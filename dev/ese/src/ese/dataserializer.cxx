@@ -688,7 +688,7 @@ DataSerializer::~DataSerializer()
 
 void DataSerializer::SetBindingsToDefault()
 {
-    for_each( m_bindings.begin(), m_bindings.end(), mem_fun( &DataBinding::SetToDefault ) );
+    for_each( m_bindings.begin(), m_bindings.end(), mem_fn( &DataBinding::SetToDefault ) );
 }
 
 ERR DataSerializer::ErrSaveBindings( IDataStore * const pstore )

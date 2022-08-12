@@ -14533,7 +14533,7 @@ void BFIMaintCacheStatsITask( VOID *, VOID * pvContext )
         //  we've failed to acquire the semaphore to schedule the task. this means the task must be executing
         //  right now or in the process of rescheduling itself to complete its job.
 
-        S_ASSERT( dtickMaintCacheSizeRequest <= ( dtickMaintCacheStatsPeriod / 2 ) );
+        static_assert( dtickMaintCacheSizeRequest <= ( dtickMaintCacheStatsPeriod / 2 ) );
 
         g_cMaintCacheSizeReqAcquireFailures++;
 
