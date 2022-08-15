@@ -639,7 +639,7 @@ print DATAFILE<<EOF9;
 	};
 
 // These two objects should be the same.
-C_ASSERT( sizeof( PerfDataTemplateReadOnly ) == sizeof( PerfDataTemplateReadWrite ) );
+static_assert( sizeof( PerfDataTemplateReadOnly ) == sizeof( PerfDataTemplateReadWrite ) );
 
 EOF9
 
