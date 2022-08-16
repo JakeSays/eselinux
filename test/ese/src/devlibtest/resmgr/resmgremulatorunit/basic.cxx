@@ -3973,14 +3973,6 @@ ERR ResMgrEmulatorBasicTest::ErrSubSampling_()
     BFFTLContext* pbfftlc = NULL;
     PageEvictionAlgorithmLRUTest algorithm;
 
-    // Initialize the sampling in the emulator to be able to count the events that will be sampled.
-    TestCall( emulator.ErrSetSamplingParameters( 5, 0 ) );
-    // Count sampled events in each of the phases of the scenario
-    int cSampledCache = 0;
-    int cSampledEvict = 0;
-    int cSampledCacheB = 0;
-    int cSampledTouch = 0;
-
     //  Scenario:
     //  - Init; (1)
     //  - Cache 100 pages; (101)
@@ -4000,6 +3992,14 @@ ERR ResMgrEmulatorBasicTest::ErrSubSampling_()
     memset( rgbftrace, 0, 208 * sizeof( BFTRACE ) );
     size_t iTrace = 0;
     TICK tick = 0;
+
+    // Initialize the sampling in the emulator to be able to count the events that will be sampled.
+    TestCall( emulator.ErrSetSamplingParameters( 5, 0 ) );
+    // Count sampled events in each of the phases of the scenario
+    int cSampledCache = 0;
+    int cSampledEvict = 0;
+    int cSampledCacheB = 0;
+    int cSampledTouch = 0;
 
     //  - Init; (1)
 
