@@ -5157,8 +5157,19 @@ LOCAL VOID VERIFreeExt( PIB * const ppib, FCB *pfcb, PGNO pgnoFirst, CPG cpg )
 
     const BOOL fCleanUpStateSavedSavedSaved = FOSSetCleanupState( fFalse );
 
-    (VOID)ErrSPFreeExt( pfucb, pgnoFirst, cpg, "VerFreeExt" );
-    
+    // Free extent only only after logging extent freed. If not, we might not capture the fact that these pages need to be reconciled if in required range and page is in dbtimeRevert.
+    // We will also mark the extent empty to avoid re-capturing page preimage.
+    err = ErrSPCaptureSnapshot( pfucb, pgnoFirst, cpg, fTrue );
+
+    if ( err >= JET_errSuccess )
+    {
+        (VOID)ErrSPFreeExt( pfucb, pgnoFirst, cpg, "VerFreeExt" );
+    }
+    else
+    {
+        SPReportSpaceLeak( pfucb, err, pgnoFirst, cpg, "VerFreeExt" );
+    }
+
     // Restore cleanup checking
     FOSSetCleanupState( fCleanUpStateSavedSavedSaved );
 

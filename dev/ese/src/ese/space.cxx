@@ -2567,7 +2567,7 @@ INLINE const SPACE_HEADER * PsphSPIRootPage( FUCB* pfucb )
 
 //  get pgnoFDP of parentFDP of this tree
 //
-PGNO PgnoSPIParentFDP( FUCB *pfucb )
+PGNO PgnoSPParentFDP( FUCB *pfucb )
 {
     return PsphSPIRootPage( pfucb )->PgnoParent();
 }
@@ -7466,7 +7466,7 @@ LOCAL ERR ErrSPIFreeSEToParent(
     //  get parentFDP's root pgno
     //  cursor passed in should be at root of tree
     //  so we can access pgnoParentFDP from the external header
-    const PGNO  pgnoParentFDP = PgnoSPIParentFDP( pfucb );
+    const PGNO  pgnoParentFDP = PgnoSPParentFDP( pfucb );
     if ( pgnoParentFDP == pgnoNull )
     {
         // This is the root DB and its parent is the file system, so there's nothing to release
@@ -8006,7 +8006,7 @@ HandleError:
     return err;
 }
 
-LOCAL VOID SPIReportSpaceLeak( _In_ const FUCB* const pfucb, _In_ const ERR err, _In_ const PGNO pgnoFirst, _In_ const CPG cpg, __in_z const CHAR* const szTag )
+VOID SPReportSpaceLeak( _In_ const FUCB* const pfucb, _In_ const ERR err, _In_ const PGNO pgnoFirst, _In_ const CPG cpg, __in_z const CHAR* const szTag )
 {
     Assert( pfucb != NULL );
     Expected( err < JET_errSuccess );
@@ -8583,7 +8583,7 @@ ERR ErrSPCaptureNonRevertableFDPRootPage( PIB *ppib, FCB* pfcbFDPToFree, const P
 HandleError:
     if ( err < JET_errSuccess )
     {
-        SPIReportSpaceLeak( pfucb, err, pfcbFDPToFree->PgnoFDP(), 1, "CaptureNonRevertableFDPRootPage" );
+        SPReportSpaceLeak( pfucb, err, pfcbFDPToFree->PgnoFDP(), 1, "CaptureNonRevertableFDPRootPage" );
     }
 
     if ( pfucbNil != pfucb )
@@ -8681,7 +8681,7 @@ ERR ErrSPCaptureSpaceTreePages( FUCB* const pfucbParent, FCB* pfcb, CPG* pcpgSna
 HandleError:
     if ( err < JET_errSuccess )
     {
-        SPIReportSpaceLeak( pfucbOE, err, pgnoFirst, cpgExtent, "CaptureSpaceTreePages" );
+        SPReportSpaceLeak( pfucbOE, err, pgnoFirst, cpgExtent, "CaptureSpaceTreePages" );
     }
 
     if ( pfucbOE != pfucbNil )
@@ -8940,7 +8940,7 @@ HandleError:
                 err,
                 err ) );
 
-        SPIReportSpaceLeak( pfucb, err, pgnoFirst, cpgSize, szTag );
+        SPReportSpaceLeak( pfucb, err, pgnoFirst, cpgSize, szTag );
     }
     else
     {
@@ -10931,7 +10931,7 @@ ERR ErrSPFreeFDP(
 
     //  get parent FDP pgno
     //
-    Assert( pgnoFDPParent == PgnoSPIParentFDP( pfucb ) );
+    Assert( pgnoFDPParent == PgnoSPParentFDP( pfucb ) );
     Assert( pgnoFDPParent == PgnoFDP( pfucbParent ) );
 
     if ( !pfucb->u.pfcb->FSpaceInitialized() )
@@ -11468,7 +11468,7 @@ HandleError:
     Assert( ( err < JET_errSuccess ) || ( fAddedToOwnExt && fAddedToAvailExt ) );
     if ( fAddedToOwnExt && !fAddedToAvailExt )
     {
-        SPIReportSpaceLeak( pfucb, err, pgnoLast - cpgAvailable + 1, cpgAvailable, "NewExt" );
+        SPReportSpaceLeak( pfucb, err, pgnoLast - cpgAvailable + 1, cpgAvailable, "NewExt" );
     }
 
     return err;
@@ -13519,7 +13519,7 @@ HandleError:
 
         if ( !fExtentFreed )
         {
-            SPIReportSpaceLeak( pfucb, err, extinfo.PgnoFirst(), (CPG)extinfo.CpgExtent(), "SpBuffer" );
+            SPReportSpaceLeak( pfucb, err, extinfo.PgnoFirst(), (CPG)extinfo.CpgExtent(), "SpBuffer" );
         }
     }
 

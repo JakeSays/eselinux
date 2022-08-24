@@ -1923,7 +1923,7 @@ LOCAL ERR ErrSHKIRootMoveCheck( const ROOTMOVE& rm, FUCB* const pfucb, const OBJ
             pfucbChild->pcsrRoot = Pcsr( pfucbChild );
 
             // Check against the previously enumerated objected.
-            if ( PgnoSPIParentFDP( pfucbChild ) != rm.pgnoNewFDP )
+            if ( PgnoSPParentFDP( pfucbChild ) != rm.pgnoNewFDP )
             {
                 AssertTrack( fFalse, "RootMoveBadPgnoParentFdp" );
                 Error( ErrERRCheck( JET_errDatabaseCorrupted ) );

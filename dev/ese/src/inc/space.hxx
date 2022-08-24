@@ -437,7 +437,9 @@ INLINE BOOL FSPExpectedError( const ERR err )
 
 BOOL FSPIsRootSpaceTree( const FUCB * const pfucb );
 
-PGNO PgnoSPIParentFDP( FUCB *pfucb );
+PGNO PgnoSPParentFDP( FUCB *pfucb );
+
+VOID SPReportSpaceLeak( _In_ const FUCB* const pfucb, _In_ const ERR err, _In_ const PGNO pgnoFirst, _In_ const CPG cpg, __in_z const CHAR* const szTag );
 
 //  space Manager constants
 const INT   cSecFrac                = 4;    // divider of primary extent to get secondary
