@@ -3694,7 +3694,13 @@ ERR RBSCleaner::ErrRBSCleanupBackup( QWORD* cbFreeRBSDisk, QWORD* cbTotalRBSDisk
         return JET_errSuccess;
     }
 
-    if ( *cbFreeRBSDisk < cbLowDiskSpace && *cbTotalRBSDiskSpace > cbMaxRBSSpaceLowDiskSpace )
+    // We will restrict max space RBS can consume on the disk to avoid overrunning the disk with snapshots.
+    if ( *cbTotalRBSDiskSpace > m_prbscleanerconfig->CbMaxSpaceForRBS() )
+    {
+        fRBSCleanupBackup = fTrue;
+        wszRBSBackupRemoveReason = L"MaxRBSDiskSpace";
+    }
+    else if ( *cbFreeRBSDisk < cbLowDiskSpace && *cbTotalRBSDiskSpace > cbMaxRBSSpaceLowDiskSpace )
     {
         // Low disk space, lets clean up all the backup snapshots we have for investigation.
         fRBSCleanupBackup = fTrue;
@@ -3847,13 +3853,24 @@ ERR RBSCleaner::ErrDoOneCleanupPass()
                 wszRBSRemoveReason = L"InvalidRBS";
             }
 
-            if ( fRBSCleanupMinGen || ( cbFreeRBSDisk < cbLowDiskSpace && cbTotalRBSDiskSpace > cbMaxRBSSpaceLowDiskSpace ) )
+            
+            if ( !fRBSCleanupMinGen )
             {
-                if ( !fRBSCleanupMinGen )
+                // We will restrict max space RBS can consume on the disk to avoid overrunning the disk with snapshots.
+                if ( cbTotalRBSDiskSpace > m_prbscleanerconfig->CbMaxSpaceForRBS() )
                 {
+                    fRBSCleanupMinGen = fTrue;
+                    wszRBSRemoveReason = L"MaxRBSDiskSpace";
+                }
+                else if ( cbFreeRBSDisk < cbLowDiskSpace && cbTotalRBSDiskSpace > cbMaxRBSSpaceLowDiskSpace )
+                {
+                    fRBSCleanupMinGen = fTrue;
                     wszRBSRemoveReason = L"LowDiskSpace";
                 }
+            }
 
+            if ( fRBSCleanupMinGen )
+            {
                 Call( m_prbscleaneriooperator->ErrGetDirSize( wszRBSAbsDirPath, &cbRBSDiskSpace ) );
                 Call( m_prbscleaneriooperator->ErrRemoveFolder( wszRBSAbsDirPath, wszRBSRemoveReason ) );
                 cbTotalRBSDiskSpace -= cbRBSDiskSpace;

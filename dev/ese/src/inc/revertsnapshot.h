@@ -13,6 +13,7 @@
 #define csecSpaceUsagePeriodicLog       3600
 #define cbMaxRBSSizeAllowed             100LL*1024*1024*1024
 #define cbRBSIOSize                     512*1024
+#define cbMaxRBSDiskSpace               300LL*1024*1024*1024
 
 C_ASSERT( cbRBSSegmentSizeMask == cbRBSSegmentSize - 1 );
 
@@ -474,6 +475,9 @@ public:
     // Max alloted space for revert snapshots when the disk space is low.
     virtual QWORD CbMaxSpaceForRBSWhenLowDiskSpace() = 0;
 
+    // Max alloted space for revert snapshots under normal conditions.
+    virtual QWORD CbMaxSpaceForRBS() = 0;
+
     // Time since when we need revert snapshots relative to current time.
     virtual INT CSecRBSMaxTimeSpan() = 0;
     
@@ -503,6 +507,7 @@ public:
     QWORD CbLowDiskSpaceThreshold();
     QWORD CbLowDiskSpaceDisableRBSThreshold();
     QWORD CbMaxSpaceForRBSWhenLowDiskSpace();
+    QWORD CbMaxSpaceForRBS();
     INT CSecRBSMaxTimeSpan();
     INT CSecMinCleanupIntervalTime();
     LONG LFirstValidRBSGen() { return 1; }
@@ -530,6 +535,11 @@ INLINE QWORD RBSCleanerConfig::CbLowDiskSpaceDisableRBSThreshold()
 INLINE QWORD RBSCleanerConfig::CbMaxSpaceForRBSWhenLowDiskSpace()
 {
     return ( (QWORD) UlParam( m_pinst, JET_paramFlight_RBSMaxSpaceWhenLowDiskSpaceGb ) ) * 1024 * 1024 * 1024;
+}
+
+INLINE QWORD RBSCleanerConfig::CbMaxSpaceForRBS()
+{
+    return cbMaxRBSDiskSpace;
 }
 
 INLINE INT RBSCleanerConfig::CSecMinCleanupIntervalTime()
