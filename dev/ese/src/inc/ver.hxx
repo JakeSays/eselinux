@@ -827,7 +827,7 @@ INLINE RCEID RCE::Rceid() const
 INLINE TRX RCE::TrxBegin0 () const
 //  ================================================================
 {
-    Assert( FAssertReadable_() );
+    Assert( FIsRCECleanup() || FAssertReadable_() );
     return m_trxBegin0;
 }
 
@@ -1626,6 +1626,7 @@ public:
     RECTASKBATCHER      m_rectaskbatcher;
 
     BOOL                m_fAboveMaxTransactionSize;
+    TRX                 m_trxOldestRCE;
 public:
 
 #ifdef VERPERF
@@ -1752,6 +1753,16 @@ public:
     INLINE RCE *GetChain( UINT ui ) const;
     INLINE RCE **PGetChain( UINT ui );
     INLINE VOID SetChain( UINT ui, RCE * );
+
+    BOOL FAboveMaxTransactionSize() const
+    {
+        return m_fAboveMaxTransactionSize;
+    }
+
+    TRX TrxOldestRCE() const
+    {
+        return m_trxOldestRCE;
+    }
 
 #ifdef RTM
 #else

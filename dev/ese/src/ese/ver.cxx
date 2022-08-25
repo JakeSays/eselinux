@@ -188,6 +188,8 @@ VER::VER( INST *pinst )
             (INT)UlParam(pinst, JET_paramVersionStoreTaskQueueMax),
             ctasksPerBatchMaxDefault,
             ctasksBatchedMaxDefault ),
+        m_fAboveMaxTransactionSize( fFalse ),
+        m_trxOldestRCE( trxMin ),
         m_cresBucket( pinst )
 {
 
@@ -1758,6 +1760,10 @@ ERR VER::ErrVERICreateRCE(
     }
 
     Call( ErrVERIAllocateRCE( cbNewRCE, &prce, uiHashConcurrentOp ) );
+    if ( m_trxOldestRCE == trxMin )
+    {
+        m_trxOldestRCE = trxBegin0;
+    }
 
 #ifdef DEBUG
     if ( !PinstFromIfmp( pfcb->Ifmp() )->m_plog->FRecovering() )
@@ -4412,11 +4418,11 @@ ERR VER::ErrVERCheckTransactionSize( PIB * const ppib )
     ERR err = JET_errSuccess;
     if ( m_fAboveMaxTransactionSize )
     {
-        UpdateCachedTrxOldest( m_pinst );
+        VERSignalCleanup();
 
         // If this is the oldest transaction and the version store is too
         // full, return an error
-        if ( ppib->trxBegin0 == TrxOldestCached( m_pinst ) )
+        if ( TrxCmp( ppib->trxBegin0, m_trxOldestRCE ) <= 0 )
         {
             const BOOL fCleanupWasRun   = m_msigRCECleanPerformedRecently.FWait( cmsecAsyncBackgroundCleanup );
 
@@ -6149,6 +6155,11 @@ ERR VER::ErrVERIRCEClean( const IFMP ifmp )
                 const TRX   trxRCECommitted = prce->TrxCommitted();
                 BOOL        fCleanable      = fFalse;
 
+                if ( !fCleanOneDb )
+                {
+                    m_trxOldestRCE = fFullyCommitted ? trxRCECommitted : prce->TrxBegin0();
+                }
+
                 if ( trxMax == trxOldest )
                 {
                     //  trxOldest may no longer be trxMax. if so we may not be able to
@@ -6344,6 +6355,7 @@ NextRCE:
         }
         else
         {
+            m_trxOldestRCE = trxMin;
             Assert( pbucketNil == m_pbucketGlobalTail );
         }
         m_critBucketGlobal.Leave();
