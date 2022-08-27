@@ -2622,6 +2622,7 @@ Number of uncached primary objects: %38%n
 Correction applied to space owned by primary objects: %46 page(s) (%47 bytes, %48%%).%n
 Enumeration conflicts resolved successfully: %49%n
 Enumeration conflicts not resolved successfully: %50%n
+Time spent resolving conflicts: %51 seconds(s).%n
 Performance: %39 page(s) read, %40 page(s) preread, %41 page(s) referenced, %42 page(s) dirtied, %43 page(s) re-dirtied.%n
 Duration: %44 minute(s) and %45 second(s).%n
 .
