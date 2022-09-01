@@ -5,28 +5,6 @@ using namespace std;
 
 #include "collectionunittest.hxx"
 
-// Borrowed from an implementation of random_shuffle(), used here
-// to make shuffle() behave like random_shuffle.
-struct _Rand_urng_from_func
-{	// wrap rand() as a URNG
-    typedef unsigned int result_type;
-
-    static result_type (min)()
-        {	// return minimum possible generated value
-            return (0);
-        }
-
-    static result_type (max)()
-        {	// return maximum possible generated value
-            return (RAND_MAX);
-        }
-
-    result_type operator()()
-        {	// invoke rand()
-            return (_CSTD rand());
-        }
-};
-
 _Rand_urng_from_func _ShuffleRandFunc;
 
 // node constructor zeroes members and sets the color to red

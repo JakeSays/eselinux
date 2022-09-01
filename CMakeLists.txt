@@ -147,6 +147,11 @@ link_libraries(
     ${ESE_RELEASE_LIBRARIES}
 )
 
+#  Global ESE project defines
+add_compile_definitions(
+    OS_LAYER_USE_NEW_OVERRIDE
+)
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Using Microsoft Visual C++
 

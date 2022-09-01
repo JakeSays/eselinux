@@ -4773,7 +4773,7 @@ ERR CRBSDatabaseRevertContext::ErrRBSInitRootPageDeleteState( const LONG lRBSGen
     QWORD cbOffset      = 0;
     QWORD cbRemaining   = cbSize;
 
-    pbread = (BYTE*)PvOSMemoryPageAlloc( cbSize, NULL );
+    pbread = (BYTE*)PvOSMemoryPageAlloc( (size_t)cbSize, NULL );
     Alloc( pbread );
 
     while ( cbRemaining > 0 )

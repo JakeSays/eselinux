@@ -3494,7 +3494,7 @@ class THashedLRUKCache
                     const QWORD                 cbSlab              = pc->CbChunkPerSlab();
                     const QWORD                 ibSlabMin           = pc->m_pch->IbChunkHash();
                     const QWORD                 cSlab               = pc->m_pch->CbChunkHash() / cbSlab;
-                    const size_t                cBitmap             = roundup( cSlab, CHAR_BIT );
+                    const size_t                cBitmap             = roundup( (size_t)cSlab, CHAR_BIT );
                     const size_t                cbBitmap            = (size_t)CbFromCbit( cBitmap );
                     BYTE*                       rgbBitmap           = NULL;
                     IBitmapAPI*                 pbmLoaded           = NULL;
@@ -3515,12 +3515,12 @@ class THashedLRUKCache
 
                     Alloc( rgbBitmap = new BYTE[ cbBitmap ] );
                     Alloc( pbmLoaded = new CFixedBitmap( rgbBitmap, cbBitmap ) );
-                    OnDebug( Alloc( rgCount = new LONG[ cSlab ] ) );
+                    OnDebug( Alloc( rgCount = new LONG[ (size_t)cSlab ] ) );
                     if ( rgCount )
                     {
-                        memset( rgCount, 0, cSlab * sizeof( rgCount[ 0 ] ) );
+                        memset( rgCount, 0, (size_t)cSlab * sizeof( rgCount[ 0 ] ) );
                     }
-                    Alloc( rgBucket = new CBucket[ cBucket ] );
+                    Alloc( rgBucket = new CBucket[ (size_t)cBucket ] );
                     Alloc( rgdwStandby = new DWORD[ cStandby ] );
                     memset( rgdwStandby, 0, cStandby * sizeof( rgdwStandby[ 0 ] ) );
                     Alloc( pcbpf = new CCachedBlockPresenceFilter(  pc,
@@ -3702,7 +3702,7 @@ class THashedLRUKCache
                         m_rgCount( *prgCount ),
                         m_cCluster( cCluster ),
                         m_cBucket( cBucket ),
-                        m_maskBucket( ( 1LL << Log2( cBucket ) ) - 1 ),
+                        m_maskBucket( ( 1LL << Log2( (ULONG)cBucket ) ) - 1 ),
                         m_rgBucket( *prgBucket ),
                         m_cCuckooMax( max( 2, cCuckooMax ) ),
                         m_cStandby( cStandby ),
