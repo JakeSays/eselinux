@@ -4167,8 +4167,7 @@ typedef enum
 #define JET_paramEnableShrinkDatabase           184 //  Release space back to the OS when deleting data. This may require an OS feature of Sparse Files, and is subject to change.
 // end_PubEsent
 
-// DEPRECATED: this was once used in the first implementation of DB shrink.
-// #define JET_paramAutomaticShrinkDatabaseFreeSpaceThreshold   185 //  DEPRECATED: Minimum threshold (percentage of the database size) that determines if the periodic shrink and/or shrink at JetTerm will take place or not.
+#define JET_paramFlight_CacheTraceSamplingRatio 185 //  Trace all cache events for 1 out of JET_paramFlight_CacheTraceSamplingRatio pages.
 
 // begin_PubEsent
 

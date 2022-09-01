@@ -6217,9 +6217,25 @@ SetCacheSizeRange(  CJetParam* const    pjetparam,
                     PCWSTR      wszParam )
 {
     ERR err = JET_errSuccess;
-    
+
     Call( CJetParam::SetInteger( pjetparam, pinst, ppib, ulParam, wszParam ) );
     Call( ErrBFConsumeSettings( bfcsCacheSize, ifmpNil ) );
+
+HandleError:
+    return err;
+}
+
+ERR
+SetCacheTraceSamplingRatio( CJetParam* const    pjetparam,
+                            INST* const         pinst,
+                            PIB* const          ppib,
+                            const ULONG_PTR     ulParam,
+                            PCWSTR      wszParam )
+{
+    ERR err = JET_errSuccess;
+
+    Call( CJetParam::SetInteger( pjetparam, pinst, ppib, ulParam, wszParam ) );
+    BFICacheTraceSamplingInit( (ULONG)ulParam );
 
 HandleError:
     return err;

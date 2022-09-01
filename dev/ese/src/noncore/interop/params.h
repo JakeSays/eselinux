@@ -222,6 +222,7 @@ MSINTERNAL enum class MJET_PARAM
     HungIOActions = 182, // A set of actions to be taken on IOs that appear hung.
     MinDataForXpress = 183, // Smallest amount of data that should be compressed with xpress compression.
     EnableShrinkDatabase = 184, // Release space back to the OS when deleting data. This may require an OS feature of Sparse Files, and is subject to change.
+    Flight_CacheTraceSamplingRatio = 185, // Trace all cache events for 1 out of JET_paramFlight_CacheTraceSamplingRatio pages.
     ProcessFriendlyName = 186, // Friendly name for this instance of the process (e.g. performance counter global instance name, event logs).
     DurableCommitCallback = 187, // callback for when log is flushed
     EnableSqm = 188, // Deprecated / ignored param.

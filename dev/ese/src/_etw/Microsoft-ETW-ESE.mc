@@ -107,6 +107,7 @@ ESE_PRE_GEN_BASE_FILE:   be pre-processed with eseetw.pl.
               http://msdn.microsoft.com/en-us/library/aa382786(VS.85).aspx
           -->
         <keywords>
+          <!--ESE_ETW_AUTOGEN_KEYWORD_LIST_BEGIN-->
           <!-- Keywords 1 and 2 are defined by WinPhone best practices. -->
           <keyword
               mask="0x0000000000000001"
@@ -207,6 +208,7 @@ ESE_PRE_GEN_BASE_FILE:   be pre-processed with eseetw.pl.
               message="$(string.Keyword.CompressExp)"
               name="CompressExp"
               />
+          <!--ESE_ETW_AUTOGEN_KEYWORD_LIST_END-->
         </keywords>
 
         <!-- ==========================================================================================================

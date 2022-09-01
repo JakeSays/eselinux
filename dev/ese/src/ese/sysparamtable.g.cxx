@@ -198,7 +198,7 @@ JetParam g_rgparamRaw[] =
     NORMAL_PARAM(JET_paramHungIOActions, CJetParam::typeInteger, 1,  1,  1, 1, JET_bitNil, (JET_bitHungIOEvent|JET_bitHungIOCancel|JET_bitHungIODebug|JET_bitHungIOEnforce|JET_bitHungIOTimeout), JET_bitHungIOEvent),
     NORMAL_PARAM(JET_paramMinDataForXpress, CJetParam::typeInteger, 1,  1,  1, 1, 0, 2147483647, 1024),
     CUSTOM_PARAM3(JET_paramEnableShrinkDatabase, CJetParam::typeGrbit, 0,  0,  0, 1, 0, 0xffff, JET_paramEnableShrinkDatabase_DEFAULT, JET_paramEnableShrinkDatabase_DEFAULT, CJetParam::GetInteger, SetShrinkDatabaseParam, CJetParam::CloneDefault),
-    ILLEGAL_PARAM(185),
+    CUSTOM_PARAM3(JET_paramFlight_CacheTraceSamplingRatio, CJetParam::typeInteger, 0,  1,  0, 0, 1, 2147483647, 1, 1, CJetParam::GetInteger, SetCacheTraceSamplingRatio, CJetParam::CloneDefault),
     NORMAL_PARAM(JET_paramProcessFriendlyName, CJetParam::typeString, 0,  1,  1, 1, 0, JET_cbNameMost, L""),
     NORMAL_PARAM(JET_paramDurableCommitCallback, CJetParam::typePointer, 1,  0,  0, 1, 0, -1, NULL),
     IGNORED_PARAM(JET_paramEnableSqm, CJetParam::typeInteger, 0,  0,  0, 1, JET_sqmDisable, JET_sqmFromCEIP, JET_sqmEnable),
@@ -431,7 +431,7 @@ static_assert( JET_paramHungIOThreshold == 181, "The order of defintion for JET_
 static_assert( JET_paramHungIOActions == 182, "The order of defintion for JET_paramHungIOActions in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
 static_assert( JET_paramMinDataForXpress == 183, "The order of defintion for JET_paramMinDataForXpress in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
 static_assert( JET_paramEnableShrinkDatabase == 184, "The order of defintion for JET_paramEnableShrinkDatabase in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
-static_assert( 185 == 185, "The order of defintion for 185 in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
+static_assert( JET_paramFlight_CacheTraceSamplingRatio == 185, "The order of defintion for JET_paramFlight_CacheTraceSamplingRatio in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
 static_assert( JET_paramProcessFriendlyName == 186, "The order of defintion for JET_paramProcessFriendlyName in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
 static_assert( JET_paramDurableCommitCallback == 187, "The order of defintion for JET_paramDurableCommitCallback in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
 static_assert( JET_paramEnableSqm == 188, "The order of defintion for JET_paramEnableSqm in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );

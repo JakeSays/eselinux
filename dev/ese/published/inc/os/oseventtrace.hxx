@@ -23,6 +23,9 @@ INLINE BOOL FOSEventTraceEnabled();
 
 #define OSEventTrace if ( FOSEventTraceEnabled() ) OSEventTrace_
 
+template< OSEventTraceKeywordGUID etguid >
+INLINE BOOL FOSEventTraceKeywordEnabled();
+
 //  The first 8 are generic reasons, resused per event, the next 248 are for whatever 
 
 enum TraceStationIdentificationReason : BYTE // tsidr
@@ -136,6 +139,9 @@ template INLINE BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidFileStationId >
 template INLINE BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidSysStationId >( const TraceStationIdentificationReason tsidr );
 template INLINE BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidIsamDbfilehdrInfo >( const TraceStationIdentificationReason tsidr );
 template INLINE BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidFmpStationId >( const TraceStationIdentificationReason tsidr );
+
+// Used to avoid subsampling if the keyword BFRESMGR is not set
+template INLINE BOOL FOSEventTraceKeywordEnabled< _etguidKeywordBFRESMGR >();
 
 #endif  //  _OS_EVENT_TRACE_HXX_INCLUDED
 

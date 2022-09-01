@@ -601,6 +601,8 @@ void BFIFTLTerm();
 
 //  BF tracing
 
+void BFICacheTraceSamplingInit( const ULONG ulSamplingRatio );
+
 INLINE void BFITraceResMgrInit(
     const INT       K,
     const double    csecCorrelatedTouch,
