@@ -108,8 +108,8 @@ UINT IbitNewChecksumFormatFlag( const PAGETYPE pagetype )
         //  for database pages, the page flags are stored in the 10th
         //  unsigned long. The format bit is 0x2000, which is the 14th bit
         //
-        Assert( OffsetOf( CPAGE::PGHDR, fFlags ) * 8 == 9 * 32 );
-        Assert( CPAGE::fPageNewChecksumFormat == ( 1 << 13 ) );
+        static_assert( OffsetOf( CPAGE::PGHDR, fFlags ) * 8 == 9 * 32 );
+        static_assert( CPAGE::fPageNewChecksumFormat == ( 1 << 13 ) );
 
         return ( 9 * 32 ) + 13;
     }
@@ -267,19 +267,18 @@ ULONG CbBlockSize( const ULONG cb )
 }
 
 //  ================================================================
-static PAGECHECKSUM ComputePageChecksum(
+LOCAL PAGECHECKSUM ComputePageChecksum_(
     const void* const pv,
     const UINT cb,
     const PAGETYPE pagetype,
     const ULONG pgno,
-    // set fNew to compute new ECC for a page (R/W wrt the large page!!)
-    // reset fNew to computer ECC for verification purpose (R/O wrt the page)
-    const BOOL fNew = fFalse )
+    const BOOL fNewChecksumFormat,
+    const BOOL fWriteChecksum )
 //  ================================================================
 {
     if( FPageHasLongChecksum( pagetype ) )
     {
-        if( FPageHasNewChecksumFormat( pv, pagetype ) )
+        if( fNewChecksumFormat )
         {
             // large pages (16/32kiB) always have new checksum format
             PAGECHECKSUM pgChecksum;
@@ -311,7 +310,7 @@ static PAGECHECKSUM ComputePageChecksum(
 
                 // write checksums into designated location in header block
                 // so checksum for header block can protect them as well
-                if ( fNew )
+                if ( fWriteChecksum )
                 {
                     // cast RO pv to RW pPgHdr2
                     CPAGE::PGHDR2* const pPgHdr2 = ( CPAGE::PGHDR2* )pv;
@@ -332,6 +331,18 @@ static PAGECHECKSUM ComputePageChecksum(
     }
 
     return ChecksumOldFormat((unsigned char *)pv, cb);
+}
+
+//  ================================================================
+static PAGECHECKSUM ComputePageChecksum(
+    const void* const pv,
+    const UINT cb,
+    const PAGETYPE pagetype,
+    const ULONG pgno,
+    const BOOL fWriteChecksum = fFalse )
+//  ================================================================
+{
+    return ComputePageChecksum_( pv, cb, pagetype, pgno, FPageHasNewChecksumFormat( pv, pagetype ), fWriteChecksum );
 }
 
 //  ================================================================
@@ -383,7 +394,7 @@ static void TryFixPage(
     UINT ibT = 0;
     XECHECKSUMERROR rgErr[ cxeChecksumPerPage ] = { xeChecksumNoError, };
 
-    UINT rgibitCorrupted[ cxeChecksumPerPage ] = { IbitNewChecksumFormatFlag( pagetype ), UINT_MAX, UINT_MAX, UINT_MAX, };
+    UINT rgibitCorrupted[ cxeChecksumPerPage ] = { UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, };
     UINT ibitCorrupted = UINT_MAX;
 
     // work out correction
@@ -488,11 +499,25 @@ void ChecksumAndPossiblyFixPage(
 
     *pchecksumExpected  = ChecksumFromPage( pv, cb, pagetype );
     *pchecksumActual    = ComputePageChecksum( pv, cb, pagetype, pgno );
-    
+
     const BOOL fNewChecksumFormat = FPageHasNewChecksumFormat( pv, pagetype );
-    if( *pchecksumActual != *pchecksumExpected && fNewChecksumFormat )
+    if ( *pchecksumActual != *pchecksumExpected && *pchecksumExpected != PAGECHECKSUM{ 0 } )
     {
-        TryFixPage( pv, cb, pagetype, fCorrectError, pfCorrectableError, pibitCorrupted, *pchecksumExpected, *pchecksumActual );
+        // Try correcting bit flips in the page for non-zero pages. (Pages whose checksum isn't 0).
+        // Note that a valid old format checksum can be 0 for some combination of non-zero bits on the page.
+        // A valid new checksum can't be zero because it comprises of two complimentary checksums,
+        // both of which can only be 0 if all of the bits on the page are 0 or 1.
+        // See checksum_amd64.cxx for a detailed description of why that is true.
+
+        // Old checksum format doesn't support error correction.
+        // But it could be that the checksum was new format and the bit that indicated formats got flipped.
+        // Compute the checksum as new format and try fixing it.
+        // If it is fixable, then we know that fNewChecksumFormat bit on the page got flipped.
+        PAGECHECKSUM checksumNewFormat = fNewChecksumFormat ?
+                                                *pchecksumActual :
+                                                ComputePageChecksum_( pv, cb, pagetype, pgno, fTrue, fFalse );
+
+        TryFixPage( pv, cb, pagetype, fCorrectError, pfCorrectableError, pibitCorrupted, *pchecksumExpected, checksumNewFormat );
         Assert( ( *pfCorrectableError && *pibitCorrupted != -1 ) || ( !*pfCorrectableError && *pibitCorrupted == -1 ) );
 
         // no point in re-computing the checksum if we haven't done any changes
