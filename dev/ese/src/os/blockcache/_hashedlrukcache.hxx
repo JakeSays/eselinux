@@ -4297,12 +4297,12 @@ class THashedLRUKCache
 
                         CBucket()
                         {
-                            C_ASSERT( sizeof( *this ) == sizeof( m_rgbFingerprint ) );
-                            memset( this, 0, sizeof( *this ) );
+                            memset( this, 0, sizeof( CBucket ) );
                         }
 
-                        static size_t C() { return _countof( m_rgbFingerprint ); }
-                        static size_t CbitFingerprint() { return sizeof( m_rgbFingerprint[0] ) * 8; }
+                        static size_t C() { return 4; }
+                        static size_t CbitFingerprint() { return sizeof( CBucket ) * CHAR_BIT / C(); }
+                        static WORD WFingerprintMask() { return (WORD)( ( 1 << CbitFingerprint() ) - 1 ); }
 
                         BOOL FTryAdd(   _In_        const WORD  wFingerprint,
                                         _Out_opt_   WORD* const pwFingerprintReplaced = NULL )
@@ -4312,11 +4312,13 @@ class THashedLRUKCache
                                 *pwFingerprintReplaced = 0;
                             }
 
-                            for ( int i = 0; i < _countof( m_rgbFingerprint ); i++ )
+                            const QWORD qwFingerprints = QwFingerprints();
+
+                            for ( int i = 0; i < C(); i++ )
                             {
-                                if ( m_rgbFingerprint[ i ] == 0 )
+                                if ( WFingerprint( qwFingerprints, i ) == 0 )
                                 {
-                                    m_rgbFingerprint[ i ] = (BYTE)wFingerprint;
+                                    SetFingerprint( qwFingerprints, i, wFingerprint );
                                     return fTrue;
                                 }
                             }
@@ -4324,10 +4326,10 @@ class THashedLRUKCache
                             if ( pwFingerprintReplaced )
                             {
                                 const size_t    iRandom = rand();
-                                const size_t    iVictim = iRandom % _countof( m_rgbFingerprint );
+                                const size_t    iVictim = iRandom % C();
 
-                                *pwFingerprintReplaced = m_rgbFingerprint[ iVictim ];
-                                m_rgbFingerprint[ iVictim ] = (BYTE)wFingerprint;
+                                *pwFingerprintReplaced = WFingerprint( qwFingerprints, iVictim );
+                                SetFingerprint( qwFingerprints, iVictim, wFingerprint );
                             }
 
                             return fFalse;
@@ -4335,11 +4337,13 @@ class THashedLRUKCache
 
                         BOOL FTryRemove( _In_ const WORD wFingerprint )
                         {
-                            for ( int i = 0; i < _countof( m_rgbFingerprint ); i++ )
+                            const QWORD qwFingerprints = QwFingerprints();
+
+                            for ( int i = 0; i < C(); i++ )
                             {
-                                if ( m_rgbFingerprint[ i ] == wFingerprint )
+                                if ( WFingerprint( qwFingerprints, i ) == wFingerprint )
                                 {
-                                    m_rgbFingerprint[ i ] = 0;
+                                    SetFingerprint( qwFingerprints, i, 0 );
                                     return fTrue;
                                 }
                             }
@@ -4349,9 +4353,11 @@ class THashedLRUKCache
 
                         BOOL FContains( _In_ const WORD wFingerprint )
                         {
-                            for ( int i = 0; i < _countof( m_rgbFingerprint ); i++ )
+                            const QWORD qwFingerprints = QwFingerprints();
+
+                            for ( int i = 0; i < C(); i++ )
                             {
-                                if ( m_rgbFingerprint[ i ] == wFingerprint )
+                                if ( WFingerprint( qwFingerprints, i ) == wFingerprint )
                                 {
                                     return fTrue;
                                 }
@@ -4362,7 +4368,47 @@ class THashedLRUKCache
 
                     private:
 
-                        BYTE    m_rgbFingerprint[ 4 ];
+                        QWORD QwFingerprints() const
+                        {
+                            QWORD qwFingerprints;
+                            memcpy( &qwFingerprints, m_rgbFingerprint, sizeof( m_rgbFingerprint ) );
+
+                            return qwFingerprints;
+                        }
+
+                        WORD WFingerprint( _In_ const QWORD qwFingerprints, _In_ const size_t i )
+                        {
+                            return ( qwFingerprints >> ( i * CbitFingerprint() ) ) & WFingerprintMask();
+                        }
+
+                        void SetFingerprint( _In_ const QWORD qwFingerprints, _In_ const size_t i, _In_ const WORD wFingerprint )
+                        {
+                            QWORD qwFingerprintsT = qwFingerprints & ~( QWORD( WFingerprintMask() << ( i * CbitFingerprint() ) ) );
+                            qwFingerprintsT = qwFingerprintsT | ( QWORD( wFingerprint & WFingerprintMask() ) << ( i * CbitFingerprint() ) );
+
+                            memcpy( m_rgbFingerprint, &qwFingerprintsT, sizeof( m_rgbFingerprint ) );
+                        }
+
+                    private:
+
+                        union
+                        {
+                            BYTE    m_rgbFingerprint[ 5 ];
+
+                            struct
+                            {
+                                DWORD   m_wFingerprint0 : 10;
+                                DWORD   m_wFingerprint1 : 10;
+                                DWORD   m_wFingerprint2 : 10;
+                            };
+
+                            struct
+                            {
+                                BYTE    _ : 8;
+                                DWORD   __ : 22;
+                                DWORD   m_wFingerprint3 : 10;
+                            };
+                        };
                 };
 
 #include <poppack.h>
