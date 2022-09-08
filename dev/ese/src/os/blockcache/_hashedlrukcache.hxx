@@ -132,7 +132,9 @@ class THashedLRUKCache
                             CClusterWriteCompletionContext( this, (CMeteredSection::Group)0 ),
                             CClusterWriteCompletionContext( this, (CMeteredSection::Group)1 )
                         },
+                        m_fCacheMiss( fFalse ),
                         m_cCachedFileIO( 0 ),
+                        m_fCacheHit( fFalse ),
                         m_cCachingFileIO( 0 ),
                         m_iorl( this ),
                         m_pfnIORangeLockAcquired( NULL ),
@@ -151,6 +153,8 @@ class THashedLRUKCache
                 ERR ErrStatus() const { return THashedLRUKCacheBase<I>::CRequest::ErrStatus(); }
                 typename CHashedLRUKCachedFileTableEntry<I>::CIORangeLockBase* Piorl() { return &m_iorl; }
                 BOOL FIOCompleted() const { return m_msIO.FEmpty(); }
+                BOOL FCacheMiss() const { return m_fCacheMiss; }
+                BOOL FCacheHit() const { return m_fCacheHit; }
 
                 COffsets OffsetsForIO() const
                 {
@@ -252,6 +256,7 @@ class THashedLRUKCache
                                                 DWORD_PTR( this ),
                                                 ClusterReadHandoff_ ) );
 
+                    m_fCacheHit = fTrue;
                     m_cCachingFileIO++;
 
                 HandleError:
@@ -273,6 +278,7 @@ class THashedLRUKCache
 
                     Call( ErrRead( Pcfte()->Pff(), ibOffset, cbData, pbData, iomCacheMiss ) );
 
+                    m_fCacheMiss = fTrue;
                     m_cCachedFileIO++;
 
                 HandleError:
@@ -552,7 +558,9 @@ class THashedLRUKCache
 
                 const CClusterWriteCompletionContext                                        m_rgcwcc[ 2 ];
                 CMeteredSection                                                             m_msIO;
+                BOOL                                                                        m_fCacheMiss;
                 int                                                                         m_cCachedFileIO;
+                BOOL                                                                        m_fCacheHit;
                 int                                                                         m_cCachingFileIO;
                 typename CCountedInvasiveList<CRequest, OffsetOfRequestsByThread>::CElement m_ileRequestsByThread;
                 typename CCountedInvasiveList<CRequest, OffsetOfIOs>::CElement              m_ileIOs;
@@ -4749,6 +4757,7 @@ class THashedLRUKCache
 
         ERR ErrIsPossiblyCached(    _In_    CHashedLRUKCachedFileTableEntry<I>* pcfte,
                                     _In_    const QWORD                         ibCachedBlock,
+                                    _In_    const BOOL                          fKnownNotCached,
                                     _Out_   QWORD* const                        pibSlab,
                                     _Out_   CCachedBlockId* const               pcbid,
                                     _Out_   BOOL* const                         pfPossiblyCached );
@@ -5702,7 +5711,7 @@ ERR THashedLRUKCache<I>::ErrInvalidate( _In_ const VolumeId     volumeid,
 
         //  determine if we are likely to have this cached block
 
-        Call( ErrIsPossiblyCached( pcfte, ibCachedBlock, &ibSlab, &cbid, &fPossiblyCached ) );
+        Call( ErrIsPossiblyCached( pcfte, ibCachedBlock, fFalse, &ibSlab, &cbid, &fPossiblyCached ) );
 
         //  if the cached block is not possibly cached then skip this offset
 
@@ -8457,7 +8466,7 @@ void THashedLRUKCache<I>::RequestRead(  _In_    CRequest* const             preq
 
         //  determine if we are likely to have this cached block
 
-        Call( ErrIsPossiblyCached( prequest->Pcfte(), ibCachedBlock, &ibSlab, &cbid, &fPossiblyCached ) );
+        Call( ErrIsPossiblyCached( prequest->Pcfte(), ibCachedBlock, fFalse, &ibSlab, &cbid, &fPossiblyCached ) );
 
         //  if the cached block is possibly cached then determine if it is cached
 
@@ -8583,7 +8592,7 @@ void THashedLRUKCache<I>::RequestFinalizeRead(  _In_    CRequest* const         
 
         //  determine if we are likely to have this cached block
 
-        Call( ErrIsPossiblyCached( prequest->Pcfte(), ibCachedBlock, &ibSlab, &cbid, &fPossiblyCached ) );
+        Call( ErrIsPossiblyCached( prequest->Pcfte(), ibCachedBlock, !prequest->FCacheHit(), &ibSlab, &cbid, &fPossiblyCached ) );
 
         //  if the cached block is possibly cached then determine if it is cached.  otherwise, if we want to cache it
         //  then ensure that we check to see if it is already cached
@@ -8735,7 +8744,7 @@ void THashedLRUKCache<I>::RequestWrite( _In_    CRequest* const             preq
 
         //  determine if we are likely to have this cached block
 
-        Call( ErrIsPossiblyCached( prequest->Pcfte(), ibCachedBlock, &ibSlab, &cbid, &fPossiblyCached ) );
+        Call( ErrIsPossiblyCached( prequest->Pcfte(), ibCachedBlock, fFalse, &ibSlab, &cbid, &fPossiblyCached ) );
 
         //  if the cached block is possibly cached then determine if it is cached.  otherwise, if we want to cache it
         //  then ensure that we check to see if it is already cached
@@ -8966,6 +8975,7 @@ HandleError:
 template<class I>
 ERR THashedLRUKCache<I>::ErrIsPossiblyCached(   _In_    CHashedLRUKCachedFileTableEntry<I>* pcfte,
                                                 _In_    const QWORD                         ibCachedBlock,
+                                                _In_    const BOOL                          fKnownNotCached,
                                                 _Out_   QWORD* const                        pibSlab,
                                                 _Out_   CCachedBlockId* const               pcbid,
                                                 _Out_   BOOL* const                         pfPossiblyCached )
@@ -8975,28 +8985,26 @@ ERR THashedLRUKCache<I>::ErrIsPossiblyCached(   _In_    CHashedLRUKCachedFileTab
     BOOL    fPossiblyCached = fFalse;
 
     *pibSlab = 0;
-    new( pcbid ) CCachedBlockId();
     *pfPossiblyCached = fFalse;
 
     //  compute the cached block id for this offset
 
-    const CCachedBlockId cbid(  pcfte->Volumeid(),
-                                pcfte->Fileid(),
-                                pcfte->Fileserial(),
-                                (CachedBlockNumber)( ibCachedBlock / cbCachedBlock ) );
+    new( pcbid ) CCachedBlockId(    pcfte->Volumeid(),
+                                    pcfte->Fileid(),
+                                    pcfte->Fileserial(),
+                                    (CachedBlockNumber)( ibCachedBlock / cbCachedBlock ) );
 
     //  determine the slab that should hold this cached block
 
-    Call( m_pcbsmHash->ErrGetSlabForCachedBlock( cbid, &ibSlab ) );
+    Call( m_pcbsmHash->ErrGetSlabForCachedBlock( *pcbid, &ibSlab ) );
 
     //  determine if it is possible that we have this cached block in the cache
 
-    fPossiblyCached = m_pcbpf->FPossiblyContains( ibSlab, cbid );
+    fPossiblyCached = !fKnownNotCached && m_pcbpf->FPossiblyContains( ibSlab, *pcbid );
 
     //  return the results
 
     *pibSlab = ibSlab;
-    new( pcbid ) CCachedBlockId( cbid.Volumeid(), cbid.Fileid(), cbid.Fileserial(), cbid.Cbno() );
     *pfPossiblyCached = fPossiblyCached;
 
 HandleError:
