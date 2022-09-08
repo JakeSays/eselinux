@@ -4932,15 +4932,15 @@ ERR CPAGE::ErrCheckPage(
             if ( errGetLine < JET_errSuccess || !FOnData( line.pv, line.cb ) )
             {
                 // catch all
-                CHAR szGetLineErr[40];
-                OSStrCbFormatA( szGetLineErr, sizeof( szGetLineErr ), "GetLineFailed:%d\n", errGetLine );
+                WCHAR wszGetLineErr[40];
+                OSStrCbFormatW( wszGetLineErr, sizeof( wszGetLineErr ), L"GetLineFailed:%d\n", errGetLine );
                 MakeCorruptionDetailsSz( L"GetLineFailed:%d\n", errGetLine );
                 MakeCorruptionDetailsSz( L"UNCAUGHT: TAG %d ErrGetPtr() failed or got line off page (ib=%d, cb=%d, err=%d,f=%d).", itag, ib, cb, errGetLine, FOnData( line.pv, line.cb ) );
                 (*pcprintf)( "%ws\r\n", wszCorruptionDetails );
                 //  there should not be too many errors coming from ErrGetLine() that we can't embed the err in the corruption type.
                 PageAssertTrack( *this, FNegTest( fCorruptingPageLogically ), "GetLineFailed:%d\n", errGetLine );
 #ifdef DEBUG
-                Error( ErrCaptureCorruptedPageInfoSz( mode, szGetLineErr, wszCorruptionDetails, fLogEvent ) );
+                Error( ErrCaptureCorruptedPageInfoSz( mode, wszGetLineErr, wszCorruptionDetails, fLogEvent ) );
 #endif
             }
 
@@ -5040,12 +5040,12 @@ ERR CPAGE::ErrCheckPage(
 
                 if ( errGetKdf < JET_errSuccess )
                 {
-                    CHAR szGetKdfErr [40];
+                    WCHAR wszGetKdfErr [40];
                     //  there should not be too many errors coming from ErrNDIGetKeydataflags() that we can't embed the err in the corruption type.
-                    OSStrCbFormatA( szGetKdfErr, sizeof( szGetKdfErr ), "NdiGetKdfFailed:%d", errGetKdf );
-                    MakeCorruptionDetailsSz( L"TAG %d failed to load NDIGetKeydataFlags with %d\r\n", errGetKdf );
+                    OSStrCbFormatW( wszGetKdfErr, sizeof( wszGetKdfErr ), L"NdiGetKdfFailed:%d", errGetKdf );
+                    MakeCorruptionDetailsSz( L"TAG %d failed to load NDIGetKeydataFlags with %d\r\n", itag, errGetKdf );
                     (*pcprintf)( "%ws\r\n", wszCorruptionDetails );
-                    Error( ErrCaptureCorruptedPageInfoSz( mode, L"TagDataTooLarge", wszCorruptionDetails, fLogEvent ) );
+                    Error( ErrCaptureCorruptedPageInfoSz( mode, wszGetKdfErr, wszCorruptionDetails, fLogEvent ) );
                 }
 
                 if ( grbitExtensiveCheck & CheckLinesInOrder )

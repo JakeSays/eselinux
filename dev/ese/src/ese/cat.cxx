@@ -6403,7 +6403,6 @@ LOCAL ERR ErrCATIBuildFIELDArray(
     {
         Assert( JET_errRecordDeleted != err );
         Assert( locOnCurBM == pfucbCatalog->locLogical );
-        Assert( Pcsr( pfucbCatalog )->FLatched() );
         if ( JET_errNoCurrentRecord != err )
             return err;
     }
