@@ -890,6 +890,12 @@ ERR ErrSHKShrinkDbFromEof(
 
     Call( ErrSHKIShrinkEofTracingBegin( pinst->m_pfsapi, g_rgfmp[ ifmp ].WszDatabaseName(), &pcprintfShrinkTraceRaw ) );
 
+    // First, delete any previously saved shrink archive files.
+    if ( !BoolParam( pinst, JET_paramFlight_EnableShrinkArchiving ) )
+    {
+        (void)ErrIODeleteShrinkArchiveFiles( ifmp );
+    }
+
     // Bail out as early as possible if the database is already sufficiently small.
     if ( pfmp->CpgOfCb( pfmp->CbOwnedFileSize() ) <= pfmp->CpgShrinkDatabaseSizeLimit() )
     {
@@ -898,12 +904,6 @@ ERR ErrSHKShrinkDbFromEof(
     }
 
     Assert( !BoolParam( JET_paramEnableViewCache ) );
-
-    // First, delete any previously saved shrink archive files.
-    if ( !BoolParam( pinst, JET_paramFlight_EnableShrinkArchiving ) )
-    {
-        (void)ErrIODeleteShrinkArchiveFiles( ifmp );
-    }
 
     IFMP ifmpDummy;
     Call( ErrDBOpenDatabase( ppib, pfmp->WszDatabaseName(), &ifmpDummy, JET_bitDbExclusive ) );

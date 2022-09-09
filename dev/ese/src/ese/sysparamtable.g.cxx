@@ -102,7 +102,7 @@ JetParam g_rgparamRaw[] =
     NORMAL_PARAM(JET_paramFlight_LowMetedOpsThreshold, CJetParam::typeInteger, 0,  0,  0, 1, 0, 1024, 40),
     NORMAL_PARAM(JET_paramFlight_MetedOpStarvedThreshold, CJetParam::typeInteger, 0,  0,  0, 1, 50, 2147483647, 3000),
     NORMAL_PARAM(JET_paramFlight_MaxRBSBuffers, CJetParam::typeInteger, 0,  0,  0, 0, 1, 2147483647, 20),
-    NORMAL_PARAM(JET_paramFlight_EnableShrinkArchiving, CJetParam::typeBoolean, 1,  0,  0, 0, 0, 1, 1),
+    NORMAL_PARAM(JET_paramFlight_EnableShrinkArchiving, CJetParam::typeBoolean, 1,  0,  0, 0, 0, 1, 0),
     NORMAL_PARAM(JET_paramFlight_EnableBackupDuringRecovery, CJetParam::typeBoolean, 1,  0,  0, 0, 0, -1, 0),
     NORMAL_PARAM(JET_paramFlight_RBSRollIntervalSec, CJetParam::typeInteger, 1,  0,  0, 0, 0, 604800, 43200),
     NORMAL_PARAM(JET_paramFlight_RBSMaxRequiredRange, CJetParam::typeInteger, 1,  0,  0, 0, 0, 10000, 1000),

@@ -5691,7 +5691,7 @@ namespace Isam
     public ref class IsamDatabaseAttachedForRecoveryException : public IsamUsageException
     {
     public:
-        IsamDatabaseAttachedForRecoveryException() : IsamUsageException( "Database is attached but only for recovery.  It must be explicitly attached before it can be opened. ", JET_errDatabaseAttachedForRecovery)
+        IsamDatabaseAttachedForRecoveryException() : IsamUsageException( "Database is attached but only for recovery.  It must be explicitly attached before it can be opened.", JET_errDatabaseAttachedForRecovery)
         {
         }
 
