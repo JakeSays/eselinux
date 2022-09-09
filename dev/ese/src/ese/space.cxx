@@ -11860,7 +11860,7 @@ LOCAL ERR ErrSPIExtendDB(
     // If Shrink is running, signal it to bail and let the database grow IFF
     // if we can violate the max DB size constraint, which is a proxy for when
     // not doing so would lead to space leaks.
-    if ( g_rgfmp[pfucbRoot->ifmp].FShrinkIsActive() )
+    if ( g_rgfmp[pfucbRoot->ifmp].FShrinkIsRunning() )
     {
         if ( fMayViolateMaxSize )
         {
