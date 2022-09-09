@@ -232,7 +232,7 @@ VOID RBSRecToSz( const RBSRecord *prbsrec, __out_bcount(cbRBSRec) PSTR szRBSRec,
             dataImage.SetPv( prbsdbpgrec->m_rgbData );
             dataImage.SetCb( prbsrec->m_usRecLength - sizeof(RBSDbPageRecord) );
 
-            if ( prbsdbpgrec->m_fFlags )
+            if ( prbsdbpgrec->m_fFlags & ( fRBSPreimageCompressed | fRBSPreimageDehydrated ) )
             {
                 pbDataDecompressed = (BYTE *)PvOSMemoryPageAlloc( g_cbPageFromSnapshot, NULL );
                 if ( pbDataDecompressed &&

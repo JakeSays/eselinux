@@ -6083,7 +6083,7 @@ ERR CRBSRevertContext::ErrApplyRBSRecord( RBSRecord* prbsrec, BOOL fCaptureDbHdr
                 pvPage = PvOSMemoryPageAlloc( m_cbDbPageSize, NULL );
                 Alloc( pvPage );
 
-                if ( prbsdbpgrec->m_fFlags )
+                if ( prbsdbpgrec->m_fFlags & ( fRBSPreimageCompressed | fRBSPreimageDehydrated ) )
                 {
                     Call( ErrRBSDecompressPreimage( dataImage, m_cbDbPageSize, (BYTE*) pvPage, prbsdbpgrec->m_pgno, prbsdbpgrec->m_fFlags ) );
                 }
