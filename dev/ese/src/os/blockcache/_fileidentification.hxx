@@ -426,62 +426,72 @@ ERR TFileIdentification<I>::ErrGetFileId(   _In_z_      const WCHAR* const  wszP
                                                 sizeof( fileIdInfo ) );
     if ( !fSuccess )
     {
-        Error( ErrGetLastError() );
-    }
-
-    //  get the volume id
-
-    volumeid = (VolumeId)fileIdInfo.VolumeSerialNumber;
-
-    //  defend against illegal values for the volumeid
-
-    if ( volumeid == volumeidInvalid )
-    {
-        Error( ErrBlockCacheInternalError( wszPath, "InvalidVolumeId" ) );
-    }
-
-    //  try to get the volume handle for the volume id. this will only work if it is a local volume
-
-    err = ErrOpenVolumeById( volumeid, &pvhce );
-    err = err == JET_errInvalidPath ? JET_errSuccess : err;
-    Call( err );
-
-    //  get the file id if requested
-
-    if ( pfileid )
-    {
-        //  if this is a local volume then return a normal file id
-
-        if ( pvhce )
+        if ( GetLastError() == ERROR_INVALID_PARAMETER )
         {
-            //  extract the file id
-
-            fileid = *( (FileId*)fileIdInfo.FileId.Identifier );
-
-            //  defend against illegal values for the file id
-
-            if ( fileid == fileidInvalid )
-            {
-                Error( ErrBlockCacheInternalError( wszPath, "InvalidFileId" ) );
-            }
-
-            //  defend against truncation of the file id because we cannot handle that
-
-            FILE_ID_128 fileId;
-            memset( fileId.Identifier, 0, _cbrg( fileId.Identifier ) );
-            *( (FileId*)fileId.Identifier ) = fileid;
-            if ( memcmp( fileIdInfo.FileId.Identifier, fileId.Identifier, sizeof( fileId.Identifier ) ) )
-            {
-                Error( ErrBlockCacheInternalError( wszPath, "TruncatedFileId" ) );
-            }
+            //  exception:  if we get invalid parameter then presume file id is not supported for this file
         }
-
-        //  if this is not a local volume then return an invalid file id to prevent caching
-
         else
         {
-            volumeid = volumeidInvalid;
-            fileid = fileidInvalid;
+            Error( ErrGetLastError() );
+        }
+    }
+
+    if ( fSuccess )
+    {
+        //  get the volume id
+
+        volumeid = (VolumeId)fileIdInfo.VolumeSerialNumber;
+
+        //  defend against illegal values for the volumeid
+
+        if ( volumeid == volumeidInvalid )
+        {
+            Error( ErrBlockCacheInternalError( wszPath, "InvalidVolumeId" ) );
+        }
+
+        //  try to get the volume handle for the volume id. this will only work if it is a local volume
+
+        err = ErrOpenVolumeById( volumeid, &pvhce );
+        err = err == JET_errInvalidPath ? JET_errSuccess : err;
+        Call( err );
+
+        //  get the file id if requested
+
+        if ( pfileid )
+        {
+            //  if this is a local volume then return a normal file id
+
+            if ( pvhce )
+            {
+                //  extract the file id
+
+                fileid = *( (FileId*)fileIdInfo.FileId.Identifier );
+
+                //  defend against illegal values for the file id
+
+                if ( fileid == fileidInvalid )
+                {
+                    Error( ErrBlockCacheInternalError( wszPath, "InvalidFileId" ) );
+                }
+
+                //  defend against truncation of the file id because we cannot handle that
+
+                FILE_ID_128 fileId;
+                memset( fileId.Identifier, 0, _cbrg( fileId.Identifier ) );
+                *( (FileId*)fileId.Identifier ) = fileid;
+                if ( memcmp( fileIdInfo.FileId.Identifier, fileId.Identifier, sizeof( fileId.Identifier ) ) )
+                {
+                    Error( ErrBlockCacheInternalError( wszPath, "TruncatedFileId" ) );
+                }
+            }
+
+            //  if this is not a local volume then return an invalid file id to prevent caching
+
+            else
+            {
+                volumeid = volumeidInvalid;
+                fileid = fileidInvalid;
+            }
         }
     }
 
