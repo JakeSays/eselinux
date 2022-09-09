@@ -4191,6 +4191,13 @@ class THashedLRUKCache
                         }
                     }
 
+                    //  if we still haven't found it then check the standby list
+
+                    if ( !fSucceeded )
+                    {
+                        fSucceeded = FIsStandbyItemPresent( dwHash );
+                    }
+
                     return fSucceeded;
                 }
 
@@ -4252,6 +4259,18 @@ class THashedLRUKCache
                     for ( int iStandby = 0; !fSucceeded && iStandby < m_cStandby; iStandby++ )
                     {
                         fSucceeded = AtomicCompareExchange( (LONG*)&m_rgdwStandby[ iStandby ], 0, dwHash ) == 0;
+                    }
+
+                    return fSucceeded;
+                }
+
+                BOOL FIsStandbyItemPresent( _In_ const DWORD dwHash )
+                {
+                    BOOL fSucceeded = fFalse;
+
+                    for ( int iStandby = 0; !fSucceeded && iStandby < m_cStandby; iStandby++ )
+                    {
+                        fSucceeded = (DWORD)AtomicRead( (LONG*)&m_rgdwStandby[ iStandby ] ) == dwHash;
                     }
 
                     return fSucceeded;
