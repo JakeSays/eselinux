@@ -166,6 +166,8 @@ const char* const szEmptyPages2         = "EmptyPg2 ";
 
 const char* const szRootPageMove        = "PageMoveR";
 
+const char* const szRootPageMove2       = "PgMoveR2 ";
+
 const char * szRBSRecUnknown            = "*UNKNOWN*";
 
 const INT   cbRBSRecBuf = 1024 + cbFormattedDataMax;
@@ -182,6 +184,7 @@ const char * SzRBSRec( BYTE bRBSRecType )
         case rbsrectypeDbEmptyPages:    return szEmptyPages;
         case rbsrectypeDbEmptyPages2:   return szEmptyPages2;
         case rbsrectypeRootPageMove:    return szRootPageMove;
+        case rbsrectypeRootPageMove2:    return szRootPageMove2;
         default:                        return szRBSRecUnknown;
     }
 }
@@ -289,12 +292,14 @@ VOID RBSRecToSz( const RBSRecord *prbsrec, __out_bcount(cbRBSRec) PSTR szRBSRec,
             break;
         }
         case rbsrectypeRootPageMove:
+        case rbsrectypeRootPageMove2:
         {
-            RBSRootPageMoveRecord* prbsrootpgmoverec = (RBSRootPageMoveRecord*)prbsrec;
-            OSStrCbFormatA( rgchBuf, sizeof( rgchBuf ), " [%u:%lu:%lu]",
+            RBSRootPageMove2Record* prbsrootpgmoverec = (RBSRootPageMove2Record*)prbsrec;
+            OSStrCbFormatA( rgchBuf, sizeof( rgchBuf ), " [%u:%lu:%lu], dbtime:%I64x",
                 (DBID)  prbsrootpgmoverec->m_dbid,
                 (ULONG) prbsrootpgmoverec->m_pgnoSrc,
-                (ULONG) prbsrootpgmoverec->m_pgnoDest );
+                (ULONG) prbsrootpgmoverec->m_pgnoDest,
+                (DBTIME) prbsrootpgmoverec->m_dbtime );
             OSStrCbAppendA( szRBSRec, cbRBSRec, rgchBuf );
             break;
         }

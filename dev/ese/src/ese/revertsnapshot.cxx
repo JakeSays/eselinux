@@ -2002,18 +2002,19 @@ ERR CRevertSnapshot::ErrCaptureDbAttach( WCHAR* wszDatabaseName, const DBID dbid
     return ErrCaptureRec( &dbRec, &dataRec, &dummy );
 }
 
-ERR CRevertSnapshot::ErrCaptureRootPageMove( const DBID dbid, const PGNO pgnoSrc, const PGNO pgnoDest )
+ERR CRevertSnapshot::ErrCaptureRootPageMove( const DBID dbid, const PGNO pgnoSrc, const PGNO pgnoDest, const DBTIME dbtime )
 {
     RBS_POS dummy;
     DATA dataDummy;
     dataDummy.Nullify();
 
-    RBSRootPageMoveRecord rootpagemoverec;
-    rootpagemoverec.m_bRecType      = rbsrectypeRootPageMove;
-    rootpagemoverec.m_usRecLength   = sizeof( RBSRootPageMoveRecord );
+    RBSRootPageMove2Record rootpagemoverec;
+    rootpagemoverec.m_bRecType      = rbsrectypeRootPageMove2;
+    rootpagemoverec.m_usRecLength   = sizeof( RBSRootPageMove2Record );
     rootpagemoverec.m_dbid          = dbid;
     rootpagemoverec.m_pgnoSrc       = pgnoSrc;
     rootpagemoverec.m_pgnoDest      = pgnoDest;
+    rootpagemoverec.m_dbtime        = dbtime;
 
     return ErrCaptureRec( &rootpagemoverec, &dataDummy, &dummy );
 }
@@ -4561,9 +4562,9 @@ HandleError:
 
 // Add root page record to the array of records.
 //
-ERR CRBSDatabaseRevertContext::ErrAddRootPageRecord( BOOL fDeleteOperation, PGNO pgnoSrc, PGNO pgnoDest )
+ERR CRBSDatabaseRevertContext::ErrAddRootPageRecord( const BOOL fDeleteOperation, const PGNO pgnoSrc, const PGNO pgnoDest, const DBTIME dbtime )
 {
-    CRootPageRecord rootpagerec( fDeleteOperation, pgnoSrc, pgnoDest );
+    CRootPageRecord rootpagerec( fDeleteOperation, pgnoSrc, pgnoDest, dbtime );
 
     CArray< CRootPageRecord >::ERR errArray = CArray< CRootPageRecord >::ERR::errSuccess;
 
@@ -4572,7 +4573,11 @@ ERR CRBSDatabaseRevertContext::ErrAddRootPageRecord( BOOL fDeleteOperation, PGNO
         m_rgrootpagerec = new CArray< CRootPageRecord >( 32 );
     }
 
-    errArray = m_rgrootpagerec->ErrSetEntry( m_rgrootpagerec->Size(), rootpagerec );
+    // Only add entry to root page records if it doesn't exist already
+    if ( m_rgrootpagerec->SearchLinear( rootpagerec, CRBSDatabaseRevertContext::ICRBSDatabaseRootPageRecordEquals ) == CArray< CRootPageRecord >::iEntryNotFound )
+    {
+        errArray = m_rgrootpagerec->ErrSetEntry( m_rgrootpagerec->Size(), rootpagerec );
+    }
 
     if ( errArray != CArray< CRootPageRecord >::ERR::errSuccess )
     {
@@ -5010,6 +5015,20 @@ INLINE INT __cdecl CRBSDatabaseRevertContext::ICRBSDatabaseRevertContextPgEquals
     Assert( ppg2 );
 
     return ( ( ppg1->PgNo() == ppg2->PgNo() ) ? 0 : ( ( ppg1->PgNo() < ppg2->PgNo() ) ? -1 : +1 ) );
+}
+
+// Equals method to say if both root page records are the same or not.
+//
+INLINE INT __cdecl CRBSDatabaseRevertContext::ICRBSDatabaseRootPageRecordEquals( const CRootPageRecord* prootpagerecord1, const CRootPageRecord* prootpagerecord2 )
+{
+    Assert( prootpagerecord1 );
+    Assert( prootpagerecord2 );
+
+    return ( (
+        prootpagerecord1->PgnoSrc() == prootpagerecord2->PgnoSrc() && 
+        prootpagerecord1->PgnoDest() == prootpagerecord2->PgnoDest() && 
+        prootpagerecord1->FDeleteOperation() == prootpagerecord2->FDeleteOperation() &&
+        prootpagerecord1->Dbtime() == prootpagerecord2->Dbtime() ) ? 0 : 1 );
 }
 
 void CRBSDatabaseRevertContext::OsWriteIoComplete(
@@ -5916,13 +5935,13 @@ HandleError:
 
 // Add root page record to the array of records for the given database.
 //
-ERR CRBSRevertContext::ErrAddRootPageRecord( DBID dbid, BOOL fDeleteOperation, PGNO pgnoSrc, PGNO pgnoDest )
+ERR CRBSRevertContext::ErrAddRootPageRecord( const DBID dbid, const BOOL fDeleteOperation, const PGNO pgnoSrc, const PGNO pgnoDest, const DBTIME dbtime )
 {
     Assert( m_mpdbidirbsdbrc[ dbid ] != irbsdbrcInvalid );
     Assert( m_mpdbidirbsdbrc[ dbid ] <= m_irbsdbrcMaxInUse );
     Assert( m_rgprbsdbrcAttached[ m_mpdbidirbsdbrc[ dbid ] ] );
 
-    return m_rgprbsdbrcAttached[ m_mpdbidirbsdbrc[ dbid ] ]->ErrAddRootPageRecord( fDeleteOperation, pgnoSrc, pgnoDest );
+    return m_rgprbsdbrcAttached[ m_mpdbidirbsdbrc[ dbid ] ]->ErrAddRootPageRecord( fDeleteOperation, pgnoSrc, pgnoDest, dbtime );
 }
 
 // Checks whether we continue applying RBS, taking any required actions.
@@ -6063,22 +6082,13 @@ ERR CRBSRevertContext::ErrApplyRBSRecord( RBSRecord* prbsrec, BOOL fCaptureDbHdr
             // At the end of the snapshot, we will go through and apply the flag while going through the records in the reverse order.
             // We need to do this in reverse order since we allow shrink/table creation to happen in the snapshot window.
             // So we might have to move the flag from one root page to another.
-            if ( prbsdbpgrec->m_fFlags & fRBSDeletedTableRootPage && fRevertStateRootPageRecords )
-            {
-                Call( ErrAddRootPageRecord( prbsdbpgrec->m_dbid, fTrue, prbsdbpgrec->m_pgno, pgnoNull ) );
-            }
-
-            // When we are starting snapshot in JET_revertstateRootPageRecords, all we need is to capture the fact that root page record needs to be marked with FDPDeleteFlag and
-            // the fact that we saw a preimage for this page so that root page move record can decide if it needs to be applied.
-            // All the preimage applying work should have already been completed.
-            if ( fRevertStateRootPageRecords )
-            {
-                SetPageCaptured( prbsdbpgrec->m_dbid, prbsdbpgrec->m_pgno );
-                return JET_errSuccess;
-            }
+            BOOL fAddRootPageRecord                 = prbsdbpgrec->m_fFlags & fRBSDeletedTableRootPage && fRevertStateRootPageRecords;
 
             // If either revert always flag is set or if we have not already captured page preimage to revert to, capture the page record.
-            if ( prbsdbpgrec->m_fFlags & fRBSPreimageRevertAlways || !fPageAlreadyCaptured )
+            BOOL fAddDbPageRecord                   = ( prbsdbpgrec->m_fFlags & fRBSPreimageRevertAlways || !fPageAlreadyCaptured ) && !fRevertStateRootPageRecords;
+
+
+            if ( fAddDbPageRecord || fAddRootPageRecord )
             {
                 pvPage = PvOSMemoryPageAlloc( m_cbDbPageSize, NULL );
                 Alloc( pvPage );
@@ -6097,15 +6107,36 @@ ERR CRBSRevertContext::ErrApplyRBSRecord( RBSRecord* prbsrec, BOOL fCaptureDbHdr
 
                 CPAGE cpage;
                 cpage.LoadPage( ifmpNil, prbsdbpgrec->m_pgno, pvPage, m_cbDbPageSize );
-                cpage.PreparePageForWrite( CPAGE::PageFlushType::pgftUnknown, fTrue, fTrue );
 
-                // We will check the root page for fPageFDPDelete, if it is a root page and fPageFDPDelete is not set on the preimage and
-                // no other preimage was captured as part of this snapshot. If one was captured, we should have done the check for fPageFDPDelete then.
-                fCheckPageFDPRootDelete = cpage.FRootPage() && !cpage.FPageFDPDelete() && !fPageAlreadyCaptured;
+                if ( fAddRootPageRecord )
+                {
+                    Call( ErrAddRootPageRecord( prbsdbpgrec->m_dbid, fTrue, prbsdbpgrec->m_pgno, pgnoNull, cpage.Dbtime() ) );
+                    cpage.UnloadPage();
+                    OSMemoryPageFree( pvPage );
+                    pvPage = NULL;
+                }
+                else
+                {
+                    Assert( fAddDbPageRecord );
+                    cpage.PreparePageForWrite( CPAGE::PageFlushType::pgftUnknown, fTrue, fTrue );
 
-                cpage.UnloadPage();
+                    // We will check the root page for fPageFDPDelete, if it is a root page and fPageFDPDelete is not set on the preimage and
+                    // no other preimage was captured as part of this snapshot. If one was captured, we should have done the check for fPageFDPDelete then.
+                    fCheckPageFDPRootDelete = cpage.FRootPage() && !cpage.FPageFDPDelete() && !fPageAlreadyCaptured;
 
-                Call( ErrAddPageRecord( pvPage, prbsdbpgrec->m_dbid, prbsdbpgrec->m_pgno, fPageAlreadyCaptured, fCheckPageFDPRootDelete, fFalse, fFalse, m_cbDbPageSize ) );
+                    cpage.UnloadPage();
+
+                    Call( ErrAddPageRecord( pvPage, prbsdbpgrec->m_dbid, prbsdbpgrec->m_pgno, fPageAlreadyCaptured, fCheckPageFDPRootDelete, fFalse, fFalse, m_cbDbPageSize ) );
+                }
+            }
+
+            // When we are starting snapshot in JET_revertstateRootPageRecords, all we need is to capture the fact that root page record needs to be marked with FDPDeleteFlag and
+            // the fact that we saw a preimage for this page so that root page move record can decide if it needs to be applied.
+            // All the preimage applying work should have already been completed.
+            if ( fRevertStateRootPageRecords )
+            {
+                SetPageCaptured( prbsdbpgrec->m_dbid, prbsdbpgrec->m_pgno );
+                return JET_errSuccess;
             }
 
             break;
@@ -6148,8 +6179,9 @@ ERR CRBSRevertContext::ErrApplyRBSRecord( RBSRecord* prbsrec, BOOL fCaptureDbHdr
         }
 
         case rbsrectypeRootPageMove:
+        case rbsrectypeRootPageMove2:
         {
-            RBSRootPageMoveRecord* prbsrootpagemoverec = (RBSRootPageMoveRecord*)prbsrec;
+            RBSRootPageMove2Record* prbsrootpagemoverec = (RBSRootPageMove2Record*)prbsrec;
 
             // We will apply root page record only if we have captured a preimage for the source and destination page.
             // RootPageMove record is captured whenever shrink does a root page move or when a table is just created (in this case pgnoSrc = 0).
@@ -6163,7 +6195,7 @@ ERR CRBSRevertContext::ErrApplyRBSRecord( RBSRecord* prbsrec, BOOL fCaptureDbHdr
             if ( ( prbsrootpagemoverec->m_pgnoSrc == 0 || FPageAlreadyCaptured( prbsrootpagemoverec->m_dbid, prbsrootpagemoverec->m_pgnoSrc ) ) &&
                 FPageAlreadyCaptured( prbsrootpagemoverec->m_dbid, prbsrootpagemoverec->m_pgnoDest ) )
             {
-                Call( ErrAddRootPageRecord( prbsrootpagemoverec->m_dbid, fFalse, prbsrootpagemoverec->m_pgnoSrc, prbsrootpagemoverec->m_pgnoDest ) );
+                Call( ErrAddRootPageRecord( prbsrootpagemoverec->m_dbid, fFalse, prbsrootpagemoverec->m_pgnoSrc, prbsrootpagemoverec->m_pgnoDest, prbsrootpagemoverec->m_dbtime ) );
             }
 
             break;

@@ -7335,7 +7335,7 @@ ERR LOG::ErrLGRIRedoOperation( LR *plr )
         //       This is because we will apply this root page move record only if we have preimage of the root.
         if ( g_rgfmp[ ifmp ].FRBSOn() )
         {
-            CallR( g_rgfmp[ ifmp ].PRBS()->ErrCaptureRootPageMove( dbid, 0, plrcreatemefdp->le_pgno ) );
+            CallR( g_rgfmp[ ifmp ].PRBS()->ErrCaptureRootPageMove( dbid, 0, plrcreatemefdp->le_pgno, plrcreatemefdp->le_dbtime ) );
         }
 
         break;
@@ -7385,7 +7385,7 @@ ERR LOG::ErrLGRIRedoOperation( LR *plr )
         //       This is because we will apply this root page move record only if we have preimage of the root.
         if ( g_rgfmp[ ifmp ].FRBSOn() )
         {
-            CallR( g_rgfmp[ ifmp ].PRBS()->ErrCaptureRootPageMove( dbid, 0, pgnoFDP ) );
+            CallR( g_rgfmp[ ifmp ].PRBS()->ErrCaptureRootPageMove( dbid, 0, pgnoFDP, plrcreatesefdp->le_dbtime ) );
         }
 
         break;
@@ -10965,7 +10965,7 @@ ERR LOG::ErrLGRIRedoRootPageMove( PIB* const ppib, const DBTIME dbtime )
     //       This is because we will apply this root page move record only if we have preimages of both the source and destination.
     if ( g_rgfmp[ ifmp ].FRBSOn() )
     {
-        Call( g_rgfmp[ ifmp ].PRBS()->ErrCaptureRootPageMove( g_rgfmp[ ifmp ].Dbid(), rm.pgnoFDP, rm.pgnoNewFDP ) );
+        Call( g_rgfmp[ ifmp ].PRBS()->ErrCaptureRootPageMove( g_rgfmp[ ifmp ].Dbid(), rm.pgnoFDP, rm.pgnoNewFDP, rm.dbtimeAfter ) );
     }
 
 HandleError:

@@ -3470,7 +3470,7 @@ ERR ErrSPCreate(
     // and if the database is reverted, delete flag can be cleared accordingly.
     if ( g_rgfmp[ pfucb->ifmp ].FRBSOn() )
     {
-        Call( g_rgfmp[ pfucb->ifmp ].PRBS()->ErrCaptureRootPageMove( g_rgfmp[ pfucb->ifmp ].Dbid(), 0, pgnoFDP ) );
+        Call( g_rgfmp[ pfucb->ifmp ].PRBS()->ErrCaptureRootPageMove( g_rgfmp[ pfucb->ifmp ].Dbid(), 0, pgnoFDP, g_rgfmp[ pfucb->ifmp ].DbtimeLast() ) );
     }
 
     Assert( !FFUCBSpace( pfucb ) );

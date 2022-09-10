@@ -2239,7 +2239,7 @@ ERR ErrSHKRootPageMove(
     //       This is because we will apply this root page move record only if we have preimages of both the source and destination.
     if ( g_rgfmp[ ifmp ].FRBSOn() )
     {
-        Call( g_rgfmp[ ifmp ].PRBS()->ErrCaptureRootPageMove( g_rgfmp[ ifmp ].Dbid(), rm.pgnoFDP, rm.pgnoNewFDP ) );
+        Call( g_rgfmp[ ifmp ].PRBS()->ErrCaptureRootPageMove( g_rgfmp[ ifmp ].Dbid(), rm.pgnoFDP, rm.pgnoNewFDP, rm.dbtimeAfter ) );
     }
 
     // Re-open cursors and verify that the move looks consistent.
