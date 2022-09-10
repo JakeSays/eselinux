@@ -1695,6 +1695,12 @@ Language=English
 %1 (%2) %3Database %4: Page %5 in a B-Tree (ObjectId: %6) failed verfication due to page FDP delete flag mismatch at log position %7.  The remote page FDP delete flag persisted to the log record was %8 but the actual page FDP delete flag was %9. This problem is likely due to revert of the database gone wrong. Please investigate the database revert operations performed on the database.%n
 .
 
+MessageId=571
+SymbolicName=DB_PAGE_FDP_REDELETE_EXPECTED_ID
+Language=English
+%1 (%2) %3Database %4: Page %5 failed verification due to being reverted using revert snapshot without having page fdp delete flag set, but the log record at log position %6 expected the page to have the flag set (log position commit before revert - %7).  This problem is likely due to revert of the database gone wrong. Please investigate the database revert operations performed on the database.%n
+.
+
 ;// !!! ARE YOU SURE you're adding this in the right place !!! ???
 
 

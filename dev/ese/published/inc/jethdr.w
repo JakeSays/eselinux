@@ -4091,8 +4091,8 @@ typedef enum
 
 #define JET_paramFlight_ExtentPageCountCacheVerifyOnly          114 //  Verify values read from the Extent Page Count Cache rather than just returning them.
 #define JET_paramFlight_EnablePgnoFDPLastSetTime                115 //  whether we want to enable setting PgnoPFDSetTime in the system table for a table entry.
-#define JET_paramFlight_EnableScanCheck2Flags                   116 //  whether we want to enable logging flags in ScanCheck2 log record.
-#define JET_paramFlight_EnableExtentFreed2                      117 //  whether we want to enable logging ExtentFreed2 LR after the efv upgrade.
+#define JET_paramFlight_EnableFDPDeleteFlagCheckOnExtentFreedRedo 116 //  whether we want to check if FDP delete flag is set when we redo extent freed LR.
+//#define JET_paramFlight_EnableExtentFreed2                    117 //  whether we want to enable logging ExtentFreed2 LR after the efv upgrade.
 #define JET_paramFlight_RBSLargeRevertableDeletePages           118 //  Large revertable delete size for a table (in pages) beyond which we will track the deletes.
 #define JET_paramFlight_RBSRevertableDeleteIfTooSoonTimeNull    119 //  If set, we will do a revertable table delete even if NonRevertableTableDelete flag is passed provided NonRevertable delete is failing due to JET_errRBSDeleteTableTooSoon due to time not being set. Note: If JET_bitRevertableTableDeleteIfTooSoon is set, this variant is ignored.
 
@@ -6692,6 +6692,7 @@ typedef JET_ERR (JET_API * JET_PFNEMITLOGDATA)(
 #define errRBSCorruptUninitializedRBSRemoved -1946  /* The RBS being loaded is either missing or corrupt and uninitialized, so it has been removed. */
 #define JET_errRBSRedeleteFDPUnexpected     -1947  /* Indicates that the reverted table marked with delete flag is unexpected. */
 #define JET_errRBSRCPageFDPDeleteFileCorrupt -1948  /* The database cannot be reverted to the expected time as we are in apply root page records state but the corresponding file to init the page state is corrupt */
+#define JET_errRBSRedeleteFDPExpected       -1949  /* Indicates that the reverted table is expected to be marked with delete flag. */
 // begin_PubEsent
 
 #define JET_wrnDefragAlreadyRunning          2000 /* Online defrag already running on specified database */

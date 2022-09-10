@@ -1004,7 +1004,7 @@ ERR ErrLGScanCheck(
 #endif  // !DEBUG
 
     const BOOL fScanCheck2Supported         = g_rgfmp[ifmp].FEfvSupported( JET_efvScanCheck2 );
-    const BOOL fScanCheck2FlagsSupported    = g_rgfmp[ ifmp ].FEfvSupported( JET_efvScanCheck2Flags ) && BoolParam( pinst, JET_paramFlight_EnableScanCheck2Flags );
+    const BOOL fScanCheck2FlagsSupported    = g_rgfmp[ ifmp ].FEfvSupported( JET_efvScanCheck2Flags );
     const BOOL fScanEnableFDPDelete         = g_rgfmp[ ifmp ].FEfvSupported( JET_efvRBSTooSoonDeletes ) && BoolParam( pinst, JET_paramFlight_EnableScanCheckFDPDeleteFlags );
 
     DATA data;
@@ -4869,7 +4869,7 @@ ERR ErrLGExtentFreed( LOG * const plog, const IFMP ifmp, const PGNO pgnoFirst, c
 
     // This is not logged for all free extent operations, only for those related to deleting a whole space tree.
     DATA        rgdata[1];
-    const BOOL  fExtentFreed2Supported  = g_rgfmp[ ifmp ].FEfvSupported( JET_efvExtentFreed2 ) && BoolParam( PinstFromIfmp( ifmp ), JET_paramFlight_EnableExtentFreed2 );
+    const BOOL  fExtentFreed2Supported  = g_rgfmp[ ifmp ].FEfvSupported( JET_efvExtentFreed2 );
     ERR         err                     = JET_errSuccess;
 
     LREXTENTFREED* const plr            = fExtentFreed2Supported ? ( new LREXTENTFREED2() ) : ( new LREXTENTFREED() );

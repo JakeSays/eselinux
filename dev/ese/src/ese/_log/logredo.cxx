@@ -11543,6 +11543,10 @@ ERR LOG::ErrLGRIRedoExtentFreed( const LREXTENTFREED2 * const plrextentfreed )
 
     if ( fTableRootPage )
     {
+        // If this database was reverted and we redo'ing an extent freed LR on root page, we should be seeing fPageFDPDelete flag set on the page when it was reverted.
+        LGPOS lgposCommitBeforeRevert   = pfmp->Pdbfilehdr()->le_lgposCommitBeforeRevert;
+        BOOL fPageFDPDeleteFlagExpected = BoolParam( m_pinst, JET_paramFlight_EnableFDPDeleteFlagCheckOnExtentFreedRedo ) && !pfmp->FContainsDataFromFutureLogs() && ( CmpLgpos( lgposCommitBeforeRevert, m_lgposRedo ) > 0 );
+
         // Capture the preimage of the table root and pass flag to indicate this is a delete table so that we special mark this table when reverted.
         // We should generally not be touching the table pages before table delete.
         // But in case we did due to some bug or some unexpected scenario, we will pass fRBSPreimageRevertAlways to make sure we always keep the table deleted.
@@ -11551,6 +11555,7 @@ ERR LOG::ErrLGRIRedoExtentFreed( const LREXTENTFREED2 * const plrextentfreed )
                 pgnoFirst,
                 dbtimeLast,
                 fRBSDeletedTableRootPage,
+                fPageFDPDeleteFlagExpected,
                 BfpriBFMake( PctFMPCachePriority( ifmp ), (BFTEMPOSFILEQOS) qosIODispatchImmediate ),
                 TcCurr() );
 
@@ -11561,6 +11566,37 @@ ERR LOG::ErrLGRIRedoExtentFreed( const LREXTENTFREED2 * const plrextentfreed )
             BFMarkAsSuperCold( ifmp, pgnoFirst );
             err = JET_errSuccess;
         }
+
+        if ( err == JET_errRBSRedeleteFDPExpected )
+        {
+            OSTraceSuspendGC();
+            const WCHAR* rgwsz[] =
+            {
+                pfmp->WszDatabaseName(),
+                OSFormatW( L"%I32u (0x%08x)", pgnoFirst, pgnoFirst ),
+                OSFormatW( L"(%08I32X,%04hX,%04hX)", m_lgposRedo.lGeneration, m_lgposRedo.isec, m_lgposRedo.ib ),
+                OSFormatW( L"(%08I32X,%04hX,%04hX)", lgposCommitBeforeRevert.lGeneration, lgposCommitBeforeRevert.isec, lgposCommitBeforeRevert.ib ),
+            };
+
+            // Raise corruption event
+            UtilReportEvent(
+                eventError,
+                DATABASE_CORRUPTION_CATEGORY,
+                DB_PAGE_FDP_REDELETE_EXPECTED_ID,
+                _countof( rgwsz ),
+                rgwsz,
+                0,
+                NULL,
+                pfmp->Pinst() );
+
+            OSUHAPublishEvent(
+                HaDbFailureTagCorruption, pfmp->Pinst(), HA_DATABASE_CORRUPTION_CATEGORY,
+                HaDbIoErrorNone, pfmp->WszDatabaseName(), 0, 0,
+                HA_DB_PAGE_FDP_REDELETE_EXPECTED_ID, _countof( rgwsz ), rgwsz );
+
+            OSTraceResumeGC();
+        }
+
         CallR( err );
     }
     else if ( fEmptyPageFDPDeleted )

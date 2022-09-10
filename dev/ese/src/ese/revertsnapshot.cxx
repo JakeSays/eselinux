@@ -1873,7 +1873,7 @@ JETUNITTESTDB( RBSPreImageCompression, Xpress, dwOpenDatabase )
 
 #endif // ENABLE_JET_UNIT_TEST
 
-ERR ErrRBSRDWLatchAndCapturePreImage( _In_ const IFMP ifmp, _In_ const PGNO pgno, _In_ const DBTIME dbtimeLast, ULONG fPreImageFlags, _In_ const BFPriority bfpri, _In_ const TraceContext& tc )
+ERR ErrRBSRDWLatchAndCapturePreImage( _In_ const IFMP ifmp, _In_ const PGNO pgno, _In_ const DBTIME dbtimeLast, ULONG fPreImageFlags, _In_ BOOL fPageFDPDeleteFlagExpected, _In_ const BFPriority bfpri, _In_ const TraceContext& tc )
 {
     if ( g_rgfmp[ifmp].Dbid() == dbidTemp ||
         !g_rgfmp[ifmp].FRBSOn() )
@@ -1883,7 +1883,6 @@ ERR ErrRBSRDWLatchAndCapturePreImage( _In_ const IFMP ifmp, _In_ const PGNO pgno
 
     ERR err = JET_errSuccess;
     RBS_POS rbspos;
-    CPAGE cpageT;
     BFLatch bfl;
 
     //  get exclusive latch.
@@ -1897,6 +1896,14 @@ ERR ErrRBSRDWLatchAndCapturePreImage( _In_ const IFMP ifmp, _In_ const PGNO pgno
     {
         BFRDWUnlatch( &bfl );
         return JET_errSuccess;
+    }
+
+    // If it is expected for the page to have PageFDPDelete flag set but it isn't, return error.
+    // Used during redo to validate any previously deleted and reverted table being redeleted has the flag set.
+    if ( fPageFDPDeleteFlagExpected && !( ( (CPAGE::PGHDR*)bfl.pv )->fFlags & CPAGE::fPageFDPDelete ) )
+    {
+        BFRDWUnlatch( &bfl );
+        return ErrERRCheck( JET_errRBSRedeleteFDPExpected );
     }
 
     Call( g_rgfmp[ifmp].PRBS()->ErrCapturePreimage( 

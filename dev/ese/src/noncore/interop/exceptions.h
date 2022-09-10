@@ -8688,6 +8688,30 @@ namespace Isam
     };
 
     [Serializable]
+    public ref class IsamRBSRedeleteFDPExpectedException : public IsamCorruptionException
+    {
+    public:
+        IsamRBSRedeleteFDPExpectedException() : IsamCorruptionException( "Indicates that the reverted table is expected to be marked with delete flag.", JET_errRBSRedeleteFDPExpected)
+        {
+        }
+
+        // Constructor with embedded exception. Does not use the string from esent.h.
+        IsamRBSRedeleteFDPExpectedException( String ^ description, Exception^ innerException ) :
+            IsamCorruptionException( description, innerException )
+        {
+        }
+
+        IsamRBSRedeleteFDPExpectedException(
+            System::Runtime::Serialization::SerializationInfo^ info,
+            System::Runtime::Serialization::StreamingContext context
+        )
+            : IsamCorruptionException( info, context )
+        {
+        }
+
+    };
+
+    [Serializable]
     public ref class IsamDatabaseAlreadyRunningMaintenanceException : public IsamUsageException
     {
     public:
@@ -9835,6 +9859,8 @@ static IsamErrorException^ JetErrToException( const JET_ERR err )
             return gcnew IsamRBSRedeleteFDPUnexpectedException;
         case JET_errRBSRCPageFDPDeleteFileCorrupt:
             return gcnew IsamRBSRCPageFDPDeleteFileCorruptException;
+        case JET_errRBSRedeleteFDPExpected:
+            return gcnew IsamRBSRedeleteFDPExpectedException;
         case JET_errDatabaseAlreadyRunningMaintenance:
             return gcnew IsamDatabaseAlreadyRunningMaintenanceException;
         case JET_errRootSpaceLeakEstimationAlreadyRunning:

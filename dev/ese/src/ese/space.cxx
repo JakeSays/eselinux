@@ -8525,6 +8525,7 @@ ERR ErrSPCaptureNonRevertableFDPRootPage( PIB *ppib, FCB* pfcbFDPToFree, const P
         PgnoRoot( pfucb ),
         dbtimeNil,
         fRBSDeletedTableRootPage,
+        fFalse,
         pfucb->ppib->BfpriPriority( pfucb->ifmp ),
         *tcScope ) );
     cpgCaptured++;
@@ -8545,6 +8546,7 @@ ERR ErrSPCaptureNonRevertableFDPRootPage( PIB *ppib, FCB* pfcbFDPToFree, const P
                 pfcbT->PgnoFDP(),
                 dbtimeNil,
                 fRBSDeletedTableRootPage,
+                fFalse,
                 pfucb->ppib->BfpriPriority( pfucb->ifmp ),
                 *tcScope ) );
             cpgCaptured++;
@@ -8563,6 +8565,7 @@ ERR ErrSPCaptureNonRevertableFDPRootPage( PIB *ppib, FCB* pfcbFDPToFree, const P
                 pgnoLVRoot,
                 dbtimeNil,
                 fRBSDeletedTableRootPage,
+                fFalse,
                 pfucb->ppib->BfpriPriority( pfucb->ifmp ),
                 *tcScope ) );
             cpgCaptured++;
