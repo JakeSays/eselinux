@@ -3622,13 +3622,6 @@ class THashedLRUKCache
                         Error( JET_errSuccess );
                     }
 
-                    //  if this slab contains changes that aren't accepted then ignore it
-
-                    if ( pcbs->FUpdated() )
-                    {
-                        Error( JET_errSuccess );
-                    }
-
                     //  visit all slots in the slab and load what is cached
 
                     Call( pcbs->ErrVisitSlots( FLoadSlot_, (DWORD_PTR)this ) );
@@ -3796,12 +3789,13 @@ class THashedLRUKCache
                 }
 
                 BOOL FLoadSlot( _In_ const ERR                      errChunk,
-                                _In_ const CCachedBlockSlotState&   slotstAccepted,
-                                _In_ const CCachedBlockSlotState&   slotstCurrent )
+                                _In_ const CCachedBlockSlotState&   slotstAccepted )
                 {
-                    //  ignore invalid slots
+                    //  NOTE:  we only load accepted changes not pending changes
 
-                    if ( !slotstCurrent.FValid() )
+                    //  ignore invalid blocks
+
+                    if ( !slotstAccepted.FValid() )
                     {
                         return fTrue;
                     }
@@ -3809,15 +3803,15 @@ class THashedLRUKCache
                     OSTrace(    JET_tracetagBlockCacheOperations,
                                 OSFormat(   "C=%s Presence Filter %s Load Current",
                                             OSFormatFileId( m_pc ),
-                                            OSFormat( slotstCurrent ) ) );
+                                            OSFormat( slotstAccepted ) ) );
 
-                    //  ignore any slot that is superceded
+                    //  ignore any block that is superceded
 
-                    if ( slotstCurrent.FSuperceded() )
+                    if ( slotstAccepted.FSuperceded() )
                     {
-                        //  except if the slot is clean, to match the tracking in FUpdateSlot
+                        //  except if the block is unmodified, to match the tracking in FUpdateSlot
 
-                        if ( !slotstCurrent.FDirty() )
+                        if ( !slotstAccepted.FDirty() && !slotstAccepted.FEverDirty() )
                         {
                         }
                         else
@@ -3828,13 +3822,13 @@ class THashedLRUKCache
 
                     //  remember that the cached block in this slot is cached
 
-                    Add( slotstCurrent.IbSlab(), slotstCurrent.Cbid() );
+                    Add( slotstAccepted.IbSlab(), slotstAccepted.Cbid() );
 
                     //  if we just finished the entire slab then verify that the counts are correct
 
-                    Assert( slotstCurrent.Chno() < (ChunkNumber)( m_cChunkPerSlab - 1 ) ||
-                            slotstCurrent.Slno() < (SlotNumber)( m_cSlotPerChunk - 1 ) ||
-                            FValidCounts( slotstCurrent.IbSlab() ) );
+                    Assert( slotstAccepted.Chno() < (ChunkNumber)( m_cChunkPerSlab - 1 ) ||
+                            slotstAccepted.Slno() < (SlotNumber)( m_cSlotPerChunk - 1 ) ||
+                            FValidCounts( slotstAccepted.IbSlab() ) );
 
                     return fTrue;
                 }
@@ -3848,7 +3842,7 @@ class THashedLRUKCache
                     Unused( pfnVisitSlot );
  
                     CCachedBlockPresenceFilter* const pcbpf = (CCachedBlockPresenceFilter*)keyVisitSlot;
-                    return pcbpf->FLoadSlot( errChunk, slotstAccepted, slotstCurrent );
+                    return pcbpf->FLoadSlot( errChunk, slotstAccepted );
                 }
 
                 BOOL FUpdateSlot(   _In_ const ERR                      errChunk,
@@ -3880,10 +3874,10 @@ class THashedLRUKCache
 
                     //  track cached blocks removed from the cache
                     //
-                    //  -  any clean block
+                    //  -  an unmodified block (!FDirty && !FEverDirty)
                     //  -  the current version of a dirty block (!FSuperceded)
                     //
-                    //  we track clean blocks due to a limitation with add below
+                    //  we track unmodified blocks due to a limitation with add below
 
                     if ( slotstAccepted.FValid() && !slotstCurrent.FValid() )
                     {
@@ -3891,7 +3885,7 @@ class THashedLRUKCache
                                 slotstAccepted.Cbid().Fileid() != fileidInvalid && 
                                 slotstAccepted.Cbid().Fileserial() != fileserialInvalid )
                         {
-                            if ( !slotstAccepted.FDirty() || !slotstAccepted.FSuperceded() )
+                            if ( !slotstAccepted.FDirty() && !slotstAccepted.FEverDirty() || !slotstAccepted.FSuperceded() )
                             {
                                 Remove( slotstAccepted.IbSlab(), slotstAccepted.Cbid() );
                             }
@@ -3900,12 +3894,13 @@ class THashedLRUKCache
 
                     //  track cached blocks added to the cache
                     //
-                    //  -  any clean block
+                    //  -  an unmodified block (!FDirty && !FEverDirty)
                     //  -  the first update of a block (FFirstUpdate)
                     //
-                    //  we track both clean blocks and blocks that are first updated because we don't have enough state
-                    //  to only track either the clean block or the first dirty if the clean block was not previously
-                    //  cached just by looking at this one slot.  ideally we would detect this and track only one
+                    //  we track both unmodified blocks and blocks that are first updated because we don't have enough
+                    //  state to only track either the unmodified block or the first dirty if the unmodified block was
+                    //  not previously cached just by looking at this one slot.  ideally we would detect this and track
+                    //  only one
 
                     if ( !slotstAccepted.FValid() && slotstCurrent.FValid() )
                     {
@@ -3913,7 +3908,7 @@ class THashedLRUKCache
                                 slotstCurrent.Cbid().Fileid() != fileidInvalid && 
                                 slotstCurrent.Cbid().Fileserial() != fileserialInvalid )
                         {
-                            if ( !slotstCurrent.FDirty() || slotstCurrent.FFirstUpdate() )
+                            if ( !slotstCurrent.FDirty() && !slotstCurrent.FEverDirty() || slotstCurrent.FFirstUpdate() )
                             {
                                 Add( slotstCurrent.IbSlab(), slotstCurrent.Cbid() );
                             }
@@ -4159,13 +4154,20 @@ class THashedLRUKCache
                         }
                     }
 
+                    //  if we didn't succeed then try to remove the item from the standby list
+
+                    if ( !fSucceeded )
+                    {
+                        fSucceeded = FRemoveStandbyItem( dwHash );
+                    }
+
                     //  this must succeed
 
                     EnforceSz( fSucceeded, "HashedLRUKCachePresenceFilterRemove2" );
 
                     //  try to retire an item from the standby list
 
-                    RetireStandbyItem();
+                    RetireAnyStandbyItem();
                 }
 
                 BOOL FPossiblyContains( _In_ const DWORD dwHash )
@@ -4276,12 +4278,24 @@ class THashedLRUKCache
                     return fSucceeded;
                 }
 
-                void RetireStandbyItem()
+                BOOL FRemoveStandbyItem( _In_ const DWORD dwHash )
+                {
+                    BOOL fSucceeded = fFalse;
+
+                    for ( int iStandby = 0; !fSucceeded && iStandby < m_cStandby; iStandby++ )
+                    {
+                        fSucceeded = (DWORD)AtomicCompareExchange( (LONG*)&m_rgdwStandby[ iStandby ], dwHash, 0 ) == dwHash;
+                    }
+
+                    return fSucceeded;
+                }
+
+                void RetireAnyStandbyItem()
                 {
                     DWORD   dwHash      = 0;
                     BOOL    fSucceeded  = fFalse;
 
-                    fSucceeded = FRemoveStandbyItem( &dwHash );
+                    fSucceeded = FRemoveAnyStandbyItem( &dwHash );
 
                     if ( fSucceeded )
                     {
@@ -4289,17 +4303,17 @@ class THashedLRUKCache
                         WORD    wFingerprint    = WFingerprint( dwHash );
 
                         fSucceeded = FAdd( qwIndex, wFingerprint );
-                    }
 
-                    if ( !fSucceeded )
-                    {
-                        fSucceeded = FAddStandbyItem( dwHash );
-                    }
+                        if ( !fSucceeded )
+                        {
+                            fSucceeded = FAddStandbyItem( dwHash );
+                        }
 
-                    EnforceSz( fSucceeded, "HashedLRUKCachePresenceFilterRetireStandbyItem" );
+                        EnforceSz( fSucceeded, "HashedLRUKCachePresenceFilterRetireStandbyItem" );
+                    }
                 }
 
-                BOOL FRemoveStandbyItem( _Out_ DWORD* const pdwHash )
+                BOOL FRemoveAnyStandbyItem( _Out_ DWORD* const pdwHash )
                 {
                     BOOL fSucceeded = fFalse;
 
@@ -7056,16 +7070,6 @@ ERR THashedLRUKCache<I>::ErrUpdateSlabs(    _Inout_opt_ ICachedBlockSlab** const
                                 OSFormat( *pcbu ) ) );
     }
 
-    //  update our cached block presence filter if necessary
-
-    for ( size_t ipcbs = 0; ipcbs < cpcbs; ipcbs++ )
-    {
-        if ( rgpcbs[ ipcbs ] && rgpcbs[ ipcbs ]->FUpdated() )
-        {
-            m_pcbpf->Update( rgpcbs[ ipcbs ] );
-        }
-    }
-
     //  schedule slabs for write back
 
     for ( size_t ipcbs = 0; ipcbs < cpcbs; ipcbs++ )
@@ -7121,6 +7125,18 @@ ERR THashedLRUKCache<I>::ErrScheduleSlabForWriteBack(   _In_opt_    ICachedBlock
     //  get or add the slab write back context whose existence is protected by ownership of the slab itself
 
     Call( ErrGetOrAddSlabWriteBackContext( pcbs, &pswb ) );
+
+    //  update our cached block presence filter if necessary
+
+    if ( pcbs->FUpdated() )
+    {
+        //  only update if we are not in recovery where we unilaterally overwrite slab state
+
+        if ( m_fRecovered )
+        {
+            m_pcbpf->Update( pcbs );
+        }
+    }
 
     //  accept any updates that were made to the slab.  if this isn't called then the state is rolled back.  this step
     //  is what prevents us from accidentally writing back changes to the slab that were not journaled.  also note that
