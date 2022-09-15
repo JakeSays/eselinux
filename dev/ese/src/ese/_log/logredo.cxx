@@ -9620,7 +9620,7 @@ ERR LOG::ErrLGRIRedoScanCheck( const LRSCANCHECK2 * const plrscancheck, BOOL* co
             Assert( cpage.CbPage() == UlParam( PinstFromIfmp( ifmp ), JET_paramDatabasePageSize ) );
             const DBTIME dbtimePage = cpage.Dbtime();
             const BOOL fInitDbtimePage = dbtimePage != 0 && dbtimePage != dbtimeShrunk;
-            const BOOL fPageFDPDelete = cpage.FPageFDPDelete();
+            const BOOL fPageFDPDelete = !!( cpage.FPageFDPDelete() );
             Expected( fInitDbtimePage || ( dbtimePage == dbtimeShrunk ) ); // dbtime 0 only usually comes from a completely uninit page (-1019).
 
             const DBTIME dbtimeCurrentInLogRec = plrscancheck->DbtimeCurrent();
