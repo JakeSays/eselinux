@@ -3156,6 +3156,13 @@ ERR TFileFilter<I>::ErrAttach( _In_ const COffsets& offsetsFirstWrite )
     err = ErrGetConfiguredCache();
     if ( err < JET_errSuccess )
     {
+        //  silently ignore invalid path to cover the case when the storage doesn't exist, possibly intentionally
+
+        if ( err == JET_errInvalidPath )
+        {
+            Error( JET_errSuccess );
+        }
+
         Error( ErrCacheOpenFailure( "Open", err, JET_errSuccess ) );
     }
 
