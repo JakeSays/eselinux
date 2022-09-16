@@ -4793,7 +4793,8 @@ class THashedLRUKCache
                                     _In_    const BOOL                          fKnownNotCached,
                                     _Out_   QWORD* const                        pibSlab,
                                     _Out_   CCachedBlockId* const               pcbid,
-                                    _Out_   BOOL* const                         pfPossiblyCached );
+                                    _Out_   BOOL* const                         pfPossiblyCached,
+                                    _Out_   BOOL* const                         pfUncachable );
         void FailIO( _In_ CRequest* const prequestIO, _In_ const ERR err );
 
         ERR ErrEnsureInitSlabWriteBackHash() { return m_initOnceSlabWriteBackHash.Init( ErrInitSlabWriteBackHash_, this ); };
@@ -5741,10 +5742,18 @@ ERR THashedLRUKCache<I>::ErrInvalidate( _In_ const VolumeId     volumeid,
         QWORD               ibSlab          = 0;
         CCachedBlockId      cbid;
         BOOL                fPossiblyCached = fFalse;
+        BOOL                fUncachable     = fFalse;
 
         //  determine if we are likely to have this cached block
 
-        Call( ErrIsPossiblyCached( pcfte, ibCachedBlock, fFalse, &ibSlab, &cbid, &fPossiblyCached ) );
+        Call( ErrIsPossiblyCached( pcfte, ibCachedBlock, fFalse, &ibSlab, &cbid, &fPossiblyCached, &fUncachable ) );
+
+        //  if we couldn't have cached this block then skip it
+
+        if ( fUncachable )
+        {
+            continue;
+        }
 
         //  if the cached block is not possibly cached then skip this offset
 
@@ -8494,6 +8503,7 @@ void THashedLRUKCache<I>::RequestRead(  _In_    CRequest* const             preq
         QWORD               ibSlab          = 0;
         CCachedBlockId      cbid;
         BOOL                fPossiblyCached = fFalse;
+        BOOL                fUncachable     = fFalse;
         CCachedBlockSlot    slot;
         BOOL                fCached         = fFalse;
 
@@ -8501,7 +8511,7 @@ void THashedLRUKCache<I>::RequestRead(  _In_    CRequest* const             preq
 
         //  determine if we are likely to have this cached block
 
-        Call( ErrIsPossiblyCached( prequest->Pcfte(), ibCachedBlock, fFalse, &ibSlab, &cbid, &fPossiblyCached ) );
+        Call( ErrIsPossiblyCached( prequest->Pcfte(), ibCachedBlock, fFalse, &ibSlab, &cbid, &fPossiblyCached, &fUncachable ) );
 
         //  if the cached block is possibly cached then determine if it is cached
 
@@ -8609,7 +8619,7 @@ void THashedLRUKCache<I>::RequestFinalizeRead(  _In_    CRequest* const         
 
     //  determine if we should cache this request
 
-    const BOOL fCacheIfPossible = prequest->Cp() != cpDontCache && Pcconfig()->PctWrite() < 100;
+    const BOOL fCacheRequestIfPossible = prequest->Cp() != cpDontCache && Pcconfig()->PctWrite() < 100;
 
     //  loop through the read by cached block potentially crossing many cached file blocks
 
@@ -8617,17 +8627,23 @@ void THashedLRUKCache<I>::RequestFinalizeRead(  _In_    CRequest* const         
             ibCachedBlock <= prequest->Offsets().IbEnd();
             ibCachedBlock += cbCachedBlock )
     {
-        QWORD               ibSlab          = 0;
+        QWORD               ibSlab              = 0;
         CCachedBlockId      cbid;
-        BOOL                fPossiblyCached = fFalse;
+        BOOL                fPossiblyCached     = fFalse;
+        BOOL                fUncachable         = fFalse;
+        BOOL                fCacheIfPossible    = fFalse;
         CCachedBlockSlot    slot;
-        BOOL                fCached         = fFalse;
+        BOOL                fCached             = fFalse;
 
         BYTE* const         pbCachedBlock   = (BYTE*)prequest->PbData() + ibCachedBlock - prequest->Offsets().IbStart();
 
         //  determine if we are likely to have this cached block
 
-        Call( ErrIsPossiblyCached( prequest->Pcfte(), ibCachedBlock, !prequest->FCacheHit(), &ibSlab, &cbid, &fPossiblyCached ) );
+        Call( ErrIsPossiblyCached( prequest->Pcfte(), ibCachedBlock, !prequest->FCacheHit(), &ibSlab, &cbid, &fPossiblyCached, &fUncachable ) );
+
+        //  do not attempt to cache an uncachable block
+
+        fCacheIfPossible = fCacheRequestIfPossible && !fUncachable;
 
         //  if the cached block is possibly cached then determine if it is cached.  otherwise, if we want to cache it
         //  then ensure that we check to see if it is already cached
@@ -8759,11 +8775,13 @@ void THashedLRUKCache<I>::RequestWrite( _In_    CRequest* const             preq
             ibCachedBlock <= prequest->Offsets().IbEnd();
             ibCachedBlock += cbCachedBlock )
     {
-        QWORD               ibSlab = 0;
+        QWORD               ibSlab              = 0;
         CCachedBlockId      cbid;
-        BOOL                fPossiblyCached = fFalse;
+        BOOL                fPossiblyCached     = fFalse;
+        BOOL                fUncachable         = fFalse;
+        BOOL                fCacheIfPossible    = fFalse;
         CCachedBlockSlot    slot;
-        BOOL                fCached         = fFalse;
+        BOOL                fCached             = fFalse;
 
         const BYTE* const   pbCachedBlock   = prequest->PbData() + ibCachedBlock - prequest->Offsets().IbStart();
 
@@ -8772,14 +8790,18 @@ void THashedLRUKCache<I>::RequestWrite( _In_    CRequest* const             preq
         //  NOTE:  we do not cache writes to sparse regions of a file to force them to be reallocated.  this is
         //  required to maintain file meta-data parity with uncached files
 
-        const BOOL          fCacheIfPossible =   (  prequest->Cp() != cpDontCache &&
-                                                    Pcconfig()->PctWrite() > 0 &&
-                                                    !prequest->Pcfte()->FSparse( ibCachedBlock, cbCachedBlock ) ) ||
-                                                prequest->Cp() == cpPinned;
+        const BOOL          fCacheRequestIfPossible =   (  prequest->Cp() != cpDontCache &&
+                                                            Pcconfig()->PctWrite() > 0 &&
+                                                            !prequest->Pcfte()->FSparse( ibCachedBlock, cbCachedBlock ) ) ||
+                                                        prequest->Cp() == cpPinned;
 
         //  determine if we are likely to have this cached block
 
-        Call( ErrIsPossiblyCached( prequest->Pcfte(), ibCachedBlock, fFalse, &ibSlab, &cbid, &fPossiblyCached ) );
+        Call( ErrIsPossiblyCached( prequest->Pcfte(), ibCachedBlock, fFalse, &ibSlab, &cbid, &fPossiblyCached, &fUncachable ) );
+
+        //  do not attempt to cache an uncachable block
+
+        fCacheIfPossible = fCacheRequestIfPossible && !fUncachable;
 
         //  if the cached block is possibly cached then determine if it is cached.  otherwise, if we want to cache it
         //  then ensure that we check to see if it is already cached
@@ -9013,34 +9035,46 @@ ERR THashedLRUKCache<I>::ErrIsPossiblyCached(   _In_    CHashedLRUKCachedFileTab
                                                 _In_    const BOOL                          fKnownNotCached,
                                                 _Out_   QWORD* const                        pibSlab,
                                                 _Out_   CCachedBlockId* const               pcbid,
-                                                _Out_   BOOL* const                         pfPossiblyCached )
+                                                _Out_   BOOL* const                         pfPossiblyCached,
+                                                _Out_   BOOL* const                         pfUncachable )
 {
-    ERR     err             = JET_errSuccess;
-    QWORD   ibSlab          = 0;
-    BOOL    fPossiblyCached = fFalse;
+    ERR                 err             = JET_errSuccess;
+    CachedBlockNumber   cbno            = cbnoInvalid;
+    QWORD               ibSlab          = 0;
+    BOOL                fPossiblyCached = fFalse;
+    BOOL                fUncachable     = fFalse;
 
     *pibSlab = 0;
     *pfPossiblyCached = fFalse;
+    *pfUncachable = fFalse;
 
-    //  compute the cached block id for this offset
+    //  compute the CachedBlockNumber and check for overflow or invalid values
 
-    new( pcbid ) CCachedBlockId(    pcfte->Volumeid(),
-                                    pcfte->Fileid(),
-                                    pcfte->Fileserial(),
-                                    (CachedBlockNumber)( ibCachedBlock / cbCachedBlock ) );
+    cbno = (CachedBlockNumber)( ibCachedBlock / cbCachedBlock );
+    if ( ibCachedBlock != (QWORD)cbno * cbCachedBlock || cbno == cbnoInvalid )
+    {
+        fUncachable = fTrue;
+    }
+    else
+    {
+        //  compute the cached block id for this offset
 
-    //  determine the slab that should hold this cached block
+        new( pcbid ) CCachedBlockId( pcfte->Volumeid(), pcfte->Fileid(), pcfte->Fileserial(), cbno );
 
-    Call( m_pcbsmHash->ErrGetSlabForCachedBlock( *pcbid, &ibSlab ) );
+        //  determine the slab that should hold this cached block
 
-    //  determine if it is possible that we have this cached block in the cache
+        Call( m_pcbsmHash->ErrGetSlabForCachedBlock( *pcbid, &ibSlab ) );
 
-    fPossiblyCached = !fKnownNotCached && m_pcbpf->FPossiblyContains( ibSlab, *pcbid );
+        //  determine if it is possible that we have this cached block in the cache
+
+        fPossiblyCached = !fKnownNotCached && m_pcbpf->FPossiblyContains( ibSlab, *pcbid );
+    }
 
     //  return the results
 
     *pibSlab = ibSlab;
     *pfPossiblyCached = fPossiblyCached;
+    *pfUncachable = fUncachable;
 
 HandleError:
     if ( err < JET_errSuccess )
@@ -9048,6 +9082,7 @@ HandleError:
         *pibSlab = 0;
         new( pcbid ) CCachedBlockId();
         *pfPossiblyCached = fFalse;
+        *pfUncachable = fFalse;
     }
     return err;
 }
