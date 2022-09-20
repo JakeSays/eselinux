@@ -1311,7 +1311,7 @@ ERR FMP::ErrNewAndWriteLatch(
                         memset( pdbfilehdr, 0, g_cbPage );
                         // read in db header
                         // note: read will fail from the newly created database path (when createdatabase() calls us)
-                        const ERR errRH = ErrUtilReadShadowedHeader( pinst, pfsapi, wszDatabaseName, (BYTE*)pdbfilehdr, g_cbPage, -1, UtilReadHeaderFlags( urhfReadOnly | urhfNoEventLogging ) );
+                        const ERR errRH = ErrUtilReadShadowedHeader( pinst, pfsapi, wszDatabaseName, JET_filetypeDatabase, (BYTE*)pdbfilehdr, g_cbPage, -1, UtilReadHeaderFlags( urhfReadOnly | urhfNoEventLogging ) );
                         if ( errRH >= JET_errSuccess )
                         {
                             AssertDatabaseHeaderConsistent( pdbfilehdr, g_cbPage, g_cbPage );

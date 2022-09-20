@@ -846,7 +846,7 @@ LOCAL ERR ErrRBSLoadRbsGen(
             QwInstFileID( qwRBSFileID, pinst->m_iInstance, lRBSGen ),
             &pfapiRBS ) );
 
-    err = ErrUtilReadShadowedHeader( pinst, pinst->m_pfsapi, pfapiRBS, (BYTE*) prbshdr, sizeof( RBSFILEHDR ), -1, urhfNoAutoDetectPageSize | urhfNoEventLogging );
+    err = ErrUtilReadShadowedHeader( pinst, pinst->m_pfsapi, pfapiRBS, JET_filetypeSnapshot, (BYTE*) prbshdr, sizeof( RBSFILEHDR ), -1, urhfNoAutoDetectPageSize | urhfNoEventLogging );
 
     if ( fDeleteCorruptUninitializedRBS && err == JET_errReadVerifyFailure )
     {
@@ -934,7 +934,7 @@ LOCAL ERR ErrRBSPerformLogChecks(
     Call( ErrRBSFilePathForGen_( wszRBSAbsRootDirPath, wszRBSBaseName, pinst->m_pfsapi, wszRBSAbsDirPath, sizeof( wszRBSAbsDirPath ), wszRBSAbsFilePath, cbOSFSAPI_MAX_PATHW, lRBSGen ) );
     Call( CIOFilePerf::ErrFileOpen( pinst->m_pfsapi, pinst, wszRBSAbsFilePath, IFileAPI::fmfReadOnly, iofileRBS, qwRBSFileID, &pfapirbs ) );
 
-    Call( ErrUtilReadShadowedHeader( pinst, pinst->m_pfsapi, pfapirbs, (BYTE*) &rbsfilehdr, sizeof( RBSFILEHDR ), -1, urhfNoAutoDetectPageSize | urhfReadOnly | urhfNoEventLogging ) );
+    Call( ErrUtilReadShadowedHeader( pinst, pinst->m_pfsapi, pfapirbs, JET_filetypeSnapshot, (BYTE*) &rbsfilehdr, sizeof( RBSFILEHDR ), -1, urhfNoAutoDetectPageSize | urhfReadOnly | urhfNoEventLogging ) );
     
     Assert( pinst->m_plog );
     Assert( rbsfilehdr.rbsfilehdr.le_lGenMaxLogCopied >= rbsfilehdr.rbsfilehdr.le_lGenMinLogCopied );
@@ -1276,7 +1276,7 @@ ERR CRevertSnapshot::ErrSetRBSFileApi( _In_ IFileAPI *pfapiRBS )
     Alloc( m_prbsfilehdrCurrent = (RBSFILEHDR *)PvOSMemoryPageAlloc( sizeof(RBSFILEHDR), NULL ) );    
 
     // Load the header in the snapshot based on the set file api
-    Call( ErrUtilReadShadowedHeader( m_pinst, m_pinst->m_pfsapi, m_pfapiRBS, (BYTE*) m_prbsfilehdrCurrent, sizeof( RBSFILEHDR ), -1, urhfNoAutoDetectPageSize | urhfReadOnly | urhfNoEventLogging ) );
+    Call( ErrUtilReadShadowedHeader( m_pinst, m_pinst->m_pfsapi, m_pfapiRBS, JET_filetypeSnapshot, (BYTE*) m_prbsfilehdrCurrent, sizeof( RBSFILEHDR ), -1, urhfNoAutoDetectPageSize | urhfReadOnly | urhfNoEventLogging ) );
 
     // Set the file time create of current RBS gen on the cleaner.
     if ( m_pinst->m_prbscleaner != NULL )
@@ -3545,7 +3545,7 @@ ERR RBSCleanerIOOperator::ErrRBSFileHeader( PCWSTR wszRBSFilePath, _Out_ RBSFILE
     Assert( pfsapi );
 
     Call( CIOFilePerf::ErrFileOpen( pfsapi, m_pinst, wszRBSFilePath, IFileAPI::fmfReadOnly, iofileRBS, qwRBSFileID, &pfapiRBS ) );
-    Call( ErrUtilReadShadowedHeader( m_pinst, pfsapi, pfapiRBS, (BYTE*) prbsfilehdr, sizeof( RBSFILEHDR ), -1, urhfNoAutoDetectPageSize | urhfReadOnly | urhfNoEventLogging ) );
+    Call( ErrUtilReadShadowedHeader( m_pinst, pfsapi, pfapiRBS, JET_filetypeSnapshot, (BYTE*) prbsfilehdr, sizeof( RBSFILEHDR ), -1, urhfNoAutoDetectPageSize | urhfReadOnly | urhfNoEventLogging ) );
 
 HandleError:
     if ( pfapiRBS )
@@ -4132,6 +4132,7 @@ ERR CRBSDatabaseRevertContext::ErrRBSDBRCInit( RBSATTACHINFO* prbsattachinfo, SI
             m_pinst,
             m_pinst->m_pfsapi,
             m_pfapiDb,
+            JET_filetypeDatabase,
             (BYTE*)m_pdbfilehdr,
             g_cbPage,
             OffsetOf( DBFILEHDR, le_cbPageSize ) );
@@ -5428,7 +5429,7 @@ ERR CRBSRevertContext::ErrRevertCheckpointInit()
             qwRBSRevertChkFileID, 
             &m_pfapirbsrchk ) );
 
-        err = ErrUtilReadShadowedHeader( m_pinst, pfsapi, m_pfapirbsrchk, (BYTE*) m_prbsrchk, sizeof( RBSREVERTCHECKPOINT ), -1, urhfNoAutoDetectPageSize );
+        err = ErrUtilReadShadowedHeader( m_pinst, pfsapi, m_pfapirbsrchk, JET_filetypeRBSRevertCheckpoint, (BYTE*) m_prbsrchk, sizeof( RBSREVERTCHECKPOINT ), -1, urhfNoAutoDetectPageSize );
 
         if ( err < JET_errSuccess )
         {

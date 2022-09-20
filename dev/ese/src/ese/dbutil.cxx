@@ -5808,6 +5808,7 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
                     err = ErrUtilReadShadowedHeader(    pinst,
                                                         pinst->m_pfsapi,
                                                         pfapi,
+                                                        JET_filetypeDatabase,
                                                         (BYTE*)pdbfilehdr,
                                                         g_cbPage,
                                                         OffsetOf( DBFILEHDR, le_cbPageSize ),

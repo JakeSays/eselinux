@@ -2679,6 +2679,7 @@ ERR ErrDBReadHeaderCheckConsistency(
     err = ErrUtilReadShadowedHeader(    pfmp->Pinst(),
                                         pfsapi,
                                         pfapi,
+                                        JET_filetypeDatabase,
                                         (BYTE*)pdbfilehdr,
                                         g_cbPage,
                                         OffsetOf( DBFILEHDR, le_cbPageSize ),
@@ -3958,6 +3959,7 @@ LOCAL ERR ErrDBIUpdateHeaderFromTrailer(
             pinst,
             pfsapi,
             wszDatabase,
+            JET_filetypeDatabase,
             reinterpret_cast<BYTE *>( pdbfilehdr ),
             g_cbPage,
             OffsetOf( DBFILEHDR_FIX, le_cbPageSize ),
@@ -6185,6 +6187,7 @@ ERR ISAMAPI ErrIsamSetDatabaseSize( JET_SESID sesid, const WCHAR *wszDatabase, D
     Call( ErrUtilReadShadowedHeader(    PinstFromPpib( ppib ),
                                         pfsapi,
                                         pfapi,
+                                        JET_filetypeDatabase,
                                         (BYTE *)pdbfilehdr,
                                         g_cbPage,
                                         OffsetOf( DBFILEHDR_FIX, le_cbPageSize ) ) );

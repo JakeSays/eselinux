@@ -4765,6 +4765,7 @@ ERR CIrsOpContext::ErrCheckAttachedIrsContext( const INST * const pinst, PCWSTR 
     err = ErrUtilReadShadowedHeader(    pinst,
                                         pinst->m_pfsapi,
                                         m_pfapiDb,
+                                        JET_filetypeDatabase,
                                         (BYTE*)pdbfilehdrCheck,
                                         g_cbPage,
                                         OffsetOf( DBFILEHDR, le_cbPageSize ) );
@@ -4991,6 +4992,7 @@ ERR ErrIRSAttachDatabaseForIrsV2( _Inout_ INST * const pinst, _In_ PCWSTR wszDat
     err = ErrUtilReadShadowedHeader(    pinst,
                                         pinst->m_pfsapi,
                                         pfapiDb,
+                                        JET_filetypeDatabase,
                                         (BYTE*)pdbfilehdr,
                                         g_cbPage,
                                         OffsetOf( DBFILEHDR, le_cbPageSize ) );
@@ -5853,6 +5855,7 @@ RestartFromLowerLogGeneration:
     err = ErrUtilReadShadowedHeader(    pinst,
                                         pfsapi,
                                         pfapiCheckpoint,
+                                        JET_filetypeCheckpoint,
                                         (BYTE*)pcheckpoint,
                                         sizeof( CHECKPOINT ),
                                         -1,
@@ -6487,6 +6490,7 @@ ERR ErrIsamRemoveLogfile(
             pinstNil,
             pfsapi,
             wszDatabase,
+            JET_filetypeDatabase,
             reinterpret_cast<BYTE *>( pdbfilehdr ),
             g_cbPage,
             OffsetOf( DBFILEHDR_FIX, le_cbPageSize ),

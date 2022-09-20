@@ -4988,6 +4988,7 @@ ERR LOG::ErrLGRICheckRedoCreateDb(
             m_pinst,
             m_pinst->m_pfsapi,
             wszDbName,
+            JET_filetypeDatabase,
             (BYTE*)pdbfilehdr,
             g_cbPage,
             OffsetOf( DBFILEHDR, le_cbPageSize ) );
@@ -5236,6 +5237,7 @@ ERR LOG::ErrLGRICheckRedoAttachDb(
             m_pinst,
             m_pinst->m_pfsapi,
             wszDbName,
+            JET_filetypeDatabase,
             (BYTE*)pdbfilehdr,
             g_cbPage,
             OffsetOf( DBFILEHDR, le_cbPageSize ) );

@@ -13032,6 +13032,7 @@ LOCAL JET_ERR JetGetDatabaseFileInfoEx(
                         pinstNil,
                         pfsapi,
                         wszFullDbName,
+                        JET_filetypeDatabase,
                         (BYTE*)pdbfilehdr,
                         g_cbPage,
                         OffsetOf( DBFILEHDR_FIX, le_cbPageSize ),
@@ -13158,6 +13159,7 @@ LOCAL JET_ERR JetGetDatabaseFileInfoEx(
                 Call( ErrUtilReadShadowedHeader(    pinstNil,
                                                     pfsapi,
                                                     wszFullDbName,
+                                                    InfoLevel == JET_DbInfoFileType ? JET_filetypeUnknown : JET_filetypeDatabase,
                                                     (BYTE *)pdbfilehdr,
                                                     sizeof( DBFILEHDR ),
                                                     OffsetOf( DBFILEHDR_FIX, le_cbPageSize ),
@@ -23312,7 +23314,7 @@ JET_ERR ErrTestHookCorruptOfflineFile( const JET_TESTHOOKCORRUPT * const pcorrup
                                     IFileAPI::fmfNone ),
                                 &pfapi ) );
 
-    Call( ErrUtilReadShadowedHeader( pinstNil, pfsapi, pfapi, pbPageImage, g_cbPageMax, OffsetOf( DBFILEHDR_FIX, le_cbPageSize ), urhfNoFailOnPageMismatch ) );
+    Call( ErrUtilReadShadowedHeader( pinstNil, pfsapi, pfapi, JET_filetypeDatabase, pbPageImage, g_cbPageMax, OffsetOf( DBFILEHDR_FIX, le_cbPageSize ), urhfNoFailOnPageMismatch ) );
     cbPageSize = ((DBFILEHDR*)pbPageImage)->le_cbPageSize;
 
     Call( pfapi->ErrIORead( *TraceContextScope( iorpDirectAccessUtil ),
@@ -23369,7 +23371,7 @@ JET_ERR ErrTESTHOOKAlterDatabaseFileHeader( const JET_TESTHOOKALTERDBFILEHDR * c
     Call( ErrOSFSCreate( g_pfsconfigGlobal, &pfsapi ) );
 
     Call( pfsapi->ErrFileOpen( palterdbfilehdr->szDatabase, IFileAPI::fmfNone, &pfapiDatabase ) );
-    Call( ErrUtilReadShadowedHeader( pinstNil, pfsapi, pfapiDatabase, (BYTE*)pdbfilehdr, (DWORD)g_cbPageMax, (LONG)OffsetOf( DBFILEHDR_FIX, le_cbPageSize ), urhfReadOnly|urhfNoFailOnPageMismatch, &cbPageSize, &shs ) );
+    Call( ErrUtilReadShadowedHeader( pinstNil, pfsapi, pfapiDatabase, JET_filetypeDatabase, (BYTE*)pdbfilehdr, (DWORD)g_cbPageMax, (LONG)OffsetOf( DBFILEHDR_FIX, le_cbPageSize ), urhfReadOnly|urhfNoFailOnPageMismatch, &cbPageSize, &shs ) );
     Call( CFlushMapForUnattachedDb::ErrGetPersistedFlushMapOrNullObjectIfRuntime( palterdbfilehdr->szDatabase, pdbfilehdr, pinstNil, &pfm ) );
 
 
@@ -24472,7 +24474,7 @@ LOCAL JET_ERR JetGetRBSFileInfoEx(
 
             Alloc( prbsfilehdr = (RBSFILEHDR * )PvOSMemoryPageAlloc( sizeof( RBSFILEHDR ), NULL ) );
 
-            Call( ErrUtilReadShadowedHeader( pinstNil, pfsapi, pfapi, (BYTE*) prbsfilehdr, sizeof( RBSFILEHDR ), -1, urhfNoAutoDetectPageSize | urhfReadOnly | urhfNoEventLogging ) );
+            Call( ErrUtilReadShadowedHeader( pinstNil, pfsapi, pfapi, JET_filetypeSnapshot, (BYTE*) prbsfilehdr, sizeof( RBSFILEHDR ), -1, urhfNoAutoDetectPageSize | urhfReadOnly | urhfNoEventLogging ) );
             UtilLoadRBSinfomiscFromRBSfilehdr( ( JET_RBSINFOMISC* )pvResult, cbMax, ( RBSFILEHDR* )prbsfilehdr );
             break;
             

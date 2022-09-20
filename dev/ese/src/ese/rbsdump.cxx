@@ -406,6 +406,7 @@ ERR ErrDUMPRBSHeader( INST *pinst, _In_ PCWSTR wszRBS, const BOOL fVerbose )
     {
         headerRequestPrimaryOnly,
         wszRBS,
+        JET_filetypeSnapshot,
         NULL,
         cbHeader,
         -1,
@@ -421,6 +422,7 @@ ERR ErrDUMPRBSHeader( INST *pinst, _In_ PCWSTR wszRBS, const BOOL fVerbose )
     {
         headerRequestSecondaryOnly,
         wszRBS,
+        JET_filetypeSnapshot,
         NULL,
         cbHeader,
         -1,
