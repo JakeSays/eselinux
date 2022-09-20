@@ -46,6 +46,18 @@
 ESESHADOW_LOCAL_DEFERRED_DLL_STATE
 #endif
 
+// Base product name and version numbers reported by eseutil.
+#ifdef ESENT
+#define ESEUTIL_PRODUCT_NAME L"Windows(R)"
+#define ESEUTIL_PRODUCT_MAJOR VER_PRODUCTMAJORVERSION
+#define ESEUTIL_PRODUCT_MINOR VER_PRODUCTMINORVERSION
+#else
+#define ESEUTIL_PRODUCT_NAME L"Exchange Server"
+#define ESEUTIL_PRODUCT_MAJOR PRODUCT_MAJOR
+#define ESEUTIL_PRODUCT_MINOR PRODUCT_MINOR
+#endif
+
+
 //  In fake recovery without undo, we set the grbit for JET_bitRecoveryWithoutUndo, but 
 //  then the our callback control decides to do undo after all, unless the "/u" option 
 //  was passed.
@@ -147,11 +159,7 @@ LOCAL const WCHAR   * const wszUsageErr21   = L"Usage Error: Config store spec n
 
 LOCAL const WCHAR   * const wszUsageErr22   = L"Usage Error: Invalid log generation range specification.";
 
-#ifdef ESENT
-LOCAL const WCHAR   * const wszHelpDesc1        = L"DESCRIPTION:  Database utilities for the Extensible Storage Engine for Microsoft(R) Windows(R).";
-#else  //  !ESENT
-LOCAL const WCHAR   * const wszHelpDesc1        = L"DESCRIPTION:  Database utilities for the Extensible Storage Engine for Microsoft(R) Exchange Server.";
-#endif  //  ESENT
+LOCAL const WCHAR   * const wszHelpDesc1    = L"DESCRIPTION:  Database utilities for the Extensible Storage Engine for Microsoft(R) " ESEUTIL_PRODUCT_NAME L".";
 LOCAL const WCHAR   * const wszHelpSyntax   = L"MODES OF OPERATION:";
 LOCAL const WCHAR   * const wszHelpModes1   = L"      Defragmentation:  %s /d <database name> [options]";
 LOCAL const WCHAR   * const wszHelpModes2   = L"             Recovery:  %s /r <logfile base name> [options]";
@@ -213,16 +221,8 @@ LOCAL WCHAR *GetCurArg();
 
 LOCAL VOID EDBUTLPrintLogo( void )
 {
-    WCHAR   wszVersion[16];
-
-#ifdef ESENT
-    StringCbPrintfW( wszVersion, sizeof(wszVersion), L"%d.%d", VER_PRODUCTMAJORVERSION, VER_PRODUCTMINORVERSION );
-    wprintf( L"Extensible Storage Engine Utilities for Microsoft(R) Windows(R)%c", wchNewLine );
-#else  //  !ESENT
-    StringCbPrintfW( wszVersion, sizeof(wszVersion), L"%hs.%hs", PRODUCT_MAJOR, PRODUCT_MINOR );
-    wprintf( L"Extensible Storage Engine Utilities for Microsoft(R) Exchange Server%c", wchNewLine );
-#endif  //  ESENT
-    wprintf( L"Version %s%c", wszVersion, wchNewLine );
+    wprintf( L"Extensible Storage Engine Utilities for Microsoft(R) %s%c", ESEUTIL_PRODUCT_NAME, wchNewLine );
+    wprintf( L"Version %hs.%hs%c", ESEUTIL_PRODUCT_MAJOR, ESEUTIL_PRODUCT_MINOR, wchNewLine );
     wprintf( L"Copyright (c) Microsoft Corporation.\nLicensed under the MIT License.%c", wchNewLine );
     wprintf( L"%c", wchNewLine );
 }
