@@ -103,7 +103,7 @@ ERR TFileFilterWrapper<I>::ErrIORead(   _In_                    const TraceConte
     if ( pfnIOComplete || pfnIOHandoff )
     {
         const BOOL fHeap = pfnIOComplete != NULL;
-        Alloc( piocomplete = new( fHeap ? new Buffer<CIOComplete>() : _malloca( sizeof( CIOComplete ) ) )
+        Alloc( piocomplete = new( fHeap ? CIOComplete::CPool::PvAllocate() : _malloca( sizeof( CIOComplete ) ) )
             CIOComplete(    fHeap,
                             this,
                             ibOffset,
@@ -161,7 +161,7 @@ ERR TFileFilterWrapper<I>::ErrIOWrite(  _In_                    const TraceConte
     if ( pfnIOComplete || pfnIOHandoff )
     {
         const BOOL fHeap = pfnIOComplete != NULL;
-        Alloc( piocomplete = new( fHeap ? new Buffer<CIOComplete>() : _malloca( sizeof( CIOComplete ) ) )
+        Alloc( piocomplete = new( fHeap ? CIOComplete::CPool::PvAllocate() : _malloca( sizeof( CIOComplete ) ) )
             CIOComplete(    fHeap,
                             this, 
                             ibOffset,
@@ -219,7 +219,7 @@ ERR TFileFilterWrapper<I>::ErrRead( _In_                    const TraceContext& 
     if ( pfnIOComplete || pfnIOHandoff )
     {
         const BOOL fHeap = pfnIOComplete != NULL;
-        Alloc( piocomplete = new( fHeap ? new Buffer<CIOComplete>() : _malloca( sizeof( CIOComplete ) ) )
+        Alloc( piocomplete = new( fHeap ? CIOComplete::CPool::PvAllocate() : _malloca( sizeof( CIOComplete ) ) )
             CIOComplete(    fHeap,
                             this,
                             ibOffset,
@@ -279,7 +279,7 @@ ERR TFileFilterWrapper<I>::ErrWrite(    _In_                    const TraceConte
     if ( pfnIOComplete || pfnIOHandoff )
     {
         const BOOL fHeap = pfnIOComplete != NULL;
-        Alloc( piocomplete = new( fHeap ? new Buffer<CIOComplete>() : _malloca( sizeof( CIOComplete ) ) )
+        Alloc( piocomplete = new( fHeap ? CIOComplete::CPool::PvAllocate() : _malloca( sizeof( CIOComplete ) ) )
             CIOComplete(    fHeap,
                             this, 
                             ibOffset,
@@ -335,6 +335,8 @@ class CFileFilterWrapper : public TFileFilterWrapper<IFileFilter>
             :   TFileFilterWrapper<IFileFilter>( pff, iom )
         {
         }
+
+        static void Cleanup() { CIOComplete::Cleanup(); }
 };
 
 

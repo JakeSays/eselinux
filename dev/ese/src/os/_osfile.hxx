@@ -412,7 +412,7 @@ class COSFile  //  osf
                                         CIOComplete* const  piocomplete );
     private:
 
-        static void IOSyncHandoff_( const ERR           err,
+        static void IOSyncHandoff_(     const ERR           err,
                                         COSFile* const      posf,
                                         const FullTraceContext& tc,
                                         const OSFILEQOS     grbitQOS,

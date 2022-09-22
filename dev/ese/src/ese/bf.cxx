@@ -24054,7 +24054,9 @@ ERR ErrBFIFlushLog( _In_ const IFMP ifmp, _In_ const IOFLUSHREASON iofr, const B
 
     //  I/O
 
-const void* const PV_IO_CTX_LOCK = (void*)upMax;
+const void* const PV_IO_CTX_TICK_FLAG = (void*)(ULONG_PTR)1;
+const void* const PV_IO_CTX_LOCK = (void*)( upMax & ~( (ULONG_PTR)PV_IO_CTX_TICK_FLAG ) );
+
 void* PvBFIAcquireIOContext( PBF pbf )
 {
     void* pvIOContextOld = AtomicReadPointer( &pbf->pvIOContext );
@@ -24143,6 +24145,36 @@ void BFIResetIOContext( PBF pbf )
     }
 }
 
+void BFISetAsyncIOContext( _In_ const PBF pbf, _In_ void* const pvIOContextNew )
+{
+    Assert( !( (ULONG_PTR)pvIOContextNew & (ULONG_PTR)PV_IO_CTX_TICK_FLAG ) );
+
+    BFISetIOContext( pbf, pvIOContextNew );
+}
+
+void BFIResetAsyncIOContext( _In_ const PBF pbf )
+{
+    BFIResetIOContext( pbf );
+}
+
+TICK TickBFISyncIOContextStartTime()
+{
+    return (TICK)( (ULONG_PTR)TickOSTimeInterruptCurrent() | (ULONG_PTR)PV_IO_CTX_TICK_FLAG );
+}
+
+void BFISetSyncIOContext( _In_ const PBF pbf )
+{
+    void* const pvIOContextNew = (void*)(ULONG_PTR)TickBFISyncIOContextStartTime();
+    Assert( (ULONG_PTR)pvIOContextNew & (ULONG_PTR)PV_IO_CTX_TICK_FLAG );
+
+    BFISetIOContext( pbf, pvIOContextNew );
+}
+
+void BFIResetSyncIOContext( _In_ const PBF pbf )
+{
+    BFIResetIOContext( pbf );
+}
+
 BOOL FBFIIsIOHung( PBF pbf )
 {
     void* const pvIOContext = PvBFIAcquireIOContext( pbf );
@@ -24162,12 +24194,14 @@ BYTE PctBFIIsIOHung( PBF pbf, void* const pvIOContext )
 {
     IFileAPI* const pfapi = g_rgfmp[ pbf->ifmp ].Pfapi();
 
-    const TICK dtickIOElapsed = pfapi->DtickIOElapsed( pvIOContext );
+    const TICK dtickIOElapsed = ( (ULONG_PTR)pvIOContext & (ULONG_PTR)PV_IO_CTX_TICK_FLAG ) ?
+        DtickDelta( (TICK)(ULONG_PTR)pvIOContext, TickBFISyncIOContextStartTime() ) :
+        pfapi->DtickIOElapsed( pvIOContext );
     const TICK dtickHungIO = (TICK)UlParam( JET_paramHungIOThreshold );
 
     if ( dtickIOElapsed >= dtickHungIO )
     {
-        return 100;
+        return IsDebuggerAttached() ? 99 : 100;
     }
     else
     {
@@ -24317,14 +24351,17 @@ void BFISyncRead( PBF pbf, const OSFILEQOS qosIoPriorities, const TraceContext& 
     if ( !FBFICacheViewCacheDerefIo( pbf ) )
     {
         HRT hrtStart = HrtHRTCount();
+
+        BFISetSyncIOContext( pbf );
+
         err = pfapi->ErrIORead( tc,
                                 ibOffset,
                                 cbData,
                                 pbData,
-                                qosIoUserDispatch | qosIOSignalSlowSyncIO,
-                                NULL,   // Passing a NULL pfnCompletion triggers sync I/O (foreground on this thread).
-                                DWORD_PTR( pbf ),
-                                IFileAPI::PfnIOHandoff( BFISyncReadHandoff )  );
+                                qosIoUserDispatch | qosIOSignalSlowSyncIO );
+
+        BFIResetSyncIOContext( pbf );
+
         BFITrackCacheMissLatency( pbf, hrtStart, ( tc.iorReason.Iorf() & iorfReclaimPageFromOS ) ? bftcmrReasonPagingFaultDb : bftcmrReasonSyncRead, qosIoPriorities, tc, err );
         Ptls()->threadstats.cPageRead++;
     }
@@ -24334,21 +24371,6 @@ void BFISyncRead( PBF pbf, const OSFILEQOS qosIoPriorities, const TraceContext& 
     BFISyncReadComplete( err, pfapi, err == wrnIOSlow ? qosIOCompleteIoSlow : 0, ibOffset, cbData, pbData, pbf );
 
 
-}
-
-void BFISyncReadHandoff(    const ERR           err,
-                            IFileAPI* const     pfapi,
-                            const FullTraceContext& tc,
-                            const OSFILEQOS     grbitQOS,
-                            const QWORD         ibOffset,
-                            const DWORD         cbData,
-                            const BYTE* const   pbData,
-                            const PBF           pbf,
-                            void* const         pvIOContext )
-{
-    Assert( JET_errSuccess == err );    // Yeah!!!
-
-    BFISetIOContext( pbf, pvIOContext );
 }
 
 void BFISyncReadComplete(   const ERR           err,
@@ -24361,17 +24383,6 @@ void BFISyncReadComplete(   const ERR           err,
 
 {
     Assert( pbf->sxwl.FOwnWriteLatch() );
-
-    //  reset the I/O context, since the operation is officially completed.
-
-    if ( AtomicReadPointer( &pbf->pvIOContext ) != NULL )
-    {
-        BFIResetIOContext( pbf );
-    }
-    else
-    {
-        Assert( FBFICacheViewCacheDerefIo( pbf ) );
-    }
 
     //  read was successful
 
@@ -24547,10 +24558,9 @@ void BFIAsyncReadHandoff(   const ERR           err,
                             void* const         pvIOContext )
 {
     Assert( JET_errSuccess == err );    // Yeah!!!
-
     if ( pvIOContext != NULL )
     {
-        BFISetIOContext( pbf, pvIOContext );
+        BFISetAsyncIOContext( pbf, pvIOContext );
     }
     else
     {
@@ -24580,7 +24590,7 @@ void BFIAsyncReadComplete(  const ERR           err,
 
     if ( AtomicReadPointer( &pbf->pvIOContext ) != NULL )
     {
-        BFIResetIOContext( pbf );
+        BFIResetAsyncIOContext( pbf );
     }
     else
     {
@@ -24689,14 +24699,15 @@ ERR ErrBFISyncWrite( PBF pbf, const BFLatchType bfltHave, OSFILEQOS qos, const T
 
     //  issue sync write
 
+    BFISetSyncIOContext( pbf );
+
     err = pfapi->ErrIOWrite(    tc,
                                 ibOffset,
                                 cbData,
                                 pbData,
-                                qos,
-                                NULL,   // Passing a NULL pfnCompletion triggers sync I/O (foreground on this thread).
-                                DWORD_PTR( pbf ),
-                                IFileAPI::PfnIOHandoff( BFISyncWriteHandoff ) );
+                                qos );
+
+    BFIResetSyncIOContext( pbf );
 
     //  complete sync write
 
@@ -24705,21 +24716,6 @@ ERR ErrBFISyncWrite( PBF pbf, const BFLatchType bfltHave, OSFILEQOS qos, const T
     BFISyncWriteComplete( err, pfapi, fullTc, qos, ibOffset, cbData, pbData, pbf, bfltHave );
 
     return err;
-}
-
-void BFISyncWriteHandoff(   const ERR           err,
-                            IFileAPI* const     pfapi,
-                            const FullTraceContext& tc,
-                            const OSFILEQOS     grbitQOS,
-                            const QWORD         ibOffset,
-                            const DWORD         cbData,
-                            const BYTE* const   pbData,
-                            const PBF           pbf,
-                            void* const         pvIOContext )
-{
-    Assert( JET_errSuccess == err );    // Yeah!!!
-
-    BFISetIOContext( pbf, pvIOContext );
 }
 
 void BFISyncWriteComplete(  const ERR           err,
@@ -24732,10 +24728,6 @@ void BFISyncWriteComplete(  const ERR           err,
                             const PBF           pbf,
                             const BFLatchType   bfltHave )
 {
-    //  reset the I/O context, since the operation is officially completed.
-
-    BFIResetIOContext( pbf );
-    
     //  trace that we have just written a page
 
     BFITraceWritePage( pbf, tc );
@@ -24932,8 +24924,7 @@ void BFIAsyncWriteHandoff(  const ERR           err,
                             void* const         pvIOContext )
 {
     Assert( JET_errSuccess == err );    // Yeah!!!
-
-    BFISetIOContext( pbf, pvIOContext );
+    BFISetAsyncIOContext( pbf, pvIOContext );
 
     Enforce( CmpLgpos( pbf->lgposModify, g_rgfmp[ pbf->ifmp ].LgposWaypoint() ) <= 0 );   // just for insurance
 
@@ -25539,7 +25530,7 @@ void BFIAsyncWriteComplete( const ERR           err,
 
     //  reset the I/O context, since the operation is officially completed.
 
-    BFIResetIOContext( pbf );
+    BFIResetAsyncIOContext( pbf );
 
     //  trace that we have just written a page
 

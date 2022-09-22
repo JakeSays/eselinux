@@ -2091,6 +2091,9 @@ class TFileFilter  //  ff
 
         //  IO completion context for an IFileFilter implementation.
 
+#pragma push_macro( "new" )
+#undef new
+
         class CIOComplete
             :   public TFileWrapper<I>::CIOComplete
         {
@@ -2146,13 +2149,36 @@ class TFileFilter  //  ff
                     }
                 }
 
+                using CPool = TPool<CIOComplete>;
+
+                void* operator new( _In_ const size_t cb )
+                {
+                    return CPool::PvAllocate();
+                }
+
+                void* operator new( _In_ const size_t cb, _In_ const void* const pv )
+                {
+                    return (void*)pv;
+                }
+
+                void operator delete( _In_opt_ void* const pv )
+                {
+                    void* pvT = pv;
+                    CPool::Free( &pvT );
+                }
+
                 BOOL FAccessingHeader() const { return m_psemCachedFileHeader != NULL; }
 
                 void DoNotReleaseWriteBack()
                 {
                     m_fReleaseWriteback = fFalse;
                 }
- 
+
+                static void Cleanup()
+                {
+                    CPool::Cleanup();
+                }
+
                 static void Complete_(  _In_                    const ERR               err,
                                         _In_                    const VolumeId          volumeid,
                                         _In_                    const FileId            fileid,
@@ -2295,6 +2321,9 @@ class TFileFilter  //  ff
                 volatile BOOL               m_fReleaseResources;
                 CIORequestPending           m_iorequestpending;
         };
+
+#pragma pop_macro( "new" )
+
 };
 
 template< class I >
@@ -3907,7 +3936,7 @@ ERR TFileFilter<I>::ErrCacheMiss(   _In_                    const TraceContext& 
     if ( pfnIOComplete || pfnIOHandoff )
     {
         const BOOL fHeap = pfnIOComplete != NULL;
-        Alloc( piocomplete = new( fHeap ? new Buffer<CIOComplete>() : _malloca( sizeof( CIOComplete ) ) )
+        Alloc( piocomplete = new( fHeap ? CIOComplete::CPool::PvAllocate() : _malloca( sizeof( CIOComplete ) ) )
             CIOComplete(    fHeap,
                             this,
                             iomCacheMiss,
@@ -4177,7 +4206,7 @@ ERR TFileFilter<I>::ErrWriteCommon( _In_                    const IFileFilter::I
     if ( pfnIOComplete || pfnIOHandoff )
     {
         const BOOL fHeap = pfnIOComplete != NULL;
-        Alloc( piocomplete = new( fHeap ? new Buffer<CIOComplete>() : _malloca( sizeof( CIOComplete ) ) )
+        Alloc( piocomplete = new( fHeap ? CIOComplete::CPool::PvAllocate() : _malloca( sizeof( CIOComplete ) ) )
             CIOComplete(    fHeap,
                             this, 
                             iom,

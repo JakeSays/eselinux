@@ -2125,6 +2125,10 @@ void COSFile::IOSyncHandoff_(   const ERR           err,
                                 void* const         pioreq )
 {
     Assert( ( piocomplete != NULL ) && ( piocomplete->m_pfnIOHandoff != NULL ) );
+
+    //  NOTE:  we intentionally do not provide the pvIOContext (i.e. pioreq) for a sync I/O.  there is no safe way to
+    //  use that context because there is no notification of when it becomes invalid / no longer used by ths I/O.
+
     piocomplete->m_pfnIOHandoff(    err,
                                     posf,
                                     tc,
@@ -2133,7 +2137,7 @@ void COSFile::IOSyncHandoff_(   const ERR           err,
                                     cbData,
                                     pbData,
                                     piocomplete->m_keyIOComplete,
-                                    pioreq );
+                                    NULL );
 }
 
 void COSFile::IOSyncComplete(   const ERR           err,

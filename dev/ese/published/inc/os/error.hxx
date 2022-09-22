@@ -22,13 +22,9 @@ const CHAR * SzSourceFileName( const CHAR * szFilePath );
 //  Prototypes
 //
 
-#ifdef DEBUG
-
-// IsDebuggerAttached() is useful to silence Asserts.  It shouldn't be used in 
-// retail code.  
+//  indicates if a user mode debugger is attached to this process
 
 BOOL IsDebuggerAttached();
-#endif
 
 
 // ------------------------------------------------------------------------------------------------

@@ -377,6 +377,8 @@ class IFileAPI  //  fapi
         //  to later surface a PfnIOComplete.  If the ErrIORead / ErrIOWrite 
         //  functions are going to return a quota exceeded / errDiskTilt error,
         //  this function will not be called.
+        //
+        //  NOTE:  pvIOContext is only provided for async I/O.
 
         typedef void (*PfnIOHandoff)(   const ERR               err,
                                         IFileAPI* const         pfapi,
