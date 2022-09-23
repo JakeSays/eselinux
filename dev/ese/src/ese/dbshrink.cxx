@@ -343,11 +343,10 @@ LOCAL ERR ErrSHKIMoveLastExtent(
                         goto HandleError;
                     }
 
-                    // Check if indeterminate-page handling is enabled and supported.
+                    // Check if indeterminate-page handling is supported.
                     // Note that FMP::FEfvSupported() below checks for both DB and log versions, but JET_efvShelvedPages2
                     // only upgrades the DB version so technically, we wouldn't need to check for the log version.
-                    if ( pfmp->FShrinkDatabaseDontTruncateIndeterminatePagesOnAttach() ||
-                         !pfmp->FEfvSupported( JET_efvShelvedPages2 ) )
+                    if ( !pfmp->FEfvSupported( JET_efvShelvedPages2 ) )
                     {
                         *psdr = sdrPageNotMovable;
                         goto HandleError;
@@ -362,13 +361,6 @@ LOCAL ERR ErrSHKIMoveLastExtent(
                     {
                         AssertTrack( fFalse, "ShrinkMoveUnexpectedRootLeakedPage" );
                         *psdr = sdrUnexpected;
-                        goto HandleError;
-                    }
-
-                    // Check if leaked-page handling is enabled.
-                    if ( pfmp->FShrinkDatabaseDontTruncateLeakedPagesOnAttach() )
-                    {
-                        *psdr = sdrPageNotMovable;
                         goto HandleError;
                     }
                 }
@@ -694,7 +686,7 @@ LOCAL ERR ErrSHKIMoveLastExtent(
             {
                 Assert( !FSPSpaceCatSmallSpace( spcatfCurrent ) );
 
-                if ( !pfmp->FShrinkDatabaseDontMoveRootsOnAttach() && pfmp->FEfvSupported( JET_efvRootPageMove ) )
+                if ( pfmp->FEfvSupported( JET_efvRootPageMove ) )
                 {
                     // Note that we currently only support moving all roots of a tree (root itself, OE and AE root)
                     // at the same time. So depending on what kind of root we are processing, we need to pass the

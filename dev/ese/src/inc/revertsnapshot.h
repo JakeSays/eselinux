@@ -743,7 +743,7 @@ class CRevertSnapshot
     VOID AssertAllFlushed()
     {
         Assert( m_cNextFlushSegment == m_cNextWriteSegment &&
-                ( m_pActiveBuffer == NULL || m_pActiveBuffer->m_ibNextRecord <= sizeof(RBSSEGHDR) ) );
+                ( m_pActiveBuffer == NULL || m_pActiveBuffer->m_ibNextRecord == 0 || m_pActiveBuffer->m_ibNextRecord == sizeof(RBSSEGHDR) ) );
     }
 
     ERR ErrSetReadBuffer( ULONG iStartSegment );

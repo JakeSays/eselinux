@@ -3564,7 +3564,7 @@ RBSCleaner::RBSCleaner(
     IRBSCleanerConfig* const        prbscleanerconfig ) : 
     CZeroInit( sizeof( RBSCleaner ) ),
     m_pinst( pinst ),
-    m_msigRBSCleanerStop( CSyncBasicInfo( _T("RBSCleaner::m_msigRBSCleanerStop" ) ) ),
+    m_msigRBSCleanerStop( CSyncBasicInfo( _T( "RBSCleaner::m_msigRBSCleanerStop" ) ) ),
     m_critRBSFirstValidGen( CLockBasicInfo( CSyncBasicInfo( szRBSFirstValidGen ), rankRBSFirstValidGen, 0 ) ),
     m_prbscleaneriooperator( prbscleaneriooperator ),
     m_prbscleanerstate( prbscleanerstate ),

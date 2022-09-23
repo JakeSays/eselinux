@@ -421,9 +421,6 @@ MSINTERNAL enum class MJET_GRBIT
     StageProdBetaMode = 0x400000,
     ShrinkDatabaseEofOnAttach = 0x00000001, // Resizes the database file during its attachment.
     ShrinkDatabaseFullCategorizationOnAttach = 0x00000002, // Enables full space categorization when shrinking the database
-    ShrinkDatabaseDontMoveRootsOnAttach = 0x00000004, // Disable root moves when shrinking the database
-    ShrinkDatabaseDontTruncateLeakedPagesOnAttach = 0x00000008, // Disable truncating leaked pages when shrinking the database
-    ShrinkDatabaseDontTruncateIndeterminatePagesOnAttach = 0x00000010, // Disable truncating indeterminate/uncategorized pages when
     DumpMinimum = 0x00000001,
     DumpMaximum = 0x00000002,
     DumpCacheMinimum = 0x00000004,

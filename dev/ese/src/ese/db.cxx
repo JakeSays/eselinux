@@ -1576,10 +1576,7 @@ ERR ErrDBParseDbParams(
     if ( ( pgrbitShrinkDatabaseOptions != NULL ) &&
         ( ( *pgrbitShrinkDatabaseOptions &
           ~( JET_bitShrinkDatabaseEofOnAttach |
-             JET_bitShrinkDatabaseFullCategorizationOnAttach |
-             JET_bitShrinkDatabaseDontMoveRootsOnAttach |
-             JET_bitShrinkDatabaseDontTruncateLeakedPagesOnAttach |
-             JET_bitShrinkDatabaseDontTruncateIndeterminatePagesOnAttach ) ) != 0 ) )
+             JET_bitShrinkDatabaseFullCategorizationOnAttach ) ) != 0 ) )
     {
         return ErrERRCheck( JET_errInvalidGrbit );
     }

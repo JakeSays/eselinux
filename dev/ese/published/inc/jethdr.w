@@ -7378,16 +7378,6 @@ JetIdle(
                                                                                     // shrinking the database, but avoids a potential small extra
                                                                                     // cost afterwards, when operating on the shrunk database.
 
-#define JET_bitShrinkDatabaseDontMoveRootsOnAttach                      0x00000004  // Disable root moves when shrinking the database
-                                                                                    // at attachment time. NOTE: temporary, for flighting only.
-
-#define JET_bitShrinkDatabaseDontTruncateLeakedPagesOnAttach            0x00000008  // Disable truncating leaked pages when shrinking the database
-                                                                                    // at attachment time. NOTE: temporary, for flighting only.
-
-#define JET_bitShrinkDatabaseDontTruncateIndeterminatePagesOnAttach     0x00000010  // Disable truncating indeterminate/uncategorized pages when
-                                                                                    // shrinking the database at attachment time.
-                                                                                    // NOTE: temporary, for flighting only.
-
 #endif // JET_VERSION >= 0x0A01
 
 // begin_PubEsent

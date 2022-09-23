@@ -768,9 +768,6 @@ public:
         VOID SetShrinkDatabaseSizeLimit( const CPG cpgShrinkDatabaseSizeLimit );
         BOOL FShrinkDatabaseEofOnAttach() const;
         BOOL FRunShrinkDatabaseFullCatOnAttach() const;
-        BOOL FShrinkDatabaseDontMoveRootsOnAttach() const;
-        BOOL FShrinkDatabaseDontTruncateLeakedPagesOnAttach() const;
-        BOOL FShrinkDatabaseDontTruncateIndeterminatePagesOnAttach() const;
         LONG DtickShrinkDatabaseTimeQuota() const;
         CPG CpgShrinkDatabaseSizeLimit() const;
         // Leak reclaimer.
@@ -1664,21 +1661,6 @@ INLINE BOOL FMP::FShrinkDatabaseEofOnAttach() const
 INLINE BOOL FMP::FRunShrinkDatabaseFullCatOnAttach() const
 {
     return ( m_grbitShrinkDatabaseOptions & JET_bitShrinkDatabaseFullCategorizationOnAttach ) != 0;
-}
-
-INLINE BOOL FMP::FShrinkDatabaseDontMoveRootsOnAttach() const
-{
-    return ( m_grbitShrinkDatabaseOptions & JET_bitShrinkDatabaseDontMoveRootsOnAttach ) != 0;
-}
-
-INLINE BOOL FMP::FShrinkDatabaseDontTruncateLeakedPagesOnAttach() const
-{
-    return ( m_grbitShrinkDatabaseOptions & JET_bitShrinkDatabaseDontTruncateLeakedPagesOnAttach ) != 0;
-}
-
-INLINE BOOL FMP::FShrinkDatabaseDontTruncateIndeterminatePagesOnAttach() const
-{
-    return ( m_grbitShrinkDatabaseOptions & JET_bitShrinkDatabaseDontTruncateIndeterminatePagesOnAttach ) != 0;
 }
 
 INLINE LONG FMP::DtickShrinkDatabaseTimeQuota() const

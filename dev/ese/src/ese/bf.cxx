@@ -4648,6 +4648,10 @@ ERR ErrBFFlush( IFMP ifmp, const OBJID objidFDP, const PGNO pgnoFirst, const PGN
     }
     while ( fRetryFlush );
 
+    if ( g_rgfmp[ ifmp ].FRBSOn() && ( g_rgfmp[ ifmp ].PRBS()->ErrFlushAll() >= JET_errSuccess ) )
+    {
+        g_rgfmp[ ifmp ].PRBS()->AssertAllFlushed();
+    }
     const ERR errBfFlushLoop = err;
     
     OSTraceFMP(
