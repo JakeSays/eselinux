@@ -130,8 +130,6 @@ typedef DWORD LCID;
 typedef GUID SORTID;
 #define SORTIDNil { 0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 } }
 
-typedef wchar_t WCHAR;
-
 typedef struct
 {
     INT month;
@@ -417,18 +415,6 @@ inline __int32 ReverseBytes< __int32 >( const __int32 dw )
 
 template<>
 inline unsigned __int32 ReverseBytes< unsigned __int32 >( const unsigned __int32 dw )
-{
-    return ReverseFourBytes( (const unsigned __int32) dw );
-}
-
-template<>
-inline LONG ReverseBytes< LONG >( const LONG dw )
-{
-    return ReverseFourBytes( (const unsigned __int32) dw );
-}
-
-template<>
-inline ULONG ReverseBytes< ULONG >( const ULONG dw )
 {
     return ReverseFourBytes( (const unsigned __int32) dw );
 }

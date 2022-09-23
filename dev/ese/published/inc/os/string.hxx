@@ -8,18 +8,6 @@
 // string with the singular exception of being passed a buffer that has zero length.
 
 #include <specstrings.h>
-#ifndef PSTR
-typedef _Null_terminated_ char *  PSTR;    /* ASCII string (char *) null terminated */
-#ifndef PCSTR
-#endif
-typedef _Null_terminated_ const char *  PCSTR;   /* const ASCII string (char *) null terminated */
-#ifndef PWSTR
-#endif
-typedef _Null_terminated_ wchar_t * PWSTR;   /* Unicode string (char *) null terminated */
-#ifndef PCWSTR
-#endif
-typedef _Null_terminated_ const wchar_t * PCWSTR;  /* const Unicode string (char *) null terminated */
-#endif
 
 #undef STRSAFE_NO_DEPRECATE
 
