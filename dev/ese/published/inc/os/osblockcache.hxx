@@ -944,6 +944,11 @@ class CCachedBlockSlot : public CCachedBlock
         {
         }
 
+        CCachedBlockSlot( _In_ const CCachedBlockSlot& other )
+        {
+            memcpy( this, &other, sizeof( *this ) );
+        }
+
         QWORD IbSlab() const { return m_le_ibSlab; }
         ChunkNumber Chno() const { return m_le_chno; }
         SlotNumber Slno() const { return m_le_slno; }
