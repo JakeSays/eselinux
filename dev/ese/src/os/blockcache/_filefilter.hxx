@@ -403,6 +403,7 @@ class TFileFilter  //  ff
             return pff->ErrAttach( offsetsFirstWrite );
         }
         ERR ErrAttach( _In_ const COffsets& offsetsFirstWrite );
+        ERR ErrMarkAsNotCached();
         ERR ErrGetConfiguredCache();
         ERR ErrCacheOpenFailure(    _In_ const char* const                  szFunction,
                                     _In_ const ERR                          errFromCall,
@@ -3291,7 +3292,27 @@ HandleError:
     }
     delete pcfh;
     OSMemoryPageFree( pvData );
+    if ( !m_pcfh )
+    {
+        CallS( ErrMarkAsNotCached() );
+    }
     return fPresumeAttached ? err : JET_errSuccess;
+}
+
+template< class I >
+ERR TFileFilter<I>::ErrMarkAsNotCached()
+{
+    ERR         err                                                 = JET_errSuccess;
+    WCHAR       wszCachedFile[ IFileSystemAPI::cchPathMax ]         = { 0 };
+    WCHAR       wszStreamCachedPath[ IFileSystemAPI::cchPathMax ]   = { 0 };
+
+    Call( TFileFilter<I>::ErrPath( wszCachedFile ) );
+    Call( ErrOSStrCbCopyW( wszStreamCachedPath, _cbrg( wszStreamCachedPath ), wszCachedFile ) );
+    Call( ErrOSStrCbAppendW( wszStreamCachedPath, _cbrg( wszStreamCachedPath ), CFileSystemFilter::c_wszStreamCached ) );
+    Call( m_pfsf->ErrFileDelete( wszStreamCachedPath ) );
+
+HandleError:
+    return err;
 }
 
 template< class I >

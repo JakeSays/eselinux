@@ -1447,6 +1447,8 @@ class IBlockCacheFactory  //  bcf
         virtual ERR ErrDetachFile(  _In_z_      const WCHAR* const                              wszFilePath,
                                     _In_opt_    const IBlockCacheFactory::PfnDetachFileStatus   pfnDetachFileStatus,
                                     _In_opt_    const DWORD_PTR                                 keyDetachFileStatus ) = 0;
+
+        virtual ERR ErrIsCachedFile( _In_z_ const WCHAR* const wszFilePath, _Out_ BOOL* const pfCached ) = 0;
 };
 
 class COSBlockCacheFactory
