@@ -3312,6 +3312,16 @@ ERR TFileFilter<I>::ErrMarkAsNotCached()
     Call( m_pfsf->ErrFileDelete( wszStreamCachedPath ) );
 
 HandleError:
+    if ( err < JET_errSuccess )
+    {
+        switch ( err )
+        {
+            case JET_errInvalidPath:
+            case JET_errBufferTooSmall:
+                err = JET_errSuccess;
+                break;
+        }
+    }
     return err;
 }
 

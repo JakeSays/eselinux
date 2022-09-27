@@ -1441,8 +1441,12 @@ ERR TFileSystemFilter<I>::ErrGetCachingConfiguration(   _In_z_  const WCHAR* con
         pcfconfig->CachingFilePath( wszAbsPathCachingFile );
         if ( wszAbsPathCachingFile[ 0 ] )
         {
-            Call( m_pfident->ErrGetFileKeyPath( wszAbsPathCachingFile, wszKeyPathCachingFile ) );
-            Call( pbcconfig->ErrGetCacheConfiguration( wszKeyPathCachingFile, &pcconfig ) );
+            err = m_pfident->ErrGetFileKeyPath( wszAbsPathCachingFile, wszKeyPathCachingFile );
+            if ( err >= JET_errSuccess )
+            {
+                Call( pbcconfig->ErrGetCacheConfiguration( wszKeyPathCachingFile, &pcconfig ) );
+            }
+            Call( err == JET_errInvalidPath ? JET_errSuccess : err );
         }
     }
 
@@ -1452,6 +1456,7 @@ ERR TFileSystemFilter<I>::ErrGetCachingConfiguration(   _In_z_  const WCHAR* con
                         ( fmf & IFileAPI::fmfTemporary ) == 0 &&
                         pcfconfig->FCachingEnabled() &&
                         wszAbsPathCachingFile[ 0 ] &&
+                        pcconfig &&
                         pcconfig->FCacheEnabled() && pcconfig->CbMaximumSize() > 0;
 
     //  return our outputs
@@ -1495,38 +1500,37 @@ ERR TFileSystemFilter<I>::ErrTryMarkAsEverEligibleForCaching(   _In_z_  const WC
     {
         *pfMarked = fTrue;
     }
+    Call( err == JET_errFileNotFound ? JET_errSuccess : err );
 
     //  if the ever eligible marker isn't present and caching is enabled then try to create it
 
-    if ( err == JET_errFileNotFound )
+    if ( !( *pfMarked ) && fCachingEnabled )
     {
-        err = JET_errSuccess;
-
-        if ( fCachingEnabled )
-        {
-            Call( TFileSystemWrapper<I>::ErrFileCreate( wszStreamEverEligiblePath,
-                                                        fOverwriteExisting ? IFileAPI::fmfOverwriteExisting : IFileAPI::fmfNone,
-                                                        &pfapiEverEligible ) );
-            *pfMarked = fTrue;
-        }
+        err = TFileSystemWrapper<I>::ErrFileCreate( wszStreamEverEligiblePath,
+                                                    fOverwriteExisting ? IFileAPI::fmfOverwriteExisting : IFileAPI::fmfNone,
+                                                    &pfapiEverEligible );
+        Call( err == JET_errFileAlreadyExists ? JET_errSuccess : err );
+        delete pfapiEverEligible;
+        pfapiEverEligible = fFalse;
+        *pfMarked = fTrue;
     }
-    Call( err );
 
     //  best effort mark the file as cached.  we will remove this later if the file isn't actually cached
 
-    Call( ErrOSStrCbCopyW( wszStreamCachedPath, _cbrg( wszStreamCachedPath ), wszAnyAbsPath ) );
-    Call( ErrOSStrCbAppendW( wszStreamCachedPath, _cbrg( wszStreamCachedPath ), c_wszStreamCached ) );
-    err = TFileSystemWrapper<I>::ErrPathExists( wszStreamCachedPath, NULL );
-    if ( err == JET_errFileNotFound )
+    if ( *pfMarked && fCachingEnabled )
     {
-        err = JET_errSuccess;
-
-        if ( fCachingEnabled )
+        Call( ErrOSStrCbCopyW( wszStreamCachedPath, _cbrg( wszStreamCachedPath ), wszAnyAbsPath ) );
+        Call( ErrOSStrCbAppendW( wszStreamCachedPath, _cbrg( wszStreamCachedPath ), c_wszStreamCached ) );
+        err = TFileSystemWrapper<I>::ErrPathExists( wszStreamCachedPath, NULL );
+        if ( err == JET_errFileNotFound )
         {
-            Call( TFileSystemWrapper<I>::ErrFileCreate( wszStreamCachedPath, IFileAPI::fmfNone, &pfapiCached ) );
+            err = TFileSystemWrapper<I>::ErrFileCreate( wszStreamCachedPath, IFileAPI::fmfNone, &pfapiCached );
+            Call( err == JET_errFileAlreadyExists ? JET_errSuccess : err );
+            delete pfapiCached;
+            pfapiCached = fFalse;
         }
+        Call( err );
     }
-    Call( err );
 
 HandleError:
     delete pfapiCached;
@@ -1537,8 +1541,6 @@ HandleError:
         {
             case JET_errInvalidPath:
             case JET_errBufferTooSmall:
-            case JET_errFileNotFound:
-            case JET_errFileAlreadyExists:
                 err = JET_errSuccess;
                 break;
         }
@@ -1820,6 +1822,16 @@ ERR TFileSystemFilter<I>::ErrMarkAsNotCached( _In_ CFileFilter* const pff )
     Call( TFileSystemWrapper<I>::ErrFileDelete( wszStreamCachedPath ) );
 
 HandleError:
+    if ( err < JET_errSuccess )
+    {
+        switch ( err )
+        {
+            case JET_errInvalidPath:
+            case JET_errBufferTooSmall:
+                err = JET_errSuccess;
+                break;
+        }
+    }
     return err;
 }
 
