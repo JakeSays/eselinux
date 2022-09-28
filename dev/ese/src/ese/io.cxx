@@ -4194,7 +4194,7 @@ ERR FMP::ErrDBReadPages(
         // If we got an unexpected lost flush error, loop for a while to see if the page fixes itself.
         if ( ( err == JET_errReadLostFlushVerifyFailure ) && !FNegTest( fCorruptingWithLostFlush ) )
         {
-            DWORD cRetriesMax = 0;
+            DWORD cRetriesMax = 0, cRetriesToAssert = 0;
             
 #ifdef DEBUG
             const CPG cpgActual = pgnoEnd - pgnoStart + 1;
@@ -4205,10 +4205,14 @@ ERR FMP::ErrDBReadPages(
             }
 
             cRetriesMax = 100;
+            
+            // Unfortunately, there seems to be hardware which loses writes in our test pass pool of machines.
+            cRetriesToAssert = 2;
 #else // !DEBUG
             // FNegTest() always returns fFalse in RETAIL, so do not run the retry loop when running tests, otherwise
             // they will get confused with multiple events and take too long with 1 sec per lost flush detected.
             cRetriesMax = ( _wcsicmp( WszUtilProcessName(), L"Microsoft.Exchange.Store.Worker" ) == 0 ) ? 10 : 0;
+            cRetriesToAssert = 1;
 #endif // DEBUG
 
             if ( cRetriesMax > 0 )
@@ -4231,7 +4235,7 @@ ERR FMP::ErrDBReadPages(
                     UtilSleep( 100 );
                 }
 
-                AssertTrack( fFalse, OSFormat( "UnexpectedLostFlush:%I32u:%d:%d", cRetries, err, errRetry ) );
+                AssertTrack( cRetries < cRetriesToAssert, OSFormat( "UnexpectedLostFlush:%I32u:%d:%d", cRetries, err, errRetry ) );
             }
         }
 
