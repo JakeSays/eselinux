@@ -5256,11 +5256,29 @@ HandleError:
 template< class I >
 ERR THashedLRUKCache<I>::ErrPrepareToDismount()
 {
-    ERR err = JET_errSuccess;
+    ERR             err                     = JET_errSuccess;
+    JournalPosition jposReplay              = jposInvalid;
+    JournalPosition jposDurableForWriteBack = jposInvalid;
+    JournalPosition jposDurable             = jposInvalid;
 
     //  flush our state for all files
 
     Call( ErrFlush() );
+
+    //  flush all our state
+
+    Call( m_pj->ErrGetProperties( &jposReplay, &jposDurableForWriteBack, &jposDurable, NULL, NULL ) );
+    if ( jposDurableForWriteBack < jposDurable )
+    {
+        Call( ErrFlush() );
+        Call( m_pj->ErrGetProperties( &jposReplay, &jposDurableForWriteBack, &jposDurable, NULL, NULL ) );
+    }
+    if ( jposReplay < jposDurableForWriteBack )
+    {
+        Call( ErrFlushAllState( jposDurableForWriteBack ) );
+        Call( m_pj->ErrTruncate( jposDurableForWriteBack ) );
+        Call( ErrFlush() );
+    }
 
 HandleError:
     return err;
@@ -5327,7 +5345,7 @@ ERR THashedLRUKCache<I>::ErrDump( _In_ CPRINTF* const pcprintf )
     {
         //  analyze the journal
 
-        errAnalyzeJournal = ErrAnalyzeJournal();
+        errAnalyzeJournal = ErrAnalyzeJournal( fTrue );
 
         //  dump the journal metadata
 
