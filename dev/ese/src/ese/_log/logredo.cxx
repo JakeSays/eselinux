@@ -4710,7 +4710,6 @@ ERR LOG::ErrLGRISetupFMPFromAttach(
     IFMP        ifmp                            = ifmpNil;
     RSTMAP*     psrtmap                         = NULL;
     ULONG       pctCachePriority                = g_pctCachePriorityUnassigned;
-    JET_GRBIT   grbitShrinkDatabaseOptions      = NO_GRBIT;
 
     pifmp = pifmp ? pifmp : &ifmp;
     pirstmap = pirstmap ? pirstmap : &irstmap;
@@ -4761,13 +4760,12 @@ ERR LOG::ErrLGRISetupFMPFromAttach(
     //  and set below in the FMP. Once recovery is finished, the DB needs to go through
     //  JetAttachDatabase anyways, so all DB parameters will be parsed and consumed then.
     //
-
     Call( ErrDBParseDbParams(
                 psrtmap ? psrtmap->rgsetdbparam : NULL,
                 psrtmap ? psrtmap->csetdbparam : 0,
                 NULL,                           // JET_dbparamDbSizeMaxPages (not used here).
                 &pctCachePriority,              // JET_dbparamCachePriority.
-                &grbitShrinkDatabaseOptions,    // JET_dbparamShrinkDatabaseOptions.
+                NULL,                           // JET_dbparamShrinkDatabaseOptions (not used here).
                 NULL,                           // JET_dbparamShrinkDatabaseTimeQuota (not used here).
                 NULL,                           // JET_dbparamShrinkDatabaseSizeLimit (not used here).
                 NULL,                           // JET_dbparamLeakReclaimerEnabled (not used here).
@@ -4815,7 +4813,6 @@ ERR LOG::ErrLGRISetupFMPFromAttach(
     pfmpT->ResetDeferredAttach();
 
     pfmpT->SetPctCachePriorityFmp( pctCachePriority );
-    pfmpT->SetShrinkDatabaseOptions( grbitShrinkDatabaseOptions );
 
     FMP::EnterFMPPoolAsWriter();
     pfmpT->SetLogOn();
@@ -11055,12 +11052,6 @@ ERR LOG::ErrLGRIRedoExtendDB( const LREXTENDDB * const plrdbextension )
     const BOOL fLgposLastResizeSet = ( CmpLgpos( lgposLastResize, lgposMin ) != 0 );
     const INT icmpLgposLastVsCurrent = CmpLgpos( lgposLastResize, m_lgposRedo );
 
-#ifndef DEBUG
-    const BOOL fMaySkipOlderResize = fLgposLastResizeSet && pfmp->FShrinkDatabaseEofOnAttach();
-#else
-    const BOOL fMaySkipOlderResize = fLgposLastResizeSet;
-#endif
-
     Assert( !fLgposLastResizeSet || fLgposLastResizeSupported );
     {
     OnDebug( PdbfilehdrReadOnly pdbfilehdr = pfmp->Pdbfilehdr() );
@@ -11072,9 +11063,7 @@ ERR LOG::ErrLGRIRedoExtendDB( const LREXTENDDB * const plrdbextension )
     //  that may have been initiated after the physical resizing of the file and the stamping of lgposLastResize to
     //  the header, but before the logical file size is updated post-OE operation. In that case, not replaying a
     //  matching lgposLastResize would leave the file with the smaller (logical) size captured by backup-start.
-    if ( fMaySkipOlderResize &&
-         fLgposLastResizeSet &&
-         ( icmpLgposLastVsCurrent > 0 ) )
+    if ( fLgposLastResizeSet && ( icmpLgposLastVsCurrent > 0 ) )
     {
         OSTraceFMP( ifmp, JET_tracetagSpaceManagement,
             OSFormat( "%hs: Skipping ExtendDB because we're replaying the initial required range and we haven't reached the last resize yet.", __FUNCTION__ ) );

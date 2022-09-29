@@ -1286,9 +1286,8 @@ ERR ErrIOResizeUpdateDbHdrLgposLast( const IFMP ifmp, const LGPOS& lgposLastResi
         }
         else if ( icmpLgposLastVsCurrent < 0 )
         {
-            Assert( !pfmp->FShrinkDatabaseEofOnAttach() &&
-                    ( PinstFromIfmp( ifmp )->m_plog->FRecoveringMode() == fRecoveringRedo ) );
-
+            // we don't expect to ever go back under normal resize conditions.
+            Assert( fFalse );
         }
     }
 
