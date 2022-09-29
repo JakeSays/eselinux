@@ -13,11 +13,11 @@ const INT rankThrottleContexts = 0;
 const INT rankThrottleContext = 0;
 const INT rankFileFilterReferences = 0;
 const INT rankCachedFileHash = 0;
-const INT rankCacheThreadLocalStorage = 0;
 const INT rankClusterReferenceHash = 0;
 const INT rankClusterWrites = 0;
 const INT rankSlabWrites = 0;
 const INT rankSlabWriteBackHash = 0;
+const INT rankCacheThreadLocalStorage = 1;
 const INT rankSlabHash = 1;
 const INT rankCachedBlockWriteCounts = 0;
 const INT rankCacheRepository = 0;
@@ -341,7 +341,7 @@ class TPool
         {
             void* pv = NULL;
 
-            if ( s_state.m_il.PrevMost() )
+            if ( s_state.FInit() && s_state.m_il.PrevMost() )
             {
                 s_state.m_crit.Enter();
 
@@ -391,6 +391,12 @@ class TPool
             if ( ppv )
             {
                 *ppv = NULL;
+            }
+
+            if ( !s_state.FInit() )
+            {
+                Free_( pv );
+                return;
             }
 
             if ( pv && cb >= sizeof( CHeader ) )
@@ -486,14 +492,18 @@ class TPool
             public:
 
                 CState()
-                    :   m_crit( CLockBasicInfo( CSyncBasicInfo( "TPool<T, fHeap, dtickMin>::CState::m_crit" ), rankPool, 0 ) )
+                    :   m_fInit( fTrue ),
+                        m_crit( CLockBasicInfo( CSyncBasicInfo( "TPool<T, fHeap, dtickMin>::CState::m_crit" ), rankPool, 0 ) )
                 {
                 }
 
                 ~CState()
                 {
+                    m_fInit = fFalse;
                     Release( m_il );
                 }
+
+                BOOL FInit() const { return m_fInit; }
 
                 static void Release( CInvasiveList<CHeader, CHeader::OffsetOfILE>& il )
                 {
@@ -506,6 +516,7 @@ class TPool
                     }
                 }
 
+                BOOL                                                            m_fInit;
                 CCriticalSection                                                m_crit;
                 typename CCountedInvasiveList<CHeader, CHeader::OffsetOfILE>    m_il;
         };

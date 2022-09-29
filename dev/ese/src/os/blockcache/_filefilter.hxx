@@ -819,6 +819,11 @@ class TFileFilter  //  ff
                     }
                 }
 
+                static void Cleanup()
+                {
+                    CRequest::Cleanup();
+                }
+
             protected:
 
                 ~CThreadLocalStorage()
@@ -827,6 +832,9 @@ class TFileFilter  //  ff
                 }
 
             private:
+
+#pragma push_macro( "new" )
+#undef new
 
                 class CRequest
                 {
@@ -844,6 +852,19 @@ class TFileFilter  //  ff
                                 m_offsets( offsets )
                         {
                             m_ilRequestsByIO.InsertAsPrevMost( this );
+                        }
+
+                        using CPool = TPool<CRequest>;
+
+                        void* operator new( _In_ const size_t cb )
+                        {
+                            return CPool::PvAllocate();
+                        }
+
+                        void operator delete( _In_opt_ void* const pv )
+                        {
+                            void* pvT = pv;
+                            CPool::Free( &pvT );
                         }
 
                         VolumeId Volumeid() const { return m_volumeid; }
@@ -867,6 +888,11 @@ class TFileFilter  //  ff
 
                         CCountedInvasiveList<CRequest, CRequest::OffsetOfRequestsByIO>& IlRequestsByIO() { return m_ilRequestsByIO; }
 
+                        static void Cleanup()
+                        {
+                            CPool::Cleanup();
+                        }
+
                     private:
 
                         const VolumeId                                                          m_volumeid;
@@ -878,6 +904,8 @@ class TFileFilter  //  ff
                         CCountedInvasiveList<CRequest, OffsetOfRequestsByIO>                    m_ilRequestsByIO;
                         typename CCountedInvasiveList<CRequest, OffsetOfRequestsByIO>::CElement m_ileRequestsByIO;
                 };
+
+#pragma pop_macro( "new" )
 
             private:
 
@@ -2400,6 +2428,7 @@ TFileFilter<I>::~TFileFilter()
 template<class I>
 void TFileFilter<I>::Cleanup()
 {
+    CThreadLocalStorage::Cleanup();
     CIOComplete::Cleanup();
     CThreadLocalStorageRepository::Cleanup();
     CThrottleContextRepository::Cleanup();
