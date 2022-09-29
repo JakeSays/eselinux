@@ -10350,6 +10350,7 @@ ERR ErrCATRenameColumn(
 //  ================================================================
 {
     ERR             err                 = JET_errSuccess;
+    BOOL            fRollback           = fFalse;
     const INT       cbSzNameNew         = (ULONG)strlen( szNameNew ) + 1;
     Assert( cbSzNameNew > 1 );
 
@@ -10365,7 +10366,8 @@ ERR ErrCATRenameColumn(
     BOOL            fPrimaryIndexPlaceholder    = fFalse;
 
     Assert( 0 == ppib->Level() );
-    CallR( ErrDIRBeginTransaction( ppib, 34533, NO_GRBIT ) );
+    Call( ErrDIRBeginTransaction( ppib, 34533, NO_GRBIT ) );
+    fRollback = fTrue;
 
     objidTable  = pfcbTable->ObjidFDP();
 
@@ -10388,13 +10390,18 @@ ERR ErrCATRenameColumn(
         Call( ErrERRCheck( JET_errColumnNotFound ) );
     }
 
+    if ( FFIELDVersioned( pfield->ffield ) )
+    {
+        Call( ErrERRCheck( JET_errIllegalOperation ) );
+    }
+
     pfcbTable->EnterDDL();
 
     //  put the new column name in the mempool
     //  do this before getting the FIELD in case we re-arrange the mempool
 
     err = ptdbTable->MemPool().ErrAddEntry( (BYTE *)szNameNew, cbSzNameNew, &itagColumnNameNew );
-    if( err < 0 )
+    if ( err < 0 )
     {
         pfcbTable->LeaveDDL();
         Call( err );
@@ -10460,6 +10467,7 @@ ERR ErrCATRenameColumn(
     //  once the commit succeeds, no errors can be generated
 
     Call( ErrDIRCommitTransaction( ppib, NO_GRBIT ) );
+    fRollback = fFalse;
 
     pfcbTable->EnterDML();
 
@@ -10496,14 +10504,14 @@ ERR ErrCATRenameColumn(
 
 HandleError:
 
-    if( 0 != itagColumnNameNew )
+    if ( 0 != itagColumnNameNew )
     {
         pfcbTable->EnterDDL();
         ptdbTable->MemPool().DeleteEntry( itagColumnNameNew );
         pfcbTable->LeaveDDL();
     }
 
-    if( err < 0 )
+    if ( fRollback )
     {
         CallSx( ErrDIRRollback( ppib ), JET_errRollbackError );
     }
