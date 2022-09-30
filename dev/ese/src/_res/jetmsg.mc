@@ -2513,11 +2513,15 @@ Pages shelved: %24 page(s).%n
 Pages unleaked: %25 page(s).%n
 Return code: %17%n
 Stop reason: %18%n
+Small-space trees converted: %27 tree(s).%n
+Root pages moved (regular, space): %28 page(s), %29 page(s).%n
+Strictly-internal pages moved (regular, space): %30 page(s), %31 page(s).%n
+Strictly-leaf pages moved (regular, space): %32 page(s), %33 page(s).%n
 Total time: %5 minute(s) and %6 second(s).%n
 Pct. time in extent maintenance: %19%%%n
 Pct. time in file truncation: %20%%%n
 Pct. time in page categorization: %21%%%n
-Pct. time in data move: %22%%%n
+Pct. time in page processing: %22%% (%26%% in page moves)%n
 Pct. remaining time: %23%%%n
 .
 
@@ -2534,11 +2538,15 @@ Pages shelved: %24 page(s).%n
 Pages unleaked: %25 page(s).%n
 Error code: %17%n
 Stop reason: %18%n
+Small-space trees converted: %27 tree(s).%n
+Root pages moved (regular, space): %28 page(s), %29 page(s).%n
+Strictly-internal pages moved (regular, space): %30 page(s), %31 page(s).%n
+Strictly-leaf pages moved (regular, space): %32 page(s), %33 page(s).%n
 Total time: %5 minute(s) and %6 second(s).%n
 Pct. time in extent maintenance: %19%%%n
 Pct. time in file truncation: %20%%%n
 Pct. time in page categorization: %21%%%n
-Pct. time in data move: %22%%%n
+Pct. time in page processing: %22%% (%26%% in page moves)%n
 Pct. remaining time: %23%%%n
 .
 

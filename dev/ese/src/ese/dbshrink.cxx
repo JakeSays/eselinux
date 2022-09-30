@@ -36,16 +36,33 @@ VOID SHKIShrinkEofTracingEnd( _Out_ CPRINTF** ppcprintfShrinkTraceRaw )
 // Top-level shrink functions.
 //
 
+typedef struct ShrinkExtMoveStats : public CZeroInit
+{
+    // .ctor
+    ShrinkExtMoveStats() : CZeroInit( sizeof( ShrinkExtMoveStats ) ) {}
+
+    // Data.
+    CPG cpgMoved;
+    CPG cpgShelved;
+    CPG cpgUnleaked;
+    CPG cpgRootMoved;
+    CPG cpgInternalMoved;
+    CPG cpgLeafMoved;
+    CPG cpgRootSpaceMoved;
+    CPG cpgInternalSpaceMoved;
+    CPG cpgLeafSpaceMoved;
+    ULONG cSmallSpaceTreesConverted;
+    HRT dhrtPageCategorization;
+    HRT dhrtPageProcessing;
+    HRT dhrtPageMoves;
+} ShrinkExtMoveStats;
+
 LOCAL ERR ErrSHKIMoveLastExtent(
     _In_ PIB* ppib,
     _In_ const IFMP ifmp,
     _In_ const HRT hrtStarted,
     _In_ CPRINTF* const pcprintfShrinkTraceRaw,
-    _Inout_ CPG* const pcpgMoved,
-    _Inout_ CPG* const pcpgShelved,
-    _Inout_ CPG* const pcpgUnleaked,
-    _Inout_ HRT* const pdhrtPageCategorization,
-    _Inout_ HRT* const pdhrtDataMove,
+    _Inout_ ShrinkExtMoveStats* const psems,
     _Out_ ShrinkDoneReason* const psdr,
     _Out_ PGNO* const ppgnoLastProcessed,
     _Out_ PGNO* const pgnoFirstFromLastExtentMoved,
@@ -94,13 +111,9 @@ LOCAL ERR ErrSHKIMoveLastExtent(
     SpaceCatCtx* pSpCatCtx = NULL;
     BFLatch bfl;
     BOOL fPageLatched = fFalse;
-    BOOL fPageCategorization = fFalse;
-    BOOL fDataMove = fFalse;
-    HRT hrtPageCategorizationStart = 0;
-    HRT hrtDataMoveStart = 0;
-    CPG cpgMoved = 0;
-    CPG cpgShelved = 0;
-    CPG cpgUnleaked = 0;
+    BOOL fPageCategorization = fFalse, fPageProcessing = fFalse, fPageMove = fFalse;
+    HRT hrtPageCategorizationStart = 0, hrtPageProcessingStart = 0, hrtPageMoveStart = 0;
+    CPG cpgShelved = 0, cpgUnleaked = 0;
 
     PIBTraceContextScope tcScope = ppib->InitTraceContextScope();
     tcScope->iorReason.SetIort( iortDbShrink );
@@ -160,10 +173,16 @@ LOCAL ERR ErrSHKIMoveLastExtent(
     {
         while ( pgnoCurrent <= pgnoLast )
         {
-            if ( fDataMove )
+            if ( fPageProcessing )
             {
-                *pdhrtDataMove += DhrtHRTElapsedFromHrtStart( hrtDataMoveStart );
-                fDataMove = fFalse;
+                psems->dhrtPageProcessing += DhrtHRTElapsedFromHrtStart( hrtPageProcessingStart );
+                fPageProcessing = fFalse;
+            }
+
+            if ( fPageMove )
+            {
+                psems->dhrtPageMoves += DhrtHRTElapsedFromHrtStart( hrtPageMoveStart );
+                fPageMove = fFalse;
             }
 
             // Resume to normal pass type if we're past the proper page or if
@@ -252,7 +271,7 @@ LOCAL ERR ErrSHKIMoveLastExtent(
                     &pSpCatCtx ) );
             Assert( !FSPSpaceCatUnknown( spcatfCurrent ) ); // We should not get this here.
             Assert( !FSPSpaceCatNotOwnedEof( spcatfCurrent ) ); // We should not get this here because we're only processing known-owned pages.
-            *pdhrtPageCategorization += DhrtHRTElapsedFromHrtStart( hrtPageCategorizationStart );
+            psems->dhrtPageCategorization += DhrtHRTElapsedFromHrtStart( hrtPageCategorizationStart );
             fPageCategorization = fFalse;
 
             // It is not possible to handle these. The database is now effectively unshrinkable.
@@ -298,8 +317,8 @@ LOCAL ERR ErrSHKIMoveLastExtent(
             *ppgnoLastProcessed = pgnoCurrent;
             *pspcatfLastProcessed = spcatfCurrent;
 
-            fDataMove = fTrue;
-            hrtDataMoveStart = HrtHRTCount();
+            fPageProcessing = fTrue;
+            hrtPageProcessingStart = HrtHRTCount();
 
             // Indeterminate and leaked pages share some common handling.
             if ( FSPSpaceCatIndeterminate( spcatfCurrent ) || FSPSpaceCatLeaked( spcatfCurrent ) )
@@ -630,6 +649,7 @@ LOCAL ERR ErrSHKIMoveLastExtent(
                 }
 
                 Call( ErrSPBurstSpaceTrees( pSpCatCtx->pfucb ) );
+                psems->cSmallSpaceTreesConverted++;
 
                 // Next iteration will see the same page as large space and move it appropriately.
                 fMovedPage = fTrue;
@@ -688,6 +708,9 @@ LOCAL ERR ErrSHKIMoveLastExtent(
 
                 if ( pfmp->FEfvSupported( JET_efvRootPageMove ) )
                 {
+                    fPageMove = fTrue;
+                    hrtPageMoveStart = HrtHRTCount();
+
                     // Note that we currently only support moving all roots of a tree (root itself, OE and AE root)
                     // at the same time. So depending on what kind of root we are processing, we need to pass the
                     // actual root of the tree.
@@ -701,7 +724,9 @@ LOCAL ERR ErrSHKIMoveLastExtent(
                     fMovedPage = fTrue;
                     (*pcprintfShrinkTraceRaw)( "ShrinkMoveRoot[%I32u:%I32u:%I32u:%d]\r\n", objidCurrent, pgnoCurrent, pgnoFDP, (int)spcatfCurrent );
 
-                    cpgMoved += 3;  // FDP + OE + AE.
+                    psems->cpgMoved += 3;  // FDP + OE + AE.
+                    psems->cpgRootMoved++;
+                    psems->cpgRootSpaceMoved += 2;
                     continue;
                 }
                 else
@@ -715,6 +740,9 @@ LOCAL ERR ErrSHKIMoveLastExtent(
             if ( FSPSpaceCatStrictlyInternal( spcatfCurrent ) || FSPSpaceCatStrictlyLeaf( spcatfCurrent ) )
             {
                 Assert( !FSPSpaceCatSmallSpace( spcatfCurrent ) );
+
+                fPageMove = fTrue;
+                hrtPageMoveStart = HrtHRTCount();
 
                 const BOOL fSpacePage = FSPSpaceCatAnySpaceTree( spcatfCurrent );
 
@@ -750,7 +778,29 @@ LOCAL ERR ErrSHKIMoveLastExtent(
                 fMovedPage = fTrue;
                 (*pcprintfShrinkTraceRaw)( "ShrinkMove[%I32u:%I32u:%d]\r\n", objidCurrent, pgnoCurrent, (int)spcatfCurrent );
 
-                cpgMoved++;
+                psems->cpgMoved++;
+                if ( FSPSpaceCatStrictlyLeaf( spcatfCurrent ) )
+                {
+                    if ( fSpacePage )
+                    {
+                        psems->cpgLeafSpaceMoved++;
+                    }
+                    else
+                    {
+                        psems->cpgLeafMoved++;
+                    }
+                }
+                else
+                {
+                    if ( fSpacePage )
+                    {
+                        psems->cpgInternalSpaceMoved++;
+                    }
+                    else
+                    {
+                        psems->cpgInternalMoved++;
+                    }
+                }
                 continue;
             }
 
@@ -762,10 +812,16 @@ LOCAL ERR ErrSHKIMoveLastExtent(
             goto HandleError;
         }  // end while ( pgnoCurrent <= pgnoLast )
 
-        if ( fDataMove )
+        if ( fPageProcessing )
         {
-            *pdhrtDataMove += DhrtHRTElapsedFromHrtStart( hrtDataMoveStart );
-            fDataMove = fFalse;
+            psems->dhrtPageProcessing += DhrtHRTElapsedFromHrtStart( hrtPageProcessingStart );
+            fPageProcessing = fFalse;
+        }
+
+        if ( fPageMove )
+        {
+            psems->dhrtPageMoves += DhrtHRTElapsedFromHrtStart( hrtPageMoveStart );
+            fPageMove = fFalse;
         }
 
         // If we made all the way with a lookup pending, go back and re-evaluate.
@@ -792,18 +848,25 @@ LOCAL ERR ErrSHKIMoveLastExtent(
     }  // end while ( fTrue )
 
 HandleError:
-    Assert( !( fPageCategorization && fDataMove ) );
+    Assert( !( fPageMove && !fPageProcessing ) );
+    Assert( !( fPageCategorization && fPageProcessing ) );
 
     if ( fPageCategorization )
     {
-        *pdhrtPageCategorization += DhrtHRTElapsedFromHrtStart( hrtPageCategorizationStart );
+        psems->dhrtPageCategorization += DhrtHRTElapsedFromHrtStart( hrtPageCategorizationStart );
         fPageCategorization = fFalse;
     }
 
-    if ( fDataMove )
+    if ( fPageProcessing )
     {
-        *pdhrtDataMove += DhrtHRTElapsedFromHrtStart( hrtDataMoveStart );
-        fDataMove = fFalse;
+        psems->dhrtPageProcessing += DhrtHRTElapsedFromHrtStart( hrtPageProcessingStart );
+        fPageProcessing = fFalse;
+    }
+
+    if ( fPageMove )
+    {
+        psems->dhrtPageMoves += DhrtHRTElapsedFromHrtStart( hrtPageMoveStart );
+        fPageMove = fFalse;
     }
 
     if ( fPageLatched )
@@ -839,9 +902,8 @@ HandleError:
         AssertTrack( cpgUnleaked <= cpgLastOE, "ShrinkMoveTooManyPagesUnleaked" );
     }
 
-    *pcpgMoved += cpgMoved;
-    *pcpgShelved += cpgShelved;
-    *pcpgUnleaked += cpgUnleaked;
+    psems->cpgShelved += cpgShelved;
+    psems->cpgUnleaked += cpgUnleaked;
 
     return err;
 }
@@ -867,15 +929,12 @@ ERR ErrSHKShrinkDbFromEof(
     QWORD cbSizeOwnedFinal = 0;
     CPRINTF* pcprintfShrinkTraceRaw = NULL;
     const HRT hrtStarted = HrtHRTCount();
-    CPG cpgMoved = 0, cpgShelved = 0, cpgUnleaked = 0;
+    ShrinkExtMoveStats sems;
     ShrinkDoneReason sdr = sdrNone;
     PGNO pgnoFirstFromLastExtentShrunkPrev = pgnoNull;
     PGNO pgnoLastProcessed = pgnoNull;
     SpaceCategoryFlags spcatfLastProcessed = spcatfNone;
-    HRT dhrtExtMaint = 0;
-    HRT dhrtFileTruncation = 0;
-    HRT dhrtPageCategorization = 0;
-    HRT dhrtDataMove = 0;
+    HRT dhrtExtMaint = 0, dhrtFileTruncation = 0;
     BOOL fDbMayHaveChanged = fFalse;
 
     Assert( !pfmp->FIsTempDB() );
@@ -1014,11 +1073,7 @@ ERR ErrSHKShrinkDbFromEof(
                 ifmp,
                 hrtStarted,
                 pcprintfShrinkTraceRaw,
-                &cpgMoved,
-                &cpgShelved,
-                &cpgUnleaked,
-                &dhrtPageCategorization,
-                &dhrtDataMove,
+                &sems,
                 &sdr,
                 &pgnoLastProcessed,
                 &pgnoFirstFromLastExtentMoved,
@@ -1070,9 +1125,17 @@ DoneWithDataMove:
 
 HandleError:
 #ifdef DEBUG
-    Assert( cpgMoved >= 0 );
-    Assert( cpgShelved >= 0 );
-    Assert( cpgUnleaked >= 0 );
+    Assert( sems.cpgMoved >= 0 );
+    Assert( sems.cpgRootMoved >= 0 );
+    Assert( sems.cpgRootSpaceMoved >= 0 );
+    Assert( sems.cpgInternalMoved >= 0 );
+    Assert( sems.cpgInternalSpaceMoved >= 0 );
+    Assert( sems.cpgLeafMoved >= 0 );
+    Assert( sems.cpgLeafSpaceMoved >= 0 );
+    Assert( sems.cpgMoved == ( sems.cpgRootMoved + sems.cpgRootSpaceMoved + sems.cpgInternalMoved + sems.cpgInternalSpaceMoved + sems.cpgLeafMoved + sems.cpgLeafSpaceMoved ) );
+    Assert( sems.cpgShelved >= 0 );
+    Assert( sems.cpgUnleaked >= 0 );
+    Assert( sems.cSmallSpaceTreesConverted >= 0 );
     Assert( err != errSPNoSpaceBelowShrinkTarget );
     if ( err == JET_wrnShrinkNotPossible )
     {
@@ -1150,9 +1213,10 @@ HandleError:
         const double dblSecElapsed = dblSecTotalElapsed - (double)dwMinElapsed * 60.0;
         dhrtExtMaint = min( dhrtExtMaint, dhrtElapsed );
         dhrtFileTruncation = min( dhrtFileTruncation, dhrtElapsed );
-        dhrtPageCategorization = min( dhrtPageCategorization, dhrtElapsed );
-        dhrtDataMove = min( dhrtDataMove, dhrtElapsed );
-        HRT dhrtRemaining = dhrtElapsed - ( dhrtExtMaint + dhrtFileTruncation + dhrtPageCategorization + dhrtDataMove );
+        sems.dhrtPageCategorization = min( sems.dhrtPageCategorization, dhrtElapsed );
+        sems.dhrtPageProcessing = min( sems.dhrtPageProcessing, dhrtElapsed );
+        sems.dhrtPageMoves = min( sems.dhrtPageMoves, dhrtElapsed );
+        HRT dhrtRemaining = dhrtElapsed - ( dhrtExtMaint + dhrtFileTruncation + sems.dhrtPageCategorization + sems.dhrtPageProcessing );
         dhrtRemaining = max( dhrtRemaining, 0 );
         const WCHAR* rgwsz[] =
         {
@@ -1162,16 +1226,21 @@ HandleError:
             OSFormatW( L"%I64u", cbSizeFileFinal ), OSFormatW( L"%d", pfmp->CpgOfCb( cbSizeFileFinal ) ),
             OSFormatW( L"%I64u", cbSizeOwnedInitial ), OSFormatW( L"%d", pfmp->CpgOfCb( cbSizeOwnedInitial ) ),
             OSFormatW( L"%I64u", cbSizeOwnedFinal ), OSFormatW( L"%d", pfmp->CpgOfCb( cbSizeOwnedFinal ) ),
-            OSFormatW( L"%I64u", pfmp->CbOfCpg( cpgMoved ) ), OSFormatW( L"%d", cpgMoved ),
+            OSFormatW( L"%I64u", pfmp->CbOfCpg( sems.cpgMoved ) ), OSFormatW( L"%d", sems.cpgMoved ),
             OSFormatW( L"%d", err ),
             OSFormatW( L"%I32u:%d:0x%08I32x", pgnoLastProcessed, (int)sdr, (DWORD)spcatfLastProcessed ),
             OSFormatW( L"%.2f", ( 100.0 * (double)dhrtExtMaint ) / (double)dhrtElapsed ),
             OSFormatW( L"%.2f", ( 100.0 * (double)dhrtFileTruncation ) / (double)dhrtElapsed ),
-            OSFormatW( L"%.2f", ( 100.0 * (double)dhrtPageCategorization ) / (double)dhrtElapsed ),
-            OSFormatW( L"%.2f", ( 100.0 * (double)dhrtDataMove ) / (double)dhrtElapsed ),
+            OSFormatW( L"%.2f", ( 100.0 * (double)sems.dhrtPageCategorization ) / (double)dhrtElapsed ),
+            OSFormatW( L"%.2f", ( 100.0 * (double)sems.dhrtPageProcessing ) / (double)dhrtElapsed ),
             OSFormatW( L"%.2f", ( 100.0 * (double)dhrtRemaining ) / (double)dhrtElapsed ),
-            OSFormatW( L"%d", cpgShelved ),
-            OSFormatW( L"%d", cpgUnleaked )
+            OSFormatW( L"%d", sems.cpgShelved ),
+            OSFormatW( L"%d", sems.cpgUnleaked ),
+            OSFormatW( L"%.2f", ( 100.0 * (double)sems.dhrtPageMoves ) / (double)dhrtElapsed ),
+            OSFormatW( L"%lu", sems.cSmallSpaceTreesConverted ),
+            OSFormatW( L"%d", sems.cpgRootMoved ), OSFormatW( L"%d", sems.cpgRootSpaceMoved ),
+            OSFormatW( L"%d", sems.cpgInternalMoved ), OSFormatW( L"%d", sems.cpgInternalSpaceMoved ),
+            OSFormatW( L"%d", sems.cpgLeafMoved ), OSFormatW( L"%d", sems.cpgLeafSpaceMoved )
         };
         UtilReportEvent(
             ( err < JET_errSuccess ) ? eventError : eventInformation,
