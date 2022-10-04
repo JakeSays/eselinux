@@ -5307,7 +5307,7 @@ LOCAL ERR ErrDBUTLIEstimateRootSpaceLeak( PIB* const ppib, const IFMP ifmp )
         }
         else
         {
-            if ( ( err == JET_errRecordNotFound ) || ( err == JET_errNotInitialized ) )
+            if ( ( err == JET_errRecordNotFound ) || ( err == JET_errNotInitialized ) || ( err == JET_errRecordDeleted ) )
             {
                 err = JET_errSuccess;
             }
@@ -5343,8 +5343,16 @@ LOCAL ERR ErrDBUTLIEstimateRootSpaceLeak( PIB* const ppib, const IFMP ifmp )
                 {
                     // We are probably racing with table deletion.
                     FCBStateFlags fcbsf = fcbsfNone;
-                    const BOOL fFoundFcb = ( FCB::PfcbFCBGet( ifmp, pgnoFDPLast, &fcbsf, fFalse /* fIncrementRefCount */, fTrue /* fInitForRecovery */ ) != pfcbNil );
-                    const BOOL fDeletePending = fFoundFcb && ( fcbsf & fcbsfDeletePending );
+                    OBJID objidFcb = objidNil;
+                    const BOOL fFoundFcb = ( FCB::PfcbFCBGet(
+                                                ifmp,
+                                                pgnoFDPLast,
+                                                &fcbsf,
+                                                fFalse,  // fIncrementRefCount
+                                                fTrue,   // fInitForRecovery
+                                                &objidFcb ) != pfcbNil ) &&
+                                            ( objidFcb == objidLast );
+                    const BOOL fDeletePending = fFoundFcb && ( ( fcbsf & fcbsfDeletePending ) != 0 );
 
                     if ( fFoundFcb )
                     {
