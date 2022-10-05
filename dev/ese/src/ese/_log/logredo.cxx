@@ -2277,13 +2277,23 @@ LOCAL ERR ErrLGRIClearRedoMapDbtimeRevert( PIB* ppib, const LR* const plr, const
         {
             const LRMERGE_* const plrmerge = (LRMERGE_*)plr;
 
-            // Merge is always done inside a Macro
-            Assert( fMacroGoing );
-
             // Add it to the list of pages freed, if empty.
             if ( plrmerge->FEmptyPage() )
             {
-                CallR( ppib->ErrInsertPgnoFreed( dbtime, ifmp, plrmerge->le_pgno ) );
+                // Merge is always done inside a Macro
+                // If there is no macro for given dbtime, then macro begin must have been outside the checkpoint.
+                // We should be fine skipping reconciling such a page from dbtimerevert redomap as the macro would have had exclusive latch during merge
+                // and no other update on the page should be possible concurrently and shouldn't have been added to redomap.
+                //
+                if ( !fMacroGoing )
+                {
+                    Assert( !pLogRedoMapToClear || !pLogRedoMapToClear->FPgnoSet( plrmerge->le_pgno ) );
+                    return JET_errSuccess;
+                }
+                else
+                {
+                    CallR( ppib->ErrInsertPgnoFreed( dbtime, ifmp, plrmerge->le_pgno ) );
+                }
             }
             break;
         }
