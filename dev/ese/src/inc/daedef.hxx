@@ -3260,12 +3260,12 @@ INLINE ERR SigToSz( const SIGNATURE * const psig, __out_bcount(cbSigBuffer) PSTR
     LOGTIME tm = psig->logtimeCreate;
     const char * szSigFormat = "Create time:%02d/%02d/%04d %02d:%02d:%02d.%3.3d Rand:%lu Computer:%s";
 
-    ErrOSStrCbFormatA( szSigBuffer, cbSigBuffer, szSigFormat,
-                        (SHORT) tm.bMonth, (SHORT) tm.bDay, (SHORT) tm.bYear + 1900,
-                        (SHORT) tm.bHours, (SHORT) tm.bMinutes, (SHORT) tm.bSeconds,
-                        (SHORT) tm.Milliseconds(),
-                        ULONG(psig->le_ulRandom),
-                        psig->szComputerName );
+    OSStrCbFormatA( szSigBuffer, cbSigBuffer, szSigFormat,
+                    (SHORT) tm.bMonth, (SHORT) tm.bDay, (SHORT) tm.bYear + 1900,
+                    (SHORT) tm.bHours, (SHORT) tm.bMinutes, (SHORT) tm.bSeconds,
+                    (SHORT) tm.Milliseconds(),
+                    ULONG(psig->le_ulRandom),
+                    psig->szComputerName );
     return(JET_errSuccess);
 }
 
@@ -3968,8 +3968,8 @@ public:
         m_state( stateStart ),
         m_thread( 0 ),
         m_errFreeze ( JET_errSuccess ),
-        m_asigSnapshotThread( CSyncBasicInfo( _T( "asigSnapshotThread" ) ) ),
-        m_asigSnapshotStarted( CSyncBasicInfo( _T( "asigSnapshotStarted" ) ) ),
+        m_asigSnapshotThread( CSyncBasicInfo( "asigSnapshotThread" ) ),
+        m_asigSnapshotStarted( CSyncBasicInfo( "asigSnapshotStarted" ) ),
         m_fFreezeAllInstances ( fFalse ),
         m_ipinstCurrent ( 0 ),
         m_fFlags ( 0 )
@@ -3995,8 +3995,8 @@ private:
         m_state( stateStart ),
         m_thread( 0 ),
         m_errFreeze ( JET_errSuccess ),
-        m_asigSnapshotThread( CSyncBasicInfo( _T( "asigSnapshotThread" ) ) ),
-        m_asigSnapshotStarted( CSyncBasicInfo( _T( "asigSnapshotStarted" ) ) ),
+        m_asigSnapshotThread( CSyncBasicInfo( "asigSnapshotThread" ) ),
+        m_asigSnapshotStarted( CSyncBasicInfo( "asigSnapshotStarted" ) ),
         m_fFreezeAllInstances ( fFalse ),
         m_ipinstCurrent ( 0 ),
         m_fFlags ( 0 )

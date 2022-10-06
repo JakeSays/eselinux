@@ -6,7 +6,6 @@
 
 
 
-
 //  Only Init requires the global cbPage, subsequent this point the buffer manager is page independent, and
 //  supports multiple page sizes concurrently.
 //
@@ -9769,7 +9768,7 @@ VOID CBFIssueList::NullifyDiskTiltFake( const IFMP ifmp )
 }
 
 
-CCriticalSection            CBFIssueList::s_critSync( CLockBasicInfo( CSyncBasicInfo( _T( "CBFIssueList::s_critSync" ) ), rankBFIssueListSync, 0 ) );
+CCriticalSection            CBFIssueList::s_critSync( CLockBasicInfo( CSyncBasicInfo( "CBFIssueList::s_critSync" ), rankBFIssueListSync, 0 ) );
 CMeteredSection             CBFIssueList::s_msSync;
 
 
@@ -9794,7 +9793,7 @@ HMEMORY_NOTIFICATION g_pMemoryNotification = NULL;
 
     //  Init / Term
 
-LOCAL CBinaryLock g_blBFMaintScheduleCancel( CLockBasicInfo( CSyncBasicInfo( _T( "BFMaint Schedule/Cancel" ) ), rankBFMaintScheduleCancel, 0 ) );
+LOCAL CBinaryLock g_blBFMaintScheduleCancel( CLockBasicInfo( CSyncBasicInfo( "BFMaint Schedule/Cancel" ), rankBFMaintScheduleCancel, 0 ) );
 LOCAL volatile BOOL g_fBFMaintInitialized = fFalse;
 
 ERR ErrBFIMaintInit()
@@ -10166,8 +10165,8 @@ INLINE void BFISynchronicity( void )
 
     //  Avail Pool
 
-CSemaphore      g_semMaintAvailPoolRequestUrgent( CSyncBasicInfo( _T( "g_semMaintAvailPoolRequestUrgent" ) ) );
-CSemaphore      g_semMaintAvailPoolRequest( CSyncBasicInfo( _T( "g_semMaintAvailPoolRequest" ) ) );
+CSemaphore      g_semMaintAvailPoolRequestUrgent( CSyncBasicInfo( "g_semMaintAvailPoolRequestUrgent" ) );
+CSemaphore      g_semMaintAvailPoolRequest( CSyncBasicInfo( "g_semMaintAvailPoolRequest" ) );
 
 LONG_PTR        cbfAvailPoolLow;
 LONG_PTR        cbfAvailPoolHigh;
@@ -10367,7 +10366,7 @@ void BFIMaintAvailPoolITask( void*, void* )
 
     //  Scavenging
 
-CSemaphore g_semMaintScavenge( CSyncBasicInfo( _T( "g_semMaintScavenge" ) ) );
+CSemaphore g_semMaintScavenge( CSyncBasicInfo( "g_semMaintScavenge" ) );
 
 //  We track the last several runs
 
@@ -11816,7 +11815,7 @@ void BFIMaintScavengeTerm( void )
 
     //  Checkpoint Depth
 
-CSemaphore      g_semMaintCheckpointDepthRequest( CSyncBasicInfo( _T( "g_semMaintCheckpointDepthRequest" ) ) );
+CSemaphore      g_semMaintCheckpointDepthRequest( CSyncBasicInfo( "g_semMaintCheckpointDepthRequest" ) );
 
 IFMP            g_ifmpMaintCheckpointDepthStart;
 
@@ -13381,7 +13380,7 @@ ERR ErrBFIMaintCheckpointDepthIFlushPagesByIFMP( const IFMP ifmp, BOOL * const p
 
     //  Checkpoint
 
-CSemaphore      g_semMaintCheckpointRequest( CSyncBasicInfo( _T( "g_semMaintCheckpointRequest" ) ) );
+CSemaphore      g_semMaintCheckpointRequest( CSyncBasicInfo( "g_semMaintCheckpointRequest" ) );
 
 TICK            g_tickMaintCheckpointLast;
 
@@ -13915,9 +13914,9 @@ void BFIMaintHashedLatchesIRedistribute()
 
     //  Cache Size
 
-CSemaphore      g_semMaintCacheStatsRequest( CSyncBasicInfo( _T( "g_semMaintCacheStatsRequest" ) ) );
+CSemaphore      g_semMaintCacheStatsRequest( CSyncBasicInfo( "g_semMaintCacheStatsRequest" ) );
 
-CSemaphore      g_semMaintCacheSize( CSyncBasicInfo( _T( "g_semMaintCacheSize" ) ) );
+CSemaphore      g_semMaintCacheSize( CSyncBasicInfo( "g_semMaintCacheSize" ) );
 LONG            g_cMaintCacheSizePending = 0;
 
 inline ICBPage IcbBFIBufferSize( _In_ const INT cbSize )
@@ -15125,7 +15124,7 @@ TICK DtickBFIMaintCacheSizeDuration()
 
     //  Idle Database
 
-CSemaphore      g_semMaintIdleDatabaseRequest( CSyncBasicInfo( _T( "g_semMaintIdleDatabaseRequest" ) ) );
+CSemaphore      g_semMaintIdleDatabaseRequest( CSyncBasicInfo( "g_semMaintIdleDatabaseRequest" ) );
 
 TICK            g_tickMaintIdleDatabaseLast;
 

@@ -624,7 +624,7 @@ class CPAGE
         struct PGHDR2;
         typedef INT (*PFNVISITNODE)( const CPAGE::PGHDR * const ppghdr, INT itag, DWORD fNodeFlags, const KEYDATAFLAGS * const pkdf, void * pvCtx );
 
-        VOID    DumpAllocMap_   ( _TCHAR * rgchBuf, CPRINTF * pcprintf ) const;
+        VOID    DumpAllocMap_   ( CHAR * rgchBuf, CPRINTF * pcprintf ) const;
         ERR     DumpAllocMap    ( CPRINTF * pcprintf ) const;
         ERR     DumpTags        ( CPRINTF * pcprintf, DWORD_PTR dwOffset = 0 ) const;
         VOID    DumpTag         ( CPRINTF * pcprintf, const INT itag, const DWORD_PTR dwOffset ) const;

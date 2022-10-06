@@ -710,7 +710,7 @@ const char* OSFormat_( __format_string const char* const szFormat, _In_ va_list 
             szRaw[ cchRawMax ]      = 0;
             cchRaw                  = 0;
 
-            if ( S_OK != StringCbVPrintfA( szRaw + cchRaw,
+            if ( JET_errSuccess > ErrOSStrCbVFormatA( szRaw + cchRaw,
                                         ( cchRawMax - cchRaw ) * sizeof( char ),
                                         szFormat,
                                         arglist ) )
@@ -795,7 +795,7 @@ const WCHAR* OSFormatW_( __format_string const WCHAR* const wszFormat, _In_ va_l
             wszRaw[ cchRawMax ]     = 0;
             cchRaw                  = 0;
 
-            if ( S_OK != StringCbVPrintfW( wszRaw + cchRaw,
+            if ( JET_errSuccess > ErrOSStrCbVFormatW( wszRaw + cchRaw,
                                         ( cchRawMax - cchRaw ) * sizeof( WCHAR ),
                                         wszFormat,
                                         arglist ) )

@@ -167,7 +167,7 @@ public:
             critLogBeginTrx( CLockBasicInfo( CSyncBasicInfo( szPIBLogBeginTrx ), rankPIBLogBeginTrx, 0 ) ),
             ptlsApi( NULL ),
             ptlsTrxBeginLast( Ptls() ),
-            asigWaitLogWrite( CSyncBasicInfo( _T( "PIB::asigWaitLogWrite" ) ) ),
+            asigWaitLogWrite( CSyncBasicInfo( "PIB::asigWaitLogWrite" ) ),
             m_level( 0 ),
             m_critCachePriority( CLockBasicInfo( CSyncBasicInfo( szPIBCachePriority ), rankPIBCachePriority, 0 ) ),
             m_pctCachePriority( g_pctCachePriorityUnassigned ),

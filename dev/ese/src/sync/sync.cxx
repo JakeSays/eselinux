@@ -1,24 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-// tchar.h must be above where strsafe.h is includes.
-#pragma prefast(push)
-#pragma prefast(disable:26006, "Dont bother us with tchar, someone else owns that.")
-#pragma prefast(disable:26007, "Dont bother us with tchar, someone else owns that.")
-#pragma prefast(disable:28718, "Dont bother us with tchar, someone else owns that.")
-#pragma prefast(disable:28726, "Dont bother us with tchar, someone else owns that.")
-#include <tchar.h>
-#pragma prefast(pop)
-
 #include "sync.hxx"
-
-#define STRSAFE_NO_DEPRECATE 1
-#pragma prefast(push)
-#pragma prefast(disable:28196, "Do not bother us with strsafe, someone else owns that.")
-#pragma prefast(disable:28205, "Do not bother us with strsafe, someone else owns that.")
-#include <strsafe.h>
-#pragma prefast(pop)
-
 
 //  Random Fault Injection
 
@@ -4262,7 +4245,6 @@ void CKernelSemaphore::Release( const INT cToRelease )
 
 #include<stdarg.h>
 #include<stdio.h>
-#include<tchar.h>
 
 //  ================================================================
 class CPrintF
@@ -4313,7 +4295,7 @@ inline void __cdecl CIPrintF::operator()( const CHAR* szFormat, ... )
     CHAR szT[ 1024 ];
     va_list arg_ptr;
     va_start( arg_ptr, szFormat );
-    StringCbVPrintfA( szT, sizeof(szT), szFormat, arg_ptr );
+    vsprintf_s( szT, sizeof(szT), szFormat, arg_ptr );
     va_end( arg_ptr );
 
     CHAR*   szLast  = szT;
@@ -4444,7 +4426,7 @@ void __cdecl CFPrintF::operator()( const char* szFormat, ... )
 
         va_list arg_ptr;
         va_start( arg_ptr, szFormat );
-        StringCbVPrintfA( szBuf, cchBuf, szFormat, arg_ptr );
+        vsprintf_s( szBuf, cchBuf, szFormat, arg_ptr );
         va_end( arg_ptr );
 
         //  append the string to the file
@@ -4890,7 +4872,7 @@ LOCAL VOID SprintHex(
     {
         if ( 0 != cbAddress )
         {
-            StringCbPrintfA( sz, cbDest-(sz-szDest), "%*.*lx    ", cbAddress, cbAddress, (DWORD)(pb - rgbSrc) + cbStart );
+            sprintf_s( sz, cbDest-(sz-szDest), "%*.*lx    ", cbAddress, cbAddress, (DWORD)(pb - rgbSrc) + cbStart );
             sz += strlen( sz );
         }
         CHAR * szHex    = sz;

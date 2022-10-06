@@ -7,7 +7,6 @@
 
 #include "PageSizeClean.hxx"
 
-
 ///#define BREAK_ON_PREFERRED_BUCKET_LIMIT
 
 #ifdef DEBUG
@@ -174,8 +173,8 @@ VER::VER( INST *pinst )
     :   CZeroInit( sizeof( VER ) ),
         m_pinst( pinst ),
         m_fVERCleanUpWait( 2 ),
-        m_msigRCECleanPerformedRecently( CSyncBasicInfo( _T( "m_msigRCECleanPerformedRecently" ) ) ),
-        m_asigRCECleanDone( CSyncBasicInfo( _T( "m_asigRCECleanDone" ) ) ),
+        m_msigRCECleanPerformedRecently( CSyncBasicInfo( "m_msigRCECleanPerformedRecently" ) ),
+        m_asigRCECleanDone( CSyncBasicInfo( "m_asigRCECleanDone" ) ),
         m_critRCEClean( CLockBasicInfo( CSyncBasicInfo( szRCEClean ), rankRCEClean, 0 ) ),
         m_critBucketGlobal( CLockBasicInfo( CSyncBasicInfo( szBucketGlobal ), rankBucketGlobal, 0 ) ),
 #ifdef VERPERF

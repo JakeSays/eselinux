@@ -446,7 +446,7 @@ UINT CbLGFixedSizeOfRec( const LR * );
 VOID AssertLRSizesConsistent();
 #endif
 
-ERR ErrLrToLogCsvSimple( CWPRINTFFILE * pcwpfCsvOut, LGPOS lgpos, const LR *plr, LOG * plog );
+ERR ErrLrToLogCsvSimple( CPRINTFFILE * pcpfCsvOutW, LGPOS lgpos, const LR *plr, LOG * plog );
 
 BOOL FLGDebugLogRec( LR *plr );
 
@@ -1524,7 +1524,7 @@ public:
                 FLAG32  m_fSummary          :   1;  //  output the IO summary at end of log dumps
             };
         };
-        CWPRINTFFILE* m_pcwpfCsvOut; // non-NULL indicates do CSV output.
+        CPRINTFFILE* m_pcpfCsvOutW; // non-NULL indicates do CSV output.
     }
     LOGDUMP_OP;
 

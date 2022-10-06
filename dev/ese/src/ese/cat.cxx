@@ -16902,7 +16902,7 @@ JETUNITTEST( CATMSysLocales, TestCLocaleNameInfoArrayWillWorkAsRequiredForMSysLo
     li.m_cIndices = 0x2;
     li.m_qwVersion = 0x34;
     li.m_sortID = sortID;
-    StringCchCopyW( li.m_wszLocaleName, _countof( li.m_wszLocaleName ), L"en-us" );
+    OSStrCbCopyW( li.m_wszLocaleName, sizeof( li.m_wszLocaleName ), L"en-us" );
 
     CLocaleNameInfoArray        localesarray;
     CLocaleNameInfoArray::ERR   err;
@@ -16913,7 +16913,7 @@ JETUNITTEST( CATMSysLocales, TestCLocaleNameInfoArrayWillWorkAsRequiredForMSysLo
     err = localesarray.ErrSetEntry( localesarray.Size(), li );
     CHECK( err == CLocaleNameInfoArray::ERR::errSuccess );
 
-    StringCchCopyW( li.m_wszLocaleName, _countof( li.m_wszLocaleName ), L"pt-br" );
+    OSStrCbCopyW( li.m_wszLocaleName, sizeof( li.m_wszLocaleName ), L"pt-br" );
     err = localesarray.ErrSetEntry( localesarray.Size(), li );
     CHECK( err == CLocaleNameInfoArray::ERR::errSuccess );
 
@@ -16921,7 +16921,7 @@ JETUNITTEST( CATMSysLocales, TestCLocaleNameInfoArrayWillWorkAsRequiredForMSysLo
     err = localesarray.ErrSetEntry( localesarray.Size(), li );
     CHECK( err == CLocaleNameInfoArray::ERR::errSuccess );
 
-    StringCchCopyW( li.m_wszLocaleName, _countof( li.m_wszLocaleName ), L"pt-pt" );
+    OSStrCbCopyW( li.m_wszLocaleName, sizeof( li.m_wszLocaleName ), L"pt-pt" );
     err = localesarray.ErrSetEntry( localesarray.Size(), li );
     CHECK( err == CLocaleNameInfoArray::ERR::errSuccess );
 
@@ -16949,25 +16949,25 @@ JETUNITTEST( CATMSysLocales, TestCLocaleNameInfoArrayWillWorkAsRequiredForMSysLo
     //  Search for all LocaleName + version combos we inserted ...
     ULONG i;
 
-    StringCchCopyW( li.m_wszLocaleName, _countof( li.m_wszLocaleName ), L"pt-br" );
+    OSStrCbCopyW( li.m_wszLocaleName, sizeof( li.m_wszLocaleName ), L"pt-br" );
     li.m_qwVersion = 0x34;
 
     i = localesarray.SearchLinear( li, PfnCmpLocaleNameInfo );
     CHECK( i == 1 );
 
-    StringCchCopyW( li.m_wszLocaleName, _countof( li.m_wszLocaleName ), L"pt-br" );
+    OSStrCbCopyW( li.m_wszLocaleName, sizeof( li.m_wszLocaleName ), L"pt-br" );
     li.m_qwVersion = 0x45;
 
     i = localesarray.SearchLinear( li, PfnCmpLocaleNameInfo );
     CHECK( i == 2 );
 
-    StringCchCopyW( li.m_wszLocaleName, _countof( li.m_wszLocaleName ), L"en-us" );
+    OSStrCbCopyW( li.m_wszLocaleName, sizeof( li.m_wszLocaleName ), L"en-us" );
     li.m_qwVersion = 0x34;
 
     i = localesarray.SearchLinear( li, PfnCmpLocaleNameInfo );
     CHECK( i == 0 );
 
-    StringCchCopyW( li.m_wszLocaleName, _countof( li.m_wszLocaleName ), L"pt-pt" );
+    OSStrCbCopyW( li.m_wszLocaleName, sizeof( li.m_wszLocaleName ), L"pt-pt" );
     li.m_qwVersion = 0x45;
 
     i = localesarray.SearchLinear( li, PfnCmpLocaleNameInfo );
@@ -16996,7 +16996,7 @@ JETUNITTEST( CATMSysLocales, TestCLocaleNameInfoArrayWillWorkAsRequiredForMSysLo
     it = localesarray.SearchLinear( li, PfnCmpLocaleNameInfo );
     CHECK( it == localesarray.iEntryNotFound );
 
-    StringCchCopyW( li.m_wszLocaleName, _countof( li.m_wszLocaleName ), L"st-kg" );
+    OSStrCbCopyW( li.m_wszLocaleName, sizeof( li.m_wszLocaleName ), L"st-kg" );
     li.m_qwVersion = 0x34;
 
     it = localesarray.SearchLinear( li, PfnCmpLocaleNameInfo );
@@ -17013,7 +17013,8 @@ INLINE ERR ErrCATIParseLocaleNameInfo(
 {
     PCWSTR wszCurr;
     WCHAR wszSortID[PERSISTED_SORTID_MAX_LENGTH];
-    ULONG cchLocaleName;
+    ULONG cbLocaleName;
+    ERR errT; // Not a return value, local only.
 
     Assert( ( NULL != wszLocaleName ) && ( NULL != pqwSortedVersion ) && ( NULL != psortID ) );
 
@@ -17032,14 +17033,14 @@ INLINE ERR ErrCATIParseLocaleNameInfo(
     {
         // Empty locale name is valid.
         wszCurr++;
-        cchLocaleName = 0;
+        cbLocaleName = 0;
     }
     else
     {
         wszCurr++;
-        cchLocaleName = wcscspn( wszCurr, L"," );
+        cbLocaleName = wcscspn( wszCurr, L"," ) * sizeof(WCHAR);
 
-        if ( ( cchLocaleName == 0 ) || ( cchLocaleName >= NORM_LOCALE_NAME_MAX_LENGTH ) )
+        if ( ( cbLocaleName == 0 ) || ( cbLocaleName >= ( sizeof(WCHAR) * NORM_LOCALE_NAME_MAX_LENGTH ) ) )
         {
             return ErrERRCheck( JET_errDatabaseCorrupted );
         }
@@ -17050,8 +17051,13 @@ INLINE ERR ErrCATIParseLocaleNameInfo(
     Assert( 0 == LOSStrCompareW( wszLocaleEntryKey, wszExpectedLocaleName, LOSStrLengthW( wszExpectedLocaleName ) ) );
 #endif // DEBUG
 
-    StringCchCopyW( wszLocaleName, cchLocaleName + 1, wszCurr );
-    wszLocaleName[cchLocaleName] = L'\0';
+    // Note that we're fibbing about the size of wszLocaleName in order to only
+    // copy a limited number of bytes from wszCurr.  What we need is
+    // ErrOSStrCbCopyNW, where we can specify both the size of the destination
+    // buffer as well as the number of bytes to copy.
+    errT = ErrOSStrCbCopyW( wszLocaleName, cbLocaleName + sizeof( WCHAR ), wszCurr );
+    Assert(  JET_errSuccess == errT || JET_errBufferTooSmall == errT ); 
+    wszLocaleName[ cbLocaleName / sizeof( WCHAR ) ] = L'\0';
 
     //
     //  second, grab the Sort Version out of the key
@@ -17079,17 +17085,19 @@ INLINE ERR ErrCATIParseLocaleNameInfo(
     }
 
     wszCurr++;
-    ULONG cchSortID = wcscspn( wszCurr, L"," );
+    ULONG cbSortID = sizeof( WCHAR ) * wcscspn( wszCurr, L"," );
 
     C_ASSERT( _countof( wszSortID ) == PERSISTED_SORTID_MAX_LENGTH );
-    if ( ( cchSortID == 0 ) || ( cchSortID != PERSISTED_SORTID_MAX_LENGTH - 1 ) )
+    if ( ( cbSortID == 0 ) || ( cbSortID != (sizeof( WCHAR ) * ( PERSISTED_SORTID_MAX_LENGTH - 1 ) ) ) )
     {
         AssertSz( fFalse, "The sort ID was not of the right size.  Should be exactly the size we put in." );
         return ErrERRCheck( JET_errDatabaseCorrupted );
     }
 
-    StringCchCopyW( wszSortID, cchSortID + 1, wszCurr );
-    wszSortID[cchSortID] = L'\0';
+    // Again, fibbing.
+    errT = ErrOSStrCbCopyW( wszSortID, cbSortID + sizeof( WCHAR ), wszCurr );
+    Assert(  JET_errSuccess == errT || JET_errBufferTooSmall == errT ); 
+    wszSortID[ cbSortID / sizeof( WCHAR ) ] = L'\0';
     SortIDWsz( wszSortID, psortID );
 
     //

@@ -10,7 +10,6 @@
 
 #include <winioctl.h>
 
-
 ////////////////////////////////////////
 //  Support Functions
 
@@ -394,8 +393,8 @@ COSFile::COSFile() :
     m_posv( NULL ),
     m_hFile( INVALID_HANDLE_VALUE ),
     m_p_osf( NULL ),
-    m_semChangeFileSize( CSyncBasicInfo( _T( "COSFile::m_semChangeFileSize" ) ) ),
-    m_critDefer( CLockBasicInfo( CSyncBasicInfo( _T( "COSFile::m_critDefer" ) ), 0, 0 ) ),
+    m_semChangeFileSize( CSyncBasicInfo( "COSFile::m_semChangeFileSize" ) ),
+    m_critDefer( CLockBasicInfo( CSyncBasicInfo( "COSFile::m_critDefer" ), 0, 0 ) ),
     m_fmf( fmfNone ),
     m_cioUnflushed( 0 ),
     m_cioFlushing( 0 ),

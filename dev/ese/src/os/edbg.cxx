@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 #include "osstd.hxx"
-
 //  we use LoadLibrary in here to test loading our own DLL for EDBGLoad
 #undef LoadLibraryExW
 
@@ -29,6 +28,11 @@ DEBUG_EXT( name )       VOID name(  const PDEBUG_CLIENT pdebugClient, const INT 
 #pragma pop_macro( "Alloc" )
 
 // Allows easier porting from the older wdbgexts-style extensions.
+HRESULT
+EDBGPrintf(
+    _In_ PCSTR szFormat,
+    ...
+);
 #define dprintf EDBGPrintf
 
 #ifdef DEBUGGER_EXTENSION
@@ -302,13 +306,6 @@ typedef CLRUKResourceUtilityManager<2,DWORD,0,DWORD>    CLRUKResourceUtilityMana
         const PDEBUG_CLIENT pdebugClient,   \
         const INT argc,                     \
         const CHAR * const argv[]  )
-
-HRESULT
-DPrintf(
-    _In_ PCSTR szFormat,
-    ...
-)
-;
 
 LOCAL BOOL FFetchGlobalParamsArray(
     _Deref_out_ CJetParam** prgparam,
@@ -16539,17 +16536,17 @@ LOCAL VOID EDBGDumpNodeInfo( CPRINTF * pcprintf, const CPAGE * const pcpage, con
     {
         if ( FFetchVariable( (BYTE *)kdf.key.prefix.Pv() + dwOffset, &rgbPrefix, kdf.key.prefix.Cb() ) )
         {
-            (*pcprintf)( _T( "Prefix (%d bytes):%c" ), kdf.key.prefix.Cb(), ( kdf.key.prefix.Cb() > 16 ? '\n' : ' ' ) );
+            (*pcprintf)( "Prefix (%d bytes):%c", kdf.key.prefix.Cb(), ( kdf.key.prefix.Cb() > 16 ? '\n' : ' ' ) );
             EDBGDumpRawData( pcprintf, rgbPrefix, kdf.key.prefix.Cb(), fFalse );
         }
         else
         {
-            (*pcprintf)( _T( "Error: Failed fetching node prefix.\n" ) );
+            (*pcprintf)( "Error: Failed fetching node prefix.\n" );
         }
     }
     else
     {
-        (*pcprintf)( _T( "Prefix: <null>\n" ) );
+        (*pcprintf)( "Prefix: <null>\n" );
     }
 
     //  fetch and dump suffix, if any
@@ -16558,17 +16555,17 @@ LOCAL VOID EDBGDumpNodeInfo( CPRINTF * pcprintf, const CPAGE * const pcpage, con
     {
         if ( FFetchVariable( (BYTE *)kdf.key.suffix.Pv() + dwOffset, &rgbSuffix, kdf.key.suffix.Cb() ) )
         {
-            (*pcprintf)( _T( "Suffix (%d bytes):%c" ), kdf.key.suffix.Cb(), ( kdf.key.suffix.Cb() > 16 ? '\n' : ' ' ) );
+            (*pcprintf)( "Suffix (%d bytes):%c", kdf.key.suffix.Cb(), ( kdf.key.suffix.Cb() > 16 ? '\n' : ' ' ) );
             EDBGDumpRawData( pcprintf, rgbSuffix, kdf.key.suffix.Cb(), fFalse );
         }
         else
         {
-            (*pcprintf)( _T( "Error: Failed fetching node suffix.\n" ) );
+            (*pcprintf)( "Error: Failed fetching node suffix.\n" );
         }
     }
     else
     {
-        (*pcprintf)( _T( "Suffix: <null>\n" ) );
+        (*pcprintf)( "Suffix: <null>\n" );
     }
 
     //  only fetch data if not performing key-only dump,
@@ -16580,13 +16577,13 @@ LOCAL VOID EDBGDumpNodeInfo( CPRINTF * pcprintf, const CPAGE * const pcpage, con
         {
             if ( !FFetchVariable( (BYTE *)kdf.data.Pv() + dwOffset, &rgbData, kdf.data.Cb() ) )
             {
-                (*pcprintf)( _T( "Error: Failed fetching node data.\n" ) );
+                (*pcprintf)( "Error: Failed fetching node data.\n" );
                 goto HandleError;
             }
         }
         else
         {
-            (*pcprintf)( _T( "Data: <null>\n" ) );
+            (*pcprintf)( "Data: <null>\n" );
             goto HandleError;
         }
     }
@@ -16599,7 +16596,7 @@ LOCAL VOID EDBGDumpNodeInfo( CPRINTF * pcprintf, const CPAGE * const pcpage, con
         if ( !pcpage->FLeafPage() )
         {
             (*pcprintf)(
-                    _T( "Page Pointer: %d (0x%x)\n" ),
+                    "Page Pointer: %d (0x%x)\n",
                     (PGNO)*((LittleEndian<PGNO>*)rgbData),
                     (PGNO)*((LittleEndian<PGNO>*)rgbData) );
             fDumpRawData = fFalse;
@@ -16613,7 +16610,7 @@ LOCAL VOID EDBGDumpNodeInfo( CPRINTF * pcprintf, const CPAGE * const pcpage, con
             if( ErrSPREPAIRValidateSpaceNode( &kdf, &pgnoLast, &cpgExtent, &wszPoolName ) >= JET_errSuccess )
             {
                 (*pcprintf)(
-                        _T( "Space Data (%d bytes): Pool:%ws, cpg:%d, page range:%d-%d\n" ),
+                        "Space Data (%d bytes): Pool:%ws, cpg:%d, page range:%d-%d\n",
                         kdf.data.Cb(),
                         wszPoolName,
                         cpgExtent,
@@ -16622,19 +16619,19 @@ LOCAL VOID EDBGDumpNodeInfo( CPRINTF * pcprintf, const CPAGE * const pcpage, con
             }
             else
             {
-                (*pcprintf)( _T( "Space Data (%d bytes): <could not parse space node data>\n" ), kdf.data.Cb() );
+                (*pcprintf)( "Space Data (%d bytes): <could not parse space node data>\n", kdf.data.Cb() );
                 fDumpRawData = fTrue;
             }
         }
         else if ( pcpage->FLongValuePage() )
         {
-            (*pcprintf)( _T( "Long-Value Data (%d bytes):\n" ), kdf.data.Cb() );
+            (*pcprintf)( "Long-Value Data (%d bytes):\n", kdf.data.Cb() );
             EDBGDumpRawData( pcprintf, rgbData, kdf.data.Cb(), fTrue );
             fDumpRawData = fFalse;
         }
         else if ( pcpage->FIndexPage() )
         {
-            (*pcprintf)( _T( "Primary Bookmark (%d bytes):%c" ), kdf.data.Cb(), ( kdf.data.Cb() > 16 ? '\n' : ' ' ) );
+            (*pcprintf)( "Primary Bookmark (%d bytes):%c", kdf.data.Cb(), ( kdf.data.Cb() > 16 ? '\n' : ' ' ) );
             EDBGDumpRawData( pcprintf, rgbData, kdf.data.Cb(), fFalse );
             fDumpRawData = fFalse;
         }
@@ -16669,7 +16666,7 @@ LOCAL VOID EDBGDumpNodeInfo( CPRINTF * pcprintf, const CPAGE * const pcpage, con
                 dprintf( "WARNING: Could not retrieve table metadata on pfcb = %p, so will be missing some column data.\n", Pdls()->PfcbCurrentTableDebuggee() );
             }
 
-            (*pcprintf)( _T( "Data Record (%d bytes):\n"), kdf.data.Cb() );
+            (*pcprintf)( "Data Record (%d bytes):\n", kdf.data.Cb() );
 
             // Note: pfcbTable ? pfucbSchemaOnly : NULL is _correct_.  We are just using the pfucbSchemaOnly to 
             // pass the FCB really, as that's what DBUTLDumpRec() expects.
@@ -16683,12 +16680,12 @@ LOCAL VOID EDBGDumpNodeInfo( CPRINTF * pcprintf, const CPAGE * const pcpage, con
     //
     if ( fDumpRawData )
     {
-        (*pcprintf)( _T( "Raw Data (%d bytes):\n"), kdf.data.Cb() );
+        (*pcprintf)( "Raw Data (%d bytes):\n", kdf.data.Cb() );
         EDBGDumpRawData( pcprintf, rgbData, kdf.data.Cb(), fTrue );
     }
 
 HandleError:
-    (*pcprintf)( _T( "\n" ) );
+    (*pcprintf)( "\n" );
     Unfetch( rgbPrefix );
     Unfetch( rgbSuffix );
     Unfetch( rgbData );
@@ -21261,7 +21258,7 @@ HRESULT CALLBACK ese(
         DEBUGGER_LOCAL_STORE::DlsDestroy();
         LocalFree( pv );
     }
-    EXCEPT( fDebugMode ? ExceptionFail( _T( "ESE Debugger Extension" ) ) : efaContinueSearch )
+    EXCEPT( fDebugMode ? ExceptionFail( "ESE Debugger Extension" ) : efaContinueSearch )
     {
         DEBUGGER_LOCAL_STORE::DlsDestroy();
         AssertPREFIX( !"This code path should be impossible (the exception-handler should have terminated the process)." );

@@ -185,7 +185,7 @@ Crc32Checksum(
 
 
 HCRYPTPROV g_hAESProv = NULL;
-CCriticalSection g_critAESProv( CLockBasicInfo( CSyncBasicInfo( _T( "g_critAESProv" ) ), rankAESProv, 0 ) );
+CCriticalSection g_critAESProv( CLockBasicInfo( CSyncBasicInfo( "g_critAESProv" ), rankAESProv, 0 ) );
 #define BlockSizeAes256 16
 
 BOOL FOSEncryptionPreinit()

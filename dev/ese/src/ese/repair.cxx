@@ -265,7 +265,7 @@ struct CHECKTABLE
 
     //  need a constructor to initialize the signal
 
-    CHECKTABLE() : signal( CSyncBasicInfo( _T( "CHECKTABLE::signal" ) ) ) {}
+    CHECKTABLE() : signal( CSyncBasicInfo( "CHECKTABLE::signal" ) ) {}
 };
 
 
@@ -1218,7 +1218,7 @@ ERR ErrDBUTLRepair( JET_SESID sesid, const JET_DBUTIL_W *pdbutil, CPRINTF* const
         CallR( ErrERRCheck( JET_errInvalidParameter ) );
     }
     OSStrCbFormatW(wszFile, sizeof( wszFile ), L"%s%s", wszPrefix, L".INTEG.RAW" );
-    CPRINTFFILE cprintfFile( wszFile );
+    CPRINTFFILE cprintfFile( wszFile, CPRINTFFILE::FILEENCODING::ASCII );
 
     // we check this only if we are going to use the szFile in the next line
     //
@@ -1231,7 +1231,7 @@ ERR ErrDBUTLRepair( JET_SESID sesid, const JET_DBUTIL_W *pdbutil, CPRINTF* const
         OSStrCbFormatW(wszFile, sizeof( wszFile ), L"%s%s", wszPrefix, L".INTGINFO.TXT" );
     }
     CPRINTF * const pcprintfStatsInternal = ( pdbutil->grbitOptions & JET_bitDBUtilOptionStats ) ?
-                                    new CPRINTFFILE( wszFile ) :
+                                    new CPRINTFFILE( wszFile, CPRINTFFILE::FILEENCODING::ASCII ) :
                                     CPRINTFNULL::PcprintfInstance();
     if ( NULL == pcprintfStatsInternal )
     {

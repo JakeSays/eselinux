@@ -3564,7 +3564,7 @@ RBSCleaner::RBSCleaner(
     IRBSCleanerConfig* const        prbscleanerconfig ) : 
     CZeroInit( sizeof( RBSCleaner ) ),
     m_pinst( pinst ),
-    m_msigRBSCleanerStop( CSyncBasicInfo( _T( "RBSCleaner::m_msigRBSCleanerStop" ) ) ),
+    m_msigRBSCleanerStop( CSyncBasicInfo( "RBSCleaner::m_msigRBSCleanerStop" ) ),
     m_critRBSFirstValidGen( CLockBasicInfo( CSyncBasicInfo( szRBSFirstValidGen ), rankRBSFirstValidGen, 0 ) ),
     m_prbscleaneriooperator( prbscleaneriooperator ),
     m_prbscleanerstate( prbscleanerstate ),
@@ -3985,7 +3985,7 @@ CRBSDatabaseRevertContext::CRBSDatabaseRevertContext( _In_ INST* const pinst )
     : CZeroInit( sizeof( CRBSDatabaseRevertContext ) ),
     m_pinst ( pinst ),
     m_dbidCurrent ( dbidMax ),
-    m_asigWritePossible( CSyncBasicInfo( _T( "CRBSDatabaseRevertContext::m_asigWritePossible" ) ) )
+    m_asigWritePossible( CSyncBasicInfo( "CRBSDatabaseRevertContext::m_asigWritePossible" ) )
 {
     Assert( pinst );
 }
@@ -5354,7 +5354,7 @@ ERR CRBSRevertContext::ErrBeginRevertTracing( bool fDeleteOldTraceFile )
     }
 
     //  create the tracing file
-    CPRINTF * const pcprintfAlloc = new CPRINTFFILE( wszRBSRCRawFile );
+    CPRINTF * const pcprintfAlloc = new CPRINTFFILE( wszRBSRCRawFile, CPRINTFFILE::FILEENCODING::ASCII );
     Alloc( pcprintfAlloc ); // avoid clobbering the default / NULL tracer
 
     //  set tracing to goto the tracing file

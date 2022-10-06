@@ -2024,7 +2024,7 @@ VOID SprintHex(
     {
         if ( 0 != cbAddress )
         {
-            StringCbPrintfA( sz, cbDest-(sz-szDest), "%*.*lx    ", cbAddress, cbAddress, (INT)(pb - rgbSrc) + cbStart );
+            OSStrCbFormatA( sz, cbDest-(sz-szDest), "%*.*lx    ", cbAddress, cbAddress, (INT)(pb - rgbSrc) + cbStart );
             sz += strlen( sz );
         }
         CHAR * szHex    = sz;

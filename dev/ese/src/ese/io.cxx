@@ -4607,7 +4607,7 @@ ERR ErrBeginDatabaseIncReseedTracing_( _In_ IFileSystemAPI * pfsapi, _In_ JET_PC
 
     //  create the tracing file
 
-    CPRINTF * const pcprintfAlloc = new CPRINTFFILE( wszIrsRawFile );
+    CPRINTF * const pcprintfAlloc = new CPRINTFFILE( wszIrsRawFile, CPRINTFFILE::FILEENCODING::ASCII );
     Alloc( pcprintfAlloc ); // avoid clobbering the default / NULL tracer
 
     //  set tracing to goto the tracing file
@@ -6903,7 +6903,7 @@ ERR ErrIOReadDbPages(
     PGNO pgnoMaxDb = pgnoEnd + 1;
 
     volatile LONG acRead = 0;
-    CAutoResetSignal asigDone( CSyncBasicInfo( _T( "ErrIOReadDbPages::asigDone" ) ) );
+    CAutoResetSignal asigDone( CSyncBasicInfo( "ErrIOReadDbPages::asigDone" ) );
 
     READPAGE_DATA readdata;
     readdata.err = JET_errSuccess;

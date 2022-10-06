@@ -306,7 +306,7 @@ class COSFile  //  osf
             public:
 
                 CIOComplete()
-                    :   m_signal( CSyncBasicInfo( _T( "CIOComplete::m_signal" ) ) ),
+                    :   m_signal( CSyncBasicInfo( "CIOComplete::m_signal" ) ),
                         m_err( JET_errSuccess ),
                         m_tidWait( DwUtilThreadId() ),
                         m_keyIOComplete( NULL ),

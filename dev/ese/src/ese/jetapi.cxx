@@ -2622,14 +2622,17 @@ LOCAL const BYTE bProcFriendlyNameAggregationID = 1;
 
 LONG LProcFriendlyNameICFLPwszPpb( _In_ LONG icf, _Inout_opt_ void* const pvParam1, _Inout_opt_ void* const pvParam2 )
 {
+    ERR err;
+    
     switch ( icf )
     {
         case ICFInit:
         {
             // Even though we'll truncate the string at cchPerfmonInstanceNameMax,
-            // the OSStrCbFormatW() will assert if it truncates the string.
-            (void) ErrOSStrCbFormatW( g_wszProcName, sizeof(g_wszProcName), L"%ws\0" , WszUtilProcessFriendlyName() );
-
+            // OSStrCbFormatW() will Assert on anything but JET_errSuccess, and
+            // truncation is not JET_errSuccess.
+            err = ErrOSStrCbFormatW( g_wszProcName, sizeof(g_wszProcName), L"%ws\0" , WszUtilProcessFriendlyName() );
+            Assert( err == JET_errSuccess || err == JET_errBufferTooSmall );
             AtomicExchange( &g_lRefreshPerfInstanceList, 1 );
             
             return 1;

@@ -73,7 +73,7 @@ VOID DBUTLSprintHex(
         
         if ( cbAddress )
         {
-            StringCbPrintfA( szDestCurrent, szDestMax - szDestCurrent + 1, "%*.*lx    ", cbAddress, cbAddress, (INT)(pb - rgbSrc + cbStart) );
+            OSStrCbFormatA( szDestCurrent, szDestMax - szDestCurrent + 1, "%*.*lx    ", cbAddress, cbAddress, (INT)(pb - rgbSrc + cbStart) );
             (*szDestMax) = 0;
             szDestCurrent += strlen(szDestCurrent);
 
