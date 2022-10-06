@@ -14367,6 +14367,8 @@ LOCAL ERR ErrSPITrimRegion(
 {
     ERR err;
 
+    Expected( !g_rgfmp[ ifmp ].FShrinkIsActive() );
+
     *pcpgSparseBeforeThisExtent = 0;
     *pcpgSparseAfterThisExtent = 0;
 
@@ -14523,15 +14525,15 @@ LOCAL ERR ErrSPIAddFreedExtent(
     Assert( Pcsr( pfucbAE )->FLatched() );
 
     if ( ( pgnoParentFDP == pgnoSystemRoot ) &&
+         !g_rgfmp[ ifmp ].FShrinkIsActive() &&
          g_rgfmp[ ifmp ].FTrimSupported() &&
-         ( ( GrbitParam( g_rgfmp[ ifmp ].Pinst(), JET_paramEnableShrinkDatabase ) & ( JET_bitShrinkDatabaseOn | JET_bitShrinkDatabaseRealtime ) ) ==
-         ( JET_bitShrinkDatabaseOn | JET_bitShrinkDatabaseRealtime ) ) )
+         ( ( GrbitParam( g_rgfmp[ ifmp ].Pinst(), JET_paramEnableShrinkDatabase ) & ( JET_bitShrinkDatabaseOn | JET_bitShrinkDatabaseRealtime ) ) == ( JET_bitShrinkDatabaseOn | JET_bitShrinkDatabaseRealtime ) ) )
     {
         // In-line version of database trim. Swallow the errors because at this point in the
         // code an error freeing up on-disk space should not block freeing up the extent.
         CPG cpgSparseBeforeThisExtent = 0;
         CPG cpgSparseAfterThisExtent = 0;
-        (void) ErrSPITrimRegion( ifmp, pfucbAE->ppib, pgnoLast, cpgSize, &cpgSparseBeforeThisExtent, &cpgSparseAfterThisExtent );
+        (void)ErrSPITrimRegion( ifmp, pfucbAE->ppib, pgnoLast, cpgSize, &cpgSparseBeforeThisExtent, &cpgSparseAfterThisExtent );
     }
 
 HandleError:

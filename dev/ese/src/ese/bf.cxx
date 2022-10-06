@@ -23264,23 +23264,34 @@ void BFIPurgeAllPageVersions( _Inout_ BFLatch* const pbfl, const TraceContext& t
     g_critBFDepend.Enter();
     for ( PBF pbfAbandon = pbf->pbfTimeDepChainNext; pbfAbandon != pbfNil; )
     {
+        BOOL fRetry = fFalse;
+
         if ( pbfAbandon->sxwl.ErrTryAcquireExclusiveLatch() == CSXWLatch::ERR::errSuccess )
         {
             if ( !pbfAbandon->fAbandoned )
             {
-                pbfAbandon->sxwl.UpgradeExclusiveLatchToWriteLatch();
-                pbfAbandon->fAbandoned = fTrue;
-                pbfAbandon->sxwl.ReleaseWriteLatch();
+                if ( pbfAbandon->sxwl.ErrTryUpgradeExclusiveLatchToWriteLatch() == CSXWLatch::ERR::errSuccess )
+                {
+                    pbfAbandon->fAbandoned = fTrue;
+                    pbfAbandon->sxwl.ReleaseWriteLatch();
+                }
+                else
+                {
+                    fRetry = fTrue;
+                    pbfAbandon->sxwl.ReleaseExclusiveLatch();
+                }
             }
             else
             {
                 pbfAbandon->sxwl.ReleaseExclusiveLatch();
             }
-
-            // Next in the chain.
-            pbfAbandon = pbfAbandon->pbfTimeDepChainNext;
         }
         else
+        {
+            fRetry = fTrue;
+        }
+
+        if ( fRetry )
         {
             // Avoid deadlocks.
             g_critBFDepend.Leave();
@@ -23289,6 +23300,11 @@ void BFIPurgeAllPageVersions( _Inout_ BFLatch* const pbfl, const TraceContext& t
 
             // Reset enumeration because we left the g_critBFDepend for an instant.
             pbfAbandon = pbf->pbfTimeDepChainNext;
+        }
+        else
+        {
+            // Next in the chain.
+            pbfAbandon = pbfAbandon->pbfTimeDepChainNext;
         }
     }
     g_critBFDepend.Leave();
