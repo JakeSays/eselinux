@@ -23,7 +23,9 @@ class CHashedLRUKCacheThreadLocalStorage  //  ctls
                 m_critAsyncIOWorkerState( CLockBasicInfo( CSyncBasicInfo( "CHashedLRUKCacheThreadLocalStorage::m_critAsyncIOWorkerState" ), rankIssued, 0 ) ),
                 m_rgibSlab { 0 },
                 m_rgpcbsSlab { NULL },
-                m_ibSlabWait( 0 )
+                m_ibSlabWait( 0 ),
+                m_cIORangeLocked( 0 ),
+                m_cbIORangeLocked( 0 )
         {
             m_semAsyncIOWorkerRequest.Release();
             m_semAsyncIOWorkerRequest.Release();
@@ -52,6 +54,8 @@ class CHashedLRUKCacheThreadLocalStorage  //  ctls
         CCountedInvasiveList<CRequest, CRequest::OffsetOfIOs>& IlFinalizeIOPending() { return m_ilFinalizeIOPending; }
         CCountedInvasiveList<CRequest, CRequest::OffsetOfIOs>& IlFinalizeIOCompleted() { return m_ilFinalizeIOCompleted; }
         QWORD IbSlabWait() const { return AtomicRead( (__int64*)&m_ibSlabWait ); }
+        volatile DWORD& CIORangeLocked() { return m_cIORangeLocked; }
+        volatile QWORD& CbIORangeLocked() { return m_cbIORangeLocked; }
 
         void AddRequest( _Inout_ CRequest** const pprequest )
         {
@@ -221,7 +225,7 @@ class CHashedLRUKCacheThreadLocalStorage  //  ctls
             }
         }
 
-        static void CueAsyncIOWorker( _In_ const DWORD_PTR keyIOComplete )
+        static void CueAsyncIOWorker_( _In_ const DWORD_PTR keyIOComplete )
         {
             CHashedLRUKCacheThreadLocalStorage<I>* const pctls = (CHashedLRUKCacheThreadLocalStorage<I>*)keyIOComplete;
 
@@ -271,4 +275,7 @@ class CHashedLRUKCacheThreadLocalStorage  //  ctls
         QWORD                                                               m_rgibSlab[ s_cibSlab ];
         ICachedBlockSlab*                                                   m_rgpcbsSlab[ s_cibSlab ];
         volatile QWORD                                                      m_ibSlabWait;
+
+        volatile DWORD                                                      m_cIORangeLocked;
+        volatile QWORD                                                      m_cbIORangeLocked;
 };

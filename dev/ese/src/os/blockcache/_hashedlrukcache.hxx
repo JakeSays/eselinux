@@ -148,6 +148,7 @@ class THashedLRUKCache
                 CHashedLRUKCachedFileTableEntry<I>* Pcfte() const { return THashedLRUKCacheBase<I>::CRequest::Pcfte(); }
                 const COffsets& Offsets() const { return THashedLRUKCacheBase<I>::CRequest::Offsets(); }
                 const BYTE* const PbData() const { return THashedLRUKCacheBase<I>::CRequest::PbData(); }
+                OSFILEQOS GrbitQOS() const { return THashedLRUKCacheBase<I>::CRequest::GrbitQOS(); }
                 ICache::CachingPolicy Cp() const { return THashedLRUKCacheBase<I>::CRequest::Cp(); }
 
                 ERR ErrStatus() const { return THashedLRUKCacheBase<I>::CRequest::ErrStatus(); }
@@ -3779,11 +3780,14 @@ class THashedLRUKCache
 
                     CallS( ErrToErr<IBitmapAPI>( m_pbmLoaded->ErrGet( Islab( ibSlab ), &fSlabLoaded ) ) );
 
-                    OSTrace(    JET_tracetagBlockCacheOperations,
-                                OSFormat(   "C=%s Presence Filter 0x%016I64x IsSlabLoaded %s",
-                                            OSFormatFileId( m_pc ),
-                                            ibSlab,
-                                            fSlabLoaded ? "fTrue" : "fFalse" ) );
+                    if ( !fSlabLoaded )
+                    {
+                        OSTrace(    JET_tracetagBlockCacheOperations,
+                                    OSFormat(   "C=%s Presence Filter 0x%016I64x IsSlabLoaded %s",
+                                                OSFormatFileId( m_pc ),
+                                                ibSlab,
+                                                OSFormatBoolean( fSlabLoaded ) ) );
+                    }
 
                     return fSlabLoaded;
                 }
@@ -4012,15 +4016,18 @@ class THashedLRUKCache
 
                     BOOL fPossiblyContains = FPossiblyContains( dwHash );
 
-                    OSTrace(    JET_tracetagBlockCacheOperations,
-                                OSFormat(   "C=%s Presence Filter %s,0x%08x Contains 0x%02x %s",
-                                            OSFormatFileId( m_pc ),
-                                            OSFormat(   cbid.Volumeid(),
-                                                        cbid.Fileid(),
-                                                        cbid.Fileserial() ),
-                                            cbid.Cbno(),
-                                            WFingerprint( dwHash ),
-                                            fPossiblyContains ? "fTrue" : "fFalse" ) );
+                    if ( !fPossiblyContains )
+                    {
+                        OSTrace(    JET_tracetagBlockCacheOperations,
+                                    OSFormat(   "C=%s Presence Filter %s,0x%08x Contains 0x%02x %s",
+                                                OSFormatFileId( m_pc ),
+                                                OSFormat(   cbid.Volumeid(),
+                                                            cbid.Fileid(),
+                                                            cbid.Fileserial() ),
+                                                cbid.Cbno(),
+                                                WFingerprint( dwHash ),
+                                                OSFormatBoolean( fPossiblyContains ) ) );
+                    }
 
                     m_rwlPresenceFilter.LeaveAsReader();
 
@@ -4744,6 +4751,7 @@ class THashedLRUKCache
         ERR ErrEnqueue( _Inout_ CRequest** const pprequest );
         BOOL FConflicting( _In_ CRequest* const prequestIOA, _In_ CRequest* const prequestIOB );
         BOOL FCombinable( _In_ CRequest* const prequestIOA, _In_ CRequest* const prequestIOB );
+        BOOL FOverrideMaxSize( _In_ CRequest* const prequestIO );
         int CmpRequestIO( _In_ CRequest* const prequestIOA, _In_ CRequest* const prequestIOB );
 
         void Issue();
@@ -4751,6 +4759,18 @@ class THashedLRUKCache
         void AsyncIOWorker( _In_ CHashedLRUKCacheThreadLocalStorage<I>* const pctls );
 
         ERR ErrSynchronousIO( _In_ CRequest* const prequest );
+
+        void WaitForIORangeLock( _In_ CRequest* const prequest );
+        BOOL FWaitForIORangeLock(   _In_        CRequest* const                                 prequest,
+                                    _In_opt_    CHashedLRUKCacheThreadLocalStorage<I>* const    pctls       = NULL );
+        void ReleaseIORangeLock(    _In_        CRequest* const                                 prequest,
+                                    _In_opt_    CHashedLRUKCacheThreadLocalStorage<I>* const    pctls       = NULL );
+        void ReleaseIORangeLockedCounts(    _In_        CRequest* const                                 prequest,
+                                            _In_opt_    CHashedLRUKCacheThreadLocalStorage<I>* const    pctls       = NULL );
+        BOOL FAcquireIORangeLockedBySlabCounts( _In_ CRequest* const prequest, _In_ const BOOL fFirstRequest );
+        void ReleaseIORangeLockedBySlabCounts(  _In_ CHashedLRUKCachedFileTableEntry<I>* const  pcfte,
+                                                _In_ const COffsets&                            offsets );
+        DWORD CCachedBlockIORangeLockedBySlabMax() const;
 
         void RequestCachedFileIO( _In_ CRequest* const prequestIO );
         void RequestCachingFileIO( _In_ CRequest* const prequestIO );
@@ -4928,6 +4948,16 @@ class THashedLRUKCache
             return ( m_pch->CbCachingFilePerSlab() / ( CCachedBlockChunk::Ccbl() * cbCachedBlock ) ) * sizeof( CCachedBlockChunk );
         }
 
+        QWORD IHashedSlab( _In_ const QWORD ibSlab ) const
+        {
+            return ( ibSlab - m_pch->IbChunkHash() ) / CbChunkPerSlab();
+        }
+
+        QWORD CHashedSlab() const
+        {
+            return m_pch->CbChunkHash() / CbChunkPerSlab();
+        }
+
     private:
 
         static const CCachedBlockId                                                         s_cbidInvalid;
@@ -4939,6 +4969,11 @@ class THashedLRUKCache
         ICachedBlockWriteCountsManager*                                                     m_pcbwcm;
         ICachedBlockSlabManager*                                                            m_pcbsmHash;
         ICachedBlockSlabManager*                                                            m_pcbsmJournal;
+
+        volatile DWORD                                                                      m_cIORangeLockedContext;
+        volatile DWORD                                                                      m_cIORangeLocked;
+        volatile QWORD                                                                      m_cbIORangeLocked;
+        volatile DWORD*                                                                     m_rgcCachedBlockIORangeLockedBySlab;
 
         CSemaphore                                                                          m_semQuiesceStateAccess;
         CMeteredSection                                                                     m_msStateAccess;
@@ -5007,6 +5042,7 @@ THashedLRUKCache<I>::~THashedLRUKCache()
     ReleaseCompletedSlabWriteBacks();
     TermSlabWriteBackHash();
     delete[] m_rgcrefJournalSlab;
+    delete[] m_rgcCachedBlockIORangeLockedBySlab;
     delete m_pcbsmJournal;
     delete m_pcbsmHash;
     delete m_pcbwcm;
@@ -6003,6 +6039,10 @@ THashedLRUKCache<I>::THashedLRUKCache(  _In_    IFileSystemFilter* const        
                 m_pcbwcm( NULL ),
                 m_pcbsmHash( NULL ),
                 m_pcbsmJournal( NULL ),
+                m_cIORangeLockedContext( 0 ),
+                m_cIORangeLocked( 0 ),
+                m_cbIORangeLocked( 0 ),
+                m_rgcCachedBlockIORangeLockedBySlab( NULL ),
                 m_semQuiesceStateAccess( CSyncBasicInfo( "THashedLRUKCache<I>::m_semQuiesceStateAccess" ) ),
                 m_msigStateAccess0( CSyncBasicInfo( "THashedLRUKCache<I>::m_msigStateAccess0" ) ),
                 m_msigStateAccess1( CSyncBasicInfo( "THashedLRUKCache<I>::m_msigStateAccess1" ) ),
@@ -6374,6 +6414,7 @@ template< class I >
 ERR THashedLRUKCache<I>::ErrInit()
 {
     ERR             err     = JET_errSuccess;
+    SIZE_T          cSlab   = 0;
     ClusterNumber   clnoMin = clnoInvalid;
     ClusterNumber   clnoMax = clnoInvalid;
 
@@ -6384,6 +6425,12 @@ ERR THashedLRUKCache<I>::ErrInit()
     //  init the cached block presence filter
 
     Call( CCachedBlockPresenceFilter::ErrInit( this, &m_pcbpf ) );
+
+    //  init the slab counts
+
+    cSlab = CHashedSlab();
+    Alloc( (void*)( m_rgcCachedBlockIORangeLockedBySlab = new volatile DWORD[ cSlab ] ) );
+    memset( (void*)m_rgcCachedBlockIORangeLockedBySlab, 0, sizeof( m_rgcCachedBlockIORangeLockedBySlab[ 0 ] ) * cSlab );
 
     //  mount the journal
 
@@ -8081,8 +8128,36 @@ BOOL THashedLRUKCache<I>::FCombinable( _In_ CRequest* const prequestIOA, _In_ CR
         return fFalse;
     }
 
+    //  IOs that are too large cannot be combined
+
+    const QWORD cbMaxSize = prequestIOA->FRead() ? Pfsconfig()->CbMaxReadSize() : Pfsconfig()->CbMaxWriteSize();
+
+    if ( offsetsIOA.Cb() + offsetsIOB.Cb() > cbMaxSize )
+    {
+        if ( !FOverrideMaxSize( prequestIOA ) && !FOverrideMaxSize( prequestIOB ) )
+        {
+            return fFalse;
+        }
+    }
+
     return fTrue;
  }
+
+template<class I>
+BOOL THashedLRUKCache<I>::FOverrideMaxSize( _In_ CRequest* const prequestIO )
+{
+    if ( prequestIO->FRead() )
+    {
+        return fFalse;
+    }
+
+    if ( !( prequestIO->GrbitQOS() & qosIOOptimizeOverrideMaxIOLimits ) )
+    {
+        return fFalse;
+    }
+
+    return fTrue;
+}
 
 template<class I>
 int THashedLRUKCache<I>::CmpRequestIO( _In_ CRequest* const prequestIOA, _In_ CRequest* const prequestIOB )
@@ -8166,6 +8241,9 @@ void THashedLRUKCache<I>::Issue()
 template<class I>
 void THashedLRUKCache<I>::AsyncIOWorker( _In_ CHashedLRUKCacheThreadLocalStorage<I>* const pctls )
 {
+    BOOL        fIORangeLockFailure = fFalse;
+    CRequest*   prequestIONext      = NULL;
+
     pctls->BeginAsyncIOWorker();
 
     //  for each issued IO, request an IO range lock in terms of the cached file.  these IO range locks not only
@@ -8173,18 +8251,28 @@ void THashedLRUKCache<I>::AsyncIOWorker( _In_ CHashedLRUKCacheThreadLocalStorage
     //  offset range including things like write back or moving cached blocks in the caching file
 
     pctls->CritAsyncIOWorkerState().Enter();
-    while ( CRequest* prequestIO = pctls->IlIOIssued().PrevMost() )
+    prequestIONext = NULL;
+    for (   CRequest* prequestIO = pctls->IlIOIssued().PrevMost();
+            prequestIO;
+            prequestIO = prequestIONext )
     {
-        prequestIO->WaitForIORangeLock( CHashedLRUKCacheThreadLocalStorage<I>::CueAsyncIOWorker, (DWORD_PTR)pctls );
+        prequestIONext = pctls->IlIOIssued().Next( prequestIO );
 
-        pctls->IlIOIssued().Remove( prequestIO );
-        pctls->IlIORangeLockPending().InsertAsNextMost( prequestIO );
+        if ( FWaitForIORangeLock( prequestIO, pctls ) )
+        {
+            pctls->IlIOIssued().Remove( prequestIO );
+            pctls->IlIORangeLockPending().InsertAsNextMost( prequestIO );
+        }
+        else
+        {
+            fIORangeLockFailure = fTrue;
+        }
     }
     pctls->CritAsyncIOWorkerState().Leave();
 
     //  determine which requested IO range locks have been acquired
 
-    CRequest* prequestIONext = NULL;
+    prequestIONext = NULL;
     for (   CRequest* prequestIO = pctls->IlIORangeLockPending().PrevMost();
             prequestIO;
             prequestIO = prequestIONext )
@@ -8287,7 +8375,7 @@ void THashedLRUKCache<I>::AsyncIOWorker( _In_ CHashedLRUKCacheThreadLocalStorage
     {
         pctls->IlFinalizeIOCompleted().Remove( prequestIO );
 
-        prequestIO->Piorl()->Release();
+        ReleaseIORangeLock( prequestIO, pctls );
 
         CRequest* prequestNext = NULL;
         for ( CRequest* prequest = prequestIO->IlRequestsByIO().PrevMost();
@@ -8307,6 +8395,13 @@ void THashedLRUKCache<I>::AsyncIOWorker( _In_ CHashedLRUKCacheThreadLocalStorage
         pctls->RemoveRequest( prequestIO );
     }
 
+    //  if we failed to get an IO Range Lock and we currently have no IO Range Locks then we should try to issue again
+
+    if ( fIORangeLockFailure && pctls->CIORangeLocked() == 0 )
+    {
+        pctls->CueAsyncIOWorker();
+    }
+
     pctls->EndAsyncIOWorker();
 }
 
@@ -8320,7 +8415,7 @@ ERR THashedLRUKCache<I>::ErrSynchronousIO( _In_ CRequest* const prequest )
     //  also serialize all activity for that offset range including things like write back or moving cached blocks in
     //  the caching file
 
-    prequest->WaitForIORangeLock();
+    WaitForIORangeLock( prequest );
 
     //  request our IO
 
@@ -8340,8 +8435,177 @@ ERR THashedLRUKCache<I>::ErrSynchronousIO( _In_ CRequest* const prequest )
 
     //  release the IO range lock
 
-    prequest->Piorl()->Release();
+    ReleaseIORangeLock( prequest );
     return err;
+}
+
+template<class I>
+void THashedLRUKCache<I>::WaitForIORangeLock( _In_ CRequest* const prequest )
+{
+    const BOOL fSuccess = FWaitForIORangeLock( prequest );
+    EnforceSz( fSuccess, "FWaitForIORangeLock" );
+}
+
+template<class I>
+BOOL THashedLRUKCache<I>::FWaitForIORangeLock(  _In_        CRequest* const                                 prequest,
+                                                _In_opt_    CHashedLRUKCacheThreadLocalStorage<I>* const    pctls )
+{
+    BOOL    fFirstRequest   = fFalse;
+    BOOL    fRelease        = fTrue;
+    BOOL    fAcquired       = fFalse;
+
+    if ( !pctls )
+    {
+        fFirstRequest = fTrue;
+    }
+    else
+    {
+        fFirstRequest = AtomicIncrement( (DWORD*)&pctls->CIORangeLocked() ) == 1;
+        AtomicAdd( (QWORD*)&pctls->CbIORangeLocked(), prequest->OffsetsForIO().Cb() );
+    }
+
+    AtomicExchangeAdd( (LONG*)&m_cIORangeLockedContext, fFirstRequest ? 1 : 0 );
+    AtomicIncrement( (DWORD*)&m_cIORangeLocked );
+    AtomicAdd( (QWORD*)&m_cbIORangeLocked, prequest->OffsetsForIO().Cb() );
+
+    fRelease = fTrue;
+
+    if ( FAcquireIORangeLockedBySlabCounts( prequest, fFirstRequest ) )
+    {
+        fAcquired = fTrue;
+        fRelease = fFalse;
+
+        prequest->WaitForIORangeLock(   pctls ? CHashedLRUKCacheThreadLocalStorage<I>::CueAsyncIOWorker_ : NULL,
+                                        (DWORD_PTR)pctls );
+    }
+
+    if ( fRelease )
+    {
+        ReleaseIORangeLockedCounts( prequest, pctls );
+    }
+
+    return fAcquired;
+}
+
+template<class I>
+void THashedLRUKCache<I>::ReleaseIORangeLock(   _In_        CRequest* const                                 prequest,
+                                                _In_opt_    CHashedLRUKCacheThreadLocalStorage<I>* const    pctls )
+{
+    prequest->Piorl()->Release();
+
+    ReleaseIORangeLockedBySlabCounts( prequest->Pcfte(), prequest->OffsetsForIO() );
+
+    ReleaseIORangeLockedCounts( prequest, pctls );
+}
+
+template<class I>
+void THashedLRUKCache<I>::ReleaseIORangeLockedCounts(   _In_        CRequest* const                                 prequest,
+                                                        _In_opt_    CHashedLRUKCacheThreadLocalStorage<I>* const    pctls )
+{
+    BOOL        fLastRequest            = fFalse;
+    const QWORD cbIORangeLocked         = prequest->OffsetsForIO().Cb();
+    const QWORD cbIORangeLockedNegative = (QWORD)( -( (LONGLONG)cbIORangeLocked ) );
+
+    if ( !pctls )
+    {
+        fLastRequest = fTrue;
+    }
+    else
+    {
+        Enforce( pctls->CIORangeLocked() >= 1 );
+        fLastRequest = AtomicDecrement( (DWORD*)&pctls->CIORangeLocked() ) == 0;
+        Enforce( pctls->CbIORangeLocked() >= cbIORangeLocked );
+        AtomicAdd( (QWORD*)&pctls->CbIORangeLocked(), cbIORangeLockedNegative );
+    }
+
+    Enforce( m_cIORangeLockedContext >= (DWORD)( fLastRequest ? 1 : 0 ) );
+    AtomicExchangeAdd( (LONG*)&m_cIORangeLockedContext, fLastRequest ? -1 : 0 );
+    Enforce( m_cIORangeLocked >= 1 );
+    AtomicDecrement( (DWORD*)&m_cIORangeLocked );
+    Enforce( m_cbIORangeLocked >= cbIORangeLocked );
+    AtomicAdd( (QWORD*)&m_cbIORangeLocked, cbIORangeLockedNegative );
+}
+
+template<class I>
+BOOL THashedLRUKCache<I>::FAcquireIORangeLockedBySlabCounts( _In_ CRequest* const prequest, _In_ const BOOL fFirstRequest )
+{
+    const COffsets                              offsets         = prequest->OffsetsForIO();
+    CHashedLRUKCachedFileTableEntry<I>* const   pcfte           = prequest->Pcfte();
+    const QWORD                                 cSlab           = CHashedSlab();
+    const DWORD                                 cCachedBlockMax = fFirstRequest ? dwMax : CCachedBlockIORangeLockedBySlabMax();
+
+    for (   QWORD ibCachedBlock = offsets.IbStart();
+            ibCachedBlock <= offsets.IbEnd();
+            ibCachedBlock += cbCachedBlock )
+    {
+        const CachedBlockNumber cbno = (CachedBlockNumber)( ibCachedBlock / cbCachedBlock );
+
+        if ( ibCachedBlock != (QWORD)cbno * cbCachedBlock || cbno == cbnoInvalid )
+        {
+        }
+        else
+        {
+            const CCachedBlockId    cbid( pcfte->Volumeid(), pcfte->Fileid(), pcfte->Fileserial(), cbno );
+            QWORD                   ibSlab  = 0;
+
+            if ( m_pcbsmHash->ErrGetSlabForCachedBlock( cbid, &ibSlab ) >= JET_errSuccess )
+            {
+                QWORD   iSlab           = IHashedSlab( ibSlab );
+                DWORD   cCachedBlockT   = 0;
+
+                if ( iSlab < cSlab )
+                {
+                    if ( !FAtomicIncrementMax( (DWORD*)&m_rgcCachedBlockIORangeLockedBySlab[ iSlab ], &cCachedBlockT, cCachedBlockMax ) )
+                    {
+                        ReleaseIORangeLockedBySlabCounts( pcfte, COffsets( prequest->OffsetsForIO().IbStart(), ibCachedBlock - 1 ) );
+                        return fFalse;
+                    }
+                }
+            }
+        }
+    }
+
+    return fTrue;
+}
+
+template<class I>
+void THashedLRUKCache<I>::ReleaseIORangeLockedBySlabCounts( _In_ CHashedLRUKCachedFileTableEntry<I>* const  pcfte,
+                                                            _In_ const COffsets&                            offsets )
+{
+    const QWORD cSlab   = CHashedSlab();
+
+    for (   QWORD ibCachedBlock = offsets.IbStart();
+            ibCachedBlock <= offsets.IbEnd();
+            ibCachedBlock += cbCachedBlock )
+    {
+        const CachedBlockNumber cbno = (CachedBlockNumber)( ibCachedBlock / cbCachedBlock );
+
+        if ( ibCachedBlock != (QWORD)cbno * cbCachedBlock || cbno == cbnoInvalid )
+        {
+        }
+        else
+        {
+            const CCachedBlockId    cbid( pcfte->Volumeid(), pcfte->Fileid(), pcfte->Fileserial(), cbno );
+            QWORD                   ibSlab  = 0;
+
+            if ( m_pcbsmHash->ErrGetSlabForCachedBlock( cbid, &ibSlab ) >= JET_errSuccess )
+            {
+                QWORD   iSlab   = IHashedSlab( ibSlab );
+
+                if ( iSlab < cSlab )
+                {
+                    Enforce( m_rgcCachedBlockIORangeLockedBySlab[ iSlab ] > 0 );
+                    AtomicDecrement( (DWORD*)&m_rgcCachedBlockIORangeLockedBySlab[ iSlab ] );
+                }
+            }
+        }
+    }
+}
+
+template<class I>
+DWORD THashedLRUKCache<I>::CCachedBlockIORangeLockedBySlabMax() const
+{
+    return (DWORD)( m_pch->CbCachingFilePerSlab() / cbCachedBlock / 2 );
 }
 
 template<class I>
@@ -8370,7 +8634,7 @@ void THashedLRUKCache<I>::WaitForPendingIOAsync(    _In_ CHashedLRUKCacheThreadL
             prequest;
             prequest = prequestIO->IlRequestsByIO().Next( prequest ) )
     {
-        prequest->WaitForIO( CHashedLRUKCacheThreadLocalStorage<I>::CueAsyncIOWorker, (DWORD_PTR)pctls );
+        prequest->WaitForIO( CHashedLRUKCacheThreadLocalStorage<I>::CueAsyncIOWorker_, (DWORD_PTR)pctls );
     }
 }
 

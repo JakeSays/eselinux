@@ -784,7 +784,7 @@ class TFileFilter  //  ff
                         Error( JET_errSuccess );
                     }
 
-                    Alloc( prequest = new CRequest( volumeid, fileid, fileserial, fRead, offsets ) );
+                    Alloc( prequest = new CRequest( volumeid, fileid, fileserial, fRead, offsets, grbitQOS ) );
 
                     Call( ErrRequest( pfsconfig, fRead, grbitQOS, fMustCombineIO, &prequest, &fCombined ) );
 
@@ -844,12 +844,14 @@ class TFileFilter  //  ff
                                     _In_ const FileId           fileid,
                                     _In_ const FileSerial       fileserial,
                                     _In_ const BOOL             fRead,
-                                    _In_ const COffsets&        offsets )
+                                    _In_ const COffsets&        offsets,
+                                    _In_ const OSFILEQOS        grbitQOS )
                             :   m_volumeid( volumeid ),
                                 m_fileid( fileid ),
                                 m_fileserial( fileserial ),
                                 m_fRead( fRead ),
-                                m_offsets( offsets )
+                                m_offsets( offsets ),
+                                m_grbitQOS( grbitQOS )
                         {
                             m_ilRequestsByIO.InsertAsPrevMost( this );
                         }
@@ -872,6 +874,7 @@ class TFileFilter  //  ff
                         FileSerial Fileserial() const { return m_fileserial; }
                         BOOL FRead() const { return m_fRead; }
                         const COffsets& Offsets() const { return m_offsets; }
+                        OSFILEQOS GrbitQOS() const { return m_grbitQOS; }
 
                         COffsets OffsetsForIO() const
                         {
@@ -900,6 +903,7 @@ class TFileFilter  //  ff
                         const FileSerial                                                        m_fileserial;
                         const BOOL                                                              m_fRead;
                         const COffsets                                                          m_offsets;
+                        const OSFILEQOS                                                         m_grbitQOS;
                         typename CCountedInvasiveList<CRequest, OffsetOfIOs>::CElement          m_ileIOs;
                         CCountedInvasiveList<CRequest, OffsetOfRequestsByIO>                    m_ilRequestsByIO;
                         typename CCountedInvasiveList<CRequest, OffsetOfRequestsByIO>::CElement m_ileRequestsByIO;
@@ -934,7 +938,7 @@ class TFileFilter  //  ff
                             prequestIOPrev && !FConflicting( prequestIOPrev, prequestIO );
                             prequestIOPrev = IlIORequested().Prev( prequestIOPrev ) )
                     {
-                        if ( FCombinable( pfsconfig, grbitQOS, prequestIOPrev, prequestIO ) )
+                        if ( FCombinable( pfsconfig, prequestIOPrev, prequestIO ) )
                         {
                             if ( prequestIOPrev->OffsetsForIO().IbStart() > prequestIO->OffsetsForIO().IbStart() )
                             {
@@ -969,13 +973,13 @@ class TFileFilter  //  ff
                     //  determine if this request could be combined via IO gap coalescing
 
                     if (    IlIORequested().Prev( prequestIO ) &&
-                            FBridgeableGap( pfsconfig, grbitQOS, IlIORequested().Prev( prequestIO ), prequestIO ) )
+                            FBridgeableGap( pfsconfig, IlIORequested().Prev( prequestIO ), prequestIO ) )
                     {
                         fCombined = fTrue;
                     }
 
                     if (    IlIORequested().Next( prequestIO ) &&
-                            FBridgeableGap( pfsconfig, grbitQOS, prequestIO, IlIORequested().Next( prequestIO ) ) )
+                            FBridgeableGap( pfsconfig, prequestIO, IlIORequested().Next( prequestIO ) ) )
                     {
                         fCombined = fTrue;
                     }
@@ -1029,7 +1033,6 @@ class TFileFilter  //  ff
                 }
 
                 BOOL FCombinable(   _In_ IFileSystemConfiguration* const    pfsconfig, 
-                                    _In_ const OSFILEQOS                    grbitQOS,
                                     _In_ CRequest* const                    prequestIOA, 
                                     _In_ CRequest* const                    prequestIOB )
                 {
@@ -1080,7 +1083,7 @@ class TFileFilter  //  ff
 
                     if ( offsetsIOA.Cb() + offsetsIOB.Cb() > cbMaxSize )
                     {
-                        if ( !FOverrideMaxSize( grbitQOS, prequestIOA->FRead() ) )
+                        if ( !FOverrideMaxSize( prequestIOA ) && !FOverrideMaxSize( prequestIOB ) )
                         {
                             return fFalse;
                         }
@@ -1089,14 +1092,14 @@ class TFileFilter  //  ff
                     return fTrue;
                 }
 
-                BOOL FOverrideMaxSize(  _In_ const OSFILEQOS grbitQOS, _In_ const BOOL fRead )
+                BOOL FOverrideMaxSize( _In_ CRequest* const prequestIO )
                 {
-                    if ( fRead )
+                    if ( prequestIO->FRead() )
                     {
                         return fFalse;
                     }
 
-                    if ( !( grbitQOS & qosIOOptimizeOverrideMaxIOLimits ) )
+                    if ( !( prequestIO->GrbitQOS() & qosIOOptimizeOverrideMaxIOLimits ) )
                     {
                         return fFalse;
                     }
@@ -1150,7 +1153,6 @@ class TFileFilter  //  ff
                 }
 
                 BOOL FBridgeableGap(    _In_ IFileSystemConfiguration* const    pfsconfig,
-                                        _In_ const OSFILEQOS                    grbitQOS,
                                         _In_ CRequest* const                    prequestIOA, 
                                         _In_ CRequest* const                    prequestIOB )
                 {
@@ -1210,10 +1212,7 @@ class TFileFilter  //  ff
 
                     if ( offsetsIOA.Cb() + offsetsIOB.Cb() + cbGap > pfsconfig->CbMaxReadSize() )
                     {
-                        if ( !FOverrideMaxSize( grbitQOS, prequestIOA->FRead() ) )
-                        {
-                            return fFalse;
-                        }
+                        return fFalse;
                     }
 
                     return fTrue;

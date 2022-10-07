@@ -197,6 +197,7 @@ class TCacheBase  //  c
                 CFTE* Pcfte() const { return m_pcfte; }
                 const COffsets& Offsets() const { return m_offsets; }
                 const BYTE* const PbData() const { return m_pbData; }
+                OSFILEQOS GrbitQOS() const { return m_grbitQOS; }
                 ICache::CachingPolicy Cp() const { return m_cp; }
                 BOOL FSync() const { return m_pfnComplete == NULL; }
 
