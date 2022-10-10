@@ -1783,6 +1783,7 @@ class THashedLRUKCache
                                         _Inout_ ICachedBlockSlab** const    ppcbs,
                                         _In_    const BOOL                  fRead,
                                         _In_    const QWORD                 cbRequested,
+                                        _In_    const BOOL                  fOverrideCachePercentage,
                                         _Out_   QWORD* const                pcbProduced,
                                         _Out_   QWORD* const                pcbWriteBackFailed )
                 {
@@ -1801,7 +1802,15 @@ class THashedLRUKCache
                     //  those as well.
 
                     {
-                        CCleanSlabVisitor csv( pc, prequest, ppcbs, fRead, cbRequested, isv.CbTotal(), isv.CbWriteCache(), isv.CbReadCache() );
+                        CCleanSlabVisitor csv(  pc, 
+                                                prequest, 
+                                                ppcbs, 
+                                                fRead, 
+                                                cbRequested, 
+                                                fOverrideCachePercentage, 
+                                                isv.CbTotal(), 
+                                                isv.CbWriteCache(), 
+                                                isv.CbReadCache() );
                         Call( csv.ErrTryCleanSlots() );
 
                         *pcbProduced = csv.CbProduced();
@@ -1831,6 +1840,7 @@ class THashedLRUKCache
                                     _Inout_ ICachedBlockSlab** const    ppcbs,
                                     _In_    const BOOL                  fRead,
                                     _In_    const QWORD                 cbRequested,
+                                    _In_    const BOOL                  fOverrideCachePercentage,
                                     _In_    const QWORD                 cbTotal,
                                     _In_    const QWORD                 cbWriteCache,
                                     _In_    const QWORD                 cbReadCache )
@@ -1840,6 +1850,7 @@ class THashedLRUKCache
                         m_pcbs( *ppcbs ),
                         m_fRead( fRead ),
                         m_cbRequested( cbRequested ),
+                        m_fOverrideCachePercentage( fOverrideCachePercentage ),
                         m_cbTotal( cbTotal ),
                         m_pctWrite( max( 0, min( 100, m_pc->Pcconfig()->PctWrite() ) ) ),
                         m_cbWriteCacheMax( (QWORD)( m_cbTotal * m_pctWrite / 100 ) ),
@@ -1848,9 +1859,8 @@ class THashedLRUKCache
                         m_cbReadCache( cbReadCache ),
                         m_cbWriteCacheEligible( cbWriteCache > m_cbWriteCacheMax ? cbWriteCache - m_cbWriteCacheMax : 0 ),
                         m_cbReadCacheEligible( cbReadCache > m_cbReadCacheMax ? cbReadCache - m_cbReadCacheMax : 0 ),
-                        m_cbSeen( 0 ),
-                        m_cbWriteCacheSeen( 0 ),
-                        m_cbReadCacheSeen( 0 ),
+                        m_cbWriteCacheProduced( 0 ),
+                        m_cbReadCacheProduced( 0 ),
                         m_cbInvalid( 0 ),
                         m_cbIORangeLocked( 0 ),
                         m_cbWriteBackPending( 0 ),
@@ -1929,6 +1939,7 @@ class THashedLRUKCache
                     const CCachedBlockId&               cbid                = slotstCurrent.Cbid();
                     const QWORD                         ibCachedBlock       = (QWORD)cbid.Cbno() * cbCachedBlock;
                     const COffsets                      offsets             = COffsets( ibCachedBlock, ibCachedBlock - 1 + cbCachedBlock );
+                    BOOL                                fProduced           = fFalse;
                     BOOL                                fFileNoLongerExists = fFalse;
                     CHashedLRUKCachedFileTableEntry<I>* pcfte               = NULL;
                     BOOL                                fIORangeLocked      = fFalse;
@@ -1964,6 +1975,8 @@ class THashedLRUKCache
 
                         m_cbInvalid += cbCachedBlock;
 
+                        fProduced = fTrue;
+
                         Error( JET_errSuccess );
                     }
 
@@ -1986,7 +1999,7 @@ class THashedLRUKCache
 
                     //  try to get the IO range lock
 
-                    Call( ErrTryGetIORangeLock( pcfte, offsets, &fIORangeLocked ) );
+                    Call( ErrTryGetIORangeLock( slotstCurrent, pcfte, offsets, &fIORangeLocked ) );
 
                     //  if the cached file still exists and this slot is dirty and not pinned and doesn't contain an
                     //  obsolete image of the data then try to write back its data to the cached file.  we will mark it
@@ -2007,6 +2020,8 @@ class THashedLRUKCache
                         m_cbIORangeLocked -= cbCachedBlock;
                         m_cbWriteBackPending += cbCachedBlock;
 
+                        fProduced = fTrue;
+
                         Error( JET_errSuccess );
                     }
 
@@ -2021,6 +2036,8 @@ class THashedLRUKCache
 
                         m_cbIORangeLocked -= fEvicted && fIORangeLocked ? cbCachedBlock : 0;
                         m_cbEvicted += fEvicted ? cbCachedBlock : 0;
+
+                        fProduced = fEvicted;
 
                         //  if we evicted this slot then we're done with it
 
@@ -2037,6 +2054,8 @@ class THashedLRUKCache
                     {
                         m_cbInvalidatePending += cbCachedBlock;
 
+                        fProduced = fTrue;
+
                         Error( JET_errSuccess );
                     }
 
@@ -2046,56 +2065,62 @@ class THashedLRUKCache
 
                 HandleError:
                     m_pc->ReleaseCachedFile( &pcfte );
-                    m_cbSeen += cbCachedBlock;
-                    m_cbReadCacheSeen += slotstCurrent.FEverDirty() ? 0 : cbCachedBlock;
-                    m_cbWriteCacheSeen += slotstCurrent.FEverDirty() ? cbCachedBlock : 0;
+                    m_cbReadCacheProduced += fProduced && !slotstCurrent.FEverDirty() ? cbCachedBlock : 0;
+                    m_cbWriteCacheProduced += fProduced && slotstCurrent.FEverDirty() ? cbCachedBlock : 0;
                     return err;
                 }
 
                 BOOL FProtectedFromClean( _In_ const CCachedBlockSlotState& slotstCurrent )
                 {
-                    //  we are cleaning to cache a read
+                    //  if this slot contains excess write cache then we can clean it
 
-                    if ( m_fRead )
+                    if ( m_cbWriteCacheProduced < m_cbWriteCacheEligible )
                     {
-                        //  if this slot contains excess write cache then we can clean it
-
-                        if ( m_cbWriteCacheSeen < m_cbWriteCacheEligible )
-                        {
-                            return fFalse;
-                        }
-
-                        //  if protecting this slot from clean would cause us to fail to clean enough space then we
-                        //  must clean it
-
-                        if ( m_cbReadCacheSeen < m_cbReadCache )
-                        {
-                            return fFalse;
-                        }
+                        return fFalse;
                     }
 
-                    //  we are cleaning to cache a write
+                    //  if this slot contains excess read cache then we can clean it
 
-                    if ( !m_fRead )
+                    if ( m_cbReadCacheProduced < m_cbReadCacheEligible )
                     {
-                        //  if this slot contains excess read cache then we can clean it
+                        return fFalse;
+                    }
 
-                        if ( m_cbReadCacheSeen < m_cbReadCacheEligible )
-                        {
-                            return fFalse;
-                        }
+                    //  if this is a write and the slot is not part of the read cache then we can clean it without
+                    //  increasing the write cache percentage
 
-                        //  if protecting this slot from clean would cause us to fail to clean enough space then we
-                        //  must clean it
+                    if ( !m_fRead && !( slotstCurrent.FValid() && !slotstCurrent.FSuperceded() && !slotstCurrent.FEverDirty() ) )
+                    {
+                        return fFalse;
+                    }
 
-                        if ( m_cbWriteCacheSeen < m_cbWriteCache )
-                        {
-                            return fFalse;
-                        }
+                    //  if this is a read and the slot is not part of the write cache then we can clean it without
+                    //  reducing the write cache percentage
+
+                    if ( m_fRead && !( slotstCurrent.FValid() && !slotstCurrent.FSuperceded() && slotstCurrent.FEverDirty() ) )
+                    {
+                        return fFalse;
+                    }
+
+                    //  if we are overriding our efforts to preserve our write caching percentage then clean anyway
+
+                    if ( m_fOverrideCachePercentage )
+                    {
+                        OSTrace(    JET_tracetagBlockCacheOperations,
+                                    OSFormat(   "C=%s R=0x%016I64x Clean %s Write Caching Percentage Overridden",
+                                                OSFormatFileId( m_pc ),
+                                                QWORD( m_prequest ),
+                                                OSFormat( slotstCurrent ) ) );
+                        return fFalse;
                     }
 
                     //  this slot is protected from clean to preserve our write caching percentage
 
+                    OSTrace(    JET_tracetagBlockCacheOperations,
+                                OSFormat(   "C=%s R=0x%016I64x Clean ineligible %s Write Caching Percentage",
+                                            OSFormatFileId( m_pc ),
+                                            QWORD( m_prequest ),
+                                            OSFormat( slotstCurrent ) ) );
                     return fTrue;
                 }
 
@@ -2396,7 +2421,8 @@ class THashedLRUKCache
                         THashedLRUKCache<I>* const                                  m_pc;
                 };
 
-                ERR ErrTryGetIORangeLock(   _In_    CHashedLRUKCachedFileTableEntry<I>* const   pcfte,
+                ERR ErrTryGetIORangeLock(   _In_    const CCachedBlockSlotState&                slotstCurrent,
+                                            _In_    CHashedLRUKCachedFileTableEntry<I>* const   pcfte,
                                             _In_    const COffsets                              offsetsSlot,
                                             _Out_   BOOL* const                                 pfIORangeLocked )
                 {
@@ -2409,6 +2435,13 @@ class THashedLRUKCache
                     //  if we don't have the file open then we can't get the io range lock
 
                     if ( !pcfte )
+                    {
+                        Error( JET_errSuccess );
+                    }
+
+                    //  if the block is superceded then we don't need the io range lock
+
+                    if ( slotstCurrent.FSuperceded() )
                     {
                         Error( JET_errSuccess );
                     }
@@ -2443,7 +2476,7 @@ class THashedLRUKCache
                         if ( pcfte->FTryRequestIORangeLock( piorlNew, fFalse ) )
                         {
                             OSTrace(    JET_tracetagBlockCacheOperations,
-                                        OSFormat(   "C=%s R=0x%016I64x Clean IORangeLock F=%s ib=%llu cb=%llu Grant",
+                                        OSFormat(   "C=%s R=0x%016I64x Clean F=%s IORangeLock ib=%llu cb=%llu Grant",
                                                     OSFormatFileId( m_pc ),
                                                     QWORD( m_prequest ),
                                                     OSFormatFileId( piorlNew->Pcfte()->Pff()),
@@ -2459,9 +2492,10 @@ class THashedLRUKCache
                         else
                         {
                             OSTrace(    JET_tracetagBlockCacheOperations,
-                                        OSFormat(   "C=%s R=0x%016I64x Clean IORangeLock F=%s ib=%llu cb=%llu not available",
+                                        OSFormat(   "C=%s R=0x%016I64x Clean Ineligible %s F=%s IORangeLock ib=%llu cb=%llu not available",
                                                     OSFormatFileId( m_pc ),
                                                     QWORD( m_prequest ),
+                                                    OSFormat( slotstCurrent ),
                                                     OSFormatFileId( piorlNew->Pcfte()->Pff()),
                                                     piorlNew->Offsets().IbStart(),
                                                     piorlNew->Offsets().Cb() ) );
@@ -2593,8 +2627,11 @@ class THashedLRUKCache
                                             _In_ const CCachedBlockSlotState&   slotstCurrent )
                         {
                             m_cbTotal += cbCachedBlock;
-                            m_cbReadCache += slotstCurrent.FValid() && !slotstCurrent.FEverDirty() ? cbCachedBlock : 0;
-                            m_cbWriteCache += slotstCurrent.FValid() && slotstCurrent.FEverDirty() ? cbCachedBlock : 0;
+                            if ( slotstCurrent.FValid() && !slotstCurrent.FSuperceded() )
+                            {
+                                m_cbReadCache += !slotstCurrent.FEverDirty() ? cbCachedBlock : 0;
+                                m_cbWriteCache += slotstCurrent.FEverDirty() ? cbCachedBlock : 0;
+                            }
 
                             return fTrue;
                         }
@@ -2759,6 +2796,7 @@ class THashedLRUKCache
                 ICachedBlockSlab*&                                      m_pcbs;
                 const BOOL                                              m_fRead;
                 const QWORD                                             m_cbRequested;
+                const BOOL                                              m_fOverrideCachePercentage;
                 const QWORD                                             m_cbTotal;
                 const double                                            m_pctWrite;
                 const QWORD                                             m_cbWriteCacheMax;
@@ -2767,9 +2805,8 @@ class THashedLRUKCache
                 const QWORD                                             m_cbReadCache;
                 const QWORD                                             m_cbWriteCacheEligible;
                 const QWORD                                             m_cbReadCacheEligible;
-                QWORD                                                   m_cbSeen;
-                QWORD                                                   m_cbWriteCacheSeen;
-                QWORD                                                   m_cbReadCacheSeen;
+                QWORD                                                   m_cbWriteCacheProduced;
+                QWORD                                                   m_cbReadCacheProduced;
                 QWORD                                                   m_cbInvalid;
                 QWORD                                                   m_cbIORangeLocked;
                 QWORD                                                   m_cbWriteBackPending;
@@ -9279,14 +9316,19 @@ ERR THashedLRUKCache<I>::ErrCleanSlab(  _In_    CRequest* const             preq
 
     //  if we don't already have enough then clean until we do or we cannot clean any more
 
-    QWORD   cClean                  = 0;
-    QWORD   cbWriteBackFailedPrev   = 0;
-    QWORD   cbWriteBackFailed       = 0;
+    QWORD   cClean                      = 0;
+    QWORD   cbWriteBackFailedPrev       = 0;
+    QWORD   cbWriteBackFailed           = 0;
+    BOOL    fOverrideCachePercentage    = fFalse;
 
     while ( cbClean > *pcbClean &&
-            ( cClean == 0 || cbWriteBackFailed > cbWriteBackFailedPrev ) &&
+            (   cClean == 0 ||
+                cbWriteBackFailed > cbWriteBackFailedPrev ||
+                !fRead ) &&
             cClean < cCleanMax )
     {
+        fOverrideCachePercentage = cClean > 0 && cbWriteBackFailed == cbWriteBackFailedPrev && !fRead;
+
         cbWriteBackFailedPrev = cbWriteBackFailed;
 
         Call( CCleanSlabVisitor::ErrExecute(    this, 
@@ -9294,6 +9336,7 @@ ERR THashedLRUKCache<I>::ErrCleanSlab(  _In_    CRequest* const             preq
                                                 ppcbs, 
                                                 fRead, 
                                                 cbClean + cbWriteBackFailedPrev,
+                                                fOverrideCachePercentage,
                                                 pcbClean, 
                                                 &cbWriteBackFailed ) );
 
@@ -9304,7 +9347,17 @@ ERR THashedLRUKCache<I>::ErrCleanSlab(  _In_    CRequest* const             preq
 
     if ( cbClean > *pcbClean )
     {
-        Error( ErrBlockCacheInternalError( "ErrCleanSlab" ) );
+        //  if we are cleaning for a read then track the failure but the failure will be ignored
+
+        if ( fRead )
+        {
+            BlockCacheNotableEvent( "CleanSlabForRead" );
+            Error( ErrERRCheck( JET_errFileIOFail ) );
+        }
+
+        //  we have experienced a fatal error trying to cache a write
+
+        Error( ErrBlockCacheInternalError( "CleanSlabForWrite" ) );
     }
 
 HandleError:
