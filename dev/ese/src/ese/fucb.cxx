@@ -381,7 +381,7 @@ VOID FUCBIllegalOperationFDPToBeDeleted(
 
         if ( pfcbTable != NULL && pfcbTable->Ptdb() != NULL && pfcbTable->Ptdb()->SzTableName() != NULL )
         {
-            OSStrCbFormatW( wszTableName, sizeof(wszTableName), L"%hs", pfucb->u.pfcb->Ptdb()->SzTableName() );
+            OSStrCbFormatW( wszTableName, sizeof(wszTableName), L"%hs", pfcbTable->Ptdb()->SzTableName() );
         }
 
         const WCHAR* rgwsz[] =
