@@ -4912,20 +4912,14 @@ ERR CPAGE::ErrCheckPage(
                 //  The whole line is starting above the data start, i.e. off the data section, and possibly even off page.
                 MakeCorruptionDetailsSz( L"TAG %d computed offset starts too high (ib=%d, cb=%d, %p > %p)", itag, ib, cb, line.pv, pbPageDataEnd );
                 (*pcprintf)( "%ws\r\n", wszCorruptionDetails );
-                PageAssertTrack( *this, fFalse, "LineEntirelyAboveDataSection" );
-#ifdef DEBUG
                 Error( ErrCaptureCorruptedPageInfoSz( mode, L"LineEntirelyAboveDataSection", wszCorruptionDetails, fLogEvent ) );
-#endif
             }
             if ( pbLineLastByte > pbPageDataEnd )
             {
                 //  The line ends above the data start, i.e. off the data section, but does start / overlaping in valid data section.
                 MakeCorruptionDetailsSz( L"TAG %d computed offset starts too high (ib=%d, cb=%d, %p > %p)", itag, ib, cb, pbLineLastByte, pbPageDataEnd );
                 (*pcprintf)( "%ws\r\n", wszCorruptionDetails );
-                PageAssertTrack( *this, FNegTest( fCorruptingPageLogically ), "LineEndsAboveDataSection" );
-#ifdef DEBUG
                 Error( ErrCaptureCorruptedPageInfoSz( mode, L"LineEndsAboveDataSection", wszCorruptionDetails, fLogEvent ) );
-#endif
             }
 
             if ( errGetLine < JET_errSuccess || !FOnData( line.pv, line.cb ) )
@@ -4937,10 +4931,7 @@ ERR CPAGE::ErrCheckPage(
                 MakeCorruptionDetailsSz( L"UNCAUGHT: TAG %d ErrGetPtr() failed or got line off page (ib=%d, cb=%d, err=%d,f=%d).", itag, ib, cb, errGetLine, FOnData( line.pv, line.cb ) );
                 (*pcprintf)( "%ws\r\n", wszCorruptionDetails );
                 //  there should not be too many errors coming from ErrGetLine() that we can't embed the err in the corruption type.
-                PageAssertTrack( *this, FNegTest( fCorruptingPageLogically ), "GetLineFailed:%d\n", errGetLine );
-#ifdef DEBUG
                 Error( ErrCaptureCorruptedPageInfoSz( mode, wszGetLineErr, wszCorruptionDetails, fLogEvent ) );
-#endif
             }
 
             //  do some simple KEYDATAFLAGS checks
