@@ -3274,7 +3274,7 @@ class THashedLRUKCache
                     //  ask the cache to flush all its state up to the write back pointer
 
                     Call( m_pjInner->ErrGetProperties( NULL, &jposReplayNew, NULL, NULL, NULL ) );
-                    Call( m_pc->ErrFlushAllState( jposReplayNew ) );
+                    Call( m_pc->ErrFlushAllState( jposReplayNew, fTrue ) );
 
                     //  advance the replay pointer to the write back pointer
 
@@ -4739,7 +4739,7 @@ class THashedLRUKCache
         void AsyncSlabWriteBackWorker();
         void PerformOpportunisticSlabWriteBacks();
         ERR ErrVerifyTruncate( _In_ const JournalPosition jposReplay );
-        ERR ErrFlushAllState( _In_ const JournalPosition jposDurableForWriteBack );
+        ERR ErrFlushAllState( _In_ const JournalPosition jposDurableForWriteBack, _In_ const BOOL fSaveOpenSlabs );
         ERR ErrTryStartSlabWriteBacks(  _In_ CArray<QWORD>&         arrayIbSlab,
                                         _In_ const BOOL             fSaveOpenSlabs );
         ICachedBlockSlab* PcbsGetOpenSlabSafeForWriteBack( _In_ const QWORD ibSlab );
@@ -5348,7 +5348,7 @@ ERR THashedLRUKCache<I>::ErrPrepareToDismount()
     }
     if ( jposReplay < jposDurableForWriteBack )
     {
-        Call( ErrFlushAllState( jposDurableForWriteBack ) );
+        Call( ErrFlushAllState( jposDurableForWriteBack, fFalse ) );
         Call( m_pj->ErrTruncate( jposDurableForWriteBack ) );
         Call( ErrFlush() );
     }
@@ -7620,20 +7620,21 @@ HandleError:
 }
 
 template<class I>
-ERR THashedLRUKCache<I>::ErrFlushAllState( _In_ const JournalPosition jposDurableForWriteBack )
+ERR THashedLRUKCache<I>::ErrFlushAllState(  _In_ const JournalPosition  jposDurableForWriteBack,
+                                            _In_ const BOOL             fSaveOpenSlabs )
 {
     ERR                                     err         = JET_errSuccess;
     CHashedLRUKCacheThreadLocalStorage<I>*  pctls       = NULL;
     BOOL                                    fListLocked = fFalse;
     CArray<QWORD>                           arrayIbSlab;
 
-    //  get our thread local storage
-
-    Call( ErrGetThreadLocalStorage( &pctls ) );
-
     //  register the thread that is performing the flush as suspended as well so that we can write its slabs
 
-    Call( ErrSuspendThreadFromStateAccess( m_msStateAccess.GroupActive(), pctls ) );
+    if ( fSaveOpenSlabs )
+    {
+        Call( ErrGetThreadLocalStorage( &pctls ) );
+        Call( ErrSuspendThreadFromStateAccess( m_msStateAccess.GroupActive(), pctls ) );
+    }
 
     //  retry until all dirty slabs are written out
 
@@ -7641,7 +7642,10 @@ ERR THashedLRUKCache<I>::ErrFlushAllState( _In_ const JournalPosition jposDurabl
     {
         //  register any effectively suspended threads
 
-        Call( ErrSuspendBlockedThreadsFromStateAccess() );
+        if ( fSaveOpenSlabs )
+        {
+            Call( ErrSuspendBlockedThreadsFromStateAccess() );
+        }
 
         //  get a list of all dirty slabs
 
@@ -7674,7 +7678,7 @@ ERR THashedLRUKCache<I>::ErrFlushAllState( _In_ const JournalPosition jposDurabl
 
         if ( arrayIbSlab.Size() > 0 )
         {
-            Call( ErrTryStartSlabWriteBacks( arrayIbSlab, fTrue ) );
+            Call( ErrTryStartSlabWriteBacks( arrayIbSlab, fSaveOpenSlabs ) );
         }
     }
 
