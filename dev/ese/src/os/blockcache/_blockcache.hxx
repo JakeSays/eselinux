@@ -5,6 +5,7 @@
 
 #include "tcconst.hxx"
 #include "checksum.hxx"
+#include "lz4.h"
 
 #ifdef ESENT
 #include "jetmsg.h"
