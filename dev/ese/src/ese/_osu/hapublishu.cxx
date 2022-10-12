@@ -20,23 +20,8 @@ void OSUHAPublishEvent_(
     DWORD cParameter,
     const WCHAR** rgwszParameter )
 {
-    BOOL fEmit    =   fTrue;
-
     // failure events need not be published if there is no instance
-    // update:  why?
-    if ( pinst == NULL || pinstNil == pinst )
-    {
-        FireWall( "SkipFi2NoInst" );
-        fEmit = fFalse;
-    }
-
-    if ( !UlParam( pinst, JET_paramEnableHaPublish ) )
-    {
-        // might be nice to Assert/FireWall not O365 Datacenter / Store.worker, but a bit of a layer violation
-        fEmit = fFalse;
-    }
-
-    if ( fEmit )
+    if ( pinstNil != pinst && UlParam( pinst, JET_paramEnableHaPublish ) )
     {
         OSUHAPublishEventImpl(  haTag,
                                 pinst->m_wszInstanceName,
@@ -146,27 +131,10 @@ void OSUHAEmitFailureTag_(
         }
     }
 
-    // FUTURE:  HA Publish is only for O365 datacenter, but even so this is a bit of a layering violation.  We will
-    // add these temporarily to do a basic health check on O365 to see if we're dropping HA FailureItems from any ESE
-    // code paths.
-    const BOOL fO365StoreWorker = ( _wcsicmp( WszUtilProcessName(), L"Microsoft.Exchange.Store.Worker" ) == 0 );
-    const BOOL fO365DatacenterProcess = 
-       fO365StoreWorker ||
-       ( _wcsicmp( WszUtilProcessName(), L"MSExchangeRepl" ) == 0 ) ||
-       ( _wcsicmp( WszUtilProcessName(), L"EdgeTransport" ) == 0 ) ||
-       ( _wcsicmp( WszUtilProcessName(), L"Microsoft.Exchange.DxStore.HA.Instance" ) == 0 ) ||
-       ( _wcsicmp( WszUtilProcessName(), L"Microsoft.Exchange.SharedCache" ) == 0 ) ||
-       ( _wcsicmp( WszUtilProcessName(), L"Microsoft.Exchange.Store.Service" ) == 0 );  // calls JET APIs, but should not actually start ese inst
-       // should we add eseutil?
-
     //  if the instance pointer is NULL then do not emit an event
     //
     if ( !pinstActual )
     {
-        if ( !FInEmbeddedUnitTest() )
-        {
-            FireWall( "SkipFiNoInstActualX" );
-        }
         fEmit = fFalse;
     }
 
@@ -174,10 +142,6 @@ void OSUHAEmitFailureTag_(
     //
     if ( pinstActual && !UlParam( pinstActual, JET_paramEnableHaPublish ) )
     {
-        if ( fO365StoreWorker )
-        {
-            FireWall( "SkipFiHaPublishOff" );
-        }
         fEmit = fFalse;
     }
 
@@ -187,11 +151,6 @@ void OSUHAEmitFailureTag_(
             (   !pinstActual->m_wszInstanceName || !pinstActual->m_wszInstanceName[ 0 ] ||
                 !pinstActual->m_wszDisplayName || !pinstActual->m_wszDisplayName[ 0 ] ) )
     {
-        // many test processes have this off, but all real ESE instances should be correctly identified.
-        if ( fO365DatacenterProcess )
-        {
-            FireWall( "SkipFiNoInstOrDispName" );
-        }
         fEmit = fFalse;
     }
 
@@ -199,7 +158,6 @@ void OSUHAEmitFailureTag_(
     //
     if ( haTag == HaDbFailureTagNoOp )
     {
-        FireWall( "SkipFiTagNoOp" );
         fEmit = fFalse;
     }
 
@@ -207,7 +165,6 @@ void OSUHAEmitFailureTag_(
     //
     if ( !wszGuid || !wszGuid[ 0 ] )
     {
-        FireWall( "SkipFiNoGuid" );
         fEmit = fFalse;
     }
 
@@ -219,7 +176,6 @@ void OSUHAEmitFailureTag_(
             HA_NOOP_FAILURE_TAG_ID + msgidOffset <= HA_NOOP_FAILURE_TAG_ID ||
             HA_NOOP_FAILURE_TAG_ID + msgidOffset > HA_MAX_FAILURE_TAG_ID )
     {
-        FireWall( "SkipFiEvtOutOfRange" );
         fEmit = fFalse;
     }
 
@@ -258,16 +214,6 @@ void OSUHAEmitFailureTag_(
                                 HA_NOOP_FAILURE_TAG_ID + msgidOffset,
                                 iwsz,
                                 rgwsz );
-
-        AtomicExchangeSet( (ULONG*)&pinst->m_grbitHaFailureTags, (ULONG)bitHaPublishedEvent );
-        if ( haTag == HaDbFailureTagCorruption )
-        {
-            AtomicExchangeSet( (ULONG*)&pinst->m_grbitHaFailureTags, (ULONG)bitHaPublishedCorruptionTag );
-        }
-        if ( haTag == HaDbFailureTagIoHard )
-        {
-            AtomicExchangeSet( (ULONG*)&pinst->m_grbitHaFailureTags, (ULONG)bitHaPublishedIoHardTag );
-        }
     }
 
     //  cleanup

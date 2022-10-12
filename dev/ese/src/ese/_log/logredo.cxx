@@ -3570,10 +3570,6 @@ ERR LOG::ErrLGRIRedoNodeOperation( const LRNODE_ *plrnode, ERR *perr )
             Assert( (ULONG)data.Cb() == cbNewData );
             if ( (ULONG)data.Cb() != cbNewData )
             {
-                //  per analysis of a real world case, it is hard to imagine how local (passive) data or remote (active)
-                //  database data generated this incorrectness.  This is literally saying the ib/cb pairs do NOT add up 
-                //  to the final record size (from the active).  This almost assuredly means that there was a corruption 
-                //  of the actual log record data.  Or a bug in our diff creation or reconstruction alg.
                 OSUHAEmitFailureTag( m_pinst, HaDbFailureTagCorruption, L"a3cb57b9-8ba1-496d-a6fc-4fc2f0140fc4" );
                 Error( ErrERRCheck( JET_errLogCorrupted ) );
             }
@@ -5287,7 +5283,7 @@ ERR LOG::ErrLGRICheckRedoAttachDb(
             goto HandleError;
         }
     }
-    else if ( FErrIsDbCorruption( err ) )
+    else if ( JET_errReadVerifyFailure == err )
     {
         reason = eDARHeaderCorrupt;
         if ( pfmp->FIgnoreDeferredAttach() )
@@ -5297,8 +5293,8 @@ ERR LOG::ErrLGRICheckRedoAttachDb(
         }
         else
         {
-            // the DB file header is corrupt
-            OSUHAEmitFailureTag( m_pinst, HaDbFailureTagCorruption, L"9106f5c1-2f93-479b-a12a-c93c6ab3de68" );
+            // the log file header is corrupt
+            OSUHAEmitFailureTag( m_pinst, HaDbFailureTagRecoveryRedoLogCorruption, L"9106f5c1-2f93-479b-a12a-c93c6ab3de68" );
             goto HandleError;
         }
     }

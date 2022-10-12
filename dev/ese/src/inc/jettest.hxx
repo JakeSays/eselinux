@@ -356,8 +356,5 @@ void Test##component##test::Run_()
 
 #endif // !ENABLE_JET_UNIT_TEST
 
-// defined in both ese.dll and eselibwithtest.dll, but returning different answer
-BOOL FInEmbeddedUnitTest();
-
 #endif // JETTEST_HXX_INCLUDED
 

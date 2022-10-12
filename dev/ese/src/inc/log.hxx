@@ -1285,10 +1285,6 @@ public:
     BOOL FLastLRIsShutdown() const { return m_fLastLRIsShutdown; }
     LGPOS LgposShutDownMark() const { return m_lgposRedoShutDownMarkGlobal; }
 
-    // Note: Generally people should not be interested in lgposRedo, but failure event code has a need to 
-    // know it directly.
-    LGPOS LgposDiagnosticRedoFailedAddress() const { return m_lgposRedo; }
-
     VOID LGRRemoveFucb( FUCB * pfucb );
 
     ERR ErrLGMostSignificantRecoveryWarning( void );

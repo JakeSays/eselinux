@@ -215,17 +215,6 @@ Language=English
 %1 (%2) %3The specific ESE configuration store is locked in a read inhibit state, clear the %1 registry value to enable ESE to continue and utilize the config store.
 .
 
-MessageId=109
-SymbolicName=START_INSTANCE_FAILED_ID
-Language=English
-%1 (%2) %3The database engine failed to start instance (%4) due to error %5. (Time=%6 seconds)
-%n
-Failure Details:%n
-Mode: %7%n
-Fail Address: %8%n
-Publishing: %9%n
-.
-
 ;// You are almost assuredly not adding in the right place?
 
 

@@ -3465,7 +3465,7 @@ INLINE ERR DBFILEHDR::DumpLite( CPRINTF* pcprintf, const char * const szNewLine,
     (*pcprintf)( "Revert Page Count: %u%s", (ULONG) le_ulRevertPageCount, szNewLine );
 
     lgpos = le_lgposCommitBeforeRevert;
-    (*pcprintf)( "Last Commit Before Revert: (0x%X,%X,%X)  %s", lgpos.lGeneration, lgpos.isec, lgpos.ib, szNewLine );
+    (*pcprintf)( "Last Commit Before Revert: (0x%X,%X,%X)  ", lgpos.lGeneration, lgpos.isec, lgpos.ib );
 
     return JET_errSuccess;
 }
@@ -5032,9 +5032,6 @@ public:
     BOOL                m_fTermInProgress;
     BOOL                m_fTermAbruptly;
     INST_STINIT         m_fSTInit;
-    //  Note: This status is not cleaned up if we fail in middle of Redo, Undo and this fact
-    //  is used at end of JetInitEx() to log what mode we failed in.  So do not reset this on
-    //  error paths
     INT                 m_perfstatusEvent;  //  Redo, Undo, Runtime/Do-time, and Term.
     
     BOOL                m_fBackupAllowed;
@@ -5235,8 +5232,6 @@ public:
 
     CIsamSequenceDiagLog        m_isdlInit;
     CIsamSequenceDiagLog        m_isdlTerm;
-
-    volatile DWORD              m_grbitHaFailureTags;
 
 private:
     ERR ErrAPIAbandonEnter_( const LONG lOld );

@@ -5,9 +5,7 @@
 
 #include "PageSizeClean.hxx"
 
-#ifndef ENABLE_JET_UNIT_TEST
-#error "File jettest.cxx is only supposed to be referenced / compiled in the unit test .vcxproj file."
-#endif
+#ifdef ENABLE_JET_UNIT_TEST
 
 #include <errhandlingapi.h>
 
@@ -539,7 +537,5 @@ void JetTestEnforceSEHException::Cleanup()
     s_pThreadExcep = NULL;
 }
 
-BOOL FInEmbeddedUnitTest()
-{
-    return fTrue;
-}
+#endif // ENABLE_JET_UNIT_TEST
+

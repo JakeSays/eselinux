@@ -665,7 +665,7 @@ const INT cfuncmap = sizeof( rgfuncmap ) / sizeof( EDBGFUNCMAP );
 
 
 #define DUMPA( _struct )            { #_struct, &(CDUMPA<_struct>::instance), #_struct " <address>" }
-#define DUMPAA( _struct, addlargs ) { #_struct, &(CDUMPA<_struct>::instance), #_struct " <address>" addlargs }
+#define DUMPAA( _struct, addlargs ) { #_struct, &(CDUMPA<_struct>::instance), #_struct " <address> " addlargs }
 
 
 //  ================================================================
@@ -691,20 +691,20 @@ LOCAL const CDUMPMAP rgcdumpmap[] = {
     DUMPA( LOG_STREAM ),
     DUMPA( LOG_WRITE_BUFFER ),
     DUMPA( VER ),
-    DUMPAA( MEMPOOL, " [<itag>|*]              - <itag>=specified tag only, *=all tags" ),
+    DUMPAA( MEMPOOL, "[<itag>|*]              - <itag>=specified tag only, *=all tags" ),
     DUMPA( SPLIT ),
     DUMPA( SPLITPATH ),
     DUMPA( MERGE ),
     DUMPA( MERGEPATH ),
-    DUMPAA( DBFILEHDR, "|.|.disk" ),
+    DUMPA( DBFILEHDR ),
     { "CDynamicHashTable", &(CDUMPA<CDynamicHashTableEDBG>::instance), "CDynamicHashTable <address>" },
     { "CApproximateIndex", &(CDUMPA<CApproximateIndexEDBG>::instance), "CApproximateIndex <address>" },
     { "g_bflruk", &(CDUMPA<CLRUKResourceUtilityManagerEDBG>::instance), "g_bflruk ese!g_bflruk" },
-    DUMPAA( COSDisk, "|.db|.edb" ),
-    DUMPAA( COSFile, "|.db|.edb" ),
+    DUMPA( COSDisk ),
+    DUMPA( COSFile ),
     DUMPA( COSFileFind ),
     DUMPA( COSFileSystem ),
-    DUMPAA( IOREQ, " [dumpall|norunstats]" ),
+    DUMPAA( IOREQ, "[dumpall|norunstats]" ),
     { "PAGE", &(CDUMPA<CPAGE>::instance), 
          "PAGE <pgno> <address|.> [a|b|h|t|*|2|4|8|16|32]   - a=alloc map, b=binary dump, h=header, t=tags, *=all, 2/4/8/16/32=pagesize" },
     DUMPA( CResource ),
@@ -16117,7 +16117,7 @@ DEBUG_EXT( EDBGDumpDBDiskPage )
         dprintf( "Error: Could not read global FMP variables for ifmp = %d.\n", ifmp );
         goto HandleError;
     }
-    else if ( pgno < 1 )
+    else if ( pgno < 1 )        //  UNDONE: don't currently support dumping page header
     {
         dprintf( "Error: Invalid pgno.\n" );
         goto HandleError;
@@ -16179,10 +16179,6 @@ HandleError:
     if ( NULL != pbPage )
     {
         VirtualFree( pbPage, 0, MEM_RELEASE );
-    }
-    if ( NULL != posf )
-    {
-        Unfetch( posf );
     }
 }
 
@@ -19131,8 +19127,6 @@ VOID CDUMPA<DBFILEHDR>::Dump(
 {
     DBFILEHDR *     pdbfilehdrDebuggee  = NULL;
     DBFILEHDR *     pdbfilehdr          = NULL;
-    COSFile *       posf                = NULL;
-    const BOOL      fReadFromDisk       = ( argc >= 1 || 0 == _stricmp( argv[ 0 ], ".disk" ) );
 
     const CHAR * const szMemDump = "mem";
 
@@ -19150,81 +19144,24 @@ VOID CDUMPA<DBFILEHDR>::Dump(
         return;
     }
 
-    if ( fReadFromDisk )
+    if ( FFetchVariable( pdbfilehdrDebuggee, &pdbfilehdr ) )
     {
-        HANDLE      hCurrentProcess;
-        ULONG64     ulCurrentProcess;
+        const SIZE_T    dwOffset        = (BYTE *)pdbfilehdrDebuggee - (BYTE *)pdbfilehdr;
 
-        const ULONG cbPage = Pdls()->CbPage();
-
-        if ( Pdls()->IfmpCurrent() == ifmpNil || Pdls()->IfmpCurrent() == 0 ||
-             Pdls()->PfmpCache( Pdls()->IfmpCurrent() ) == NULL ||
-             cbPage == 0 )
+        dprintf(    "[DBFILEHDR] 0x%p bytes @ 0x%N\n",
+                    QWORD( sizeof( DBFILEHDR ) ),
+                    pdbfilehdrDebuggee );
+        if ( fMemDump )
         {
-            dprintf( "Something went wrong.  To use .disk argument, must have an implicit IFMP set with !ese .db.  Or we couldn't load the Pfmp cache or cbPage. (%d, 0x%p, %d)\n",
-                     Pdls()->IfmpCurrent(), ( Pdls()->IfmpCurrent() != 0 && Pdls()->IfmpCurrent() != ifmpNil ) ? Pdls()->PfmpCache( Pdls()->IfmpCurrent() ) : NULL, cbPage );
-            goto HandleError;
+            (VOID)( pdbfilehdr->Dump( CPRINTFWDBG::PcprintfInstance(), dwOffset ) );
         }
-
-        //  UNDONE: currently assumes all databases are COSFile
-        //
-        if ( !FFetchVariable( (COSFile *)( Pdls()->PfmpCache( Pdls()->IfmpCurrent() ) )->Pfapi(), &posf ) )
+        else
         {
-            dprintf( "Error: Could not read COSFile at 0x%N for specified FMP.\n", ( Pdls()->PfmpCache( Pdls()->IfmpCurrent() ) )->Pfapi() );
-            goto HandleError;
+            (VOID)( pdbfilehdr->DumpLite( CPRINTFWDBG::PcprintfInstance(), "\n", dwOffset ) );
         }
-
-        //  VirtualAlloc() the buffer to ensure alignment
-        //
-        pdbfilehdr = (DBFILEHDR *)VirtualAlloc( NULL, cbPage, MEM_COMMIT, PAGE_READWRITE );
-        if ( NULL == pdbfilehdr )
-        {
-            dprintf( "Error: Could not allocate DBFILEHDR buffer (%d bytes) via VA !\n", cbPage );
-            goto HandleError;
-            return;
-        }
-
-        HRESULT hr = g_DebugSystemObjects->GetCurrentProcessHandle( &ulCurrentProcess );
-        hCurrentProcess = (HANDLE) ulCurrentProcess;
-        if ( FAILED( hr ) )
-        {
-            dprintf( "Failed to fetch process handle: %#x\n", hr );
-            goto HandleError;
-        }
-
-        if ( !FEDBGGetDbDiskPage( hCurrentProcess, posf->Handle(), (PGNO)-1 /* 0 would be shadow header */, (BYTE*)pdbfilehdr, cbPage ) )
-        {
-            dprintf( "Failed to read from disk handle.\n" );
-            goto HandleError;            
-        }
-        dprintf( "Successfully read DBFILEHDR off the disk.\n" );
-        if ( pdbfilehdr->le_filetype != JET_filetypeDatabase )
-        {
-            dprintf( "\nWARNING:  The read DBFILEHDR doesn't have JET_filetypeDatabase.  Corruption or maybe EBC is enabled.  Dumping contents anyways.\n\n" );
-        }
+        
+        Unfetch( pdbfilehdr );
     }
-    else if ( !FFetchVariable( pdbfilehdrDebuggee, &pdbfilehdr ) )
-    {
-        dprintf( "Failed to fetch DBFILEHDR memory from debugger process.\n" );
-        goto HandleError;            
-    }
-
-    const SIZE_T dwOffset = fReadFromDisk ? 0 : ( (BYTE *)pdbfilehdrDebuggee - (BYTE *)pdbfilehdr );
-
-    dprintf( "[DBFILEHDR] 0x%p bytes @ 0x%N\n", QWORD( sizeof( DBFILEHDR ) ), pdbfilehdrDebuggee );
-    if ( fMemDump )
-    {
-        (VOID)( pdbfilehdr->Dump( CPRINTFWDBG::PcprintfInstance(), dwOffset ) );
-    }
-    else
-    {
-        (VOID)( pdbfilehdr->DumpLite( CPRINTFWDBG::PcprintfInstance(), "\n", dwOffset ) );
-    }        
-
-HandleError:
-
-    fReadFromDisk ? VirtualFree( pdbfilehdr, 0, MEM_RELEASE ) : Unfetch( pdbfilehdr );
-    Unfetch( posf );
 }
 
 // TrxidStack dumping
