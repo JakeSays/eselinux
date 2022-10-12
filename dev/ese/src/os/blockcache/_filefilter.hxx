@@ -2939,7 +2939,9 @@ ERR TFileFilter<I>::ErrBeginAccess( _In_    const COffsets&                 offs
 {
     ERR                     err             = JET_errSuccess;
     const BOOL              fNotYetAttached = !m_pcfh && !m_initOnceAttach.FIsInit();
-    const BOOL              fNeedsAttach    = fWrite && fNotYetAttached && m_pcfconfig && m_pcfconfig->FCachingEnabled();
+    const BOOL              fNeedsAttach    = ( fWrite && fNotYetAttached &&
+                                                m_fEverEligibleForCaching &&
+                                                m_pcfconfig && m_pcfconfig->FCachingEnabled() );
     COffsets                offsetsActual   = offsets;
     CMeteredSection::Group  group           = CMeteredSection::groupInvalidNil;
     CSemaphore*             psem            = NULL;
