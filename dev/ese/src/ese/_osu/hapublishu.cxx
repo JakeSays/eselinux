@@ -26,7 +26,7 @@ void OSUHAPublishEvent_(
     // update:  why?
     if ( pinst == NULL || pinstNil == pinst )
     {
-        FireWall( "SkipFi2NoInst" );
+        //FireWall( "SkipFi2NoInst" );
         fEmit = fFalse;
     }
 
