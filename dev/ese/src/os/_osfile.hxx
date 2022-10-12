@@ -168,7 +168,8 @@ class COSFile  //  osf
 
         IFileAPI::FileModeFlags Fmf() const override;
 
-        ERR ErrFlushFileBuffers( const IOFLUSHREASON iofr ) override;
+        ERR ErrFlushFileBuffers( _In_ const IOFLUSHREASON iofr, _In_ const FileFlushMode ffm ) override;
+        LONG64 CioNonFlushed() const override;
         void SetNoFlushNeeded() override;
 
         ERR ErrPath( _Out_bytecap_c_(cbOSFSAPI_MAX_PATHW) WCHAR* const wszAbsPath ) override;
@@ -282,8 +283,6 @@ class COSFile  //  osf
         ERR ErrNTFSAttributeListSize( QWORD* const pcbSize ) override;
 
         ERR ErrDiskId( ULONG_PTR* const pulDiskId ) const override;
-
-        LONG64 CioNonFlushed() const override;
 
         BOOL FSeekPenalty() const override
         {

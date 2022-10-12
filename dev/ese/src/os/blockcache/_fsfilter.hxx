@@ -2110,7 +2110,7 @@ ERR TFileSystemFilter<I>::ErrDetachFile(    _In_        CFileFilter* const      
                             NULL, 
                             NULL ) );
     fPresumeDetached = fTrue;
-    Call( pff->ErrFlush( iofrBlockCache, iomRaw ) );
+    Call( pff->ErrFlush( iofrBlockCache, ffmDataOnly, iomRaw ) );
 
     //  ask the cache to close the file
     //

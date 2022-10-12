@@ -96,7 +96,7 @@ class TFileFilter  //  ff
 
     public:  //  IFileAPI
 
-        ERR ErrFlushFileBuffers( _In_ const IOFLUSHREASON iofr ) override;
+        ERR ErrFlushFileBuffers( _In_ const IOFLUSHREASON iofr, _In_ const IFileAPI::FileFlushMode ffm ) override;
         void SetNoFlushNeeded() override;
 
         ERR ErrSetSize( _In_ const TraceContext&    tc,
@@ -162,7 +162,9 @@ class TFileFilter  //  ff
                         _In_opt_                const DWORD_PTR                 keyIOComplete,
                         _In_opt_                const IFileAPI::PfnIOHandoff    pfnIOHandoff ) override;
         ERR ErrIssue( _In_ const IFileFilter::IOMode iom ) override;
-        ERR ErrFlush( _In_ const IOFLUSHREASON iofr, _In_ const IFileFilter::IOMode iom ) override;
+        ERR ErrFlush(   _In_ const IOFLUSHREASON            iofr,
+                        _In_ const IFileAPI::FileFlushMode  ffm,
+                        _In_ const IFileFilter::IOMode      iom ) override;
 
     private:
 
@@ -2446,14 +2448,14 @@ ERR TFileFilter<I>::ErrGetPhysicalId(   _Out_ VolumeId* const   pvolumeid,
 }
 
 template< class I >
-ERR TFileFilter<I>::ErrFlushFileBuffers( _In_ const IOFLUSHREASON iofr )
+ERR TFileFilter<I>::ErrFlushFileBuffers( _In_ const IOFLUSHREASON iofr, _In_ const IFileAPI::FileFlushMode ffm )
 {
     ERR err = JET_errSuccess;
 
     const LONG64 ciosDelta = AtomicExchange( &m_cioUnflushed, 0 );
     AtomicAdd( (QWORD*)&m_cioFlushing, ciosDelta );
 
-    Call( ErrFlush( iofr, iomEngine ) );
+    Call( ErrFlush( iofr, ffm, iomEngine ) );
 
 HandleError:
     if ( err < JET_errSuccess )
@@ -2879,7 +2881,9 @@ HandleError:
 }
 
 template< class I >
-ERR TFileFilter<I>::ErrFlush( _In_ const IOFLUSHREASON iofr, _In_ const IFileFilter::IOMode iom )
+ERR TFileFilter<I>::ErrFlush(   _In_ const IOFLUSHREASON            iofr,
+                                _In_ const IFileAPI::FileFlushMode  ffm,
+                                _In_ const IFileFilter::IOMode      iom )
 {
     ERR     err         = JET_errSuccess;
     BOOL    fFlush      = fFalse;
@@ -2891,7 +2895,7 @@ ERR TFileFilter<I>::ErrFlush( _In_ const IOFLUSHREASON iofr, _In_ const IFileFil
             iom == iomCacheWriteThrough ||
             iom == iomCacheWriteBack );
 
-    OSTrace( JET_tracetagBlockCache, OSFormat( "%s ErrFlushFileBuffers iom=%u", OSFormat( this ), iom ) );
+    OSTrace( JET_tracetagBlockCache, OSFormat( "%s ErrFlush ffm=%u iom=%u", OSFormat( this ), ffm, iom ) );
 
     switch ( iom )
     {
@@ -2924,7 +2928,7 @@ ERR TFileFilter<I>::ErrFlush( _In_ const IOFLUSHREASON iofr, _In_ const IFileFil
 
     if ( fFlush )
     {
-        Call( TFileWrapper<I>::ErrFlushFileBuffers( iofr ) );
+        Call( TFileWrapper<I>::ErrFlushFileBuffers( iofr, ffm ) );
     }
 
 HandleError:
@@ -3296,7 +3300,7 @@ ERR TFileFilter<I>::ErrAttach( _In_ const COffsets& offsetsFirstWrite )
                     NULL ) );
     fPresumeAttached = fTrue;
 
-    Call( ErrFlushFileBuffers( iofrBlockCache ) );
+    Call( ErrFlushFileBuffers( iofrBlockCache, ffmDataOnly ) );
 
     //  mark the file as attached by retaining the cached file header.  this will allow cache write through / write back
     //  to the cached file to occur

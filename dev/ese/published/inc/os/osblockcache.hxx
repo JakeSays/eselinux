@@ -155,7 +155,9 @@ class IFileFilter  //  ff
 
         //  Flushes all data previously written for the current file.
 
-        virtual ERR ErrFlush( _In_ const IOFLUSHREASON iofr, _In_ const IFileFilter::IOMode iom ) = 0;
+        virtual ERR ErrFlush(   _In_ const IOFLUSHREASON            iofr,
+                                _In_ const IFileAPI::FileFlushMode  ffm,
+                                _In_ const IFileFilter::IOMode      iom ) = 0;
 };
 
 constexpr IFileFilter::IOMode iomRaw = IFileFilter::IOMode::iomRaw;

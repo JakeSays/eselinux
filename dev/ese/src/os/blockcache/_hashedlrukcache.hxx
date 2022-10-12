@@ -2246,7 +2246,7 @@ class THashedLRUKCache
 
                         if ( pwb == m_ilWriteBack.NextMost() || pwb->Pcfte() != m_ilWriteBack.Next( pwb )->Pcfte() )
                         {
-                            const ERR errFlush = pwb->Pcfte()->Pff()->ErrFlush( iofrBlockCache, iomCacheWriteThrough );
+                            const ERR errFlush = pwb->Pcfte()->Pff()->ErrFlush( iofrBlockCache, ffmDataOnly, iomCacheWriteThrough );
                             for (   CWriteBack* pwbT = pwb;
                                     pwbT && pwbT->Pcfte() == pwb->Pcfte();
                                     pwbT = m_ilWriteBack.Prev( pwbT ) )
@@ -3090,7 +3090,7 @@ class THashedLRUKCache
 
                     //  ensure that all state referred to by the journal entries we are about to truncate is durable
 
-                    Call( m_pc->PffCaching()->ErrFlushFileBuffers( iofrBlockCache ) );
+                    Call( m_pc->PffCaching()->ErrFlushFileBuffers( iofrBlockCache, ffmDataOnly ) );
 
                     //  truncate the journal
 
@@ -3257,7 +3257,7 @@ class THashedLRUKCache
                         //  advance the durable pointer (if not already done)
 
                         Call( m_pjInner->ErrFlush() );
-                        Call( m_pc->PffCaching()->ErrFlushFileBuffers( iofrBlockCache ) );
+                        Call( m_pc->PffCaching()->ErrFlushFileBuffers( iofrBlockCache, ffmDataOnly ) );
                     }
 
                     if ( m_jposLastEnd != jposInvalid || cbAvail >= cbJournalFullAndDurable )
@@ -3268,7 +3268,7 @@ class THashedLRUKCache
                         Call( err == JET_errDiskFull ? JET_errSuccess : err );
 
                         Call( m_pjInner->ErrFlush() );
-                        Call( m_pc->PffCaching()->ErrFlushFileBuffers( iofrBlockCache ) );
+                        Call( m_pc->PffCaching()->ErrFlushFileBuffers( iofrBlockCache, ffmDataOnly ) );
                     }
 
                     //  ask the cache to flush all its state up to the write back pointer
@@ -3284,7 +3284,7 @@ class THashedLRUKCache
 
                     Call( m_pjInner->ErrAppendEntry( _countof( rgjbEmpty ), rgjbEmpty, &jposEmpty, &jposEmptyEnd ) );
                     Call( m_pjInner->ErrFlush() );
-                    Call( m_pc->PffCaching()->ErrFlushFileBuffers( iofrBlockCache ) );
+                    Call( m_pc->PffCaching()->ErrFlushFileBuffers( iofrBlockCache, ffmDataOnly ) );
 
                 HandleError:
                     if ( err < JET_errSuccess )
@@ -3329,7 +3329,7 @@ class THashedLRUKCache
 
                     //  flush the caching file
 
-                    Call( m_pc->PffCaching()->ErrFlushFileBuffers( iofrBlockCache ) );
+                    Call( m_pc->PffCaching()->ErrFlushFileBuffers( iofrBlockCache, ffmDataOnly ) );
 
                 HandleError:
                     delete pfje;
@@ -5301,7 +5301,7 @@ ERR THashedLRUKCache<I>::ErrCreate()
 
     //  flush the caching file
 
-    Call( PffCaching()->ErrFlushFileBuffers( iofrBlockCache ) );
+    Call( PffCaching()->ErrFlushFileBuffers( iofrBlockCache, ffmAll ) );
 
 HandleError:
     delete pch;
@@ -5667,7 +5667,7 @@ ERR THashedLRUKCache<I>::ErrDestage(    _In_        const VolumeId              
 
             //  flush the cached file and mark the write backs as durable
 
-            Call( pcfte->Pff()->ErrFlush( iofrBlockCache, iomCacheWriteThrough ) );
+            Call( pcfte->Pff()->ErrFlush( iofrBlockCache, ffmDataOnly, iomCacheWriteThrough ) );
 
             for ( CWriteBack* pwb = ilWriteBack.PrevMost(); pwb; pwb = ilWriteBack.Next( pwb ) )
             {

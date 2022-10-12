@@ -548,7 +548,7 @@ COSFile::~COSFile()
 #ifdef OS_LAYER_VIOLATIONS
         AssertSz( fFalse, "All ESE-level files should be completely flushed by file close." );
 #endif
-        (void)ErrFlushFileBuffers( (IOFLUSHREASON) 0x00800000 /* iofrDefensiveCloseFlush not available */ );
+        (void)ErrFlushFileBuffers( (IOFLUSHREASON) 0x00800000 /* iofrDefensiveCloseFlush not available */, ffmAll );
     }
 
     //  tear down our volume 
@@ -714,7 +714,46 @@ ERR COSFile::ErrIsReadOnly( BOOL* const pfReadOnly )
 extern HaDbFailureTag OSDiskIIOHaTagOfErr( const ERR err, const BOOL fWrite );
 #endif
 
-ERR COSFile::ErrFlushFileBuffers( const IOFLUSHREASON iofr )
+typedef __success( return >= 0 ) LONG NTSTATUS;
+
+typedef struct _IO_STATUS_BLOCK {
+    union {
+        NTSTATUS Status;
+        PVOID Pointer;
+    } DUMMYUNIONNAME;
+
+    ULONG_PTR Information;
+} IO_STATUS_BLOCK, * PIO_STATUS_BLOCK;
+
+#define NT_SUCCESS(Status) (((NTSTATUS)(Status)) >= 0)
+
+__kernel_entry NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtFlushBuffersFileEx(
+    _In_ HANDLE FileHandle,
+    _In_ ULONG Flags,
+    _In_reads_bytes_( ParametersSize ) PVOID Parameters,
+    _In_ ULONG ParametersSize,
+    _Out_ PIO_STATUS_BLOCK IoStatusBlock
+);
+
+#define FLUSH_FLAGS_FILE_DATA_ONLY                      0x00000001  //  Win8
+#define FLUSH_FLAGS_NO_SYNC                             0x00000002  //  Win8
+#define FLUSH_FLAGS_FILE_DATA_SYNC_ONLY                 0x00000004  //  Win10 RS1
+
+static NTOSFuncNtStd( g_pfnNtFlushBuffersFileEx, g_mwszzNtdllLibs, NtFlushBuffersFileEx, oslfExpectedOnWin8 );
+
+NTSYSAPI
+ULONG
+NTAPI
+RtlNtStatusToDosError(
+    _In_ NTSTATUS Status
+);
+
+static NTOSFuncNtStd( g_pfnRtlNtStatusToDosError, g_mwszzNtdllLibs, RtlNtStatusToDosError, oslfExpectedOnWin5x );
+
+ERR COSFile::ErrFlushFileBuffers( _In_ const IOFLUSHREASON iofr, _In_ const FileFlushMode ffm )
 {
     ERR err = JET_errSuccess;
 
@@ -775,13 +814,18 @@ ERR COSFile::ErrFlushFileBuffers( const IOFLUSHREASON iofr )
         SetLastError( ERROR_BROKEN_PIPE /* hopefully odd enough to cause people to look at code */ );
     }
 
-    DWORD error = ERROR_SUCCESS;
+    NTSTATUS        status  = 0;
+    ULONG           flags   = ffm == ffmDataOnly ? FLUSH_FLAGS_FILE_DATA_SYNC_ONLY : 0;
+    IO_STATUS_BLOCK iosb    = { };
+    DWORD           error   = ERROR_SUCCESS;
 
     //  CONSIDER: Should we have some sort of locking at COSFile or COSDisk on running 
     //  concurrent FFB calls?  I can't find any documentation that it is not supported,
     //  so it is only a potentially inefficiency (pointless)
-    if ( !fFaultedFlushSucceeded || !FlushFileBuffers( m_hFile ) )
+    if (    !fFaultedFlushSucceeded ||
+            !NT_SUCCESS( status = g_pfnNtFlushBuffersFileEx( m_hFile, flags, NULL, 0, &iosb ) ) )
     {
+        SetLastError( g_pfnRtlNtStatusToDosError( status ) );
         error = GetLastError();
         err = ErrOSFileIFromWinError( error );
         Assert( ERROR_IO_PENDING != error );    // not bad, just unexpected

@@ -357,7 +357,29 @@ class IFileAPI  //  fapi
                                            _Out_ QWORD* const   pibStartTrimmedRegion,
                                            _Out_ QWORD* const   pcbTrimmed ) = 0;
 
-        virtual ERR ErrFlushFileBuffers( const IOFLUSHREASON iofr ) = 0;
+        //  Flush
+
+        //  Flags indicating the portion of a file's metadata and/or data to flush.
+
+        enum class FileFlushMode  //  ffm
+        {
+            ffmAll      = 0,    //  Flush the file's metadata and data.
+            ffmDataOnly = 1,    //  Flush the file's data only.
+        };
+
+        //  Synchronously flushes the requested portion of the file's metadata and/or data.
+
+        virtual ERR ErrFlushFileBuffers(    _In_ const IOFLUSHREASON            iofr,
+                                            _In_ const IFileAPI::FileFlushMode  ffm     = IFileAPI::FileFlushMode::ffmAll ) = 0;
+
+        //  Returns the number of Write IOs that are unflushed or flush pending 
+        //  since the last ErrFlushFileBuffers call.
+
+        virtual LONG64 CioNonFlushed() const = 0;
+
+        //  Indicates that a flush is not required for any Write IOs that are unflushed or
+        //  flush pending since the last ErrFlushFileBuffers call.
+
         virtual void SetNoFlushNeeded() = 0;
 
         //  I/O
@@ -517,11 +539,6 @@ class IFileAPI  //  fapi
         
         virtual ERR ErrDiskId( ULONG_PTR* const pulDiskId ) const = 0;
 
-        //  get number of Write IOs that are unflushed or flush pending 
-        //  since last ErrFlushFileBuffers call
-
-        virtual LONG64 CioNonFlushed() const = 0;
-
         //  get seek penalty (in order to identify SSD)
 
         virtual BOOL FSeekPenalty() const = 0;
@@ -537,6 +554,10 @@ class IFileAPI  //  fapi
 };
 
 DEFINE_ENUM_FLAG_OPERATORS_BASIC( IFileAPI::FileModeFlags )
+
+constexpr IFileAPI::FileFlushMode ffmAll = IFileAPI::FileFlushMode::ffmAll;
+constexpr IFileAPI::FileFlushMode ffmDataOnly = IFileAPI::FileFlushMode::ffmDataOnly;
+
 
 // Exposing for log zero filling
 extern QWORD g_cbZero;

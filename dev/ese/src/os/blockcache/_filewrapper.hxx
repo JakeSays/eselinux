@@ -23,7 +23,8 @@ class TFileWrapper  //  fw
 
         IFileAPI::FileModeFlags Fmf() const;
 
-        ERR ErrFlushFileBuffers( const IOFLUSHREASON iofr );
+        ERR ErrFlushFileBuffers( _In_ const IOFLUSHREASON iofr, _In_ const IFileAPI::FileFlushMode ffm );
+        LONG64 CioNonFlushed() const;
         void SetNoFlushNeeded();
 
         ERR ErrPath( _Out_bytecap_c_(cbOSFSAPI_MAX_PATHW) WCHAR* const wszAbsPath );
@@ -103,8 +104,6 @@ class TFileWrapper  //  fw
         ERR ErrNTFSAttributeListSize( QWORD* const pcbSize );
 
         ERR ErrDiskId( ULONG_PTR* const pulDiskId ) const;
-
-        LONG64 CioNonFlushed() const;
 
         BOOL FSeekPenalty() const;
 
@@ -457,9 +456,15 @@ IFileAPI::FileModeFlags TFileWrapper<I>::Fmf() const
 }
 
 template< class I >
-ERR TFileWrapper<I>::ErrFlushFileBuffers( const IOFLUSHREASON iofr )
+ERR TFileWrapper<I>::ErrFlushFileBuffers( _In_ const IOFLUSHREASON iofr, _In_ const IFileAPI::FileFlushMode ffm )
 {
-    return m_piInner->ErrFlushFileBuffers( iofr );
+    return m_piInner->ErrFlushFileBuffers( iofr, ffm );
+}
+
+template< class I >
+LONG64 TFileWrapper<I>::CioNonFlushed() const
+{
+    return m_piInner->CioNonFlushed();
 }
 
 template< class I >
@@ -729,12 +734,6 @@ template< class I >
 ERR TFileWrapper<I>::ErrDiskId( ULONG_PTR* const pulDiskId ) const
 {
     return m_piInner->ErrDiskId( pulDiskId );
-}
-
-template< class I >
-LONG64 TFileWrapper<I>::CioNonFlushed() const
-{
-    return m_piInner->CioNonFlushed();
 }
 
 template< class I >
