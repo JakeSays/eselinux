@@ -150,6 +150,7 @@ class THashedLRUKCache
                 const BYTE* const PbData() const { return THashedLRUKCacheBase<I>::CRequest::PbData(); }
                 OSFILEQOS GrbitQOS() const { return THashedLRUKCacheBase<I>::CRequest::GrbitQOS(); }
                 ICache::CachingPolicy Cp() const { return THashedLRUKCacheBase<I>::CRequest::Cp(); }
+                double PctWrite() const { return THashedLRUKCacheBase<I>::CRequest::PctWrite(); }
 
                 ERR ErrStatus() const { return THashedLRUKCacheBase<I>::CRequest::ErrStatus(); }
                 typename CHashedLRUKCachedFileTableEntry<I>::CIORangeLockBase* Piorl() { return &m_iorl; }
@@ -1852,7 +1853,7 @@ class THashedLRUKCache
                         m_cbRequested( cbRequested ),
                         m_fOverrideCachePercentage( fOverrideCachePercentage ),
                         m_cbTotal( cbTotal ),
-                        m_pctWrite( max( 0, min( 100, m_pc->Pcconfig()->PctWrite() ) ) ),
+                        m_pctWrite( prequest->PctWrite() ),
                         m_cbWriteCacheMax( (QWORD)( m_cbTotal * m_pctWrite / 100 ) ),
                         m_cbReadCacheMax( m_cbTotal - m_cbWriteCacheMax ),
                         m_cbWriteCache( cbWriteCache ),
@@ -8815,7 +8816,7 @@ void THashedLRUKCache<I>::RequestRead(  _In_    CRequest* const             preq
     
     //  determine if we should cache this request
 
-    const BOOL fCacheIfPossible = prequest->Cp() != cpDontCache && Pcconfig()->PctWrite() < 100;
+    const BOOL fCacheIfPossible = prequest->Cp() != cpDontCache && prequest->PctWrite() < 100;
 
     //  loop through the read by cached block potentially crossing many cached file blocks
 
@@ -8942,7 +8943,7 @@ void THashedLRUKCache<I>::RequestFinalizeRead(  _In_    CRequest* const         
 
     //  determine if we should cache this request
 
-    const BOOL fCacheRequestIfPossible = prequest->Cp() != cpDontCache && Pcconfig()->PctWrite() < 100;
+    const BOOL fCacheRequestIfPossible = prequest->Cp() != cpDontCache && prequest->PctWrite() < 100;
 
     //  loop through the read by cached block potentially crossing many cached file blocks
 
@@ -9113,8 +9114,8 @@ void THashedLRUKCache<I>::RequestWrite( _In_    CRequest* const             preq
         //  NOTE:  we do not cache writes to sparse regions of a file to force them to be reallocated.  this is
         //  required to maintain file meta-data parity with uncached files
 
-        const BOOL          fCacheRequestIfPossible =   (  prequest->Cp() != cpDontCache &&
-                                                            Pcconfig()->PctWrite() > 0 &&
+        const BOOL          fCacheRequestIfPossible =   (   prequest->Cp() != cpDontCache &&
+                                                            prequest->PctWrite() > 0 &&
                                                             !prequest->Pcfte()->FSparse( ibCachedBlock, cbCachedBlock ) ) ||
                                                         prequest->Cp() == cpPinned;
 
