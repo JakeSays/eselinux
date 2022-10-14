@@ -825,7 +825,10 @@ ERR COSFile::ErrFlushFileBuffers( _In_ const IOFLUSHREASON iofr, _In_ const File
     if (    !fFaultedFlushSucceeded ||
             !NT_SUCCESS( status = g_pfnNtFlushBuffersFileEx( m_hFile, flags, NULL, 0, &iosb ) ) )
     {
-        SetLastError( g_pfnRtlNtStatusToDosError( status ) );
+        if ( fFaultedFlushSucceeded )
+        {
+            SetLastError( g_pfnRtlNtStatusToDosError( status ) );
+        }
         error = GetLastError();
         err = ErrOSFileIFromWinError( error );
         Assert( ERROR_IO_PENDING != error );    // not bad, just unexpected
