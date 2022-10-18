@@ -11218,8 +11218,14 @@ ERR ErrBFIMaintScavengeIScavengePages( const char* const szContextTraceOnly, con
             }
 
             // Async-flush this page.
+            //
+            // NOTE:  this can block if ulScavengeWriteSev == ulScavengeWriteMax which would give us qosIODispatchImmediate
             const IOREASON ior = IOR( ( ( bfefReason == bfefReasonShrink ) ? iorpBFShrink : iorpBFAvailPool ), fSync ? iorfForeground : iorfNone );
             const OSFILEQOS qos = QosBFIMaintScavengePages( UlParam( PinstFromIfmp( pbf->ifmp ), JET_paramIOPriority ), ulScavengeWriteSev );
+            if ( ( qos & qosIODispatchMask ) == qosIODispatchImmediate )
+            {
+                (void)bfil.ErrIssue( fFalse );
+            }
             const ERR errFlush = ErrBFIFlushPage( pbf, ior, qos, bfdfDirty, fFalse /* fOpportune */, &fPermanentErr );
 
             // Count the number of latched pages we see.
