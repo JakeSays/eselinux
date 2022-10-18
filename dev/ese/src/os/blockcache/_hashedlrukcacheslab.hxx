@@ -2861,15 +2861,15 @@ int TCachedBlockSlab<I>::CompareSlotsForInit( _In_ const ISlot& islotA, _In_ con
     const BOOL                  fValidA = pcblA->FValid();
     const BOOL                  fValidB = pcblB->FValid();
 
-    if ( !fValidA & fValidB )
+    if ( ( !fValidA ) & fValidB )
     {
         return -1;
     }
-    if ( fValidA & !fValidB )
+    if ( fValidA & ( !fValidB ) )
     {
         return 1;
     }
-    if ( !fValidA & !fValidB )
+    if ( ( !fValidA ) & ( !fValidB ) )
     {
         if ( islotA < islotB )
         {
@@ -2962,15 +2962,15 @@ int TCachedBlockSlab<I>::CompareSlotsForEvict( _In_ const ISlot& islotA, _In_ co
     const TouchNumber           tono0A  = pcblA->Tono0();
     const TouchNumber           tono0B  = pcblB->Tono0();
 
-    if ( !fValidA & fValidB )
+    if ( ( !fValidA ) & fValidB )
     {
         return -1;
     }
-    if ( fValidA & !fValidB )
+    if ( fValidA & ( !fValidB ) )
     {
         return 1;
     }
-    if ( !fValidA & !fValidB )
+    if ( ( !fValidA ) & ( !fValidB ) )
     {
         if ( tono0A == tonoInvalid && tono0B != tonoInvalid )
         {
@@ -3008,11 +3008,11 @@ int TCachedBlockSlab<I>::CompareSlotsForEvict( _In_ const ISlot& islotA, _In_ co
     const BOOL  fSupercededA    = m_rgfSlotSuperceded[ (size_t)islotA ];
     const BOOL  fSupercededB    = m_rgfSlotSuperceded[ (size_t)islotB ];
 
-    if ( fSupercededA & !fSupercededB )
+    if ( fSupercededA & ( !fSupercededB ) )
     {
         return -1;
     }
-    if ( !fSupercededA & fSupercededB )
+    if ( ( !fSupercededA ) & fSupercededB )
     {
         return 1;
     }

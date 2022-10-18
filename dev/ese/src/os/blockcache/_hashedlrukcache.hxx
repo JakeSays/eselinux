@@ -4469,7 +4469,7 @@ class THashedLRUKCache
 
                         void SetFingerprint( _In_ const QWORD qwFingerprints, _In_ const size_t i, _In_ const WORD wFingerprint )
                         {
-                            QWORD qwFingerprintsT = qwFingerprints & ~( QWORD( WFingerprintMask() << ( i * CbitFingerprint() ) ) );
+                            QWORD qwFingerprintsT = qwFingerprints & ~( QWORD( WFingerprintMask() ) << ( i * CbitFingerprint() ) );
                             qwFingerprintsT = qwFingerprintsT | ( QWORD( wFingerprint & WFingerprintMask() ) << ( i * CbitFingerprint() ) );
 
                             memcpy( m_rgbFingerprint, &qwFingerprintsT, sizeof( m_rgbFingerprint ) );
