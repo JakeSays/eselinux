@@ -6278,22 +6278,41 @@ void BFIFTLTerm()
 #endif
 
 ULONG g_ulSamplingRatio = 0;
-ULONG g_ulSamplingSeed  = 0;
+// Mask of all keywords that have events in common with BFRESMGRSUBSAMPLED.
+const ULONGLONG g_ullSamplingKeywordMask = _etguidKeywordPerformance | _etguidKeywordBF | _etguidKeywordBFRESMGR | _etguidKeywordDataWorkingSet;
 
 void BFICacheTraceSamplingInit( const ULONG ulSamplingRatio )
 {
-    g_ulSamplingRatio   = ulSamplingRatio;
-    g_ulSamplingSeed    = (ULONG)TickOSTimeCurrent();
+    g_ulSamplingRatio = ulSamplingRatio;
 }
 
-INLINE bool FBFISamplePage( const IFMP ifmp, const PGNO pgno )
+// Do not emit the events for ResMgrInit and ResMgrTerm if g_ulSamplingRatio is equals to 0
+// and no other keyword with events in common with BFRESMGRSUBSAMPLED are set.
+INLINE bool FBFIDoNotEmitBfResMgrInitTermTrace()
 {
-    if ( ( !FOSEventTraceKeywordEnabled< _etguidKeywordBFRESMGR >() ) || ( g_ulSamplingRatio <= 1 ) )
-    {
-        return true;
-    }
-    return ( ( ( IFMPPGNO( ifmp, pgno ).Hash() + g_ulSamplingSeed ) % g_ulSamplingRatio ) == 0 );
+    return ( ( g_ulSamplingRatio == 0 ) &&
+             !FOSEventTraceAnyKeywordEnabled( g_ullSamplingKeywordMask ) );
 }
+
+// Subsample the cache trace by preventing some events from being emitted.
+// Subsampling is only possible if no other keyword with events in common with BFRESMGRSUBSAMPLED are set and BFRESMGRSUBSAMPLED is set.
+// If g_ulSamplingRatio is set to 0, no events are emitted.
+// With g_ulSamplingRatio > 0, only the events for 1 in g_ulSamplingRatio pages are traced on average.
+INLINE bool FBFIDoNotEmitBfResMgrPageTrace( const IFMP ifmp, const PGNO pgno )
+{
+    if ( ( g_ulSamplingRatio == 1 ) || FOSEventTraceAnyKeywordEnabled( g_ullSamplingKeywordMask ) )
+    {
+        return fFalse;
+    }
+
+    if ( ( g_ulSamplingRatio == 0 ) || !FOSEventTraceKeywordEnabled<_etguidKeywordBFRESMGRSUBSAMPLED>() )
+    {
+        return fTrue;
+    }
+
+    return ( ( ( IFMPPGNO( ifmp, pgno ).Hash() ) % g_ulSamplingRatio ) != 0 );
+}
+
 
 INLINE void BFITraceResMgrInit(
     const INT       K,
@@ -6304,35 +6323,41 @@ INLINE void BFITraceResMgrInit(
     const double    dblHashUniformity,
     const double    dblSpeedSizeTradeoff )
 {
+    if ( !FBFIDoNotEmitBfResMgrInitTermTrace() )
+    {
 #ifdef ENABLE_BFFTL_TRACING
-    (void)ErrBFIFTLSysResMgrInit(
-        K,
-        csecCorrelatedTouch,
-        csecTimeout,
-        csecUncertainty,
-        dblHashLoadFactor,
-        dblHashUniformity,
-        dblSpeedSizeTradeoff );
+        ( void )ErrBFIFTLSysResMgrInit(
+            K,
+            csecCorrelatedTouch,
+            csecTimeout,
+            csecUncertainty,
+            dblHashLoadFactor,
+            dblHashUniformity,
+            dblSpeedSizeTradeoff );
 #endif // ENABLE_BFFTL_TRACING
 
-    ETResMgrInit(
-        TickOSTimeCurrent(),
-        K,
-        csecCorrelatedTouch,
-        csecTimeout,
-        csecUncertainty,
-        dblHashLoadFactor,
-        dblHashUniformity,
-        dblSpeedSizeTradeoff );
+        ETResMgrInit(
+            TickOSTimeCurrent(),
+            K,
+            csecCorrelatedTouch,
+            csecTimeout,
+            csecUncertainty,
+            dblHashLoadFactor,
+            dblHashUniformity,
+            dblSpeedSizeTradeoff );
+    }
 }
 
 INLINE void BFITraceResMgrTerm()
 {
+    if ( !FBFIDoNotEmitBfResMgrInitTermTrace() )
+    {
 #ifdef ENABLE_BFFTL_TRACING
-    (void)ErrBFIFTLSysResMgrTerm();
+        ( void )ErrBFIFTLSysResMgrTerm();
 #endif // ENABLE_BFFTL_TRACING
 
-    ETResMgrTerm( TickOSTimeCurrent() );
+        ETResMgrTerm( TickOSTimeCurrent() );
+    }
 }
 
 INLINE void BFITraceCachePage(
@@ -6344,7 +6369,7 @@ INLINE void BFITraceCachePage(
     const BFRequestTraceFlags   bfrtf,
     const TraceContext&         tc )
 {
-    if ( FBFISamplePage( pbf->ifmp, pbf->pgno ) )
+    if ( !FBFIDoNotEmitBfResMgrPageTrace( pbf->ifmp, pbf->pgno ) )
     {
         GetCurrUserTraceContext getutc;
         const BYTE bClientType = getutc->context.nClientType;
@@ -6373,7 +6398,7 @@ INLINE void BFITraceRequestPage(
     const BFRequestTraceFlags   bfrtf,
     const TraceContext&         tc )
 {
-    if ( FBFISamplePage( pbf->ifmp, pbf->pgno ) )
+    if ( !FBFIDoNotEmitBfResMgrPageTrace( pbf->ifmp, pbf->pgno ) )
     {
 #ifdef ENABLE_BFFTL_TRACING
         GetCurrUserTraceContext getutc;
@@ -6421,7 +6446,7 @@ INLINE void BFITraceMarkPageAsSuperCold(
     const IFMP  ifmp,
     const PGNO  pgno )
 {
-    if ( FBFISamplePage( ifmp, pgno ) )
+    if ( !FBFIDoNotEmitBfResMgrPageTrace( ifmp, pgno ) )
     {
 #ifdef ENABLE_BFFTL_TRACING
         ( void )ErrBFIFTLMarkAsSuperCold( ifmp, pgno );
@@ -6438,7 +6463,7 @@ INLINE void BFITraceEvictPage(
     const ERR   errBF,
     const ULONG bfef )
 {
-    if ( FBFISamplePage( ifmp, pgno ) )
+    if ( !FBFIDoNotEmitBfResMgrPageTrace( ifmp, pgno ) )
     {
         const ULONG pctPriority = 0;    //  Not relevant for eviction anymore.
 
@@ -6458,7 +6483,7 @@ INLINE void BFITraceDirtyPage(
     const TraceContext&     tc )
 {
 
-    if ( FBFISamplePage( pbf->ifmp, pbf->pgno ) )
+    if ( !FBFIDoNotEmitBfResMgrPageTrace( pbf->ifmp, pbf->pgno ) )
     {
         auto tick = TickOSTimeCurrent();
         static_assert( sizeof( tick ) == sizeof( DWORD ), "Compiler magic failing." );
@@ -6552,7 +6577,7 @@ INLINE void BFITraceSetLgposModify(
     const PBF       pbf,
     const LGPOS&    lgposModify )
 {
-    if ( FBFISamplePage( pbf->ifmp, pbf->pgno ) )
+    if ( !FBFIDoNotEmitBfResMgrPageTrace( pbf->ifmp, pbf->pgno ) )
     {
         auto tick = TickOSTimeCurrent();
         static_assert( sizeof( tick ) == sizeof( DWORD ), "Compiler magic failing." );
@@ -6579,7 +6604,7 @@ INLINE void BFITraceWritePage(
     const PBF               pbf,
     const FullTraceContext&     tc )
 {
-    if ( FBFISamplePage( pbf->ifmp, pbf->pgno ) )
+    if ( !FBFIDoNotEmitBfResMgrPageTrace( pbf->ifmp, pbf->pgno ) )
     {
         const ULONG bfdfTrace = (ULONG) pbf->bfdf;   //  We need to put this on the stack because & isn't valid on a bitfield
         auto tick = TickOSTimeCurrent();

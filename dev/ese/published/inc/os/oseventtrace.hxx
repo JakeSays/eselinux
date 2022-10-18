@@ -26,6 +26,8 @@ INLINE BOOL FOSEventTraceEnabled();
 template< OSEventTraceKeywordGUID etguid >
 INLINE BOOL FOSEventTraceKeywordEnabled();
 
+INLINE BOOL FOSEventTraceAnyKeywordEnabled( const ULONGLONG ullKeywordMask );
+
 //  The first 8 are generic reasons, resused per event, the next 248 are for whatever 
 
 enum TraceStationIdentificationReason : BYTE // tsidr
@@ -140,8 +142,8 @@ template INLINE BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidSysStationId >(
 template INLINE BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidIsamDbfilehdrInfo >( const TraceStationIdentificationReason tsidr );
 template INLINE BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidFmpStationId >( const TraceStationIdentificationReason tsidr );
 
-// Used to avoid subsampling if the keyword BFRESMGR is not set
-template INLINE BOOL FOSEventTraceKeywordEnabled< _etguidKeywordBFRESMGR >();
+// Used to down sample the cache trace if only the keyword BFRESMGRSUBSAMPLED is set.
+template INLINE BOOL FOSEventTraceKeywordEnabled< _etguidKeywordBFRESMGRSUBSAMPLED >();
 
 #endif  //  _OS_EVENT_TRACE_HXX_INCLUDED
 

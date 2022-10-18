@@ -110,6 +110,7 @@ enum OSEventTraceKeywordGUID : ULONGLONG
     _etguidKeywordIOEX = 0x0000000000008000,
     _etguidKeywordIOSESS = 0x0000000000010000,
     _etguidKeywordSubstrateTelemetry = 0x0000000000020000,
+    _etguidKeywordBFRESMGRSUBSAMPLED = 0x0000000000040000,
     _etguidKeywordCompressExp = 0x0000000100000000,
 };
 
