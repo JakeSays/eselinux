@@ -9530,7 +9530,7 @@ LOCAL JET_ERR JET_API JetCreateEncryptionKeyEx(
         return ErrERRCheck( JET_errInvalidParameter );
     }
     *pcbActual = cbKey;
-    return ErrOSCreateAes256Key( (BYTE*)pvKey, pcbActual );
+    return ErrOSCreateAes256Key( AES256_CAPI_IMPLEMENTATION, (BYTE*)pvKey, pcbActual );
 }
 
 JET_ERR JET_API JetCreateEncryptionKey(

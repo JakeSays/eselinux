@@ -75,7 +75,7 @@ ErrOSUEncrypt(
     PERFOpt( cEncryptionCalls.Inc( iInstance, tce ) );
 
     const HRT hrtStart = HrtHRTCount();
-    const ERR err = ErrOSEncryptWithAes256( pbData, pcbDataLen, cbDataBufLen, pfucbTable->pbEncryptionKey, pfucbTable->cbEncryptionKey );
+    const ERR err = ErrOSEncryptWithAes256( AES256_CAPI_IMPLEMENTATION, pbData, pcbDataLen, cbDataBufLen, pfucbTable->pbEncryptionKey, pfucbTable->cbEncryptionKey );
     PERFOpt( cEncryptionTotalDhrts.Add( iInstance, tce, HrtHRTCount() - hrtStart ) );
 
     return err;
@@ -100,7 +100,7 @@ ErrOSUDecrypt(
     PERFOpt( cDecryptionCalls.Inc( iInstance, tce ) );
 
     const HRT hrtStart = HrtHRTCount();
-    const ERR err = ErrOSDecryptWithAes256( pbDataIn, pbDataOut, pcbDataLen, pfucbTable->pbEncryptionKey, pfucbTable->cbEncryptionKey );
+    const ERR err = ErrOSDecryptWithAes256( AES256_CAPI_IMPLEMENTATION, pbDataIn, pbDataOut, pcbDataLen, pfucbTable->pbEncryptionKey, pfucbTable->cbEncryptionKey );
     PERFOpt( cDecryptionTotalDhrts.Add( iInstance, tce, HrtHRTCount() - hrtStart ) );
 
     if ( err == JET_errDecryptionFailed )

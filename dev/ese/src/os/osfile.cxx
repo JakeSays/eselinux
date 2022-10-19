@@ -751,7 +751,7 @@ RtlNtStatusToDosError(
     _In_ NTSTATUS Status
 );
 
-static NTOSFuncNtStd( g_pfnRtlNtStatusToDosError, g_mwszzNtdllLibs, RtlNtStatusToDosError, oslfExpectedOnWin5x );
+static NTOSFuncError( g_pfnRtlNtStatusToDosError, g_mwszzNtdllLibs, RtlNtStatusToDosError, oslfExpectedOnWin5x );
 
 ERR COSFile::ErrFlushFileBuffers( _In_ const IOFLUSHREASON iofr, _In_ const FileFlushMode ffm )
 {

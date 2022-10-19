@@ -92,6 +92,7 @@ using namespace std;
 #define wszMinUser              L"minuser32.dll"    // is this on phone?
 #define wszKernel32Legacy       L"kernel32legacy.dll"   // win-phone
 
+#define wszBCryptDll            L"bcrypt.dll"
 
 //  base libraries (API sets)
 
@@ -176,6 +177,8 @@ const wchar_t * const g_mwszzAppModelStateLibs  = szAppModelState L"\0";        
 const wchar_t * const g_mwszzEventingProviderLibs = wszEventingProvider L"\0" /* downlevel */ wszAdvapi32 L"\0";
 const wchar_t * const g_mwszzEventLogLegacyLibs = wszEventLogLegacy L"\0" /* downlevel */ wszAdvapi32 L"\0";
 
+const wchar_t * const g_mwszzBCryptLib          = wszBCryptDll L"\0"; // BCrypt/CNG APIs
+
 const wchar_t * const g_mwszzKernel32CoreSystemBroken       = wszKernel32 L"\0" /* medium level */ wszKernelBase L"\0" /* up-level legacy */ wszKernel32Legacy L"\0";
 const wchar_t * const g_mwszzAdvapi32CoreSystemBroken       = wszAdvapi32 L"\0";
 
@@ -196,7 +199,6 @@ const wchar_t * const g_mwszzAdvapi32CoreSystemBroken       = wszAdvapi32 L"\0";
 
 
 const INT rankCritTaskList                  = 0;
-const INT rankAESProv                       = 1;
 const INT rankIoStats                       = 1;
 const INT rankIOREQ                         = 2;
 const INT rankTimerTaskList                 = 3;    //  Held only during TimerTask Schedule

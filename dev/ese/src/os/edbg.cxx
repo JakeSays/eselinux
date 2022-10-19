@@ -16456,6 +16456,7 @@ DEBUG_EXT( EDBGDecrypt )
     }
 
     err = ErrOSDecryptWithAes256(
+            AES256_CAPI_IMPLEMENTATION,
             pbBuffer,
             pbDecrypted,
             &cbDecrypted,

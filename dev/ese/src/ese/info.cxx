@@ -1273,7 +1273,7 @@ ERR VTAPI ErrIsamSetTableInfo(
             FUCBRemoveEncryptionKey( pfucb );
             if ( cbParam > 0 )
             {
-                err = ErrOSEncryptionVerifyKey( (BYTE*)pvParam, cbParam );
+                err = ErrOSEncryptionVerifyKey( AES256_CAPI_IMPLEMENTATION, (BYTE*)pvParam, cbParam );
                 if ( err < JET_errSuccess )
                 {
                     AssertSz( fFalse, "Client is giving us a bad key" );
@@ -1606,7 +1606,7 @@ ERR VTAPI ErrIsamGetTableInfo(
 #ifdef DEBUG
             if ( pfucb->cbEncryptionKey > 0 )
             {
-                ERR errT = ErrOSEncryptionVerifyKey( pfucb->pbEncryptionKey, pfucb->cbEncryptionKey );
+                ERR errT = ErrOSEncryptionVerifyKey( AES256_CAPI_IMPLEMENTATION, pfucb->pbEncryptionKey, pfucb->cbEncryptionKey );
                 if ( errT < JET_errSuccess )
                 {
                     AssertSz( fFalse, "Client should not have been able to save a bad encryption key" );
