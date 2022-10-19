@@ -4092,7 +4092,7 @@ typedef enum
 #define JET_paramFlight_ExtentPageCountCacheVerifyOnly          114 //  Verify values read from the Extent Page Count Cache rather than just returning them.
 #define JET_paramFlight_EnablePgnoFDPLastSetTime                115 //  whether we want to enable setting PgnoPFDSetTime in the system table for a table entry.
 #define JET_paramFlight_EnableFDPDeleteFlagCheckOnExtentFreedRedo 116 //  whether we want to check if FDP delete flag is set when we redo extent freed LR.
-//#define JET_paramFlight_EnableExtentFreed2                    117 //  whether we want to enable logging ExtentFreed2 LR after the efv upgrade.
+#define JET_paramFlight_RBSRaiseCorruptionOnRBSFDPToBeDeleted   117 //  Whether we want to raise corruption event/failure item when we hit RBSFDPToBeDeleted error.
 #define JET_paramFlight_RBSLargeRevertableDeletePages           118 //  Large revertable delete size for a table (in pages) beyond which we will track the deletes.
 #define JET_paramFlight_RBSRevertableDeleteIfTooSoonTimeNull    119 //  If set, we will do a revertable table delete even if NonRevertableTableDelete flag is passed provided NonRevertable delete is failing due to JET_errRBSDeleteTableTooSoon due to time not being set. Note: If JET_bitRevertableTableDeleteIfTooSoon is set, this variant is ignored.
 

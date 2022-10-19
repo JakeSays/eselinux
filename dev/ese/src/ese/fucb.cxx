@@ -373,7 +373,7 @@ VOID FUCBIllegalOperationFDPToBeDeleted(
     const OBJID         objidFDP )
 {
     //  only report the error if not repairing
-    if ( !g_fRepair )
+    if ( !g_fRepair && BoolParam( PinstFromPfucb( pfucb ), JET_paramFlight_RBSRaiseCorruptionOnRBSFDPToBeDeleted ) )
     {
         OSTraceSuspendGC();
         WCHAR wszTableName[JET_cbNameMost+1] = L"";

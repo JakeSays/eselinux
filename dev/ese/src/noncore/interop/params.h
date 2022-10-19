@@ -183,6 +183,7 @@ MSINTERNAL enum class MJET_PARAM
     Flight_ExtentPageCountCacheVerifyOnly = 114, // Verify values read from the Extent Page Count Cache rather than just returning them.
     Flight_EnablePgnoFDPLastSetTime = 115, // whether we want to enable setting PgnoPFDSetTime in the system table for a table entry.
     Flight_EnableFDPDeleteFlagCheckOnExtentFreedRedo = 116, // whether we want to check if FDP delete flag is set when we redo extent freed LR.
+    Flight_RBSRaiseCorruptionOnRBSFDPToBeDeleted = 117, // Whether we want to raise corruption event/failure item when we hit RBSFDPToBeDeleted error.
     Flight_RBSLargeRevertableDeletePages = 118, // Large revertable delete size for a table (in pages) beyond which we will track the deletes.
     Flight_RBSRevertableDeleteIfTooSoonTimeNull = 119, // If set, we will do a revertable table delete even if NonRevertableTableDelete flag is passed provided NonRevertable delete is failing due to JET_errRBSDeleteTableTooSoon due to time not being set. Note: If JET_bitRevertableTableDeleteIfTooSoon is set, this variant is ignored.
     IndexTupleIncrement = 132, // for tuple indexes, offset increment for each succesive tuple
