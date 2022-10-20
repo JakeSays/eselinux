@@ -138,7 +138,12 @@ class THashedLRUKCache
                         m_cCachingFileIO( 0 ),
                         m_iorl( this ),
                         m_pfnIORangeLockAcquired( NULL ),
-                        m_keyIORangeLockAcquired( NULL )
+                        m_keyIORangeLockAcquired( NULL ),
+                        m_fIORangeLockAcquired( fFalse ),
+                        m_fIORequested( fFalse ),
+                        m_pfnWaitForIOComplete( NULL ),
+                        m_keyWaitForIOComplete( NULL ),
+                        m_fWaitForIOCompleted( fFalse )
                 {
                     m_ilRequestsByIO.InsertAsPrevMost( this );
                 }
@@ -154,7 +159,7 @@ class THashedLRUKCache
 
                 ERR ErrStatus() const { return THashedLRUKCacheBase<I>::CRequest::ErrStatus(); }
                 typename CHashedLRUKCachedFileTableEntry<I>::CIORangeLockBase* Piorl() { return &m_iorl; }
-                BOOL FIOCompleted() const { return m_msIO.FEmpty(); }
+                BOOL FWaitForIOCompleted() const { return !m_fIORequested || m_fWaitForIOCompleted; }
                 BOOL FCacheMiss() const { return m_fCacheMiss; }
                 BOOL FCacheHit() const { return m_fCacheHit; }
 
@@ -198,9 +203,37 @@ class THashedLRUKCache
                 void WaitForIO( _In_opt_ CRequest::PfnIOComplete    pfnIOComplete   = NULL,
                                 _In_opt_ const DWORD_PTR            keyIOComplete   = NULL )
                 {
+                    Assert( !m_fWaitForIOCompleted );
+
                     IssueIO();
 
-                    m_msIO.Partition( pfnIOComplete, keyIOComplete );
+                    if ( pfnIOComplete )
+                    {
+                        m_pfnWaitForIOComplete = pfnIOComplete;
+                        m_keyWaitForIOComplete = keyIOComplete;
+
+                        m_msIO.Partition( WaitForIOComplete_, DWORD_PTR( this ) );
+                    }
+                    else
+                    {
+                        m_msIO.Partition();
+                        WaitForIOComplete();
+                    }
+                }
+
+                void ResetWaitForIO()
+                {
+                    Assert( FWaitForIOCompleted() );
+
+                    if ( m_msIO.GroupActive() != 0 )
+                    {
+                        m_msIO.Partition();
+                    }
+
+                    m_pfnWaitForIOComplete = NULL;
+                    m_keyWaitForIOComplete = NULL;
+                    m_fIORequested = fFalse;
+                    m_fWaitForIOCompleted = fFalse;
                 }
 
                 ERR ErrWriteCluster(    _In_                ICachedBlockSlab* const pcbs,
@@ -210,6 +243,8 @@ class THashedLRUKCache
                 {
                     ERR                                     err     = JET_errSuccess;
                     const CClusterWriteCompletionContext*   pcwcc   = PcwccGetClusterCompletionContext();
+
+                    Assert( !m_fWaitForIOCompleted );
 
                     OSTrace(    JET_tracetagBlockCacheOperations,
                                 OSFormat(   "C=%s R=0x%016I64x F=%s Write Cluster %s",
@@ -244,6 +279,8 @@ class THashedLRUKCache
                 {
                     ERR err = JET_errSuccess;
 
+                    Assert( !m_fWaitForIOCompleted );
+
                     OSTrace(    JET_tracetagBlockCacheOperations,
                                 OSFormat(   "C=%s R=0x%016I64x F=%s Read Cluster %s",
                                             OSFormatFileId( Pc() ),
@@ -270,6 +307,8 @@ class THashedLRUKCache
                     ERR         err     = JET_errSuccess;
                     BYTE* const pbData  = (BYTE*)PbData() + ibOffset - Offsets().IbStart();
 
+                    Assert( !m_fWaitForIOCompleted );
+
                     OSTrace(    JET_tracetagBlockCacheOperations,
                                 OSFormat(   "C=%s R=0x%016I64x F=%s Read Block ib=%llu cb=%u",
                                             OSFormatFileId( Pc() ),
@@ -291,6 +330,8 @@ class THashedLRUKCache
                 {
                     ERR                 err     = JET_errSuccess;
                     const BYTE* const   pbData  = PbData() + ibOffset - Offsets().IbStart();
+
+                    Assert( !m_fWaitForIOCompleted );
 
                     OSTrace(    JET_tracetagBlockCacheOperations,
                                 OSFormat(   "C=%s R=0x%016I64x F=%s Write Block ib=%llu cb=%u",
@@ -368,12 +409,9 @@ class THashedLRUKCache
 
                 void Start() override
                 {
-                    THashedLRUKCacheBase<I>::CRequest::Start();
+                    m_fIORequested = fTrue;
 
-                    if ( m_msIO.GroupActive() != 0 )
-                    {
-                        m_msIO.Partition();
-                    }
+                    THashedLRUKCacheBase<I>::CRequest::Start();
 
                     const CMeteredSection::Group group = m_msIO.Enter();
                     Assert( group == 0 );
@@ -473,6 +511,8 @@ class THashedLRUKCache
                             {
                                 m_prequest->m_pfnIORangeLockAcquired( m_prequest->m_keyIORangeLockAcquired );
                             }
+
+                            m_prequest->m_fIORangeLockAcquired = fTrue;
                         }
 
                     private:
@@ -556,6 +596,25 @@ class THashedLRUKCache
                     }
                 }
 
+                void WaitForIOComplete()
+                {
+                    m_fWaitForIOCompleted = fTrue;
+
+                    if ( m_pfnWaitForIOComplete )
+                    {
+                        m_pfnWaitForIOComplete( m_keyWaitForIOComplete );
+                    }
+                }
+
+                static void WaitForIOComplete_( _In_ const DWORD_PTR keyWaitForIOComplete )
+                {
+                    const CMeteredSection::PFNPARTITIONCOMPLETE pfnPartitionComplete = WaitForIOComplete_;
+                    Unused( pfnPartitionComplete );
+
+                    CRequest* const prequest = (CRequest*)keyWaitForIOComplete;
+                    prequest->WaitForIOComplete();
+                }
+
             private:
 
                 const CClusterWriteCompletionContext                                        m_rgcwcc[ 2 ];
@@ -571,6 +630,11 @@ class THashedLRUKCache
                 CIORangeLock                                                                m_iorl;
                 CRequest::PfnIORangeLockAcquired                                            m_pfnIORangeLockAcquired;
                 DWORD_PTR                                                                   m_keyIORangeLockAcquired;
+                BOOL                                                                        m_fIORangeLockAcquired;
+                BOOL                                                                        m_fIORequested;
+                CRequest::PfnIOComplete                                                     m_pfnWaitForIOComplete;
+                DWORD_PTR                                                                   m_keyWaitForIOComplete;
+                BOOL                                                                        m_fWaitForIOCompleted;
         };
 
         //  Update Slab Visitor
@@ -4817,6 +4881,7 @@ class THashedLRUKCache
                                     _In_ CRequest* const                                prequestIO );
         void WaitForPendingIO( _In_ CRequest* const prequestIO );
         BOOL FCompletedIO( _In_ CRequest* const prequestIO );
+        void ClearIOCompletion( _In_ CRequest* const prequestIO );
         void RequestFinalizeIO( _In_ CRequest* const prequestIO );
 
         void RequestIO( _In_    CRequest* const prequestIO, 
@@ -8283,168 +8348,171 @@ void THashedLRUKCache<I>::Issue()
 template<class I>
 void THashedLRUKCache<I>::AsyncIOWorker( _In_ CHashedLRUKCacheThreadLocalStorage<I>* const pctls )
 {
-    BOOL        fIORangeLockFailure = fFalse;
-    CRequest*   prequestIONext      = NULL;
-
     pctls->BeginAsyncIOWorker();
 
-    //  for each issued IO, request an IO range lock in terms of the cached file.  these IO range locks not only
-    //  protect against chaotic concurrent IO to overlapping offsets but they also serialize all activity for that
-    //  offset range including things like write back or moving cached blocks in the caching file
+    while ( !pctls->FTryEndAsyncIOWorker() )
+    {
+        BOOL        fIORangeLockFailure = fFalse;
+        CRequest*   prequestIONext      = NULL;
 
-    pctls->CritAsyncIOWorkerState().Enter();
-    prequestIONext = NULL;
-    for (   CRequest* prequestIO = pctls->IlIOIssued().PrevMost();
+        //  for each issued IO, request an IO range lock in terms of the cached file.  these IO range locks not only
+        //  protect against chaotic concurrent IO to overlapping offsets but they also serialize all activity for that
+        //  offset range including things like write back or moving cached blocks in the caching file
+
+        pctls->CritAsyncIOWorkerState().Enter();
+        prequestIONext = NULL;
+        for ( CRequest* prequestIO = pctls->IlIOIssued().PrevMost();
             prequestIO;
             prequestIO = prequestIONext )
-    {
-        prequestIONext = pctls->IlIOIssued().Next( prequestIO );
-
-        if ( FWaitForIORangeLock( prequestIO, pctls ) )
         {
-            pctls->IlIOIssued().Remove( prequestIO );
-            pctls->IlIORangeLockPending().InsertAsNextMost( prequestIO );
-        }
-        else
-        {
-            fIORangeLockFailure = fTrue;
-        }
-    }
-    pctls->CritAsyncIOWorkerState().Leave();
+            prequestIONext = pctls->IlIOIssued().Next( prequestIO );
 
-    //  determine which requested IO range locks have been acquired
-
-    prequestIONext = NULL;
-    for (   CRequest* prequestIO = pctls->IlIORangeLockPending().PrevMost();
-            prequestIO;
-            prequestIO = prequestIONext )
-    {
-        prequestIONext = pctls->IlIORangeLockPending().Next( prequestIO );
-
-        if ( prequestIO->Piorl()->FLocked() )
-        {
-            pctls->IlIORangeLockPending().Remove( prequestIO );
-            pctls->IlIORangeLocked().InsertAsNextMost( prequestIO );
-        }
-    }
-
-    //  for each locked IO, request IO against the cached file and then the caching file.  we do this to maximize
-    //  our chances of IO optimization by the underlying file system implementation
-    //
-    //  NOTE:  RequestCachedFileIO / RequestCachingFileIO is touching slabs twice
-
-    while ( CRequest* prequestIO = pctls->IlIORangeLocked().PrevMost() )
-    {
-        RequestCachedFileIO( prequestIO );
-
-        pctls->IlIORangeLocked().Remove( prequestIO );
-        pctls->IlCachedFileIORequested().InsertAsNextMost( prequestIO );
-    }
-
-    while ( CRequest* prequestIO = pctls->IlCachedFileIORequested().PrevMost() )
-    {
-        RequestCachingFileIO( prequestIO );
-
-        pctls->IlCachedFileIORequested().Remove( prequestIO );
-        pctls->IlCachingFileIORequested().InsertAsNextMost( prequestIO );
-    }
-
-    //  wait for all IO issued so far but asynchronously
-
-    while ( CRequest* prequestIO = pctls->IlCachingFileIORequested().PrevMost() )
-    {
-        WaitForPendingIOAsync( pctls, prequestIO );
-
-        pctls->IlCachingFileIORequested().Remove( prequestIO );
-        pctls->IlIOPending().InsertAsNextMost( prequestIO );
-    }
-
-    //  for each pending IO, check for any IOs that are complete
-
-    prequestIONext = NULL;
-    for (   CRequest* prequestIO = pctls->IlIOPending().PrevMost();
-            prequestIO;
-            prequestIO = prequestIONext )
-    {
-        prequestIONext = pctls->IlIOPending().Next( prequestIO );
-
-        if ( FCompletedIO( prequestIO ) )
-        {
-            pctls->IlIOPending().Remove( prequestIO );
-            pctls->IlIOCompleted().InsertAsNextMost( prequestIO );
-        }
-    }
-
-    //  for each completed IO, finalize the IO in the cache
-
-    while ( CRequest* prequestIO = pctls->IlIOCompleted().PrevMost() )
-    {
-        RequestFinalizeIO( prequestIO );
-
-        pctls->IlIOCompleted().Remove( prequestIO );
-        pctls->IlFinalizeIORequested().InsertAsNextMost( prequestIO );
-    }
-
-    //  wait for all IO issued so far but asynchronously
-
-    while ( CRequest* prequestIO = pctls->IlFinalizeIORequested().PrevMost() )
-    {
-        WaitForPendingIOAsync( pctls, prequestIO );
-
-        pctls->IlFinalizeIORequested().Remove( prequestIO );
-        pctls->IlFinalizeIOPending().InsertAsNextMost( prequestIO );
-    }
-
-    //  for each pending finalize IO, check for any IOs that are complete
-
-    prequestIONext = NULL;
-    for (   CRequest* prequestIO = pctls->IlFinalizeIOPending().PrevMost();
-            prequestIO;
-            prequestIO = prequestIONext )
-    {
-        prequestIONext = pctls->IlFinalizeIOPending().Next( prequestIO );
-
-        if ( FCompletedIO( prequestIO ) )
-        {
-            pctls->IlFinalizeIOPending().Remove( prequestIO );
-            pctls->IlFinalizeIOCompleted().InsertAsNextMost( prequestIO );
-        }
-    }
-
-    //  for each finalized IO, release the IO range locks and trigger the IO completion
-
-    while ( CRequest* prequestIO = pctls->IlFinalizeIOCompleted().PrevMost() )
-    {
-        pctls->IlFinalizeIOCompleted().Remove( prequestIO );
-
-        ReleaseIORangeLock( prequestIO, pctls );
-
-        CRequest* prequestNext = NULL;
-        for ( CRequest* prequest = prequestIO->IlRequestsByIO().PrevMost();
-            prequest;
-            prequest = prequestNext )
-        {
-            prequestNext = prequestIO->IlRequestsByIO().Next( prequest );
-
-            prequestIO->IlRequestsByIO().Remove( prequest );
-
-            if ( prequest != prequestIO )
+            if ( FWaitForIORangeLock( prequestIO, pctls ) )
             {
-                pctls->RemoveRequest( prequest );
+                pctls->IlIOIssued().Remove( prequestIO );
+                pctls->IlIORangeLockPending().InsertAsNextMost( prequestIO );
+            }
+            else
+            {
+                fIORangeLockFailure = fTrue;
+            }
+        }
+        pctls->CritAsyncIOWorkerState().Leave();
+
+        //  determine which requested IO range locks have been acquired
+
+        prequestIONext = NULL;
+        for ( CRequest* prequestIO = pctls->IlIORangeLockPending().PrevMost();
+            prequestIO;
+            prequestIO = prequestIONext )
+        {
+            prequestIONext = pctls->IlIORangeLockPending().Next( prequestIO );
+
+            if ( prequestIO->Piorl()->FLocked() )
+            {
+                pctls->IlIORangeLockPending().Remove( prequestIO );
+                pctls->IlIORangeLocked().InsertAsNextMost( prequestIO );
             }
         }
 
-        pctls->RemoveRequest( prequestIO );
+        //  for each locked IO, request IO against the cached file and then the caching file.  we do this to maximize
+        //  our chances of IO optimization by the underlying file system implementation
+        //
+        //  NOTE:  RequestCachedFileIO / RequestCachingFileIO is touching slabs twice
+
+        while ( CRequest* prequestIO = pctls->IlIORangeLocked().PrevMost() )
+        {
+            RequestCachedFileIO( prequestIO );
+
+            pctls->IlIORangeLocked().Remove( prequestIO );
+            pctls->IlCachedFileIORequested().InsertAsNextMost( prequestIO );
+        }
+
+        while ( CRequest* prequestIO = pctls->IlCachedFileIORequested().PrevMost() )
+        {
+            RequestCachingFileIO( prequestIO );
+
+            pctls->IlCachedFileIORequested().Remove( prequestIO );
+            pctls->IlCachingFileIORequested().InsertAsNextMost( prequestIO );
+        }
+
+        //  wait for all IO issued so far but asynchronously
+
+        while ( CRequest* prequestIO = pctls->IlCachingFileIORequested().PrevMost() )
+        {
+            WaitForPendingIOAsync( pctls, prequestIO );
+
+            pctls->IlCachingFileIORequested().Remove( prequestIO );
+            pctls->IlIOPending().InsertAsNextMost( prequestIO );
+        }
+
+        //  for each pending IO, check for any IOs that are complete
+
+        prequestIONext = NULL;
+        for ( CRequest* prequestIO = pctls->IlIOPending().PrevMost();
+            prequestIO;
+            prequestIO = prequestIONext )
+        {
+            prequestIONext = pctls->IlIOPending().Next( prequestIO );
+
+            if ( FCompletedIO( prequestIO ) )
+            {
+                pctls->IlIOPending().Remove( prequestIO );
+                pctls->IlIOCompleted().InsertAsNextMost( prequestIO );
+
+                ClearIOCompletion( prequestIO );
+            }
+        }
+
+        //  for each completed IO, finalize the IO in the cache
+
+        while ( CRequest* prequestIO = pctls->IlIOCompleted().PrevMost() )
+        {
+            RequestFinalizeIO( prequestIO );
+
+            pctls->IlIOCompleted().Remove( prequestIO );
+            pctls->IlFinalizeIORequested().InsertAsNextMost( prequestIO );
+        }
+
+        //  wait for all IO issued so far but asynchronously
+
+        while ( CRequest* prequestIO = pctls->IlFinalizeIORequested().PrevMost() )
+        {
+            WaitForPendingIOAsync( pctls, prequestIO );
+
+            pctls->IlFinalizeIORequested().Remove( prequestIO );
+            pctls->IlFinalizeIOPending().InsertAsNextMost( prequestIO );
+        }
+
+        //  for each pending finalize IO, check for any IOs that are complete
+
+        prequestIONext = NULL;
+        for ( CRequest* prequestIO = pctls->IlFinalizeIOPending().PrevMost();
+            prequestIO;
+            prequestIO = prequestIONext )
+        {
+            prequestIONext = pctls->IlFinalizeIOPending().Next( prequestIO );
+
+            if ( FCompletedIO( prequestIO ) )
+            {
+                pctls->IlFinalizeIOPending().Remove( prequestIO );
+                pctls->IlFinalizeIOCompleted().InsertAsNextMost( prequestIO );
+            }
+        }
+
+        //  for each finalized IO, release the IO range locks and trigger the IO completion
+
+        while ( CRequest* prequestIO = pctls->IlFinalizeIOCompleted().PrevMost() )
+        {
+            pctls->IlFinalizeIOCompleted().Remove( prequestIO );
+
+            ReleaseIORangeLock( prequestIO, pctls );
+
+            CRequest* prequestNext = NULL;
+            for ( CRequest* prequest = prequestIO->IlRequestsByIO().PrevMost();
+                prequest;
+                prequest = prequestNext )
+            {
+                prequestNext = prequestIO->IlRequestsByIO().Next( prequest );
+
+                prequestIO->IlRequestsByIO().Remove( prequest );
+
+                if ( prequest != prequestIO )
+                {
+                    pctls->RemoveRequest( prequest );
+                }
+            }
+
+            pctls->RemoveRequest( prequestIO );
+        }
+
+        //  if we failed to get an IO Range Lock and we currently have no IO Range Locks then we should try to issue again
+
+        if ( fIORangeLockFailure && pctls->CIORangeLocked() == 0 )
+        {
+            pctls->CueAsyncIOWorker();
+        }
     }
-
-    //  if we failed to get an IO Range Lock and we currently have no IO Range Locks then we should try to issue again
-
-    if ( fIORangeLockFailure && pctls->CIORangeLocked() == 0 )
-    {
-        pctls->CueAsyncIOWorker();
-    }
-
-    pctls->EndAsyncIOWorker();
 }
 
 template<class I>
@@ -8466,6 +8534,7 @@ ERR THashedLRUKCache<I>::ErrSynchronousIO( _In_ CRequest* const prequest )
     //  wait for all the IO to complete even if it is not needed for finalization
 
     WaitForPendingIO( prequest );
+    ClearIOCompletion( prequest );
 
     //  finalize the IO in the cache
 
@@ -8698,13 +8767,24 @@ BOOL THashedLRUKCache<I>::FCompletedIO( _In_ CRequest* const prequestIO )
             prequest;
             prequest = prequestIO->IlRequestsByIO().Next( prequest ) )
     {
-        if ( !prequest->FIOCompleted() )
+        if ( !prequest->FWaitForIOCompleted() )
         {
             return fFalse;
         }
     }
 
     return fTrue;
+}
+
+template<class I>
+void THashedLRUKCache<I>::ClearIOCompletion( _In_ CRequest* const prequestIO )
+{
+    for (   CRequest* prequest = prequestIO->IlRequestsByIO().PrevMost();
+            prequest;
+            prequest = prequestIO->IlRequestsByIO().Next( prequest ) )
+    {
+        prequest->ResetWaitForIO();
+    }
 }
 
 template<class I>
