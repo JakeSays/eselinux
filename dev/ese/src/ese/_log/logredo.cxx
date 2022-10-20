@@ -3165,7 +3165,7 @@ ERR LOG::ErrLGRIRedoNodeOperation( const LRNODE_ *plrnode, ERR *perr )
             err = ErrNDValidateSetExternalHeader( csr.Cpage(), &data );
             if ( err < JET_errSuccess )
             {
-                OSUHAEmitFailureTag( m_pinst, HaDbFailureTagCorruption, L"630fa9f1-afcd-4998-bb82-db992a6eb22f" );
+                OSUHAEmitFailureTag( m_pinst, HaDbFailureTagLogLogicallyInconsistent, L"630fa9f1-afcd-4998-bb82-db992a6eb22f" );
                 Call( err );
             }
 
@@ -3555,7 +3555,7 @@ ERR LOG::ErrLGRIRedoNodeOperation( const LRNODE_ *plrnode, ERR *perr )
 //              Assert( cb < sizeof( rgbRecNew ) );
                 if ( cb >= (SIZE_T)g_cbPage )
                 {
-                    OSUHAEmitFailureTag( m_pinst, HaDbFailureTagCorruption, L"dba4c055-bbbf-4fd1-a56d-e786519803eb" );
+                    OSUHAEmitFailureTag( m_pinst, HaDbFailureTagLogLogicallyInconsistent, L"dba4c055-bbbf-4fd1-a56d-e786519803eb" );
                     Error( ErrERRCheck( JET_errLogCorrupted ) );
                 }
 
@@ -3570,7 +3570,7 @@ ERR LOG::ErrLGRIRedoNodeOperation( const LRNODE_ *plrnode, ERR *perr )
             Assert( (ULONG)data.Cb() == cbNewData );
             if ( (ULONG)data.Cb() != cbNewData )
             {
-                OSUHAEmitFailureTag( m_pinst, HaDbFailureTagCorruption, L"a3cb57b9-8ba1-496d-a6fc-4fc2f0140fc4" );
+                OSUHAEmitFailureTag( m_pinst, HaDbFailureTagLogLogicallyInconsistent, L"a3cb57b9-8ba1-496d-a6fc-4fc2f0140fc4" );
                 Error( ErrERRCheck( JET_errLogCorrupted ) );
             }
 
@@ -7733,8 +7733,8 @@ LOCAL ERR ErrLGIRedoSplitLineinfo( FUCB                 *pfucb,
 
     if ( psplit->clines < 0 || psplit->clines > 1000000 )
     {
-        OSUHAEmitFailureTag( PinstFromPfucb( pfucb ), HaDbFailureTagRecoveryRedoLogCorruption, L"2dfb97c9-80ee-4438-ba68-0d4953cf09ad" );
-        return ErrERRCheck( JET_errLogFileCorrupt );
+        OSUHAEmitFailureTag( PinstFromPfucb( pfucb ), HaDbFailureTagLogLogicallyInconsistent, L"2dfb97c9-80ee-4438-ba68-0d4953cf09ad" );
+        return ErrERRCheck( JET_errLogCorrupted );
     }
 
     AllocR( psplit->rglineinfo = new LINEINFO[psplit->clines] );
@@ -10993,7 +10993,8 @@ ERR LOG::ErrLGRIRedoMacroOperation( PIB *ppib, DBTIME dbtime )
     if ( plr == NULL )
     {
         FireWall( "NullLrOnRedoMacro" );
-        return ErrERRCheck( JET_errLogFileCorrupt );
+        OSUHAEmitFailureTag( PinstFromPpib( ppib ), HaDbFailureTagLogLogicallyInconsistent, L"5ccd5865-becc-4c71-9eed-14756d0b0397" );
+        return ErrERRCheck( JET_errLogCorrupted );
     }
 
     LRTYP   lrtyp   = plr->lrtyp;
