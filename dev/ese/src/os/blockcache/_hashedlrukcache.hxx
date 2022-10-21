@@ -5326,32 +5326,26 @@ HandleError:
     return err;
 }
 
-
 template< class I >
 ERR THashedLRUKCache<I>::ErrPrepareToDismount()
 {
     ERR             err                     = JET_errSuccess;
     JournalPosition jposReplay              = jposInvalid;
     JournalPosition jposDurableForWriteBack = jposInvalid;
-    JournalPosition jposDurable             = jposInvalid;
 
-    //  flush our state for all files
+    //  durable flush all cached files
 
     Call( ErrFlush() );
 
-    //  flush all our state
+    //  flush all our state and durably truncate the journal
 
-    Call( m_pj->ErrGetProperties( &jposReplay, &jposDurableForWriteBack, &jposDurable, NULL, NULL ) );
-    if ( jposDurableForWriteBack < jposDurable )
-    {
-        Call( ErrFlush() );
-        Call( m_pj->ErrGetProperties( &jposReplay, &jposDurableForWriteBack, &jposDurable, NULL, NULL ) );
-    }
-    if ( jposReplay < jposDurableForWriteBack )
+    Call( m_pj->ErrGetProperties( &jposReplay, &jposDurableForWriteBack, NULL, NULL, NULL ) );
+    if ( rounddn( (QWORD)jposReplay, cbJournalSegment ) < rounddn( (QWORD)jposDurableForWriteBack, cbJournalSegment ) )
     {
         Call( ErrFlushAllState( jposDurableForWriteBack, fFalse ) );
         Call( m_pj->ErrTruncate( jposDurableForWriteBack ) );
-        Call( ErrFlush() );
+        Call( m_pj->ErrFlush() );
+        Call( m_pj->ErrFlush() );
     }
 
 HandleError:
@@ -8042,8 +8036,11 @@ ERR THashedLRUKCache<I>::ErrFlush()
 {
     ERR err = JET_errSuccess;
 
-    //  flush the journal
+    //  flush the journal twice to ensure all updates are durable for write back and will survive a restart
+    //
+    //  NOTE:  see the comment in TJournalSegmentManager<I>::ErrFindLastSegmentWithBinarySearch for an explanation
 
+    Call( m_pj->ErrFlush() );
     Call( m_pj->ErrFlush() );
 
 HandleError:
