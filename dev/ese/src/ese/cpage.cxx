@@ -4720,7 +4720,7 @@ ERR CPAGE::ErrCheckPage(
     const ULONG_PTR pbPageDataEnd = PbDataEnd_();      // m_bfl.pv + CbBuffer() - tag array size (off itagMicFree)
     if ( pbPageDataEnd <= ( pbPageDataStart + 1 /* generous 1 byte in data section, tighter check next */ ) )
     {
-        MakeCorruptionDetailsSz( L"itagMicFree / tag array too large, overlapping PGHDR (%p,%p,%I64d / %d)", pbPageDataEnd, pbPageDataStart, ctags, CbTagArray_() );
+        MakeCorruptionDetailsSz( L"itagMicFree / tag array too large, overlapping PGHDR (%p,%p,%I64d / %d)", (PVOID)pbPageDataEnd, (PVOID)pbPageDataStart, ctags, CbTagArray_() );
         (*pcprintf)( "%ws\r\n", wszCorruptionDetails );
         Error( ErrCaptureCorruptedPageInfoSz( mode, L"TagArrayWalkingOntoPghdr", wszCorruptionDetails, fLogEvent ) );
     }

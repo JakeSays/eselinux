@@ -7167,7 +7167,7 @@ LOCAL ERR ErrREPAIRICheck(
     {
         if ( !csr.Cpage().FInvisibleSons() )
         {
-            (*popts->pcprintfError)( "page %d: not an internal page\r\n" );
+            (*popts->pcprintfError)( "page %d: not an internal page\r\n", csr.Pgno() );
             Call( ErrERRCheck( JET_errDatabaseCorrupted ) );
         }
 
