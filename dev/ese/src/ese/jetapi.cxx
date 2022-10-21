@@ -7526,6 +7526,8 @@ const
 
 #define JET_paramFlight_RBSCleanupEnabledDEFAULT                OnDebugOrRetail( fTrue, fFalse )
 
+#define JET_paramFlight_UseCngAes256ImplementationDEFAULT       OnDebugOrRetail( fTrue, fFalse )
+
 //  ================================================================
 // The following file is auto-generated from sysparam.xml.
 // To modify or add parameters, edit sysparam.xml and run gengen.bat.
@@ -9530,7 +9532,15 @@ LOCAL JET_ERR JET_API JetCreateEncryptionKeyEx(
         return ErrERRCheck( JET_errInvalidParameter );
     }
     *pcbActual = cbKey;
-    return ErrOSCreateAes256Key( AES256_CAPI_IMPLEMENTATION, (BYTE*)pvKey, pcbActual );
+    ERR err = ErrOSCreateAes256Key( PARAM_AES256_IMPLEMENTATION, (BYTE*)pvKey, pcbActual );
+#ifdef DEBUG
+    // On debug, verify that key works with the other implementation
+    if ( err >= JET_errSuccess )
+    {
+        CallS( ErrOSEncryptionVerifyKey( OTHER_AES256_IMPLEMENTATION, (BYTE*)pvKey, *pcbActual ) );
+    }
+#endif
+    return err;
 }
 
 JET_ERR JET_API JetCreateEncryptionKey(

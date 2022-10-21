@@ -4251,7 +4251,11 @@ typedef enum
 
 #define JET_paramEnableBlockCacheDetach         220 //  Indicates that ESE Block Cache detach is enabled.  This will allow a file cached by the ESE Block Cache to be detached on open.
 
-#define JET_paramMaxValueInvalid                221 //  This is not a valid parameter. It can change from release to release!
+// end_PubEsent
+#define JET_paramFlight_UseCngAes256Implementation 221 //   Whether to use the CNG based implementation (rather than CAPI based one) for AES256 encryption
+// begin_PubEsent
+
+#define JET_paramMaxValueInvalid                222 //  This is not a valid parameter. It can change from release to release!
 
 // end_PubEsent
 #if ( JET_VERSION >= 0x0A01 )

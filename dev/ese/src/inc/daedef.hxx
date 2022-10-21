@@ -5874,3 +5874,6 @@ INLINE ERR ErrFromCStatsErr( const CStats::ERR err )
         return ErrERRCheck( JET_errInternalError );
     }
 }
+
+#define PARAM_AES256_IMPLEMENTATION         ( BoolParam( JET_paramFlight_UseCngAes256Implementation ) ? AES256_CNG_IMPLEMENTATION : AES256_CAPI_IMPLEMENTATION )
+#define OTHER_AES256_IMPLEMENTATION         ( BoolParam( JET_paramFlight_UseCngAes256Implementation ) ? AES256_CAPI_IMPLEMENTATION : AES256_CNG_IMPLEMENTATION )

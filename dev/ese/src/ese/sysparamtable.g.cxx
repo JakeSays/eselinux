@@ -240,6 +240,7 @@ JetParam g_rgparamRaw[] =
     NORMAL_PARAM(JET_paramEnableBlockCache, CJetParam::typeBoolean, 1,  1,  1, 0, 0, 1, 0),
     NORMAL_PARAM(JET_paramDeferredIndexPopulateRowsPerTransaction, CJetParam::typeInteger, 1,  0,  0, 0, 1, 2147483647, 1000),
     NORMAL_PARAM(JET_paramEnableBlockCacheDetach, CJetParam::typeBoolean, 1,  1,  1, 0, 0, 1, 0),
+    NORMAL_PARAM(JET_paramFlight_UseCngAes256Implementation, CJetParam::typeBoolean, 0,  1,  0, 0, 0, 1, JET_paramFlight_UseCngAes256ImplementationDEFAULT),
     ILLEGAL_PARAM(JET_paramMaxValueInvalid),
 };
 
@@ -467,4 +468,5 @@ static_assert( JET_paramPerfmonRefreshInterval == 217, "The order of defintion f
 static_assert( JET_paramEnableBlockCache == 218, "The order of defintion for JET_paramEnableBlockCache in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
 static_assert( JET_paramDeferredIndexPopulateRowsPerTransaction == 219, "The order of defintion for JET_paramDeferredIndexPopulateRowsPerTransaction in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
 static_assert( JET_paramEnableBlockCacheDetach == 220, "The order of defintion for JET_paramEnableBlockCacheDetach in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
-static_assert( JET_paramMaxValueInvalid == 221, "The order of defintion for JET_paramMaxValueInvalid in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
+static_assert( JET_paramFlight_UseCngAes256Implementation == 221, "The order of defintion for JET_paramFlight_UseCngAes256Implementation in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
+static_assert( JET_paramMaxValueInvalid == 222, "The order of defintion for JET_paramMaxValueInvalid in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
