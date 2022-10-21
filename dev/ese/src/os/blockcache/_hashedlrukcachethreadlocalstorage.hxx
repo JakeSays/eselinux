@@ -17,7 +17,8 @@ class CHashedLRUKCacheThreadLocalStorage  //  ctls
             :   CCacheThreadLocalStorageBase( ctid ),
                 m_pc( NULL ),
                 m_ptpwIssue( NULL ),
-                m_cwAsyncIOWorkerState( ControlWord::cwNone ),
+                m_semAsyncIOWorkerRequest( CSyncBasicInfo( "CHashedLRUKCacheThreadLocalStorage::m_semAsyncIOWorkerRequest" ) ),
+                m_semAsyncIOWorkerExecute( CSyncBasicInfo( "CHashedLRUKCacheThreadLocalStorage::m_semAsyncIOWorkerExecute" ) ),
                 m_ctidAsyncIOWorker( ctidInvalid ),
                 m_critAsyncIOWorkerState( CLockBasicInfo( CSyncBasicInfo( "CHashedLRUKCacheThreadLocalStorage::m_critAsyncIOWorkerState" ), rankIssued, 0 ) ),
                 m_rgibSlab { 0 },
@@ -26,6 +27,9 @@ class CHashedLRUKCacheThreadLocalStorage  //  ctls
                 m_cIORangeLocked( 0 ),
                 m_cbIORangeLocked( 0 )
         {
+            m_semAsyncIOWorkerRequest.Release();
+            m_semAsyncIOWorkerRequest.Release();
+            m_semAsyncIOWorkerExecute.Release();
         }
 
         void Initialize( _In_ THashedLRUKCache<I>* const pc, _Inout_ TP_WORK** const pptpwIssue )
@@ -182,73 +186,36 @@ class CHashedLRUKCacheThreadLocalStorage  //  ctls
 
         void BeginAsyncIOWorker()
         {
-            m_ctidAsyncIOWorker = CtidCurrentThread();
+            //  serialize execution of the async IO worker because more than one can be requested and executing concurrently
 
-            OSTrace(    JET_tracetagBlockCacheOperations,
-                        OSFormat(   "C=%s BeginAsyncIOWorker .%x",
-                                    OSFormatFileId( Pc() ),
-                                    Ctid() ) );
+            m_semAsyncIOWorkerExecute.Acquire();
+            m_ctidAsyncIOWorker = CtidCurrentThread();
         }
 
-        BOOL FTryEndAsyncIOWorker()
+        void EndAsyncIOWorker()
         {
-            BOOL fNewRequest = fFalse;
+            //  enable another async IO worker task to execute
 
-            //  if the worker is requested and running then clear the requested state
-            //  if the worker is not requested and running then clear the running state
+            m_ctidAsyncIOWorker = ctidInvalid;
+            m_semAsyncIOWorkerExecute.Release();
 
-            OSSYNC_FOREVER
-            {
-                const ControlWord cwAsyncIOWorkerStateBIExpected    = (ControlWord)AtomicRead( (LONG*)&m_cwAsyncIOWorkerState );
-                const ControlWord cwAsyncIOWorkerStateAI            = cwAsyncIOWorkerStateBIExpected == ControlWord::cwRunning ?
-                                                                        ControlWord::cwNone :
-                                                                        ControlWord::cwRunning;
-                const ControlWord cwAsyncIOWorkerStateBI            = (ControlWord)AtomicCompareExchange(   (LONG*)&m_cwAsyncIOWorkerState,
-                                                                                                            (LONG)cwAsyncIOWorkerStateBIExpected,
-                                                                                                            (LONG)cwAsyncIOWorkerStateAI );
+            //  allow another async IO worker request to be made
 
-                if ( cwAsyncIOWorkerStateBI == cwAsyncIOWorkerStateBIExpected )
-                {
-                    fNewRequest = cwAsyncIOWorkerStateBI == ControlWord::cwRequestedAndRunning;
-                    break;
-                }
-            }
+            m_semAsyncIOWorkerRequest.Release();
 
-            OSTrace(    JET_tracetagBlockCacheOperations,
-                        OSFormat(   "C=%s FTryEndAsyncIOWorker .%x = %s",
-                                    OSFormatFileId( Pc() ),
-                                    Ctid(),
-                                    OSFormatBoolean( fNewRequest ) ) );
+            //  release the ref count for this request
 
-            //  if we are no longer running then release the ref count for the async IO worker
-
-            if ( !fNewRequest )
-            {
-                CHashedLRUKCacheThreadLocalStorage<I>* pctlsT = this;
-                Release( &pctlsT );
-            }
-
-            //  we have succeeded in ending if there is no new request
-
-            return !fNewRequest;
+            CHashedLRUKCacheThreadLocalStorage<I>* pctlsT = this;
+            Release( &pctlsT );
         }
 
         void CueAsyncIOWorker()
         {
-            //  request the async IO worker
+            //  try to get a token to request the async IO worker
 
-            const ControlWord   cwAsyncIOWorkerStateBI  = (ControlWord)AtomicExchange(  (LONG*)&m_cwAsyncIOWorkerState,
-                                                                                        (LONG)ControlWord::cwRequestedAndRunning );
-
-            const BOOL          fNewRequest             = ( cwAsyncIOWorkerStateBI == ControlWord::cwNone ||
-                                                            cwAsyncIOWorkerStateBI == ControlWord::cwRunning );
-            const BOOL          fSignalNeeded           = cwAsyncIOWorkerStateBI == ControlWord::cwNone;
-
-            //  signal the async IO worker if necessary
-
-            if ( fSignalNeeded )
+            if ( m_semAsyncIOWorkerRequest.FTryAcquire() )
             {
-                //  add a ref count for the async IO worker
+                //  add a ref count for this request
 
                 AddRef();
 
@@ -256,13 +223,6 @@ class CHashedLRUKCacheThreadLocalStorage  //  ctls
 
                 SubmitThreadpoolWork( PtpwIssue() );
             }
-
-            OSTrace(    JET_tracetagBlockCacheOperations,
-                        OSFormat(   "C=%s CueAsyncIOWorker .%x fNewRequest = %s fSignalNeeded = %s",
-                                    OSFormatFileId( Pc() ),
-                                    Ctid(),
-                                    OSFormatBoolean( fNewRequest ),
-                                    OSFormatBoolean( fSignalNeeded ) ) );
         }
 
         static void CueAsyncIOWorker_( _In_ const DWORD_PTR keyIOComplete )
@@ -281,18 +241,12 @@ class CHashedLRUKCacheThreadLocalStorage  //  ctls
 
         ~CHashedLRUKCacheThreadLocalStorage()
         {
+            m_semAsyncIOWorkerRequest.Acquire();
+            m_semAsyncIOWorkerRequest.Acquire();
+            m_semAsyncIOWorkerExecute.Acquire();
+
             m_pc->ReleaseThreadpoolState( &m_ptpwIssue );
         }
-
-    private:
-
-        enum class ControlWord : LONG
-        {
-            cwNone = 0,
-            cwRequested = 1,
-            cwRunning = 2,
-            cwRequestedAndRunning = 3,
-        };
 
     private:
 
@@ -300,7 +254,8 @@ class CHashedLRUKCacheThreadLocalStorage  //  ctls
         TP_WORK*                                                            m_ptpwIssue;
 
         CCountedInvasiveList<CRequest, CRequest::OffsetOfIOs>               m_ilIORequested;
-        volatile ControlWord                                                m_cwAsyncIOWorkerState;
+        CSemaphore                                                          m_semAsyncIOWorkerRequest;
+        CSemaphore                                                          m_semAsyncIOWorkerExecute;
         CacheThreadId                                                       m_ctidAsyncIOWorker;
         CCountedInvasiveList<CRequest, CRequest::OffsetOfIOs>               m_ilIORangeLockPending;
         CCountedInvasiveList<CRequest, CRequest::OffsetOfIOs>               m_ilIORangeLocked;
