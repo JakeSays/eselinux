@@ -523,12 +523,6 @@ public:
 
 __forceinline CErrFrameSimple * PefLastThrow();
 
-__forceinline ERR ErrERRSetLastThrow( _In_ const CHAR* szFile, _In_ const LONG lLine, _In_ const ERR err )
-{
-    PefLastThrow()->Set( szFile, lLine, err );
-    return err;
-}
-
 //  Returns the line of the last call that failed out w/ an error, presumably within this frame.
 
 ULONG UlLineLastCall();
@@ -569,7 +563,10 @@ ERR ErrERRCheck_( const ERR err, const CHAR* szFile, const LONG lLine );
 __forceinline ERR ErrERRCheck_( _In_ const ERR err, _In_ const CHAR* szFile, _In_ const LONG lLine )
 {
     extern ERR g_errTrap;
-    PefLastThrow()->Set( szFile, lLine, err );
+    if ( err < 0 /* JET_errSuccess */ )
+    {
+        PefLastThrow()->Set( szFile, lLine, err );
+    }
     if ( g_errTrap == err )
     {
         KernelDebugBreakPoint();

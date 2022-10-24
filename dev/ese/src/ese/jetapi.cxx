@@ -6,6 +6,9 @@
 #include "errdata.hxx"
 #include "_bf.hxx"  // for JetTestHook
 
+// ISSUE-2014/09/12-BrettSh - I personally view this as a layering violation of stuff that should be
+// contained in the OS layer, as it is specific to the Windows OS, and as used today actually only
+// affects phone.
 #ifdef ESENT
 #include "slpolicylist.h"
 #else
@@ -56,7 +59,7 @@ Instructions for adding a JET param
   2) Modify sysparam.xml to create a defintion for the JET param
   3) Run gengen.bat to update the source files.
   -- ------ ManagedEsent Layer -------
-  A) Update manually. // [2014/08/09 - SOMEONE]: Support for auto-generated ManagedEsent params will be added soon.
+  A) Update manually. // [2014/08/09 - UmairA]: Support for auto-generated ManagedEsent params will be added soon.
   */
 
 JET_ERR ErrERRLookupErrorCategory(
@@ -1358,6 +1361,7 @@ VOID INST::TraceStationId( const TraceStationIdentificationReason tsidr )
         return;
     }
 
+    //  FUTURE-2017/08/02-BrettSh - also consider adding some critical or ?ALL? params to an additional trace?
     ETInstStationId( tsidr, m_iInstance, (BYTE)m_perfstatusEvent, m_wszInstanceName, m_wszDisplayName );
 }
 
@@ -1393,6 +1397,9 @@ __range( 0, g_ifmpMax * ( cchPerfmonInstanceNameMax + 1 ) + 1 ) ULONG g_cchDatab
 BYTE*       g_rgbDatabaseAggregationIDs     = NULL;
 
 
+// ISSUE-2009/10/21-BrettSh - This used to be static, but needed it in osu.cxx.  Would 
+// love to get this static again, or have a cleaner init/term story for perfmon and 
+// these instance names.
 INT g_cInstances = 0;
 INT g_cDatabases = 0;
 
@@ -1549,6 +1556,92 @@ VOID PERFSetDatabaseNames( IFileSystemAPI* const pfsapi )
 }
 
 
+#ifdef ENABLE_MICROSOFT_MANAGED_DATACENTER_LEVEL_OPTICS
+
+//
+//      Trace to an IRS.RAW the init failure.
+//
+
+void DumpFailedInitToIrsRaw(
+    _In_ INST * pinst,
+    _In_ PCWSTR wszInstDisplayName,
+    _In_ PCWSTR wszErrorState, 
+    _In_ PCWSTR wszSeconds, 
+    _In_ PCWSTR wszFailingMode, 
+    _In_ PCWSTR wszFailingAddress, 
+    _In_ PCWSTR wszHaPublishingFacts )
+{
+    __int64  fileTime;
+    WCHAR    wszDate[32];
+    WCHAR    wszTime[32];
+    size_t   cchRequired;
+    WCHAR    wszInstIrsFile[ 5 /* Inst- */ + 3 /* inst log base name */ + 1 ];
+    WCHAR    wszInstIrsPathBase[ OSFSAPI_MAX_PATH ];
+    CPRINTF * pcprintfPageTrace = NULL;
+
+    if ( pinst == NULL || pinst->m_pfsapi == NULL )
+    {
+        FireWall( "InstIrsUnexpectedInitExitBeforeInstOrPfsapiAlloc" );
+        return;
+    }
+
+    if ( ( SzParam( pinst, JET_paramLogFilePath ) == NULL ) ||
+         ( SzParam( pinst, JET_paramLogFilePath )[0] == L'\0' ) )
+    {
+        FireWall( "InstIrsLogPathNotSet" );
+        return;
+    }
+
+    if ( ( SzParam( pinst, JET_paramBaseName ) == NULL ) ||
+         ( SzParam( pinst, JET_paramBaseName )[0] == L'\0' ) )
+    {
+        FireWall( "InstIrsBaseNameNotSet" );
+        return;
+    }
+
+    //  make path
+    //
+    OSStrCbFormatW( wszInstIrsFile, sizeof( wszInstIrsFile ), L"Inst-%ws", SzParam( pinst, JET_paramBaseName ) );
+    ERR errT = pinst->m_pfsapi->ErrPathBuild( 
+            SzParam( pinst, JET_paramLogFilePath ), 
+            wszInstIrsFile, 
+            L"", // ext filled by IRS func / ErrBeginDatabaseIncReseedTracing()
+            wszInstIrsPathBase,
+            sizeof( wszInstIrsPathBase ) );
+    if ( errT < JET_errSuccess )
+    {
+        FireWall( "InstIrsPathBuildFail" );
+        return;
+    }
+
+    //  start tracing (before anything else)
+    //
+    errT = ErrBeginDatabaseIncReseedTracing( pinst->m_pfsapi, wszInstIrsPathBase, &pcprintfPageTrace );
+    if ( errT < JET_errSuccess )
+    {
+        AssertSzRTL( FRFSAnyFailureDetected(), "InstIrsFailedIrsOpen" );
+        return;
+    }
+
+    fileTime = UtilGetCurrentFileTime();
+    ErrUtilFormatFileTimeAsTimeWithSeconds( fileTime, wszTime, _countof(wszTime), &cchRequired);
+    ErrUtilFormatFileTimeAsDate( fileTime, wszDate, _countof(wszDate), &cchRequired);
+    (*pcprintfPageTrace)( "Begin " __FUNCTION__ "() @ Time %ws %ws\r\n", wszTime, wszDate );
+
+    // Consider adding ERRFormatIssueSource() to get last error information and Server Version.
+    (*pcprintfPageTrace)( "JetInit (%ws) Failed with %ws in %ws seconds.\r\n", wszInstDisplayName, wszErrorState, wszSeconds );
+    (*pcprintfPageTrace)( "Failing Mode: %ws\r\n", wszFailingMode );
+    (*pcprintfPageTrace)( "Failing Address: %ws\r\n", wszFailingAddress );
+    (*pcprintfPageTrace)( "HA Pub Facts: %ws\r\n", wszHaPublishingFacts );
+
+    EndDatabaseIncReseedTracing( &pcprintfPageTrace );
+
+    return;
+}
+
+#endif // ENABLE_MICROSOFT_MANAGED_DATACENTER_LEVEL_OPTICS
+
+
 //
 //      CIsamSequenceDiagLog
 //
@@ -1683,6 +1776,10 @@ void CIsamSequenceDiagLog::Trigger( _In_ const BYTE seqTrigger )
         //  the time adjustments - it is sort of a little ambigious, does the waits we accumulated 
         //  at m_cseqMac - 1 belong there, or at the new seqTrigger array element?  So we'll assert 
         //  if jumping by more than one sequence value, that there are no time adjustments lingering.
+        //  ISSUE-2016/12/08-BrettSh - On final review realized this is not quite complete, we may
+        //  have skipped two or more steps ... so we should walk back checking all untriggered steps
+        //  for this, until we hit a triggered step (which would be allowed to have callbacks, throttles
+        //  busy waits, etc).
         Assert( FTriggeredStep( m_cseqMac - 1 ) || m_rgDiagInfo[ m_cseqMac - 1 ].cCallbacks == 0 );
         Assert( FTriggeredStep( m_cseqMac - 1 ) || m_rgDiagInfo[ m_cseqMac - 1 ].cThrottled == 0 );
     }
@@ -1717,6 +1814,9 @@ void CIsamSequenceDiagLog::AddCallbackTime( const double secsCallback, const __i
         return; // see comments in Trigger() about this.
     }
 
+    // FUTURE-2016/10/30-BrettSh - Since engaging the floating point can burn alot of CPU, I really should
+    // have just accumulated DHRTs and then converted it to seconds at the very end for the sprintf / stats
+    // accumulation.  Applies to AddThrottleTime() as well.
     m_rgDiagInfo[m_cseqMac].cCallbacks += cCallbacks;
     m_rgDiagInfo[m_cseqMac].secInCallback += secsCallback;
 }
@@ -1778,6 +1878,9 @@ __int64 CIsamSequenceDiagLog::UsecTimer( _In_ INT seqBegin, _In_ const INT seqEn
         return 0;
     }
     
+    Expected( FTriggeredSequence_( 0 ) );  // be odd to have not started sequence and ask for timings
+    Expected( seqEnd + 1 != m_cseqMax || FTriggeredSequence_( seqEnd ) );
+
     if ( !FValidSequence_( seqBegin ) ||
         !FValidSequence_( seqEnd ) ||
         seqBegin >= seqEnd ||
@@ -1793,9 +1896,10 @@ __int64 CIsamSequenceDiagLog::UsecTimer( _In_ INT seqBegin, _In_ const INT seqEn
     {
         seqBegin--;
     }
-    
+    Expected( seqBegin < seqEnd );  // this should be true unless we had a failure before the 2nd sequence (seq = 1).  Let us see if it happens.
+
     if ( !FTriggeredSequence_( seqBegin ) ||
-        !FTriggeredSequence_( seqEnd ) )
+         !FTriggeredSequence_( seqEnd ) )
     {
         return 0;
     }
@@ -2120,6 +2224,11 @@ void CIsamSequenceDiagLog::SprintTimings( _Out_writes_bytes_(cbTimeSeq) WCHAR * 
                         dckbPagefileUsagePeak ||
                         dckbPrivateUsage ) )
             {
+                // FUTURE-2014/12/13-BrettSh - Jeez, I wish we had the kind of engine where I wasn't measuring 
+                // in KB!  But for now, we do, and also since we don't have heap bytes (which would be more useful
+                // in real bytes), all of these deltas are actually multiples of KB.
+                // FUTURE-2016/02/06-BrettSh - We could easily add some other interesting stats like reserved 
+                // memory, differentiating mapped binary image (b/c DLL is shared), unique reference set, etc.
                 OSStrCbFormatW( pwszCurr, cbCurrLeft, L" +M(C:%I64dK, Fs:%d, WS:%IdK # %IdK, PF:%IdK # %IdK, P:%I64dK)",
                                     dckbCacheMem,
                                     m_rgDiagInfo[seq].memstat.cPageFaultCount - m_rgDiagInfo[seqBefore].memstat.cPageFaultCount,
@@ -2426,6 +2535,9 @@ VOID INST::SaveDBMSParams( DBMS_PARAM *pdbms_param )
 
 VOID INST::RestoreDBMSParams( DBMS_PARAM *pdbms_param )
 {
+    // FUTURE-2010/05/20-BrettSh - So this is a bit dicey, but it is probably ok, because
+    // we either tear down the instance right after restore, or in the case we use it, we
+    // probably have to have the right params anyway.
     m_plog->SetCSecLGFile( pdbms_param->le_lcsecLGFile );
 }
 
@@ -2671,6 +2783,10 @@ PM_ICF_PROC LTableClassNamesICFLPwszPpb;
 // Max characters in any table class name's suffix that we add automatically. These
 // strings are defined below.
 #define cchTCESuffixMax     (10)
+// ISSUE-2006/01/21-BrettSh - I think this is a localization issue?  The normal perf counters
+// names as picked up from esentprf.ini are in fact localized in Vista.  So does this work?
+// not quite sure, should be investigated.  Note simply making these Unicode doesn't work,
+// someone needs to investigate how to pull the strings from a localizable context.
 const WCHAR * const g_wszUnknown    = L"_Unknown";
 const WCHAR * const g_wszCatalog    = L"_Catalog";
 const WCHAR * const g_wszShadowCatalog  = L"_ShadowCatalog";
@@ -2932,6 +3048,8 @@ INLINE VOID RUNINSTSetModeMultiInst()
     //  we're in, while JET_paramMaxInstances
     //  only keeps track of the max instances in multi-
     //  instance mode)
+    //  FUTURE-2013/10/22-BrettSh - This is too early and far away from where we're
+    //  allocating g_rgpinst.
     g_cpinstMax = (ULONG)UlParam( JET_paramMaxInstances );
     g_ifmpMax = g_cpinstMax * dbidMax + cfmpReserved;
 }
@@ -2958,6 +3076,16 @@ LOCAL ERR ErrRUNINSTCheckAndSetOneInstMode()
     if ( RUNINSTGetMode() == runInstModeNoSet )
     {
         Assert( g_cpinstInit == 0 );
+        //  FUTURE-2013/10/17-BrettSh - This is delicate code ... you see restore will 
+        //  allocate the instance (for single inst mode), BUT it's dangerous to leave 
+        //  ourselves in this state ... b/c if we fail out anywhere between here and
+        //  restore getting into the beginning of ErrNewInst(), we leave ESE in this
+        //  stuck state, where it thinks it is in one-inst mode, but there is no actual
+        //  instance initialized.  You can't JetTerm() the non-existing implicit instance
+        //  to restore yourself to the no-mode state.  It might be better to actually
+        //  move all this code into ErrINSTSystemInit() but JetEnableMultiInstance()
+        //  actually utilizes this separated state to force us to one way go into multi-
+        //  inst mode.
         RUNINSTSetModeOneInst();
     }
     else if ( RUNINSTGetMode() == runInstModeMultiInst )
@@ -2979,7 +3107,7 @@ LOCAL ERR ErrRUNINSTCheckOneInstMode()
     if ( RUNINSTGetMode() == runInstModeNoSet )
     {
         Assert( g_cpinstInit == 0 );
-        //  SOMEONE here: I checked and I could only find 4 instances (all variants of 
+        //  BrettSh here: I checked and I could only find 4 instances (all variants of 
         //  JetRestore) of this called where it would expect / be OK with no mode being
         //  set.  So the callers expect no mode to be a failure (which they will fail
         //  with once they call ErrFindPinst()).
@@ -3079,12 +3207,23 @@ class CInstanceFileSystemConfiguration : public CDefaultFileSystemConfiguration
                     DWORD cioT = 0;
                     switch( rand() % 5 )
                     {
+                        //  FUTURE-2013/08/06-BrettSh - Actually we should try 1 and 2 and 3 and other low numbers 
+                        //  just to search for bugs ...
+                        //case 0:   cioT = 1;       break;
+                        //case 0:   cioT = 2;       break;
+                        //case 0:   cioT = 3;       break;
+                        //case 0:   cioT = 12;      break;
+                        //case 1:   cioT = 36;      break;
+                        //case 2:   cioT = 108;     break;
                         case 0:     cioT = 324;     break;
                         case 1:     cioT = 1024;    break;
                         case 2:     cioT = 3072;    break;
                         case 3:     cioT = 10000;   break;
                         case 4:     cioT = 32764;   break;
                     }
+                    //  FUTURE-2013/08/26-BrettSh - Really should have an OSTrace() to indicate all interesting 
+                    //  settings overrides.
+                    //wprintf( L"\t\tDefaulted JET_paramOutstandingIOMax = %d\n", cioT );
                     m_cioOutstandingMax = min( (ULONG)UlParam( m_pinst, JET_paramOutstandingIOMax ), cioT );
                 }
 #endif // DEBUG
@@ -3138,7 +3277,7 @@ class CInstanceFileSystemConfiguration : public CDefaultFileSystemConfiguration
             //  initialize this setting
             if ( m_permillageSmoothIo == dwMax )
             {
-                // Exs: 999â€° = 99.9% Smooth, 990â€° = 99.0% Smooth, 900â€° = 90.0% Smooth.  Debug default = 0.2%
+                // Exs: 999‰ = 99.9% Smooth, 990‰ = 99.0% Smooth, 900‰ = 90.0% Smooth.  Debug default = 0.2%
                 ULONG permillageSmoothIo = OnDebugOrRetail( 2, CDefaultFileSystemConfiguration::PermillageSmoothIo() ); 
 
                 if ( m_pinst )
@@ -3500,6 +3639,10 @@ ERR ErrNewInst(
     //  initialize the system if we are creating the first instance
     //
 
+    //  FUTURE-2013/10/21-BrettSh - I would like to see this get moved out of ErrNewInst() at
+    //  some point as some of the global state setting is done with the runInstModeMultiInst,
+    //  runInstModeNoSet, runInstOneInst outside / before this, and some is done in here where
+    //  we seem to be predominantly caring about specific inst stuff.
     if ( 0 == g_cpinstInit )
     {
         // OSUInit's done my misc APIs may not have been done with the correct global params,
@@ -3518,6 +3661,11 @@ ERR ErrNewInst(
 
     //  See if g_rgpinst still have space to hold the pinst.
     //
+    //  FUTURE-2013/10/21-BrettSh - I would like to see this get moved out of ErrNewInst() at
+    //  some point as this seems to be g_rgpinst list management being done here, where as much
+    //  what else is done in here seems to be predominantly caring about specific inst stuff.
+    //  BTW, we should move this bounds check, and the ipinst loop check for a conflicting name, 
+    //  and the loop trying to find an empty slot.
     if ( g_cpinstInit >= g_cpinstMax )
     {
         Error( ErrERRCheck( JET_errTooManyInstances ) );
@@ -3635,6 +3783,7 @@ ERR ErrNewInst(
             //  but if we're creating a _new_ DB, and we happen to be in the downgrade window the new DB would use engine 
             //  default (i.e. upgradeed) and then if downgrade happens, we couldn't attach it, so we actually sort of need 
             //  to set this back to an old / safe version.
+            //  See also FUTURE-2018/07/25-BrettSh comment.
             pinst->m_rgparam[ JET_paramEngineFormatVersion ].Reset( pinst, JET_efvExchange2016Cu1Rtm | JET_efvAllowHigherPersistedFormat );
         }
     }
@@ -3824,10 +3973,14 @@ LOCAL ERR ErrFindPinst( JET_INSTANCE jinst, INST **ppinst, INT *pipinst = NULL )
         case runInstModeOneInst:
             //  find the only one instance, ignore the given instance
             //  since the given one may be bogus
+            //  FUTURE-2013/10/16-BrettSh - Why would it not always be 
+            //  slot [0]?  This applies to other APIs as well, such as
+            //  JetGet|SetSystemParameter().
             for ( ipinst = 0; ipinst < g_cpinstMax; ipinst++ )
             {
                 if ( pinstNil != g_rgpinst[ ipinst ] )
                 {
+                    // testing the FUTURE-2013/10/16-BrettSh comment.
                     Assert( ipinst == 0 );
                     *ppinst = g_rgpinst[ ipinst ];
                     if ( pipinst )
@@ -3941,7 +4094,7 @@ class APICALL
 {
     protected:
         ERR         m_err;
-        INT         m_op;       // 2014/11/03-SOMEONE - To make the change easier, we cache the op so that we don't have to modify every call site.
+        INT         m_op;       // 2014/11/03-UmairA - To make the change easier, we cache the op so that we don't have to modify every call site.
         INT         m_opOuter;  // This is the saved op of the "outer" JET API when we come into another JET API from a JET callback.
         IOREASONTERTIARY m_iortOuter;
 
@@ -4490,6 +4643,13 @@ ERR INST::ErrAPIEnterForInit()
 ERR INST::ErrAPIEnterWithoutInit( const BOOL fAllowInitInProgress )
 {
     ERR     err;
+    //  NTRAID#ESE-115-2013/06/11-BrettSh - This has a fundamental timing hole ... while
+    //  it will work while the INST is in the _MIDDLE_ of init(w/ err) or term, near 
+    //  the end it is functionally broken b/c we're using a member variable of the
+    //  INST * that is to be deallocated on Term or on a failure during Init.  We can
+    //  probably solve this by moving this m_cSessionInJetAPI into the g_rgpinst next 
+    //  to the INST *, and then give out the index to that array slot instead of the
+    //  INST * we do today.
     LONG    lOld    = AtomicExchangeAdd( &m_cSessionInJetAPI, 1 );
 
     if ( ( lOld & maskAPILocked ) && // API can't be locked, unless ...
@@ -4610,6 +4770,9 @@ VOID INST::EnterCritInst()  { g_critInst.Enter(); }
 VOID INST::LeaveCritInst()
 {
     // We should have consistent g_runInstMode and g_cpinstInit parameters at this point
+    // FUTURE-2007/11/05-BrettSh - I am dubious that it is a good idea to allow
+    // us to be in no mode and one mode w/ g_cpinstInit 0 or 1.  Ideally, we'd make
+    // the state transition to onemode at the same time as allocating an inst ...
     Assert( ( runInstModeNoSet == g_runInstMode && 2 > g_cpinstInit ) ||
             ( runInstModeOneInst == g_runInstMode && 2 > g_cpinstInit ) ||
             ( runInstModeMultiInst == g_runInstMode ) );
@@ -4660,6 +4823,24 @@ ERR INST::ErrINSTSystemInit()
     Assert( 0 == g_cpinstInit );
     Assert( g_rgpinst == NULL );    // or we'll be leaking memory.
 
+    //  FUTURE-2013/10/22-BrettSh - I've flown too high, and got burned by trying
+    //  to move this code from the RUNINSTSetModeOneInst()/RUNINSTSetModeMultiInst()
+    //  area ... this runs afoul of some perfmon re-allocation protection in 
+    //  ErrOSUInit().  What should happen?  See RUNINSTSetModeMultiInst().
+    //switch( RUNINSTGetMode() )
+    //  {
+    //case runInstModeOneInst:
+    //  g_cpinstMax = 1;
+    //  g_ifmpMax = g_cpinstMax * dbidMax + cfmpReserved;
+    //  break;
+    //case runInstModeMultiInst:
+    //  g_cpinstMax = (ULONG)UlParam( JET_paramMaxInstances );
+    //  g_ifmpMax = g_cpinstMax * dbidMax + cfmpReserved;
+    //  break;
+    //default:
+    //  //  No appropriate mode set before ErrIsamSystemInit()/ErrINSTSystemInit()!
+    //  EnforceSz( fFalse, "InvalidInstMode" );
+    //  }
 
     Alloc( g_rgpinst = new INST*[g_cpinstMax] );
     memset( g_rgpinst, 0, sizeof(INST*) * g_cpinstMax );
@@ -5588,7 +5769,7 @@ ERR CJetParam::GetString(
 
     // UNICODE_COMPATIBILITY:
     // This is tricky, b/c JET used to just truncate the value, not return error if not enough buffer.
-    // However, I (SOMEONE) think that we should change the contract, because anyone who is
+    // However, I (Brett) think that we should change the contract, because anyone who is
     // getting a truncated string, is proably unknowingly failing in some logical way.
     //
     err = ErrOSStrCbCopyW( wszParam, cbParamMax, (WCHAR*)pjetparam->m_valueCurrent );
@@ -5980,7 +6161,7 @@ ERR CJetParam::IllegalClone(    CJetParam* const    pjetparamSrc,
 //      32kb pages: 8,150
 //      16kb pages: 4,050
 //
-// 2017/11/15-SOMEONE - With prefix-compression on LID64, current chunk size still allows us to store 4 chunks + LVROOT on 1 page.
+// 2017/11/15-UmairA - With prefix-compression on LID64, current chunk size still allows us to store 4 chunks + LVROOT on 1 page.
 //                     We can avoid changing the chunk size and still get optimal storage characteristics.
 //
 //  (The chunk size on 8kb and 4kb pages stays the same to preserve
@@ -6089,6 +6270,10 @@ GetCommitDefault(   const CJetParam* const  pjetparam,
 
     if ( pinst != pinstNil )
     {
+        // FUTURE-2011/08/15-BrettSh - It is interesting and probably a poor choice that 
+        // you have to specify both a pinst and a ppib because a ppib necessarily implies 
+        // a specific pinst.  Consider moving this if ( ppib ) out of the if ( pinst )
+        // clause above.
         if ( ppib != ppibNil )
         {
             ULONG ulActual;
@@ -6102,6 +6287,8 @@ GetCommitDefault(   const CJetParam* const  pjetparam,
         }
         else
         {
+            // FUTURE-2011/08/31-BrettSh - Consider removing this and making it set the grbit
+            // in the actual INST's param table instead.
             *((JET_GRBIT*)pulParam) = pinst->m_grbitCommitDefault;
         }
     }
@@ -6254,6 +6441,8 @@ SetCheckpointDepthMax(  CJetParam* const    pjetparam,
     ERR     err = JET_errSuccess;
 
     Assert( pjetparam->m_paramid == JET_paramCheckpointDepthMax );
+    // ISSUE-2012/04/11-BrettSh - Stupidly we can't set this b/c interop just passes an int arg to both params!
+    //Expected( wszParam == NULL );
     Expected( ppib == ppibNil );
 
     Call( CJetParam::SetInteger( pjetparam, pinst, ppib, ulParam, wszParam ) );
@@ -6723,7 +6912,7 @@ struct ConfigSetOverrideValue
 #define CO( paramid, value, flags )     { value, paramid, flags }
 
 
-//  It is important (cough, SOMEONE, cough, SOMEONE, cough SOMEONE) that we do not give into our desire to
+//  It is important (cough, Anil, cough, Jonathan, cough Ian) that we do not give into our desire to
 //  easily control our clients params with our binary and define only configuration sets that can be
 //  abstracted to a logically sensible configuration for our engine that is not a layering violation.
 
@@ -6739,6 +6928,8 @@ const ConfigSetOverrideValue    g_rgJetConfigRemoveQuotas[] = {
     // parameters.  Ignoring the fact that many of these arguments did FORMERLY increase memory usage.
 };
 
+// FUTURE-2012/03/13-BrettSh - Some others that we might want to consider tuning ... esp. for the
+// fact that ManagedStore runs with B Tree Defrag and DbScan ... though maybe they'll turn these off.
 /*
 
     NORMAL_PARAM(   JET_paramDefragmentSequentialBTrees,                        CJetParam::typeBoolean,     0,  0,  0,  0,  0,      -1,         1 ),
@@ -6769,6 +6960,9 @@ const ConfigSetOverrideValue    g_rgJetConfigRemoveQuotas[] = {
 const ConfigSetOverrideValue    g_rgJetConfigLowMemory[] = {
     //CO( JET_paramEnableAdvanced,              fFalse,     0x0 ),              // pre-win8 we used to disable this on smallConfig, but it turned out to be a terrible idea
 
+    // FUTURE-2012/03/12-BrettSh - future site for breaking out the small config settings into their
+    // own table.  These variables should be checked for consistency with those a 2nd time when that
+    // is done.
 
     //      Global Component Control
     //
@@ -6877,6 +7071,9 @@ const ConfigSetOverrideValue    g_rgJetConfigSSDProfileIO[] = {
     //CO( JET_paramMaxCoalesceReadGapSize,      256*1024,   0x0 ),              //  we actually want read gapping (according to NT perf team) ... though in theory we should NOT need it with SSDs.  Leaving it at default 256 KB, so we don't get carried away.  Have not verified ourselves.
     CO( JET_paramMaxCoalesceWriteGapSize,       0,          0x0 ),              //  avoid overwriting pieces of the disk that do not need to be updated
     CO( JET_paramOutstandingIOMax,              16,         0x0 ),              //  do not need to be as aggressive for read IO max
+    // FUTURE-2012/03/13-BrettSh - Consider bringing this parameter back to hobble the write IO aggressiveness asymetrically 
+    // compared to the read IO aggressiveness / JET_paramOutstandingIOMax.
+    //CO( JET_paramCheckpointIOMax,             1,          0x0 ),              //  not used right now
     CO( JET_paramPrereadIOMax,                  5,          0x0 ),              //  should not need as much prereading for SSDs
 };
 
@@ -6889,6 +7086,15 @@ const ConfigSetOverrideValue    g_rgJetConfigRunSilent[] = {
     //      disables ETW tracing - which looks especially expensive now.
 };
 
+// FUTURE-2012/03/15-BrettSh - List of ideas for other configurations ...
+//  - Like LowMemory and MediumMemory, there is probably room for RunSilent differentiation above, 
+//    like perhaps a RunQuiet, and RunVerbose or RunChatty or RunNoisy.  Martin thinks RunStealth, 
+//    RunSneak, and RunCloaked are good, and I'll add to that RunNinja is a good one!  Honestly,
+//    it's like little boys are writing this code!
+//  - Another one might be like JET_configBenchmark or JET_configTopPerf or something that takes
+//    all the stops out and runs us in the fastest / heaviest weight mode possible.
+//  - Any others?
+//
 
 #undef CO
 
@@ -6978,6 +7184,9 @@ VOID SetJetConfigSet( INST * const pinst, _In_reads_(cConfigOverrides) const Con
             ulpFinal *= 2;
         }
 
+        //  ISSUE-2012/03/17-BrettSh - We actually know the difference between when a client has
+        //  set a param or not ... we could make the config sets skip parameters that the client has
+        //  already set before setting the configuration parameter.
 
         //  if pinst == NULL, then we're resetting parameters globally (not on a per-instance
         //  basis), so we can reset this parameter now.
@@ -7130,6 +7339,10 @@ SetConfiguration(   CJetParam* const    pjetparam,
             //
             if ( !( pinst != pinstNil && pjetparamT->FGlobal() ) )
             {
+                // ISSUE-2012/03/12-BrettSh - Here (and the other 2 calls to Reset()) all
+                // can fail due to calling this at the wrong time, so the API has kind of
+                // a sucky contract in that some settings just may not be overriden with
+                // no feedback to the consumer.
                 (void)pjetparamT->Reset( pinst, pjetparamT->m_valueDefault[ configLegacy & JET_configDefault ] );
             }
 
@@ -7182,6 +7395,10 @@ SetConfiguration(   CJetParam* const    pjetparam,
 
             if ( pinst == pinstNil || !pjetparamT->FGlobal() )
             {
+                // FUTURE-2012/03/13-BrettSh - As soon as I can write a test to validate that I won't regress this, we'll
+                // take the riskier approach to move to the g_rgJetConfigLowMemory, g_rgJetConfigRemoveQuotas[] entries
+                // for configLegacySmall and remove the checks for configLegacy != configLegacySmall above and the extra
+                // array slot in the sys param definition.
                 if ( pjetparamT->m_valueDefault[ configLegacySmall ] != pjetparamT->m_valueDefault[ configLegacyLegacy ] )
                 {
                     (void)pjetparamT->Reset( pinst, pjetparamT->m_valueDefault[configLegacySmall] );
@@ -7198,6 +7415,7 @@ SetConfiguration(   CJetParam* const    pjetparam,
     }
     if ( configSet & JET_configUnthrottledMemory )
     {
+        // FUTURE-2013/05/01-BrettSh - Fix JET_configDynamicHighMemory to do something.
         configSet &= ~JET_configUnthrottledMemory;
     }
     if ( configSet & JET_configSSDProfileIO )
@@ -7208,6 +7426,7 @@ SetConfiguration(   CJetParam* const    pjetparam,
     //  after memory configs b/c relies on paramCacheSizeMax and most likely battery is the top-most concern
     if ( configSet & JET_configLowPower )
     {
+        // FUTURE-2012/03/12-BrettSh - There are lots of things to consider, log file size, log buffers, etc.
         configSet &= ~JET_configLowPower;
     }
     //  since these are specifically pools that don't affect memory size, it's fine to have near end
@@ -7224,6 +7443,7 @@ SetConfiguration(   CJetParam* const    pjetparam,
     }
     if ( configSet & JET_configHighConcurrencyScaling )
     {
+        // FUTURE-2013/05/01-BrettSh - Fix JET_configHighConcurrencyScaling to do something.
         configSet &= ~JET_configHighConcurrencyScaling;
     }
 
@@ -7234,6 +7454,9 @@ SetConfiguration(   CJetParam* const    pjetparam,
         return ErrERRCheck( JET_errInvalidParameter );
     }
 
+    // FUTURE-2012/03/13-BrettSh - It is worth noting that if we ever set any paths that get recalculated
+    // in here via FixDefaultSystemParameters(), we'll need to add another call to FixDefaultSystemParameters
+    // here.
 
     return err;
 }
@@ -7462,7 +7685,28 @@ HandleError:
                         value2 )                        \
     NORMAL_PARAMEX( #paramid, paramid, type, fAdvanced, fGlobal, fMayNotWriteAfterGlobalInit, fMayNotWriteAfterInstanceInit, rangeLow, rangeHigh, value, value2 )
 
+// ISSUE-2012/02/02-martinc: g_rgparamRaw *should* be on a read-only data page. At the
+// time of this writing, it is for x86, but not amd64 or ARM. The latter platforms contain
+// a dynamic initializer. Because we need to pay the COW penalty for most of our platforms
+// regardless of whether it's 'const' or not, it is simpler to pay the COW penalty on
+// all platforms for simpler code.
+//
+// If the g_rgparamRaw array can be made 'const' and eliminate the dynamic initializer, then
+// we will want to keep it on a readonly page and copy it to some heap memory to avoid the
+// COW operations.
+//
+// The following are known factors causing a dynamic initializer:
+// -Presence of a destructor (~JetParam).
+// -Initialization involving { a ? b : c }. (e.g. PFNGET_OF_TYPE). The compiler does not
+//  evaluate these ternary expressions at compile time.
+//
+// Even after eliminating these two factors, the dynamic initializer was still instantiated.
 
+// ISSUE-2012/02/13-martinc. There is a bug in the Windows 8 OACR that causes the cl.exe wrapper
+// to run away consuming gigabytes of memory, and thus causing a DoS on the build machine.
+// The bug has been fixed in another branch, but may take a while to make it to our branch.
+// So this #ifdef _PREFAST_ workaround does not have to be in here for long.
+// Windows 8 Bugs:694176.
 
 // UNICODE_UNDONE_DEFERRED: Technically don't need to do this, but I noticed that if you set a default string value to ASCII string, there is no compile error, that means it is ripe for a bug.
 
@@ -7544,8 +7788,12 @@ const size_t    g_cparam    = _countof( g_rgparamRaw );
 C_ASSERT( sizeof( JetParam ) == sizeof( CJetParam ) );
 
 // g_grparamRaw is an array of JetParam, and g_rgparam is an array of the child class CJetParam.
+// FUTURE-2012/02/06-martinc. g_gparam may one day be dynamically allocated
+// and copied from g_rgparamRaw.
 CJetParam* const        g_rgparam   = (CJetParam*) &g_rgparamRaw[ 0 ];
 
+// FUTURE-2015/03/04-AndyGo - Only remaining reliance is in ErrITSetConstants calling FixDefaultSystemParameters.
+// Otherwise, FixDefaultSystemParameters is protected by g_critInst
 LOCAL CCriticalSection  g_critSysParamFixup( CLockBasicInfo( CSyncBasicInfo( "g_critSysParamFixup" ), rankSysParamFixup, 0 ) );
  
 // Some System Parameters need a dynamic default that can't be established at compile time.
@@ -7595,6 +7843,10 @@ VOID FixDefaultSystemParameters()
         //  Configure Default Path Variables
         //
 
+        // ISSUE-2013/11/06-BrettSh - Didn't think you could create a pfsapi before ErrOSUInit() ... someone
+        // should investigate that.  If not valid, fix.  IF valid, then perhaps change all the other OSU
+        // users (JetGetDatabaseFileInfo, JetRemoveLogFile, etc) off the OSU so we don't have that perfmon
+        // allocation pre-init problems.
         Call( ErrOSFSCreate( g_pfsconfigGlobal, &pfsapi ) );
         Call( pfsapi->ErrPathFolderDefault( rgwchDefaultPath, _countof( rgwchDefaultPath ), &fIsDefaultDirectory ) );
 
@@ -7846,6 +8098,14 @@ ERR ErrSysParamLoadDefaults( const BOOL fHasCritInst, INST * pinst, CConfigStore
 
     Assert( !fHasCritInst || INST::FOwnerCritInst() );
 
+    // FUTURE-2013/11/02-BrettSh - It occurred to me a bit late, that it is possibly more
+    // efficient to use some form of registry enumeration API ... rather than test get from
+    // registry almost 200 values.  Of course then you'd have to search through all the
+    // strings for the param table looking for a match! :P  Blech.
+    // ISSUE-2013/11/06-BrettSh - Got a build error by declaring cparam as "const cparam" in 
+    // the arg list above (which I didn't even know you could do, must be assuming int), and 
+    // then not having a cast to (size_t) here ... BUT only failed build in focus, NOT on 
+    // local box.  Debug that, and fix local build to match focus build. Seriously what the?
     for ( size_t iparamid = 0; iparamid < (size_t)cparam; iparamid++ )
     {
         Assert( prgparam[iparamid].m_paramid == iparamid ); //  sanity check
@@ -8054,9 +8314,9 @@ public:
 };
 
 //
-//  In what can only be described as a new-wave fusion of Romanian SOMEONE-escu-esc CAuto 
-//  class model sprinkled with SOMEONE-like char/wchar agnostic _T-esk templating gloss, to 
-//  create a not quite break the debugger SOMEONEian templated auto class for converting 
+//  In what can only be described as a new-wave fusion of Romanian Andrei-escu-esc CAuto 
+//  class model sprinkled with JLiem-like char/wchar agnostic _T-esk templating gloss, to 
+//  create a not quite break the debugger Goodsellian templated auto class for converting 
 //  V1 index create structures to type V2 index create structures.
 //
 template< class JET_INDEXCREATE_T, class JET_INDEXCREATE2_T >
@@ -8158,9 +8418,9 @@ CAutoINDEXCREATE1To2_T< JET_INDEXCREATE_T, JET_INDEXCREATE2_T >::~CAutoINDEXCREA
 
 //=====================================================
 //
-//  In what can only be described as a new-wave fusion of Romanian SOMEONE-escu-esc CAuto 
-//  class model sprinkled with SOMEONE-like char/wchar agnostic _T-esk templating gloss, to 
-//  create a not quite break the debugger SOMEONEian templated auto class for converting 
+//  In what can only be described as a new-wave fusion of Romanian Andrei-escu-esc CAuto 
+//  class model sprinkled with JLiem-like char/wchar agnostic _T-esk templating gloss, to 
+//  create a not quite break the debugger Goodsellian templated auto class for converting 
 //  V2 index create structures to type V3 index create structures.
 //
 template< class JET_INDEXCREATE2_T, class JET_INDEXCREATE3_T >
@@ -12212,6 +12472,9 @@ LOCAL JET_ERR JetGetVersionEx( _In_ JET_SESID sesid, _Out_ ULONG  *pVersion )
         //      27-31       Image Major
         //
         //
+        //  ISSUE-2009/08/03-KetanD - Need to revise this before we get to Windows 16.
+        //  ISSUE-2009/08/03-KetanD - On Windows, we are relying on the build number not resetting for 
+        //                            service packs. If that changes, our version ULONG moves backwards.
         
 #ifdef ESENT
         //  assert no aliasing (i.e. overlap) of version information
@@ -12225,6 +12488,9 @@ LOCAL JET_ERR JetGetVersionEx( _In_ JET_SESID sesid, _Out_ ULONG  *pVersion )
 
         Assert( DwUtilSystemServicePackNumber() < 1 << 8 );
 
+        //  ISSUE-2009/08/03-KetanD - Note that we had not been using BuildNumberMinor or ImageVersionMinor for Windows since 9/2004. 
+        //                            When we revise this API, we can try having a build number again. The lack of ImageVersionMinor
+        //                            was unintentional. Using service packs for low bits is questionable.
 
         const ULONG ulVersion   = ( ( DwUtilImageVersionMajor()       & 0xF )    << 28 ) +
                                   ( ( DwUtilImageVersionMinor()       & 0xF )    << 24 ) +
@@ -12291,6 +12557,11 @@ LOCAL JET_ERR JetGetSystemParameterEx(
     _In_ JET_INSTANCE                   instance,
     _In_ JET_SESID                      sesid,
     _In_ ULONG                  paramid,
+    // FUTURE-2005/06/09-BrettSh - This changing of SAL is for a SINGLE JET param that I know
+    // of, JET_paramErrorToString, where it uses an OUT param as basically an IN param!! Guh.
+    // We'd be  best to put this back, and make the clients use some other function for getting
+    // errors.
+    //  __out_bcount_opt(cbMax) JET_API_PTR     *plParam,
     __out_opt JET_API_PTR *             plParam,
     _Out_opt_z_bytecap_( cbMax ) JET_PWSTR  wszParam,
     _In_ ULONG                  cbMax )
@@ -12382,6 +12653,10 @@ LOCAL JET_ERR JetGetSystemParameterExA(
     _In_ JET_INSTANCE                   instance,
     _In_ JET_SESID                      sesid,
     _In_ ULONG                  paramid,
+    // FUTURE-2005/06/09-BrettSh - This changing of SAL is for a SINGLE JET param that I know
+    // of, JET_paramErrorToString, where it uses an OUT param as basically an IN param!!
+    // We'd be  best to put this back, and make the clients use some other function for getting
+    // errors.
     __out_opt JET_API_PTR *             plParam,
     _Out_opt_z_bytecap_( cbMax ) JET_PSTR   szParam,
     _In_ ULONG                  cbMax )
@@ -13869,6 +14144,13 @@ LOCAL JET_ERR JetGetPageInfoEx(
                     || pgnoNull == pgno
                     || pgnoMax == pgno )
         {
+                //  FUTURE-2006/08/23-JLiem - AndyGo suggested
+                //  setting a flag in JET_PAGEINFO to indicate
+                //  that this page is being interpreted as a
+                //  trailer page (so the caller can verify
+                //  that this is in fact the last physical
+                //  page in the database)
+                //
                 pagetype = databaseHeader;
                 pgno = pgnoNull;
         }
@@ -15015,6 +15297,9 @@ C_ASSERT( sizeof(JET_TABLECREATE2_W) != sizeof(JET_TABLECREATE3_A) );
 LOCAL JET_ERR JetCreateTableColumnIndexEx(
     _In_ JET_SESID                  sesid,
     _In_ JET_DBID                   dbid,
+    // NTRAID#ESE-125-2014/06/18-BrettSh - Are you implementing JET_TABLECREATE6_A !?!?!  Then please please 
+    // please please split out the in and out args per the ESE bug cited.
+    // ISSUE ISSUE / FUTURE FUTURE - NOTICE ME.
     __inout JET_TABLECREATE5_A *    ptablecreate )
 {
     JET_ERR err;
@@ -15047,6 +15332,13 @@ LOCAL JET_ERR JetCreateTableColumnIndexEx(
         }
         else
         {
+            // FUTURE-2014/07/09-martinc;BrettSh - This is a particularly inefficient method of creating
+            // a table because of the forced deep copy. The problems preventing passing the original
+            // structure with JET_bitTableCreateImmutableStructure are:
+            //    - The list of columnids are updated in rgcolumns, that are consumed later in ErrFILEICreateIndexes (columnidT = pcolcreate->columnid;).
+            //    - (Solvable) Closing the exclusively-opened tableid.
+            //    - (Solvable) Not writing the index id's.
+            //    - Unknown further issues beyond ... ;-)
             CAutoTABLECREATE5To5_T< JET_TABLECREATE5_A, JET_TABLECREATE5_A, CAutoINDEXCREATE3To3_T< JET_INDEXCREATE3_A, JET_INDEXCREATE3_A > > tablecreate;
 
             Call( tablecreate.ErrSet( ptablecreate ) );
@@ -17024,6 +17316,9 @@ LOCAL JET_ERR JetBackupInstanceEx(
 
     if ( apicall.FEnter( instance ) )
     {
+        // ISSUE-2009/12/05-BrettSh - I don't really like this, because the backup callback
+        // doesn't have to match the Init callback.  The backup even has a JET_SESID that we
+        // could pass to the backup callback.
         InitCallbackWrapper initCallbackWrapper(pfnStatus);
         apicall.LeaveAfterCall( apicall.Pinst()->m_fBackupAllowed ?
             ErrIsamBackup( (JET_INSTANCE)apicall.Pinst(), wszBackupPath, grbit, InitCallbackWrapper::PfnWrapper, &initCallbackWrapper ) :
@@ -17101,6 +17396,9 @@ JET_ERR JET_API JetRestoreA(    _In_ JET_PCSTR szSource, __in_opt JET_PFNSTATUS 
 
     Assert( fInitd == ( g_rgpinst != NULL ) );
 
+    // ISSUE-2013/10/15-BrettSh - I'm not convinced this is safe, we definitely could have someone
+    // term at the same time, and a bad race and AV here.  I don't think we should spin too many
+    // cycles on a concurrent race condition, that could cause other AVs as well.
     err = JetRestoreInstanceA( g_rgpinst ? (JET_INSTANCE)g_rgpinst[0] : NULL, szSource, NULL, pfn );
 
     //  I am not sure this holds ...
@@ -19861,7 +20159,7 @@ LOCAL JET_ERR JetDBUtilitiesEx( JET_DBUTIL_W *pdbutilW )
             // With the introduction of restartable seeds, some long-held assumptions and checks about the backup set and its
             // required range may not hold anymore. Therefore, this JET_bitDBUtilOptionSkipMinLogChecksUpdateHeader option was
             // created to handle that case.
-            // I (SOMEONE) think we shouldn't even have the bit and just always pass fTrue to the function below to signal
+            // I (ADaCosta) think we shouldn't even have the bit and just always pass fTrue to the function below to signal
             // that the backup set is being handled externally, regardless of whether or not it was restarted. Perhaps we
             // should do that in the future and deprecate exposing the bit in the first place.
             //
@@ -20984,10 +21282,19 @@ ERR ErrTermComplete( JET_INSTANCE instance, JET_GRBIT grbit )
         {
 
             pinst->m_pbackup->BKLockBackup();
+            // FUTURE-2006/03/11-BrettSh - may be concurrency hole, b/c logutil.cxx doesn't check
+            //  m_fBackupAllowed inside this crit section?  Check thoroughly ...
             pinst->m_pbackup->BKUnlockBackup();
 
             // Lazy way to wait until the snapshot terminates / aborts and comes back to us, letting
             // the term thread go on normally. 
+            // FUTURE-2006/06/10-BrettSh - We should signal the freeze-thaw thread that we can
+            // abort and cleanup the snapshow backup immediately.  For some reaon though this 
+            // all finishes fairly quickly so it seems not needed?  Not sure I understand why.
+            // In theory it shouldn't be that hard to just call snapshot abort if this is taking
+            // too long for anyone?
+            //
+            // Exchange12 138101: Yield to VSS writer thread to avoid deadlock
             while( pinst->m_pOSSnapshotSession != NULL )
             {
                 CESESnapshotSession::SnapshotCritLeave();
@@ -21222,6 +21529,9 @@ LOCAL JET_ERR JetEnableMultiInstanceEx(
                 WCHAR wszParamName[100];
                 OSStrCbFormatW( wszParamName, sizeof(wszParamName), L"%hs", g_rgparam[iparamid].m_szParamName );
                 const WCHAR * rgwszT[] = { wszParamName };
+                // FUTURE-2013/11/20-BrettSh - It would be cool if we could generate a string for the identity
+                // of the _other_ instance that is _most likely_ currently initialized so that we could identify
+                // the conflicting service.
                 UtilReportEvent(    eventWarning,
                                     GENERAL_CATEGORY,
                                     GLOBAL_SYSTEM_PARAMETER_NOT_SET_PREVIOUSLY_MISMATCH_ID,
@@ -21234,6 +21544,13 @@ LOCAL JET_ERR JetEnableMultiInstanceEx(
             IBitmapAPI::ERR errBitmap = fbm.ErrSet( iparamid, fTrue );
             Assert( errBitmap == IBitmapAPI::ERR::errSuccess );
 
+            // ISSUE-2013/11/15-BrettSh comment we just have to load reg defaults
+            //  here but in a special way that says we're only interested in the set property ... and to
+            //  check the equality below ... I think.  Maybe we can just load this specific param and see if
+            //  the value matches?  Think about how this integrates w/ people setting paramConfigStoreSpec
+            //  itself!  Ugh ... that seems like it would break, but I think it works?  Find the test.  OHHH,
+            //  I see we won't set it the 2nd time, so if the reg values have changed, we'll ignore it.  Log
+            //  an event or fail out or both if they don't match?
 
             switch( g_rgparam[iparamid].Type_() )
             {
@@ -21270,6 +21587,9 @@ LOCAL JET_ERR JetEnableMultiInstanceEx(
                 WCHAR wszParamName[100];
                 OSStrCbFormatW( wszParamName, sizeof(wszParamName), L"%hs", g_rgparam[iparamid].m_szParamName );
                 const WCHAR * rgwszT[] = { wszParamName };
+                // FUTURE-2013/11/20-BrettSh - It would be cool if we could generate a string for the identity
+                // of the _other_ instance that is _most likely_ currently initialized so that we could identify
+                // the conflicting service.
                 UtilReportEvent(    eventWarning,
                                     GENERAL_CATEGORY,
                                     GLOBAL_SYSTEM_PARAMETER_MISMATCH_ID,
@@ -21299,6 +21619,9 @@ LOCAL JET_ERR JetEnableMultiInstanceEx(
                         //  Since the registry defaults _appear written_, it can seem like the
                         //  two sets disagree.  We will assume that if they set the same value
                         //  that they got the same set of params.  This is not the safest bet.
+                        //  FUTURE-2013/11/15-BrettSh - Make this fail depending upon if the 
+                        //  actual registry parameters values have changed.  A sort of deep
+                        //  read of the fact.
                         !g_rgparam[iparamid].m_fRegDefault )
                 {
                     Assert( fOriginallySet );
@@ -21306,6 +21629,9 @@ LOCAL JET_ERR JetEnableMultiInstanceEx(
                     WCHAR wszParamName[100];
                     OSStrCbFormatW( wszParamName, sizeof(wszParamName), L"%hs", g_rgparam[iparamid].m_szParamName );
                     const WCHAR * rgwszT[] = { wszParamName };
+                    // FUTURE-2013/11/20-BrettSh - It would be cool if we could generate a string for the identity
+                    // of the _other_ instance that is _most likely_ currently initialized so that we could identify
+                    // the conflicting service.
                     UtilReportEvent(    eventWarning,
                                         GENERAL_CATEGORY,
                                         GLOBAL_SYSTEM_PARAMETER_SET_PREVIOUSLY_MISMATCH_ID,
@@ -21490,10 +21816,10 @@ LOCAL JET_ERR JetInitEx(
     const ULONG cbTimingResourceDataSequence = pinst->m_isdlInit.CbSprintTimings();
     WCHAR * wszTimingResourceDataSequence = (WCHAR *)_alloca( cbTimingResourceDataSequence );
     pinst->m_isdlInit.SprintTimings( wszTimingResourceDataSequence, cbTimingResourceDataSequence );
-    const __int64 secsInit = pinst->m_isdlInit.UsecTimer( eSequenceStart, eInitDone ) / 1000000;    // convert to seconds
-    WCHAR wszSeconds[16];
+    const double secsInit = (double)pinst->m_isdlInit.UsecTimer( eSequenceStart, eInitDone ) / 1000000.0;    // convert to seconds
+    WCHAR wszSeconds[30];
     WCHAR wszInstId[16];
-    OSStrCbFormatW( wszSeconds, sizeof(wszSeconds), L"%I64d", secsInit );
+    OSStrCbFormatW( wszSeconds, sizeof(wszSeconds), L"%.3f", secsInit );
     OSStrCbFormatW( wszInstId, sizeof(wszInstId), L"%d", IpinstFromPinst( pinst ) );
     const WCHAR * rgszT[4] = { wszInstId, wszSeconds, wszTimingResourceDataSequence, wszAdditionalFixedData };
 
@@ -21530,6 +21856,77 @@ TermAlloc:
     {
         const WCHAR* wszInstDisplayName = ( pinst != NULL && pinst->m_wszDisplayName != NULL ? pinst->m_wszDisplayName : L"_unknown_" );
         OSDiagTrackInit( wszInstDisplayName, pinst->m_plog->QwSignLogHash(), err );
+
+        // avoiding quick and dirty non-localized insert text on windows
+#ifdef ENABLE_MICROSOFT_MANAGED_DATACENTER_LEVEL_OPTICS
+
+        pinst->m_isdlInit.Trigger( eInitDone );
+        const double secsInit2 = (double)pinst->m_isdlInit.UsecTimer( eSequenceStart, eInitDone ) / 1000000.0;    // convert to seconds
+        WCHAR wszSeconds2[30];
+        OSStrCbFormatW( wszSeconds2, sizeof(wszSeconds2), L"%.3f", secsInit2 );
+
+        WCHAR wszErrorState[120];
+        JET_ERRCAT errcatMostSpecific = JET_errcatUnknown;
+        (void)ErrERRLookupErrorCategory( err, &errcatMostSpecific );
+        if ( PefLastThrow() && err == PefLastThrow()->Err() )
+        {
+            PERSISTED // for optics "(JET_errcat: 10)", etc.  see Exch \ EseEventCategorized.cs.
+            OSStrCbFormatW( wszErrorState, sizeof(wszErrorState), L"%d (JET_errcat: %d) (src: %hs:%d)", err, errcatMostSpecific, SzSourceFileName( PefLastThrow()->SzFile() ), PefLastThrow()->UlLine() );
+        }
+        else
+        {
+            PERSISTED // for optics "(JET_errcat: 10)", etc.  see Exch \ EseEventCategorized.cs.
+            OSStrCbFormatW( wszErrorState, sizeof(wszErrorState), L"%d (JET_errcat: %d)", err, errcatMostSpecific );
+        }
+
+        WCHAR wszFailingMode[2] = { WchReportInstState( pinst ), L'\0' };
+
+        WCHAR wszFailingAddress[60];
+        //  The normal way of detecting recovery \ redo via:
+        //      plog->FRecovering() && plog->FRecoveringMode() == fRecoveringRedo
+        //  is controlled and cleaned up by this point even on an error.  However, fortunately 
+        //  the pinst->m_perfstatusEvent mode is one way during init, and not reset until next
+        //  call to JetInit() so we use this method for determining what mode we reached.
+        const BOOL fRedo = pinst->m_perfstatusEvent == perfStatusRecoveryRedo;
+        const BOOL fUndo = pinst->m_perfstatusEvent == perfStatusRecoveryUndo;
+        const BOOL fDo   = pinst->m_perfstatusEvent == perfStatusRuntime;
+        //  Normal method of getting lpgosRedo (plog->LgposLGLogTipNoLock()) won't work for
+        //  the same reason the regular mode computation, computes it wrong above.  But the
+        //  actual lgpos we want is in m_lgposRedo, so use special function to fetch it.
+        LGPOS lgposFailed = !fUndo ?  // just in case, we treat everything besides undo as redo.
+                      pinst->m_plog->LgposDiagnosticRedoFailedAddress() :
+                      pinst->m_plog->LgposLGLogTipNoLock(); // undo address comes from live lgpos tip.
+        //  Can imagine actually sticking other pieces of address in here, like the pgno the LR was
+        //  referencing, or even logical descriptions like "DbfilehdrReadErr" or something.
+        OSStrCbFormatW( wszFailingAddress, sizeof( wszFailingAddress ),
+                   L"lgpos%hs:%08x:%04x:%04x",
+                   fRedo ? "Redo" :
+                       ( fUndo ? "Undo" :
+                       ( fDo ? "RedoOld" :
+                       "Redo-Unconfirmed" ) ),
+                   lgposFailed.lGeneration, lgposFailed.isec, lgposFailed.ib );
+
+        WCHAR wszHaPublishingFacts[300];
+        PERSISTED // for optics "Verbose: 1", "FI Tags Published: 0x", and "FiCorruptionTag " / "FiLogLogicallyInconsistent ".  see Exch \ EseEventCategorized.cs, Exch \ EseDatabaseMonitoringContext.cs
+        (void)ErrOSStrCbFormatW( wszHaPublishingFacts, sizeof( wszHaPublishingFacts ), L"Verbose: %d, FI Tags Published: 0x%x ( %hs%hs%hs)", 
+                        !!pinst->m_isdlInit.FTriggeredStep( eInitLogRecoverySilentRedoDone ),
+                        pinst->m_grbitHaFailureTags,
+#if defined( USE_HAPUBLISH_API )
+                        ( pinst->m_grbitHaFailureTags & bitHaPublishedCorruptionTag ) ? "FiCorruptionTag " : "",
+                        ( pinst->m_grbitHaFailureTags & bitHaPublishedIoHardTag ) ? "FiIoHardTag " : "", 
+                        ( pinst->m_grbitHaFailureTags & bitHaPublishedLogLogicallyInconsistentTag ) ? "FiLogLogicallyInconsistent " : ""
+#else
+                        "", "", ""
+#endif
+                        );
+
+        const WCHAR * rgszFailT[6] = { wszInstDisplayName, wszErrorState, wszSeconds2, wszFailingMode, wszFailingAddress, wszHaPublishingFacts };
+
+        UtilReportEvent( eventError, GENERAL_CATEGORY, START_INSTANCE_FAILED_ID, _countof( rgszFailT ), rgszFailT, 0, NULL, pinst );
+
+        //  Also to avoid event wrap, report failures in JetInit() to .IRS.RAW
+        DumpFailedInitToIrsRaw( pinst, wszInstDisplayName, wszErrorState, wszSeconds2, wszFailingMode, wszFailingAddress, wszHaPublishingFacts );
+#endif
     }
 
     // if instance allocated in this function call
@@ -22306,6 +22703,9 @@ JET_ERR JET_API JetTerm2( _In_ JET_INSTANCE instance, _In_ JET_GRBIT grbit )
     JET_TRY( opTerm, JetTermEx( instance, grbit ) );
 }
 
+// FUTURE-2012/04/10-BrettSh - The new version came in too late to risk the existing API (says
+// Alex) so we'll make the v1 JET API call this and v2 will call the new JetStopServiceInstanceEx()
+// API.  In Win9 we can move the v1 to the v2 API with the JET_bitStopServiceAll.
 JET_ERR JET_API JetStopServiceInstanceExOld( _In_ JET_INSTANCE instance )
 {
     ERR     err;
@@ -22313,6 +22713,8 @@ JET_ERR JET_API JetStopServiceInstanceExOld( _In_ JET_INSTANCE instance )
 
     OSTrace( JET_tracetagAPI, OSFormat( "Start %s(0x%Ix)", __FUNCTION__, instance ) );
 
+    //  ISSUE-2013/10/16-BrettSh - We didn't do APICALL_INST::FEnter(), nor are we in 
+    //  INST::FOwnerCritInst() ... so I don't think this is actually safe.
     CallR( ErrFindPinst( instance, &pinst ) );
 
     //  Halt OLD for this instance
@@ -22353,6 +22755,8 @@ JET_ERR JET_API JetStopServiceInstanceEx( _In_ JET_INSTANCE instance, _In_ JET_G
     //  Validate and retrieve args
     //
 
+    //  ISSUE-2013/10/16-BrettSh - We didn't do APICALL_INST::FEnter(), nor are we in 
+    //  INST::FOwnerCritInst() ... so I don't think this is actually safe.
     CallR( ErrFindPinst( instance, &pinst ) );
 
     const JET_GRBIT bitStopServiceAllInternal = 0x1;
@@ -22418,6 +22822,8 @@ JET_ERR JET_API JetStopServiceInstanceEx( _In_ JET_INSTANCE instance, _In_ JET_G
 
             pinst->m_fCheckpointQuiesce = fFalse;
 
+            //  FUTURE-2012/04/21-BrettSh - Should we reject this if ( 0 == ( pinst->m_grbitStopped & JET_bitStopServiceQuiesceCaches ) ) ...
+            //  it means they asked for a service to be resumed that wasn't stopped in the first place?  Well the contract is fulfilled.
 
             //  We don't need to call ErrIOUpdateCheckpoints() like we do for quiesce, because it
             //  wouldn't do anything ... so we'll let the user drive the checkpoint back up from
@@ -22506,6 +22912,8 @@ JET_ERR JET_API JetStopServiceInstanceEx( _In_ JET_INSTANCE instance, _In_ JET_G
         {
             //  Halt OLD for this instance
 
+            // FUTURE-2012/04/10-BrettSh - These should all in the fullness of time move under
+            // the JET_bitStopServiceBackgroundUserTasks bit, once they are all restartable.
             DBMScanStopAllScansForInst( pinst );
             OLDTermInst( pinst );
             OLD2TermInst( pinst );
@@ -22516,10 +22924,18 @@ JET_ERR JET_API JetStopServiceInstanceEx( _In_ JET_INSTANCE instance, _In_ JET_G
             //OnDebug( grbitCheck &= ~bitStopServiceAllInternal );
         }
 
+        //  FUTURE-2012/04/10-BrettSh - This method is essentially Jetterm broken up piece-meal,
+        //  and I think I would like to see JetTerm() implemented as each piece of these done
+        //  independently.
+        //  FUTURE-2012/04/10-BrettSh - It would be good to implement JetStopBackupInstanceEx as
+        //  another grbit here.
         if ( grbit & JET_bitStopServiceBackgroundUserTasks )
         {
             //  Halt OLDv2/B+ Tree defrag for this instance
 
+            //  ISSUE-2012/04/18-BrettSh - It would be better to suspend in-progress B+ tree defrags
+            //  as well, BUT the way Exchange will use this (as it will be suspended _most_ of the 
+            //  time until the maintenance window), then we're unlikely to need this.
             FMP::EnterFMPPoolAsWriter();
             FMP *   pfmpCurr = NULL;
             if ( pinst && pinst->m_fJetInitialized )
@@ -22653,6 +23069,8 @@ LOCAL JET_ERR JetStopBackupInstanceEx( _In_ JET_INSTANCE instance )
 
     OSTrace( JET_tracetagAPI, OSFormat( "Start %s(0x%Ix)", __FUNCTION__, instance ) );
 
+    //  ISSUE-2013/10/16-BrettSh - We didn't do APICALL_INST::FEnter(), nor are we in 
+    //  INST::FOwnerCritInst() ... so I don't think this is actually safe.
     CallR( ErrFindPinst( instance, &pinst ) );
 
     if ( pinst->m_plog )
@@ -23387,6 +23805,9 @@ JET_ERR ErrTESTHOOKAlterDatabaseFileHeader( const JET_TESTHOOKALTERDBFILEHDR * c
     Call( ErrUtilReadShadowedHeader( pinstNil, pfsapi, pfapiDatabase, JET_filetypeDatabase, (BYTE*)pdbfilehdr, (DWORD)g_cbPageMax, (LONG)OffsetOf( DBFILEHDR_FIX, le_cbPageSize ), urhfReadOnly|urhfNoFailOnPageMismatch, &cbPageSize, &shs ) );
     Call( CFlushMapForUnattachedDb::ErrGetPersistedFlushMapOrNullObjectIfRuntime( palterdbfilehdr->szDatabase, pdbfilehdr, pinstNil, &pfm ) );
 
+    // FUTURE-2016/03/16-BrettSh - Be better if we kept the flush map up to date, but not critical to this 
+    // feature, so dropping.
+    //Alloc( pfm );
 
     //  Must be after ErrUtilReadShadowedHeader() so we have page size.
     if ( ( palterdbfilehdr->ibField + palterdbfilehdr->cbField ) > cbPageSize )
@@ -23470,10 +23891,16 @@ JET_ERR JET_API JetTestHook(
         }
             break;
 
+        // FUTURE-2010/01/02-BrettSh - Try to integrate this testing method to the other and
+        // bring convergence to how we trigger unit tests.  Probably need to move ErrOSUInit()
+        // above to make that happen.
         case opTestHookUnitTests2:
         {
             const JET_TESTHOOKUNITTEST2* const pParams = reinterpret_cast<JET_TESTHOOKUNITTEST2*>( pv );
 
+            // ISSUE-2010/01/25-BrettSh - In one of fugliest API decisions ever, the
+            // JET_dbidNil (JET_DBIDs which get casted to IFMPs internally) is different
+            // from ifmpNil.
             const INT failures = JetUnitTest::RunTests( pParams->szTestName,
                             pParams->dbidTestOn == JET_dbidNil ? ifmpNil : (IFMP)pParams->dbidTestOn );
             if( failures > 0 )
@@ -23504,7 +23931,7 @@ JET_ERR JET_API JetTestHook(
             {
                 if ( pParams->type != JET_TestInjectFault ||
                         pParams->grbit != JET_bitInjectionProbabilityPct ||
-                        pParams->ulProbability != 5 /* b/c that's what g_bflruk is using, move along SOMEONE */ )
+                        pParams->ulProbability != 5 /* b/c that's what g_bflruk is using, move along Alex */ )
                 {
                     //
                     Call( ErrERRCheck( JET_errInvalidParameter ) );
@@ -23652,6 +24079,10 @@ JET_ERR JET_API JetTestHook(
             const LGPOS lgposNewest = pinst->m_plog->LgposLGLogTipNoLock();
             const __int64 cbCheckpointDepth = (__int64)pinst->m_plog->CbLGOffsetLgposForOB0( lgposNewest, lgposCheckpoint );
 
+            //  ISSUE-2012/04/18-BrettSh - I've gotten -8 out of this calculation!  This is because the 
+            //  lgposTip is at beginning of the last LR pushed into the log buffer, not after it.  So
+            //  this should just be calculated as zero.  We should fix this in log if possible, this is
+            //  just silly.
 
             Assert( cbCheckpointDepth > -( 4096 * 64 * 1024 ) /* new 4k-segment-based max log file size */ );
             *((__int64*)pv) = max( cbCheckpointDepth, 0 );
@@ -23694,6 +24125,10 @@ JET_ERR JET_API JetTestHook(
                 //  This is only used for our resmgrenginetest.exe, and it at worst case loads 100k buffers, at
                 //  a 20 unique touches / sec rate ... this is 5 M ticks cache lifetime ... anything beyond that
                 //  is a break of our target ...
+                //  FUTURE-2012/09/13-BrettSh - This is assuming what resmgrenginetest needs, and so may break
+                //  some day, or need to be moved to separate variables in JET_TESTHOOKTIMEINJECTION.  For now
+                //  I am ok with this.  We also may need a parameter to force if we're going to walk over 2B or
+                //  4B ticks and excercise wrap.
                 g_bflruk.SetTimeBar( 90 * 60 * 1000 /* lifetime = 90 min | 5,400,000 */, pthtimeinj->tickNow + 10 * 60 * 60 * 1000 /* +10 hrs */ );
             }
         }
@@ -23735,6 +24170,8 @@ JET_ERR JET_API JetTestHook(
                                 JET_mskTestHookCorruptSpecific ) &
                                 JET_bitTestHookCorruptLeaveChecksum ) );
 
+            // FUTURE-2013/01/16-BrettSh - This may have to be restructured and split up when we allow
+            // the corrupting of say log files and such.
 
             if ( pcorrupt->grbit & JET_bitTestHookCorruptDatabaseFile )
             {
@@ -23763,6 +24200,7 @@ JET_ERR JET_API JetTestHook(
                 if ( pcorrupt->grbit & JET_bitTestHookCorruptPageSingleFld )
                 {
                     //  Help the client out ...
+                    //  FUTURE-2013/01/17-BrettSh - Probably should let client explicitly set this.
                     (void)FNegTestSet( fCorruptingPageLogically );
 
                     //  Corrupt the Page, by tweaking a byte randomly in the page.
@@ -23780,6 +24218,7 @@ JET_ERR JET_API JetTestHook(
                 if ( pcorrupt->grbit & JET_bitTestHookCorruptPageRemoveNode )
                 {
                     //  Help the client out ...
+                    //  FUTURE-2013/01/17-BrettSh - Probably should let client explicitly set this.
                     (void)FNegTestSet( fCorruptingPageLogically );
 
                     AssertSz( fFalse, "NYI - caused problems if there is only 1 line on the page." );
@@ -23794,6 +24233,7 @@ JET_ERR JET_API JetTestHook(
                     Assert( pcorrupt->CorruptDatabasePageImage.iSubTarget );    // or else this would do nothing.
 
                     //  Help the client out ...
+                    //  FUTURE-2013/01/17-BrettSh - Probably should let client explicitly set this.
 
                     (void)FNegTestSet( fCorruptingWithLostFlush );
 
