@@ -34,7 +34,7 @@ void OSUHAPublishEvent_(
         fEmit = fFalse;
     }
 
-    if ( !UlParam( pinst, JET_paramEnableHaPublish ) )
+    if (  pinstNil != pinst && !UlParam( pinst, JET_paramEnableHaPublish ) )
     {
         // might be nice to Assert/FireWall not O365 Datacenter / Store.worker, but a bit of a layer violation
         fEmit = fFalse;
