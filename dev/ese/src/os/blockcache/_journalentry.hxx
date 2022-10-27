@@ -232,7 +232,7 @@ INLINE ERR TCompressedJournalEntry<T, JETYPCOMPRESSED>::ErrCreate(  _In_    cons
 
     //  determine our compression algorithm
 
-    ca = caLegacyXpressHuffman;
+    ca = caLz4;
 
     //  compress the data
 
