@@ -1218,7 +1218,29 @@ INLINE VOID RCE::SetPrcePrevOfNode( RCE * prce )
     Assert( FAssertRwlHashAsWriter_() );
     Assert( prceNil == prce
         || RceidCmp( m_rceid, prce->Rceid() ) > 0 );
-    m_prcePrevOfNode = prce;
+#ifdef DEBUG
+    if ( prce )
+    {
+        const BOOL  fPrevRCEIsDelete = ( operFlagDelete == prce->m_oper && !prce->FMoved() );
+        if ( fPrevRCEIsDelete )
+        {
+            switch ( m_oper )
+            {
+                case operInsert:
+                case operPreInsert:
+                case operWriteLock:
+                    //  these are the only valid operations after a delete
+                    break;
+
+                default:
+                {
+                    Assert( fFalse );
+                }
+            }
+        }
+    }
+#endif
+     m_prcePrevOfNode = prce;
 }
 
 
@@ -5993,6 +6015,36 @@ ERR RCE::ErrPrepareToDeallocate( TRX trxOldest )
 
         FCB * const pfcb = prce->Pfcb();
         ENTERCRITICALSECTION enterCritFCBRCEList( &( pfcb->CritRCEList() ) );
+
+        // Except for recovery, this should be the HEAD RCE for this node. Recovery can
+        // allocate RCEs out of order because of deferred RCEs, so make sure to still clean
+        // them up in order.
+        Assert( PinstFromIfmp( m_ifmp )->FRecovering() ||  m_prcePrevOfNode == NULL );
+        if ( PinstFromIfmp( m_ifmp )->FRecovering() )
+        {
+            RCE *prceFirst = this;
+            while ( prceFirst->m_prcePrevOfNode != NULL )
+            {
+                Assert( prceFirst->m_prcePrevOfNode->m_prceNextOfNode == prceFirst );
+                prceFirst = prceFirst->m_prcePrevOfNode;
+            }
+
+            while ( prceFirst != this )
+            {
+                RCE *prceNext = prceFirst->PrceNextOfNode();
+
+                ASSERT_VALID( prceFirst );
+                Assert( !prceFirst->FOperNull() );
+                // Only deferrable oper's like FlagDelete/Replace should end up out-of-order
+                Assert( prceFirst->Oper() == operFlagDelete || prceFirst->Oper() == operReplace );
+                Assert( prceFirst->FFullyCommitted() );
+                Assert( TrxCmp( prceFirst->TrxCommitted(), trxOldest ) < 0 );
+
+                VERINullifyCommittedRCE( prceFirst );
+
+                prceFirst = prceNext;
+            }
+        }
 
         do
         {

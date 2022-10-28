@@ -271,6 +271,16 @@ VOID PIB::AssertNoDeferredRceid() const
     AssertRTL( m_redblacktreeRceidDeferred.FEmpty() );
 }
 
+#ifdef DEBUG
+//  ================================================================
+ERR PIB::FDeferredRceid( const RCEID& rceid )
+//  ================================================================
+{
+    Assert( rceidNull != rceid );
+    return ( CRedBlackTree<RCEID,PGNO>::ERR::errSuccess == m_redblacktreeRceidDeferred.ErrFind( rceid ));
+}
+#endif
+
 //  ================================================================
 ERR PIB::ErrRegisterRceid( const RCEID rceid, RCE * const prce)
 //  ================================================================

@@ -3203,6 +3203,7 @@ ERR LOG::ErrLGRIRedoNodeOperation( const LRNODE_ *plrnode, ERR *perr )
             }
 
             //  remove this RCE from the list of uncreated RCEs
+            Assert( !ppib->FDeferredRceid( plrundoinfo->le_rceid ) || g_rgfmp[ifmp].FContainsDataFromFutureLogs() );
             Call( ppib->ErrDeregisterDeferredRceid( plrundoinfo->le_rceid ) );
 
             Assert( trxOld == plrundoinfo->le_trxBegin0 );
@@ -3491,6 +3492,7 @@ ERR LOG::ErrLGRIRedoNodeOperation( const LRNODE_ *plrnode, ERR *perr )
                 //  add this RCE to the list of uncreated RCEs
                 if ( plrfiard->FVersioned() )
                 {
+                    Assert( g_rgfmp[ifmp].FContainsDataFromFutureLogs() );
                     Call( ppib->ErrRegisterDeferredRceid( plrfiard->le_rceidReplace, pgno ) );
                 }
 
@@ -3511,6 +3513,7 @@ ERR LOG::ErrLGRIRedoNodeOperation( const LRNODE_ *plrnode, ERR *perr )
                 //  add this RCE to the list of uncreated RCEs
                 if ( plrreplace->FVersioned() )
                 {
+                    Assert( g_rgfmp[ifmp].FContainsDataFromFutureLogs() );
                     Call( ppib->ErrRegisterDeferredRceid( plrnode->le_rceid, pgno ) );
                 }
 
@@ -3636,6 +3639,7 @@ ERR LOG::ErrLGRIRedoNodeOperation( const LRNODE_ *plrnode, ERR *perr )
                 //  add this RCE to the list of uncreated RCEs
                 if ( plrflagdelete->FVersioned() )
                 {
+                    Assert( g_rgfmp[ifmp].FContainsDataFromFutureLogs() );
                     Call( ppib->ErrRegisterDeferredRceid( plrnode->le_rceid, pgno ) );
                 }
 

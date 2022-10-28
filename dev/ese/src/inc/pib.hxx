@@ -511,6 +511,9 @@ public:
     ERR                 ErrDeregisterDeferredRceid( const RCEID& );
     VOID                RemoveAllDeferredRceid();
     VOID                AssertNoDeferredRceid() const;
+#ifdef DEBUG
+    BOOL                FDeferredRceid( const RCEID& );
+#endif
 
     ERR                 ErrRegisterRceid( const RCEID rceid, RCE * const prce);
     ERR                 ErrDeregisterRceid( const RCEID rceid );
