@@ -168,11 +168,6 @@ class TFileWrapper  //  fw
                     CPool::Free( &pvT );
                 }
 
-                static void Cleanup()
-                {
-                    CPool::Cleanup();
-                }
-
         protected:
 
                 virtual ~CIOComplete()
@@ -839,6 +834,4 @@ class CFileWrapper : public TFileWrapper<IFileAPI>
         }
 
         virtual ~CFileWrapper() {}
-
-        static void Cleanup() { CIOComplete::Cleanup(); }
 };

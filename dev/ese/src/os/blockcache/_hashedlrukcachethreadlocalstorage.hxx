@@ -62,8 +62,6 @@ class CHashedLRUKCacheThreadLocalStorage  //  ctls
             CritAsyncIOWorkerState().Enter();
             m_ilRequests.InsertAsNextMost( prequest );
             CritAsyncIOWorkerState().Leave();
-
-            AddRef();
         }
 
         void RemoveRequest( _In_ CRequest* const prequest )
@@ -71,9 +69,6 @@ class CHashedLRUKCacheThreadLocalStorage  //  ctls
             CritAsyncIOWorkerState().Enter();
             m_ilRequests.Remove( prequest );
             CritAsyncIOWorkerState().Leave();
-
-            CHashedLRUKCacheThreadLocalStorage<I>* pctlsT = this;
-            Release( &pctlsT );
 
             CRequest* prequestT = prequest;
             (void)CRequest::ErrRelease( &prequestT, JET_errSuccess );
@@ -263,13 +258,6 @@ class CHashedLRUKCacheThreadLocalStorage  //  ctls
                                     Ctid(),
                                     OSFormatBoolean( fNewRequest ),
                                     OSFormatBoolean( fSignalNeeded ) ) );
-        }
-
-        static void CueAsyncIOWorker_( _In_ const DWORD_PTR keyIOComplete )
-        {
-            CHashedLRUKCacheThreadLocalStorage<I>* const pctls = (CHashedLRUKCacheThreadLocalStorage<I>*)keyIOComplete;
-
-            pctls->CueAsyncIOWorker();
         }
 
         static void Release( _Inout_ CHashedLRUKCacheThreadLocalStorage<I>** const ppctls )

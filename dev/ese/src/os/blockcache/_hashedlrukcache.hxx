@@ -105,17 +105,18 @@ class THashedLRUKCache
         {
             public:
 
-                CRequest(   _In_                    const BOOL                                  fRead,
-                            _In_                    THashedLRUKCache<I>* const                  pc,
-                            _In_                    const TraceContext&                         tc,
-                            _Inout_                 CHashedLRUKCachedFileTableEntry<I>** const  ppcfte,
-                            _In_                    const QWORD                                 ibOffset,
-                            _In_                    const DWORD                                 cbData,
-                            _In_reads_( cbData )    const BYTE* const                           pbData,
-                            _In_                    const OSFILEQOS                             grbitQOS,
-                            _In_                    const ICache::CachingPolicy                 cp,
-                            _In_opt_                const ICache::PfnComplete                   pfnComplete,
-                            _In_opt_                const DWORD_PTR                             keyComplete )
+                CRequest(   _In_                    const BOOL                                      fRead,
+                            _In_                    THashedLRUKCache<I>* const                      pc,
+                            _In_                    const TraceContext&                             tc,
+                            _Inout_                 CHashedLRUKCachedFileTableEntry<I>** const      ppcfte,
+                            _In_                    const QWORD                                     ibOffset,
+                            _In_                    const DWORD                                     cbData,
+                            _In_reads_( cbData )    const BYTE* const                               pbData,
+                            _In_                    const OSFILEQOS                                 grbitQOS,
+                            _In_                    const ICache::CachingPolicy                     cp,
+                            _In_opt_                const ICache::PfnComplete                       pfnComplete,
+                            _In_opt_                const DWORD_PTR                                 keyComplete,
+                            _Inout_opt_             CHashedLRUKCacheThreadLocalStorage<I>** const   ppctls )
                     :   THashedLRUKCacheBase<I>::CRequest(  fRead,
                                                             pc,
                                                             tc,
@@ -127,6 +128,7 @@ class THashedLRUKCache
                                                             cp,
                                                             pfnComplete, 
                                                             keyComplete ),
+                        m_pctls( *ppctls ),
                         m_rgcwcc
                         {
                             CClusterWriteCompletionContext( this, (CMeteredSection::Group)0 ),
@@ -136,18 +138,39 @@ class THashedLRUKCache
                         m_cCachedFileIO( 0 ),
                         m_fCacheHit( fFalse ),
                         m_cCachingFileIO( 0 ),
+                        m_prequestIO( NULL ),
                         m_iorl( this ),
-                        m_pfnIORangeLockAcquired( NULL ),
-                        m_keyIORangeLockAcquired( NULL ),
                         m_fIORangeLockAcquired( fFalse ),
+                        m_fCachedFileIORequested( fFalse ),
+                        m_fCachingFileIORequested( fFalse ),
                         m_fIORequested( fFalse ),
                         m_cIOPending( 0 ),
-                        m_pctls( NULL ),
-                        m_pmsig( NULL ),
+                        m_fCachedFileIOIssued( fFalse ),
+                        m_fCachingFileIOIssued( fFalse ),
+                        m_pmsigWaitForIOCompleted( NULL ),
                         m_fWaitForIOCompleted( fFalse )
                 {
-                    m_ilRequestsByIO.InsertAsPrevMost( this );
+                    *ppctls = NULL;
+                    AddRequestToIOAsPrevMost( this );
                 }
+
+#pragma push_macro( "new" )
+#undef new
+
+                using CPool = TPool<CRequest>;
+
+                void* operator new( _In_ const size_t cb )
+                {
+                    return CPool::PvAllocate();
+                }
+
+                void operator delete( _In_opt_ void* const pv )
+                {
+                    void* pvT = pv;
+                    CPool::Free( &pvT );
+                }
+
+#pragma pop_macro( "new" )
 
                 BOOL FRead() const { return THashedLRUKCacheBase<I>::CRequest::FRead(); }
                 THashedLRUKCache<I>* Pc() const { return (THashedLRUKCache<I>*)THashedLRUKCacheBase<I>::CRequest::Pc(); }
@@ -157,6 +180,8 @@ class THashedLRUKCache
                 OSFILEQOS GrbitQOS() const { return THashedLRUKCacheBase<I>::CRequest::GrbitQOS(); }
                 ICache::CachingPolicy Cp() const { return THashedLRUKCacheBase<I>::CRequest::Cp(); }
                 double PctWrite() const { return THashedLRUKCacheBase<I>::CRequest::PctWrite(); }
+                BOOL FSync() const { return THashedLRUKCacheBase<I>::CRequest::FSync(); }
+                CHashedLRUKCacheThreadLocalStorage<I>* Pctls() const { return m_pctls; }
 
                 ERR ErrStatus() const { return THashedLRUKCacheBase<I>::CRequest::ErrStatus(); }
                 typename CHashedLRUKCachedFileTableEntry<I>::CIORangeLockBase* Piorl() { return &m_iorl; }
@@ -166,27 +191,23 @@ class THashedLRUKCache
 
                 COffsets OffsetsForIO() const
                 {
-                    CRequest* const prequestIOFirst = m_ilRequestsByIO.PrevMost();
+                    Assert( this == PrequestIO() );
+
+                    CRequest* const prequestIOFirst = IlRequestsByIO().PrevMost();
                     const QWORD     ibStartIOFirst  = prequestIOFirst->Offsets().IbStart();
-                    CRequest* const prequestIOLast  = m_ilRequestsByIO.NextMost();
+                    CRequest* const prequestIOLast  = IlRequestsByIO().NextMost();
                     const QWORD     ibEndIOLast     = prequestIOLast->Offsets().IbEnd();
 
                     return COffsets( ibStartIOFirst, ibEndIOLast );
                 }
 
-                typedef void (*PfnIORangeLockAcquired)( const DWORD_PTR dwCompletionKey );
-
-                void WaitForIORangeLock(    _In_opt_ CRequest::PfnIORangeLockAcquired   pfnIORangeLockAcquired  = NULL,
-                                            _In_opt_ const DWORD_PTR                    keyIORangeLockAcquired  = NULL )
+                void WaitForIORangeLock()
                 {
-                    if ( pfnIORangeLockAcquired )
+                    Assert( this == PrequestIO() );
+
+                    if ( !FSync() )
                     {
-                        //  save the completion context
-
-                        m_pfnIORangeLockAcquired = pfnIORangeLockAcquired;
-                        m_keyIORangeLockAcquired = keyIORangeLockAcquired;
-
-                        //  request the IO range lock, calling the completion when acquired
+                        //  request the IO range lock async which will be completed via our CIORangeLock::Grant impl
 
                         const BOOL fIORangeLockPending = Pcfte()->FTryRequestIORangeLock( Piorl() );
                         EnforceSz( fIORangeLockPending, "WaitForIORangeLock" );
@@ -199,20 +220,20 @@ class THashedLRUKCache
                     }
                 }
 
-                void WaitForIO( _In_ CHashedLRUKCacheThreadLocalStorage<I>* const pctls = NULL )
+                void WaitForIO()
                 {
                     CManualResetSignal msig( CSyncBasicInfo( "THashedLRUKCache<I>::CRequest::WaitForIO::msig" ) );
 
+                    Assert( this == PrequestIO() );
                     Assert( !m_fWaitForIOCompleted );
 
                     IssueIO();
 
                     //  setup to wait for the IO to complete either sync or async
 
-                    m_pctls = pctls;
-                    m_pmsig = pctls ? NULL : &msig;
+                    m_pmsigWaitForIOCompleted = !FSync() ? NULL : &msig;
 
-                    if ( pctls )
+                    if ( !FSync() )
                     {
                         msig.Set();
                     }
@@ -228,13 +249,18 @@ class THashedLRUKCache
 
                 void ResetWaitForIO()
                 {
+                    Assert( this == PrequestIO() );
                     Assert( FWaitForIOCompleted() );
+
+                    m_fCachedFileIORequested = fFalse;
+                    m_fCachedFileIOIssued = fFalse;
+                    m_fCachingFileIORequested = fFalse;
+                    m_fCachingFileIOIssued = fFalse;
 
                     m_fIORequested = fFalse;
                     AtomicExchange( (LONG*)&m_cIOPending, 0 );
                     m_fWaitForIOCompleted = fFalse;
-                    m_pctls = NULL;
-                    m_pmsig = NULL;
+                    m_pmsigWaitForIOCompleted = NULL;
                 }
 
                 ERR ErrWriteCluster(    _In_                ICachedBlockSlab* const pcbs,
@@ -245,7 +271,7 @@ class THashedLRUKCache
                     ERR                                     err     = JET_errSuccess;
                     const CClusterWriteCompletionContext*   pcwcc   = PcwccGetClusterCompletionContext();
 
-                    Assert( !m_fWaitForIOCompleted );
+                    Assert( !PrequestIO()->m_fWaitForIOCompleted );
 
                     OSTrace(    JET_tracetagBlockCacheOperations,
                                 OSFormat(   "C=%s R=0x%016I64x F=%s Write Cluster %s",
@@ -257,13 +283,14 @@ class THashedLRUKCache
                     Call( pcwcc->ErrWriteCluster( pcbs, slot, cb, rgb ) );
                     pcwcc = NULL;
 
-                    m_cCachingFileIO++;
+                    CachingFileIORequest();
 
                     //  we must immediately issue after writing a cluster to avoid a deadlock in ErrFlushClusters when
                     //  this thread must block to access another slab.  the cluster write is in TLS and can't be
                     //  flushed by ErrFlushClusters.  this should not hurt IO coalescing in any core scenario
 
-                    IssueIO();
+                    CallS( Pc()->PffCaching()->ErrIOIssue() );
+                    PrequestIO()->m_fCachingFileIOIssued = fTrue;
 
                 HandleError:
                     if ( pcwcc )
@@ -280,7 +307,7 @@ class THashedLRUKCache
                 {
                     ERR err = JET_errSuccess;
 
-                    Assert( !m_fWaitForIOCompleted );
+                    Assert( !PrequestIO()->m_fWaitForIOCompleted );
 
                     OSTrace(    JET_tracetagBlockCacheOperations,
                                 OSFormat(   "C=%s R=0x%016I64x F=%s Read Cluster %s",
@@ -297,7 +324,7 @@ class THashedLRUKCache
                                                 ClusterReadHandoff_ ) );
 
                     m_fCacheHit = fTrue;
-                    m_cCachingFileIO++;
+                    CachingFileIORequest();
 
                 HandleError:
                     return err;
@@ -308,7 +335,7 @@ class THashedLRUKCache
                     ERR         err     = JET_errSuccess;
                     BYTE* const pbData  = (BYTE*)PbData() + ibOffset - Offsets().IbStart();
 
-                    Assert( !m_fWaitForIOCompleted );
+                    Assert( !PrequestIO()->m_fWaitForIOCompleted );
 
                     OSTrace(    JET_tracetagBlockCacheOperations,
                                 OSFormat(   "C=%s R=0x%016I64x F=%s Read Block ib=%llu cb=%u",
@@ -321,7 +348,7 @@ class THashedLRUKCache
                     Call( ErrRead( Pcfte()->Pff(), ibOffset, cbData, pbData, iomCacheMiss ) );
 
                     m_fCacheMiss = fTrue;
-                    m_cCachedFileIO++;
+                    CachedFileIORequest();
 
                 HandleError:
                     return err;
@@ -332,7 +359,7 @@ class THashedLRUKCache
                     ERR                 err     = JET_errSuccess;
                     const BYTE* const   pbData  = PbData() + ibOffset - Offsets().IbStart();
 
-                    Assert( !m_fWaitForIOCompleted );
+                    Assert( !PrequestIO()->m_fWaitForIOCompleted );
 
                     OSTrace(    JET_tracetagBlockCacheOperations,
                                 OSFormat(   "C=%s R=0x%016I64x F=%s Write Block ib=%llu cb=%u",
@@ -344,7 +371,7 @@ class THashedLRUKCache
 
                     Call( ErrWrite( Pcfte()->Pff(), ibOffset, cbData, pbData, iomCacheWriteThrough ) );
 
-                    m_cCachedFileIO++;
+                    CachedFileIORequest();
 
                 HandleError:
                     return err;
@@ -374,7 +401,26 @@ class THashedLRUKCache
                 static SIZE_T OffsetOfIOs() { return OffsetOf( CRequest, m_ileIOs ); }
                 static SIZE_T OffsetOfRequestsByIO() { return OffsetOf( CRequest, m_ileRequestsByIO ); }
 
-                CCountedInvasiveList<CRequest, CRequest::OffsetOfRequestsByIO>& IlRequestsByIO() { return m_ilRequestsByIO; }
+                const CCountedInvasiveList<CRequest, CRequest::OffsetOfRequestsByIO>& IlRequestsByIO() const { return m_ilRequestsByIO; }
+                CRequest* PrequestIO() const { return m_prequestIO; }
+
+                void RemoveRequestFromIO( _In_ CRequest* const prequest )
+                {
+                    m_ilRequestsByIO.Remove( prequest );
+                    prequest->m_prequestIO = NULL;
+                }
+
+                void AddRequestToIOAsPrevMost( _In_ CRequest* const prequest )
+                {
+                    m_ilRequestsByIO.InsertAsPrevMost( prequest );
+                    prequest->m_prequestIO = this;
+                }
+
+                void AddRequestToIOAsNextMost( _In_ CRequest* const prequest )
+                {
+                    m_ilRequestsByIO.InsertAsNextMost( prequest );
+                    prequest->m_prequestIO = this;
+                }
 
             public:
 
@@ -406,71 +452,23 @@ class THashedLRUKCache
                 ~CRequest()
                 {
                     Assert( FWaitForIOCompleted() );
+
+                    CHashedLRUKCacheThreadLocalStorage<I>* pctlsT = m_pctls;
+                    CHashedLRUKCacheThreadLocalStorage<I>::Release( &pctlsT );
                 }
 
                 void Start() override
                 {
                     THashedLRUKCacheBase<I>::CRequest::Start();
 
-                    AddRefIO();
+                    PrequestIO()->AddRefIO();
                 }
 
                 void Finish( _In_ const ERR err ) override
                 {
                     THashedLRUKCacheBase<I>::CRequest::Finish( err );
 
-                    ReleaseRefIO();
-                }
-
-                void AddRefIO()
-                {
-                    m_fIORequested = fTrue;
-                    AtomicIncrement( (LONG*)&m_cIOPending );
-                }
-
-                void ReleaseRefIO()
-                {
-                    if ( AtomicDecrement( (LONG*)&m_cIOPending ) == -1 )
-                    {
-                        WaitForIOComplete();
-                    }
-                }
-
-                void WaitForIOComplete()
-                {
-                    //  cache the completion context
-                    //
-                    //  NOTE:  this is stable while m_cIOPending != -1
-
-                    CHashedLRUKCacheThreadLocalStorage<I>*  pctls   = m_pctls;
-                    CManualResetSignal* const               pmsig   = m_pmsig;
-
-                    //  if this is an async completion then we must reference the TLS so it isn't released
-
-                    if ( pctls )
-                    {
-                        pctls->AddRef();
-                    }
-
-                    //  indicate that the IO is complete
-                    //
-                    //  NOTE:  we cannot touch the object after this point because it can be released by the
-                    //  Async IO Worker immediately
-
-                    m_fWaitForIOCompleted = fTrue;
-
-                    //  do the completion notification
-
-                    if ( pctls )
-                    {
-                        pctls->CueAsyncIOWorker();
-                        CHashedLRUKCacheThreadLocalStorage<I>::Release( &pctls );
-                    }
-                    
-                    if ( pmsig )
-                    {
-                        pmsig->Set();
-                    }
+                    PrequestIO()->ReleaseRefIO();
                 }
 
             private:
@@ -556,12 +554,12 @@ class THashedLRUKCache
                         {
                             CHashedLRUKCachedFileTableEntry<I>::CIORangeLockBase::Grant();
 
-                            if ( m_prequest->m_pfnIORangeLockAcquired )
-                            {
-                                m_prequest->m_pfnIORangeLockAcquired( m_prequest->m_keyIORangeLockAcquired );
-                            }
-
                             m_prequest->m_fIORangeLockAcquired = fTrue;
+
+                            if ( !m_prequest->FSync() )
+                            {
+                                m_prequest->Pctls()->CueAsyncIOWorker();
+                            }
                         }
 
                     private:
@@ -625,28 +623,101 @@ class THashedLRUKCache
 
                 ERR ErrRelease( _In_ const ERR err )
                 {
-                    IssueIO();
-
                     return THashedLRUKCacheBase<I>::CRequest::ErrRelease( err );
+                }
+
+                void CachingFileIORequest()
+                {
+                    m_cCachingFileIO++;
+                    PrequestIO()->m_fCachingFileIORequested = fTrue;
+                }
+
+                void CachedFileIORequest()
+                {
+                    m_cCachedFileIO++;
+                    PrequestIO()->m_fCachedFileIORequested = fTrue;
+                }
+
+                void AddRefIO()
+                {
+                    Assert( this == PrequestIO() );
+
+                    m_fIORequested = fTrue;
+                    AtomicIncrement( (LONG*)&m_cIOPending );
+                }
+
+                void ReleaseRefIO()
+                {
+                    Assert( this == PrequestIO() );
+
+                    if ( AtomicDecrement( (LONG*)&m_cIOPending ) == -1 )
+                    {
+                        WaitForIOComplete();
+                    }
+                }
+
+                void WaitForIOComplete()
+                {
+                    Assert( this == PrequestIO() );
+
+                    //  cache the completion context
+                    //
+                    //  NOTE:  this is stable while m_cIOPending != -1
+
+                    const BOOL                              fSync   = FSync();
+                    CHashedLRUKCacheThreadLocalStorage<I>*  pctls   = Pctls();
+                    CManualResetSignal* const               pmsig   = m_pmsigWaitForIOCompleted;
+
+                    //  if this is an async completion then we must reference the TLS so it isn't released as a side
+                    //  effect of releasing this CRequest before we can signal it
+
+                    if ( !fSync )
+                    {
+                        pctls->AddRef();
+                    }
+
+                    //  indicate that the IO is complete
+                    //
+                    //  NOTE:  we cannot touch the object after this point because it can be released by the
+                    //  Async IO Worker immediately
+
+                    m_fWaitForIOCompleted = fTrue;
+
+                    //  do the completion notification
+
+                    if ( !fSync )
+                    {
+                        pctls->CueAsyncIOWorker();
+                        CHashedLRUKCacheThreadLocalStorage<I>::Release( &pctls );
+                    }
+                    else
+                    {
+                        pmsig->Set();
+                    }
                 }
 
                 void IssueIO()
                 {
-                    if ( m_cCachedFileIO )
+                    Assert( this == PrequestIO() );
+
+                    if ( m_fCachedFileIORequested )
                     {
-                        m_cCachedFileIO = 0;
+                        m_fCachedFileIORequested = fFalse;
                         CallS( Pcfte()->Pff()->ErrIssue( FRead() ? iomCacheMiss : iomCacheWriteThrough ) );
+                        m_fCachedFileIOIssued = fTrue;
                     }
 
-                    if ( m_cCachingFileIO )
+                    if ( m_fCachingFileIORequested )
                     {
-                        m_cCachingFileIO = 0;
+                        m_fCachingFileIORequested = fFalse;
                         CallS( Pc()->PffCaching()->ErrIOIssue() );
+                        m_fCachingFileIOIssued = fTrue;
                     }
                 }
 
             private:
 
+                CHashedLRUKCacheThreadLocalStorage<I>* const                                m_pctls;
                 const CClusterWriteCompletionContext                                        m_rgcwcc[ 2 ];
                 BOOL                                                                        m_fCacheMiss;
                 int                                                                         m_cCachedFileIO;
@@ -656,15 +727,17 @@ class THashedLRUKCache
                 typename CCountedInvasiveList<CRequest, OffsetOfIOs>::CElement              m_ileIOs;
                 CCountedInvasiveList<CRequest, OffsetOfRequestsByIO>                        m_ilRequestsByIO;
                 typename CCountedInvasiveList<CRequest, OffsetOfRequestsByIO>::CElement     m_ileRequestsByIO;
+                CRequest*                                                                   m_prequestIO;
                 CIORangeLock                                                                m_iorl;
-                CRequest::PfnIORangeLockAcquired                                            m_pfnIORangeLockAcquired;
-                DWORD_PTR                                                                   m_keyIORangeLockAcquired;
                 BOOL                                                                        m_fIORangeLockAcquired;
+                BOOL                                                                        m_fCachedFileIORequested;
+                BOOL                                                                        m_fCachingFileIORequested;
                 BOOL                                                                        m_fIORequested;
                 volatile LONG                                                               m_cIOPending;
+                BOOL                                                                        m_fCachedFileIOIssued;
+                BOOL                                                                        m_fCachingFileIOIssued;
+                CManualResetSignal*                                                         m_pmsigWaitForIOCompleted;
                 BOOL                                                                        m_fWaitForIOCompleted;
-                CHashedLRUKCacheThreadLocalStorage<I>*                                      m_pctls;
-                CManualResetSignal*                                                         m_pmsig;
         };
 
         //  Update Slab Visitor
@@ -4880,7 +4953,7 @@ class THashedLRUKCache
 
         ERR ErrFlush();
 
-        ERR ErrEnqueue( _Inout_ CRequest** const pprequest );
+        void Enqueue( _Inout_ CRequest** const pprequest );
         BOOL FConflicting( _In_ CRequest* const prequestIOA, _In_ CRequest* const prequestIOB );
         BOOL FCombinable( _In_ CRequest* const prequestIOA, _In_ CRequest* const prequestIOB );
         BOOL FOverrideMaxSize( _In_ CRequest* const prequestIO );
@@ -4893,12 +4966,9 @@ class THashedLRUKCache
         ERR ErrSynchronousIO( _In_ CRequest* const prequest );
 
         void WaitForIORangeLock( _In_ CRequest* const prequest );
-        BOOL FWaitForIORangeLock(   _In_        CRequest* const                                 prequest,
-                                    _In_opt_    CHashedLRUKCacheThreadLocalStorage<I>* const    pctls       = NULL );
-        void ReleaseIORangeLock(    _In_        CRequest* const                                 prequest,
-                                    _In_opt_    CHashedLRUKCacheThreadLocalStorage<I>* const    pctls       = NULL );
-        void ReleaseIORangeLockedCounts(    _In_        CRequest* const                                 prequest,
-                                            _In_opt_    CHashedLRUKCacheThreadLocalStorage<I>* const    pctls       = NULL );
+        BOOL FWaitForIORangeLock( _In_ CRequest* const prequest );
+        void ReleaseIORangeLock( _In_ CRequest* const prequest );
+        void ReleaseIORangeLockedCounts( _In_ CRequest* const prequest );
         BOOL FAcquireIORangeLockedBySlabCounts( _In_ CRequest* const prequest, _In_ const BOOL fFirstRequest );
         void ReleaseIORangeLockedBySlabCounts(  _In_ CHashedLRUKCachedFileTableEntry<I>* const  pcfte,
                                                 _In_ const COffsets&                            offsets );
@@ -4907,11 +4977,6 @@ class THashedLRUKCache
         void RequestCachedFileIO( _In_ CRequest* const prequestIO );
         void RequestCachingFileIO( _In_ CRequest* const prequestIO );
         void RequestIO( _In_ CRequest* const prequestIO );
-        void WaitForPendingIOAsync( _In_ CHashedLRUKCacheThreadLocalStorage<I>* const   pctls,
-                                    _In_ CRequest* const                                prequestIO );
-        void WaitForPendingIO( _In_ CRequest* const prequestIO );
-        BOOL FCompletedIO( _In_ CRequest* const prequestIO );
-        void ClearIOCompletion( _In_ CRequest* const prequestIO );
         void RequestFinalizeIO( _In_ CRequest* const prequestIO );
 
         void RequestIO( _In_    CRequest* const prequestIO, 
@@ -6016,10 +6081,18 @@ ERR THashedLRUKCache<I>::ErrRead(   _In_                    const TraceContext& 
                                     _In_opt_                const ICache::PfnComplete   pfnComplete,
                                     _In_opt_                const DWORD_PTR             keyComplete )
 {
-    ERR                                 err         = JET_errSuccess;
-    CHashedLRUKCachedFileTableEntry<I>* pcfte       = NULL;
-    const BOOL                          fAsync      = pfnComplete != NULL;
-    CRequest*                           prequest    = NULL;
+    ERR                                     err         = JET_errSuccess;
+    CHashedLRUKCacheThreadLocalStorage<I>*  pctls       = NULL;
+    CHashedLRUKCachedFileTableEntry<I>*     pcfte       = NULL;
+    const BOOL                              fAsync      = pfnComplete != NULL;
+    CRequest*                               prequest    = NULL;
+
+    //  get our thread local storage if we will be enqueuing requests
+
+    if ( fAsync )
+    {
+        Call( ErrGetThreadLocalStorage( &pctls ) );
+    }
 
     //  get the cached file
 
@@ -6041,14 +6114,15 @@ ERR THashedLRUKCache<I>::ErrRead(   _In_                    const TraceContext& 
                                     grbitQOS,
                                     cp,
                                     pfnComplete, 
-                                    keyComplete ) );
+                                    keyComplete,
+                                    &pctls ) );
 
     //  if this request is async then we must perform the request async to avoid blocking the request for sync reads to
     //  read our cache state.  otherwise, perform it inline to allow a sync request to be performed directly
 
     if ( fAsync )
     {
-        Call( ErrEnqueue( &prequest ) );
+        Enqueue( &prequest );
     }
     else
     {
@@ -6058,6 +6132,7 @@ ERR THashedLRUKCache<I>::ErrRead(   _In_                    const TraceContext& 
 HandleError:
     err = CRequest::ErrRelease( &prequest, err );
     ReleaseCachedFile( &pcfte );
+    CHashedLRUKCacheThreadLocalStorage<I>::Release( &pctls );
     Assert( !FAnyOpenSlab() );
     return err;
 }
@@ -6075,10 +6150,18 @@ ERR THashedLRUKCache<I>::ErrWrite(  _In_                    const TraceContext& 
                                     _In_opt_                const ICache::PfnComplete   pfnComplete,
                                     _In_opt_                const DWORD_PTR             keyComplete )
 {
-    ERR                                 err         = JET_errSuccess;
-    CHashedLRUKCachedFileTableEntry<I>* pcfte       = NULL;
-    const BOOL                          fAsync      = pfnComplete != NULL;
-    CRequest*                           prequest    = NULL;
+    ERR                                     err         = JET_errSuccess;
+    CHashedLRUKCacheThreadLocalStorage<I>*  pctls       = NULL;
+    CHashedLRUKCachedFileTableEntry<I>*     pcfte       = NULL;
+    const BOOL                              fAsync      = pfnComplete != NULL;
+    CRequest*                               prequest    = NULL;
+
+    //  get our thread local storage if we will be enqueuing requests
+
+    if ( fAsync )
+    {
+        Call( ErrGetThreadLocalStorage( &pctls ) );
+    }
 
     //  get the cached file
 
@@ -6100,14 +6183,15 @@ ERR THashedLRUKCache<I>::ErrWrite(  _In_                    const TraceContext& 
                                     grbitQOS,
                                     cp,
                                     pfnComplete, 
-                                    keyComplete ) );
+                                    keyComplete,
+                                    &pctls ) );
 
     //  if this request is async then we must perform the request async to avoid blocking the request for sync reads to
     //  read our cache state.  otherwise, perform it inline to allow a sync request to be performed directly
 
     if ( fAsync )
     {
-        Call( ErrEnqueue( &prequest ) );
+        Enqueue( &prequest );
     }
     else
     {
@@ -6117,6 +6201,7 @@ ERR THashedLRUKCache<I>::ErrWrite(  _In_                    const TraceContext& 
 HandleError:
     err = CRequest::ErrRelease( &prequest, err );
     ReleaseCachedFile( &pcfte );
+    CHashedLRUKCacheThreadLocalStorage<I>::Release( &pctls );
     Assert( !FAnyOpenSlab() );
     return err;
 }
@@ -8143,19 +8228,14 @@ HandleError:
 }
 
 template<class I>
-ERR THashedLRUKCache<I>::ErrEnqueue( _Inout_ CRequest** const pprequest )
+void THashedLRUKCache<I>::Enqueue( _Inout_ CRequest** const pprequest )
 {
-    ERR                                     err             = JET_errSuccess;
-    CHashedLRUKCacheThreadLocalStorage<I>*  pctls           = NULL;
-    CRequest*                               prequest        = *pprequest;
-    CRequest*                               prequestIO      = NULL;
-    CRequest*                               prequestIOPrev  = NULL;
+    CRequest*                                       prequest        = *pprequest;
+    CHashedLRUKCacheThreadLocalStorage<I>* const    pctls           = prequest->Pctls();
+    CRequest*                                       prequestIO      = NULL;
+    CRequest*                                       prequestIOPrev  = NULL;
 
     *pprequest = NULL;
-
-    //  get our thread local storage where we are enqueuing requests
-
-    Call( ErrGetThreadLocalStorage( &pctls ) );
 
     //  enqueue the request, combining and ordering with previous requests
     //
@@ -8174,16 +8254,16 @@ ERR THashedLRUKCache<I>::ErrEnqueue( _Inout_ CRequest** const pprequest )
             {
                 while ( CRequest* prequestT = prequestIO->IlRequestsByIO().NextMost() )
                 {
-                    prequestIO->IlRequestsByIO().Remove( prequestT );
-                    prequestIOPrev->IlRequestsByIO().InsertAsPrevMost( prequestT );
+                    prequestIO->RemoveRequestFromIO( prequestT );
+                    prequestIOPrev->AddRequestToIOAsPrevMost( prequestT );
                 }
             }
             else
             {
                 while ( CRequest* prequestT = prequestIO->IlRequestsByIO().PrevMost() )
                 {
-                    prequestIO->IlRequestsByIO().Remove( prequestT );
-                    prequestIOPrev->IlRequestsByIO().InsertAsNextMost( prequestT );
+                    prequestIO->RemoveRequestFromIO( prequestT );
+                    prequestIOPrev->AddRequestToIOAsNextMost( prequestT );
                 }
             }
 
@@ -8201,11 +8281,6 @@ ERR THashedLRUKCache<I>::ErrEnqueue( _Inout_ CRequest** const pprequest )
     //  give ownership of the request to the TLS
 
     pctls->AddRequest( &prequest );
-
-HandleError:
-    err = CRequest::ErrRelease( &prequest, err );
-    CHashedLRUKCacheThreadLocalStorage<I>::Release( &pctls );
-    return err;
 }
 
 template<class I>
@@ -8394,7 +8469,7 @@ void THashedLRUKCache<I>::AsyncIOWorker( _In_ CHashedLRUKCacheThreadLocalStorage
         {
             prequestIONext = pctls->IlIOIssued().Next( prequestIO );
 
-            if ( FWaitForIORangeLock( prequestIO, pctls ) )
+            if ( FWaitForIORangeLock( prequestIO ) )
             {
                 pctls->IlIOIssued().Remove( prequestIO );
                 pctls->IlIORangeLockPending().InsertAsNextMost( prequestIO );
@@ -8447,7 +8522,7 @@ void THashedLRUKCache<I>::AsyncIOWorker( _In_ CHashedLRUKCacheThreadLocalStorage
 
         while ( CRequest* prequestIO = pctls->IlCachingFileIORequested().PrevMost() )
         {
-            WaitForPendingIOAsync( pctls, prequestIO );
+            prequestIO->WaitForIO();
 
             pctls->IlCachingFileIORequested().Remove( prequestIO );
             pctls->IlIOPending().InsertAsNextMost( prequestIO );
@@ -8462,12 +8537,12 @@ void THashedLRUKCache<I>::AsyncIOWorker( _In_ CHashedLRUKCacheThreadLocalStorage
         {
             prequestIONext = pctls->IlIOPending().Next( prequestIO );
 
-            if ( FCompletedIO( prequestIO ) )
+            if ( prequestIO->FWaitForIOCompleted() )
             {
                 pctls->IlIOPending().Remove( prequestIO );
                 pctls->IlIOCompleted().InsertAsNextMost( prequestIO );
 
-                ClearIOCompletion( prequestIO );
+                prequestIO->ResetWaitForIO();
             }
         }
 
@@ -8485,7 +8560,7 @@ void THashedLRUKCache<I>::AsyncIOWorker( _In_ CHashedLRUKCacheThreadLocalStorage
 
         while ( CRequest* prequestIO = pctls->IlFinalizeIORequested().PrevMost() )
         {
-            WaitForPendingIOAsync( pctls, prequestIO );
+            prequestIO->WaitForIO();
 
             pctls->IlFinalizeIORequested().Remove( prequestIO );
             pctls->IlFinalizeIOPending().InsertAsNextMost( prequestIO );
@@ -8500,7 +8575,7 @@ void THashedLRUKCache<I>::AsyncIOWorker( _In_ CHashedLRUKCacheThreadLocalStorage
         {
             prequestIONext = pctls->IlFinalizeIOPending().Next( prequestIO );
 
-            if ( FCompletedIO( prequestIO ) )
+            if ( prequestIO->FWaitForIOCompleted() )
             {
                 pctls->IlFinalizeIOPending().Remove( prequestIO );
                 pctls->IlFinalizeIOCompleted().InsertAsNextMost( prequestIO );
@@ -8513,7 +8588,7 @@ void THashedLRUKCache<I>::AsyncIOWorker( _In_ CHashedLRUKCacheThreadLocalStorage
         {
             pctls->IlFinalizeIOCompleted().Remove( prequestIO );
 
-            ReleaseIORangeLock( prequestIO, pctls );
+            ReleaseIORangeLock( prequestIO );
 
             CRequest* prequestNext = NULL;
             for ( CRequest* prequest = prequestIO->IlRequestsByIO().PrevMost();
@@ -8522,7 +8597,7 @@ void THashedLRUKCache<I>::AsyncIOWorker( _In_ CHashedLRUKCacheThreadLocalStorage
             {
                 prequestNext = prequestIO->IlRequestsByIO().Next( prequest );
 
-                prequestIO->IlRequestsByIO().Remove( prequest );
+                prequestIO->RemoveRequestFromIO( prequest );
 
                 if ( prequest != prequestIO )
                 {
@@ -8560,8 +8635,8 @@ ERR THashedLRUKCache<I>::ErrSynchronousIO( _In_ CRequest* const prequest )
 
     //  wait for all the IO to complete even if it is not needed for finalization
 
-    WaitForPendingIO( prequest );
-    ClearIOCompletion( prequest );
+    prequest->WaitForIO();
+    prequest->ResetWaitForIO();
 
     //  finalize the IO in the cache
 
@@ -8569,7 +8644,7 @@ ERR THashedLRUKCache<I>::ErrSynchronousIO( _In_ CRequest* const prequest )
 
     //  wait for any additional IO caused by finalization
 
-    WaitForPendingIO( prequest );
+    prequest->WaitForIO();
 
     //  release the IO range lock
 
@@ -8585,21 +8660,20 @@ void THashedLRUKCache<I>::WaitForIORangeLock( _In_ CRequest* const prequest )
 }
 
 template<class I>
-BOOL THashedLRUKCache<I>::FWaitForIORangeLock(  _In_        CRequest* const                                 prequest,
-                                                _In_opt_    CHashedLRUKCacheThreadLocalStorage<I>* const    pctls )
+BOOL THashedLRUKCache<I>::FWaitForIORangeLock( _In_ CRequest* const prequest )
 {
     BOOL    fFirstRequest   = fFalse;
     BOOL    fRelease        = fTrue;
     BOOL    fAcquired       = fFalse;
 
-    if ( !pctls )
+    if ( prequest->FSync() )
     {
         fFirstRequest = fTrue;
     }
     else
     {
-        fFirstRequest = AtomicIncrement( (DWORD*)&pctls->CIORangeLocked() ) == 1;
-        AtomicAdd( (QWORD*)&pctls->CbIORangeLocked(), prequest->OffsetsForIO().Cb() );
+        fFirstRequest = AtomicIncrement( (DWORD*)&prequest->Pctls()->CIORangeLocked() ) == 1;
+        AtomicAdd( (QWORD*)&prequest->Pctls()->CbIORangeLocked(), prequest->OffsetsForIO().Cb() );
     }
 
     AtomicExchangeAdd( (LONG*)&m_cIORangeLockedContext, fFirstRequest ? 1 : 0 );
@@ -8613,47 +8687,44 @@ BOOL THashedLRUKCache<I>::FWaitForIORangeLock(  _In_        CRequest* const     
         fAcquired = fTrue;
         fRelease = fFalse;
 
-        prequest->WaitForIORangeLock(   pctls ? CHashedLRUKCacheThreadLocalStorage<I>::CueAsyncIOWorker_ : NULL,
-                                        (DWORD_PTR)pctls );
+        prequest->WaitForIORangeLock();
     }
 
     if ( fRelease )
     {
-        ReleaseIORangeLockedCounts( prequest, pctls );
+        ReleaseIORangeLockedCounts( prequest );
     }
 
     return fAcquired;
 }
 
 template<class I>
-void THashedLRUKCache<I>::ReleaseIORangeLock(   _In_        CRequest* const                                 prequest,
-                                                _In_opt_    CHashedLRUKCacheThreadLocalStorage<I>* const    pctls )
+void THashedLRUKCache<I>::ReleaseIORangeLock( _In_ CRequest* const prequest )
 {
     prequest->Piorl()->Release();
 
     ReleaseIORangeLockedBySlabCounts( prequest->Pcfte(), prequest->OffsetsForIO() );
 
-    ReleaseIORangeLockedCounts( prequest, pctls );
+    ReleaseIORangeLockedCounts( prequest );
 }
 
 template<class I>
-void THashedLRUKCache<I>::ReleaseIORangeLockedCounts(   _In_        CRequest* const                                 prequest,
-                                                        _In_opt_    CHashedLRUKCacheThreadLocalStorage<I>* const    pctls )
+void THashedLRUKCache<I>::ReleaseIORangeLockedCounts( _In_ CRequest* const prequest )
 {
     BOOL        fLastRequest            = fFalse;
     const QWORD cbIORangeLocked         = prequest->OffsetsForIO().Cb();
     const QWORD cbIORangeLockedNegative = (QWORD)( -( (LONGLONG)cbIORangeLocked ) );
 
-    if ( !pctls )
+    if ( prequest->FSync() )
     {
         fLastRequest = fTrue;
     }
     else
     {
-        Enforce( pctls->CIORangeLocked() >= 1 );
-        fLastRequest = AtomicDecrement( (DWORD*)&pctls->CIORangeLocked() ) == 0;
-        Enforce( pctls->CbIORangeLocked() >= cbIORangeLocked );
-        AtomicAdd( (QWORD*)&pctls->CbIORangeLocked(), cbIORangeLockedNegative );
+        Enforce( prequest->Pctls()->CIORangeLocked() >= 1 );
+        fLastRequest = AtomicDecrement( (DWORD*)&prequest->Pctls()->CIORangeLocked() ) == 0;
+        Enforce( prequest->Pctls()->CbIORangeLocked() >= cbIORangeLocked );
+        AtomicAdd( (QWORD*)&prequest->Pctls()->CbIORangeLocked(), cbIORangeLockedNegative );
     }
 
     Enforce( m_cIORangeLockedContext >= (DWORD)( fLastRequest ? 1 : 0 ) );
@@ -8762,56 +8833,6 @@ template<class I>
 void THashedLRUKCache<I>::RequestIO( _In_ CRequest* const prequestIO )
 {
     RequestIO( prequestIO, fTrue, fTrue );
-}
-
-template<class I>
-void THashedLRUKCache<I>::WaitForPendingIOAsync(    _In_ CHashedLRUKCacheThreadLocalStorage<I>* const   pctls,
-                                                    _In_ CRequest* const                                prequestIO )
-{
-    for (   CRequest* prequest = prequestIO->IlRequestsByIO().PrevMost();
-            prequest;
-            prequest = prequestIO->IlRequestsByIO().Next( prequest ) )
-    {
-        prequest->WaitForIO( pctls );
-    }
-}
-
-template<class I>
-void THashedLRUKCache<I>::WaitForPendingIO( _In_ CRequest* const prequestIO )
-{
-    for (   CRequest* prequest = prequestIO->IlRequestsByIO().PrevMost();
-            prequest;
-            prequest = prequestIO->IlRequestsByIO().Next( prequest ) )
-    {
-        prequest->WaitForIO();
-    }
-}
-
-template<class I>
-BOOL THashedLRUKCache<I>::FCompletedIO( _In_ CRequest* const prequestIO )
-{
-    for (   CRequest* prequest = prequestIO->IlRequestsByIO().PrevMost();
-            prequest;
-            prequest = prequestIO->IlRequestsByIO().Next( prequest ) )
-    {
-        if ( !prequest->FWaitForIOCompleted() )
-        {
-            return fFalse;
-        }
-    }
-
-    return fTrue;
-}
-
-template<class I>
-void THashedLRUKCache<I>::ClearIOCompletion( _In_ CRequest* const prequestIO )
-{
-    for (   CRequest* prequest = prequestIO->IlRequestsByIO().PrevMost();
-            prequest;
-            prequest = prequestIO->IlRequestsByIO().Next( prequest ) )
-    {
-        prequest->ResetWaitForIO();
-    }
 }
 
 template<class I>

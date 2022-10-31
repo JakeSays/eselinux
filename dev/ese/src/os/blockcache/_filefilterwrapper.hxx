@@ -339,8 +339,6 @@ class CFileFilterWrapper : public TFileFilterWrapper<IFileFilter>
             :   TFileFilterWrapper<IFileFilter>( pff, iom )
         {
         }
-
-        static void Cleanup() { CIOComplete::Cleanup(); }
 };
 
 

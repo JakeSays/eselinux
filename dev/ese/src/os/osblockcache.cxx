@@ -337,7 +337,6 @@ BOOL FOSBlockCachePreinit()
 
 void OSBlockCachePostterm()
 {
-    CFileWrapper::Cleanup();
-    CFileFilterWrapper::Cleanup();
     CFileFilter::Cleanup();
+    CPoolRepository::CleanupAll();
 }

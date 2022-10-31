@@ -893,11 +893,6 @@ class TFileFilter  //  ff
 
                         CCountedInvasiveList<CRequest, CRequest::OffsetOfRequestsByIO>& IlRequestsByIO() { return m_ilRequestsByIO; }
 
-                        static void Cleanup()
-                        {
-                            CPool::Cleanup();
-                        }
-
                     private:
 
                         const VolumeId                                                          m_volumeid;
@@ -2204,11 +2199,6 @@ class TFileFilter  //  ff
                     m_fReleaseWriteback = fFalse;
                 }
 
-                static void Cleanup()
-                {
-                    CPool::Cleanup();
-                }
-
                 static void Complete_(  _In_                    const ERR               err,
                                         _In_                    const VolumeId          volumeid,
                                         _In_                    const FileId            fileid,
@@ -2429,8 +2419,6 @@ TFileFilter<I>::~TFileFilter()
 template<class I>
 void TFileFilter<I>::Cleanup()
 {
-    CThreadLocalStorage::Cleanup();
-    CIOComplete::Cleanup();
     CThreadLocalStorageRepository::Cleanup();
     CThrottleContextRepository::Cleanup();
 }

@@ -327,6 +327,53 @@ INLINE const char* OSFormatFileId( _In_ ICache* const pc )
 
 //  Pool of objects with a minimum lifetime
 
+template< class T = void >
+class TStateBase
+{
+    public:
+
+        static void CleanupAll()
+        {
+            for ( TStateBase<T>* pstate = s_il.PrevMost(); pstate; pstate = s_il.Next( pstate ) )
+            {
+                pstate->CleanupThis();
+            }
+        }
+
+    protected:
+
+        TStateBase()
+        {
+            s_il.InsertAsNextMost( this );
+        }
+
+        virtual ~TStateBase()
+        {
+            s_il.Remove( this );
+        }
+
+        virtual void CleanupThis() {}
+
+        static SIZE_T OffsetOfILE() { return OffsetOf( TStateBase<T>, m_ile ); }
+
+    private:
+
+        static CInvasiveList<TStateBase<T>, TStateBase<T>::OffsetOfILE>             s_il;
+
+        typename CInvasiveList<TStateBase<T>, TStateBase<T>::OffsetOfILE>::CElement m_ile;
+};
+
+template< class T >
+CInvasiveList<TStateBase<T>, TStateBase<T>::OffsetOfILE> TStateBase<T>::s_il;
+
+class CStateBase : public TStateBase<>
+{
+};
+
+class CPoolRepository : public CStateBase
+{
+};
+
 template< class T, BOOL fHeap = fTrue, TICK dtickMin = 10 * 1000 >
 class TPool
 {
@@ -341,20 +388,20 @@ class TPool
         {
             void* pv = NULL;
 
-            if ( s_state.FInit() && s_state.m_il.PrevMost() )
+            if ( s_state.FInit() && s_state.Il().PrevMost() )
             {
-                s_state.m_crit.Enter();
+                s_state.Crit().Enter();
 
-                CHeader* pheader = s_state.m_il.PrevMost();
+                CHeader* pheader = s_state.Il().PrevMost();
 
                 pheader = pheader && pheader->Cb() >= cb ? pheader : NULL;
 
                 if ( pheader )
                 {
-                    s_state.m_il.Remove( pheader );
+                    s_state.Il().Remove( pheader );
                 }
 
-                s_state.m_crit.Leave();
+                s_state.Crit().Leave();
 
                 if ( pheader )
                 {
@@ -405,23 +452,23 @@ class TPool
                 pv = NULL;
             }
 
-            s_state.m_crit.Enter();
+            s_state.Crit().Enter();
 
             if ( pheader )
             {
-                s_state.m_il.InsertAsPrevMost( pheader );
+                s_state.Il().InsertAsPrevMost( pheader );
                 pheader = NULL;
             }
 
-            while ( s_state.m_il.NextMost() && s_state.m_il.NextMost()->FRelease() )
+            while ( s_state.Il().NextMost() && s_state.Il().NextMost()->FRelease() )
             {
-                pheader = s_state.m_il.NextMost();
-                s_state.m_il.Remove( pheader );
+                pheader = s_state.Il().NextMost();
+                s_state.Il().Remove( pheader );
                 il.InsertAsNextMost( pheader );
                 pheader = NULL;
             }
 
-            s_state.m_crit.Leave();
+            s_state.Crit().Leave();
 
             s_state.Release( il );
 
@@ -430,7 +477,7 @@ class TPool
 
         static void Cleanup()
         {
-            s_state.Release( s_state.m_il );
+            s_state.CleanupThis();
         }
 
     private:
@@ -487,7 +534,7 @@ class TPool
 
     private:
 
-        class CState
+        class CState : CStateBase
         {
             public:
 
@@ -500,10 +547,18 @@ class TPool
                 ~CState()
                 {
                     m_fInit = fFalse;
+                    CleanupThis();
+                }
+
+                void CleanupThis() override
+                {
                     Release( m_il );
                 }
 
                 BOOL FInit() const { return m_fInit; }
+
+                CCriticalSection& Crit() { return m_crit; }
+                CCountedInvasiveList<CHeader, CHeader::OffsetOfILE>& Il() { return m_il; }
 
                 static void Release( CInvasiveList<CHeader, CHeader::OffsetOfILE>& il )
                 {
@@ -515,6 +570,8 @@ class TPool
                         Free_( pheader );
                     }
                 }
+
+            private:
 
                 BOOL                                                            m_fInit;
                 CCriticalSection                                                m_crit;
