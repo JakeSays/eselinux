@@ -6257,6 +6257,13 @@ ERR VER::ErrVERIRCEClean( const IFMP ifmp )
                         //
                         Assert( fFalse );
                     }
+
+                    // If we are only cleaning one database, and this RCE belongs to another one and we already
+                    // skipped the first RCE in the node chain, skip this one also.
+                    if ( fCleanable && fCleanOneDb && prce->Ifmp() != ifmp && prce->FPastVersionsOfNode() )
+                    {
+                        fCleanable = fFalse;
+                    }
                 }
 
                 if ( !fCleanable )

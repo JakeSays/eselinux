@@ -521,6 +521,7 @@ class RCE
         RCE     *PrceNextOfSession  ()  const;
         RCE     *PrcePrevOfSession  ()  const;
         BOOL    FFutureVersionsOfNode   ()  const;
+        BOOL    FPastVersionsOfNode ()  const;
         RCE     *PrceNextOfFCB      ()  const;
         RCE     *PrcePrevOfFCB      ()  const;
         RCE     *PrceUndoInfoNext ()    const;
@@ -1078,6 +1079,14 @@ INLINE BOOL RCE::FFutureVersionsOfNode() const
 //  ================================================================
 {
     return prceNil != m_prceNextOfNode;
+}
+
+
+//  ================================================================
+INLINE BOOL RCE::FPastVersionsOfNode() const
+//  ================================================================
+{
+    return prceNil != m_prcePrevOfNode;
 }
 
 
