@@ -120,6 +120,8 @@ ERR ErrDIRCreateDirectory(
 //
 ERR ErrDIROpen( PIB *ppib, FCB *pfcb, FUCB **ppfucb );
 ERR ErrDIROpenByProxy( PIB *ppib, FCB *pfcb, FUCB **ppfucb, LEVEL level );
+ERR ErrDIROpen( PIB *ppib, PGNO pgnoFDP, IFMP ifmp, FUCB **ppfucb, BOOL fWillInitFCB = fFalse );
+ERR ErrDIROpenNoTouch( PIB *ppib, IFMP ifmp, PGNO pgnoFDP, OBJID objidFDP, BOOL fUnique, FUCB **ppfucb, BOOL fWillInitFCB = fFalse );
 INLINE VOID DIRInitOpenedCursor( FUCB * const pfucb, const LEVEL level )
 {
     FUCBSetLevelNavigate( pfucb, level );

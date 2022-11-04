@@ -1099,10 +1099,8 @@ VOID BATCHRECTASK::PrereadTaskBookmarks( PIB * const ppib, const INT itaskStart,
     BOOKMARK * rgbm;
     if( NULL != ( rgbm = new BOOKMARK[cbookmarksPreread] ) )
     {
-        FCBRef fcbRef;
         FUCB * pfucb = pfucbNil;
-        if ( JET_errSuccess == ErrFILEFcbGet( ppib, m_ifmp, m_pgnoFDP, objidNil, fcbRef ) &&
-             JET_errSuccess == ErrDIROpen( ppib, fcbRef.get(), &pfucb ) )
+        if( JET_errSuccess == ErrDIROpen( ppib, m_pgnoFDP, m_ifmp, &pfucb ) )
         {
             PIBTraceContextScope tcScope = ppib->InitTraceContextScope();
             tcScope->iorReason.SetIort( iortRecTask );

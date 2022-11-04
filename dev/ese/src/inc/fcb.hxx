@@ -883,13 +883,13 @@ private:
         BOOL FInitialIndex() const;
         VOID SetInitialIndex();
 
-        BOOL FInitialized() const volatile;
+        BOOL FInitialized() const;
     private:
         VOID SetInitialized_();
         VOID ResetInitialized_();
 
     public:
-        BOOL FInitedForRecovery() const volatile;
+        BOOL FInitedForRecovery() const;
         VOID SetInitedForRecovery();
         VOID ResetInitedForRecovery();
 
@@ -900,9 +900,9 @@ private:
         VOID SetVersioningOffForExtentPageCountCache();
         VOID ResetVersioningOffForExtentPageCountCache();
 
-        VOID AcquireAdditionalInitDuringRecovery();
-        VOID ReleaseAdditionalInitDuringRecovery();
-        BOOL FDoingAdditionalInitializationDuringRecovery() const volatile;
+        BOOL FDoingAdditionalInitializationDuringRecovery() const;
+        VOID SetDoingAdditionalInitializationDuringRecovery();
+        VOID ResetDoingAdditionalInitializationDuringRecovery();
 
         BOOL FInList() const;
         VOID SetInList();
@@ -932,7 +932,7 @@ private:
         VOID SetPreread();
         VOID ResetPreread();
 
-        BOOL FSpaceInitialized() const volatile;
+        BOOL FSpaceInitialized() const;
         VOID SetSpaceInitialized();
         VOID ResetSpaceInitialized();
 
@@ -1023,7 +1023,7 @@ private:
         VOID ResetUpdatingAndLeaveDML();
         VOID ResetUpdating();
 
-        VOID IncrementRefCount( BOOL fOwnWriteLock = fFalse );
+        VOID IncrementRefCount();
 
     private:
         VOID ResetUpdating_();
@@ -1064,7 +1064,7 @@ private:
     // =====================================================================
     // FCB creation/deletion.
     public:
-        static FCB *PfcbFCBGet( const IFMP ifmp, const PGNO pgnoFDP, FCBStateFlags* const pfcbsf = NULL, const BOOL fIncrementRefCount = fTrue );
+        static FCB *PfcbFCBGet( const IFMP ifmp, const PGNO pgnoFDP, FCBStateFlags* const pfcbsf = NULL, const BOOL fIncrementRefCount = fTrue, const BOOL fInitForRecovery = fFalse, OBJID* const pobjid = NULL );
         static ERR ErrCreate( PIB *ppib, IFMP ifmp, PGNO pgnoFDP, FCB **ppfcb );
         VOID CreateComplete_( ERR err, PCSTR szFile, const LONG lLine );
         VOID PrepareForPurge( const BOOL fPrepareChildren = fTrue );
@@ -1079,7 +1079,7 @@ private:
         static BOOL FScanAndPurge_( _In_ INST * pinst, _In_ PIB * ppib, const BOOL fThreshold );
         static BOOL FCloseToQuota_( INST * pinst ) { return pinst->m_cresFCB.FCloseToQuota(); };
         static VOID PurgeObjects_( INST* const pinst, const IFMP ifmp, const PGNO pgnoFDP, const BOOL fTerminating );
-        BOOL FCheckFreeAndPurge_( _In_ const BOOL fThreshold );
+        BOOL FCheckFreeAndPurge_( _In_ PIB *ppib, _In_ const BOOL fThreshold );
         VOID CloseAllCursorsOnFCB_( const BOOL fTerminating );
         VOID Delete_( INST *pinst );
         BOOL FHasCallbacks_( INST *pinst );
@@ -1140,7 +1140,7 @@ private:
     public:
         VOID InsertHashTable();
         VOID DeleteHashTable();
-        VOID Release( BOOL fPreventMoveToAvail = fFalse );
+        VOID Release();
         static BOOL FInHashTable( IFMP ifmp, PGNO pgnoFDB, FCB **ppfcb = NULL );
 
     private:
@@ -1449,7 +1449,7 @@ INLINE PGNO FCB::PgnoAE() const                 { return m_pgnoAE; }
 INLINE BFLatch* FCB::PBFLatchHintPgnoAE()       { Assert( NULL == m_bflPgnoAE.pv ); return &m_bflPgnoAE; }
 INLINE IFMP FCB::Ifmp() const                   { return m_ifmp; }
 INLINE SHORT FCB::CbDensityFree() const         { return m_spacehints.m_cbDensityFree; }
-INLINE LONG FCB::WRefCount() const              { return AtomicRead( const_cast<LONG*>( &m_wRefCount ) ); } // refcount is read without locks on multiple threads for synchronization
+INLINE LONG FCB::WRefCount() const              { return m_wRefCount; }
 INLINE RCE *FCB::PrceNewest() const             { return m_prceNewest; }
 INLINE RCE *FCB::PrceOldest() const             { return m_prceOldest; }
 INLINE USHORT FCB::CrefDomainDenyRead() const   { return m_crefDomainDenyRead; }
@@ -1586,7 +1586,7 @@ INLINE VOID FCB::SetDerivedIndex()              { Assert( IsLocked() ); AtomicEx
 INLINE BOOL FCB::FInitialIndex() const          { return !!(m_ulFCBFlags & mskFCBInitialIndex ); }
 INLINE VOID FCB::SetInitialIndex()              { Assert( IsLocked() ); AtomicExchangeSet( &m_ulFCBFlags, mskFCBInitialIndex ); }
 
-INLINE BOOL FCB::FInitialized() const volatile  { return !!(m_ulFCBFlags & mskFCBInitialized ); }
+INLINE BOOL FCB::FInitialized() const           { return !!(m_ulFCBFlags & mskFCBInitialized ); }
 INLINE VOID FCB::SetInitialized_()              { Assert( IsLocked() ); AtomicExchangeSet( &m_ulFCBFlags, mskFCBInitialized ); }
 INLINE VOID FCB::ResetInitialized_()            { Assert( IsLocked() ); AtomicExchangeReset( &m_ulFCBFlags, mskFCBInitialized ); }
 
@@ -1594,11 +1594,13 @@ INLINE BOOL FCB::FVersioningOffForExtentPageCountCache() const { return !!(m_ulF
 INLINE VOID FCB::SetVersioningOffForExtentPageCountCache()     { AtomicExchangeSet( &m_ulFCBFlags, mskFCBVersioningOff ); }
 INLINE VOID FCB::ResetVersioningOffForExtentPageCountCache()   { AtomicExchangeReset( &m_ulFCBFlags, mskFCBVersioningOff ); }
 
-INLINE BOOL FCB::FInitedForRecovery() const volatile { return !!( m_ulFCBFlags & mskFCBInitedForRecovery ); }
-INLINE VOID FCB::SetInitedForRecovery()             { Assert( IsLocked() ); AtomicExchangeSet( &m_ulFCBFlags, mskFCBInitedForRecovery ); }
-INLINE VOID FCB::ResetInitedForRecovery()           { Assert( IsLocked() ); AtomicExchangeReset( &m_ulFCBFlags, mskFCBInitedForRecovery ); }
+INLINE BOOL FCB::FInitedForRecovery() const     { return !!(m_ulFCBFlags & mskFCBInitedForRecovery ); }
+INLINE VOID FCB::SetInitedForRecovery()         { Assert( IsLocked() ); AtomicExchangeSet( &m_ulFCBFlags, mskFCBInitedForRecovery ); }
+INLINE VOID FCB::ResetInitedForRecovery()       { Assert( IsLocked() ); AtomicExchangeReset( &m_ulFCBFlags, mskFCBInitedForRecovery ); }
 
-INLINE BOOL FCB::FDoingAdditionalInitializationDuringRecovery() const volatile { return !!( m_ulFCBFlags & mskFCBDoingAdditionalInitializationDuringRecovery ); }
+INLINE BOOL FCB::FDoingAdditionalInitializationDuringRecovery() const       { return !!(m_ulFCBFlags & mskFCBDoingAdditionalInitializationDuringRecovery ); }
+INLINE VOID FCB::SetDoingAdditionalInitializationDuringRecovery()           { Assert( IsLocked() ); AtomicExchangeSet( &m_ulFCBFlags, mskFCBDoingAdditionalInitializationDuringRecovery ); }
+INLINE VOID FCB::ResetDoingAdditionalInitializationDuringRecovery()         { Assert( IsLocked() ); AtomicExchangeReset( &m_ulFCBFlags, mskFCBDoingAdditionalInitializationDuringRecovery ); }
 
 INLINE BOOL FCB::FInList() const                { return m_fFCBInList; }
 INLINE VOID FCB::SetInList()                    { m_fFCBInList = fTrue; }
@@ -1628,9 +1630,9 @@ INLINE BOOL FCB::FPreread() const               { return !!(m_ulFCBFlags & mskFC
 INLINE VOID FCB::SetPreread()                   { Assert( IsLocked() ); AtomicExchangeSet( &m_ulFCBFlags, mskFCBPreread ); }
 INLINE VOID FCB::ResetPreread()                 { Assert( IsLocked() ); AtomicExchangeReset( &m_ulFCBFlags, mskFCBPreread ); }
 
-INLINE BOOL FCB::FSpaceInitialized() const volatile { return !!(m_ulFCBFlags & mskFCBSpaceInitialized ); }
-INLINE VOID FCB::SetSpaceInitialized()              { Assert( IsLocked() ); AtomicExchangeSet( &m_ulFCBFlags, mskFCBSpaceInitialized ); }
-INLINE VOID FCB::ResetSpaceInitialized()            { Assert( IsLocked() ); AtomicExchangeReset( &m_ulFCBFlags, mskFCBSpaceInitialized ); }
+INLINE BOOL FCB::FSpaceInitialized() const      { return !!(m_ulFCBFlags & mskFCBSpaceInitialized ); }
+INLINE VOID FCB::SetSpaceInitialized()          { Assert( IsLocked() ); AtomicExchangeSet( &m_ulFCBFlags, mskFCBSpaceInitialized ); }
+INLINE VOID FCB::ResetSpaceInitialized()        { Assert( IsLocked() ); AtomicExchangeReset( &m_ulFCBFlags, mskFCBSpaceInitialized ); }
 
 INLINE BOOL FCB::FTryPurgeOnClose() const       { return !!(m_ulFCBFlags & mskFCBTryPurgeOnClose ); }
 INLINE VOID FCB::SetTryPurgeOnClose()           { Assert( IsLocked() ); AtomicExchangeSet( &m_ulFCBFlags, mskFCBTryPurgeOnClose ); }
@@ -1943,7 +1945,7 @@ INLINE VOID FCB::AssertDDL()
 // =========================================================================
 // Hashing.
 
-INLINE VOID FCB::Release( BOOL fPreventMoveToAvail /* = fFalse */ )
+INLINE VOID FCB::Release()
 {
 #ifdef DEBUG
     FCB *pfcbT;
@@ -1964,7 +1966,7 @@ INLINE VOID FCB::Release( BOOL fPreventMoveToAvail /* = fFalse */ )
         Assert( pfcbT == this || ( FDeleteCommitted() && ObjidFDP() != pfcbT->ObjidFDP() ) );
     }
 #endif  //  DEBUG
-    DecrementRefCountAndUnlink_( pfucbNil, fTrue, fPreventMoveToAvail );
+    DecrementRefCountAndUnlink_( pfucbNil, fTrue );
 }
 
 INLINE BOOL FCB::FInHashTable( IFMP ifmp, PGNO pgnoFDP, FCB **ppfcb )

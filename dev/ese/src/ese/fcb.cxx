@@ -734,11 +734,12 @@ VOID FCB::UnlinkIDB( FCB *pfcbTable )
 //  NOTE: this is the proper channel for accessing an FCB; it uses the locking
 //      protocol setup by the FCB hash-table and FCB latch
 
-FCB *FCB::PfcbFCBGet( const IFMP ifmp, const PGNO pgnoFDP, FCBStateFlags* const pfcbsf, const BOOL fIncrementRefCount )
+FCB *FCB::PfcbFCBGet( const IFMP ifmp, const PGNO pgnoFDP, FCBStateFlags* const pfcbsf, const BOOL fIncrementRefCount, const BOOL fInitForRecovery, OBJID* const pobjid )
 {
     FCBStateFlags   fcbsf = fcbsfNone;
     INST            *pinst = PinstFromIfmp( ifmp );
     FCB             *pfcbT;
+    OBJID           objid = objidNil;
     FCBHash::ERR    errFCBHash;
     FCBHash::CLock  lockFCBHash;
     FCBHashKey      keyFCBHash( ifmp, pgnoFDP );
@@ -798,10 +799,6 @@ RetrieveFCB:
     //      using the existing abstraction.  But I don't think it's as safe, since
     //      I think that when we try to acquire the exclusive latch, we register
     //      ourselves as next for the latch.
-    //  SOMEONE: This can be simplified by not requiring a write latch on the fcb for refcount modification.
-    //          If the refcount is interlocked incremented while holding the fcbhash latch,
-    //          it will give the same lifetime guarantees for the fcb as currently implemented.
-    //          Note that it can be interlocked decremented any time without holding the fcbhash latch (just like today).
     if ( pfcbT->FNeedLock_() )
     {
         CSXWLatch::ERR errSXWLatch = pfcbT->m_sxwl.ErrAcquireExclusiveLatch();
@@ -885,6 +882,41 @@ RetrieveFCB:
     Assert( fcbsf == fcbsfNone );
     fcbsf |= fcbsfInitialized;
     fcbsf |= ( pfcbT->FDeletePending() ? fcbsfDeletePending : fcbsfNone );
+    objid = pfcbT->ObjidFDP();
+
+    // If this is the dummy FCB created by recovery, we need to fully populate
+    // it, make sure that the others wait while the first person finishes doing it
+
+    if ( pfcbT != pfcbNil && !fInitForRecovery && pfcbT->FInitedForRecovery() )
+    {
+        if ( !pfcbT->FDoingAdditionalInitializationDuringRecovery() )
+        {
+            Assert( pfcbT->IsLocked_( LOCK_TYPE::ltWrite ) );
+            pfcbT->SetDoingAdditionalInitializationDuringRecovery();
+        }
+        else
+        {
+            //  release write latch
+            pfcbT->Unlock_( LOCK_TYPE::ltWrite );
+
+            //  FCB is not finished initializing
+            //  update performance counter
+
+            PERFOpt( cFCBCacheStalls.Inc( pinst ) );
+
+            //  wait
+
+            UtilSleep( 10 );
+
+            //  try to get the FCB again
+
+            fcbsf = fcbsfNone;
+            objid = objidNil;
+
+            cRetries++;
+            goto RetrieveFCB;
+        }
+    }
 
     if ( pfcbT != pfcbNil )
     {
@@ -899,57 +931,20 @@ RetrieveFCB:
 SetStateAndReturn:
     //  set the state
     Assert( ( pfcbT == pfcbNil ) == ( fcbsf == fcbsfNone ) );           // Pointer and flag must agree.
+    Assert( ( pfcbT == pfcbNil ) == ( objid == objidNil ) );            // Pointer and OBJID must agree.
     Assert( ( fcbsf == fcbsfNone ) || ( fcbsf & fcbsfInitialized ) );   // Can't have any flags set if it's not initialized.
     if ( pfcbsf )
     {
         *pfcbsf = fcbsf;
     }
+    if ( pobjid )
+    {
+        *pobjid = objid;
+    }
 
     //  return the FCB
     Assert( ( pfcbNil == pfcbT ) || ( pfcbT->IsUnlocked_( LOCK_TYPE::ltShared ) && pfcbT->IsUnlocked_( LOCK_TYPE::ltWrite ) ) );
     return pfcbT;
-}
-
-
-// =========================================================================
-// FCB Init during recovery support.
-
-// Acquires mskFCBDoingAdditionalInitializationDuringRecovery locklessly.
-// Returns fTrue for the first thread through, fFalse otherwise.
-VOID FCB::AcquireAdditionalInitDuringRecovery()
-{
-    INST* pinst = PinstFromIfmp( Ifmp() );
-
-    for ( INT cRetries  = 0; true; cRetries++ )
-    {
-        // This could've been done locklessly but it is pointless.
-        // If another thread acquires this flag, then it is initializing the fcb under the write lock (a potentially heavy operation).
-        // We don't gain anything by spinning the cpu during that time. Better to wait for the write latch.
-
-        Lock_( LOCK_TYPE::ltWrite );
-        if ( !( m_ulFCBFlags & mskFCBDoingAdditionalInitializationDuringRecovery ) )
-        {
-            m_ulFCBFlags |= mskFCBDoingAdditionalInitializationDuringRecovery;
-            Unlock_( LOCK_TYPE::ltWrite );
-            return;
-        }
-
-        Unlock_( LOCK_TYPE::ltWrite );
-
-        //  Someone else is initializing the fcb
-        //  update performance counter
-        PERFOpt( cFCBCacheStalls.Inc( pinst ) );
-        AssertTrack( cRetries != 100000, "TooManyAdditionalInitDuringRecoveryRetries" );
-
-        //  wait
-        UtilSleep( 10 );
-    }
-}
-
-VOID FCB::ReleaseAdditionalInitDuringRecovery()
-{
-    Assert( IsLocked_( LOCK_TYPE::ltWrite ) );
-    m_ulFCBFlags &= ( ~mskFCBDoingAdditionalInitializationDuringRecovery );
 }
 
 
@@ -1178,7 +1173,7 @@ BOOL FCB::FScanAndPurge_(
 
         PERFOpt( cFCBAsyncScan.Inc( pinst, tce ) );
 
-        if ( pfcbToPurge->FCheckFreeAndPurge_( fThreshold ) )
+        if ( pfcbToPurge->FCheckFreeAndPurge_( ppib, fThreshold ) )
         {
             // pfcbPurge is now gone.
 
@@ -1405,9 +1400,10 @@ enum FCBPurgeFailReason : BYTE // fcbpfr
 //          etc... (everything that makes it free), we can purge the FCB
 
 BOOL FCB::FCheckFreeAndPurge_(
+    _In_ PIB *ppib,
     _In_ const BOOL fThreshold )
 {
-    INST            *pinst = PinstFromIfmp( Ifmp() );
+    INST            *pinst = PinstFromPpib( ppib );
 
     Assert( pinst->m_critFCBList.FOwner() );
     Assert( IsUnlocked_( LOCK_TYPE::ltShared ) );
@@ -1453,6 +1449,11 @@ BOOL FCB::FCheckFreeAndPurge_(
             fFCBPossiblyFree = fFalse;
             fcbpfr = fcbpfrDeletePending;
         }
+        else if ( FDomainDenyRead( ppib ) )
+        {
+            fFCBPossiblyFree = fFalse;
+            fcbpfr = fcbpfrDomainDenyRead;
+        }
         else if ( FOutstandingVersions_() )
         {
             fFCBPossiblyFree = fFalse;
@@ -1470,8 +1471,6 @@ BOOL FCB::FCheckFreeAndPurge_(
         }
         else
         {
-            EnforceSz( m_crefDomainDenyRead == 0, "FCBPurge_BadDenyReadRef" );
-            EnforceSz( m_crefDomainDenyWrite == 0, "FCBPurge_BadDenyWriteRef" );
             fFCBPossiblyFree = fTrue;
         }
 
@@ -3169,9 +3168,9 @@ VOID FCBAssertAllClean( INST *pinst )
 //      under the assumption that the FCB you are refcounting will
 //      not suddenly disappear (e.g. you own a cursor on it or know
 //      for a fact that someone else does and they will not close it)
-VOID FCB::IncrementRefCount( BOOL fOwnWriteLock /* = fFalse */ )
+VOID FCB::IncrementRefCount()
 {
-    IncrementRefCount_( fOwnWriteLock );
+    IncrementRefCount_( fFalse );
 }
 
 VOID FCB::IncrementRefCount_( BOOL fOwnWriteLock )
@@ -3286,13 +3285,13 @@ VOID FCB::DecrementRefCountAndUnlink_( FUCB *pfucb, const BOOL fLockList, const 
 
     Unlock_( LOCK_TYPE::ltWrite );
 
-    if ( fTryPurge && FTryPurgeOnClose() )
+    if ( fTryPurge && ( pfucbNil != pfucb ) && FTryPurgeOnClose() )
     {
         // We unlinked an FUCB from a table, and it was the last thing with
         // a refcount on the table.  Try to purge the FCB.  If we succeed,
         // it has to be the last reference to "this", as it may have
         // been purged.
-        BOOL fPurgeable = FCheckFreeAndPurge_( fFalse );
+        BOOL fPurgeable = FCheckFreeAndPurge_( pfucb->ppib, fFalse );
 
         if ( fPurgeable )
         {

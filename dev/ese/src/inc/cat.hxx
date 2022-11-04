@@ -816,9 +816,9 @@ ERR ErrCATGetColumnCallbackInfo(
     ULONG * const pchDependantColumns
     );
 
-ERR ErrCATInitCatalogFCB( PIB* ppib, FCB* pfcb );
-ERR ErrCATInitTempFCB( PIB* ppib, FCB* pfcb );
-ERR ErrCATInitFCB( PIB* ppib, FCB* pfcb, OBJID objidTable, const BOOL fSkipPgnoFDPLastSetTime );
+ERR ErrCATInitCatalogFCB( FUCB *pfucbTable );
+ERR ErrCATInitTempFCB( FUCB *pfucbTable );
+ERR ErrCATInitFCB( FUCB *pfucbTable, OBJID objidTable, const BOOL fSkipPgnoFDPLastSetTime );
 
 enum CATCheckIndicesFlags : ULONG  //  catcif
 {

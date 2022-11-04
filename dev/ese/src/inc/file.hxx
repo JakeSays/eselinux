@@ -64,39 +64,11 @@ INLINE VOID FILEFreeDefaultRecord( FUCB *pfucbFake )
 
 VOID FILETableMustRollback( PIB *ppib, FCB *pfcbTable );
 
-// Guard object to help with FCB lifetime.
-// Uses unique_ptr with a custom deleter to decrement FCB refcount when the FCB reference goes out of scope.
-// Purges (deletes) semi-intialized FCBs. Required because an FCB is only added to the inst's FCB list
-// after being fully initialized.
-class FCBRefDeleter
-{
-public:
-    void operator() ( FCB* pfcb );
-};
-
-// A reference to an FCB. Works with different FCB lifetime states and refcount to ensure proper access to an FCB.
-using FCBRef = std::unique_ptr<FCB, FCBRefDeleter>;
-
-enum OPENTYPE
-{
-    openNormal,             //  normal open cursor (may be either unique or non-unique btree)
-    openNormalNoTouch,      //  normal open cursor, doesn't read pgnoFDP
-    openNew                 //  open cursor on newly-created FDP
-};
-
-ERR ErrFILEIOpenFCB(
-    PIB         *ppib,
-    IFMP        ifmp,
-    PGNO        pgnoFDP,
-    OBJID       objidFDP,
-    OPENTYPE    opentype,
-    FCBRef&     fcbRef );
-
 ERR ErrFILEIInitializeFCB(
     PIB         *ppib,
     IFMP        ifmp,
     TDB         *ptdb,
-    FCB         *pfcbNew,
+    FCB         *ppfcbNew,
     IDB         *pidb,
     BOOL        fPrimary,
     PGNO        pgnoFDP,
@@ -107,9 +79,7 @@ VOID FILESetAllIndexMask( FCB *pfcbTable );
 ERR ErrFILEDeleteTable( PIB *ppib, IFMP ifmp, const CHAR *szTable, const BOOL fAllowTableDeleteSensitive = fFalse, const JET_GRBIT grbit = NO_GRBIT );
 
 FIELD *PfieldFCBFromColumnName( FCB *pfcb, _In_ PCSTR szColumnName );
-
-ERR ErrFILEFcbGet( PIB* ppib, IFMP ifmp, PGNO pgnoFDP, OBJID objidFDP, FCBRef& pfcbRef );
-ERR ErrFILEFcbGetNoTouch( PIB* ppib, IFMP ifmp, PGNO pgnoFDP, OBJID objidFDP, FCBRef& pfcbRef );
+    
 FCB *PfcbFCBFromIndexName( FCB *pfcbTable, _In_ PCSTR szName );
 
 struct FDPINFO
@@ -304,37 +274,6 @@ INLINE VOID FILEReleaseCurrentSecondary( FUCB *pfucb )
         if ( pfucb->u.pfcb->Pidb()->FIDBOwnedByFCB() || ( !pfucb->u.pfcb->FTemplateIndex() && !pfucb->u.pfcb->FDerivedIndex() ) )
         {
             pfucb->u.pfcb->Pidb()->DecrementCurrentIndex();
-        }
-    }
-}
-
-INLINE void FCBRefDeleter::operator()( FCB* pfcb )
-{
-    if ( pfcb != pfcbNil )
-    {
-        if ( pfcb->FInitialized() )
-        {
-            pfcb->Release( !pfcb->FTypeTable() /* fPreventMoveToAvail */ ); //only table FCBs may move to avail list
-        }
-        else
-        {
-            //  we own the FCB bcause we are in the create path (we're closing because the FCB was created
-            //      but not fully initialized, or because an error
-            //      occurred during FILEOpenTable())
-
-#ifdef DEBUG
-            pfcb->Lock();
-            pfcb->FucbList().LockForEnumeration();
-            Assert( pfcb->FucbList().Count() == 0 );
-            pfcb->FucbList().UnlockForEnumeration();
-            pfcb->Unlock();
-#endif
-
-            //  synchronously purge the FCB
-            Assert( pfcb->WRefCount() == 1 );   // we should be the only reference
-            pfcb->Release( fTrue /* fPreventMoveToAvail */ );
-            pfcb->PrepareForPurge();
-            pfcb->Purge();
         }
     }
 }

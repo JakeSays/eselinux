@@ -519,7 +519,6 @@ INLINE BOOL FFUCBSpace( const FUCB *pfucb )
 INLINE BOOL FFUCBUnique( const FUCB *pfucb )
 {
     Assert( pfcbNil != pfucb->u.pfcb );
-    Assert( pfucb->u.pfcb->FInitialized() );    // unique flag is only valid after full FCB initialization
 
     const BOOL  fUnique = ( pfucb->u.pfcb->FUnique() || FFUCBSpace( pfucb ) );
 

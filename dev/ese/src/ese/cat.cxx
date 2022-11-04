@@ -457,18 +457,17 @@ INLINE ERR ErrCATICreateCatalogIndexes(
     FUCB        *pfucbTableExtent;
     PGNO        pgnoIndexFDP;
     FCB         *pfcb = pfcbNil;
-    FCBRef      fcbRef;
 
     //  don't maintain secondary indexes on the shadow catalog.
 
     // Open cursor for space navigation
-    CallR( ErrFILEFcbGet( ppib, ifmp, pgnoFDPMSO, objidFDPMSO, fcbRef ) );
-    CallR( ErrDIROpen( ppib, fcbRef.get(), &pfucbTableExtent ) );
+    CallR( ErrDIROpen( ppib, pgnoFDPMSO, ifmp, &pfucbTableExtent ) );
 
     pfcb = pfucbTableExtent->u.pfcb;
 
     Assert( pfucbTableExtent != pfucbNil );
     Assert( !FFUCBVersioned( pfucbTableExtent ) );  // Verify won't be deferred closed.
+    Assert( pfcb != pfcbNil );
     Assert( !pfcb->FInitialized() );
     Assert( pfcb->Pidb() == pidbNil );
 
@@ -498,9 +497,9 @@ INLINE ERR ErrCATICreateCatalogIndexes(
 
 HandleError:
     Assert( pfcb->FInitialized() );
-    Assert( pfcb->WRefCount() == 2 ); // 1 for fcbRef, 1 for pfucbTableExtent
+    Assert( pfcb->WRefCount() == 1 );
 
-    //  force the FCB to be uninitialized so it will be purged by FCBRef deleter
+    //  force the FCB to be uninitialized so it will be purged by DIRClose
 
     pfcb->Lock();
     pfcb->CreateCompleteErr( errFCBUnusable );
@@ -2248,7 +2247,6 @@ HandleError:
 ERR ErrCATCreate( PIB *ppib, const IFMP ifmp, const BOOL fReplayCreateDbImplicitly )
 {
     ERR     err;
-    FCBRef  fcbRef;
     FUCB    *pfucb              = pfucbNil;
     PGNO    pgnoFDP;
     PGNO    pgnoFDPShadow;
@@ -2276,8 +2274,7 @@ ERR ErrCATCreate( PIB *ppib, const IFMP ifmp, const BOOL fReplayCreateDbImplicit
 
     //  allocate cursor
     //
-    CallR( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRef ) );
-    CallR( ErrDIROpen( ppib, fcbRef.get(), &pfucb ) );
+    CallR( ErrDIROpen( ppib, pgnoSystemRoot, ifmp, &pfucb ) );
     Assert( pfucbNil != pfucb );
     Assert( cpgMSOInitial > cpgTableMin );
     Call( ErrDIRCreateDirectory(
@@ -2320,8 +2317,6 @@ HandleError:
     {
         DIRClose( pfucb );
     }
-
-    fcbRef.reset();   // do we need to release the FCB before trx rollback?
 
     if( err < 0 )
     {
@@ -5456,10 +5451,12 @@ LOCAL VOID CATIFreeSecondaryIndexes( FCB *pfcbSecondaryIndexes )
 
 /*  get index info of a system table index
 /**/
-ERR ErrCATInitCatalogFCB( PIB* ppib, FCB* pfcb )
+ERR ErrCATInitCatalogFCB( FUCB *pfucbTable )
 {
     ERR         err;
-    const IFMP  ifmp                    = pfcb->Ifmp();
+    PIB         *ppib                   = pfucbTable->ppib;
+    const IFMP  ifmp                    = pfucbTable->ifmp;
+    FCB         *pfcb                   = pfucbTable->u.pfcb;
     TDB         *ptdb                   = ptdbNil;
     IDB         idb( PinstFromIfmp( ifmp ) );
     UINT        iIndex;
@@ -5535,7 +5532,7 @@ ERR ErrCATInitCatalogFCB( PIB* ppib, FCB* pfcb )
         }
         else if ( !fShadow )
         {
-            FCBRef  fcbRefSecondaryIndex;
+            FUCB    *pfucbSecondaryIndex;
             PGNO    pgnoIndexFDP;
             OBJID   objidIndexFDP;
 
@@ -5561,33 +5558,46 @@ ERR ErrCATInitCatalogFCB( PIB* ppib, FCB* pfcb )
             }
 
             Assert( idb.FUnique() );    //  all catalog indexes are unique  - note redundant w/ above assert.
+            Call( ErrDIROpenNoTouch(
+                        ppib,
+                        ifmp,
+                        pgnoIndexFDP,
+                        objidIndexFDP,
+                        fTrue,                  //  all catalog indexes are unique
+                        &pfucbSecondaryIndex,
+                        fTrue ) );              //  will initialize FCB
 
-            Call( ErrFILEFcbGetNoTouch( ppib, ifmp, pgnoIndexFDP, objidIndexFDP, fcbRefSecondaryIndex ) );
+            Assert( !pfucbSecondaryIndex->u.pfcb->FInitialized() || pfucbSecondaryIndex->u.pfcb->FInitedForRecovery() );
 
-            Assert( !fcbRefSecondaryIndex->FInitialized() || fcbRefSecondaryIndex->FInitedForRecovery() );
-            Call( ErrFILEIInitializeFCB(
+            err = ErrFILEIInitializeFCB(
                     ppib,
                     ifmp,
                     ptdb,
-                    fcbRefSecondaryIndex.get(),
+                    pfucbSecondaryIndex->u.pfcb,
                     &idb,
                     fFalse,
                     pgnoIndexFDP,
                     PSystemSpaceHints(eJSPHDefaultUserTable),
-                    NULL ) );
+                    NULL );
+            if ( err < 0 )
+            {
+                DIRClose( pfucbSecondaryIndex );
+                goto HandleError;
+            }
 
-            fcbRefSecondaryIndex->SetPfcbNextIndex( pfcbSecondaryIndexes );
-            pfcbSecondaryIndexes = fcbRefSecondaryIndex.get();
+            pfucbSecondaryIndex->u.pfcb->SetPfcbNextIndex( pfcbSecondaryIndexes );
+            pfcbSecondaryIndexes = pfucbSecondaryIndex->u.pfcb;
 
-            Assert( !fcbRefSecondaryIndex->FInList() );
+            Assert( !pfucbSecondaryIndex->u.pfcb->FInList() );
 
-            //  mark the secondary index fcb as being initialized successfully
-            //  this protects it from being purged when fcbRef goes out of scope
+            //  mark the secondary index as being initialized successfully
 
-            fcbRefSecondaryIndex->Lock();
-            fcbRefSecondaryIndex->CreateComplete();
-            fcbRefSecondaryIndex->ResetInitedForRecovery();
-            fcbRefSecondaryIndex->Unlock();
+            pfucbSecondaryIndex->u.pfcb->Lock();
+            pfucbSecondaryIndex->u.pfcb->CreateComplete();
+            pfucbSecondaryIndex->u.pfcb->ResetInitedForRecovery();
+            pfucbSecondaryIndex->u.pfcb->Unlock();
+
+            DIRClose( pfucbSecondaryIndex );
         }
     }
 
@@ -7721,7 +7731,7 @@ LOCAL ERR ErrCATIInitIndexFCBs(
         }
         else
         {
-            FCBRef      fcbRefSecondaryIndex;
+            FUCB    *pfucbSecondaryIndex;
 
             Assert( pgnoIndexFDP != pfcb->PgnoFDP() || g_fRepair );
 
@@ -7733,36 +7743,48 @@ LOCAL ERR ErrCATIInitIndexFCBs(
                 *pfSecondaryPgnoFDPLastSetRequired = true;
             }
 
-            Call( ErrFILEFcbGetNoTouch( ppib, ifmp, pgnoIndexFDP, objidIndexFDP, fcbRefSecondaryIndex ) );
+            Call( ErrDIROpenNoTouch(
+                        ppib,
+                        ifmp,
+                        pgnoIndexFDP,
+                        objidIndexFDP,
+                        idb.FUnique(),
+                        &pfucbSecondaryIndex,
+                        fTrue ) );              // Will initialize FCB
+            Assert( !pfucbSecondaryIndex->u.pfcb->FInitialized() || pfucbSecondaryIndex->u.pfcb->FInitedForRecovery() );
 
-            Assert( !fcbRefSecondaryIndex->FInitialized() || fcbRefSecondaryIndex->FInitedForRecovery() );
-            Call( ErrFILEIInitializeFCB(
+            err = ErrFILEIInitializeFCB(
                     ppib,
                     ifmp,
                     ptdb,
-                    fcbRefSecondaryIndex.get(),
+                    pfucbSecondaryIndex->u.pfcb,
                     &idb,
                     fFalse,
                     pgnoIndexFDP,
                     &jsph,
-                    pfcbTemplate ) );
+                    pfcbTemplate );
+            if ( err < 0 )
+            {
+                DIRClose( pfucbSecondaryIndex );
+                goto HandleError;
+            }
+            Assert( pfucbSecondaryIndex->u.pfcb->ObjidFDP() == objidIndexFDP );
 
-            Assert( fcbRefSecondaryIndex->ObjidFDP() == objidIndexFDP );
+            pfucbSecondaryIndex->u.pfcb->SetFileTimePgnoFDPLastSet( ftPgnoFDPLastSet );
+            pfucbSecondaryIndex->u.pfcb->SetPfcbNextIndex( pfcbSecondaryIndexes );
+            pfcbSecondaryIndexes = pfucbSecondaryIndex->u.pfcb;
 
-            fcbRefSecondaryIndex->SetFileTimePgnoFDPLastSet( ftPgnoFDPLastSet );
-            fcbRefSecondaryIndex->SetPfcbNextIndex( pfcbSecondaryIndexes );
-            pfcbSecondaryIndexes = fcbRefSecondaryIndex.get();
+            Assert( !pfucbSecondaryIndex->u.pfcb->FInList() );
 
-            Assert( !fcbRefSecondaryIndex->FInList() );
+            //  mark the secondary index as being initialized successfully
 
-            //  mark the secondary index fcb as being initialized successfully
-            //  this protects it from being purged when fcbRef goes out of scope
+            pfucbSecondaryIndex->u.pfcb->Lock();
+            pfucbSecondaryIndex->u.pfcb->SetInitialIndex();
+            pfucbSecondaryIndex->u.pfcb->CreateComplete();
+            pfucbSecondaryIndex->u.pfcb->ResetInitedForRecovery();
+            pfucbSecondaryIndex->u.pfcb->Unlock();
 
-            fcbRefSecondaryIndex->Lock();
-            fcbRefSecondaryIndex->SetInitialIndex();
-            fcbRefSecondaryIndex->CreateComplete();
-            fcbRefSecondaryIndex->ResetInitedForRecovery();
-            fcbRefSecondaryIndex->Unlock();
+            DIRClose( pfucbSecondaryIndex );
         }
 
         Assert( locOnCurBM == pfucbCatalog->locLogical );
@@ -8177,12 +8199,14 @@ HandleError:
     return err;
 }
 
-ERR ErrCATInitFCB( PIB* ppib, FCB* pfcb, OBJID objidTable, const BOOL fSkipPgnoFDPLastSetTime )
+ERR ErrCATInitFCB( FUCB *pfucbTable, OBJID objidTable, const BOOL fSkipPgnoFDPLastSetTime )
 {
     ERR         err;
+    PIB         *ppib                   = pfucbTable->ppib;
     INST        *pinst                  = PinstFromPpib( ppib );
-    const IFMP  ifmp                    = pfcb->Ifmp();
+    const IFMP  ifmp                    = pfucbTable->ifmp;
     FUCB        *pfucbCatalog           = pfucbNil;
+    FCB         *pfcb                   = pfucbTable->u.pfcb;
     TDB         *ptdb                   = ptdbNil;
     FCB         *pfcbTemplateTable      = pfcbNil;
     DATA        dataField;
@@ -8208,8 +8232,8 @@ ERR ErrCATInitFCB( PIB* ppib, FCB* pfcb, OBJID objidTable, const BOOL fSkipPgnoF
     }
 
     Assert( !pfcb->FInitialized() || pfcb->FInitedForRecovery() );
-    Assert( objidTable == pfcb->ObjidFDP()
-            || objidNil ==pfcb->ObjidFDP() && g_fRepair );
+    Assert( objidTable == pfucbTable->u.pfcb->ObjidFDP()
+            || objidNil == pfucbTable->u.pfcb->ObjidFDP() && g_fRepair );
 
     CallR( ErrCATOpen( ppib, ifmp, &pfucbCatalog ) );
     Assert( pfucbNil != pfucbCatalog );
@@ -8626,9 +8650,11 @@ HandleError:
 
 
 
-ERR ErrCATInitTempFCB( PIB* ppib, FCB* pfcb )
+ERR ErrCATInitTempFCB( FUCB *pfucbTable )
 {
     ERR     err;
+    PIB     *ppib = pfucbTable->ppib;
+    FCB     *pfcb = pfucbTable->u.pfcb;
     TDB     *ptdb = ptdbNil;
     TCIB    tcib;
     INST    *pinst = PinstFromPpib( ppib );
@@ -8639,7 +8665,7 @@ ERR ErrCATInitTempFCB( PIB* ppib, FCB* pfcb )
     /*  created, in which case there are no primary or secondary indexes yet.
     /**/
 
-    CallR( ErrTDBCreate( pinst, pfcb->Ifmp(), &ptdb, &tcib ) );
+    CallR( ErrTDBCreate( pinst, pfucbTable->ifmp, &ptdb, &tcib ) );
 
     ptdb->SetLVChunkMost( (LONG)UlParam( JET_paramLVChunkSizeMost ) );
 
@@ -15740,7 +15766,6 @@ ERR ErrCATGetCursorsFromObjid(
     ERR err = JET_errSuccess;
     PGNO pgnoFDPParent = pgnoNull;
     PGNO pgnoFDP = pgnoNull;
-    FCBRef fcbRef;
     FUCB* pfucb = pfucbNil;
     FUCB* pfucbParent = pfucbNil;
 
@@ -15750,8 +15775,7 @@ ERR ErrCATGetCursorsFromObjid(
         Assert( objidParent == objidNil );
         Assert( sysobj == sysobjNil );
         pgnoFDP = pgnoSystemRoot;
-        Call( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRef ) );
-        Call( ErrDIROpen( ppib, fcbRef.get(), &pfucb ) );
+        Call( ErrDIROpen( ppib, pgnoSystemRoot, ifmp, &pfucb ) );
         pgnoFDPParent = pgnoNull;
         pfucbParent = pfucbNil;
     }
@@ -15779,8 +15803,7 @@ ERR ErrCATGetCursorsFromObjid(
         if ( sysobj == sysobjTable )
         {
             pgnoFDPParent = pgnoSystemRoot;
-            Call( ErrFILEFcbGet( ppib, ifmp, pgnoFDPParent, objidSystemRoot, fcbRef ) );
-            Call( ErrDIROpen( ppib, fcbRef.get(), &pfucbParent ) );
+            Call( ErrDIROpen( ppib, pgnoFDPParent, ifmp, &pfucbParent ) );
 
             pgnoFDP = pgnoFDPTable;
             pfucb = pfucbTable;

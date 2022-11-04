@@ -207,6 +207,63 @@ HandleError:
 //  Open/Close routines
 //
 
+//  opens a cursor on given ifmp, pgnoFDP
+//
+ERR ErrDIROpen( PIB *ppib, PGNO pgnoFDP, IFMP ifmp, FUCB **ppfucb, BOOL fWillInitFCB )
+{
+    ERR     err;
+    FUCB    *pfucb;
+
+    CheckPIB( ppib );
+
+#ifdef DEBUG
+    INST *pinst = PinstFromPpib( ppib );
+    if ( !pinst->FRecovering()
+         && pinst->m_fSTInit == fSTInitDone
+         && !Ptls()->FIsTaskThread()
+         && !Ptls()->fIsRCECleanup )
+    {
+        CheckDBID( ppib, ifmp );
+    }
+#endif
+
+    CallR( ErrBTOpen( ppib, pgnoFDP, ifmp, &pfucb, openNormal, fWillInitFCB ) );
+    DIRInitOpenedCursor( pfucb, pfucb->ppib->Level() );
+
+    //  set return pfucb
+    //
+    *ppfucb = pfucb;
+    return JET_errSuccess;
+}
+
+//  open cursor, don't touch root page
+ERR ErrDIROpenNoTouch( PIB *ppib, IFMP ifmp, PGNO pgnoFDP, OBJID objidFDP, BOOL fUnique, FUCB **ppfucb, BOOL fWillInitFCB )
+{
+    ERR     err;
+    FUCB    *pfucb;
+
+    CheckPIB( ppib );
+
+#ifdef DEBUG
+    INST *pinst = PinstFromPpib( ppib );
+    if ( !pinst->FRecovering()
+         && pinst->m_fSTInit == fSTInitDone
+         && !Ptls()->FIsTaskThread()
+         && !Ptls()->fIsRCECleanup )
+    {
+        CheckDBID( ppib, ifmp );
+    }
+#endif
+
+    CallR( ErrBTOpenNoTouch( ppib, ifmp, pgnoFDP, objidFDP, fUnique, &pfucb, fWillInitFCB ) );
+    DIRInitOpenedCursor( pfucb, pfucb->ppib->Level() );
+
+    //  set return pfucb
+    //
+    *ppfucb = pfucb;
+    return JET_errSuccess;
+}
+
 //  open cursor on given FCB
 //
 ERR ErrDIROpen( PIB *ppib, FCB *pfcb, FUCB **ppfucb )

@@ -11,12 +11,69 @@
 //
 
 
+enum OPENTYPE
+{
+    openNormal,             //  normal open cursor (may be either unique or non-unique btree)
+    openNormalUnique,       //  normal open cursor (unique btree only)
+    openNormalNonUnique,    //  normal open cursor (non-unique btree only)
+    openNew                 //  open cursor on newly-created FDP
+};
+
 //  **************************************
 //  open/close opearations
 //
 ERR ErrBTOpen( PIB *ppib, FCB *pfcb, FUCB **ppfucb, BOOL fAllowReuse = fTrue );
 ERR ErrBTOpenByProxy( PIB *ppib, FCB *pfcb, FUCB **ppfucb, const LEVEL level );
 VOID BTClose( FUCB *pfucb );
+
+ERR ErrBTIOpen(
+    PIB             *ppib,
+    const IFMP      ifmp,
+    const PGNO      pgnoFDP,
+    const OBJID     objidFDP,
+    const OPENTYPE  opentype,
+    FUCB            **ppfucb,
+    BOOL            fWillInitFCB );
+
+INLINE ERR ErrBTOpen(
+    PIB             *ppib,
+    const PGNO      pgnoFDP,
+    const IFMP      ifmp,
+    FUCB            **ppfucb,
+    const OPENTYPE  opentype = openNormal,
+    BOOL            fWillInitFCB = fFalse )
+{
+    Assert( openNormal == opentype || openNew == opentype );
+    return ErrBTIOpen(
+                ppib,
+                ifmp,
+                pgnoFDP,
+                objidNil,
+                opentype,
+                ppfucb,
+                fWillInitFCB );
+}
+
+//  open cursor, don't touch root page
+INLINE ERR ErrBTOpenNoTouch(
+    PIB             *ppib,
+    const IFMP      ifmp,
+    const PGNO      pgnoFDP,
+    const OBJID     objidFDP,
+    const BOOL      fUnique,
+    FUCB            **ppfucb,
+    BOOL            fWillInitFCB = fFalse )
+{
+    Assert( objidNil != objidFDP );
+    return ErrBTIOpen(
+                ppib,
+                ifmp,
+                pgnoFDP,
+                objidFDP,
+                fUnique ? openNormalUnique : openNormalNonUnique,
+                ppfucb,
+                fWillInitFCB );
+}
 
 
 //  **************************************

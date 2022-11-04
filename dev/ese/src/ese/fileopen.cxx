@@ -1420,14 +1420,12 @@ ERR ErrFILEIOpenTable(
     ERR         err;
     ERR         wrnSurvives             = JET_errSuccess;
     FUCB        *pfucb                  = pfucbNil;
-    FCB         *pfcb                   = pfcbNil;
-    FCBRef      fcbRef;
+    FCB         *pfcb;
     CHAR        szTable[JET_cbNameMost+1];
     PGNO        pgnoFDP                 = pgnoNull;
     OBJID       objidTable              = objidNil;
     BOOL        fInTransaction          = fFalse;
     BOOL        fInitialisedCursor      = fFalse;
-    BOOL        fAddlInitDuringRecovery = fFalse;
     TABLECLASS  tableclass              = tableclassNone;
 
     Assert( ppib != ppibNil );
@@ -1619,8 +1617,7 @@ ERR ErrFILEIOpenTable(
     Assert( objidNil != objidTable );
     Assert( objidTable > objidSystemRoot );
 
-    Call( ErrFILEFcbGetNoTouch( ppib, ifmp, pgnoFDP, objidTable, fcbRef ) );
-    Call( ErrDIROpen( ppib, fcbRef.get(), &pfucb ) );
+    Call( ErrDIROpenNoTouch( ppib, ifmp, pgnoFDP, objidTable, fTrue, &pfucb, fTrue ) );
     Assert( pfucbNil != pfucb );
 
     pfcb = pfucb->u.pfcb;
@@ -1681,20 +1678,8 @@ ERR ErrFILEIOpenTable(
     //  if we're opening after table creation, the FCB shouldn't be initialised
     Assert( !( grbit & JET_bitTableCreate ) || !pfcb->FInitialized() );
 
-    if ( pfcb->FInitedForRecovery() )
-    {
-        // If we find a partially initialized FCB (created by redo), we need to fully initialize it.
-        // Acquire additional init flag, which would only allow 1 thread at a time through for initialization.
-        // The first thread through will go in to the init block below.
-        Assert( pfcb->FInitialized() ); // FCB is in a quasi-initialized state
-
-        pfcb->AcquireAdditionalInitDuringRecovery();
-        fAddlInitDuringRecovery = fTrue;
-    }
-
-    // Only one thread (the one that created a new FCB) could possibly get to this point with an uninitialized FCB,
-    // because FCB::PFcbGet() doesn't return uninitalized FCBs (it spin-waits for them to be initialized).
-    // Which is why we don't have to grab the FCB's critical section.
+    // Only one thread could possibly get to this point with an uninitialized
+    // FCB, which is why we don't have to grab the FCB's critical section.
     if ( !pfcb->FInitialized() || pfcb->FInitedForRecovery() )
     {
         if ( fInTransaction )
@@ -1708,12 +1693,12 @@ ERR ErrFILEIOpenTable(
         switch ( ttSubject )
         {
             case tt::System:
-                Call( ErrCATInitCatalogFCB( ppib, pfcb ) );
+                Call( ErrCATInitCatalogFCB( pfucb ) );
                 break;
 
             case tt::Temp:
                 Assert( !( grbit & JET_bitTableDelete ) );
-                Call( ErrCATInitTempFCB( ppib, pfcb ) );
+                Call( ErrCATInitTempFCB( pfucb ) );
                 break;
 
             case tt::ExtentPageCountCache:
@@ -1724,7 +1709,7 @@ ERR ErrFILEIOpenTable(
                 
                 //  initialize the table's FCB
                 //
-                Call( ErrCATInitFCB( ppib, pfcb, objidTable, !( grbit & JET_bitAllowPgnoFDPLastSetTime ) ) );
+                Call( ErrCATInitFCB( pfucb, objidTable, !( grbit & JET_bitAllowPgnoFDPLastSetTime ) ) );
                 
                 const ULONG cPageReadAfter = Ptls()->threadstats.cPageRead;
                 const ULONG cPagePrereadAfter = Ptls()->threadstats.cPagePreread;
@@ -1790,12 +1775,6 @@ ERR ErrFILEIOpenTable(
 
         pfcb->CreateComplete();
         pfcb->ResetInitedForRecovery();
-
-        if ( fAddlInitDuringRecovery )
-        {
-            pfcb->ReleaseAdditionalInitDuringRecovery();
-            fAddlInitDuringRecovery = fFalse;
-        }
 
         err = ErrFILEICheckAndSetMode( pfucb, grbit ) + ErrFaultInjection( 38304 );
 
@@ -1988,20 +1967,6 @@ ERR ErrFILEIOpenTable(
     return err;
 
 HandleError:
-    if ( fAddlInitDuringRecovery )
-    {
-        Assert( err < JET_errSuccess );
-        pfcb->Lock();
-
-        // Error duing init means that we should be leaving the FCB in a semi-initialized state,
-        // the same state we initially encountered.
-        // The next thread to acquire addl init flag will re-attempt initialization.
-        EnforceSz( pfcb->FInitedForRecovery(), "FCBAddlInit_BadState" );
-
-        pfcb->ReleaseAdditionalInitDuringRecovery();
-        pfcb->Unlock();
-    }
-
     Assert( pfucbNil != pfucb || !fInitialisedCursor );
     if ( pfucbNil != pfucb )
     {
@@ -2014,8 +1979,6 @@ HandleError:
             DIRClose( pfucb );
         }
     }
-
-    fcbRef.reset();   // do we need to release the FCB before trx rollback?
 
     if ( fInTransaction )
     {
@@ -2322,132 +2285,6 @@ VOID FILETableMustRollback( PIB *ppib, FCB *pfcbTable )
 }
 
 
-// Latches pgnoFDP and reads objidFDP off of the PGHDR.
-LOCAL ERR ErrFILEIGetObjidFromPgnoFDP( PIB* ppib, IFMP ifmp, PGNO pgnoFDP, OBJID* pobjidFDP )
-{
-    ERR     err;
-
-    if ( pgnoFDP == pgnoSystemRoot )
-    {
-        *pobjidFDP = objidSystemRoot;
-        return JET_errSuccess;
-    }
-    else if ( FCATSystemTable( pgnoFDP ) )
-    {
-        *pobjidFDP = ObjidCATTable( pgnoFDP );
-        return JET_errSuccess;
-    }
-    else
-    {
-        CSR csr;
-        CallR( csr.ErrGetReadPage( ppib, ifmp, pgnoFDP, bflfDefault ) );
-
-        *pobjidFDP = csr.Cpage().ObjidFDP();
-        Assert( *pobjidFDP != objidNil );
-        csr.ReleasePage();
-        return JET_errSuccess;  // clobber warnings
-    }
-}
-
-
-// Creates a new FCB, and adds it to the FCB hash and the inst's FCB list.
-// Sets the following essential properties on the FCB:
-//   - objidFDP
-// Optional properties are set later in the FCB lifetime. They include:
-//   - Schema/metadata info (rec info, index info, unique/non-unique etc), set by ErrFILEIInitializeFCB().
-//   - Space header (pgnoOE, pgnoAE), by ErrBTOpen(), or deferred initialized by space (in case of ErrBTOpenNoTouch()).
-// Note that the FCB is considered ill-formed without the essential properties set.
-// But may be usable in some limited form without the optional properties set (e.g. during recovery).
-ERR ErrFILEIOpenFCB(
-    PIB         *ppib,
-    IFMP        ifmp,
-    PGNO        pgnoFDP,
-    OBJID       objidFDP,
-    OPENTYPE    opentype,
-    FCBRef&     fcbRef )
-{
-    ERR             err         = JET_errSuccess;
-    FCB             *pfcb       = pfcbNil;
-
-    // We are creating an FCB for a new objid, its catalog entry or pgnoFDP may not be initialized yet.
-    if ( opentype != openNew )
-    {
-        if ( objidFDP == objidNil )
-        {
-            // System tables have constant objids.
-            // There is no reason for the caller not to pass them in (except repair that may not have enough context).
-            Assert( !FCATBaseSystemFDP( pgnoFDP ) || g_fRepair );
-            Assert( opentype != openNormalNoTouch );    // we need to latch the pgnoFDP here
-
-            Call( ErrFILEIGetObjidFromPgnoFDP( ppib, ifmp, pgnoFDP, &objidFDP ) );
-        }
-    }
-
-    // Create a new FCB and add to FCB hash.
-    // Only 1 thread gets past this point with JET_errSuccess.
-    Call( FCB::ErrCreate( ppib, ifmp, pgnoFDP, &pfcb ) );
-
-    //  the creation was successful
-
-    Assert( pfcb->IsLocked() );
-    Assert( pfcb->FTypeNull() );                // No fcbtype yet.
-    Assert( pfcb->Ifmp() == ifmp );
-    Assert( pfcb->PgnoFDP() == pgnoFDP );
-    Assert( !pfcb->FInitialized() );
-    Assert( !pfcb->FSpaceInitialized() );
-    Assert( pfcb->WRefCount() == 0 );
-
-    pfcb->SetObjidFDP( objidFDP );
-
-    // Increment refcount and set guard object.
-    pfcb->IncrementRefCount( fTrue /* fOwnWriteLock */ );
-    fcbRef.reset( pfcb );
-
-    pfcb->Unlock();
-
-    if ( pgnoFDP == pgnoSystemRoot )
-    {
-        // SPECIAL CASE: For database cursor, we've got all the
-        // information we need.
-
-        //  when opening db cursor, always force to check the root page
-        Assert( objidNil == objidFDP || objidSystemRoot == pfcb->ObjidFDP() );
-
-        pfcb->Lock();
-        pfcb->SetTypeDatabase();
-        pfcb->CreateComplete(); // fcb is marked as initialized
-        pfcb->Unlock();
-
-        //  insert this FCB into the global list, as it is fully initialized
-        pfcb->InsertList();
-    }
-
-    // Initialize space properties.
-    // Some codepaths require space properties to be cached on the FCB right after creation.
-
-    if ( opentype == openNormal )
-    {
-        Call( ErrSPInitFCB( ppib, pfcb ) );
-    }
-    else
-    {
-        Assert( opentype == openNew || opentype == openNormalNoTouch );
-    }
-
-    // Finish creating this FCB, non-database FCBs are not fully initialized yet.
-    // Caller must deal with the rest of the initialization sequence.
-    Assert( pfcb->WRefCount() == 1 );
-    return err;
-
-HandleError:
-    // FCB creation can't race with anything else if we are creating a new object.
-    Assert( err != errFCBExists || opentype != openNew );
-
-    fcbRef.reset(); // return NULL
-    return err;
-}
-
-
 ERR ErrFILEIInitializeFCB(
     PIB         *ppib,
     IFMP        ifmp,
@@ -2474,7 +2311,6 @@ ERR ErrFILEIInitializeFCB(
         pfcbNew->SetPtdb( ptdb );
         pfcbNew->Lock();
         pfcbNew->SetPrimaryIndex();
-        pfcbNew->SetUnique();   // primary index is always unique
         Assert( !pfcbNew->FSequentialIndex() );
         if ( pidbNil == pidb )
         {
@@ -2493,9 +2329,6 @@ ERR ErrFILEIInitializeFCB(
 
         pfcbNew->Lock();
         pfcbNew->SetTypeSecondaryIndex();
-
-        Assert( pidb != NULL );
-        pidb->FUnique() ? pfcbNew->SetUnique() : pfcbNew->SetNonUnique();
         pfcbNew->Unlock();
     }
 
@@ -2562,77 +2395,6 @@ HandleError:
     Assert( err < 0 );
     Assert( pfcbNew->Pidb() == pidbNil );       // Verify IDB not allocated.
     return err;
-}
-
-
-LOCAL ERR ErrFILEIFcbGet( PIB* ppib, IFMP ifmp, PGNO pgnoFDP, OBJID objidFDP, OPENTYPE opentype, FCBRef& fcbRef )
-{
-    ERR             err = JET_errSuccess;
-    FCBStateFlags   fcbsf;
-    ULONG           cRetries = 0;
-
-RetrieveFCB:
-    AssertTrack( cRetries != 100000, "TooManyFcbOpenRetries" );
-
-    //  get the FCB for the given ifmp/pgnoFDP
-
-    fcbRef.reset( FCB::PfcbFCBGet( ifmp, pgnoFDP, &fcbsf, fTrue /* fIncrementRefcount */ ) );
-    if ( fcbRef.get() == pfcbNil )
-    {
-        //  the FCB does not exist
-
-        Assert( fcbsfNone == fcbsf );
-
-        //  try to create a new FCB
-
-        err = ErrFILEIOpenFCB( ppib, ifmp, pgnoFDP, objidFDP, opentype, fcbRef );
-        Assert( err <= JET_errSuccess );        // Shouldn't return warnings.
-
-        if ( err == errFCBExists )
-        {
-
-            //  we failed because someone else was racing to create
-            //      the same FCB that we want, but they beat us to it
-
-            //  try to get the FCB again
-
-            err = JET_errSuccess;
-            UtilSleep( 10 );
-            cRetries++;
-            goto RetrieveFCB;
-        }
-        Call( err );
-    }
-    else
-    {
-        if ( fcbsf & fcbsfInitialized )
-        {
-            Assert( fcbRef->WRefCount() >= 1);
-        }
-        else
-        {
-            FireWall( "DeprecatedSentinelFcbBtOpen" ); // Sentinel FCBs are believed deprecated
-            Assert( !FFMPIsTempDB( ifmp ) );     // Sentinels not used by sort/temp. tables.
-
-            // If we encounter a sentinel, it means the
-            // table has been locked for subsequent deletion.
-            fcbRef.reset();
-            err = ErrERRCheck( JET_errTableLocked );
-        }
-    }
-
-HandleError:
-    return err;
-}
-
-ERR ErrFILEFcbGet( PIB* ppib, IFMP ifmp, PGNO pgnoFDP, OBJID objidFDP, FCBRef& pfcbRef )
-{
-    return ErrFILEIFcbGet( ppib, ifmp, pgnoFDP, objidFDP, openNormal, pfcbRef );
-}
-
-ERR ErrFILEFcbGetNoTouch( PIB* ppib, IFMP ifmp, PGNO pgnoFDP, OBJID objidFDP, FCBRef& pfcbRef )
-{
-    return ErrFILEIFcbGet( ppib, ifmp, pgnoFDP, objidFDP, openNormalNoTouch, pfcbRef );
 }
 
 

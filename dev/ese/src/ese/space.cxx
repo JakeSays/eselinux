@@ -2338,13 +2338,11 @@ HandleError:
 ERR ErrSPGetLastExtent( _Inout_ PIB * ppib, _In_ const IFMP ifmp, _Out_ EXTENTINFO * pextinfo )
 {
     ERR     err;
-    FCBRef  fcbRef;
     FUCB    *pfucb = pfucbNil;
     FUCB    *pfucbOE = pfucbNil;
     DIB     dib;
 
-    CallR( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRef ) );
-    CallR( ErrBTOpen( ppib, fcbRef.get(), &pfucb ) );
+    CallR( ErrBTOpen( ppib, pgnoSystemRoot, ifmp, &pfucb, openNormal, fTrue ) );
     Assert( pfucbNil != pfucb );
 
     PIBTraceContextScope tcScope = pfucb->ppib->InitTraceContextScope();
@@ -2357,23 +2355,14 @@ ERR ErrSPGetLastExtent( _Inout_ PIB * ppib, _In_ const IFMP ifmp, _Out_ EXTENTIN
         Assert( PinstFromPpib( ppib )->FRecovering() );
         Assert( pfucb->u.pfcb->FInitedForRecovery() );
 
-        pfucb->u.pfcb->AcquireAdditionalInitDuringRecovery();
-
         //  pgnoOE and pgnoAE need to be obtained
         //
-        err = ErrSPInitFCB( ppib, fcbRef.get() );
+        Call( ErrSPInitFCB( pfucb ) );
 
         pfucb->u.pfcb->Lock();
-        if ( err >= JET_errSuccess )
-        {
-            pfucb->u.pfcb->ResetInitedForRecovery();
-        }
-
-        pfucb->u.pfcb->ReleaseAdditionalInitDuringRecovery();
+        pfucb->u.pfcb->ResetInitedForRecovery();
         pfucb->u.pfcb->Unlock();
-        Call( err );
     }
-
     Assert( pfucb->u.pfcb->FSpaceInitialized() );
     Assert( pfucb->u.pfcb->PgnoOE() != pgnoNull );
 
@@ -2422,39 +2411,14 @@ HandleError:
 }
 
 
-LOCAL ERR ErrSPIOpenAndGotoRoot( PIB* ppib, FCB* pfcb, FUCB** ppfucb )
-{
-    ERR     err;
-    FUCB*   pfucb;
-
-    CallR( ErrBTOpen( ppib, pfcb, &pfucb ) );
-    Assert( pfucbNil != pfucb );
-    Assert( pfcbNil != pfucb->u.pfcb );
-    Assert( pfucb->u.pfcb->FInitialized() );
-
-    err = ErrBTIGotoRoot( pfucb, latchRIW );
-    if ( err < JET_errSuccess )
-    {
-        BTClose( pfucb );
-    }
-    else
-    {
-        Assert( latchRIW == Pcsr( pfucb )->Latch() );
-        Assert( pcsrNil == pfucb->pcsrRoot );
-        pfucb->pcsrRoot = Pcsr( pfucb );
-
-        *ppfucb = pfucb;
-    }
-
-    return err;
-}
-
-
 //  Validate I have not unintentionally changed SPACE_HEADER size.
 C_ASSERT( sizeof(SPACE_HEADER) == 16 );
 
-LOCAL VOID SPIInitFCB( FCB * pfcb, CSR* pcsr )
+LOCAL VOID SPIInitFCB( FUCB * pfucb, const BOOL fDeferredInit )
 {
+    CSR             * pcsr  = ( fDeferredInit ? pfucb->pcsrRoot : Pcsr( pfucb ) );
+    FCB             * pfcb  = pfucb->u.pfcb;
+
     Assert( pcsr->FLatched() );
 
     //  need to acquire FCB lock because that's what protects the Flags
@@ -2464,10 +2428,9 @@ LOCAL VOID SPIInitFCB( FCB * pfcb, CSR* pcsr )
     {
         //  get external header
         //
-        KEYDATAFLAGS kdf;
-        NDGetExternalHeader ( &kdf, pcsr, noderfSpaceHeader );
-        Assert( sizeof( SPACE_HEADER ) == kdf.data.Cb() );
-        const SPACE_HEADER * const psph = reinterpret_cast <const SPACE_HEADER * const> ( kdf.data.Pv() );
+        NDGetExternalHeader ( pfucb, pcsr, noderfSpaceHeader );
+        Assert( sizeof( SPACE_HEADER ) == pfucb->kdfCurr.data.Cb() );
+        const SPACE_HEADER * const psph = reinterpret_cast <const SPACE_HEADER * const> ( pfucb->kdfCurr.data.Pv() );
 
         if ( psph->FSingleExtent() )
         {
@@ -2481,10 +2444,13 @@ LOCAL VOID SPIInitFCB( FCB * pfcb, CSR* pcsr )
             Assert( pfcb->PgnoAE() == pfcb->PgnoOE() + 1 );
         }
 
-        if ( pfcb->FInitialized() )
+        if ( !fDeferredInit )
         {
-            Assert( !!psph->FNonUnique() == !pfcb->FUnique() );
+            Assert( pfcb->FUnique() );      // FCB always initialised as unique
+            if ( psph->FNonUnique() )
+                pfcb->SetNonUnique();
         }
+        Assert( !!psph->FNonUnique() == !pfcb->FUnique() );
 
         pfcb->SetSpaceInitialized();
 
@@ -2499,21 +2465,22 @@ LOCAL VOID SPIInitFCB( FCB * pfcb, CSR* pcsr )
 
 //  initializes FCB with pgnoAE and pgnoOE
 //
-ERR ErrSPInitFCB( _In_ PIB * ppib, _Inout_ FCB * const pfcb )
+ERR ErrSPInitFCB( _Inout_ FUCB * const pfucb )
 {
     ERR             err;
-    CSR             csr;
+    FCB             *pfcb   = pfucb->u.pfcb;
 
-    PIBTraceContextScope tcScope = ppib->InitTraceContextScope();
-    tcScope->nParentObjectClass = pfcb->TCE( fTrue );
+    PIBTraceContextScope tcScope = pfucb->ppib->InitTraceContextScope();
+    tcScope->nParentObjectClass = TceFromFUCB( pfucb );
     tcScope->iorReason.SetIort( iortSpace );
     tcScope->SetDwEngineObjid( pfcb->ObjidFDP() );
 
-    Expected( !pfcb->FSpaceInitialized() );
+    Assert( !Pcsr( pfucb )->FLatched() );
+    Assert( !FFUCBSpace( pfucb ) );
 
     //  goto root page of tree
     //
-    err = csr.ErrGetReadPage( ppib, pfcb->Ifmp(), pfcb->PgnoFDP(), bflfDefault );
+    err = ErrBTIGotoRoot( pfucb, latchReadTouch );
     if ( err < 0 )
     {
         if ( g_fRepair )
@@ -2529,12 +2496,15 @@ ERR ErrSPInitFCB( _In_ PIB * ppib, _Inout_ FCB * const pfcb )
     }
     else
     {
-        //  objid from fcb and the page header must match
+        //  get objidFDP from root page, FCB can only be set once
 
-        Assert( pfcb->ObjidFDP() == csr.Cpage().ObjidFDP() );
-        SPIInitFCB( pfcb, &csr );
-        csr.ReleasePage();
-        err = JET_errSuccess;   // clobber warnings
+        Assert( objidNil == pfcb->ObjidFDP()
+            || ( PinstFromIfmp( pfucb->ifmp )->FRecovering() && pfcb->ObjidFDP() == Pcsr( pfucb )->Cpage().ObjidFDP() ) );
+        pfcb->SetObjidFDP( Pcsr( pfucb )->Cpage().ObjidFDP() );
+
+        SPIInitFCB( pfucb, fFalse );
+
+        BTUp( pfucb );
     }
 
     return err;
@@ -2557,14 +2527,18 @@ ERR ErrSPDeferredInitFCB( _Inout_ FUCB * const pfucb )
 
     //  goto root page of tree
     //
-    CallR( ErrSPIOpenAndGotoRoot( pfucb->ppib, pfcb, &pfucbT ) );
+    CallR( ErrBTIOpenAndGotoRoot(
+                pfucb->ppib,
+                pfcb->PgnoFDP(),
+                pfucb->ifmp,
+                &pfucbT ) );
     Assert( pfucbNil != pfucbT );
     Assert( pfucbT->u.pfcb == pfcb );
     Assert( pcsrNil != pfucbT->pcsrRoot );
 
     if ( !pfcb->FSpaceInitialized() )
     {
-        SPIInitFCB( pfcb, pfucbT->pcsrRoot );
+        SPIInitFCB( pfucbT, fTrue );
     }
 
     SPIValidateCpgOwnedAndAvail( pfucbT );
@@ -3334,7 +3308,6 @@ ERR ErrSPCreate(
     CPG             *pcpgAEFDP )
 {
     ERR             err;
-    FCBRef          fcbRef;
     FUCB            *pfucb = pfucbNil;
     const BOOL      fUnique = !( fSPFlags & fSPNonUnique );
 
@@ -3404,9 +3377,11 @@ ERR ErrSPCreate(
     //  table.  Implement a fix to allow leaving the FCB in an uninitialized
     //  state, then have it initialized by the subsequent DIR/BTOpen.
     //
-    Call( ErrFILEIOpenFCB( ppib, ifmp, pgnoFDP, objidNil, openNew, fcbRef ) );
+    CallR( ErrBTOpen( ppib, pgnoFDP, ifmp, &pfucb, openNew ) );
 
-    FCB* pfcb   = fcbRef.get();
+    tcScope->nParentObjectClass = TceFromFUCB( pfucb );
+
+    FCB *pfcb   = pfucb->u.pfcb;
     Assert( pfcbNil != pfcb );
 
     if ( pgnoSystemRoot == pgnoFDP )
@@ -3436,7 +3411,7 @@ ERR ErrSPCreate(
     }
     else
     {
-        Call( g_rgfmp[ ifmp ].ErrObjidLastIncrementAndGet( pobjidFDP ) );
+        Call( g_rgfmp[ pfucb->ifmp ].ErrObjidLastIncrementAndGet( pobjidFDP ) );
     }
     Assert( pgnoSystemRoot != pgnoFDP || objidSystemRoot == *pobjidFDP );
 
@@ -3450,9 +3425,6 @@ ERR ErrSPCreate(
     pfcb->Lock();
     pfcb->SetSpaceInitialized();
     pfcb->Unlock();
-
-    CallR( ErrBTOpen( ppib, pfcb, &pfucb ) );    // can't latch root page, it doesn't exist yet
-    tcScope->nParentObjectClass = TceFromFUCB( pfucb );
 
     if ( fSPFlags & fSPMultipleExtent )
     {
@@ -3505,7 +3477,6 @@ ERR ErrSPCreate(
     Assert( !FFUCBVersioned( pfucb ) );
 
 HandleError:
-    Assert( err != errFCBExists );  // creation of an FCB for a new objid can't conflict
     Assert( ( pfucb != pfucbNil ) || ( err < JET_errSuccess ) );
 
     if ( pfucb != pfucbNil )
@@ -6075,7 +6046,7 @@ LOCAL ERR ErrSPIGetExt(
 
     if ( !pfcb->FSpaceInitialized() )
     {
-        SPIInitFCB( pfcb, pfucbSrc->pcsrRoot );
+        SPIInitFCB( pfucbSrc, fTrue );
     }
 
     //
@@ -6421,7 +6392,6 @@ ERR ErrSPGetExt(
     FUCB    *pfucbParent = pfucbNil;
     CPG     cpgOEFDP;
     CPG     cpgAEFDP;
-    FCBRef  fcbRef;
 
     PIBTraceContextScope tcScope = pfucb->ppib->InitTraceContextScope();
     tcScope->nParentObjectClass = TceFromFUCB( pfucb );
@@ -6434,15 +6404,14 @@ ERR ErrSPGetExt(
 
     //  open cursor on Parent and RIW latch root page
     //
-    Call( ErrFILEFcbGet( pfucb->ppib, pfucb->ifmp, pgnoParentFDP, objidNil, fcbRef ) );
-    Call( ErrSPIOpenAndGotoRoot( pfucb->ppib, fcbRef.get(), &pfucbParent ) );
+    Call( ErrBTIOpenAndGotoRoot( pfucb->ppib, pgnoParentFDP, pfucb->ifmp, &pfucbParent ) );
 
     //  allocate an extent
     //  Note: We get back info on OE and AE so we can add the value to the cpg cache
     //  AFTER we've released the root.  This is because adding a value to the cpg cache
     //  may cause a split in the cpg cache table, and that means we'd need to get space
     //  from the DBRoot.  If pgnoParentFDP happens to be systemRoot, that results in
-    //  trying to latch the page twice, one in ErrSPIOpenAndGotoRoot and one several
+    //  trying to latch the page twice, one in ErrBTIOpenAndGotoRoot and one several
     //  levels lower in the callstack.
 
     err = ErrSPIGetExt(
@@ -7386,7 +7355,7 @@ ERR ErrSPGetPage(
 
         if ( !pfcb->FSpaceInitialized() )
         {
-            SPIInitFCB( pfcb, pfucb->pcsrRoot );
+            SPIInitFCB( pfucb, fTrue );
         }
 
         //
@@ -7510,7 +7479,7 @@ LOCAL ERR ErrSPIFreeSEToParent(
 
     //  parent must always be in memory
     //
-    pfcbParent = FCB::PfcbFCBGet( pfucb->ifmp, pgnoParentFDP, &fcbsf, fTrue );
+    pfcbParent = FCB::PfcbFCBGet( pfucb->ifmp, pgnoParentFDP, &fcbsf, fTrue, fTrue );
     Assert( pfcbParent != pfcbNil );
     Assert( fcbsf & fcbsfInitialized );
     Assert( !pfcb->FTypeNull() );
@@ -7566,7 +7535,7 @@ LOCAL ERR ErrSPIFreeSEToParent(
     //
     if ( pfucbParentLocal == pfucbNil )
     {
-        Call( ErrSPIOpenAndGotoRoot( pfucb->ppib, pfcbParent, &pfucbParentLocal ) );
+        Call( ErrBTIOpenAndGotoRoot( pfucb->ppib, pgnoParentFDP, pfucb->ifmp, &pfucbParentLocal ) );
     }
     else
     {
@@ -8922,7 +8891,7 @@ ERR ErrSPFreeExt( FUCB* const pfucb, const PGNO pgnoFirst, const CPG cpgSize, co
 
         if ( !pfcb->FSpaceInitialized() )
         {
-            SPIInitFCB( pfcb, pfucb->pcsrRoot );
+            SPIInitFCB( pfucb, fTrue );
         }
 
         //
@@ -9329,12 +9298,10 @@ ERR ErrSPShelvePage( PIB* const ppib, const IFMP  ifmp, const PGNO pgno )
     Assert( pfmp->FBeyondPgnoShrinkTarget( pgno ) );
     Assert( pgno <= pfmp->PgnoLast() );
 
-    FUCB*   pfucbRoot = pfucbNil;
-    FUCB*   pfucbAE = pfucbNil;
-    FCBRef  fcbRefSystemRoot;
+    FUCB* pfucbRoot = pfucbNil;
+    FUCB* pfucbAE = pfucbNil;
 
-    Call( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRefSystemRoot ) );
-    Call( ErrSPIOpenAndGotoRoot( ppib, fcbRefSystemRoot.get(), &pfucbRoot));
+    Call( ErrBTIOpenAndGotoRoot( ppib, pgnoSystemRoot, ifmp, &pfucbRoot ) );
     Call( ErrSPIOpenAvailExt( pfucbRoot, &pfucbAE ) );
 
     Call( ErrSPIReserveSPBufPages( pfucbRoot ) );
@@ -9372,12 +9339,10 @@ HandleError:
 //-
 ERR ErrSPUnshelveShelvedPagesBelowEof( PIB* const ppib, const IFMP ifmp )
 {
-    ERR         err = JET_errSuccess;
-    FMP* const  pfmp = g_rgfmp + ifmp;
-    FUCB*       pfucbRoot = pfucbNil;
-    FCBRef      fcbRefSystemRoot;
-    BOOL        fInTransaction = fFalse;
-
+    ERR err = JET_errSuccess;
+    FMP* const pfmp = g_rgfmp + ifmp;
+    FUCB* pfucbRoot = pfucbNil;
+    BOOL fInTransaction = fFalse;
     Assert( !pfmp->FIsTempDB() );
     Expected( pfmp->FShrinkIsRunning() );
 
@@ -9387,8 +9352,7 @@ ERR ErrSPUnshelveShelvedPagesBelowEof( PIB* const ppib, const IFMP ifmp )
     Call( ErrDIRBeginTransaction( ppib, 46018, NO_GRBIT ) );
     fInTransaction = fTrue;
 
-    Call( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRefSystemRoot ) );
-    Call( ErrSPIOpenAndGotoRoot( ppib, fcbRefSystemRoot.get(), &pfucbRoot ) );
+    Call( ErrBTIOpenAndGotoRoot( ppib, pgnoSystemRoot, ifmp, &pfucbRoot ) );
 
     Call( ErrSPIUnshelvePagesInRange( pfucbRoot, 1, pfmp->PgnoLast() ) );
 
@@ -10056,7 +10020,6 @@ ERR ErrSPReclaimSpaceLeaks( PIB* const ppib, const IFMP ifmp )
     PGNO pgnoFirstShelved = pgnoNull, pgnoLastShelved = pgnoNull;
     FUCB* pfucbCatalog = pfucbNil;
     FUCB* pfucbRoot = pfucbNil;
-    FCBRef fcbRefRoot;
     CSparseBitmap spbmOwned;
     CArray<CPgnoFlagged> arrShelved;
 
@@ -10073,8 +10036,6 @@ ERR ErrSPReclaimSpaceLeaks( PIB* const ppib, const IFMP ifmp )
     EnforceSz( pfmp->FExclusiveBySession( ppib ), "LeakReclaimDbNotExclusive" );
     Assert( ifmpDummy == ifmp );
     fDbOpen = fTrue;
-
-    Call( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRefRoot ) );
 
     // Reclaiming leaked space requires a fully populated MSysObjids table because
     // that is how we enumerate all the tables efficiently.
@@ -10239,7 +10200,7 @@ ERR ErrSPReclaimSpaceLeaks( PIB* const ppib, const IFMP ifmp )
             Call( ErrDIRBeginTransaction( ppib, 37218, NO_GRBIT ) );
             fInTransaction = fTrue;
 
-            Call( ErrDIROpen( ppib, fcbRefRoot.get(), &pfucbRoot ) );
+            Call( ErrDIROpen( ppib, pgnoSystemRoot, ifmp, &pfucbRoot ) );
 
             CSPExtentInfo spext;
             err = ErrSPIFindExtOE( ppib, pfucbRoot->u.pfcb, pgnoFirstToReclaim, &spext );
@@ -10358,7 +10319,7 @@ ERR ErrSPReclaimSpaceLeaks( PIB* const ppib, const IFMP ifmp )
 
         Call( ErrDIRBeginTransaction( ppib, 51150, NO_GRBIT ) );
         fInTransaction = fTrue;
-        Call( ErrDIROpen( ppib, fcbRefRoot.get(), &pfucbRoot ) );
+        Call( ErrDIROpen( ppib, pgnoSystemRoot, ifmp, &pfucbRoot ) );
         const PGNO pgnoLastToReclaimBelowEof = UlFunctionalMin( pgnoLastToReclaim, pgnoLastInitial );
         if ( pgnoFirstToReclaim <= pgnoLastInitial )
         {
@@ -10420,8 +10381,6 @@ HandleError:
         DIRClose( pfucbRoot );
         pfucbRoot = pfucbNil;
     }
-
-    fcbRefRoot.reset();
 
     // WARNING: most (if not all) of the above is done without versioning, so there
     // really isn't any rollback of the update.
@@ -10902,7 +10861,6 @@ ERR ErrSPFreeFDP(
     ERR         err;
     const IFMP  ifmp            = pfcbFDPToFree->Ifmp();
     const PGNO  pgnoFDPFree     = pfcbFDPToFree->PgnoFDP();
-    FCBRef      fcbRefParent;
     FUCB        *pfucbParent    = pfucbNil;
     FUCB        *pfucb          = pfucbNil;
     CPG         cpgRootCaptured = 0;
@@ -10935,9 +10893,7 @@ ERR ErrSPFreeFDP(
 
     Assert( !FFMPIsTempDB( ifmp ) || pgnoSystemRoot == pgnoFDPParent );
 
-    OBJID objidParent = ( pgnoSystemRoot == pgnoFDPParent ? objidSystemRoot : objidNil );
-    Call( ErrFILEFcbGet( ppib, ifmp, pgnoFDPParent, objidParent, fcbRefParent ) );
-    Call( ErrBTOpen( ppib, fcbRefParent.get(), &pfucbParent ) );
+    Call( ErrBTOpen( ppib, pgnoFDPParent, ifmp, &pfucbParent ) );
     Assert( pfucbNil != pfucbParent );
     Assert( pfucbParent->u.pfcb->FInitialized() );
 
@@ -10983,7 +10939,7 @@ ERR ErrSPFreeFDP(
 
     if ( !pfucb->u.pfcb->FSpaceInitialized() )
     {
-        SPIInitFCB( pfucb->u.pfcb, pfucb->pcsrRoot );
+        SPIInitFCB( pfucb, fTrue );
     }
 
     // We expect this to fail to find the FCB in the cache if we're deleting it.
@@ -12119,7 +12075,6 @@ ERR ErrSPExtendDB(
     ERR         err;
     FUCB        *pfucbDbRoot        = pfucbNil;
     FUCB        *pfucbAE            = pfucbNil;
-    FCBRef      fcbRefSystemRoot;
 
     PIBTraceContextScope tcScope = ppib->InitTraceContextScope();
     tcScope->iorReason.SetIort( iortSpace );
@@ -12127,8 +12082,7 @@ ERR ErrSPExtendDB(
 
     //  open cursor on System / DB Root and RIW latch root page
     //
-    CallR( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRefSystemRoot ) );
-    CallR( ErrSPIOpenAndGotoRoot( ppib, fcbRefSystemRoot.get(), &pfucbDbRoot ) );
+    CallR( ErrBTIOpenAndGotoRoot( ppib, pgnoSystemRoot, ifmp, &pfucbDbRoot ) );
     tcScope->nParentObjectClass = TceFromFUCB( pfucbDbRoot );
     Assert( objidSystemRoot == ObjidFDP( pfucbDbRoot ) );
 
@@ -12287,7 +12241,6 @@ ERR ErrSPShrinkTruncateLastExtent(
     FUCB* pfucbRoot = pfucbNil;
     FUCB* pfucbOE = pfucbNil;
     FUCB* pfucbAE = pfucbNil;
-    FCBRef fcbRefSystemRoot;
     PIBTraceContextScope tcScope = ppib->InitTraceContextScope( );
     tcScope->iorReason.SetIort( iortDbShrink );
     tcScope->SetDwEngineObjid( objidSystemRoot );
@@ -12310,8 +12263,7 @@ ERR ErrSPShrinkTruncateLastExtent(
     fInTransaction = fTrue;
 
     // Open space trees.
-    Call( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRefSystemRoot ) );
-    Call( ErrSPIOpenAndGotoRoot( ppib, fcbRefSystemRoot.get(), &pfucbRoot ) );
+    Call( ErrBTIOpenAndGotoRoot( ppib, pgnoSystemRoot, ifmp, &pfucbRoot ) );
 
     Call( ErrSPIOpenOwnExt( pfucbRoot, &pfucbOE ) );
     Call( ErrSPIOpenAvailExt( pfucbRoot, &pfucbAE ) );
@@ -13396,9 +13348,10 @@ ERR ErrSPReserveSPBufPages(
     FUCB* pfucbOwningTree = pfucbNil;
 
     // Open FUCB of the owning tree, just in case this is a space FUCB.
-    Call( ErrSPIOpenAndGotoRoot(
+    Call( ErrBTIOpenAndGotoRoot(
             pfucb->ppib,
-            pfucb->u.pfcb,
+            pfucb->u.pfcb->PgnoFDP(),
+            pfucb->ifmp,
             &pfucbOwningTree ) );
     Assert( pfucbOwningTree->u.pfcb == pfucb->u.pfcb );
 
@@ -13464,7 +13417,6 @@ LOCAL ERR ErrSPIReserveSPBufPages(
     ERR err = JET_errSuccess;
     FMP* const pfmp = &g_rgfmp[ pfucb->ifmp ];
     FCB* const pfcb = pfucb->u.pfcb;
-    FCBRef fcbRefParent;
     FUCB* pfucbParentLocal = pfucbParent;
     FUCB* pfucbOE = pfucbNil;
     FUCB* pfucbAE = pfucbNil;
@@ -13480,10 +13432,17 @@ LOCAL ERR ErrSPIReserveSPBufPages(
     Assert( ( pgnoParentFDP != pgnoNull ) || ( pfucbParent == pfucbNil ) );
     if ( ( pfucbParentLocal == pfucbNil ) && ( pgnoParentFDP != pgnoNull ) )
     {
-        // Open cursor on parent FDP to get space from.
+        // Open cursor on parent FDP to get space from.  Don't GotoRoot yet, we don't want to be latched
+        // while calling ErrSPIReserveSPBufPages.
         //
-        Call( ErrFILEFcbGet( pfucb->ppib, pfucb->ifmp, pgnoParentFDP, objidNil, fcbRefParent ) );
-        Call( ErrBTOpen( pfucb->ppib, fcbRefParent.get(), &pfucbParentLocal ) );
+        Call( ErrBTIOpen(
+                  pfucb->ppib,
+                  pfucb->ifmp,
+                  pgnoParentFDP,
+                  objidNil,
+                  openNormal,
+                  &pfucbParentLocal,
+                  fFalse ) );
         Assert( pcsrNil == pfucbParentLocal->pcsrRoot );
     }
 
@@ -13916,13 +13875,20 @@ LOCAL ERR ErrSPIGetSe(
 
     AssertSPIPfucbOnRoot( pfucb );
     {
-        FCBRef fcbRefParent;
         FUCB *pfucbParentLocal = pfucbNil;
 
-        // Open cursor on parent FDP to get space from.
+        // Open cursor on parent FDP to get space from.  Don't GotoRoot yet, we don't want to be latched
+        // while calling ErrSPIReserveSPBufPages, but it can be a time savings to already have an FUCB
+        // that we can use for multiple calls.
         //
-        Call( ErrFILEFcbGet( pfucb->ppib, pfucb->ifmp, pgnoParentFDP, objidNil, fcbRefParent ) );
-        Call( ErrBTOpen( pfucb->ppib, fcbRefParent.get(), &pfucbParentLocal ) );
+        Call( ErrBTIOpen(
+                  pfucb->ppib,
+                  pfucb->ifmp,
+                  pgnoParentFDP,
+                  objidNil,
+                  openNormal,
+                  &pfucbParentLocal,
+                  fFalse ) );
         Assert( pcsrNil == pfucbParentLocal->pcsrRoot );
 
         CallJ( ErrSPIReserveSPBufPages( pfucb, pfucbParentLocal ), CloseParent );
@@ -15579,10 +15545,7 @@ ERR ErrSPGetInfo(
         Assert( !FSPReachablePages( fSPExtents ) );
         if ( pfucbNil == pfucb )
         {
-            FCBRef fcbRef;
-            CallR( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRef ) );
-            CallR( ErrBTOpen( ppib, fcbRef.get(), &pfucbT) );
-            Assert( fcbRef->FInitialized() );   // an initialized FCB isn't purged when fcbRef goes out of scope
+            err = ErrBTOpen( ppib, pgnoSystemRoot, ifmp, &pfucbT );
         }
         else
         {
@@ -15629,7 +15592,7 @@ ERR ErrSPGetInfo(
     {
         //  UNDONE: Are there concurrency issues with updating the FCB
         //  while we only have a read latch?
-        SPIInitFCB( pfucbT->u.pfcb, pfucbT->pcsrRoot );
+        SPIInitFCB( pfucbT, fTrue );
         if( !FSPIIsSmall( pfucbT->u.pfcb ) )
         {
             BFPrereadPageRange( pfucbT->ifmp, pfucbT->u.pfcb->PgnoOE(), 2, NULL, NULL, bfprfDefault, ppib->BfpriPriority( pfucbT->ifmp ), *tcScope );
@@ -16341,10 +16304,7 @@ ERR ErrSPGetExtentInfo(
 
     if ( pfucbNil == pfucb )
     {
-        FCBRef fcbRef;
-        CallR( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRef ) );
-        CallR( ErrBTOpen( ppib, fcbRef.get(), &pfucbT ) );
-        Assert( fcbRef->FInitialized() );   // an initialized FCB isn't purged when fcbRef goes out of scope
+        err = ErrBTOpen( ppib, pgnoSystemRoot, ifmp, &pfucbT );
     }
     else
     {
@@ -16366,7 +16326,7 @@ ERR ErrSPGetExtentInfo(
     {
         //  UNDONE: Are there cuncurrency issues with updating the FCB
         //  while we only have a read latch?
-        SPIInitFCB( pfucbT->u.pfcb, pfucbT->pcsrRoot );
+        SPIInitFCB( pfucbT, fTrue );
         if( !FSPIIsSmall( pfucbT->u.pfcb ) )
         {
             BFPrereadPageRange( pfucbT->ifmp, pfucbT->u.pfcb->PgnoOE(), 2, bfprfDefault, ppib->BfpriPriority( pfucbT->ifmp ), *tcScope );
@@ -16755,7 +16715,6 @@ ERR ErrSPTrimRootAvail(
     CPG cpgAvailExtTotalSparseAfter = 0;
     FUCB *pfucbT = pfucbNil;
     FUCB *pfucbAE = pfucbNil;
-    FCBRef fcbRef;
 
     PIBTraceContextScope tcScope = ppib->InitTraceContextScope();
     tcScope->iorReason.SetIort( iortSpace );
@@ -16764,15 +16723,14 @@ ERR ErrSPTrimRootAvail(
 
     memset( (void*)&spbufOnAE, 0, sizeof(spbufOnAE) );
 
-    CallR( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRef ) );
-    Call( ErrSPIOpenAndGotoRoot( ppib, fcbRef.get(), &pfucbT));
+    Call( ErrBTIOpenAndGotoRoot( ppib, pgnoSystemRoot, ifmp, &pfucbT ) );
     AssertSPIPfucbOnRoot( pfucbT );
 
     if ( !pfucbT->u.pfcb->FSpaceInitialized() )
     {
         //  UNDONE: Are there cuncurrency issues with updating the FCB
         //  while we only have a read latch?
-        SPIInitFCB( pfucbT->u.pfcb, pfucbT->pcsrRoot );
+        SPIInitFCB( pfucbT, fTrue );
         if( !FSPIIsSmall( pfucbT->u.pfcb ) )
         {
             BFPrereadPageRange( pfucbT->ifmp, pfucbT->u.pfcb->PgnoAE(), 2, bfprfDefault, ppib->BfpriPriority( pfucbT->ifmp ), *tcScope );

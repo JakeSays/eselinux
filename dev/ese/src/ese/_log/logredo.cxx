@@ -1005,7 +1005,7 @@ Restart:
 
     //  get fcb for table, if one exists
     //
-    pfcb = FCB::PfcbFCBGet( ifmp, pgnoFDP, &fcbsf, fTrue /* FIncrementRefCount */ );
+    pfcb = FCB::PfcbFCBGet( ifmp, pgnoFDP, &fcbsf, fTrue /* FIncrementRefCount */, fTrue /* fInitForRecovery */);
     Assert( pfcbNil == pfcb || ( fcbsf & fcbsfInitialized ) );
     if ( pfcbNil == pfcb )
     {

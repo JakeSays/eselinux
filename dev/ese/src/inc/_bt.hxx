@@ -3,6 +3,8 @@
 
 //  used only space and BT
 //
+ERR ErrBTIOpenAndGotoRoot( PIB *ppib, const PGNO pgnoFDP, const IFMP ifmp, FUCB **ppfucb );
+
 ERR ErrBTIIRefresh( FUCB *pfucb, LATCH latch );
 
 //  used by recovery

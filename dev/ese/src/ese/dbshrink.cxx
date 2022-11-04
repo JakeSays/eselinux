@@ -1976,12 +1976,10 @@ LOCAL ERR ErrSHKIRootMoveCheck( const ROOTMOVE& rm, FUCB* const pfucb, const OBJ
             }
 
             // Get child's pgnoFDP.
-            FCBRef fcbRefChild;
             PGNO pgnoFDPChild = pgnoNull;
             Call( ErrCATSeekObjectByObjid( ppib, ifmp, objidTable, sysobjChild, objidChild, NULL, 0, &pgnoFDPChild ) );
 
-            Call( ErrFILEFcbGet( ppib, ifmp, pgnoFDPChild, objidChild, fcbRefChild ) );
-            Call( ErrBTOpen( ppib, fcbRefChild.get(), &pfucbChild ) );
+            Call( ErrBTIOpen( ppib, ifmp, pgnoFDPChild, objidNil, openNormal, &pfucbChild, fFalse ) );
             Call( ErrBTIGotoRoot( pfucbChild, latchRIW ) );
             pfucbChild->pcsrRoot = Pcsr( pfucbChild );
 
@@ -2154,17 +2152,20 @@ ERR ErrSHKRootPageMove(
     // initialize helper variables.
     //
 
-    // Retrieve some metadata first by opening an FCB.
-    {
-    FCBRef fcbRef;
-    Call( ErrFILEFcbGet( ppib, ifmp, pgnoFDP, objidNil, fcbRef ) );
+    // Retrieve some metadata first by opening it at the BT level.
+    Call( ErrBTOpen( ppib, pgnoFDP, ifmp, &pfucb ) );
+    pfcb = pfucb->u.pfcb;
 
     // Determine whether or not this is a root object.
-    objid = fcbRef->ObjidFDP();
+    objid = pfcb->ObjidFDP();
     Call( ErrCATGetObjidMetadata( ppib, ifmp, objid, &objidTable, &sysobj ) );
     fRootObject = ( sysobj == sysobjTable );
     Assert( !!fRootObject == ( objid == objidTable ) );
-    }
+
+    // Close primitive cursor.
+    BTClose( pfucb );
+    pfucb = pfucbNil;
+    pfcb = pfcbNil;
 
     if ( objid == pfmp->ObjidExtentPageCountCacheFDP() )
     {

@@ -519,14 +519,12 @@ INLINE ERR ErrFILEIInitLVRoot( FUCB *pfucb, const PGNO pgnoLV, FUCB **ppfucbLV )
     ERR             err;
     FCB * const     pfcbTable   = pfucb->u.pfcb;
     FCB *           pfcbLV;
-    FCBRef          fcbRefLV;
 
     // Link LV FCB into table.
-    CallR( ErrFILEFcbGet( pfucb->ppib, pfucb->ifmp, pgnoLV, objidNil, fcbRefLV ) );
-    CallR( ErrDIROpen( pfucb->ppib, fcbRefLV.get(), ppfucbLV ) );
+    CallR( ErrDIROpen( pfucb->ppib, pgnoLV, pfucb->ifmp, ppfucbLV, fTrue ) );
     Assert( *ppfucbLV != pfucbNil );
     Assert( !FFUCBVersioned( *ppfucbLV ) ); // Verify won't be deferred closed.
-    pfcbLV = fcbRefLV.get();
+    pfcbLV = (*ppfucbLV)->u.pfcb;
     Assert( !pfcbLV->FInitialized() || pfcbLV->FInitedForRecovery() );
 
     Assert( pfcbLV->Ifmp() == pfucb->ifmp );
@@ -536,7 +534,6 @@ INLINE ERR ErrFILEIInitLVRoot( FUCB *pfucb, const PGNO pgnoLV, FUCB **ppfucbLV )
 
     // Recovery creates all FCBs as table FCB, now that we know better, we need to remove from list of table FCBs
     // before we mark FCB as being a LV FCB
-    pfcbLV->AcquireAdditionalInitDuringRecovery();  // allows only 1 thread through at a time
     if ( pfcbLV->FInitedForRecovery() )
     {
         pfcbLV->RemoveList();
@@ -561,12 +558,10 @@ INLINE ERR ErrFILEIInitLVRoot( FUCB *pfucb, const PGNO pgnoLV, FUCB **ppfucbLV )
     }
 
     //  finish the initialization of this LV FCB
-    //  an initialized fcb isn't purged by the FCBRef deleter
 
     pfcbLV->Lock();
     pfcbLV->CreateComplete();
     pfcbLV->ResetInitedForRecovery();
-    pfcbLV->ReleaseAdditionalInitDuringRecovery();
     pfcbLV->Unlock();
 
     //  WARNING: publishing the FCB in the TDB *must*
