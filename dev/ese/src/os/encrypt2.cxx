@@ -61,7 +61,7 @@ ErrOSIBCryptAESProviderInit()
     }
     if ( cbData != sizeof( g_cbKeyObject ) )
     {
-        Error( JET_errInvalidParameter );
+        Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
 
     ULONG cbBlockSize = 0;
@@ -78,7 +78,7 @@ ErrOSIBCryptAESProviderInit()
     Assert( cbBlockSize == BLOCK_SIZE_AES256 );
     if ( cbData != sizeof( cbBlockSize ) || cbBlockSize != BLOCK_SIZE_AES256 )
     {
-        Error( JET_errInvalidParameter );
+        Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
 
 HandleError:
