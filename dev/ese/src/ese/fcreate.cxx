@@ -1856,6 +1856,7 @@ LOCAL ERR ErrFILEICreateIndexes(
     FCB *               pfcbTemplateTable )
 {
     ERR             err = JET_errSuccess;
+    FCBRef          fcbRefTableExtent;
     FUCB            *pfucbTableExtent       = pfucbNil;
     FUCB            *pfucbCatalog           = pfucbNil;
     CHAR            szIndexName[ JET_cbNameMost+1 ];
@@ -1894,19 +1895,21 @@ LOCAL ERR ErrFILEICreateIndexes(
     }
 
     // Open cursor for space navigation
-    CallR( ErrDIROpen( ppib, pgnoTableFDP, ifmp, &pfucbTableExtent ) );
-    Assert( pfucbNil != pfucbTableExtent );
-    Assert( !FFUCBVersioned( pfucbTableExtent ) );  // Verify won't be deferred closed.
-    Assert( pfcbNil != pfucbTableExtent->u.pfcb );
-    Assert( !pfucbTableExtent->u.pfcb->FInitialized() );
-    Assert( pfucbTableExtent->u.pfcb->Pidb() == pidbNil );
+    CallR( ErrFILEFcbGet( ppib, ifmp, pgnoTableFDP, objidTable, fcbRefTableExtent ) );
+    Assert( !fcbRefTableExtent->FInitialized() );
 
     //  force the FCB to be initialized successfully
 
-    pfucbTableExtent->u.pfcb->Lock();
-    pfucbTableExtent->u.pfcb->SetTypeTable();
-    pfucbTableExtent->u.pfcb->CreateComplete();
-    pfucbTableExtent->u.pfcb->Unlock();
+    fcbRefTableExtent->Lock();
+    fcbRefTableExtent->SetTypeTable();
+    fcbRefTableExtent->CreateComplete();
+    fcbRefTableExtent->Unlock();
+
+    CallR( ErrDIROpen( ppib, fcbRefTableExtent.get(), &pfucbTableExtent ) );
+    Assert( pfucbNil != pfucbTableExtent );
+    Assert( !FFUCBVersioned( pfucbTableExtent ) );  // Verify won't be deferred closed.
+    Assert( pfcbNil != pfucbTableExtent->u.pfcb );
+    Assert( pfucbTableExtent->u.pfcb->Pidb() == pidbNil );
 
     Call( ErrCATOpen( ppib, ifmp, &pfucbCatalog ) );
     Assert( pfucbNil != pfucbCatalog );
@@ -2246,9 +2249,9 @@ HandleError:
     }
 
     Assert( pfucbTableExtent != pfucbNil );
-    Assert( pfucbTableExtent->u.pfcb->WRefCount() == 1 );
+    Assert( pfucbTableExtent->u.pfcb->WRefCount() == 2 );   // +1 for fcbRef, +1 for open fucb
 
-    //  force the FCB to be uninitialized so it will be purged by DIRClose
+    //  force the FCB to be uninitialized so it will be purged by the FCBRef .dtor
 
     pfucbTableExtent->u.pfcb->Lock();
     pfucbTableExtent->u.pfcb->CreateCompleteErr( errFCBUnusable );
@@ -2283,6 +2286,7 @@ LOCAL ERR ErrFILEIInheritIndexes(
     FCB *               pfcbTemplateTable )
 {
     ERR             err = JET_errSuccess;
+    FCBRef          fcbRefTableExtent;
     FUCB            *pfucbTableExtent   = pfucbNil;
     FUCB            *pfucbCatalog       = pfucbNil;
     TDB             *ptdbTemplateTable;
@@ -2305,7 +2309,8 @@ LOCAL ERR ErrFILEIInheritIndexes(
     Assert( pfcbTemplateTable->FTemplateTable() );
 
     // Open cursor for space navigation
-    CallR( ErrDIROpen( ppib, pgnoTableFDP, ifmp, &pfucbTableExtent ) );
+    CallR( ErrFILEFcbGet( ppib, ifmp, pgnoTableFDP, objidTable, fcbRefTableExtent ) );
+    CallR( ErrDIROpen( ppib, fcbRefTableExtent.get(), &pfucbTableExtent ) );
     Assert( pfucbNil != pfucbTableExtent );
     Assert( !FFUCBVersioned( pfucbTableExtent ) );  // Verify won't be deferred closed.
     Assert( pfcbNil != pfucbTableExtent->u.pfcb );
@@ -2418,9 +2423,9 @@ HandleError:
     }
 
     Assert( pfucbTableExtent != pfucbNil );
-    Assert( pfucbTableExtent->u.pfcb->WRefCount() == 1 );
+    Assert( pfucbTableExtent->u.pfcb->WRefCount() == 2 );   // +1 for fcbRef, +1 for pfucbTableExtent
 
-    //  force the FCB to be uninitialized so it will be purged by DIRClose
+    //  force the FCB to be uninitialized so it will be purged by fcbRefTableExtent .dtor
 
     pfucbTableExtent->u.pfcb->Lock();
     pfucbTableExtent->u.pfcb->CreateCompleteErr( errFCBUnusable );
@@ -2776,7 +2781,10 @@ ERR ErrFILECreateTable( PIB *ppib, IFMP ifmp, JET_TABLECREATE5_A *ptablecreate, 
 
     //  allocate cursor
     //
-    Call( ErrDIROpen( ppib, pgnoSystemRoot, ifmp, &pfucb ) );
+    {
+    FCBRef fcbRef;
+    Call( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRef ) );
+    Call( ErrDIROpen( ppib, fcbRef.get(), &pfucb ) );
     Call( ErrDIRCreateDirectory(
                 pfucb,
                 CpgInitial( &jsphPrimaryAlloc, g_rgfmp[ ifmp ].CbPage() ),
@@ -2786,6 +2794,7 @@ ERR ErrFILECreateTable( PIB *ppib, IFMP ifmp, JET_TABLECREATE5_A *ptablecreate, 
                 fSPFlags | ( FFMPIsTempDB( ifmp ) ? fSPUnversionedExtent : 0 ) ) );    // For temp. tables, create unversioned extents
     DIRClose( pfucb );
     pfucb = pfucbNil;
+    }
 
     Assert( ptablecreate->cCreated == 0 );
     ptablecreate->cCreated = 1;
@@ -6568,7 +6577,7 @@ ResetCursor:
 LOCAL ERR ErrFILEIPrepareOneIndex(
     PIB             * const ppib,
     FUCB            * const pfucbTable,
-    FUCB            ** ppfucbIdx,
+    FCBRef          * poutFcbRefIdx,
     JET_INDEXCREATE3_A  * const pidxcreate,
     const CHAR      * const szIndexName,
     const CHAR      * rgszColumns[],
@@ -6580,6 +6589,7 @@ LOCAL ERR ErrFILEIPrepareOneIndex(
     const IFMP      ifmp                    = pfucbTable->ifmp;
     FCB             * const pfcb            = pfucbTable->u.pfcb;
     FCB             * pfcbIdx               = pfcbNil;
+    FCBRef          fcbRefIdx;
     PGNO            pgnoIndexFDP;
     OBJID           objidIndex;
     FIELD           * pfield;
@@ -6882,7 +6892,6 @@ LOCAL ERR ErrFILEIPrepareOneIndex(
         //
         DIRBeforeFirst( pfucbTable );
 
-        Assert( pfucbNil == *ppfucbIdx );
         Assert( pfcbIdx == pfcbNil );
     }
     else
@@ -6905,10 +6914,8 @@ LOCAL ERR ErrFILEIPrepareOneIndex(
 
         //  get pfcb of index directory
         //
-        Call( ErrDIROpen( ppib, pgnoIndexFDP, ifmp, ppfucbIdx ) );
-        Assert( *ppfucbIdx != pfucbNil );
-        Assert( !FFUCBVersioned( *ppfucbIdx ) );    // Verify won't be deferred closed.
-        pfcbIdx = (*ppfucbIdx)->u.pfcb;
+        Call( ErrFILEFcbGet( ppib, ifmp, pgnoIndexFDP, objidIndex, fcbRefIdx ) );
+        pfcbIdx = fcbRefIdx.get();
         Assert( !pfcbIdx->FInitialized() );
         Assert( pfcbIdx->Pidb() == pidbNil );
 
@@ -6962,10 +6969,6 @@ LOCAL ERR ErrFILEIPrepareOneIndex(
             pfcbIdx->Lock();
             pfcbIdx->CreateCompleteErr( errFCBUnusable );
             pfcbIdx->Unlock();
-
-            //  verify that the FUCB will not be defer-closed
-
-            Assert( !FFUCBVersioned( *ppfucbIdx ) );
         }
         goto HandleError;
     }
@@ -6984,6 +6987,9 @@ LOCAL ERR ErrFILEIPrepareOneIndex(
                 rgidxseg,
                 rgidxsegConditional,
                 pspacehints ) );
+
+    // Return fcb to caller
+    *poutFcbRefIdx = std::move( fcbRefIdx );
 
 HandleError:
     if ( fCleanupIDB )
@@ -7055,6 +7061,7 @@ LOCAL ERR VTAPI ErrFILEICreateIndex(
     FUCB                * pfucb                     = pfucbNil;
     FUCB                * pfucbIdx                  = pfucbNil;
     FCB                 * const pfcb                = pfucbTable->u.pfcb;
+    FCBRef              fcbRefIdx;
     FCB                 * pfcbIdx                   = pfcbNil;
     IDB                 idb( pinst );
     CHAR                szIndexName[ JET_cbNameMost+1 ];
@@ -7212,7 +7219,7 @@ LOCAL ERR VTAPI ErrFILEICreateIndex(
     Call( ErrFILEIPrepareOneIndex(
             ppib,
             pfucb,
-            &pfucbIdx,
+            &fcbRefIdx,
             pidxcreate,
             szIndexName,
             rgszColumns,
@@ -7223,14 +7230,14 @@ LOCAL ERR VTAPI ErrFILEICreateIndex(
     if ( fPrimary )
     {
         Assert( pfucbNil == pfucbIdx );
+        Assert( pfcbNil == fcbRefIdx.get() );
         Assert( pfcbNil == pfcbIdx );
     }
     else
     {
-        Assert( pfucbNil != pfucbIdx );
-        pfcbIdx = pfucbIdx->u.pfcb;
+        Assert( pfcbNil != fcbRefIdx.get() );
+        pfcbIdx = fcbRefIdx.get();
 
-        Assert( pfcbNil != pfcbIdx );
         Assert( pfcbIdx->FTypeSecondaryIndex() );
 
         if ( pidxcreate->grbit & JET_bitIndexEmpty )
@@ -7277,6 +7284,7 @@ LOCAL ERR VTAPI ErrFILEICreateIndex(
             const IDBFLAG   idbflagPersisted    = idb.FPersistedFlags();
             const IDXFLAG   idbflagPersistedX   = idb.FPersistedFlagsX();
 
+            Call( ErrDIROpen( ppib, pfcbIdx, &pfucbIdx ) );
             FUCBSetIndex( pfucbIdx );
             FUCBSetSecondary( pfucbIdx );
 
@@ -7463,15 +7471,17 @@ LOCAL ERR VTAPI ErrFILEICreateIndex(
                                 pfcbIdx->Pidb()->FPersistedFlags(),
                                 pfcbIdx->Pidb()->FPersistedFlagsX() ) );
             }
-        }
 
-        // FCB now linked into table's index list, which guarantees that
-        // it will be available at Commit/Rollback time, so we can dispose
-        // of the index cursor.
-        Assert( !FFUCBVersioned( pfucbIdx ) );  // no versioned operations should have occurred on this cursor
-        Assert( pfucbNil != pfucbIdx );
-        DIRClose( pfucbIdx );
-        pfucbIdx = pfucbNil;
+            // FCB now linked into table's index list, which guarantees that
+            // it will be available at Commit/Rollback time, so we can dispose
+            // of the index cursor.
+            Assert( pfucbNil != pfucbIdx );
+            Assert( !FFUCBVersioned( pfucbIdx ) );  // no versioned operations should have occurred on this cursor
+            DIRClose( pfucbIdx );
+            pfucbIdx = pfucbNil;
+            fcbRefIdx.reset();
+            pfcbIdx = pfcbNil;
+        }
     }
 
     Call( ErrDIRCommitTransaction( ppib, ( pidxcreate->grbit & JET_bitIndexLazyFlush ) ? JET_bitCommitLazyFlush : 0 ) );
@@ -7509,6 +7519,7 @@ HandleError:
             DIRClose( pfucbIdx );
         }
 
+        fcbRefIdx.reset();  // rollback has to purge the fcb, no refs should remain
         CallSx( ErrDIRRollback( ppib ), JET_errRollbackError );
 
         DIRClose( pfucb );
@@ -7578,7 +7589,7 @@ LOCAL ERR VTAPI ErrFILEIBatchCreateIndex(
     BOOL                fInTransaction              = fFalse;
     BOOL                fLazyCommit                 = fTrue;
     ULONG               iindex;
-    FUCB                ** rgpfucbIdx               = NULL;
+    FCBRef*             rgFcbRef                    = NULL;
     JET_INDEXCREATE3_A      *pidxcreateT                = NULL;
     JET_INDEXCREATE3_A      *pidxcreateNext             = NULL;
 
@@ -7633,11 +7644,10 @@ LOCAL ERR VTAPI ErrFILEIBatchCreateIndex(
         return JET_errSuccess;
     }
 
-    AllocR( rgpfucbIdx = (FUCB **)PvOSMemoryHeapAlloc( sizeof(FUCB *) * cIndexes ) );
-    memset( rgpfucbIdx, 0, sizeof(FUCB *) * cIndexes );
+    AllocR( rgFcbRef = new FCBRef[ cIndexes ] );
 
     // Temporarily open new table cursor.
-    CallJ( ErrDIROpen( ppib, pfcb, &pfucb ), Cleanup );
+    Call( ErrDIROpen( ppib, pfcb, &pfucb ) );
     FUCBSetIndex( pfucb );
     FUCBSetMayCacheLVCursor( pfucb );
 
@@ -7711,7 +7721,7 @@ LOCAL ERR VTAPI ErrFILEIBatchCreateIndex(
         Call( ErrFILEIPrepareOneIndex(
                 ppib,
                 pfucb,
-                &rgpfucbIdx[iindex],
+                &rgFcbRef[ iindex ],
                 pidxcreateT,
                 szIndexName,
                 rgszColumns,
@@ -7719,7 +7729,7 @@ LOCAL ERR VTAPI ErrFILEIBatchCreateIndex(
                 &idb,
                 &jsphIndex ) );
 
-        pfcbIndexT = rgpfucbIdx[iindex]->u.pfcb;
+        pfcbIndexT = rgFcbRef[ iindex ].get();
         Assert( pfcbIndexT->FTypeSecondaryIndex() );
         pfcbIndexT->SetPfcbNextIndex( pfcbIndexes );
         pfcbIndexT->SetPfcbTable( pfcb );
@@ -7736,10 +7746,10 @@ LOCAL ERR VTAPI ErrFILEIBatchCreateIndex(
 
     pfcb->EnterDDL();
 
-    Assert( pfcbNil == rgpfucbIdx[0]->u.pfcb->PfcbNextIndex() );
+    Assert( pfcbNil == rgFcbRef[ 0 ]->PfcbNextIndex() );
     Assert( cIndexes > 0 );
-    Assert( pfcbIndexes == rgpfucbIdx[cIndexes-1]->u.pfcb );
-    rgpfucbIdx[0]->u.pfcb->SetPfcbNextIndex( pfcb->PfcbNextIndex() );
+    Assert( pfcbIndexes == rgFcbRef[ cIndexes - 1 ].get() );
+    rgFcbRef[ 0 ]->SetPfcbNextIndex( pfcb->PfcbNextIndex() );
     pfcb->SetPfcbNextIndex( pfcbIndexes );
 
     FILESetAllIndexMask( pfcb );
@@ -7748,10 +7758,7 @@ LOCAL ERR VTAPI ErrFILEIBatchCreateIndex(
 
     for ( iindex = 0; iindex < cIndexes; iindex++ )
     {
-        FUCB * const    pfucbIndexT     = rgpfucbIdx[iindex];
-        Assert( pfucbNil != pfucbIndexT );
-
-        FCB * const     pfcbIndexT      = pfucbIndexT->u.pfcb;
+        FCB* const     pfcbIndexT = rgFcbRef[ iindex ].get();
 
         Assert( pfcbNil != pfcbIndexT );
         Assert( pfcbIndexT->FTypeSecondaryIndex() );
@@ -7759,11 +7766,9 @@ LOCAL ERR VTAPI ErrFILEIBatchCreateIndex(
         pfcbIndexT->Lock();
         pfcbIndexT->ResetDontLogSpaceOps();
         pfcbIndexT->Unlock();
-
-        Assert( !FFUCBVersioned( pfucbIndexT ) );   // No versioned operations should have been performed, so won't be defer-closed.
-        DIRClose( pfucbIndexT );
     }
 
+    delete[] rgFcbRef;
     Call( ErrDIRCommitTransaction( ppib, fLazyCommit ? JET_bitCommitLazyFlush : 0 ) );
     fInTransaction = fFalse;
 
@@ -7775,30 +7780,16 @@ HandleError:
     {
         Assert( err < 0 );      // Must have hit an error.
 
-        if ( NULL != rgpfucbIdx )
-        {
-            for ( iindex = 0; iindex < cIndexes; iindex++ )
-            {
-                if ( pfucbNil != rgpfucbIdx[iindex] )
-                {
-                    Assert( !FFUCBVersioned( rgpfucbIdx[iindex] ) );    // No versioned operations should have been performed, so won't be defer-closed.
-                    DIRClose( rgpfucbIdx[iindex] );
-                }
-            }
-        }
-
+        delete[] rgFcbRef;
         CallSx( ErrDIRRollback( ppib ), JET_errRollbackError );
     }
 
-    DIRClose( pfucb );
-    AssertDIRNoLatch( ppib );
-
-Cleanup:
-    if ( NULL != rgpfucbIdx )
+    if ( pfucb != pfucbNil )
     {
-        OSMemoryHeapFree( rgpfucbIdx );
+        DIRClose( pfucb );
     }
 
+    AssertDIRNoLatch( ppib );
     return err;
 }
 
@@ -8568,6 +8559,7 @@ ERR ErrFILEDeleteTable( PIB *ppib, IFMP ifmp, const CHAR *szName, const BOOL fAl
     FUCB    *pfucb              = pfucbNil;
     FUCB    *pfucbParent        = pfucbNil;
     FCB     *pfcb               = pfcbNil;
+    FCBRef  fcbRefParent;
     OBJID   objidTable;
     CHAR    szTable[JET_cbNameMost+1];
     BOOL    fInUseBySystem;
@@ -8616,7 +8608,8 @@ ERR ErrFILEDeleteTable( PIB *ppib, IFMP ifmp, const CHAR *szName, const BOOL fAl
 
     //  open cursor on database and seek to table without locking
     //
-    Call( ErrDIROpen( ppib, pgnoSystemRoot, ifmp, &pfucbParent ) );
+    Call( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRefParent ) );
+    Call( ErrDIROpen( ppib, fcbRefParent.get(), &pfucbParent ) );
 
     {
     JET_GRBIT grbitOpen = JET_bitTableDelete | JET_bitTableDenyRead;

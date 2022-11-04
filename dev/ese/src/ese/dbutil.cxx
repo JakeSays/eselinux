@@ -3026,6 +3026,7 @@ LOCAL ERR ErrEnumDataNodes(
     )
 {
     ERR             err;
+    FCBRef          fcbRef;
     FUCB            *pfucb          = pfucbNil;
     BOOL            fForceInit      = fFalse;
     DIB         dib;
@@ -3033,31 +3034,32 @@ LOCAL ERR ErrEnumDataNodes(
     PGNO        pgnoLastSeen    = pgnoNull;
     CPG         cpgSeen         = 0;
 
-    CallR( ErrBTOpen( ppib, pgnoFDP, ifmp, &pfucb ) );
+    CallR( ErrFILEFcbGet( ppib, ifmp, pgnoFDP, objidNil, fcbRef ) );
+    CallR( ErrBTOpen( ppib, fcbRef.get(), &pfucb ) );
     Assert( pfucbNil != pfucb );
-    Assert( pfcbNil != pfucb->u.pfcb );
+    Assert( pfcbNil != fcbRef.get() );
 
     //  This is shamelessly stolen from the space enumeration/printing code
     //  that also walks a B-Tree during eseutil /ms, but its not clear if how
     //  much of what we were doing here is goodness ... I read the lifecycle
     //  of a FCB/FUCB doc, but it was still not clear.  Haha, just kidding, I
     //  would've read such a doc if it existed.
-    if ( !pfucb->u.pfcb->FInitialized() )
+    if ( !fcbRef->FInitialized() )
     {
         Assert( pgnoSystemRoot != pgnoFDP );
         Assert( pgnoFDPMSO != pgnoFDP );
         Assert( pgnoFDPMSO_NameIndex != pgnoFDP );
         Assert( pgnoFDPMSO_RootObjectIndex != pgnoFDP );
-        Assert( pfucb->u.pfcb->WRefCount() == 1 );
+        Assert( fcbRef->WRefCount() == 2 );
 
-        pfucb->u.pfcb->Lock();
+        fcbRef->Lock();
 
         //  must force FCB to initialized state to allow SPGetInfo() to
         //  open more cursors on the FCB -- this is safe because no
         //  other thread should be opening this FCB
-        pfucb->u.pfcb->CreateComplete();
+        fcbRef->CreateComplete();
 
-        pfucb->u.pfcb->Unlock();
+        fcbRef->Unlock();
         fForceInit = fTrue;
     }
 
@@ -3071,8 +3073,8 @@ LOCAL ERR ErrEnumDataNodes(
 
     BTUp( pfucb );
 
-    if ( pfucb->u.pfcb->FPrimaryIndex() ||
-            pfucb->u.pfcb->FTypeLV() ||
+    if ( fcbRef->FPrimaryIndex() ||
+            fcbRef->FTypeLV() ||
             FFUCBSpace( pfucb ) )
     {
         //  we will be traversing the entire tree in order, preread all the pages
@@ -3131,15 +3133,15 @@ HandleError:
 
     if ( fForceInit )
     {
-        Assert( pfucb->u.pfcb->WRefCount() == 1 );
+        Assert( fcbRef->WRefCount() == 2 );
 
-        pfucb->u.pfcb->Lock();
+        fcbRef->Lock();
 
         //  force the FCB to be uninitialized so it will be purged by BTClose
 
-        pfucb->u.pfcb->CreateCompleteErr( errFCBUnusable );
+        fcbRef->CreateCompleteErr( errFCBUnusable );
 
-        pfucb->u.pfcb->Unlock();
+        fcbRef->Unlock();
     }
     BTClose( pfucb );
 
@@ -3231,11 +3233,13 @@ LOCAL ERR ErrDBUTLGetSpaceTreeInfo(
     CPRINTF * const pcprintf )
 {
     ERR             err;
+    FCBRef          fcbRef;
     FUCB            *pfucb          = pfucbNil;
     BOOL            fForceInit      = fFalse;
     CPG             rgcpgExtent[4];
 
-    CallR( ErrBTOpen( ppib, pgnoFDP, ifmp, &pfucb ) );
+    CallR( ErrFILEFcbGet( ppib, ifmp, pgnoFDP, objidFDP, fcbRef ) );
+    CallR( ErrBTOpen( ppib, fcbRef.get(), &pfucb ) );
     Assert( pfucbNil != pfucb );
     Assert( pfcbNil != pfucb->u.pfcb );
 
@@ -3247,7 +3251,7 @@ LOCAL ERR ErrDBUTLGetSpaceTreeInfo(
         Assert( pgnoFDPMSO != pgnoFDP );
         Assert( pgnoFDPMSO_NameIndex != pgnoFDP );
         Assert( pgnoFDPMSO_RootObjectIndex != pgnoFDP );
-        Assert( pfucb->u.pfcb->WRefCount() == 1 );
+        Assert( pfucb->u.pfcb->WRefCount() == 2 );   // +1 for fcbRef, +1 for pfucb
 
         pfucb->u.pfcb->Lock();
 
@@ -3405,15 +3409,15 @@ HandleError:
 
     if ( fForceInit )
     {
-        Assert( pfucb->u.pfcb->WRefCount() == 1 );
+        Assert( fcbRef->WRefCount() == 2 );
 
-        pfucb->u.pfcb->Lock();
+        fcbRef->Lock();
 
-        //  force the FCB to be uninitialized so it will be purged by BTClose
+        //  force the FCB to be uninitialized so it will be purged by FCBRef deleter
 
-        pfucb->u.pfcb->CreateCompleteErr( errFCBUnusable );
+        fcbRef->CreateCompleteErr( errFCBUnusable );
 
-        pfucb->u.pfcb->Unlock();
+        fcbRef->Unlock();
     }
     BTClose( pfucb );
 
@@ -5262,6 +5266,7 @@ LOCAL ERR ErrDBUTLIEstimateRootSpaceLeak( PIB* const ppib, const IFMP ifmp )
     FUCB* pfucbSpaceTree = pfucbNil;
     FUCB* pfucbTable = pfucbNil;
     FUCB* pfucb = pfucbNil;
+    FCBRef fcbRef;
 
     szContext = "CheckInTrx";
     if ( ppib->Level() > 0 )
@@ -5343,16 +5348,10 @@ LOCAL ERR ErrDBUTLIEstimateRootSpaceLeak( PIB* const ppib, const IFMP ifmp )
                 {
                     // We are probably racing with table deletion.
                     FCBStateFlags fcbsf = fcbsfNone;
-                    OBJID objidFcb = objidNil;
-                    const BOOL fFoundFcb = ( FCB::PfcbFCBGet(
-                                                ifmp,
-                                                pgnoFDPLast,
-                                                &fcbsf,
-                                                fFalse,  // fIncrementRefCount
-                                                fTrue,   // fInitForRecovery
-                                                &objidFcb ) != pfcbNil ) &&
-                                            ( objidFcb == objidLast );
-                    const BOOL fDeletePending = fFoundFcb && ( ( fcbsf & fcbsfDeletePending ) != 0 );
+                    FCBRef fcbRefLast( FCB::PfcbFCBGet( ifmp, pgnoFDPLast, &fcbsf, fTrue /* fIncrementRefCount */ ) );
+                    const BOOL fFoundFcb = ( fcbRefLast.get() != pfcbNil && fcbRefLast->ObjidFDP() == objidLast );
+                    const BOOL fDeletePending = fFoundFcb && ( fcbsf & fcbsfDeletePending );
+                    fcbRefLast.reset();
 
                     if ( fFoundFcb )
                     {
@@ -5476,10 +5475,13 @@ LOCAL ERR ErrDBUTLIEstimateRootSpaceLeak( PIB* const ppib, const IFMP ifmp )
     szContext = "RootSpace";
 
     // Open root.
-    Call( ErrBTIOpen( ppib, ifmp, pgnoSystemRoot, objidNil, openNormal, &pfucb, fFalse ) );
+    Call( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRef ) );
+    Assert( fcbRef->FInitialized() );
+    Assert( fcbRef->FSpaceInitialized() );
+
+    Call( ErrBTOpen( ppib, fcbRef.get(), &pfucb ) );
     Call( ErrBTIGotoRoot( pfucb, latchReadNoTouch ) );
     pfucb->pcsrRoot = Pcsr( pfucb );
-    Assert( pfucb->u.pfcb->FSpaceInitialized() );
 
     // Root object.
     CPG rgcpgRootInfo[ 4 ] = { cpgNil };

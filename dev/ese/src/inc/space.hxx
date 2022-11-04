@@ -146,7 +146,7 @@ VOID SPTerm();
 //  initialize Root page
 //  returns pfucb placed on Root
 //
-ERR ErrSPInitFCB( _Inout_ FUCB * const pfucb );
+ERR ErrSPInitFCB( _In_ PIB * ppib, _Inout_ FCB * const pfcb );
 ERR ErrSPDeferredInitFCB( _Inout_ FUCB * const pfucb );
 ERR ErrSPGetLastPgno( _Inout_ PIB * ppib, _In_ const IFMP ifmp, _Out_ PGNO * ppgno );
 ERR ErrSPGetLastExtent( _Inout_ PIB * ppib, _In_ const IFMP ifmp, _Out_ EXTENTINFO * pextinfo );

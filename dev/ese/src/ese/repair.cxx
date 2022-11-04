@@ -8216,6 +8216,7 @@ LOCAL ERR ErrREPAIRRepairGlobalSpace(
     const PGNO pgnoLast = PgnoLast( ifmp );
     const CPG  cpgOwned = PgnoLast( ifmp ) - 3; // we will insert three pages in the ErrSPCreate below
 
+    FCBRef  fcbRef;
     FUCB    *pfucb      = pfucbNil;
     FUCB    *pfucbOE    = pfucbNil;
 
@@ -8242,7 +8243,8 @@ LOCAL ERR ErrREPAIRRepairGlobalSpace(
     // So, don't bother adding the (objidFDP, cpgOEFDP, cpgAEFDP) triplet to the
     // cache.
 
-    Call( ErrDIROpen( ppib, pgnoSystemRoot, ifmp, &pfucb ) );
+    Call( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRef ) );
+    Call( ErrDIROpen( ppib, fcbRef.get(), &pfucb ) );
 
     //  The tree has only one node so we can insert ths node without splitting
     Call( ErrSPIOpenOwnExt( pfucb, &pfucbOE ) );
@@ -8330,6 +8332,7 @@ LOCAL ERR ErrREPAIRDeleteCorruptedEntriesFromCatalog(
 //  ================================================================
 {
     ERR             err             = JET_errSuccess;
+    FCBRef          fcbRefCatalog;
     FUCB        *   pfucbCatalog    = pfucbNil;
     ENTRYINFO       entryinfo;
 
@@ -8342,7 +8345,8 @@ LOCAL ERR ErrREPAIRDeleteCorruptedEntriesFromCatalog(
 
     CallR( ErrDIRBeginTransaction( ppib, 64549, NO_GRBIT ) );
 
-    Call( ErrDIROpen( ppib, pgnoFDPMSO, ifmp, &pfucbCatalog ) );
+    Call( ErrFILEFcbGet( ppib, ifmp, pgnoFDPMSO, objidFDPMSO, fcbRefCatalog ) );
+    Call( ErrDIROpen( ppib, fcbRefCatalog.get(), &pfucbCatalog ) );
     Assert( pfucbNil != pfucbCatalog );
 
     FUCBSetIndex( pfucbCatalog );
@@ -8433,6 +8437,8 @@ HandleError:
         DIRClose( pfucbCatalog );
     }
 
+    fcbRefCatalog.reset();   // do we need to release the FCB before trx rollback?
+
     if ( JET_errSuccess != err )
     {
         CallSx( ErrDIRRollback( ppib ), JET_errRollbackError );
@@ -8481,6 +8487,7 @@ LOCAL ERR ErrREPAIRRepairCatalogs(
 {
     ERR     err                     = JET_errSuccess;
 
+    FCBRef  fcbRefParent;
     FUCB    * pfucbParent           = pfucbNil;
     FUCB    * pfucbCatalog          = pfucbNil;
     FUCB    * pfucbShadowCatalog    = pfucbNil;
@@ -8493,7 +8500,8 @@ LOCAL ERR ErrREPAIRRepairCatalogs(
     if ( fCatalogCorrupt || fShadowCatalogCorrupt )
     {
         //  we'll need this for the space
-        Call( ErrDIROpen( ppib, pgnoSystemRoot, ifmp, &pfucbParent ) );
+        Call( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRefParent ) );
+        Call( ErrDIROpen( ppib, fcbRefParent.get(), &pfucbParent ) );
     }
 
     if ( fCatalogCorrupt && fShadowCatalogCorrupt )
@@ -8996,6 +9004,7 @@ LOCAL ERR ErrREPAIRCopyTempTableToCatalog(
 
     JET_ERR err             = JET_errSuccess;
 
+    FCBRef  fcbRefParent;
     FUCB    * pfucbParent   = pfucbNil;
     FUCB    * pfucbCatalog  = pfucbNil;
     FUCB    * pfucbSpace    = pfucbNil;
@@ -9007,7 +9016,8 @@ LOCAL ERR ErrREPAIRCopyTempTableToCatalog(
     VOID * pvData = NULL;
     BFAlloc( bfasIndeterminate, &pvData );
 
-    Call( ErrDIROpen( ppib, pgnoSystemRoot, ifmp, &pfucbParent ) );
+    Call( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRefParent ) );
+    Call( ErrDIROpen( ppib, fcbRefParent.get(), &pfucbParent ) );
     Assert( pfucbNil != pfucbParent );
 
     //  when we create this we cannot make all the pages available, some will be needed later
@@ -9651,10 +9661,12 @@ LOCAL ERR ErrREPAIRCreateEmptyFDP(
     const CPG cpgMin    = cpgMultipleExtentMin;
     CPG cpgRequest      = cpgMin;
 
+    FCBRef fcbRef;
     FUCB * pfucb = pfucbNil;
 
     //  the fucb is used to get an extent from the parent
-    Call( ErrDIROpen( ppib, pgnoParent, ifmp, &pfucb ) );
+    Call( ErrFILEFcbGet( ppib, ifmp, pgnoParent, objidNil, fcbRef ) );
+    Call( ErrDIROpen( ppib, fcbRef.get(), &pfucb ) );
     if ( pgnoNull == *ppgnoFDPNew )
     {
         Call( ErrSPGetExt(
@@ -9852,6 +9864,7 @@ LOCAL ERR ErrREPAIRRebuildSpace(
     CPG     cpgRun          = 0;
 
     FUCB    *pfucbOE        = pfucbNil;
+    FCBRef  fcbRefParent;
     FUCB    *pfucbParent    = pfucbNil;
 
     const OBJID objidFDP    = pfucb->u.pfcb->ObjidFDP();
@@ -9883,7 +9896,8 @@ LOCAL ERR ErrREPAIRRebuildSpace(
     Assert( pgnoNull != pgnoParent );
     if ( pgnoNull != pgnoParent )
     {
-        Call( ErrBTOpen( ppib, pgnoParent, ifmp, &pfucbParent ) );
+        Call( ErrFILEFcbGet( ppib, ifmp, pgnoParent, objidNil, fcbRefParent ) );
+        Call( ErrBTOpen( ppib, fcbRefParent.get(), &pfucbParent ) );
         Assert( pfucbNil != pfucbParent );
         Assert( pfcbNil != pfucbParent->u.pfcb );
         Assert( pfucbParent->u.pfcb->FInitialized() );
@@ -10313,6 +10327,7 @@ LOCAL ERR ErrREPAIRFixLVs(
 {
     ERR err = JET_errSuccess;
 
+    FCBRef  fcbRef;
     FUCB *  pfucb       = pfucbNil;
     BOOL    fDone       = fFalse;
     LvId    lidCurr;
@@ -10327,7 +10342,8 @@ LOCAL ERR ErrREPAIRFixLVs(
 
     (*popts->pcprintfVerbose)( "fixing long value tree\r\n" );
 
-    Call( ErrDIROpen( ppib, pgnoLV, ifmp, &pfucb ) );
+    Call( ErrFILEFcbGet( ppib, ifmp, pgnoLV, prepairtable->objidLV, fcbRef ) );
+    Call( ErrDIROpen( ppib, fcbRef.get(), &pfucb ) );
     Assert( pfucbNil != pfucb );
     // Make sure the LV FCB is properly linked to the Table FCB, needed later to look up chunk-size
     Assert( pfucb->u.pfcb->PfcbTable() != pfcbNil );
@@ -10408,7 +10424,7 @@ LOCAL ERR ErrREPAIRFixLVs(
                     DIRUp( pfucb );
                 }
 
-                Call( ErrDIROpen( ppib, pgnoLV, ifmp, &pfucbLVRoot ) );
+                Call( ErrDIROpen( ppib, fcbRef.get(), &pfucbLVRoot ) );
 
                 (*popts->pcprintfVerbose)( "long value 0x%I64x has no root. creating a root with refcount %d and size %d\r\n", (_LID64)lidCurr, ulRefcount, ulSize );
 
@@ -10964,6 +10980,7 @@ LOCAL ERR ErrREPAIRFixRecords(
 {
     ERR err = JET_errSuccess;
 
+    FCBRef  fcbRef;
     FUCB *  pfucb   = pfucbNil;
 
     INT crecordDeleted  = 0;
@@ -10975,7 +10992,9 @@ LOCAL ERR ErrREPAIRFixRecords(
 
     (*popts->pcprintfVerbose)( "fixing records\r\n" );
 
-    Call( ErrDIROpen( ppib, pgnoFDP, ifmp, &pfucb ) );
+    Assert( objidNil != prepairtable->objidFDP );
+    Call( ErrFILEFcbGet( ppib, ifmp, pgnoFDP, prepairtable->objidFDP, fcbRef ) );
+    Call( ErrDIROpen( ppib, fcbRef.get(), &pfucb ) );
     Assert( pfucbNil != pfucb );
 
     FUCBSetIndex( pfucb );
@@ -11090,6 +11109,7 @@ LOCAL ERR ErrREPAIRFixLVRefcounts(
 //-
 {
     ERR err         = JET_errSuccess;
+    FCBRef fcbRef;
     FUCB * pfucb    = pfucbNil;
 
     (*popts->pcprintfVerbose)( "fixing long value refcounts\r\n" );
@@ -11102,7 +11122,8 @@ LOCAL ERR ErrREPAIRFixLVRefcounts(
     }
     Call( pttmapLVTree->ErrMoveFirst() );
 
-    Call( ErrDIROpen( ppib, pgnoLV, ifmp, &pfucb ) );
+    Call( ErrFILEFcbGet( ppib, ifmp, pgnoLV, prepairtable->objidLV, fcbRef ) );
+    Call( ErrDIROpen( ppib, fcbRef.get(), &pfucb ) );
 
     //  Mark the fcb as being an LV; (see ErrFILEIInitLVRoot for 
     //  other initialization that isn't needed)

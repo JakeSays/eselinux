@@ -361,8 +361,7 @@ LOCAL ERR ErrESEDUMPIndexForOneTable(FUCB *pfucbTable, JET_GRBIT grbitESEDUMPMod
         // open it
         Call (ErrDIROpen(
                     pfucbTable->ppib,
-                    pfcb->PgnoFDP(),
-                    pfucbTable->ifmp,
+                    pfcb,
                     &pfucbIndex ));
                     
         Assert(pfucbIndex != pfucbNil );
@@ -727,15 +726,14 @@ HandleError:
 // then call the space info function for this page
 LOCAL ERR ErrESEDUMPDatabaseInfo(PIB *ppib, IFMP ifmp, JET_GRBIT grbitESEDUMPMode)
 {
+    FCBRef fcbRef;
     FUCB *pfucbDb =     pfucbNil;
     ERR err =           JET_errSuccess;
     
     // open the table
-    CallR (ErrDIROpen(
-                ppib,
-                pgnoSystemRoot,
-                ifmp,
-                &pfucbDb ));
+    CallR( ErrFILEFcbGet( ppib, ifmp, pgnoSystemRoot, objidSystemRoot, fcbRef ) );
+    CallR( ErrDIROpen( ppib, fcbRef.get(), &pfucbDb ) );
+
     Assert( pfucbNil != pfucbDb );
     Assert( pfcbNil != pfucbDb->u.pfcb );
     Assert( pgnoSystemRoot == pfucbDb->u.pfcb->PgnoFDP());

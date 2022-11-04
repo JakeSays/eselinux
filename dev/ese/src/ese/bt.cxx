@@ -499,7 +499,6 @@ ERR ErrBTOpen( PIB *ppib, FCB *pfcb, FUCB **ppfucb, BOOL fAllowReuse )
     FUCB    *pfucb;
 
     Assert( pfcb != pfcbNil );
-    Assert( pfcb->FInitialized() );
 
     // In most cases, we should reuse a deferred-closed FUCB.  The one
     // time we don't want to is if we're opening a space cursor.
@@ -789,24 +788,7 @@ VOID BTClose( FUCB *pfucb )
             pfcb->ResetDomainDenyWrite();
         }
 
-        if ( !pfcb->FInitialized() )
-        {
-
-            //  we own the FCB (we're closing because the FCB was created during
-            //      a DIROpen() of a DIRCreateDirectory() or because an error
-            //      occurred during FILEOpenTable())
-
-            //  unlink the FUCB from the FCB without moving the FCB to the
-            //      avail LRU list (this prevents the FCB from being purged)
-
-            pfucb->u.pfcb->Unlink( pfucb, fTrue );
-
-            //  synchronously purge the FCB
-
-            pfcb->PrepareForPurge();
-            pfcb->Purge();
-        }
-        else if ( pfcb->FTypeTable() )
+        if ( pfcb->FTypeTable() )
         {
 
             //  only table FCBs can be moved to the avail-LRU list
@@ -7439,6 +7421,7 @@ HandleError:
 ERR ErrBTDumpPageUsage( PIB * ppib, const IFMP ifmp, const PGNO pgnoFDP )
 {
     ERR         err                     = JET_errSuccess;
+    FCBRef      fcbRef;
     FUCB *      pfucb                   = pfucbNil;
     DIB         dib;
     CSR *       pcsr;
@@ -7464,8 +7447,8 @@ ERR ErrBTDumpPageUsage( PIB * ppib, const IFMP ifmp, const PGNO pgnoFDP )
 
     if ( pgnoNull != pgnoFDP )
     {
-
-        Call( ErrBTOpen( ppib, pgnoFDP, ifmp, &pfucb ) );
+        Call( ErrFILEFcbGet( ppib, ifmp, pgnoFDP, objidNil, fcbRef ) );
+        Call( ErrBTOpen( ppib, fcbRef.get(), &pfucb ) );
         FUCBSetIndex( pfucb );
 
         //  we will be traversing the entire tree in order, preread all the pages
@@ -7626,229 +7609,6 @@ HandleError:
 
 
 
-//  ******************************************************
-//  SPECIAL OPERATIONS
-//
-
-
-INLINE ERR ErrBTICreateFCB(
-    PIB             *ppib,
-    const IFMP      ifmp,
-    const PGNO      pgnoFDP,
-    const OBJID     objidFDP,
-    const OPENTYPE  opentype,
-    FUCB            **ppfucb )
-{
-    ERR             err;
-    FCB             *pfcb       = pfcbNil;
-    FUCB            *pfucb      = pfucbNil;
-
-    //  create a new FCB
-
-    CallR( FCB::ErrCreate( ppib, ifmp, pgnoFDP, &pfcb ) );
-
-    //  the creation was successful
-
-    Assert( pfcb->IsLocked() );
-    Assert( pfcb->FTypeNull() );                // No fcbtype yet.
-    Assert( pfcb->Ifmp() == ifmp );
-    Assert( pfcb->PgnoFDP() == pgnoFDP );
-    Assert( !pfcb->FInitialized() );
-    Assert( pfcb->WRefCount() == 0 );
-    pfcb->Unlock();
-
-    Call( ErrFUCBOpen( ppib, ifmp, &pfucb ) );
-    Call( pfcb->ErrLink( pfucb ) );
-
-    Assert( !pfcb->FSpaceInitialized() );
-    Assert( openNew != opentype || objidNil == objidFDP );
-    if ( openNew != opentype )
-    {
-        if ( objidNil == objidFDP )
-        {
-            Assert( openNormal == opentype );
-
-            //  read space info into FCB cache, including objid
-            Call( ErrSPInitFCB( pfucb ) );
-            Assert( g_fRepair || pfcb->FSpaceInitialized() );
-        }
-        else
-        {
-            pfcb->SetObjidFDP( objidFDP );
-            if ( openNormalNonUnique == opentype )
-            {
-                pfcb->Lock();
-                pfcb->SetNonUnique();
-                pfcb->Unlock();
-            }
-            else
-            {
-                Assert( pfcb->FUnique() );          //  btree is initially assumed to be unique
-                Assert( openNormalUnique == opentype );
-            }
-            Assert( !pfcb->FSpaceInitialized() );
-        }
-    }
-
-    if ( pgnoFDP == pgnoSystemRoot )
-    {
-        // SPECIAL CASE: For database cursor, we've got all the
-        // information we need.
-
-        //  when opening db cursor, always force to check the root page
-        Assert( objidNil == objidFDP );
-        if ( openNew == opentype )
-        {
-            //  objid will be set when we return to ErrSPCreate()
-            Assert( objidNil == pfcb->ObjidFDP() );
-        }
-        else
-        {
-            Assert( objidSystemRoot == pfcb->ObjidFDP() );
-        }
-
-        //  insert this FCB into the global list
-
-        pfcb->InsertList();
-
-        //  finish initializing this FCB
-
-        pfcb->Lock();
-        Assert( pfcb->FTypeNull() );
-        pfcb->SetTypeDatabase();
-        pfcb->CreateComplete();
-        pfcb->Unlock();
-    }
-
-    *ppfucb = pfucb;
-    Assert( !Pcsr( pfucb )->FLatched() );
-
-    return err;
-
-HandleError:
-    Assert( pfcbNil != pfcb );
-    Assert( !pfcb->FInitialized() );
-    Assert( !pfcb->FInList() );
-    Assert( !pfcb->FInLRU() );
-    Assert( ptdbNil == pfcb->Ptdb() );
-    Assert( pfcbNil == pfcb->PfcbNextIndex() );
-    Assert( pidbNil == pfcb->Pidb() );
-
-    if ( pfucbNil != pfucb )
-    {
-        if ( pfcbNil != pfucb->u.pfcb )
-        {
-            Assert( pfcb == pfucb->u.pfcb );
-            // We managed to link the FUCB to the FCB before we errored.
-            pfcb->Unlink( pfucb, fTrue );
-        }
-
-        //  close the FUCB
-        FUCBClose( pfucb );
-    }
-
-    //  synchronously purge the FCB
-    pfcb->PrepareForPurge( fFalse );
-    pfcb->Purge( fFalse );
-
-    return err;
-}
-
-
-//  *****************************************************
-//  BTREE INTERNAL ROUTINES
-//
-
-//  opens a cursor on a tree rooted at pgnoFDP
-//  open cursor on corresponding FCB if it is in cache [common case]
-//  if FCB not in cache, create one, link with cursor
-//              and initialize FCB space info
-//  if fNew is set, this is a new tree,
-//      so do not initialize FCB space info
-//  fWillInitFCB: On a passive, is the caller planning to fully hydrate the placeholder FCB?
-//
-ERR ErrBTIOpen(
-    PIB             *ppib,
-    const IFMP      ifmp,
-    const PGNO      pgnoFDP,
-    const OBJID     objidFDP,
-    const OPENTYPE  opentype,
-    FUCB            **ppfucb,
-    BOOL            fWillInitFCB )
-{
-    ERR             err;
-    FCB             *pfcb;
-    FCBStateFlags   fcbsf;
-    ULONG           cRetries = 0;
-    PIBTraceContextScope tcScope = ppib->InitTraceContextScope( );
-    tcScope->iorReason.SetIors( iorsBTOpen );
-
-RetrieveFCB:
-    AssertTrack( cRetries != 100000, "TooManyFcbOpenRetries" );
-
-    //  get the FCB for the given ifmp/pgnoFDP
-
-    pfcb = FCB::PfcbFCBGet( ifmp, pgnoFDP, &fcbsf, fTrue, !fWillInitFCB );
-    if ( pfcb == pfcbNil )
-    {
-
-        //  the FCB does not exist
-
-        Assert( fcbsfNone == fcbsf );
-
-        //  try to create a new B-tree which will cause the creation of the new FCB
-
-        err = ErrBTICreateFCB( ppib, ifmp, pgnoFDP, objidFDP, opentype, ppfucb );
-        Assert( err <= JET_errSuccess );        // Shouldn't return warnings.
-
-        if ( err == errFCBExists )
-        {
-
-            //  we failed because someone else was racing to create
-            //      the same FCB that we want, but they beat us to it
-
-            //  try to get the FCB again
-
-            UtilSleep( 10 );
-            cRetries++;
-            goto RetrieveFCB;
-        }
-        Call( err );
-
-        tcScope->nParentObjectClass = TceFromFUCB( *ppfucb );
-    }
-    else
-    {
-        tcScope->nParentObjectClass = pfcb->TCE();
-
-        if ( fcbsf & fcbsfInitialized )
-        {
-            Assert( pfcb->WRefCount() >= 1);
-            err = ErrBTOpen( ppib, pfcb, ppfucb );
-
-            // Cursor has been opened on FCB, so refcount should be
-            // at least 2 (one for cursor, one for call to PfcbFCBGet()).
-            // (if ErrBTOpen returns w/o error)
-            Assert( pfcb->WRefCount() > 1 || (1 == pfcb->WRefCount() && err < JET_errSuccess) );
-
-            pfcb->Release();
-        }
-        else
-        {
-            FireWall( "DeprecatedSentinelFcbBtOpen" ); // Sentinel FCBs are believed deprecated
-            Assert( !FFMPIsTempDB( ifmp ) );     // Sentinels not used by sort/temp. tables.
-
-            // If we encounter a sentinel, it means the
-            // table has been locked for subsequent deletion.
-            err = ErrERRCheck( JET_errTableLocked );
-        }
-    }
-
-HandleError:
-    return err;
-}
-
-
 //  *************************************************
 //  movement operations
 //
@@ -7903,33 +7663,6 @@ ERR ErrBTIGotoRoot( FUCB *pfucb, LATCH latch )
     }
 
     return JET_errSuccess;
-}
-
-ERR ErrBTIOpenAndGotoRoot( PIB *ppib, const PGNO pgnoFDP, const IFMP ifmp, FUCB **ppfucb )
-{
-    ERR     err;
-    FUCB    *pfucb;
-
-    CallR( ErrBTIOpen( ppib, ifmp, pgnoFDP, objidNil, openNormal, &pfucb, fFalse ) );
-    Assert( pfucbNil != pfucb );
-    Assert( pfcbNil != pfucb->u.pfcb );
-    Assert( pfucb->u.pfcb->FInitialized() );
-
-    err = ErrBTIGotoRoot( pfucb, latchRIW );
-    if ( err < JET_errSuccess )
-    {
-        BTClose( pfucb );
-    }
-    else
-    {
-        Assert( latchRIW == Pcsr( pfucb )->Latch() );
-        Assert( pcsrNil == pfucb->pcsrRoot );
-        pfucb->pcsrRoot = Pcsr( pfucb );
-
-        *ppfucb = pfucb;
-    }
-
-    return err;
 }
 
 //  this is the uncommon case in the refresh logic
