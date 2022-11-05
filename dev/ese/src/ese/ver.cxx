@@ -5825,10 +5825,10 @@ ERR VER::ErrVERICleanOneRCE( RCE * const prce )
 
                 VERIWaitForTasks( this, pfcbT, fFalse, fTrue );
 
-                // bugfix (#45382): May have outstanding moved RCE's
+                // Processing of delta RCEs may have created flagDelete/writeLock RCEs after operTableDelete.
                 Assert( pfcbT->PrceOldest() == prceNil
-                    || ( pfcbT->PrceOldest()->Oper() == operFlagDelete
-                        && pfcbT->PrceOldest()->FMoved() ) );
+                    || pfcbT->PrceOldest()->Oper() == operFlagDelete
+                    || pfcbT->PrceOldest()->Oper() == operWriteLock );
                 VERNullifyAllVersionsOnFCB( pfcbT );
 
                 pfcbT->PrepareForPurge( fFalse );
