@@ -2064,7 +2064,16 @@ class TFileFilter  //  ff
 
             CLockDeadlockDetectionInfo::DisableOwnershipTracking();
             CLockDeadlockDetectionInfo::DisableDeadlockDetection();
-            m_rwlRegisterIFilePerfAPI.EnterAsReader();
+
+            if ( !m_rwlRegisterIFilePerfAPI.FTryEnterAsReader() )
+            {
+                //  ensure any previously requested IO is issued to avoid deadlock with registration
+
+                CallS( ErrIOIssue() );
+
+                m_rwlRegisterIFilePerfAPI.EnterAsReader();
+            }
+
             CLockDeadlockDetectionInfo::EnableDeadlockDetection();
             CLockDeadlockDetectionInfo::EnableOwnershipTracking();
         }
@@ -2645,13 +2654,16 @@ ERR TFileFilter<I>::ErrIOIssue()
 template< class I >
 void TFileFilter<I>::RegisterIFilePerfAPI( _In_ IFilePerfAPI* const pfpapi )
 {
-    //  ensure any previously requested IO is issued to avoid deadlock during registration
-
-    CallS( ErrIOIssue() );
-
     //  disallow registration of IFilePerfAPI during any IO request
 
-    m_rwlRegisterIFilePerfAPI.EnterAsWriter();
+    if ( !m_rwlRegisterIFilePerfAPI.FTryEnterAsWriter() )
+    {
+        //  ensure any previously requested IO is issued to avoid deadlock during registration
+
+        CallS( ErrIOIssue() );
+
+        m_rwlRegisterIFilePerfAPI.EnterAsWriter();
+    }
 
     //  if we already registered an IFilePerfAPI then drop this one, otherwise register it
 
