@@ -1247,6 +1247,10 @@ class ICachedBlockSlab  //  cbs
 
         virtual BOOL FDirty() = 0;
 
+        //  Indicates the number of invalid slots in the slab.
+
+        virtual int CInvalidSlot() = 0;
+
         //  Callback used to indicate that a slab is saved.
 
         typedef void (*PfnSlabSaved)(   _In_ const ERR          err,

@@ -113,9 +113,13 @@ class CHashedLRUKCacheThreadLocalStorage  //  ctls
         {
             if ( pcbs )
             {
+                QWORD ibSlab = 0;
+                CallS( pcbs->ErrGetPhysicalId( &ibSlab ) );
+                Assert( ibSlab );
+
                 for ( size_t iibSlab = 0; iibSlab < s_cibSlab; iibSlab++ )
                 {
-                    if ( pcbs == m_rgpcbsSlab[ iibSlab ] )
+                    if ( m_rgibSlab[ iibSlab ] == ibSlab )
                     {
                         return fTrue;
                     }
@@ -129,7 +133,7 @@ class CHashedLRUKCacheThreadLocalStorage  //  ctls
         {
             for ( size_t iibSlab = 0; iibSlab < s_cibSlab; iibSlab++ )
             {
-                if ( m_rgpcbsSlab[ iibSlab ] )
+                if ( m_rgibSlab[ iibSlab ] )
                 {
                     return fTrue;
                 }

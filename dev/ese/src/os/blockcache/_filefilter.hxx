@@ -821,11 +821,6 @@ class TFileFilter  //  ff
                     }
                 }
 
-                static void Cleanup()
-                {
-                    CRequest::Cleanup();
-                }
-
             protected:
 
                 ~CThreadLocalStorage()

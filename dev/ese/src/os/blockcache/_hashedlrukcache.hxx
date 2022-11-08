@@ -4688,6 +4688,51 @@ class THashedLRUKCache
                 CReaderWriterLock           m_rwlPresenceFilter;
         };
 
+        //  Journal Slab Wrapper
+
+        class CJournalSlabWrapper : public CCachedBlockSlabWrapper
+        {
+            public:  //  specialized API
+
+                CJournalSlabWrapper(    _In_    THashedLRUKCache<I>* const  pc,
+                                        _Inout_ ICachedBlockSlab** const    ppcbs,
+                                        _Inout_ QWORD* const                pibJournalSlabAcquired )
+                    :   CCachedBlockSlabWrapper( ppcbs ),
+                        m_pc( pc ),
+                        m_ibJournalSlabAcquired( *pibJournalSlabAcquired )
+                {
+                    *pibJournalSlabAcquired = 0;
+                }
+
+#pragma push_macro( "new" )
+#undef new
+
+                using CPool = TPool<CJournalSlabWrapper>;
+
+                void* operator new( _In_ const size_t cb )
+                {
+                    return CPool::PvAllocate();
+                }
+
+                void operator delete( _In_opt_ void* const pv )
+                {
+                    void* pvT = pv;
+                    CPool::Free( &pvT );
+                }
+
+#pragma pop_macro( "new" )
+
+                virtual ~CJournalSlabWrapper()
+                {
+                    m_pc->ReleaseJournalSlab( m_ibJournalSlabAcquired );
+                }
+
+            private:
+
+                THashedLRUKCache<I>* const  m_pc;
+                const QWORD                 m_ibJournalSlabAcquired;
+        };
+
     private:
 
         ERR ErrDumpJournalMetadata( _In_ CPRINTF* const pcprintf );
@@ -5083,10 +5128,7 @@ class THashedLRUKCache
         void UnregisterOpenSlabWait( _In_ CHashedLRUKCacheThreadLocalStorage<I>* const pctls, _In_ const QWORD ibSlab );
 
         ERR ErrGetJournalSlab( _Out_ ICachedBlockSlab** const ppcbs );
-
-        size_t IcrefJournalSlab( _In_ const QWORD ibSlab );
-        void ReferenceJournalSlab( _In_ const QWORD ibSlab );
-        void ReleaseJournalSlab( _In_ const QWORD ibSlab );
+        void ReleaseJournalSlab( _In_ const QWORD ibJournalSlabAcquired );
 
         ERR ErrEvictSlot(   _In_    ICachedBlockSlab*           pcbs,
                             _In_    const CCachedBlockSlot&     slot,
@@ -9630,7 +9672,6 @@ ERR THashedLRUKCache<I>::ErrGetSlabInternal(    _In_    const QWORD             
     const BOOL                              fWait           = !fForSlabWriteBack;
     CHashedLRUKCacheThreadLocalStorage<I>*  pctls           = NULL;
     ICachedBlockSlabManager*                pcbsm           = NULL;
-    BOOL                                    fRelease        = fFalse;
     BOOL                                    fUnregisterWait = fFalse;
     ERR                                     errSlab         = JET_errSuccess;
     ICachedBlockSlab*                       pcbs            = NULL;
@@ -9654,17 +9695,9 @@ ERR THashedLRUKCache<I>::ErrGetSlabInternal(    _In_    const QWORD             
         Error( ErrBlockCacheInternalError( "HashedLRUKCacheUnknownSlabType" ) );
     }
 
-    //  if this is a journal slab then note we are acquiring it
-
-    if ( pcbsm == m_pcbsmJournal )
-    {
-        ReferenceJournalSlab( ibSlab );
-        fRelease = fTrue;
-    }
-
     //  register as a waiter for the slab
 
-    if ( fWait && !fForSlabWriteBack )
+    if ( fWait )
     {
         RegisterOpenSlabWait( pctls, ibSlab );
         fUnregisterWait = fTrue;
@@ -9678,8 +9711,6 @@ ERR THashedLRUKCache<I>::ErrGetSlabInternal(    _In_    const QWORD             
     {
         Call( ErrUnexpectedMetadataReadFailure( "GetSlabById", err, ErrERRCheck( JET_errDiskIO ) ) );
     }
-
-    fRelease = fRelease && !pcbs;
 
     //  update our cached block presence filter if necessary
 
@@ -9720,10 +9751,6 @@ HandleError:
     {
         UnregisterOpenSlabWait( pctls, ibSlab );
     }
-    if ( fRelease )
-    {
-        ReleaseJournalSlab( ibSlab );
-    }
     ReleaseSlab( err, &pcbs );
     if ( ( fIgnoreVerificationErrors ? ErrIgnoreVerificationErrors( err ) : err ) < JET_errSuccess )
     {
@@ -9751,9 +9778,7 @@ ERR THashedLRUKCache<I>::ErrUnexpectedMetadataReadFailure(  _In_ const char* con
 template<class I>
 void THashedLRUKCache<I>::ReleaseSlab( _In_ const ERR err, _Inout_ ICachedBlockSlab** const ppcbs )
 {
-    ICachedBlockSlab* const pcbs            = *ppcbs;
-    QWORD                   ibSlab          = 0;
-    BOOL                    fJournalSlab    = fFalse;
+    ICachedBlockSlab* const pcbs    = *ppcbs;
 
     *ppcbs = NULL;
 
@@ -9761,11 +9786,6 @@ void THashedLRUKCache<I>::ReleaseSlab( _In_ const ERR err, _Inout_ ICachedBlockS
 
     if ( pcbs )
     {
-        //  determine if this is a journal slab
-
-        CallS( pcbs->ErrGetPhysicalId( &ibSlab ) );
-        fJournalSlab = FJournalSlab( ibSlab );
-
         //  unregister our open slab
 
         UnregisterOpenSlab( pcbs );
@@ -9777,13 +9797,6 @@ void THashedLRUKCache<I>::ReleaseSlab( _In_ const ERR err, _Inout_ ICachedBlockS
         //  release the slab
 
         delete pcbs;
-
-        //  if this was a journal slab then note that it has been released
-
-        if ( fJournalSlab )
-        {
-            ReleaseJournalSlab( ibSlab );
-        }
     }
 }
 
@@ -10024,14 +10037,16 @@ void THashedLRUKCache<I>::UnregisterOpenSlabWait( _In_ CHashedLRUKCacheThreadLoc
 template<class I>
 ERR THashedLRUKCache<I>::ErrGetJournalSlab( _Out_ ICachedBlockSlab** const ppcbs )
 {
-    ERR                 err     = JET_errSuccess;
-    ICachedBlockSlab*   pcbs    = NULL;
+    ERR                 err                     = JET_errSuccess;
+    QWORD               ibJournalSlabAcquired   = 0;
+    ICachedBlockSlab*   pcbs                    = NULL;
+    ICachedBlockSlab*   pcbsWrapper             = NULL;
 
     *ppcbs = NULL;
 
     //  choose a journal slab randomly to provide scalability and to ensure all clusters can be used
     //
-    //  NOTE:  this will acquire an extra ref count on the journal slab that we will release at the end
+    //  NOTE:  this will acquire an extra ref count on the journal slab that we must release with the slab
 
     UINT uiRandom;
     const BOOL fSuccess = rand_s( &uiRandom ) == 0;
@@ -10039,61 +10054,58 @@ ERR THashedLRUKCache<I>::ErrGetJournalSlab( _Out_ ICachedBlockSlab** const ppcbs
 
     const size_t        icrefJournalSlabStart   = uiRandom % m_ccrefJournalSlab;
     const QWORD         cbSlab                  = CbChunkPerSlab();
-    QWORD               ibSlab                  = 0;
 
     for ( size_t dicrefJournalSlab = 0; dicrefJournalSlab < m_ccrefJournalSlab; dicrefJournalSlab++ )
     {
         const size_t icrefJournalSlab = ( icrefJournalSlabStart + dicrefJournalSlab ) % m_ccrefJournalSlab;
         if ( AtomicCompareExchange( (LONG*)&m_rgcrefJournalSlab[ icrefJournalSlab ], 0, 1 ) == 0 )
         {
-            ibSlab = m_pch->IbChunkJournal() + icrefJournalSlab * cbSlab;
+            ibJournalSlabAcquired = m_pch->IbChunkJournal() + icrefJournalSlab * cbSlab;
             break;
         }
     }
 
-    if ( ibSlab == 0 )
+    if ( ibJournalSlabAcquired == 0 )
     {
-        ibSlab = m_pch->IbChunkJournal() + icrefJournalSlabStart * cbSlab;
-        ReferenceJournalSlab( ibSlab );
+        ibJournalSlabAcquired = m_pch->IbChunkJournal() + icrefJournalSlabStart * cbSlab;
+        AtomicIncrement( (LONG*)&m_rgcrefJournalSlab[ icrefJournalSlabStart ] );
     }
 
     //  get the chosen journal slab
 
-    Call( ErrGetSlab( ibSlab, &pcbs ) );
+    Call( ErrGetSlab( ibJournalSlabAcquired, &pcbs ) );
+
+    //  add a wrapper to the journal slab that will allow us to release the journal slab ref count
+
+    Alloc( pcbsWrapper = new CJournalSlabWrapper( this, &pcbs, &ibJournalSlabAcquired ) );
+    pcbs = pcbsWrapper;
+    pcbsWrapper = NULL;
 
     //  return the journal slab
 
     *ppcbs = pcbs;
     pcbs = NULL;
 
-    //  release the extra ref count on the journal slab
-
 HandleError:
-    ReleaseJournalSlab( ibSlab );
+    ReleaseSlab( err, &pcbsWrapper );
     ReleaseSlab( err, &pcbs );
     if ( err < JET_errSuccess )
     {
         ReleaseSlab( err, ppcbs );
     }
+    if ( ibJournalSlabAcquired )
+    {
+        ReleaseJournalSlab( ibJournalSlabAcquired );
+    }
     return err;
 }
 
 template<class I>
-size_t THashedLRUKCache<I>::IcrefJournalSlab( _In_ const QWORD ibSlab )
+void THashedLRUKCache<I>::ReleaseJournalSlab( _In_ const QWORD ibJournalSlabAcquired )
 {
-    return (size_t)( ( ibSlab - m_pch->IbChunkJournal() ) / CbChunkPerSlab() );
-}
+    const size_t icrefJournalSlab = (size_t)( ( ibJournalSlabAcquired - m_pch->IbChunkJournal() ) / CbChunkPerSlab() );
 
-template<class I>
-void THashedLRUKCache<I>::ReferenceJournalSlab( _In_ const QWORD ibSlab )
-{
-    AtomicIncrement( (LONG*)&m_rgcrefJournalSlab[ IcrefJournalSlab( ibSlab ) ] );
-}
-
-template<class I>
-void THashedLRUKCache<I>::ReleaseJournalSlab( _In_ const QWORD ibSlab )
-{
-    AtomicDecrement( (LONG*)&m_rgcrefJournalSlab[ IcrefJournalSlab( ibSlab ) ] );
+    AtomicDecrement( (LONG*)&m_rgcrefJournalSlab[ icrefJournalSlab ] );
 }
 
 template<class I>
@@ -10126,9 +10138,7 @@ ERR THashedLRUKCache<I>::ErrEvictOrInvalidateSlot(  _In_    ICachedBlockSlab*   
     //  until the journal is flushed.  if there are no slots available then we will flush the journal
     //  and evict all FValid and !FDirty slots and try again
 
-    Call( pcbsJournal->ErrGetSlotForWrite( s_cbidInvalid, 0, NULL, &slotJournal ) );
-
-    if ( !slotJournal.FValid() )
+    if ( !pcbsJournal->CInvalidSlot() )
     {
         //  flush the journal twice to advance the durable for writeback pointer so that we know it is
         //  safe to reuse the clusters
@@ -10142,7 +10152,7 @@ ERR THashedLRUKCache<I>::ErrEvictOrInvalidateSlot(  _In_    ICachedBlockSlab*   
     }
 
     Call( pcbsJournal->ErrGetSlotForWrite( s_cbidInvalid, 0, NULL, &slotJournal ) );
-    Assert( slotJournal.FValid() );
+    EnforceSz( slotJournal.FValid(), "HashedLRUKCacheEvictOrInvalidateSlot" );
     Assert( slotJournal.FDirty() );
 
     //  swap the clusters backing these slots
