@@ -8381,10 +8381,7 @@ ERR ErrCATInitFCB( FUCB *pfucbTable, OBJID objidTable, const BOOL fSkipPgnoFDPLa
             pfcbTemplateTable->GetAPISpaceHints( &jsphTemplate );
 
             //  flag the template as static, i.e., it can't be opened for modification anymore
-            //  need the lock because it's a bit-field, so read/write must be atomic
-            pfcbTemplateTable->Lock();
             pfcbTemplateTable->SetTemplateStatic();
-            pfcbTemplateTable->Unlock();
 
             //  Increment ref count so that template table does not get purged
             pfcbTemplateTable->IncrementRefCount();

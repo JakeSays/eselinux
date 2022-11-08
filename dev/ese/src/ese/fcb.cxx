@@ -2881,10 +2881,8 @@ ERR FCB::ErrSetUpdatingAndEnterDML( PIB *ppib, BOOL fWaitOnConflict )
     Assert( IsUnlocked_( LOCK_TYPE::ltShared ) );
 
     // If DDL is fixed, then there's no contention with CreateIndex
-    if ( !FFixedDDL() )
+    if ( FNeedDML_() )
     {
-        Assert( FTypeTable() );             // Sorts and temp tables have fixed DDL.
-        Assert( !FTemplateTable() );
         Assert( Ptdb() != ptdbNil );
 
 CheckIndexing:

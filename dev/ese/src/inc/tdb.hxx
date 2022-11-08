@@ -1568,8 +1568,7 @@ INLINE VOID TDB::SetFLid64( BOOL fLid64 )
 INLINE VOID FCB::ResetUpdating_()
 {
     Assert( FTypeTable() );             // Sorts and temp tables have fixed DDL.
-    Assert( !FTemplateTable() );
-    Assert( !FFixedDDL() );
+    Assert( FNeedDML_() );
     Assert( Ptdb() != ptdbNil );
 
     Ptdb()->LeaveUpdating();
@@ -1577,7 +1576,7 @@ INLINE VOID FCB::ResetUpdating_()
 INLINE VOID FCB::ResetUpdatingAndLeaveDML()
 {
     // If DDL is fixed, then there's no contention with CreateIndex
-    if ( !FFixedDDL() )
+    if ( FNeedDML_() )
     {
         LeaveDML_();
         ResetUpdating_();
@@ -1586,7 +1585,7 @@ INLINE VOID FCB::ResetUpdatingAndLeaveDML()
 INLINE VOID FCB::ResetUpdating()
 {
     // If DDL is fixed, then there's no contention with CreateIndex
-    if ( !FFixedDDL() )
+    if ( FNeedDML_() )
     {
         ResetUpdating_();
     }
@@ -1599,7 +1598,7 @@ INLINE VOID FCB::SetIndexing()
     Assert( Ptdb() != ptdbNil );
 
     // Can only override FixedDDL flag if we have exclusive use of the table.
-    Assert( !FFixedDDL() || CrefDomainDenyRead() > 0 );
+    Assert( FNeedDML_() || CrefDomainDenyRead() > 0 );
 
     Ptdb()->EnterIndexing();
 }
@@ -1611,7 +1610,7 @@ INLINE VOID FCB::ResetIndexing()
     Assert( Ptdb() != ptdbNil );
 
     // Can only override FixedDDL flag if we have exclusive use of the table.
-    Assert( !FFixedDDL() || CrefDomainDenyRead() > 0 );
+    Assert( FNeedDML_() || CrefDomainDenyRead() > 0 );
 
     Ptdb()->LeaveIndexing();
 }

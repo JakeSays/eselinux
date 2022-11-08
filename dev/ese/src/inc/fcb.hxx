@@ -1125,6 +1125,7 @@ private:
         BOOL FWRefCountOK_();
 #endif
         BOOL FNeedLock_() const;
+        BOOL FNeedDML_();
         VOID EnterDML_();
         VOID LeaveDML_();
         VOID AssertDML_() const;
@@ -1665,8 +1666,24 @@ INLINE BOOL FCB::FTemplateStatic() const        { return !!(m_ulFCBFlags & mskFC
 INLINE VOID FCB::SetTemplateStatic()
 {
     Assert( FTemplateTable() );
-    Assert( IsLocked() );
-    AtomicExchangeSet( &m_ulFCBFlags, mskFCBTemplateStatic );
+
+    //  NOTE: Perform this change while in the DDL lock.  this ensures that we don't
+    //  change the state while another thread is between EnterDML and LeaveDML because
+    //  it could change the result of FNeedDML_ which could cause them to fail to release
+    //  the lock
+
+    //  NOTE: Once upon a time, the bit fields needed this lock.  Not anymore; the bits
+    //  are set atomically.  Leaving the lock in place now just out of worry they have
+    //  some other unintended sync impact.
+
+    if ( !FTemplateStatic() )
+    {
+        EnterDDL();
+        Lock();
+        AtomicExchangeSet( &m_ulFCBFlags, mskFCBTemplateStatic );
+        Unlock();
+        LeaveDDL();
+    }
 }
 // There is no FCB::ResetTemplateStatic(), since
 // "Flagging the template as static is currently a one-way trip."
@@ -1865,15 +1882,41 @@ INLINE BOOL FCB::FNeedLock_() const
 }
 
 // Enters FCB's critical section for data set/retrieve only if needed.
+
+INLINE BOOL FCB::FNeedDML_()
+{
+    //  we must always use the DML lock for normal tables
+
+    if ( !FFixedDDL() )
+    {
+        return fTrue;
+    }
+
+    //  these are the only types of tables that should have fixed DDL
+
+    Assert( FTypeTable() || FTypeTemporaryTable() || FTypeSort() );
+
+    //  if this is a template table and the template is not yet confirmed to be
+    //  static schema then we still need to use the DML lock.  this covers the
+    //  cases where template table schema is upgraded before the derived tables
+    //  are opened for use
+
+    if ( FTypeTable() && FTemplateTable() && !FTemplateStatic() )
+    {
+        return fTrue;
+    }
+
+    return fFalse;
+}
+
 INLINE VOID FCB::EnterDML()
 {
     Assert( FTypeTable() || FTypeTemporaryTable() || FTypeSort() );
     Assert( Ptdb() != ptdbNil );
 
-    if ( !FFixedDDL() )
+    if ( FNeedDML_() )
     {
         Assert( FTypeTable() );     // Sorts and temp tables have fixed DDL.
-        Assert( !FTemplateTable() );
         EnterDML_();
     }
 
@@ -1886,10 +1929,9 @@ INLINE VOID FCB::LeaveDML()
     Assert( Ptdb() != ptdbNil );
     AssertDML();
 
-    if ( !FFixedDDL() )
+    if ( FNeedDML_() )
     {
         Assert( FTypeTable() );     // Sorts and temp tables have fixed DDL.
-        Assert( !FTemplateTable() );
         LeaveDML_();
     }
 }
@@ -1901,10 +1943,9 @@ INLINE VOID FCB::AssertDML()
     Assert( FTypeTable() || FTypeTemporaryTable() || FTypeSort() );
     Assert( Ptdb() != ptdbNil );
 
-    if ( !FFixedDDL() )
+    if ( FNeedDML_() )
     {
         Assert( FTypeTable() );     // Sorts and temp tables have fixed DDL.
-        Assert( !FTemplateTable() );
         Assert( IsUnlocked() );
         AssertDML_();
     }

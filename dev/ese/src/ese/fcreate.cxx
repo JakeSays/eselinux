@@ -2736,13 +2736,7 @@ ERR ErrFILECreateTable( PIB *ppib, IFMP ifmp, JET_TABLECREATE5_A *ptablecreate, 
         if ( pfcbNil != pfcbTemplateTable )
         {
             //  flag the template as static, i.e., it can't be opened for modification anymore
-            //  need the lock because it's a bit-field, so read/write must be atomic
-            //  NOTE: Once upon a time, the bit fields needed this lock.  Not anymore; the bits
-            //  are set atomically.  Leaving the lock in place now just out of worry they have
-            //  some other unintended sync impact.
-            pfcbTemplateTable->Lock();
             pfcbTemplateTable->SetTemplateStatic();
-            pfcbTemplateTable->Unlock();
 
             //  Increment ref count so that template table does not get purged
             pfcbTemplateTable->IncrementRefCount();
