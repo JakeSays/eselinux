@@ -5755,7 +5755,7 @@ VOID CPAGE::DehydratePageUnadjusted_( _In_ const ULONG cbNewSize )
     Enforce( cbShrinkage < CbPage() );
     Enforce( cbShrinkage < 0x10000 );
 
-    Enforce( ppghdr->cbFree >= cbShrinkage );
+    PageEnforce( (*this), ppghdr->cbFree >= cbShrinkage );
     Enforce( ppghdr->ibMicFree < ( m_platchManager->CbBuffer( m_bfl ) - cbShrinkage ) );
 
     Assert( ppghdr->ibMicFree < m_platchManager->CbBuffer( m_bfl ) - CbTagArray_() );
