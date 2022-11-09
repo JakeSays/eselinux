@@ -4444,6 +4444,11 @@ typedef struct
 
 // end_PubEsent
 #define JET_bitForceSessionClosed       0x00000001
+
+    /* Flags for JetDupSession2 */
+
+#define JET_bitDupReadOnlySnapshot      0x00000001  //  Duplicate the transaction snapshot point (including transaction context) for readonly transaction.
+                                                    //  The new session is returned in level 1 read-only transaction.
 // begin_PubEsent
 
     /* Flags for JetAttachDatabase/JetOpenDatabase */
@@ -7299,6 +7304,13 @@ JetEndSession(
 #pragma endregion
 
 // end_PubEsent
+
+JET_ERR JET_API
+JetDupSession2(
+    _In_ JET_SESID      sesid,
+    _In_ JET_GRBIT      grbit,
+    _Out_ JET_SESID *   psesid );
+
 #if ( JET_VERSION >= 0x0600 )
 
 #pragma region Desktop Family

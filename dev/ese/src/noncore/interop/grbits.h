@@ -137,6 +137,7 @@ MSINTERNAL enum class MJET_GRBIT
     IdleAvailBuffersStatus = 0x00000020, // Returns JET_wrnIdleFull when database cache available buffers is less than the JET_paramStartFlushThreshold setting.
     IdleWaitForAsyncActivity = 0x00000040, // Waits for all async activity to quiesce. Returns JET_wrnRemainingVersions if there are still pending version store buckets.
     ForceSessionClosed = 0x00000001,
+    DupReadOnlySnapshot = 0x00000001, // Duplicate the transaction snapshot point (including transaction context) for readonly transaction.
     DbReadOnly = 0x00000001,
     DbExclusive = 0x00000002, // multiple opens allowed
     DbSingleExclusive = 0x00000002, // NOT CURRENTLY IMPLEMENTED - currently maps to JET_bitDbExclusive

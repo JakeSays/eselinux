@@ -12619,7 +12619,7 @@ JET_ERR JET_API JetBeginSessionW(
     JET_TRY( opBeginSession, JetBeginSessionExW( instance, psesid, wszUserName, wszPassword ) );
 }
 
-LOCAL JET_ERR JetDupSessionEx( _In_ JET_SESID sesid, _Out_ JET_SESID *psesid )
+LOCAL JET_ERR JetDupSessionEx( _In_ JET_SESID sesid, _In_ JET_GRBIT grbit, _Out_ JET_SESID *psesid )
 {
     APICALL_SESID   apicall( opDupSession );
 
@@ -12633,17 +12633,50 @@ LOCAL JET_ERR JetDupSessionEx( _In_ JET_SESID sesid, _Out_ JET_SESID *psesid )
 
     if ( apicall.FEnter( sesid ) )
     {
-        apicall.LeaveAfterCall( ErrIsamBeginSession(
-                                        (JET_INSTANCE)PinstFromSesid( sesid ),
-                                        psesid ) );
+        ERR err;
+        PIB *ppib = (PIB *)sesid;
+        if ( grbit & ~JET_bitDupReadOnlySnapshot )
+        {
+            err = ErrERRCheck( JET_errInvalidGrbit );
+        }
+        else if ( grbit == JET_bitDupReadOnlySnapshot && ppib->Level() == 0 )
+        {
+            err = ErrERRCheck( JET_errNotInTransaction );
+        }
+        else if ( grbit == JET_bitDupReadOnlySnapshot && ( !ppib->FReadOnlyTrx() || ppib->Level() != 1 ) )
+        {
+            err = ErrERRCheck( JET_errIllegalOperation );
+        }
+        else
+        {
+            err = ErrIsamBeginSession( (JET_INSTANCE)PinstFromSesid( sesid ), psesid );
+            if ( err >= JET_errSuccess && grbit == JET_bitDupReadOnlySnapshot )
+            {
+                err = ((PIB *)*psesid)->ErrDupReadOnlyTransaction( ppib );
+                if ( err < 0 )
+                {
+                    CallS( ErrIsamEndSession( *psesid, 0 ) );
+                    *psesid = JET_sesidNil;
+                }
+            }
+        }
+
+        apicall.LeaveAfterCall( err );
     }
 
     return apicall.ErrResult();
 }
+
 JET_ERR JET_API JetDupSession( _In_ JET_SESID sesid, _Out_ JET_SESID *psesid )
 {
     JET_VALIDATE_SESID( sesid );
-    JET_TRY( opDupSession, JetDupSessionEx( sesid, psesid ) );
+    JET_TRY( opDupSession, JetDupSessionEx( sesid, 0, psesid ) );
+}
+
+JET_ERR JET_API JetDupSession2( _In_ JET_SESID sesid, _In_ JET_GRBIT grbit, _Out_ JET_SESID *psesid )
+{
+    JET_VALIDATE_SESID( sesid );
+    JET_TRY( opDupSession, JetDupSessionEx( sesid, grbit, psesid ) );
 }
 
 /*=================================================================

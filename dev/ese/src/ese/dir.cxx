@@ -1861,7 +1861,7 @@ ERR ErrDIRBeginTransaction( PIB *ppib, const TRXID trxid, const JET_GRBIT grbit 
         else
             ppib->ResetFReadOnlyTrx();
 
-        PIBSetTrxBegin0( ppib );
+        ppib->PIBSetTrxBegin0();
     }
     else if( prceNil != ppib->prceNewest )
     {
