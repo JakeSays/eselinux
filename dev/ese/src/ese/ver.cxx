@@ -1234,7 +1234,7 @@ INLINE VOID RCE::SetPrcePrevOfNode( RCE * prce )
 
                 default:
                 {
-                    Assert( fFalse );
+                    Assert( m_fRolledBack );
                 }
             }
         }
