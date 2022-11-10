@@ -38,7 +38,7 @@ inline ULONG Log2( ULONG x )
 inline ULONG Log2( unsigned __int64 x )
 {
     ULONG log2;
-    BYTE ret = _BitScanReverse64( &log2, x );
+    BYTE ret = _BitScanReverse64( ( OS_WIN_ULONG * )&log2, x );
     return ret > 0 ? log2 : -1; // log( 0 ) is undefined, represented by -1
 }
 

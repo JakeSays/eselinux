@@ -17,11 +17,6 @@
 
 #include <specstrings.h>
 
-typedef __nullterminated char* PSTR;
-typedef __nullterminated const char* PCSTR;
-typedef __nullterminated wchar_t* PWSTR;
-typedef __nullterminated const wchar_t* PCWSTR;
-
 #include <algorithm>
 #include <functional>
 #include <memory>

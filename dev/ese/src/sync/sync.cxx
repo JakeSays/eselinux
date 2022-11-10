@@ -2883,7 +2883,9 @@ CSXWLatch::~CSXWLatch()
 // errors.
 
 
+#define DWORD OS_WIN_DWORD
 #include <windows.h>
+#undef DWORD
 
 #ifndef ESENT
 //
@@ -3210,7 +3212,7 @@ BOOL FOSSyncIClsRegister( _CLS* pcls )
 
             DWORD dwExitCode;
             if (    pclsClean->hContext &&
-                    GetExitCodeThread( pclsClean->hContext, &dwExitCode ) &&
+                    GetExitCodeThread( pclsClean->hContext, ( OS_WIN_DWORD * )&dwExitCode ) &&
                     dwExitCode != STILL_ACTIVE )
             {
                 //  detach this CLS
@@ -4437,7 +4439,7 @@ void __cdecl CFPrintF::operator()( const char* szFormat, ... )
         SetFilePointerEx( HANDLE( m_hFile ), ibOffset, NULL, FILE_END );
 
         DWORD cbWritten;
-        WriteFile( HANDLE( m_hFile ), szBuf, DWORD( strlen( szBuf ) * sizeof( char ) ), &cbWritten, NULL );
+        WriteFile( HANDLE( m_hFile ), szBuf, DWORD( strlen( szBuf ) * sizeof( char ) ), ( OS_WIN_DWORD * )&cbWritten, NULL );
 
         ReleaseMutex( HANDLE( m_hMutex ) );
     }
@@ -4589,7 +4591,7 @@ GetExpression(
     DEBUG_VALUE FullValue;
     ULONG64 Address = 0;
 
-    hr = g_DebugControl->Evaluate( szExpression, DEBUG_VALUE_INT64, &FullValue, &EndIdx );
+    hr = g_DebugControl->Evaluate( szExpression, DEBUG_VALUE_INT64, &FullValue, ( OS_WIN_ULONG * )&EndIdx );
     if ( SUCCEEDED( hr ) )
     {
         Address = FullValue.I64;
@@ -4611,7 +4613,7 @@ FEDBGMemoryRead(
 //  ================================================================
 {
     HRESULT hr;
-    hr = g_DebugDataSpaces->ReadVirtual( ulAddressInDebuggee, pbBuffer, cbBuffer, pcbRead );
+    hr = g_DebugDataSpaces->ReadVirtual( ulAddressInDebuggee, pbBuffer, cbBuffer, ( OS_WIN_ULONG * )pcbRead );
     return SUCCEEDED( hr );
 }
 
@@ -4655,7 +4657,7 @@ LOCAL BOOL FAddressFromGlobal( const char* const szGlobal, T** const ppt )
     DEBUG_VALUE FullValue;
     ULONG64 Address = 0;
 
-    hr = g_DebugControl-> Evaluate( szGlobal, DEBUG_VALUE_INT64, &FullValue, &EndIdx);
+    hr = g_DebugControl->Evaluate( szGlobal, DEBUG_VALUE_INT64, &FullValue, ( OS_WIN_ULONG * )&EndIdx);
 
     if ( SUCCEEDED( hr ) )
     {
@@ -4683,7 +4685,7 @@ LOCAL BOOL FGlobalFromAddress( T* const pt, __out_bcount(cbMax) PSTR szGlobal, c
         ulAddress,
         szGlobal,
         (ULONG) cbMax,
-        &cbActual,
+        ( OS_WIN_ULONG * )&cbActual,
         &dwOffset
         );
 
@@ -6228,12 +6230,12 @@ static BOOL FOSSyncIInit()
         BOOL fResult;
         fResult = GetLogicalProcessorInformationEx( RelationGroup,
                                                     pBuffer,
-                                                    &BufferSize );
+                                                    ( OS_WIN_DWORD * )&BufferSize );
         OSSYNCAssert( !fResult && GetLastError() == ERROR_INSUFFICIENT_BUFFER );
         pBuffer = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *)_alloca( BufferSize );
         fResult = GetLogicalProcessorInformationEx( RelationGroup,
                                                     pBuffer,
-                                                    &BufferSize );
+                                                    ( OS_WIN_DWORD * )&BufferSize );
         OSSYNCAssert( fResult );
         g_cProcessorGroups = pBuffer->Group.ActiveGroupCount;
         g_cProcessorsPerGroup = 1;
