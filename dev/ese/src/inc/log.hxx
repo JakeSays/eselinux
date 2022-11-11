@@ -1896,7 +1896,7 @@ private:
     ERR ErrLGRIEndEverySession();
     ERR ErrLGRIEndAllSessions(
             const BOOL              fEndOfLog,
-            const BOOL              fKeepDbAttached,
+                  BOOL              fKeepDbAttached,
             const LE_LGPOS *        plgposRedoFrom,
             BYTE *                  pbAttach );
 

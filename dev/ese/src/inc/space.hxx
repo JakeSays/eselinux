@@ -423,6 +423,7 @@ INLINE BOOL FSPExpectedError( const ERR err )
         case JET_errOutOfMemory:
         case JET_errOutOfBuffers:
         case JET_errTransactionTooLong:
+        case JET_errCheckpointDepthTooDeep:
         case JET_errDiskIO:
         case JET_errLogWriteFail:
             fExpectedErr = fTrue;

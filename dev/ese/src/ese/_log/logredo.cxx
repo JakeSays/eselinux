@@ -2388,7 +2388,7 @@ HandleError:
 
 ERR LOG::ErrLGRIEndAllSessions(
     const BOOL              fEndOfLog,
-    const BOOL              fKeepDbAttached,
+          BOOL              fKeepDbAttached,
     const LE_LGPOS *        ple_lgposRedoFrom,
     BYTE *                  pbAttach )
 {
@@ -2397,9 +2397,17 @@ ERR LOG::ErrLGRIEndAllSessions(
     BOOL                    fNeedCallINSTTerm   = fTrue;
     DBID dbid;
 
-    //  UNDONE: is this call needed?
-    //
-    //(VOID)ErrVERRCEClean( );
+    // If we are close to the CheckpointTooDeep limit, do a clean RecoveryQuit even if asked for
+    // dirty cache keepalive recovery quit at the end of recovery.
+    if ( fKeepDbAttached && fEndOfLog )
+    {
+        const LONG lgenTooDeepLimit = (LONG)UlParam( m_pinst, JET_paramCheckpointTooDeep ) - lgenCheckpointTooDeepMin / 2;
+        const LONG lgenOutstanding = m_pLogStream->GetCurrentFileGen() - LgposGetCheckpoint().le_lGeneration;
+        if ( lgenOutstanding >= ( lgenTooDeepLimit * 90 ) / 100 )
+        {
+            fKeepDbAttached = fFalse;
+        }
+    }
 
     //  Set current time to attached db's dbfilehdr
 

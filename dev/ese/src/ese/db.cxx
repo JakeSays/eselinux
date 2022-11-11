@@ -5642,7 +5642,7 @@ StartDetaching:
     // 1. For the log writer it is OK to generate a new log w/o updating the header as no log operations
     // for this db will be logged in new logs
     // 2. For the checkpoint: don't advance the checkpoint if db's header weren't update
-    Assert( pfmp->FAllowHeaderUpdate() || pfmp->FReadOnlyAttach() );
+    Assert( pfmp->FAllowHeaderUpdate() || pfmp->FReadOnlyAttach() || pfmp->FAttachedForRecovery() );
     pfmp->RwlDetaching().EnterAsWriter();
     pfmp->ResetAllowHeaderUpdate();
     pfmp->RwlDetaching().LeaveAsWriter();
