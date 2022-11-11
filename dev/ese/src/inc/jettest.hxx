@@ -238,6 +238,7 @@ class JetTestFixture
         
     protected:
         JetTestFixture();
+        JetTestFixture( JetUnitTestResult* presult ) : m_presult( presult ) {}
         virtual ~JetTestFixture();
 
         void Fail_( const char * const szFile, const INT line, const char * const szCondition );
@@ -245,7 +246,7 @@ class JetTestFixture
         virtual bool SetUp_() = 0;
         virtual void TearDown_() = 0;
 
-    private:
+    protected:
         JetUnitTestResult * m_presult;
 };
 

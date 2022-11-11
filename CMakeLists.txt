@@ -178,6 +178,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         /Gy # function-level linking
         /Zc:wchar_t-
         /Zc:forScope
+        /Zc:externConstexpr
         /Zc:inline-
         /GR-
         /TP

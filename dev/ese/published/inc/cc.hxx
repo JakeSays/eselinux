@@ -23,6 +23,7 @@
 
 #endif
 
+#include <string>
 
 //
 //      Source Annotation Language (SAL)

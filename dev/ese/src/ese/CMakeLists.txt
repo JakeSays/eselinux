@@ -23,6 +23,7 @@ add_compile_definitions(
 
 set(ESE_SOURCES
     ${ESE_DEV}/src/ese/backup.cxx
+    ${ESE_DEV}/src/ese/bbtbuff.cxx
     ${ESE_DEV}/src/ese/bf.cxx
     ${ESE_DEV}/src/ese/bt.cxx
     ${ESE_DEV}/src/ese/callback.cxx

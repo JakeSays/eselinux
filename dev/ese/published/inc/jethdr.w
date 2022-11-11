@@ -6108,6 +6108,15 @@ typedef JET_ERR (JET_API * JET_PFNEMITLOGDATA)(
 // begin_PubEsent
 #define JET_errPageTagCorrupted             -357  // A tag / line on page is logically corrupted, offset or size is bad, or tag count on page is bad.
 #define JET_errNodeCorrupted                -358  // A node or prefix node is logically corrupted, the key suffix size is larger than the node or line's size.
+// end_PubEsent
+#define errBBTBuffFull                      -359  /* BBT Buffer is full */
+#define errBBTNodeNotFound                  -360  /* Node not found in the BBT buffer */
+#define errBBTCurrencyLost                  -361  /* Currency on the BBT buffer couldn't be re-established */
+#define wrnBBTMergeTargetFull                362  /* Couldn't merge all the external nodes during a BBT evict operation. */
+#define wrnBBTPathUnvisitedNode              363  /* ErrBBTNextPath() / ErrBBTPrevPath() didn't switch paths because the currency should move first to an unvisited node in the current path.*/
+// begin_PubEsent
+#define JET_errBBTNodeCorrupted             -364  /* A property of the BBT node is logically corrupted. Or the BBT node isn't valid. */
+#define JET_errBBTBuffCorrupted             -365  /* A BBT buff is logically corrupted. The nodes are out of sequence or the BBT header is corrupt. */
 
 /*  RECORD MANAGER errors
 /**/

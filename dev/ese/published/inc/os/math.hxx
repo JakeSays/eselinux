@@ -21,7 +21,7 @@
 //  Power-of-2 related helpers.
 
 template<class T>
-inline bool FPowerOf2( T x )
+constexpr inline bool FPowerOf2( T x )
 {
     return ( ( 0 < x ) && ( 0 == ( x & ( x - 1 ) ) ) );
 }
@@ -67,6 +67,13 @@ inline USHORT UsBits( const DWORD dw )
     ret = ret & 0x3f;
 
     return (USHORT)ret;
+}
+
+inline ULONG Log2OfPowerOf2( ULONG x )
+{
+    ULONG index;
+    _BitScanForward( &index, x );
+    return index;
 }
 
 #pragma warning (push)

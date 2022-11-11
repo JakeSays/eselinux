@@ -179,10 +179,12 @@ LOCAL ERR ErrReplacePageImage(
 
     Call( csr.ErrLoadPage( ppib, ifmp, pgno, pbBeforeImage, cb, latchWrite ) );
 
-    // the before image of the page is logged after the dbtime was updated so we have to restore it
+    // the before image of the page is logged after the dbtime was updated so we have to revert it
+    csr.RevertDbtime( dbtimeBefore, csr.Cpage().FFlags() );
+
     // Its also possible we are replaying a log on an available lag on a table which was deleted and reverted with fPageFDPDelete.
     // We do not want to overwrite that flag.
-    csr.RestoreDbtime( dbtimeBefore, fPageFDPDeleteBefore );
+    csr.Cpage().SetPageFDPDelete( fPageFDPDeleteBefore );
     csr.Downgrade( latchRIW );
 
     Assert( csr.Cpage().FPageFDPDelete() == fPageFDPDeleteBefore );

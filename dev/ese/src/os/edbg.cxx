@@ -371,6 +371,7 @@ DEBUG_EXT( EDBGSetImplicitDB );
 DEBUG_EXT( EDBGSetImplicitInst );
 DEBUG_EXT( EDBGSetImplicitBT );
 DEBUG_EXT( EDBGSetPii );
+DEBUG_EXT( EDBGDumpBBTBuff );
 
 
 extern VOID DBUTLDumpRec( const LONG cbPage, const FUCB * const pfucbTable, const VOID * const pv, const INT cb, CPRINTF * pcprintf, const INT cbWidth );
@@ -494,6 +495,10 @@ LOCAL const EDBGFUNCMAP rgfuncmap[] = {
 {
         "DUMP",             EDBGDump,
         "DUMP &lt;class&gt; &lt;address&gt;             - Dump an ESE structure at the given address"
+},
+{
+        "DUMPBBTBUFF",    EDBGDumpBBTBuff,
+        "DUMPBBTBUFF &lt;pBBTBuff&gt;] [&lt;level&gt;] - Dumps nodes in a loaded BBT Buff. All nodes &lt;=level are dumped."
 },
 {
         "DUMPCACHEINFO",    EDBGDumpCacheInfo,
@@ -16821,6 +16826,129 @@ DEBUG_EXT( EDBGHelpDump )
 
 
 //  ================================================================
+LOCAL ERR ErrEDBGDumpBBTBuff_( BBTBuff* pBBTBuffDebuggee, INT level )
+//  ================================================================
+{
+    ERR             err = JET_errSuccess;
+    BBTBuff*        pBBTBuff = NULL;
+    CSR*            pcsrBase = NULL;
+    CSR*            rgcsr = NULL;
+    BBTBuffFormat   rgFormat[ sizeof( BBTBUFF_FORMAT_CONSTANTS ) ];
+    CSRStackArray   rgcsrNew;
+
+    if ( !FFetchVariable( pBBTBuffDebuggee, &pBBTBuff ) )
+    {
+        dprintf( "Error: Failed to fetch BBT Buff\n" );
+        Error( ErrERRCheck( JET_errInternalError ) );
+    }
+
+    // Fetch pages
+    if ( !FReadGlobal( "BBTBUFF_FORMAT_CONSTANTS", &rgFormat ) )
+    {
+        dprintf( "Error: Failed to get BBTBuff format constants.\n" );
+        Error( ErrERRCheck( JET_errInternalError ) );
+    }
+
+    if ( !FFetchVariable( pBBTBuff->m_pcsrBase, &pcsrBase ) ||
+        !FFetchVariable( pBBTBuff->m_rgcsrLatched, &rgcsr, pBBTBuff->m_cMaxPages - 1 ) )
+    {
+        dprintf( "Error: Failed to fetch BBT CSRs\n" );
+        Error( ErrERRCheck( JET_errInternalError ) );
+    }
+
+    rgcsrNew = CSRStackArray( _alloca( sizeof( CSR ) * pBBTBuff->m_cMaxPages ), pBBTBuff->m_cMaxPages, false ); // don't release latches
+    ULONG cbPage = rgFormat[ pBBTBuff->m_ifmt ].cbCPAGE;
+    dprintf( "Detected page size: %u\n", cbPage );
+
+    for ( int i = 0; i < rgcsrNew.CItems(); i++ )
+    {
+        CSR* pcsrCurr = ( i == 0 ? pcsrBase : &rgcsr[ i - 1 ] );
+        IFMP ifmp = pcsrCurr->Cpage().Ifmp();
+        PGNO pgno = pcsrCurr->Pgno();   // must use CSR::m_pgno, CPAGE::PgnoThis() gets it off of the pghdr, which isn't available yet
+        BYTE* rgbPage;
+        BYTE* rgbDebuggee = (BYTE*) ( i == 0 ? pcsrBase->Cpage().PvBuffer() : rgcsr[ i - 1 ].Cpage().PvBuffer() );
+        Call( FFetchAlignedVariable( rgbDebuggee, &rgbPage, cbPage ) );
+        rgcsrNew[ i ].LoadDehydratedPage( ifmp, pgno, rgbPage, cbPage, cbPage );
+    }
+
+    {
+    LINE line;
+    BBTBuff bbtBuffNew;
+    BBTBuff::GetBBTBuffRoot( rgcsrNew[ 0 ], &line );
+    BBTBuffHeader* pbbtHeader = BBTBuff::PBBTHeader( line );
+    bbtBuffNew.Load( NULL, ifmpNil, &rgcsrNew[ 0 ], CSRHeapArray( rgcsrNew.Subarray( 1 ) ), pbbtHeader, latchReadNoTouch );
+
+    if ( pBBTBuff->m_pnodeCurr != NULL )
+    {
+        // Translate currency
+        int ipgCurr = pBBTBuff->m_ipgCurr;
+        BYTE* rgbDebuggee = (BYTE*) ( ipgCurr == 0 ? pcsrBase->Cpage().PvBuffer() : rgcsr[ ipgCurr - 1 ].Cpage().PvBuffer() );
+        auto ibOnPage = ( (BYTE*) pBBTBuff->m_pnodeCurr ) - rgbDebuggee;
+        if ( ibOnPage > bbtBuffNew.IbPageDataEnd( ipgCurr ) )
+        {
+            dprintf( "Error: Can't figure out currency\n" );
+            Error( ErrERRCheck( JET_errInternalError ) );
+        }
+
+        SkipListLink linkCurr = bbtBuffNew.LinkFromIpgOffset( ipgCurr, (int) ibOnPage );
+        Call( bbtBuffNew.ErrSetCurrNodeFromLink( linkCurr ) );
+    }
+
+    std::string szDump = DumpBBTBuff( bbtBuffNew, (INT) level );
+    dprintf( "%s", szDump.c_str() );
+    }
+
+HandleError:
+    rgcsrNew.ForEach( []( CSR& csr )
+    {
+        UnfetchAligned( csr.Cpage().PvBuffer() );
+    } );
+
+    Unfetch( rgcsr );
+    Unfetch( pcsrBase );
+    Unfetch( pBBTBuff );
+    return err;
+}
+
+//  ================================================================
+DEBUG_EXT( EDBGDumpBBTBuff )
+//  ================================================================
+{
+    BBTBuff* pBBTBuffDebuggee = NULL;
+    ULONG level = 0;
+
+    auto printHelp = []()
+    {
+        //  invalid usage
+        //
+        dprintf( "Usage: DUMPBBTBUFF <pBBTBuff> [<level>]\n" );
+        dprintf( "    <pBBTBuff> is the address of a loaded BBTBuff object\n" );
+        dprintf( "    <level> is an integer between 0 - 15. Any nodes with the skiplist level <= to the given level will be dumped\n" );
+        dprintf( "    0 dumps all nodes.\n" );
+    };
+
+    if ( argc < 1 ||
+         argc > 2 ||
+        !FAddressFromSz( argv[ 0 ], &pBBTBuffDebuggee ) )
+    {
+        printHelp();
+        return;
+    }
+
+    if ( argc == 2 )
+    {
+        if ( !FUlFromSz( argv[ 1 ], &level, 10 ) )
+        {
+            printHelp();
+            return;
+        }
+    }
+
+    (void) ErrEDBGDumpBBTBuff_( pBBTBuffDebuggee, (INT) level );
+}
+
+
+//  ================================================================
 DEBUG_EXT( EDBGDump )
 //  ================================================================
 {
@@ -17174,6 +17302,24 @@ const CHAR * const mpdbstatesz[ JET_dbstateDirtyAndPatchedShutdown + 1 ] =
     "JET_dbstateIncrementalReseedInProgress",
     "JET_dbstateDirtyAndPatchedShutdown",
 };
+
+//  ================================================================
+VOID CSR::LoadDehydratedPage( const IFMP ifmp, const PGNO pgno, VOID* const pv, const ULONG cb, const ULONG cbPage )
+//  ================================================================
+{
+    ASSERT_VALID( this );
+    Assert( m_latch == latchNone );
+
+    m_cpage.LoadDehydratedPage( ifmp, pgno, pv, cb, cbPage );
+
+    //  set members
+    m_pgno = pgno;
+    m_dbtimeSeen = m_cpage.Dbtime();
+    m_latch = latchReadNoTouch;
+    m_pagetrimState = pagetrimNormal;
+
+    Assert( m_dbtimeSeen == m_cpage.Dbtime() );
+}
 
 //  ================================================================
 VOID CSR::Dump( CPRINTF * pcprintf, DWORD_PTR dwOffset ) const

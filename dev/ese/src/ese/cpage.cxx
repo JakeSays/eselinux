@@ -2568,6 +2568,12 @@ ERR CPAGE::ErrLoadPage(
 
     UtilMemCpy( m_bfl.pv, pv, cb );
 
+    // A loaded page is considered dirty-on-load. So save the scrub state.
+    // For a loaded page, scrub state before dirty isn't available.
+    // So RevertDbtime() will leave the scrub state unchanged.
+    // Note that this is consistent with behavior prior to the bug fix for reverting scrub flag.
+    m_fPageScrubbedPrevSet = fTrue;
+    m_fPageScrubbedPrev = !!FScrubbed();
     return JET_errSuccess;
 }
 
@@ -2602,7 +2608,7 @@ VOID CPAGE::LoadNewPage(
 
 #ifdef ENABLE_JET_UNIT_TEST
 //  ================================================================
-VOID CPAGE::LoadNewTestPage( _In_ const ULONG cb, _In_ const IFMP ifmp )
+VOID CPAGE::LoadNewTestPage( _In_ const ULONG cb, _In_ const IFMP ifmp, const PGNO pgno /* = 42 */ )
 //  ================================================================
 {
     Assert( 0 != cb );
@@ -2625,7 +2631,7 @@ VOID CPAGE::LoadNewTestPage( _In_ const ULONG cb, _In_ const IFMP ifmp )
     //  Initialize the Page so it is usable for testing
     //
 
-    PreInitializeNewPage_( ppibNil, ifmp, 2, 3, 0 );
+    PreInitializeNewPage_( ppibNil, ifmp, pgno, 3, 0 );
     ConsumePreInitPage( 0x0 );
 
     //  Avoid Uninitialized Page issues
@@ -2979,6 +2985,7 @@ VOID CPAGE::RevertDbtime( const DBTIME dbtime, const ULONG fFlags )
     Expected( fFlags != 0 );
     m_platchManager->AssertPageIsDirty( m_bfl );
     Assert( FAssertWriteLatch( ) );
+    Assert( m_fPageScrubbedPrevSet );   // prev fPageScrubbed state must've been captured on dirty.
 
     ((PGHDR*)m_bfl.pv)->dbtimeDirtied = dbtime;
 
@@ -2986,33 +2993,23 @@ VOID CPAGE::RevertDbtime( const DBTIME dbtime, const ULONG fFlags )
     // state with the way scrubbed was implemented embedded in ::Dirty() and ::DirtyForScrub().
     // Still, we don't expect any other flags to change other than fPageScrubbed.
     //
-    // Its also possible we are replaying a log on an available lag on a table which was deleted and reverted with fPageFDPDelete.
-    // We do not want to overwrite that flag. So we might be restoring that flag.
-    //
     // If the FireWall() below goes off, it doesn't necessarily mean we have
     // a corruption problem, but it means there will be a divergence between
     // copies in a replicated system that may triger a DB divergence error.
 #ifndef ENABLE_JET_UNIT_TEST
-    if ( ( FFlags() | fPageScrubbed ) != ( fFlags | fPageScrubbed ) &&
-         ( FFlags() | fPageFDPDelete ) != ( fFlags | fPageFDPDelete ) &&
-         ( FFlags() | fPageScrubbed |  fPageFDPDelete ) != ( fFlags | fPageScrubbed | fPageFDPDelete ) )
+    if ( ( FFlags() | fPageScrubbed ) != ( fFlags | fPageScrubbed ) )
     {
         FireWall( OSFormat( "RevertDbtime:0x%I32x:0x%I32x", fFlags, FFlags() ) );
     }
-#endif
-    const BOOL fScrubbedBefore = ( fFlags & fPageScrubbed );
-    if ( !FScrubbed() != !fScrubbedBefore )
-    {
-        SetFScrubbedValue_( fScrubbedBefore );
-    }
 
-    // If existing root page had been marked for FDP delete but current root page isn't, mark it again.
-    const BOOL fPageFDPDeleteBefore = ( fFlags & fPageFDPDelete );
-    if ( fPageFDPDeleteBefore && !FPageFDPDelete() )
+    const ULONG fScrubbedBefore = ( fFlags & fPageScrubbed );
+    if ( m_fPageScrubbedPrev != fScrubbedBefore )
     {
-        Assert( FRootPage() );
-        SetPageFDPDelete( fPageFDPDeleteBefore );
+        FireWall( OSFormat( "RevertDbtime(fPageScrubbed):0x%I32x:0x%I32x", fScrubbedBefore, m_fPageScrubbedPrev ) );
     }
+#endif
+
+    SetFScrubbedValue_( m_fPageScrubbedPrev );
 }
 
 
@@ -3387,6 +3384,35 @@ VOID CPAGE::ReplaceReservedTag( INT itag, const DATA* rgdata, INT cdata )
     Replace_( itag, rgdata, cdata, 0 );
 }
 
+//  ================================================================
+VOID CPAGE::ResetReservedTag( INT itag, INT cb, BYTE fill )
+//  ================================================================
+//
+//  Sets size and pattern-fills a reserved tag.
+//
+//-
+{
+    Assert( itag < CTagReserved_() );
+
+    const BOOL  fSmallFormat = FSmallPageFormat();
+    PGHDR*      ppghdr = (PGHDR*) m_bfl.pv;
+    TAG*        ptag = PtagFromItag_( itag );
+
+    // Release space. Stored data will be lost !
+    ppghdr->ibMicFree += ptag->Cb( fSmallFormat );
+    ptag->SetIb( this, 0 );
+    ptag->SetCb( this, 0 );
+    FreeSpace_( cb );
+
+    ptag->SetIb( this, ppghdr->ibMicFree );
+    ppghdr->ibMicFree = USHORT( ppghdr->ibMicFree + cb );
+    ptag->SetCb( this, (USHORT) cb );
+    const USHORT cbFree = (USHORT) ( ppghdr->cbFree - cb );
+    ppghdr->cbFree = cbFree;
+
+    BYTE* pb = PbFromIb_( ptag->Ib( fSmallFormat ) );
+    memset( pb, fill, ptag->Cb( fSmallFormat ) );
+}
 
 //  ================================================================
 bool CPAGE::FResvTagFormatEnabled()
@@ -3429,6 +3455,8 @@ VOID CPAGE::ReleaseWriteLatch( BOOL fTossImmediate )
         m_objidPreInit = objidNil;
     }
 
+    m_fPageScrubbedPrevSet = fFalse;
+
     m_platchManager->ReleaseWriteLatch( &m_bfl, !!fTossImmediate );
     Abandon_();
     Assert( FAssertUnused_( ) );
@@ -3446,6 +3474,7 @@ VOID CPAGE::ReleaseRDWLatch( BOOL fTossImmediate )
     ASSERT_VALID( this );
     DebugCheckAll();
 
+    m_fPageScrubbedPrevSet = fFalse;
     m_platchManager->ReleaseRDWLatch( &m_bfl, !!fTossImmediate );
     Abandon_();
     Assert( FAssertUnused_( ) );
@@ -3466,6 +3495,7 @@ VOID CPAGE::ReleaseReadLatch( BOOL fTossImmediate )
     DebugCheckAll();
 #endif  // DEBUG_PAGE
 
+    m_fPageScrubbedPrevSet = fFalse;
     m_platchManager->ReleaseReadLatch( &m_bfl, !!fTossImmediate );
     Abandon_();
     Assert( FAssertUnused_( ) );
@@ -3807,6 +3837,12 @@ VOID CPAGE::Dirty_( const BFDirtyFlags bfdf )
             FAssertWARLatch() );
     //  for now, but someday in the future we may allow dirty small pages
     Assert( FIsNormalSized() );
+
+    if ( !m_fPageScrubbedPrevSet )
+    {
+        m_fPageScrubbedPrevSet = fTrue;
+        m_fPageScrubbedPrev = !!FScrubbed();
+    }
 
     if( FLoadedPage() )
     {
@@ -6935,6 +6971,11 @@ ERR CPAGE::DumpHeader( CPRINTF * pcprintf, DWORD_PTR dwOffset ) const
     if( FRootPage() )
     {
         (*pcprintf)( "\t\tRoot page\n" );
+    }
+
+    if ( FBBTBuffPage() )
+    {
+        (*pcprintf)( "\t\tBBT %sPage", FBBTBuffRootPage() ? "Base " : "" );
     }
 
     BOOL fNewExtHdrFormat = fFalse;

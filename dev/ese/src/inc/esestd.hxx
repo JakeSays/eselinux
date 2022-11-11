@@ -110,6 +110,7 @@ using namespace std;
 #include "idb.hxx"
 #include "callback.hxx"
 #include "fcb.hxx"
+#include "bbtbuff.hxx"
 #include "fucb.hxx"
 #include "scb.hxx"
 #include "tdb.hxx"

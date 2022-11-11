@@ -1343,12 +1343,12 @@ LOCAL VOID SHKIRootMoveRevertDbTime( ROOTMOVE* const prm )
     {
         if ( prm->csrCatObj[iCat].Latch() == latchWrite )
         {
-            prm->csrCatObj[iCat].RevertDbtime( prm->dbtimeBeforeCatObj[iCat], prm->fFlagsBeforeCatObj[iCat] );
+            prm->csrCatObj[ iCat ].RevertDbtime( prm->dbtimeBeforeCatObj[ iCat ], prm->fFlagsBeforeCatObj[ iCat ] );
         }
 
         if ( prm->csrCatClustIdx[iCat].Latch() == latchWrite )
         {
-            prm->csrCatClustIdx[iCat].RevertDbtime( prm->dbtimeBeforeCatClustIdx[iCat], prm->fFlagsBeforeCatClustIdx[iCat] );
+            prm->csrCatClustIdx[ iCat ].RevertDbtime( prm->dbtimeBeforeCatClustIdx[ iCat ], prm->fFlagsBeforeCatClustIdx[ iCat ] );
         }
     }
 }

@@ -1169,6 +1169,8 @@ class DATA
         VOID    DeltaCb     ( INT i );
         VOID    Nullify     ();
 
+        std::string ToString();
+
 #ifdef DEBUG
     public:
                 DATA        ();
@@ -1261,6 +1263,29 @@ INLINE VOID DATA::Nullify()
 }
 
 
+//  ================================================================
+INLINE std::string DATA::ToString()
+//  ================================================================
+{
+    std::string str;
+    str.reserve( Cb() * 3 );
+    char hex[ 4 ];
+    BYTE* pb = (BYTE*) Pv();
+
+    for ( int i = 0; i < Cb(); i++ )
+    {
+        sprintf_s( hex, "%02x ", pb[ i ] );
+        str.append( hex );
+    }
+
+    return str;
+
+    // Force includes the function even if there are no calls to it.
+    // This allows the function to be available for debugging in VS.
+#pragma comment(linker, "/include:" __FUNCDNAME__)
+}
+
+
 #ifdef DEBUG
 
 
@@ -1344,6 +1369,8 @@ class KEY
 
         VOID    Advance     ( INT cb );
         VOID    Nullify     ();
+
+        std::string ToString();
 
 #ifdef DEBUG
     public:
@@ -1435,6 +1462,21 @@ INLINE VOID KEY::Nullify()
 {
     prefix.Nullify();
     suffix.Nullify();
+}
+
+
+//  ================================================================
+INLINE std::string KEY::ToString()
+//  ================================================================
+{
+    std::string str = prefix.ToString();
+    str += '.';
+    str += suffix.ToString();
+    return str;
+
+    // Force includes the function even if there are no calls to it.
+    // This allows the function to be available for debugging in VS.
+#pragma comment(linker, "/include:" __FUNCDNAME__)
 }
 
 
