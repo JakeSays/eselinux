@@ -10116,8 +10116,7 @@ ERR LOG::ErrLGRIRedoScanCheck( const LRSCANCHECK2 * const plrscancheck, BOOL* co
                     (void)m_arrayPagerefSupercold.ErrSetCapacity( LNextPowerOf2( m_arrayPagerefSupercold.Size() + 1 ) );
                 }
 
-                (void)m_arrayPagerefSupercold.ErrSetEntry(  m_arrayPagerefSupercold.Size(),
-                                                            PageRef( plrscancheck->Dbid(), plrscancheck->Pgno() ) );
+                (void)m_arrayPagerefSupercold.ErrAppendEntry( PageRef( plrscancheck->Dbid(), plrscancheck->Pgno() ) );
             }
 
             //  Ideally, we should check for the error returned when latching the page to filter out cases where
@@ -12120,8 +12119,7 @@ ERR LOG::ErrLGRIRedoOperations(
                 }
             }
 
-            const CArray<PageRef>::ERR errArray = m_arrayPagerefSupercold.ErrSetSize( 0 );
-            Assert( errArray == CArray<PageRef>::ERR::errSuccess );
+            m_arrayPagerefSupercold.Clear();
 
             // we report the progress either if this log took too long to replay (at least 5 seconds) or
             // if the control callback says so ...

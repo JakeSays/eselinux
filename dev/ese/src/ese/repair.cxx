@@ -184,7 +184,7 @@ class PgnoCollection : private CArray< PGNO >
         {
             m_rwl.EnterAsWriter();
 
-            if ( ErrSetEntry( Size(), pgno ) != CArray< PGNO >::ERR::errSuccess )
+            if ( ErrAppendEntry( pgno ) != CArray< PGNO >::ERR::errSuccess )
             {
                 m_rwl.LeaveAsWriter();
                 return ErrERRCheck( JET_errOutOfMemory );

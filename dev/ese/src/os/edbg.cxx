@@ -13355,7 +13355,7 @@ ERR ErrPopulateUsageArray(CArray<CEntry> * rgUsage, const CRedBlackTreeNode<CKey
             goto HandleError;
 
         CEntry entryToAdd( pnode->Key(), pnode->Data() );
-        if ( rgUsage->ErrSetEntry( rgUsage->Size(), entryToAdd ) != CArray<CEntry>::ERR::errSuccess )
+        if ( rgUsage->ErrAppendEntry( entryToAdd ) != CArray<CEntry>::ERR::errSuccess )
         {
             Error( ErrERRCheck( JET_errOutOfMemory ) );
         }

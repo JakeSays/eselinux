@@ -5255,7 +5255,7 @@ void BFIBuildReferencedPageListForCrashDump( CReferencedPages * ptableReferenced
                             //  means that the page won't be included
                             //  in our list of referenced pages)
 
-                            (void) arrayReferencedPages.ErrSetEntry( arrayReferencedPages.Size(), pagepointer );
+                            (void) arrayReferencedPages.ErrAppendEntry( pagepointer );
                         }
                     }
                 }

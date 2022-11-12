@@ -4584,7 +4584,7 @@ ERR CRBSDatabaseRevertContext::ErrAddRootPageRecord( const BOOL fDeleteOperation
     // Only add entry to root page records if it doesn't exist already
     if ( m_rgrootpagerec->SearchLinear( rootpagerec, CRBSDatabaseRevertContext::ICRBSDatabaseRootPageRecordEquals ) == CArray< CRootPageRecord >::iEntryNotFound )
     {
-        errArray = m_rgrootpagerec->ErrSetEntry( m_rgrootpagerec->Size(), rootpagerec );
+        errArray = m_rgrootpagerec->ErrAppendEntry( rootpagerec );
     }
 
     if ( errArray != CArray< CRootPageRecord >::ERR::errSuccess )
@@ -4651,7 +4651,7 @@ ERR CRBSDatabaseRevertContext::ErrCapturePageFDPDeleteState( const LONG lRBSGen,
             Call( ErrDBDiskPageFDPRootDelete( NULL, m_rgrootpagerec->Entry( i ).PgnoDest(), fTrue, fFalse, cbDbPageSize, &fPgnoFDPRootDelete));
 
             CPageFDPDeleteState pagefdpdeletestate( m_rgrootpagerec->Entry( i ).PgnoDest(), fPgnoFDPRootDelete);
-            errArray = rgpagefdpdeletestate->ErrSetEntry( rgpagefdpdeletestate->Size(), pagefdpdeletestate );
+            errArray = rgpagefdpdeletestate->ErrAppendEntry( pagefdpdeletestate );
 
             if ( errArray != CArray< CPageFDPDeleteState >::ERR::errSuccess )
             {
@@ -4991,14 +4991,10 @@ HandleError:
 
 VOID CRBSDatabaseRevertContext::ResetRootPageRecords()
 {
-    CArray< CRootPageRecord >::ERR errArray = CArray< CRootPageRecord >::ERR::errSuccess;
-
     if ( m_rgrootpagerec != NULL )
     {
-        errArray = m_rgrootpagerec->ErrSetSize( 0 );
+        m_rgrootpagerec->Clear();
     }
-
-    Assert( errArray == CArray< CRootPageRecord >::ERR::errSuccess );
 }
 
 // Comparer to allow sorting of pages in our array to try and get sequential writes.
@@ -5181,13 +5177,7 @@ ERR CRBSDatabaseRevertContext::ErrFlushDBPages( USHORT cbDbPageSize, BOOL fFlush
         }
     }
 
-    errArray = m_rgRBSDbPage->ErrSetSize( 0 );
-
-    if ( errArray != CArray< CPagePointer >::ERR::errSuccess )
-    {
-        Assert( errArray == CArray< CPagePointer >::ERR::errOutOfMemory );
-        Error( ErrERRCheck( JET_errOutOfMemory ) );
-    }
+    m_rgRBSDbPage->Clear();
 
     // This will be NULL if there is no .jfm file.
     if ( m_pfm )

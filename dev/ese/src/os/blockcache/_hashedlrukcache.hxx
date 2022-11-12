@@ -868,9 +868,7 @@ class THashedLRUKCache
 
                         if ( !fMatched )
                         {
-                            Call( ErrToErr<CArray<CClusterSwap>>( m_arrayClusterSwap.ErrSetEntry(   m_arrayClusterSwap.Size(),
-                                                                                                    CClusterSwap(   slotstAccepted.Clno(),
-                                                                                                                    slotstCurrent.Clno() ) ) ) );
+                            Call( ErrToErr<CArray<CClusterSwap>>( m_arrayClusterSwap.ErrAppendEntry( CClusterSwap( slotstAccepted.Clno(), slotstCurrent.Clno() ) ) ) );
                         }
                     }
 
@@ -889,15 +887,13 @@ class THashedLRUKCache
                         {
                             //  NOTE:  only evicted slots can be immediately reused so these are all evicts
 
-                            Call( ErrToErr<CArray<CCachedBlockUpdate>>( m_arrayCachedBlockUpdate.ErrSetEntry(   m_arrayCachedBlockUpdate.Size(),
-                                                                                                                CCachedBlockUpdate( slotstAccepted ) ) ) );
+                            Call( ErrToErr<CArray<CCachedBlockUpdate>>( m_arrayCachedBlockUpdate.ErrAppendEntry( CCachedBlockUpdate( slotstAccepted ) ) ) );
                         }
                     }
 
                     //  accumulate the updated slot for the journal entry
 
-                    Call( ErrToErr<CArray<CCachedBlockUpdate>>( m_arrayCachedBlockUpdate.ErrSetEntry(   m_arrayCachedBlockUpdate.Size(),
-                                                                                                        CCachedBlockUpdate( slotstCurrent ) ) ) );
+                    Call( ErrToErr<CArray<CCachedBlockUpdate>>( m_arrayCachedBlockUpdate.ErrAppendEntry( CCachedBlockUpdate( slotstCurrent ) ) ) );
 
                 HandleError:
                     return err;
@@ -7778,7 +7774,7 @@ void THashedLRUKCache<I>::PerformOpportunisticSlabWriteBacks()
 
         //  collect this slab for write back
 
-        Call( ErrToErr<CArray<QWORD>>( arrayIbSlab.ErrSetEntry( arrayIbSlab.Size(), pswbT->IbSlab() ) ) );
+        Call( ErrToErr<CArray<QWORD>>( arrayIbSlab.ErrAppendEntry( pswbT->IbSlab() ) ) );
 
         //  remember the min of the youngest journal positions affecting any of the slabs to write back
 
@@ -7942,7 +7938,7 @@ ERR THashedLRUKCache<I>::ErrFlushAllState(  _In_ const JournalPosition  jposDura
         //  get a list of all dirty slabs
 
         Call( ErrToErr<CArray<QWORD>>( arrayIbSlab.ErrSetCapacity( m_ilSlabsToWriteBackByJposMin.Count() ) ) );
-        CallS( ErrToErr<CArray<QWORD>>( arrayIbSlab.ErrSetSize( 0 ) ) );
+        arrayIbSlab.Clear();
 
         m_critSlabsToWriteBack.Enter();
         fListLocked = fTrue;
@@ -7960,7 +7956,7 @@ ERR THashedLRUKCache<I>::ErrFlushAllState(  _In_ const JournalPosition  jposDura
 
             //  collect the slab for write back
 
-            Call( ErrToErr<CArray<QWORD>>( arrayIbSlab.ErrSetEntry( arrayIbSlab.Size(), pswb->IbSlab() ) ) );
+            Call( ErrToErr<CArray<QWORD>>( arrayIbSlab.ErrAppendEntry( pswb->IbSlab() ) ) );
         }
 
         m_critSlabsToWriteBack.Leave();
@@ -9963,7 +9959,7 @@ ERR THashedLRUKCache<I>::ErrSuspendThreadFromStateAccess(   _In_ const CMeteredS
     fLeave = fTrue;
 
     CArray<CHashedLRUKCacheThreadLocalStorage<I>*>* const parray = &m_rgarraySuspendedThreads[ group ];
-    Call( ErrToErr<CArray<CHashedLRUKCacheThreadLocalStorage<I>*>>( parray->ErrSetEntry( parray->Size(), pctls ) ) );
+    Call( ErrToErr<CArray<CHashedLRUKCacheThreadLocalStorage<I>*>>( parray->ErrAppendEntry( pctls ) ) );
 
     m_critSuspendedThreads.Leave();
     fLeave = fFalse;
@@ -10004,7 +10000,7 @@ void THashedLRUKCache<I>::ResumeStateAccess()
     //  reset the suspended threads for the next cycle
 
     CArray<CHashedLRUKCacheThreadLocalStorage<I>*>* const parray = &m_rgarraySuspendedThreads[ m_msStateAccess.GroupInactive() ];
-    CallS( ErrToErr<CArray<CHashedLRUKCacheThreadLocalStorage<I>*>>( parray->ErrSetSize( 0 ) ) );
+    parray->Clear();
 
     //  allow state access to continue
 

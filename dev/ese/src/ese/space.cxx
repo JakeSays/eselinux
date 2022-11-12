@@ -9627,7 +9627,7 @@ LOCAL ERR ErrSPILRProcessObjectSpaceOwnershipSetPgnos(
                 {
                     Call( ErrErrArrayPgnoToJetErr( parrShelved->ErrSetCapacity( 2 * ( parrShelved->Size() + 1 ) ) ) );
                 }
-                Call( ErrErrArrayPgnoToJetErr( parrShelved->ErrSetEntry( parrShelved->Size(), (CPgnoFlagged)pgno ) ) );
+                Call( ErrErrArrayPgnoToJetErr( parrShelved->ErrAppendEntry( (CPgnoFlagged)pgno ) ) );
             }
             else
             {
@@ -11436,9 +11436,7 @@ LOCAL ERR ErrSPIAddSecondaryExtent(
             const EXTENTINFO& extinfoReleased = parreiReleased->Entry( parreiReleased->Size() - 1 );
             Assert( extinfoReleased.FValid() && ( extinfoReleased.CpgExtent() > 0 ) );
             Call( ErrSPIAEFreeExt( pfucb, extinfoReleased.PgnoFirst(), extinfoReleased.CpgExtent() ) );
-            CallS( ( parreiReleased->ErrSetSize( parreiReleased->Size() - 1 ) == CArray<EXTENTINFO>::ERR::errSuccess ) ?
-                                                                                 JET_errSuccess :
-                                                                                 ErrERRCheck( JET_errOutOfMemory ) );
+            (void)parreiReleased->FRemoveLastEntry();
         }
         Assert( !Pcsr( pfucbAE )->FLatched() );
 
@@ -11926,7 +11924,7 @@ LOCAL ERR ErrSPIExtendDB(
             EXTENTINFO extinfoReleased;
             extinfoReleased.pgnoLastInExtent = pgnoSELastAdj + cpgAvail;
             extinfoReleased.cpgExtent = cpgAvail;
-            Call( ( parreiReleased->ErrSetEntry( parreiReleased->Size(), extinfoReleased ) == CArray<EXTENTINFO>::ERR::errSuccess ) ?
+            Call( ( parreiReleased->ErrAppendEntry( extinfoReleased ) == CArray<EXTENTINFO>::ERR::errSuccess ) ?
                                                                                               JET_errSuccess :
                                                                                               ErrERRCheck( JET_errOutOfMemory ) );
         }
@@ -13241,9 +13239,9 @@ LOCAL ERR ErrSPIReserveSPBufPagesForSpaceTree(
             // Make sure we have enough room in the array.
             if ( parreiReleased != NULL )
             {
-                Call( ( parreiReleased->ErrSetEntry( parreiReleased->Size(), extinfoReleased ) == CArray<EXTENTINFO>::ERR::errSuccess ) ?
-                                                                                                  JET_errSuccess :
-                                                                                                  ErrERRCheck( JET_errOutOfMemory ) );
+                Call( ( parreiReleased->ErrAppendEntry( extinfoReleased ) == CArray<EXTENTINFO>::ERR::errSuccess ) ?
+                                                                                JET_errSuccess :
+                                                                                ErrERRCheck( JET_errOutOfMemory ) );
             }
             else
             {
@@ -13483,9 +13481,7 @@ LOCAL ERR ErrSPIReserveSPBufPages(
             const EXTENTINFO& extinfoReleased = arreiReleased[ arreiReleased.Size() - 1 ];
             Assert( extinfoReleased.FValid() && ( extinfoReleased.CpgExtent() > 0 ) );
             Call( ErrSPIAEFreeExt( pfucb, extinfoReleased.PgnoFirst(), extinfoReleased.CpgExtent(), pfucbParentLocal ) );
-            CallS( ( arreiReleased.ErrSetSize( arreiReleased.Size() - 1 ) == CArray<EXTENTINFO>::ERR::errSuccess ) ?
-                                                                             JET_errSuccess :
-                                                                             ErrERRCheck( JET_errOutOfMemory ) );
+            (void)arreiReleased.FRemoveLastEntry();
             fNeedRefill = fTrue;
         }
     }

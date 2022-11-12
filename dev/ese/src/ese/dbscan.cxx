@@ -3711,7 +3711,7 @@ ERR DBMScanObserverCleanup::ErrCleanupLVPage_( CSR * const pcsr, DBMObjectCache*
                 }
                 LvId lid;
                 LidFromKey( &lid, kdf.key );
-                CArray<LvId>::ERR errT = arrLid.ErrSetEntry( arrLid.Size(), lid );
+                CArray<LvId>::ERR errT = arrLid.ErrAppendEntry( lid );
                 Assert( errT == CArray<LvId>::ERR::errSuccess );
             }
         }

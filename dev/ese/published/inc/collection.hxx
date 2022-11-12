@@ -4451,6 +4451,9 @@ class CArray
         void SetEntryDefault( const CEntry& entry );
 
         ERR ErrSetEntry( const size_t ientry, const CEntry& entry );
+        ERR ErrAppendEntry( const CEntry& entry );
+        bool FRemoveLastEntry();
+        void Clear();
         void SetEntry( const CEntry* const pentry, const CEntry& entry );
 
         ERR ErrLoadEntries( const BYTE* const rgbData, const size_t cbData );
@@ -4685,6 +4688,42 @@ ErrSetEntry( const size_t ientry, const CEntry& entry )
     SetEntry( PEntry( ientry ), entry );
 
     return ERR::errSuccess;
+}
+
+//  grows the array by one element and sets that element to the value provided
+
+template< class CEntry >
+inline typename CArray< CEntry >::ERR CArray< CEntry >::
+ErrAppendEntry( const CEntry& entry )
+{
+    return ErrSetEntry( Size(), entry );
+}
+
+//  removes the last entry of the array, returns false IFF the array is already empty
+
+template< class CEntry >
+inline typename bool CArray< CEntry >::
+FRemoveLastEntry()
+{
+    if ( Size() == 0 )
+    {
+        return false;
+    }
+
+    const ERR err = ErrSetSize( Size() - 1 );
+    COLLAssert( err == ERR::errSuccess );
+
+    return true;
+}
+
+//  sets the array size to zero
+
+template< class CEntry >
+inline typename void CArray< CEntry >::
+Clear()
+{
+    const ERR err = ErrSetSize( 0 );
+    COLLAssert( err == ERR::errSuccess );
 }
 
 //  sets an existing entry of the array. WARNING: the array size and capacity

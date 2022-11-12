@@ -1627,9 +1627,9 @@ ERR ErrIORetrieveSparseSegmentsInRegion(    IFileAPI* const                     
                 sparseseg.ibLast = min( ibAlloc - 1, ibLast );
             }
 
-            Call( ( parrsparseseg->ErrSetEntry( parrsparseseg->Size(), sparseseg ) == CArray<SparseFileSegment>::ERR::errSuccess ) ?
-                                                                                      JET_errSuccess :
-                                                                                      ErrERRCheck( JET_errOutOfMemory ) );
+            Call( ( parrsparseseg->ErrAppendEntry( sparseseg ) == CArray<SparseFileSegment>::ERR::errSuccess ) ?
+                                                                    JET_errSuccess :
+                                                                    ErrERRCheck( JET_errOutOfMemory ) );
         }
         else
         {

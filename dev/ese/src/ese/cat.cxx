@@ -16638,7 +16638,7 @@ ERR ErrCATIAccumulateIndexLocales(
                 {
                     //  no entry for this LocaleName + version, add one ...
                     li.m_cIndices = 1;
-                    CLocaleNameInfoArray::ERR errArray = parrayLocales->ErrSetEntry( parrayLocales->Size(), li );
+                    CLocaleNameInfoArray::ERR errArray = parrayLocales->ErrAppendEntry( li );
                     if ( CLocaleNameInfoArray::ERR::errSuccess != errArray )
                     {
                         Assert( CLocaleNameInfoArray::ERR::errOutOfMemory == errArray );
@@ -16829,16 +16829,16 @@ JETUNITTEST( CATMSysLocales, TestCLocaleInfoArrayWillWorkAsRequiredForMSysLocale
     //  insert 4 imaginary records
 
     CHECK( 0 == localesarray.Size() );
-    err = localesarray.ErrSetEntry( localesarray.Size(), li );
+    err = localesarray.ErrAppendEntry( li );
     CHECK( err == CLocaleInfoArray::ERR::errSuccess );
     li.m_lcid = 1040;
-    err = localesarray.ErrSetEntry( localesarray.Size(), li );
+    err = localesarray.ErrAppendEntry( li );
     CHECK( err == CLocaleInfoArray::ERR::errSuccess );
     li.m_qwVersion = 0x45;
-    err = localesarray.ErrSetEntry( localesarray.Size(), li );
+    err = localesarray.ErrAppendEntry( li );
     CHECK( err == CLocaleInfoArray::ERR::errSuccess );
     li.m_lcid = 1046;
-    err = localesarray.ErrSetEntry( localesarray.Size(), li );
+    err = localesarray.ErrAppendEntry( li );
     CHECK( err == CLocaleInfoArray::ERR::errSuccess );
 
     //  check that the by offset/iEntry all work to retrieve expected results.
@@ -16910,23 +16910,23 @@ JETUNITTEST( CATMSysLocales, TestCLocaleNameInfoArrayWillWorkAsRequiredForMSysLo
     //  insert 5 imaginary records
 
     CHECK( 0 == localesarray.Size() );
-    err = localesarray.ErrSetEntry( localesarray.Size(), li );
+    err = localesarray.ErrAppendEntry( li );
     CHECK( err == CLocaleNameInfoArray::ERR::errSuccess );
 
     OSStrCbCopyW( li.m_wszLocaleName, sizeof( li.m_wszLocaleName ), L"pt-br" );
-    err = localesarray.ErrSetEntry( localesarray.Size(), li );
+    err = localesarray.ErrAppendEntry( li );
     CHECK( err == CLocaleNameInfoArray::ERR::errSuccess );
 
     li.m_qwVersion = 0x45;
-    err = localesarray.ErrSetEntry( localesarray.Size(), li );
+    err = localesarray.ErrAppendEntry( li );
     CHECK( err == CLocaleNameInfoArray::ERR::errSuccess );
 
     OSStrCbCopyW( li.m_wszLocaleName, sizeof( li.m_wszLocaleName ), L"pt-pt" );
-    err = localesarray.ErrSetEntry( localesarray.Size(), li );
+    err = localesarray.ErrAppendEntry( li );
     CHECK( err == CLocaleNameInfoArray::ERR::errSuccess );
 
     li.m_sortID.Data1++;
-    err = localesarray.ErrSetEntry( localesarray.Size(), li );
+    err = localesarray.ErrAppendEntry( li );
     CHECK( err == CLocaleNameInfoArray::ERR::errSuccess );
 
     li.m_sortID.Data1--;

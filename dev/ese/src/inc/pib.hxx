@@ -872,7 +872,7 @@ INLINE ERR PIB::MACRO::ErrInsertPgnoFreed( IFMP ifmp, const PGNO pgnoFreed )
         Alloc( m_rgfmppgnoFreed = new CArray< CFMPPage >() );
     }
 
-    errArray = m_rgfmppgnoFreed->ErrSetEntry( m_rgfmppgnoFreed->Size(), fmppage );
+    errArray = m_rgfmppgnoFreed->ErrAppendEntry( fmppage );
 
     if ( errArray != CArray< CFMPPage >::ERR::errSuccess )
     {
