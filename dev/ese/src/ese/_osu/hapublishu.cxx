@@ -149,6 +149,7 @@ void OSUHAEmitFailureTag_(
             }
         }
     }
+    #define pinst  pinstDoNotUseForRestOfFuncUse_pinstActual
 
     // FUTURE:  HA Publish is only for O365 datacenter, but even so this is a bit of a layering violation.  We will
     // add these temporarily to do a basic health check on O365 to see if we're dropping HA FailureItems from any ESE
@@ -288,18 +289,18 @@ void OSUHAEmitFailureTag_(
                                 iwsz,
                                 rgwsz );
 
-        AtomicExchangeSet( (ULONG*)&pinst->m_grbitHaFailureTags, (ULONG)bitHaPublishedEvent );
+        AtomicExchangeSet( (ULONG*)&pinstActual->m_grbitHaFailureTags, (ULONG)bitHaPublishedEvent );
         if ( haTag == HaDbFailureTagCorruption )
         {
-            AtomicExchangeSet( (ULONG*)&pinst->m_grbitHaFailureTags, (ULONG)bitHaPublishedCorruptionTag );
+            AtomicExchangeSet( (ULONG*)&pinstActual->m_grbitHaFailureTags, (ULONG)bitHaPublishedCorruptionTag );
         }
         if ( haTag == HaDbFailureTagIoHard )
         {
-            AtomicExchangeSet( (ULONG*)&pinst->m_grbitHaFailureTags, (ULONG)bitHaPublishedIoHardTag );
+            AtomicExchangeSet( (ULONG*)&pinstActual->m_grbitHaFailureTags, (ULONG)bitHaPublishedIoHardTag );
         }
         if ( haTag == HaDbFailureTagLogLogicallyInconsistent )
         {
-            AtomicExchangeSet( (ULONG*)&pinst->m_grbitHaFailureTags, (ULONG)bitHaPublishedLogLogicallyInconsistentTag );
+            AtomicExchangeSet( (ULONG*)&pinstActual->m_grbitHaFailureTags, (ULONG)bitHaPublishedLogLogicallyInconsistentTag );
         }
     }
 
@@ -309,6 +310,8 @@ void OSUHAEmitFailureTag_(
     {
         pcritInstActual->Leave();
     }
+
+    #undef pinst
 }
 #endif
 
