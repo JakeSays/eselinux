@@ -6023,7 +6023,8 @@ ERR RCE::ErrPrepareToDeallocate( TRX trxOldest )
         if ( PinstFromIfmp( m_ifmp )->FRecovering() )
         {
             RCE *prceFirst = this;
-            while ( prceFirst->m_prcePrevOfNode != NULL )
+            // With Delta RCEs, you can have uncommitted delta RCEs preceding it, so let them be.
+            while ( prceFirst->Oper() != operDelta && prceFirst->Oper() != operDelta64 && prceFirst->m_prcePrevOfNode != NULL )
             {
                 Assert( prceFirst->m_prcePrevOfNode->m_prceNextOfNode == prceFirst );
                 prceFirst = prceFirst->m_prcePrevOfNode;
