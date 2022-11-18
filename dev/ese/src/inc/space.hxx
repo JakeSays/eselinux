@@ -150,6 +150,7 @@ ERR ErrSPInitFCB( _Inout_ FUCB * const pfucb );
 ERR ErrSPDeferredInitFCB( _Inout_ FUCB * const pfucb );
 ERR ErrSPGetLastPgno( _Inout_ PIB * ppib, _In_ const IFMP ifmp, _Out_ PGNO * ppgno );
 ERR ErrSPGetLastExtent( _Inout_ PIB * ppib, _In_ const IFMP ifmp, _Out_ EXTENTINFO * pextinfo );
+ERR ErrSPGetOwningExtent( _In_ FUCB* pfucb, _In_ const PGNO pgno, _Out_ EXTENTINFO* pextinfo );
 
 //  Flags related to page or extent allocation.
 //
@@ -299,7 +300,7 @@ typedef struct SpaceCatCtx
     FUCB* pfucbParent;
     FUCB* pfucb;
     FUCB* pfucbSpace;
-    BOOKMARK_COPY* pbm;
+    BOOKMARK_BUFFER* pbmb;
 } SpaceCatCtx;
 
 // Frees a SpaceCatCtx handle.

@@ -1213,6 +1213,12 @@ public:
         return ( m_pgnoShrinkTarget != pgnoNull );
     }
 
+    PGNO PgnoShrinkTarget() const
+    {
+        Assert( FPgnoShrinkTargetIsSet() );
+        return m_pgnoShrinkTarget;
+    }
+
     BOOL FBeyondPgnoShrinkTarget( const PGNO pgnoFirst, const CPG cpg = 1 ) const
     {
         Assert( !FPgnoShrinkTargetIsSet() || m_fShrinkIsRunning );

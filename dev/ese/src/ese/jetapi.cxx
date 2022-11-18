@@ -3229,21 +3229,10 @@ class CInstanceFileSystemConfiguration : public CDefaultFileSystemConfiguration
             if ( m_permillageSmoothIo == dwMax )
             {
                 // Exs: 999� = 99.9% Smooth, 990� = 99.0% Smooth, 900� = 90.0% Smooth.  Debug default = 0.2%
-                ULONG permillageSmoothIo = OnDebugOrRetail( 2, CDefaultFileSystemConfiguration::PermillageSmoothIo() ); 
-
-                if ( m_pinst )
-                {
-                    if ( !FDefaultParam( m_pinst, JET_paramFlight_SmoothIoTestPermillage ) )
-                    {
-                        permillageSmoothIo = (ULONG)UlParam( m_pinst, JET_paramFlight_SmoothIoTestPermillage );
-                    }
-                }
-                Assert( permillageSmoothIo != dwMax );
-
-                m_permillageSmoothIo = permillageSmoothIo;
+                m_permillageSmoothIo = OnDebugOrRetail( 2, CDefaultFileSystemConfiguration::PermillageSmoothIo() ); 
+                Assert( m_permillageSmoothIo != dwMax );
             }
 
-            Assert( m_permillageSmoothIo != dwMax );
             return m_permillageSmoothIo;
         }
 
@@ -7615,6 +7604,8 @@ const
 #endif
 
 #define JET_paramFlight_RBSCleanupEnabledDEFAULT                OnDebugOrRetail( fTrue, fFalse )
+
+#define JET_paramFlight_ContiguousExtentMoveShrinkEnabledDEFAULT    OnDebugOrRetail( fTrue, fFalse )
 
 #define JET_paramFlight_UseCngAes256ImplementationDEFAULT       OnDebugOrRetail( fTrue, fFalse )
 

@@ -3971,7 +3971,7 @@ typedef enum
 
 // end_PubEsent
 #if ( JET_VERSION >= 0x0A01 )
-#define JET_paramFlight_SmoothIoTestPermillage  55  //  The per mille of total (or one thousandths, or tenths of a percent) of IO should be made smooth.  Ex(s): 995(/1000) = 99.5% smooth, 10(/1000) = 1%, etc.  0 = disabled.
+#define JET_paramFlight_HierarchicalSpaceAllocFlagsEnabled  55  //  Whether we want to pass the space allocation flags along when asking for space to the parent of an object.
 #define JET_paramElasticWaypointLatency         56  //  Amount of extra elastic waypoint latency
 #define JET_paramFlight_SynchronousLVCleanup    57  //  Perform synchronous cleanup (actual delete) of LVs instead of flag delete with cleanup happening later
 #define JET_paramFlight_RBSRevertIOUrgentLevel  58  // IO urgent level for reverting the databases using RBS. Used to decide how many outstanding I/Os will be allowed.
@@ -4253,9 +4253,10 @@ typedef enum
 
 // end_PubEsent
 #define JET_paramFlight_UseCngAes256Implementation 221 //   Whether to use the CNG based implementation (rather than CAPI based one) for AES256 encryption
+#define JET_paramFlight_ContiguousExtentMoveShrinkEnabled 222 //  Whether we want to move contiguous pages to a contiguous destination extent during DB Shrink.
 // begin_PubEsent
 
-#define JET_paramMaxValueInvalid                222 //  This is not a valid parameter. It can change from release to release!
+#define JET_paramMaxValueInvalid                223 //  This is not a valid parameter. It can change from release to release!
 
 // end_PubEsent
 #if ( JET_VERSION >= 0x0A01 )
@@ -6075,7 +6076,7 @@ typedef JET_ERR (JET_API * JET_PFNEMITLOGDATA)(
 // begin_PubEsent
 #define JET_errNTSystemCallFailed           -334  // A call to the operating system failed
 // end_PubEsent
-#define wrnBTShallowTree                     335  // BTree is only one or two levels deep
+#define errBTShallowTree                    -335  // BTree is only one or two levels deep
 #define errBTMergeNotSynchronous            -336  // Multiple threads attempting to perform merge/split on same page (likely OLD vs. RCEClean)
 #define wrnSPReservedPages                   337  // space manager reserved pages for future space tree splits
 // begin_PubEsent

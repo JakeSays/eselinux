@@ -409,6 +409,7 @@ JETUNITTEST( FMP, NewAndWriteLatch )
         pfmp->SetPgnoShrinkTarget( 10 );
         CHECK( pfmp->FShrinkIsActive() );
         CHECK( pfmp->FPgnoShrinkTargetIsSet() );
+        CHECK( 10 == pfmp->PgnoShrinkTarget() );
         CHECK( !pfmp->FBeyondPgnoShrinkTarget( pgnoNull ) );
         CHECK( !pfmp->FBeyondPgnoShrinkTarget( pgnoNull, 0 ) );
         CHECK( !pfmp->FBeyondPgnoShrinkTarget( pgnoNull, 1 ) );

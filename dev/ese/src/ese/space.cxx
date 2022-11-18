@@ -309,6 +309,12 @@ const CHAR * SzSpaceTreeType( const FUCB * const pfucb )
 //
 class CSPExtentInfo;
 
+LOCAL ERR ErrSPIFindExtOE(
+    __inout     PIB *           ppib,
+    _In_        FCB *           pfcb,
+    _In_ const  PGNO            pgnoFirst,
+    _Out_       CSPExtentInfo * pcspoext );
+
 LOCAL ERR ErrSPIAddFreedExtent(
     FUCB *pfucb,
     FUCB *pfucbAE,
@@ -334,7 +340,6 @@ LOCAL ERR ErrSPIGetFsSe(
     FUCB * const pfucbAE,
     const CPG    cpgReq,
     const CPG    cpgMin,
-    const ULONG  fSPFlags,
     const BOOL   fExact = fFalse,
     const BOOL   fPermitAsyncExtension = fTrue,
     const BOOL   fMayViolateMaxSize = fFalse );
@@ -376,17 +381,6 @@ LOCAL ERR ErrSPIUnshelvePagesInRange(
     FUCB* const pfucbRoot,
     const PGNO pgnoFirst,
     const PGNO pgnoLast );
-
-LOCAL ERR ErrSPIGetInfo(
-    FUCB        *pfucb,
-    CPG         *pcpgTotal,
-    CPG         *pcpgReserved,
-    CPG         *pcpgShelved,
-    INT         *piext,
-    INT         cext,
-    EXTENTINFO  *rgext,
-    INT         *pcextSentinelsRemaining,
-    CPRINTF     * const pcprintf );
 
 #ifdef EXPENSIVE_INLINE_EXTENT_PAGE_COUNT_CACHE_VALIDATION
 // This function does very expensive validation of the value in the Extent Page
@@ -1950,7 +1944,7 @@ class CSPExtentNodeKDF {
 
         class CSPExtentInfo;
 
-        ERR ErrConsumeSpace( _In_ const PGNO pgnoConsume, _In_ const CPG cpgConsume = 1 )
+        ERR ErrConsumeSpace( _In_ const PGNO pgnoConsume, _In_ const CPG cpgConsume, _In_ const BOOL fDeleteInsertionMarker )
         {
             ASSERT_VALID( this );
 
@@ -1970,8 +1964,9 @@ class CSPExtentNodeKDF {
 
             Assert( m_spextkey.FValid( m_eSpExtType, SPEXTKEY::fValidateData ) );
 
-            if ( m_spextkey.SppPool() != spp::ContinuousPool &&
-                    CpgExtent() == 0 )
+            // Leave insertion marker behind for continuous pools, except if we were working
+            // with explicit reservation.
+            if ( ( CpgExtent() == 0 ) && ( ( m_spextkey.SppPool() != spp::ContinuousPool ) || fDeleteInsertionMarker ) )
             {
                 m_fShouldDeleteNode = fTrue;
             }
@@ -2407,6 +2402,37 @@ HandleError:
     Assert ( pfucb != pfucbNil );
     BTClose( pfucb );
 
+    return err;
+}
+
+
+//  Gets the FUCB-level extent that owns a specific pgno.
+//  Assumes that the caller guarantees that the page is known to be owned
+//  by the FUCB provided.
+//
+ERR ErrSPGetOwningExtent( _In_ FUCB * pfucb, _In_ const PGNO pgno, _Out_ EXTENTINFO * pextinfo )
+{
+    ERR err = JET_errSuccess;
+
+    Assert( pfucbNil != pfucb );
+    Assert( !FSPIIsSmall( pfucb->u.pfcb ) );
+    Assert( pfucb->u.pfcb->FSpaceInitialized() );
+    Assert( pfucb->u.pfcb->PgnoOE() != pgnoNull );
+
+    CSPExtentInfo speiOE;
+    err = ErrSPIFindExtOE( pfucb->ppib, pfucb->u.pfcb, pgno, &speiOE );
+    if ( ( err == JET_errNoCurrentRecord ) || ( err == JET_errRecordNotFound ) ||
+         ( ( err >= JET_errSuccess ) && ( !speiOE.FIsSet() || !speiOE.FContains( pgno ) || ( speiOE.CpgExtent() <= 0 ) ) ) )
+    {
+        FireWall( "GetOwningExtNoOwned" );
+        Error( ErrERRCheck( JET_errSPOwnExtCorrupted ) );
+    }
+    Call( err );
+
+    pextinfo->pgnoLastInExtent = speiOE.PgnoLast();
+    pextinfo->cpgExtent = speiOE.CpgExtent();
+
+HandleError:
     return err;
 }
 
@@ -4418,10 +4444,10 @@ VOID SPFreeSpaceCatCtx( _Inout_ SpaceCatCtx** const ppSpCatCtx )
     pSpCatCtx->pfucbParent = pfucbNil;
     pSpCatCtx->pfucb = pfucbNil;
 
-    if ( pSpCatCtx->pbm != NULL )
+    if ( pSpCatCtx->pbmb != NULL )
     {
-        delete pSpCatCtx->pbm;
-        pSpCatCtx->pbm = NULL;
+        delete pSpCatCtx->pbmb;
+        pSpCatCtx->pbmb = NULL;
     }
 
     delete pSpCatCtx;
@@ -4480,7 +4506,7 @@ ERR ErrSPIGetSpaceCategoryObject(
     BOOL fPageLatched = fFalse;
     KEYDATAFLAGS kdf;
     SpaceCatCtx* pSpCatCtx = NULL;
-    BOOKMARK_COPY* pbm = NULL;
+    BOOKMARK_BUFFER* pbmb = NULL;
 
     Assert( objid != objidNil );
     Assert( objid != objidParent );
@@ -4498,7 +4524,7 @@ ERR ErrSPIGetSpaceCategoryObject(
     *ppSpCatCtx = NULL;
 
     Alloc( pSpCatCtx = new SpaceCatCtx );
-    Alloc( pbm = new BOOKMARK_COPY );
+    Alloc( pbmb = new BOOKMARK_BUFFER );
 
     // First, determine the pgnoFDP and initialize cursors.
     //
@@ -4817,7 +4843,7 @@ ERR ErrSPIGetSpaceCategoryObject(
             goto HandleError;
         }
 
-        Call( pbm->ErrCopyKeyData( kdf.key, kdf.data ) );
+        Call( pbmb->ErrAllocAndCopyKeyData( kdf.key, kdf.data ) );
     }
     else
     {
@@ -4834,7 +4860,7 @@ ERR ErrSPIGetSpaceCategoryObject(
             goto HandleError;
         }
 
-        Call( pbm->ErrCopyKey( kdf.key ) );
+        Call( pbmb->ErrAllocAndCopyKey( kdf.key ) );
     }
 
     // Release latch before navigating.
@@ -4854,7 +4880,7 @@ ERR ErrSPIGetSpaceCategoryObject(
         }
 
         // Try the tree itself.
-        err = ErrBTContainsPage( pfucb, *pbm, pgno, fLeafPage );
+        err = ErrBTContainsPage( pfucb, pbmb->Bm(), pgno, fLeafPage);
         if ( err >= JET_errSuccess )
         {
             spcatf |= ( fLeafPage ? spcatfStrictlyLeaf : spcatfStrictlyInternal );
@@ -4877,7 +4903,7 @@ ERR ErrSPIGetSpaceCategoryObject(
             spcatf = spcatfInconsistent;
             goto HandleError;
         }
-        err = ErrBTContainsPage( pfucbSpace, *pbm, pgno, fLeafPage );
+        err = ErrBTContainsPage( pfucbSpace, pbmb->Bm(), pgno, fLeafPage);
         if ( err >= JET_errSuccess )
         {
             spcatf |= ( spcatfSpaceAE | ( fLeafPage ? spcatfStrictlyLeaf : spcatfStrictlyInternal ) );
@@ -4901,7 +4927,7 @@ ERR ErrSPIGetSpaceCategoryObject(
             spcatf = spcatfInconsistent;
             goto HandleError;
         }
-        err = ErrBTContainsPage( pfucbSpace, *pbm, pgno, fLeafPage );
+        err = ErrBTContainsPage( pfucbSpace, pbmb->Bm(), pgno, fLeafPage);
         if ( err >= JET_errSuccess )
         {
             spcatf |= ( spcatfSpaceOE | ( fLeafPage ? spcatfStrictlyLeaf : spcatfStrictlyInternal ) );
@@ -4974,10 +5000,10 @@ HandleError:
     if ( ( err >= JET_errSuccess ) &&
             !FSPSpaceCatStrictlyInternal( spcatf ) &&
             !FSPSpaceCatStrictlyLeaf( spcatf ) &&
-            ( pbm != NULL ) )
+            ( pbmb != NULL ) )
     {
-        delete pbm;
-        pbm = NULL;
+        delete pbmb;
+        pbmb = NULL;
     }
 
     // Fill out the context struct, either to clean it up or return it.
@@ -4986,14 +5012,14 @@ HandleError:
         pSpCatCtx->pfucbParent = pfucbParent;
         pSpCatCtx->pfucb = pfucb;
         pSpCatCtx->pfucbSpace = pfucbSpace;
-        pSpCatCtx->pbm = pbm;
+        pSpCatCtx->pbmb = pbmb;
     }
     else
     {
         Assert( pfucbParent == pfucbNil );
         Assert( pfucb == pfucbNil );
         Assert( pfucbSpace == pfucbNil );
-        Assert( pbm == NULL );
+        Assert( pbmb == NULL );
     }
 
     if ( err >= JET_errSuccess )
@@ -5544,7 +5570,7 @@ HandleError:
             }
 
             // We must have a bookmark if this is an internal or leaf page.
-            Assert( !FSPSpaceCatStrictlyInternal( spcatf ) && !FSPSpaceCatStrictlyLeaf( spcatf ) || ( pSpCatCtx->pbm != NULL )  );
+            Assert( !FSPSpaceCatStrictlyInternal( spcatf ) && !FSPSpaceCatStrictlyLeaf( spcatf ) || ( pSpCatCtx->pbmb != NULL )  );
         }
         else
         {
@@ -6157,7 +6183,6 @@ LOCAL ERR ErrSPIGetExt(
                         pfucbAE,
                         *pcpgReq,
                         cpgMin,
-                        fSPFlags & ( fSPSplitting | fSPExactExtent ),
                         fFalse, // fExact
                         fTrue,  // fPermitAsyncExtension
                         fMayViolateMaxSize ) );
@@ -6238,7 +6263,7 @@ LOCAL ERR ErrSPIGetExt(
         CSPExtentNodeKDF spAdjustedSize( SPEXTKEY::fSPExtentTypeAE, cspaei.PgnoLast(), cspaei.CpgExtent(), spp::AvailExtLegacyGeneralPool );
 
         OnDebug( const PGNO pgnoLastBefore = cspaei.PgnoLast() );
-        Call( spAdjustedSize.ErrConsumeSpace( *ppgnoFirst, *pcpgReq ) );
+        Call( spAdjustedSize.ErrConsumeSpace( *ppgnoFirst, *pcpgReq, fFalse /* fDeleteInsertionMarker */ ) );
         Assert( spAdjustedSize.CpgExtent() > 0 );
         Assert( pgnoLastBefore == cspaei.PgnoLast() );
 
@@ -6687,7 +6712,6 @@ ERR ErrSPIAEFindPage(
 
     switch ( err )
     {
-
         default:
             Assert( err < JET_errSuccess );
             Assert( err != JET_errNoCurrentRecord );
@@ -6931,7 +6955,7 @@ ERR ErrSPIAEGetExtentAndPage(
     }
     else
     {
-        Call( ErrSPIGetFsSe( pfucb, pfucbAE, cpgRequest, cpgRequest, fSPFlags ) );
+        Call( ErrSPIGetFsSe( pfucb, pfucbAE, cpgRequest, cpgRequest ) );
     }
 
     Assert( Pcsr( pfucbAE )->FLatched() );
@@ -6953,14 +6977,16 @@ ERR ErrSPIAEGetContinuousPage(
     __inout FUCB * const        pfucb,  // needed for ErrSPIAEGetExtentAndPage()
     __inout FUCB * const        pfucbAE,
     _In_    const PGNO          pgnoLast,
-    _In_    const CPG           cpgReserve,
-    _In_    const BOOL          fHardReserve,   // ensure reserve, even if next contiguous page is available.
+    _In_    const CPG           cpgAddlReserve,
+    _In_    const BOOL          fSPAllocFlags,
     _Out_   CSPExtentInfo *     pspaeiAlloc
     )
 {
-    ERR             err             = JET_errSuccess;
-    FCB * const     pfcb            = pfucbAE->u.pfcb;
-    CPG             cpgEscalatingRequest = 0;
+    ERR             err                     = JET_errSuccess;
+    FCB * const     pfcb                    = pfucbAE->u.pfcb;
+    const CPG       cpgFullReserveRequest   = cpgAddlReserve ? ( cpgAddlReserve + 1 ) : 0;
+    CPG             cpgEscalatingRequest    = 0;
+    const BOOL      fUseReserve             = ( fSPAllocFlags & fSPUseActiveReserve ) != 0;
 
     Assert( pfucb );
     Assert( pfucbAE );
@@ -6976,7 +7002,6 @@ ERR ErrSPIAEGetContinuousPage(
     //
     if ( cpgEscalatingRequest )
     {
-
         //  We should have had success or cpgEscalatingRequest would not be set.
         CallS( err );
         Assert( Pcsr( pfucbAE )->FLatched() );
@@ -6997,19 +7022,18 @@ ERR ErrSPIAEGetContinuousPage(
 
         Assert( !Pcsr( pfucbAE )->FLatched() );
 
-        Call( err );    // materialize the ErrBTFlagDelete() error ...
+        Call( err );    // materialize the ErrSPIWrappedBTFlagDelete() error ...
 
         err = ErrERRCheck( errSPNoSpaceForYou );
-
     }
     else
     {
         cpgEscalatingRequest = 1;
     }
 
-    if ( fHardReserve &&
+    if ( fUseReserve &&
             err >= JET_errSuccess &&
-            pspaeiAlloc->CpgExtent() < cpgReserve )
+            pspaeiAlloc->CpgExtent() < cpgFullReserveRequest )
     {
         pspaeiAlloc->Unset();
         BTUp( pfucbAE );
@@ -7017,14 +7041,17 @@ ERR ErrSPIAEGetContinuousPage(
         err = ErrERRCheck( errSPNoSpaceForYou );
     }
 
-    if ( errSPNoSpaceForYou == err )
+    if ( errSPNoSpaceForYou != err )
     {
-
+        Call( err );
+    }
+    else
+    {
         if ( cpgEscalatingRequest == 1 )
         {
-            if ( cpgReserve )
+            if ( cpgAddlReserve )
             {
-                cpgEscalatingRequest += cpgReserve;
+                cpgEscalatingRequest += cpgAddlReserve;
             }
             else
             {
@@ -7032,13 +7059,12 @@ ERR ErrSPIAEGetContinuousPage(
             }
         }
 
-        if ( fHardReserve &&
-                cpgReserve != 0 &&
-                cpgReserve != cpgEscalatingRequest )
+        if ( fUseReserve &&
+                cpgAddlReserve != 0 &&
+                cpgEscalatingRequest != cpgFullReserveRequest )
         {
-            const CPG cpgFullReserveRequest = ( cpgReserve + 1 );
             //  Made this strict, but we could entertain that the request is only 10% wastage or something.
-            if ( ( cpgEscalatingRequest % cpgFullReserveRequest ) != 0 )
+            if ( ( fSPExactExtent & fSPAllocFlags ) || ( ( cpgEscalatingRequest % cpgFullReserveRequest ) != 0 ) )
             {
                 cpgEscalatingRequest = cpgFullReserveRequest;
             }
@@ -7050,20 +7076,20 @@ ERR ErrSPIAEGetContinuousPage(
 
         //  Note: we don't want ErrSPIGetSe() to resize our request, we've already decided 
         //  on a good size, so don't pass fSPOriginatingRequest.
+        const BOOL fHierarchicalSpaceAllocFlags = BoolParam( JET_paramFlight_HierarchicalSpaceAllocFlagsEnabled );
         Call( ErrSPIAEGetExtentAndPage(
                   pfucb,
                   pfucbAE,
                   spp::ContinuousPool,
                   cpgEscalatingRequest,
-                  fSPSplitting,
+                  fSPSplitting | ( fHierarchicalSpaceAllocFlags ? fSPAllocFlags : fSPNoFlags ),
                   pspaeiAlloc ) );
-
+        Assert( !fHierarchicalSpaceAllocFlags || !( fSPExactExtent & fSPAllocFlags ) || ( pspaeiAlloc->CpgExtent() == cpgFullReserveRequest ) );
     }
 
     //  We should have succeeded or have latched some space
     //
     CallS( err );
-    Call( err );
 
     Assert( Pcsr( pfucbAE )->FLatched() );
     Assert( pspaeiAlloc->SppPool() == spp::ContinuousPool );
@@ -7149,7 +7175,7 @@ ERR ErrSPIAEGetPage(
     _In_    PGNO        pgnoLast,
     __inout PGNO *      ppgnoAlloc,
     _In_    const BOOL  fSPAllocFlags,
-    _In_    const CPG   cpgReserve
+    _In_    const CPG   cpgAddlReserve
     )
 {
     ERR             err             = JET_errSuccess;
@@ -7174,7 +7200,7 @@ ERR ErrSPIAEGetPage(
 
     if ( fSPContinuous & fSPAllocFlags )
     {
-        Call( ErrSPIAEGetContinuousPage( pfucb, pfucbAE, pgnoLast, cpgReserve, fSPAllocFlags & fSPUseActiveReserve, &cspaeiAlloc ) );
+        Call( ErrSPIAEGetContinuousPage( pfucb, pfucbAE, pgnoLast, cpgAddlReserve, fSPAllocFlags, &cspaeiAlloc ) );
     }
     else
     {
@@ -7221,7 +7247,7 @@ ERR ErrSPIAEGetPage(
                                                 cspaeiAlloc.CpgExtent(),
                                                 cspaeiAlloc.SppPool() );
 
-    Call( spAdjustedAvail.ErrConsumeSpace( cspaeiAlloc.PgnoFirst() ) );
+    Call( spAdjustedAvail.ErrConsumeSpace( cspaeiAlloc.PgnoFirst(), 1, ( fSPAllocFlags & fSPUseActiveReserve ) != 0 ) );
 
     if ( spAdjustedAvail.FDelete() )
     {
@@ -7321,9 +7347,11 @@ ERR ErrSPGetPage(
     //  check for valid input
     //
     Assert( ppgnoAlloc != NULL );
-    Assert( 0 == ( fSPAllocFlags & ~fMaskSPGetPage ) );
+    Assert( 0 == ( fSPAllocFlags & ~fMaskSPGetPage ) );  // only valid options.
+    Assert( 0 == ( fSPAllocFlags & fSPUseActiveReserve ) || 0 != ( fSPAllocFlags & fSPContinuous ) || cpgDIRReserveConsumed == CpgDIRActiveSpaceRequestReserve( pfucb ) );   // fSPUseActiveReserve requires fSPContinuous to actually reserve space.
 
-    CPG         cpgAddlReserve = 0;
+
+    CPG cpgAddlReserve = 0;
     if ( fSPAllocFlags & fSPNewExtent )
     {
         cpgAddlReserve = 15;
@@ -12096,7 +12124,6 @@ ERR ErrSPExtendDB(
             pfucbAE,
             cpgSEMin,
             cpgSEMin,
-            0,
             fTrue,
             fPermitAsyncExtension ) );
 
@@ -14004,7 +14031,6 @@ LOCAL ERR ErrSPIGetFsSe(
     FUCB * const    pfucbAE,
     const CPG       cpgReq,
     const CPG       cpgMin,
-    const ULONG     fSPFlags,
     const BOOL      fExact,
     const BOOL      fPermitAsyncExtension,
     const BOOL      fMayViolateMaxSize )
@@ -14725,8 +14751,9 @@ HandleError:
 }
 
 
-LOCAL ERR ErrSPIGetInfo(
+ERR ErrSPIGetInfo(
     FUCB        *pfucb,
+    const PGNO  pgnoHighest,
     CPG         *pcpgTotal,
     CPG         *pcpgReserved,
     CPG         *pcpgShelved,
@@ -14787,94 +14814,99 @@ LOCAL ERR ErrSPIGetInfo(
         {
             const CSPExtentInfo cspext( pfucb );
 
-            if( pcprintf )
+            if ( ( pgnoHighest == pgnoNull ) || ( !cspext.FEmptyExtent() && ( pgnoHighest >= cspext.PgnoFirst() ) ) )
             {
-                CPG cpgSparse = 0;
+                Expected( ( pgnoHighest == pgnoNull ) || ( pgnoHighest >= cspext.PgnoLast() ) );
 
-                if ( !cspext.FEmptyExtent() )
+                if ( pcprintf )
                 {
-                    (void) ErrSPIGetSparseInfoRange( &g_rgfmp[ pfucb->ifmp ], cspext.PgnoFirst(), cspext.PgnoLast(), &cpgSparse );
-                }
+                    CPG cpgSparse = 0;
 
-                if( pgnoLastSeen != Pcsr( pfucb )->Pgno() )
-                {
-                    pgnoLastSeen = Pcsr( pfucb )->Pgno();
+                    if ( !cspext.FEmptyExtent() )
+                    {
+                        (void) ErrSPIGetSparseInfoRange( &g_rgfmp[ pfucb->ifmp ], cspext.PgnoFirst(), cspext.PgnoLast(), &cpgSparse );
+                    }
 
-                    ++cpgSeen;
-                }
+                    if( pgnoLastSeen != Pcsr( pfucb )->Pgno() )
+                    {
+                        pgnoLastSeen = Pcsr( pfucb )->Pgno();
 
-                (*pcprintf)( "%30s: %s[%5d]:\t%6d-%6d (%3d) %s%s",
-                                SzNameOfTable( pfucb ),
-                                SzSpaceTreeType( pfucb ),
-                                Pcsr( pfucb )->Pgno(),
-                                cspext.FEmptyExtent() ? 0 : cspext.PgnoFirst(),
-                                cspext.FEmptyExtent() ? cspext.PgnoMarker() : cspext.PgnoLast(),
-                                cspext.CpgExtent(),
-                                FNDDeleted( pfucb->kdfCurr ) ? " (DEL)" : "",
-                                ( cspext.ErrCheckCorrupted( ) < JET_errSuccess ) ? " (COR)" : ""
-                                );
-                if ( cspext.FNewAvailFormat() )
-                {
-                    (*pcprintf)( "  Pool: %d %s",
-                                    cspext.SppPool(),
-                                    cspext.FNewAvailFormat() ? "(fNewAvailFormat)" : ""
+                        ++cpgSeen;
+                    }
+
+                    (*pcprintf)( "%30s: %s[%5d]:\t%6d-%6d (%3d) %s%s",
+                                    SzNameOfTable( pfucb ),
+                                    SzSpaceTreeType( pfucb ),
+                                    Pcsr( pfucb )->Pgno(),
+                                    cspext.FEmptyExtent() ? 0 : cspext.PgnoFirst(),
+                                    cspext.FEmptyExtent() ? cspext.PgnoMarker() : cspext.PgnoLast(),
+                                    cspext.CpgExtent(),
+                                    FNDDeleted( pfucb->kdfCurr ) ? " (DEL)" : "",
+                                    ( cspext.ErrCheckCorrupted( ) < JET_errSuccess ) ? " (COR)" : ""
                                     );
+                    if ( cspext.FNewAvailFormat() )
+                    {
+                        (*pcprintf)( "  Pool: %d %s",
+                                        cspext.SppPool(),
+                                        cspext.FNewAvailFormat() ? "(fNewAvailFormat)" : ""
+                                        );
+                    }
+                    if ( cpgSparse > 0 )
+                    {
+                        (*pcprintf)( " cpgSparse: %3d", cpgSparse );
+                    }
+                    (*pcprintf)( "\n" );
+
+                    ++cRecords;
+                    if( FNDDeleted( pfucb->kdfCurr ) )
+                    {
+                        ++cRecordsDeleted;
+                    }
                 }
-                if ( cpgSparse > 0 )
+
+                if ( cspext.SppPool() != spp::ShelvedPool )
                 {
-                    (*pcprintf)( " cpgSparse: %3d", cpgSparse );
+                    *pcpgTotal += cspext.CpgExtent();
                 }
-                (*pcprintf)( "\n" );
 
-                ++cRecords;
-                if( FNDDeleted( pfucb->kdfCurr ) )
+                if ( pcpgReserved && cspext.FNewAvailFormat() &&
+                    ( cspext.SppPool() == spp::ContinuousPool ) )
                 {
-                    ++cRecordsDeleted;
+                    *pcpgReserved += cspext.CpgExtent();
                 }
-            }
 
-            if ( cspext.SppPool() != spp::ShelvedPool )
-            {
-                *pcpgTotal += cspext.CpgExtent();
-            }
+                BOOL fSuppressExtent = fFalse;
 
-            if ( pcpgReserved && cspext.FNewAvailFormat() &&
-                ( cspext.SppPool() == spp::ContinuousPool ) )
-            {
-                *pcpgReserved += cspext.CpgExtent();
-            }
-
-            BOOL fSuppressExtent = fFalse;
-
-            if ( pcpgShelved && cspext.FNewAvailFormat() &&
-                ( cspext.SppPool() == spp::ShelvedPool ) )
-            {
-                if ( cspext.PgnoLast() > g_rgfmp[ pfucb->ifmp ].PgnoLast() )
+                if ( pcpgShelved && cspext.FNewAvailFormat() &&
+                    ( cspext.SppPool() == spp::ShelvedPool ) )
                 {
-                    Assert( cspext.PgnoFirst() > g_rgfmp[ pfucb->ifmp ].PgnoLast() );
-                    *pcpgShelved += cspext.CpgExtent();
+                    if ( cspext.PgnoLast() > g_rgfmp[ pfucb->ifmp ].PgnoLast() )
+                    {
+                        Assert( cspext.PgnoFirst() > g_rgfmp[ pfucb->ifmp ].PgnoLast() );
+                        *pcpgShelved += cspext.CpgExtent();
+                    }
+                    else
+                    {
+                        fSuppressExtent = fTrue;
+                    }
                 }
-                else
-                {
-                    fSuppressExtent = fTrue;
-                }
-            }
 
-            if ( fExtentList && !fSuppressExtent )
-            {
-                Assert( iext < cext );
-
-                //  be sure to leave space for the sentinels
-                //  (if no more room, we still want to keep
-                //  calculating page count - we just can't
-                //  keep track of individual extents anymore
-                //
-                Assert( iext + *pcextSentinelsRemaining <= cext );
-                if ( iext + *pcextSentinelsRemaining < cext )
+                if ( fExtentList && !fSuppressExtent )
                 {
-                    rgext[iext].pgnoLastInExtent = cspext.PgnoLast();
-                    rgext[iext].cpgExtent = cspext.CpgExtent();
-                    iext++;
+                    Assert( iext < cext );
+
+                    //  be sure to leave space for the sentinels
+                    //  (if no more room, we still want to keep
+                    //  calculating page count - we just can't
+                    //  keep track of individual extents anymore
+                    //
+                    Assert( iext + *pcextSentinelsRemaining <= cext );
+                    if ( iext + *pcextSentinelsRemaining < cext )
+                    {
+                        rgext[iext].pgnoLastInExtent = cspext.PgnoLast();
+                        rgext[iext].cpgExtent = cspext.CpgExtent();
+                        iext++;
+                    }
                 }
             }
 
@@ -14882,7 +14914,9 @@ LOCAL ERR ErrSPIGetInfo(
             if ( err < 0 )
             {
                 if ( err != JET_errNoCurrentRecord )
+                {
                     goto HandleError;
+                }
                 break;
             }
         }
@@ -15670,6 +15704,7 @@ ERR ErrSPGetInfo(
 
             Call( ErrSPIGetInfo(
                 pfucbSpace,
+                pgnoNull,
                 pcpgOwnExtTotal,
                 NULL,
                 NULL,
@@ -15827,6 +15862,7 @@ ERR ErrSPGetInfo(
 
             Call( ErrSPIGetInfo(
                 pfucbSpace,
+                pgnoNull,
                 pcpgAvailExtTotal,
                 pcpgReservedExtTotal,
                 pcpgShelvedExtTotal,
@@ -16065,6 +16101,7 @@ ERR ErrSPIGetCpgOwnedAndAvail(
 
         Call( ErrSPIGetInfo(
                   pfucbOE,
+                  pgnoNull,
                   pcpgOwnExtTotal,
                   NULL,
                   NULL,
@@ -16076,6 +16113,7 @@ ERR ErrSPIGetCpgOwnedAndAvail(
 
         Call( ErrSPIGetInfo(
                   pfucbAE,
+                  pgnoNull,
                   pcpgAvailExtTotal,
                   NULL,
                   NULL,

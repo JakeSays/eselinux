@@ -2524,6 +2524,7 @@ Pages shelved: %24 page(s).%n
 Pages unleaked: %25 page(s).%n
 Return code: %17%n
 Stop reason: %18%n
+Available space below target: %34 bytes (%35 page(s)).%n
 Small-space trees converted: %27 tree(s).%n
 Root pages moved (regular, space): %28 page(s), %29 page(s).%n
 Strictly-internal pages moved (regular, space): %30 page(s), %31 page(s).%n
@@ -2549,6 +2550,7 @@ Pages shelved: %24 page(s).%n
 Pages unleaked: %25 page(s).%n
 Error code: %17%n
 Stop reason: %18%n
+Available space below target: %34 bytes (%35 page(s)).%n
 Small-space trees converted: %27 tree(s).%n
 Root pages moved (regular, space): %28 page(s), %29 page(s).%n
 Strictly-internal pages moved (regular, space): %30 page(s), %31 page(s).%n

@@ -5377,7 +5377,7 @@ ERR LOG::ErrLGRICheckRedoAttachDb(
     const BOOL  fMatchingLoggedSignLog  = ( 0 == memcmp( &pdbfilehdr->signLog, psignLogged, sizeof(SIGNATURE) ) );
 
     //  When we are recovering a dirty-and-patched database, it's possible that lGenMinRequired gets
-    //  stalled due to pending redo map entries. When that happens and there are mulitple attach/detach
+    //  stalled due to pending redo map entries. When that happens and there are multiple attach/detach
     //  cycles before the redo map entries are resolved, we could have lgposAttach ahead of lGenMinRequired.
     //  In that case, we need to reset lGenMinRequired and lgposAttach so that we are forced to re-attach
     //  and rebuild the redo maps. Note that ErrIsamEndDatabaseIncrementalReseed() does something similar to

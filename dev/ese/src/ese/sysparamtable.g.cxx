@@ -63,7 +63,7 @@ JetParam g_rgparamRaw[] =
     NORMAL_PARAM(JET_paramDeleteOutOfRangeLogs, CJetParam::typeBoolean, 0,  0,  0, 1, 0, -1, 0),
     NORMAL_PARAM(JET_paramAccessDeniedRetryPeriod, CJetParam::typeInteger, 0,  1,  0, 0, 0, -1, 10000),
     NORMAL_PARAM(JET_paramEnableIndexCleanup, CJetParam::typeBoolean, 0,  0,  0, 0, 0, -1, 1),
-    NORMAL_PARAM(JET_paramFlight_SmoothIoTestPermillage, CJetParam::typeInteger, 1,  0,  0, 1, 0, 1000, 0),
+    NORMAL_PARAM(JET_paramFlight_HierarchicalSpaceAllocFlagsEnabled, CJetParam::typeBoolean, 1,  1,  0, 1, 0, -1, fTrue),
     NORMAL_PARAM(JET_paramElasticWaypointLatency, CJetParam::typeInteger, 1,  0,  0, 0, 0, 10, JET_paramElasticWaypointLatency_DEFAULT),
     NORMAL_PARAM(JET_paramFlight_SynchronousLVCleanup, CJetParam::typeBoolean, 1,  0,  0, 0, 0, -1, 0),
     NORMAL_PARAM(JET_paramFlight_RBSRevertIOUrgentLevel, CJetParam::typeInteger, 1,  0,  0, 0, 0, 127, 8),
@@ -241,6 +241,7 @@ JetParam g_rgparamRaw[] =
     NORMAL_PARAM(JET_paramDeferredIndexPopulateRowsPerTransaction, CJetParam::typeInteger, 1,  0,  0, 0, 1, 2147483647, 1000),
     NORMAL_PARAM(JET_paramEnableBlockCacheDetach, CJetParam::typeBoolean, 1,  1,  1, 0, 0, 1, 0),
     NORMAL_PARAM(JET_paramFlight_UseCngAes256Implementation, CJetParam::typeBoolean, 0,  1,  0, 0, 0, 1, JET_paramFlight_UseCngAes256ImplementationDEFAULT),
+    NORMAL_PARAM(JET_paramFlight_ContiguousExtentMoveShrinkEnabled, CJetParam::typeBoolean, 1,  1,  0, 1, 0, -1, JET_paramFlight_ContiguousExtentMoveShrinkEnabledDEFAULT),
     ILLEGAL_PARAM(JET_paramMaxValueInvalid),
 };
 
@@ -302,7 +303,7 @@ static_assert( JET_paramEventLoggingLevel == 51, "The order of defintion for JET
 static_assert( JET_paramDeleteOutOfRangeLogs == 52, "The order of defintion for JET_paramDeleteOutOfRangeLogs in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
 static_assert( JET_paramAccessDeniedRetryPeriod == 53, "The order of defintion for JET_paramAccessDeniedRetryPeriod in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
 static_assert( JET_paramEnableIndexCleanup == 54, "The order of defintion for JET_paramEnableIndexCleanup in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
-static_assert( JET_paramFlight_SmoothIoTestPermillage == 55, "The order of defintion for JET_paramFlight_SmoothIoTestPermillage in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
+static_assert( JET_paramFlight_HierarchicalSpaceAllocFlagsEnabled == 55, "The order of defintion for JET_paramFlight_HierarchicalSpaceAllocFlagsEnabled in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
 static_assert( JET_paramElasticWaypointLatency == 56, "The order of defintion for JET_paramElasticWaypointLatency in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
 static_assert( JET_paramFlight_SynchronousLVCleanup == 57, "The order of defintion for JET_paramFlight_SynchronousLVCleanup in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
 static_assert( JET_paramFlight_RBSRevertIOUrgentLevel == 58, "The order of defintion for JET_paramFlight_RBSRevertIOUrgentLevel in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
@@ -469,4 +470,5 @@ static_assert( JET_paramEnableBlockCache == 218, "The order of defintion for JET
 static_assert( JET_paramDeferredIndexPopulateRowsPerTransaction == 219, "The order of defintion for JET_paramDeferredIndexPopulateRowsPerTransaction in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
 static_assert( JET_paramEnableBlockCacheDetach == 220, "The order of defintion for JET_paramEnableBlockCacheDetach in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
 static_assert( JET_paramFlight_UseCngAes256Implementation == 221, "The order of defintion for JET_paramFlight_UseCngAes256Implementation in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
-static_assert( JET_paramMaxValueInvalid == 222, "The order of defintion for JET_paramMaxValueInvalid in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
+static_assert( JET_paramFlight_ContiguousExtentMoveShrinkEnabled == 222, "The order of defintion for JET_paramFlight_ContiguousExtentMoveShrinkEnabled in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );
+static_assert( JET_paramMaxValueInvalid == 223, "The order of defintion for JET_paramMaxValueInvalid in sysparam.xml must follow the numerical ordering of its value (as defined in jethdr.w)." );

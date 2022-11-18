@@ -4,25 +4,21 @@
 #include "std.hxx"
 #include "errdata.hxx"
 #include "_bt.hxx"
+#include "_space.hxx"
 
 #include "PageSizeClean.hxx"
 
 // Tracing.
 //
 
-LOCAL ERR ErrSHKIShrinkEofTracingBegin( _In_ IFileSystemAPI * pfsapi, _In_ JET_PCWSTR wszDatabase, _Out_ CPRINTF** ppcprintfShrinkTraceRaw )
+LOCAL VOID SHKIShrinkEofTracingBegin( _In_ IFileSystemAPI * pfsapi, _In_ JET_PCWSTR wszDatabase, _Out_ CPRINTF** ppcprintfShrinkTraceRaw )
 {
-    ERR err = JET_errSuccess;
-
-    Call( ErrBeginDatabaseIncReseedTracing( pfsapi, wszDatabase, ppcprintfShrinkTraceRaw ) );
+    (VOID)ErrBeginDatabaseIncReseedTracing( pfsapi, wszDatabase, ppcprintfShrinkTraceRaw );
 
     (**ppcprintfShrinkTraceRaw)( "Beginning shrink pass.\r\n" );
-
-HandleError:
-    return err;
 }
 
-VOID SHKIShrinkEofTracingEnd( _Out_ CPRINTF** ppcprintfShrinkTraceRaw )
+LOCAL VOID SHKIShrinkEofTracingEnd( _Out_ CPRINTF** ppcprintfShrinkTraceRaw )
 {
     if ( *ppcprintfShrinkTraceRaw )
     {
@@ -740,19 +736,34 @@ LOCAL ERR ErrSHKIMoveLastExtent(
             if ( FSPSpaceCatStrictlyInternal( spcatfCurrent ) || FSPSpaceCatStrictlyLeaf( spcatfCurrent ) )
             {
                 Assert( !FSPSpaceCatSmallSpace( spcatfCurrent ) );
+                Assert( objidCurrent != objidNil );
 
+                CPG cpgMoved = 0;
                 fPageMove = fTrue;
                 hrtPageMoveStart = HrtHRTCount();
 
                 const BOOL fSpacePage = FSPSpaceCatAnySpaceTree( spcatfCurrent );
+                Assert( ( objidCurrent != objidSystemRoot ) || fSpacePage );
 
-                err = ErrBTPageMove(
+                if ( fSpacePage || !FSPSpaceCatStrictlyLeaf( spcatfCurrent ) || !BoolParam( JET_paramFlight_ContiguousExtentMoveShrinkEnabled ) )
+                {
+                    err = ErrBTPageMove(
                         fSpacePage ? pSpCatCtx->pfucbSpace : pSpCatCtx->pfucb,
-                        *( pSpCatCtx->pbm ),
+                        pSpCatCtx->pbmb->Bm(),
                         pgnoCurrent,
                         FSPSpaceCatStrictlyLeaf( spcatfCurrent ),
                         fSPNoFlags,
                         NULL );
+                    cpgMoved = 1;
+                }
+                else
+                {
+                    err = ErrBTContiguousExtentMove(
+                        pSpCatCtx->pfucb,
+                        pSpCatCtx->pbmb->Bm(),
+                        pgnoCurrent,
+                        &cpgMoved );
+                }
 
                 // If this is a space tree, we may need to retry because reserving split buffers
                 // for the move might have changed the page we're trying to move itself, which
@@ -770,35 +781,38 @@ LOCAL ERR ErrSHKIMoveLastExtent(
                 // exclusive access to the tree, so we must have been able to find the page
                 // with the passed in bookmark in the expected conditions (i.e., strictly internal
                 // or leaf).
-                AssertTrack( ( err != wrnBTShallowTree ) && ( err != JET_errRecordNotFound ),
-                    OSFormat( ( err == wrnBTShallowTree ) ?
+                AssertTrack( ( err != errBTShallowTree ) && ( err != JET_errRecordNotFound ),
+                    OSFormat( ( err == errBTShallowTree ) ?
                         "ShrinkMoveUnexpectedShallowBt:0x%I32x" : "ShrinkMoveUnexpectedNotFound:0x%I32x",
                         spcatfCurrent ) );
                 Call( err );
                 fMovedPage = fTrue;
                 (*pcprintfShrinkTraceRaw)( "ShrinkMove[%I32u:%I32u:%d]\r\n", objidCurrent, pgnoCurrent, (int)spcatfCurrent );
 
-                psems->cpgMoved++;
+                Assert( cpgMoved > 0 );
+                psems->cpgMoved += cpgMoved;
                 if ( FSPSpaceCatStrictlyLeaf( spcatfCurrent ) )
                 {
                     if ( fSpacePage )
                     {
-                        psems->cpgLeafSpaceMoved++;
+                        Expected( cpgMoved == 1 );
+                        psems->cpgLeafSpaceMoved += cpgMoved;
                     }
                     else
                     {
-                        psems->cpgLeafMoved++;
+                        psems->cpgLeafMoved += cpgMoved;
                     }
                 }
                 else
                 {
+                    Expected( cpgMoved == 1 );
                     if ( fSpacePage )
                     {
-                        psems->cpgInternalSpaceMoved++;
+                        psems->cpgInternalSpaceMoved += cpgMoved;
                     }
                     else
                     {
-                        psems->cpgInternalMoved++;
+                        psems->cpgInternalMoved += cpgMoved;
                     }
                 }
                 continue;
@@ -923,23 +937,22 @@ ERR ErrSHKShrinkDbFromEof(
     FMP* const pfmp = g_rgfmp + ifmp;
     INST* const pinst = pfmp->Pinst();
     EXTENTINFO eiInitialOE, eiFinalOE;
-    QWORD cbSizeFileInitial = 0;
-    QWORD cbSizeFileFinal = 0;
-    QWORD cbSizeOwnedInitial = 0;
-    QWORD cbSizeOwnedFinal = 0;
+    QWORD cbSizeFileInitial = 0, cbSizeFileFinal = 0;
+    QWORD cbSizeOwnedInitial = 0, cbSizeOwnedFinal = 0;
     CPRINTF* pcprintfShrinkTraceRaw = NULL;
     const HRT hrtStarted = HrtHRTCount();
     ShrinkExtMoveStats sems;
     ShrinkDoneReason sdr = sdrNone;
     PGNO pgnoFirstFromLastExtentShrunkPrev = pgnoNull;
     PGNO pgnoLastProcessed = pgnoNull;
+    PGNO pgnoShrinkTargetLast = pgnoMax;
     SpaceCategoryFlags spcatfLastProcessed = spcatfNone;
     HRT dhrtExtMaint = 0, dhrtFileTruncation = 0;
     BOOL fDbMayHaveChanged = fFalse;
 
     Assert( !pfmp->FIsTempDB() );
 
-    Call( ErrSHKIShrinkEofTracingBegin( pinst->m_pfsapi, g_rgfmp[ ifmp ].WszDatabaseName(), &pcprintfShrinkTraceRaw ) );
+    SHKIShrinkEofTracingBegin( pinst->m_pfsapi, g_rgfmp[ ifmp ].WszDatabaseName(), &pcprintfShrinkTraceRaw );
 
     // First, delete any previously saved shrink archive files.
     if ( !BoolParam( pinst, JET_paramFlight_EnableShrinkArchiving ) )
@@ -966,6 +979,7 @@ ERR ErrSHKShrinkDbFromEof(
 
     // Open cursors to space trees.
     Call( ErrSPGetLastExtent( ppib, ifmp, &eiInitialOE ) );
+    pgnoShrinkTargetLast = eiInitialOE.PgnoLast();
     cbSizeOwnedInitial = OffsetOfPgno( eiInitialOE.PgnoLast() + 1 );
     Assert( cbSizeOwnedInitial <= cbSizeFileInitial );
 
@@ -1028,6 +1042,11 @@ ERR ErrSHKShrinkDbFromEof(
                     &sdr ),
                   DoneWithDataMove );
 
+            if ( pfmp->FPgnoShrinkTargetIsSet() )
+            {
+                pgnoShrinkTargetLast = pfmp->PgnoShrinkTarget();
+            }
+
             Assert( pgnoFirstFromLastExtentTruncated != pgnoNull );
             Assert( ( pgnoFirstFromLastExtentTruncated < pgnoFirstFromLastExtentTruncatedPrev ) ||
                     ( pgnoFirstFromLastExtentTruncatedPrev == pgnoNull ) );
@@ -1079,6 +1098,8 @@ ERR ErrSHKShrinkDbFromEof(
                 &pgnoFirstFromLastExtentMoved,
                 &spcatfLastProcessed ), DoneWithDataMove );
         Assert( pgnoFirstFromLastExtentMoved == pgnoFirstFromLastExtentTruncated );
+
+        pgnoShrinkTargetLast = pfmp->FPgnoShrinkTargetIsSet() ? pfmp->PgnoShrinkTarget() : ( pgnoFirstFromLastExtentMoved - 1 );
 
         // We've got signaled to stop.
         if ( !pfmp->FShrinkIsActive() )
@@ -1206,6 +1227,40 @@ HandleError:
     // Emit event, except for when the database file was already small enough.
     if ( ( sdr != sdrReachedSizeLimit ) || fDbMayHaveChanged )
     {
+        // Calculate total available space below the last shrink target.
+        CPG cpgAvailBelowShrinkTarget = 0;
+        if ( pgnoShrinkTargetLast == pgnoMax )
+        {
+            EXTENTINFO ei;
+            if ( ErrSPGetLastExtent( ppib, ifmp, &ei ) >= JET_errSuccess )
+            {
+                pgnoShrinkTargetLast = ei.PgnoLast();
+            }
+        }
+        if ( pgnoShrinkTargetLast != pgnoMax )
+        {
+            PIBTraceContextScope tcScope = ppib->InitTraceContextScope();
+            tcScope->iorReason.SetIort( iortSpace );
+            FUCB *pfucbRoot = pfucbNil, *pfucbRootAe = pfucbNil;
+
+            if ( ( ErrBTIOpenAndGotoRoot( ppib, pgnoSystemRoot, ifmp, &pfucbRoot ) < JET_errSuccess ) ||
+                 !pfucbRoot->u.pfcb->FSpaceInitialized() ||
+                 ( ErrSPIOpenAvailExt( pfucbRoot, &pfucbRootAe ) < JET_errSuccess ) ||
+                 ( ErrSPIGetInfo( pfucbRootAe, pgnoShrinkTargetLast, &cpgAvailBelowShrinkTarget, NULL, NULL, NULL, 0, NULL, NULL, NULL ) < JET_errSuccess ) )
+            {
+                cpgAvailBelowShrinkTarget = 0;
+            }
+            if ( pfucbRootAe != pfucbNil )
+            {
+                BTClose( pfucbRootAe );
+            }
+            if ( pfucbRoot != pfucbNil )
+            {
+                pfucbRoot->pcsrRoot = pcsrNil;
+                BTClose( pfucbRoot );
+            }
+        }
+
         OSTraceSuspendGC();
         const HRT dhrtElapsed = DhrtHRTElapsedFromHrtStart( hrtStarted );
         const double dblSecTotalElapsed = DblHRTSecondsElapsed( dhrtElapsed );
@@ -1240,7 +1295,8 @@ HandleError:
             OSFormatW( L"%lu", sems.cSmallSpaceTreesConverted ),
             OSFormatW( L"%d", sems.cpgRootMoved ), OSFormatW( L"%d", sems.cpgRootSpaceMoved ),
             OSFormatW( L"%d", sems.cpgInternalMoved ), OSFormatW( L"%d", sems.cpgInternalSpaceMoved ),
-            OSFormatW( L"%d", sems.cpgLeafMoved ), OSFormatW( L"%d", sems.cpgLeafSpaceMoved )
+            OSFormatW( L"%d", sems.cpgLeafMoved ), OSFormatW( L"%d", sems.cpgLeafSpaceMoved ),
+            OSFormatW( L"%I64u", pfmp->CbOfCpg( cpgAvailBelowShrinkTarget ) ), OSFormatW( L"%d", cpgAvailBelowShrinkTarget ),
         };
         UtilReportEvent(
             ( err < JET_errSuccess ) ? eventError : eventInformation,

@@ -3965,7 +3965,8 @@ ERR DBMScanObserverCleanup::ErrCleanupPrimaryPage_( CSR * const pcsr, DBMObjectC
                 //    In ErrBTISinglePageCleanup, ErrBTISPCDeleteNodes will nullify the node's data (replace with
                 //    a single byte NULL chSCRUBDBMaintEmptyPageLastNodeFill) but it can't remove the only node in 
                 //    the page (b-tree pages can't be empty), and return MultipageOLC. Then ErrBTIMultipageCleanup will 
-                //    return wrnBTShallowTree without doing anything.
+                //    return JET_errSuccess without doing anything (errBTShallowTree is returned from ErrBTICreateMergePath
+                //    and translated into JET_errSuccess by ErrBTIMultipageCleanup).
                 //
 
                 // Avoid repeated replacing/scrubbing of case 1 pages 

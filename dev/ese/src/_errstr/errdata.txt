@@ -95,7 +95,7 @@
 	INTERNAL_ERR( -332,	Unknown,	errSPOutOfOwnExtCacheSpace	 )
 	INTERNAL_WRN( 333,	Unknown,	wrnBTMultipageOLC	 )
 	EXTERNAL_ERR( -334,	Operation,	JET_errNTSystemCallFailed	 )	// eseutil only today
-	INTERNAL_WRN( 335,	Unknown,	wrnBTShallowTree	 )
+	INTERNAL_ERR( -335,	Unknown,	errBTShallowTree	 )
 	INTERNAL_ERR( -336,	Unknown,	errBTMergeNotSynchronous	 )
 	INTERNAL_WRN( 337,	Unknown,	wrnSPReservedPages	 )
 	EXTERNAL_ERR( -338,	Corruption,	JET_errBadParentPageLink	 )
