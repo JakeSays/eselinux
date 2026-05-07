@@ -30,9 +30,14 @@
 
 
 ////////////////////////////////////////////////
-//  UlParam — OS-layer-shape stub. INST in this TU is `typedef unsigned
-//  char INST;` (the engine-violation case has its own out-of-line body).
+//  UlParam — OS-layer-shape stub. INST in this TU is `class INST` per
+//  the os.hxx clang-arm forward decl. Provided as a weak symbol so the
+//  engine's real inline UlParam (in daedef.hxx) wins whenever libese.so
+//  is also in the link — without `weak`, this strong stub clobbered the
+//  engine's value lookup at every UlParam call site that the compiler
+//  chose not to inline, returning 0 for every system parameter.
 
+__attribute__((weak))
 ULONG_PTR UlParam( const INST* const, const ULONG )
 {
     return 0;

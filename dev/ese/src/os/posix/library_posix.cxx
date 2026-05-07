@@ -95,13 +95,16 @@ VOID OSLibraryTrackingFree( const WCHAR * const /* mwszzDlls */ )
 ERR ErrMultiLoadPfn(
     const WCHAR * const /* mwszzDlls */,
     const BOOL          /* fNonSystemDll */,
-    const CHAR * const  /* szFunction */,
+    const CHAR * const  szFunction,
     SHORT * const       pichDll,
     void ** const       ppfn )
 {
-    // Linux has no equivalent of these Windows system DLLs (kernel32,
-    // ntdll, advapi32, etc.). Always return "unloadable" so the engine
-    // falls back through pfn->ErrIsPresent() < JET_errSuccess paths.
+    // Linux has no Windows system DLLs to LoadLibrary, but the windows-shim
+    // implements many of the API entry points the engine expects (Create-
+    // ThreadpoolTimer, RegOpenKeyExW, ...). Look the function up in our
+    // own process image via dlsym(RTLD_DEFAULT, ...). Anything not shimmed
+    // returns JET_errUnloadableOSFunctionality, which the engine's
+    // FunctionLoader fall-back paths handle.
     if ( pichDll )
     {
         *pichDll = -1;
@@ -109,6 +112,17 @@ ERR ErrMultiLoadPfn(
     if ( ppfn )
     {
         *ppfn = NULL;
+    }
+    if ( !szFunction || !*szFunction )
+    {
+        return JET_errUnloadableOSFunctionality;
+    }
+    void* const sym = dlsym( RTLD_DEFAULT, szFunction );
+    if ( sym )
+    {
+        if ( ppfn )    *ppfn    = sym;
+        if ( pichDll ) *pichDll = 0;
+        return JET_errSuccess;
     }
     extern ERR g_errTrap;
     if ( g_fDllUp )

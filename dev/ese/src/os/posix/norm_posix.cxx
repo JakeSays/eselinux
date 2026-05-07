@@ -118,19 +118,24 @@ BOOL FNORMGetNLSExIsSupported()
 
 ERR ErrNORMCheckLocaleName( _In_ INST * const /* pinst */, __in_z PCWSTR const /* wszLocaleName */ )
 {
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    //  Validation-only; the engine just records the locale string and
+    //  doesn't try to use it until a secondary-index sort/compare op
+    //  fires (which we route into ErrNORMMapString and friends below,
+    //  where they fail loudly). Return success so JetSetSystemParameter
+    //  can store the locale name unrejected.
+    return JET_errSuccess;
 }
 
 ERR ErrNORMCheckLocaleVersion( _In_ const NORM_LOCALE_VER* /* pnlv */ )
 {
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    return JET_errSuccess;
 }
 
 ERR ErrNORMCheckLCMapFlags( _In_ INST * const /* pinst */,
                             _In_ const DWORD /* dwLCMapFlags */,
                             _In_ const BOOL  /* fUppercaseTextNormalization */ )
 {
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    return JET_errSuccess;
 }
 
 ERR ErrNORMCheckLCMapFlags( _In_ INST * const /* pinst */,
@@ -138,7 +143,7 @@ ERR ErrNORMCheckLCMapFlags( _In_ INST * const /* pinst */,
                             _In_ const BOOL /* fUppercaseTextNormalization */ )
 {
     if ( pdwLCMapFlags ) { *pdwLCMapFlags = dwLCMapFlagsDefault; }
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    return JET_errSuccess;
 }
 
 ERR ErrNORMGetSortVersion( __in_z PCWSTR /* wszLocaleName */,
@@ -146,9 +151,14 @@ ERR ErrNORMGetSortVersion( __in_z PCWSTR /* wszLocaleName */,
                            __out_opt SORTID * const psortID,
                            _In_ const BOOL /* fErrorOnInvalidId */ )
 {
+    //  Engine records this version against the locale on column create
+    //  and re-checks it at index time. Returning success with a synthetic
+    //  version lets JetSetSystemParameter / JetCreateInstance proceed;
+    //  any actual sort/compare op will hit the ErrNORMMapString stub
+    //  below which still fails.
     if ( pqwVersion ) { *pqwVersion = 0; }
     if ( psortID )    { memset( psortID, 0, sizeof(*psortID) ); }
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    return JET_errSuccess;
 }
 
 ERR ErrNORMMapString(
@@ -168,16 +178,25 @@ ERR ErrNORMLcidToLocale(
     __out_ecount( cchLocale ) PWSTR wszLocale,
     _In_ ULONG cchLocale )
 {
-    if ( wszLocale && cchLocale > 0 ) { wszLocale[0] = L'\0'; }
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    //  Best-effort: hand back the default invariant locale name. Engine
+    //  threads the result through ErrNORMCheckLocaleName (which we
+    //  always succeed) and stores it in instance metadata.
+    if ( wszLocale && cchLocale > 0 )
+    {
+        const PWSTR src = wszLocaleNameDefault;
+        ULONG i = 0;
+        for ( ; src[ i ] && i + 1 < cchLocale; ++i ) wszLocale[ i ] = src[ i ];
+        wszLocale[ i ] = L'\0';
+    }
+    return JET_errSuccess;
 }
 
 ERR ErrNORMLocaleToLcid(
     __in_z PCWSTR /* wszLocale */,
     _Out_ LCID *  plcid )
 {
-    if ( plcid ) { *plcid = lcidNone; }
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    if ( plcid ) { *plcid = lcidInvariant; }
+    return JET_errSuccess;
 }
 
 

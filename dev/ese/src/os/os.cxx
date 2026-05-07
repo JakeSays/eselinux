@@ -435,6 +435,19 @@ COSLayerPreInit::COSLayerPreInit() :
 {
     Assert( !m_fInitedSuccessfully  );
 
+    //  Idempotent: if libese.so's load-time constructor (dllentry_posix.cxx
+    //  on Linux, DllMain on Windows) has already brought the OS layer up,
+    //  skip re-running it. eseutil's wmain still creates a COSLayerPreInit
+    //  on the stack to mirror the historical Windows pattern; with the .so
+    //  also auto-initing, the second construction would otherwise re-init
+    //  every subsystem's globals. m_fInitedSuccessfully stays false on this
+    //  no-op instance so its destructor doesn't post-term something it
+    //  didn't bring up.
+    if ( g_fDllUp )
+    {
+        return;
+    }
+
     //  Pre-init the OS Layer ...
     m_fInitedSuccessfully = FOSPreinit();
 

@@ -14,10 +14,9 @@ endif()
 
 add_subdirectory(bstf)
 add_subdirectory(devlibtest)
-# blue/ and samples/ are Windows-only for the initial Linux port: blue/
-# pulls in Exchange/MAPI test plumbing the Linux port doesn't need, and
-# samples/ depends on Win32 APIs that aren't shimmed.
+# blue/ pulls in Exchange/MAPI test plumbing the Linux port doesn't need;
+# leave Windows-only.
 if (WIN32)
     add_subdirectory(blue)
-    add_subdirectory(samples)
 endif()
+add_subdirectory(samples)

@@ -29,6 +29,8 @@
 #include "blockcache/_cachetelemetry.hxx"
 #include "blockcache/_cacherepository.hxx"
 
+#include <unistd.h>     // getcwd
+
 
 ////////////////////////////////////////////////
 //  CDefaultFileSystemConfiguration — verbatim from osfs.cxx
@@ -178,14 +180,23 @@ ERR COSFileSystem::ErrDiskSpace(    const WCHAR* const  /* wszPath */,
 
 ERR COSFileSystem::ErrFileSectorSize( const WCHAR* const /* wszPath */, DWORD* const pcbSize )
 {
+    //  Linux exposes the logical block size via ioctl(BLKSSZGET) on
+    //  block devices but not generically; engine call sites use the
+    //  result for IO alignment and tolerate any reasonable power-of-two
+    //  >= 512. 4096 matches the vast majority of modern storage and
+    //  matches Win32's GetDiskFreeSpace default sector reporting.
     if ( pcbSize ) { *pcbSize = 4096; }
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    return JET_errSuccess;
 }
 
 ERR COSFileSystem::ErrFileAtomicWriteSize( const WCHAR* const /* wszPath */, DWORD* const pcbSize )
 {
-    if ( pcbSize ) { *pcbSize = 0; }
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    //  Engine uses this as the log-file sector size and validates that
+    //  it's >= 512, a power of two, and that sizeof(LGFILEHDR) % size == 0
+    //  (logstream.cxx:218). 4096 satisfies all three on every Linux fs;
+    //  POSIX has no portable atomic-write query so we just return that.
+    if ( pcbSize ) { *pcbSize = 4096; }
+    return JET_errSuccess;
 }
 
 ERR COSFileSystem::ErrPathRoot( const WCHAR* const /* wszPath */,
@@ -247,19 +258,133 @@ const WCHAR * const COSFileSystem::WszPathFileName( _In_z_ const WCHAR * const w
     return pwchLast;
 }
 
-ERR COSFileSystem::ErrPathBuild(    __in_z const WCHAR* const                                   /* wszFolder */,
-                                    __in_z const WCHAR* const                                   /* wszFileBase */,
-                                    __in_z const WCHAR* const                                   /* wszFileExt */,
+ERR COSFileSystem::ErrPathBuild(    __in_z const WCHAR* const                                   wszFolder,
+                                    __in_z const WCHAR* const                                   wszFileBase,
+                                    __in_z const WCHAR* const                                   wszFileExt,
                                     __out_bcount_z(cbPath) WCHAR* const                         wszPath,
                                     __in_range(cbOSFSAPI_MAX_PATHW, cbOSFSAPI_MAX_PATHW) ULONG  cbPath )
 {
-    if ( wszPath && cbPath >= sizeof(WCHAR) ) { wszPath[0] = L'\0'; }
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    //  Concatenate `<folder>/<base>.<ext>`. Engine call sites pass an
+    //  already-normalized folder (trailing '/') from ErrPathFolderNorm,
+    //  the file basename, and either the literal extension ".edb" or
+    //  ".log". A '.' is inserted between base and ext if ext lacks one.
+    ERR err = JET_errSuccess;
+    if ( !wszPath || cbPath < sizeof( WCHAR ) )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+    const ULONG cchMax = cbPath / sizeof( WCHAR );
+    ULONG i = 0;
+
+    auto append = [ & ]( const WCHAR* s ) -> ERR {
+        if ( !s ) return JET_errSuccess;
+        for ( ; *s; ++s )
+        {
+            if ( i + 1 >= cchMax ) return ErrERRCheck( JET_errOutOfBuffers );
+            wszPath[ i++ ] = *s;
+        }
+        return JET_errSuccess;
+    };
+
+    Call( append( wszFolder ) );
+    //  ensure trailing separator before appending the basename
+    if ( i > 0 && wszPath[ i - 1 ] != L'/' && wszPath[ i - 1 ] != L'\\' )
+    {
+        if ( i + 1 >= cchMax ) return ErrERRCheck( JET_errOutOfBuffers );
+        wszPath[ i++ ] = L'/';
+    }
+    Call( append( wszFileBase ) );
+    if ( wszFileExt && wszFileExt[ 0 ] && wszFileExt[ 0 ] != L'.' )
+    {
+        if ( i + 1 >= cchMax ) return ErrERRCheck( JET_errOutOfBuffers );
+        wszPath[ i++ ] = L'.';
+    }
+    Call( append( wszFileExt ) );
+    wszPath[ i ] = L'\0';
+    return JET_errSuccess;
+HandleError:
+    if ( cbPath >= sizeof( WCHAR ) ) wszPath[ 0 ] = L'\0';
+    return err;
 }
 
-ERR COSFileSystem::ErrPathFolderNorm( __inout_bcount(cbSize) PWSTR const /* wszFolder */, DWORD /* cbSize */ )
+ERR COSFileSystem::ErrPathFolderNorm( __inout_bcount(cbSize) PWSTR const wszFolder, DWORD cbSize )
 {
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    //  Engine call sites pass paths like ".\\" / "edb" / etc. and expect a
+    //  normalized absolute folder ending in a path separator. Real Win32
+    //  ErrPathFolderNorm calls GetFullPathName + appends trailing '\\'; we
+    //  do the POSIX equivalent — turn relative paths into absolute via
+    //  cwd, convert backslashes to forward slashes, and ensure a trailing
+    //  '/'. We don't follow symlinks (no realpath) because the path may
+    //  point to a not-yet-created directory.
+    if ( !wszFolder || cbSize < 2 * sizeof( WCHAR ) )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+
+    const size_t cchMax = cbSize / sizeof( WCHAR );
+
+    //  Convert backslashes to forward slashes in place.
+    for ( WCHAR* p = wszFolder; *p; ++p )
+    {
+        if ( *p == L'\\' ) *p = L'/';
+    }
+
+    //  Compute absolute path. If wszFolder isn't absolute (doesn't start
+    //  with '/'), prepend cwd.
+    WCHAR wszTmp[ 4096 ];
+    size_t cchTmp = 0;
+    if ( wszFolder[ 0 ] != L'/' )
+    {
+        char cwdBuf[ 4096 ];
+        if ( !getcwd( cwdBuf, sizeof( cwdBuf ) ) )
+        {
+            return ErrERRCheck( JET_errOutOfBuffers );
+        }
+        for ( size_t i = 0; cwdBuf[ i ] && cchTmp + 1 < _countof( wszTmp ); ++i )
+        {
+            wszTmp[ cchTmp++ ] = (WCHAR)(unsigned char)cwdBuf[ i ];
+        }
+        if ( cchTmp == 0 || wszTmp[ cchTmp - 1 ] != L'/' )
+        {
+            if ( cchTmp + 1 >= _countof( wszTmp ) ) return ErrERRCheck( JET_errOutOfBuffers );
+            wszTmp[ cchTmp++ ] = L'/';
+        }
+        //  Strip a leading "./" from wszFolder before appending — we already
+        //  have the absolute prefix.
+        const WCHAR* tail = wszFolder;
+        while ( tail[ 0 ] == L'.' && tail[ 1 ] == L'/' ) tail += 2;
+        for ( ; *tail; ++tail )
+        {
+            if ( cchTmp + 1 >= _countof( wszTmp ) ) return ErrERRCheck( JET_errOutOfBuffers );
+            wszTmp[ cchTmp++ ] = *tail;
+        }
+    }
+    else
+    {
+        for ( WCHAR* p = wszFolder; *p; ++p )
+        {
+            if ( cchTmp + 1 >= _countof( wszTmp ) ) return ErrERRCheck( JET_errOutOfBuffers );
+            wszTmp[ cchTmp++ ] = *p;
+        }
+    }
+
+    //  Ensure trailing '/'.
+    if ( cchTmp == 0 || wszTmp[ cchTmp - 1 ] != L'/' )
+    {
+        if ( cchTmp + 1 >= _countof( wszTmp ) ) return ErrERRCheck( JET_errOutOfBuffers );
+        wszTmp[ cchTmp++ ] = L'/';
+    }
+    wszTmp[ cchTmp ] = L'\0';
+
+    if ( cchTmp + 1 > cchMax )
+    {
+        return ErrERRCheck( JET_errOutOfBuffers );
+    }
+    for ( size_t i = 0; i <= cchTmp; ++i )
+    {
+        wszFolder[ i ] = wszTmp[ i ];
+    }
+    return JET_errSuccess;
 }
 
 BOOL COSFileSystem::FPathIsRelative( _In_ PCWSTR wszPath )

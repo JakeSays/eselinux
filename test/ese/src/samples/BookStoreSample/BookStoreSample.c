@@ -576,7 +576,7 @@ JET_ERR ErrProcessOrder( JET_SESID sesidT, JET_TABLEID tableidOrders, JET_TABLEI
     int                     ilT = 0;
     __int64                 llSumTotalAmount = 0;
     __int64                 llBookPrice = 0;
-    unsigned long               ulT = 0;
+    unsigned int                ulT = 0;
     JET_SETINFO             setinfoT;
     unsigned char               rgbDate[8];
 
@@ -926,7 +926,7 @@ JET_ERR ErrQueryTopThreeOrdersByOrderAmount( JET_SESID sesidT, JET_DBID dbidData
     __int64                 llOrderAmount                           = 0;
     unsigned char               bOrderCancelled                         = 0;
     char                        szCustomerNameT[256];
-    unsigned long               ulT                                     = 0;
+    unsigned int                ulT                                     = 0;
     int                     iCustomer                               = 0;
 
     //  result table variables
@@ -1155,7 +1155,7 @@ HandleError:
 }
 
 
-void __cdecl main(int argc, char ** argv)
+int __cdecl main(int argc, char ** argv)
 {
 
     JET_ERR                 err                                     = JET_errSuccess;
@@ -1437,5 +1437,5 @@ HandleError:
     }
 
 
-    return;
+    return err < 0 ? 1 : 0;
 }

@@ -140,6 +140,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
             $<IF:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>,${_llvm_libdir}/libunwind_pic.a,${_llvm_libdir}/libunwind.a>
             -Wl,--end-group
         )
+
     endif ()
 
     # -g Enables extra debugging info for GDB

@@ -113,25 +113,39 @@ void OnThreadWaitEnd()   { g_pfnThreadWaitEnd();   }
 
 namespace {
 
-std::mutex                 g_pageSizeMutex;
-std::map< void*, size_t >  g_pageSizeTable;
+// Meyers singletons — the std::map and std::mutex must be constructed
+// before any caller (e.g., FOSSyncPreinit running through libese.so's
+// load-time COSLayerPreInit). Plain namespace-scope globals lose the
+// static-init-order race because libese.so's std.cxx COSLayerPreInit
+// can fire before this TU's namespace-scope ctors run.
+std::mutex& PageSizeMutex()
+{
+    static std::mutex m;
+    return m;
+}
+std::map< void*, size_t >& PageSizeTable()
+{
+    static std::map< void*, size_t > t;
+    return t;
+}
 
 void RememberPageSize( void* pv, size_t cb )
 {
-    std::lock_guard< std::mutex > lock( g_pageSizeMutex );
-    g_pageSizeTable[ pv ] = cb;
+    std::lock_guard< std::mutex > lock( PageSizeMutex() );
+    PageSizeTable()[ pv ] = cb;
 }
 
 size_t ForgetPageSize( void* pv )
 {
-    std::lock_guard< std::mutex > lock( g_pageSizeMutex );
-    auto it = g_pageSizeTable.find( pv );
-    if ( it == g_pageSizeTable.end() )
+    std::lock_guard< std::mutex > lock( PageSizeMutex() );
+    auto& tab = PageSizeTable();
+    auto it = tab.find( pv );
+    if ( it == tab.end() )
     {
         return 0;
     }
     size_t cb = it->second;
-    g_pageSizeTable.erase( it );
+    tab.erase( it );
     return cb;
 }
 

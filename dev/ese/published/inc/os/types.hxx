@@ -31,7 +31,7 @@
 
 //  select the native word size for the checksumming code in LOG::UlChecksumBytes
 
-#if defined(_M_AMD64) || defined(_M_ARM64)
+#if defined(_M_AMD64) || defined(_M_ARM64) || defined(__x86_64__) || defined(__aarch64__) || defined(__LP64__)
 #define NATIVE_WORD QWORD
 #else
 #define NATIVE_WORD DWORD
