@@ -130,6 +130,14 @@ if (NOT WIN32)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBURING REQUIRED IMPORTED_TARGET liburing)
     target_link_libraries(osposix PUBLIC PkgConfig::LIBURING)
+
+    # ICU for collation + Unicode case mapping (norm_posix.cxx). Replaces
+    # the Win32 NLS surface (LCMapStringEx, GetNLSVersionEx, ...) that the
+    # engine's secondary-index sort/compare path relies on. The on-disk
+    # sort-key bytes are ICU-flavoured rather than Windows-NLS-flavoured
+    # — that's by design (see project_port_format_compat memory).
+    pkg_check_modules(ICU REQUIRED IMPORTED_TARGET icu-uc icu-i18n)
+    target_link_libraries(osposix PUBLIC PkgConfig::ICU)
 endif ()
 
 target_include_directories(osposix PRIVATE
