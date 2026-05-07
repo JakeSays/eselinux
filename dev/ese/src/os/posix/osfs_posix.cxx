@@ -432,10 +432,36 @@ ERR COSFileSystem::ErrGetTempFileName( _In_z_ PWSTR const                       
 ERR COSFileSystem::ErrFolderCreate( const WCHAR* const /* wszPath */ )    { return ErrERRCheck( JET_errFeatureNotAvailable ); }
 ERR COSFileSystem::ErrFolderRemove( const WCHAR* const /* wszPath */ )    { return ErrERRCheck( JET_errFeatureNotAvailable ); }
 
+namespace
+{
+    //  Minimal IFileFindAPI: an empty iterator. ErrNext returns
+    //  errFileNotFound on first call so engine consumers (e.g.,
+    //  ErrLGGetGenerationRangeExt) treat the directory as empty
+    //  and proceed with fresh-log creation. A real FindFirstFileW-
+    //  driven implementation belongs alongside the io_uring file
+    //  layer; this stub is sufficient for first-time database open.
+    class CEmptyFileFind : public IFileFindAPI
+    {
+    public:
+        ~CEmptyFileFind() override {}
+        ERR ErrNext() override { return ErrERRCheck( JET_errFileNotFound ); }
+        ERR ErrIsFolder( BOOL* const pfFolder ) override
+        { if ( pfFolder ) *pfFolder = fFalse; return ErrERRCheck( JET_errFileNotFound ); }
+        ERR ErrPath( __out_bcount(OSFSAPI_MAX_PATH*sizeof(WCHAR)) WCHAR* const wszAbsFoundPath ) override
+        { if ( wszAbsFoundPath ) wszAbsFoundPath[0] = L'\0'; return ErrERRCheck( JET_errFileNotFound ); }
+        ERR ErrSize( _Out_ QWORD* const pcbSize, _In_ const IFileAPI::FILESIZE /*file*/ ) override
+        { if ( pcbSize ) *pcbSize = 0; return ErrERRCheck( JET_errFileNotFound ); }
+        ERR ErrIsReadOnly( BOOL* const pfReadOnly ) override
+        { if ( pfReadOnly ) *pfReadOnly = fFalse; return ErrERRCheck( JET_errFileNotFound ); }
+    };
+}
+
 ERR COSFileSystem::ErrFileFind( const WCHAR* const /* wszFind */, IFileFindAPI** const ppffapi )
 {
-    if ( ppffapi ) { *ppffapi = NULL; }
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    if ( !ppffapi ) return ErrERRCheck( JET_errInvalidParameter );
+    *ppffapi = new CEmptyFileFind();
+    if ( !*ppffapi ) return ErrERRCheck( JET_errOutOfMemory );
+    return JET_errSuccess;
 }
 
 ERR COSFileSystem::ErrFileDelete( const WCHAR* const /* wszPath */ )      { return ErrERRCheck( JET_errFeatureNotAvailable ); }
@@ -452,20 +478,21 @@ ERR COSFileSystem::ErrFileCopy(   const WCHAR* const /* wszPathSource */,
     return ErrERRCheck( JET_errFeatureNotAvailable );
 }
 
-ERR COSFileSystem::ErrFileCreate(   _In_z_ const WCHAR* const       /* wszPath */,
-                                    _In_   IFileAPI::FileModeFlags  /* fmf */,
+extern "C" ERR CSyncFile_ErrFileCreate( const WCHAR* wszPath, IFileAPI::FileModeFlags fmf, IFileAPI** ppfapi );
+extern "C" ERR CSyncFile_ErrFileOpen(   const WCHAR* wszPath, IFileAPI::FileModeFlags fmf, IFileAPI** ppfapi );
+
+ERR COSFileSystem::ErrFileCreate(   _In_z_ const WCHAR* const       wszPath,
+                                    _In_   IFileAPI::FileModeFlags  fmf,
                                     _Out_  IFileAPI** const         ppfapi )
 {
-    if ( ppfapi ) { *ppfapi = NULL; }
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    return CSyncFile_ErrFileCreate( wszPath, fmf, ppfapi );
 }
 
-ERR COSFileSystem::ErrFileOpen( _In_z_ const WCHAR* const       /* wszPath */,
-                                _In_   IFileAPI::FileModeFlags  /* fmf */,
+ERR COSFileSystem::ErrFileOpen( _In_z_ const WCHAR* const       wszPath,
+                                _In_   IFileAPI::FileModeFlags  fmf,
                                 _Out_  IFileAPI** const         ppfapi )
 {
-    if ( ppfapi ) { *ppfapi = NULL; }
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    return CSyncFile_ErrFileOpen( wszPath, fmf, ppfapi );
 }
 
 

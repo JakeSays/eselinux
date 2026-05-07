@@ -80,6 +80,7 @@ set(OSPOSIX_WINAPI_SOURCES
     winapi_time.cxx
     winapi_tls.cxx
     winapi_werapi.cxx
+    syncfile_posix.cxx
 )
 
 add_library(osposix STATIC
