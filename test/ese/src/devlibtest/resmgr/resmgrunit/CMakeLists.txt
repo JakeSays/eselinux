@@ -22,3 +22,7 @@ target_link_libraries(RESMGRUNIT PRIVATE
     BstfUnitTest
     sync
 )
+
+if (NOT WIN32)
+    target_link_options(RESMGRUNIT PRIVATE -Wl,-z,muldefs)
+endif ()

@@ -104,28 +104,32 @@ private:
 // Specialized templates for different types of bindings
 
 template<>
-JET_COLTYP DataBindingOf<unsigned char>::Coltyp() const { return JET_coltypUnsignedByte; }
+inline JET_COLTYP DataBindingOf<unsigned char>::Coltyp() const { return JET_coltypUnsignedByte; }
 
 template<>
-JET_COLTYP DataBindingOf<SHORT>::Coltyp() const { return JET_coltypShort; }
+inline JET_COLTYP DataBindingOf<SHORT>::Coltyp() const { return JET_coltypShort; }
 
 template<>
-JET_COLTYP DataBindingOf<USHORT>::Coltyp() const { return JET_coltypUnsignedShort; }
+inline JET_COLTYP DataBindingOf<USHORT>::Coltyp() const { return JET_coltypUnsignedShort; }
 
 template<>
-JET_COLTYP DataBindingOf<INT>::Coltyp() const { return JET_coltypLong; }
+inline JET_COLTYP DataBindingOf<INT>::Coltyp() const { return JET_coltypLong; }
 
 template<>
-JET_COLTYP DataBindingOf<UINT>::Coltyp() const { return JET_coltypUnsignedLong; }
+inline JET_COLTYP DataBindingOf<UINT>::Coltyp() const { return JET_coltypUnsignedLong; }
+
+// On non-MSVC LONG/ULONG are typedef'd to int32_t/uint32_t (same as INT/UINT),
+// so these specializations would redefine DataBindingOf<INT/UINT>::Coltyp.
+#ifdef _MSC_VER
+template<>
+inline JET_COLTYP DataBindingOf<LONG>::Coltyp() const { return JET_coltypLong; }
 
 template<>
-JET_COLTYP DataBindingOf<LONG>::Coltyp() const { return JET_coltypLong; }
+inline JET_COLTYP DataBindingOf<ULONG>::Coltyp() const { return JET_coltypUnsignedLong; }
+#endif
 
 template<>
-JET_COLTYP DataBindingOf<ULONG>::Coltyp() const { return JET_coltypUnsignedLong; }
-
-template<>
-JET_COLTYP DataBindingOf<__int64>::Coltyp() const { return JET_coltypLongLong; }
+inline JET_COLTYP DataBindingOf<__int64>::Coltyp() const { return JET_coltypLongLong; }
 
 
 //  ================================================================

@@ -34,7 +34,7 @@ const WCHAR* const g_rgwszTraceDesc[] =
 C_ASSERT( JET_tracetagMax == _countof(g_rgwszTraceDesc) );
 
 
-#include < stdio.h >
+#include <stdio.h>
 
 
 //  Info Strings
@@ -275,11 +275,13 @@ class COSThreadInfo
 
 typedef CTable< DWORD, COSThreadInfo > COSThreadTable;
 
+template<>
 inline INT COSThreadTable::CKeyEntry:: Cmp( const DWORD& tid ) const
 {
     return m_tid - tid;
 }
 
+template<>
 inline INT COSThreadTable::CKeyEntry:: Cmp( const COSThreadTable::CKeyEntry& keyentry ) const
 {
     return Cmp( keyentry.m_tid );

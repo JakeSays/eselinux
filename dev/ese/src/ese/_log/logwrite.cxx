@@ -2388,7 +2388,8 @@ BOOL LOG_WRITE_BUFFER::FWakeWaitingQueue( const LGPOS * const plgposToWrite )
         JET_COMMIT_ID commitId;
         JET_GRBIT grbit;
 
-        commitId.signLog = *(JET_SIGNATURE *)&m_pLog->SignLog();
+        const SIGNATURE signLog = m_pLog->SignLog();
+        commitId.signLog = *(JET_SIGNATURE *)&signLog;
         commitId.commitId = (__int64)plgposToWrite->qw;
         grbit = m_pLog->FNoMoreLogWrite() ? JET_bitDurableCommitCallbackLogUnavailable : 0;
 

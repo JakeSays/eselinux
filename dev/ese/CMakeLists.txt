@@ -30,8 +30,6 @@ set(MSVC_ESE_LINK_OPTIONS
 )
 
 add_compile_definitions(
-    _ATL_STATIC_REGISTRY
-    DEBUGGER_EXTENSION;
     JET_VERSION=0xFFFF;
     WSZVERSIONNAME=L"ESE";
 
@@ -43,6 +41,18 @@ add_compile_definitions(
     BUILD_MAJOR="0"
     BUILD_MINOR="0"
 )
+
+# DEBUGGER_EXTENSION wires in the WinDbg !ese.* extension surface (edbg.cxx,
+# dbgeng.h, COM IDebugClient). Linux build excludes that source entirely; do
+# NOT define this macro on Linux because dozens of headers gate behavior on it.
+# _ATL_STATIC_REGISTRY only matters to the (noncore) ATL/COM-using code that
+# the Linux build does not compile.
+if (WIN32)
+    add_compile_definitions(
+        _ATL_STATIC_REGISTRY
+        DEBUGGER_EXTENSION
+    )
+endif()
 
 include_directories(oslite PRIVATE
     ${ESE_DEV}/published/inc/

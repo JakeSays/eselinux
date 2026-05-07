@@ -100,16 +100,19 @@ class CCachedFileEntry
 
 typedef CDynamicHashTable<CCachedFileKey, CCachedFileEntry> CCachedFileHash;
 
+template<>
 INLINE typename CCachedFileHash::NativeCounter CCachedFileHash::CKeyEntry::Hash( _In_ const CCachedFileKey& key )
 {
     return CCachedFileHash::NativeCounter( key.UiHash() );
 }
 
+template<>
 INLINE typename CCachedFileHash::NativeCounter CCachedFileHash::CKeyEntry::Hash() const
 {
     return CCachedFileHash::NativeCounter( m_entry.UiHash() );
 }
 
+template<>
 INLINE BOOL CCachedFileHash::CKeyEntry::FEntryMatchesKey( _In_ const CCachedFileKey& key ) const
 {
     if ( m_entry.UiHash() != key.UiHash() )
@@ -135,11 +138,13 @@ INLINE BOOL CCachedFileHash::CKeyEntry::FEntryMatchesKey( _In_ const CCachedFile
     return fTrue;
 }
 
+template<>
 INLINE void CCachedFileHash::CKeyEntry::SetEntry( _In_ const CCachedFileEntry& entry )
 {
     m_entry = entry;
 }
 
+template<>
 INLINE void CCachedFileHash::CKeyEntry::GetEntry( _In_ CCachedFileEntry* const pentry ) const
 {
     *pentry = m_entry;

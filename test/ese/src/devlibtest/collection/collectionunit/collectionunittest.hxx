@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include <tchar.h>
 
+// Heterogeneous min/max overloads come in via windows.h's
+// _ESE_HETEROGENEOUS_MINMAX_DEFINED block.
+
 #include "testerr.h"
 #pragma warning ( disable : 4100 )  //  unreferenced formal parameter - we removed cc.hxx from bstf.hxx temporarily, and it was providing this support here.
 #include "bstf.hxx"

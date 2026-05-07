@@ -12,11 +12,11 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 add_executable(CcLayerUnit
-    cclayerunitmain.cxx
-    ccstdoutsuite.cxx
-    cctypessuite.cxx
-    ccoperatorssuite.cxx
-    ccerrorssuite.cxx
+    CcLayerUnitMain.cxx
+    CcStdoutSuite.cxx
+    CcTypesSuite.cxx
+    CcOperatorsSuite.cxx
+    CcErrorsSuite.cxx
 )
 
 target_compile_definitions(CcLayerUnit PRIVATE

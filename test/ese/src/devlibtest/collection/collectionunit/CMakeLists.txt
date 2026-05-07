@@ -31,6 +31,14 @@ target_link_libraries(COLLECTIONUNIT PRIVATE
     BstfUnitTest
     checksum
     checksum_avx
-    oslite
+    # oslite is the Windows OS-layer-stub static lib; on Linux BstfUnitTest
+    # transitively pulls in osposix + the test_stubs_posix.cxx adapter.
+    $<$<BOOL:${WIN32}>:oslite>
     sync
 )
+
+if (NOT WIN32)
+    # Same AssertFail/EnforceFail conflict pattern as SYNCUNIT — see
+    # syncunit/CMakeLists.txt.
+    target_link_options(COLLECTIONUNIT PRIVATE -Wl,-z,muldefs)
+endif ()

@@ -1096,12 +1096,14 @@ class CATHashEntry
 
 typedef CDynamicHashTable< CATHashKey, CATHashEntry > CATHash;
 
+template<>
 INLINE CATHash::NativeCounter CATHash::CKeyEntry::Hash( const CATHashKey &key )
 {
     Assert( key.m_uiHashIfmpName == UiHashIfmpName( key.m_ifmp, key.m_pszName ) );
     return CATHash::NativeCounter( key.m_uiHashIfmpName );
 }
 
+template<>
 INLINE CATHash::NativeCounter CATHash::CKeyEntry::Hash() const
 {
     Assert( pfcbNil != m_entry.m_pfcb );
@@ -1114,6 +1116,7 @@ INLINE CATHash::NativeCounter CATHash::CKeyEntry::Hash() const
     return CATHash::NativeCounter( m_entry.m_uiHashIfmpName );
 }
 
+template<>
 INLINE BOOL CATHash::CKeyEntry::FEntryMatchesKey( const CATHashKey &key ) const
 {
     Assert( key.m_uiHashIfmpName == UiHashIfmpName( key.m_ifmp, key.m_pszName ) );
@@ -1135,11 +1138,13 @@ INLINE BOOL CATHash::CKeyEntry::FEntryMatchesKey( const CATHashKey &key ) const
     return fFalse;
 }
 
+template<>
 INLINE void CATHash::CKeyEntry::SetEntry( const CATHashEntry &src )
 {
     m_entry = src;
 }
 
+template<>
 INLINE void CATHash::CKeyEntry::GetEntry( CATHashEntry * const pdst ) const
 {
     *pdst = m_entry;

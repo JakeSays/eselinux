@@ -2891,6 +2891,12 @@ CSXWLatch::~CSXWLatch()
 //////////////////////////////////////////////////
 //  Everything below this line is OS dependent
 
+// The Linux port replaces the Win32 implementations below with POSIX
+// equivalents in `sync_posix.cxx` (Phase 5 of the port). Until that file
+// lands, gate the original Windows code so the static library still
+// builds — it is missing symbols (PvPageAlloc, kernel semaphores, ...),
+// which surface only when something tries to link against sync.lib.
+#ifdef _WIN32
 
 //  We need some lowish level NT-level primitive APIs/structs, so we need to include
 //  either nt.h,ntrtl.h,nturtl.h or winnt.h
@@ -6460,4 +6466,6 @@ void OSSYNCAPI OSSyncTermForES()
 }
 
 }; // namespace OSSYNC
+
+#endif // _WIN32
 

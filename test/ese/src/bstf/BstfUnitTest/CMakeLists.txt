@@ -19,4 +19,19 @@ target_include_directories(BstfUnitTest PRIVATE
     ${INC_OUTPUT_DIRECTORY}
     ${DEV_HEADER_OUTPUT_DIRECTORY}
     ${ESE_TEST}/src/inc
+    ${ESE_DEV}/published/inc
+    ${ESE_DEV}/published/inc/os
 )
+
+if (NOT WIN32)
+    # On Windows the Win32 API surface comes from the SDK; on Linux the
+    # devlibtest binaries get it from osposix (QueryPerformanceCounter,
+    # _strnicmp, GetExitCodeThread, ...). Propagate transitively to every
+    # test that links BstfUnitTest. checksum is pulled in because osposix's
+    # blockcache template instantiations odr-use IbitCorrupted from
+    # libchecksum (same shape as engine code in libese.so).
+    target_include_directories(BstfUnitTest PUBLIC
+        ${CMAKE_SOURCE_DIR}/windows-shim
+    )
+    target_link_libraries(BstfUnitTest PUBLIC osposix sync checksum checksum_avx oslite_posix)
+endif ()

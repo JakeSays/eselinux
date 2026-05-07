@@ -406,11 +406,16 @@ C_ASSERT( ( OffsetOf( BF, bfbitfield ) % sizeof( FLAG32 ) ) == 0 );
 C_ASSERT( sizeof( BF::bfbitfield ) == sizeof( FLAG32 ) );
 
 //  Be conscious of the size if you're changing it ...
-#ifdef _WIN64
-C_ASSERT( sizeof(BF) == 192 );
-#else  //  !_WIN64
-C_ASSERT( sizeof(BF) == 160 );
-#endif  //  _WIN64
+#if defined(_WIN64)
+static_assert( sizeof(BF) == 192, "BF size drifted on Windows x64" );
+#elif defined(__LP64__)
+//  Linux x86_64: 32 bytes larger than Windows x64 because the engine's
+//  CCriticalSection / CSemaphore wrappers around pthread mutex/cond/sem
+//  carry larger payloads than the Win32 SRWLock / KEVENT primitives.
+static_assert( sizeof(BF) == 224, "BF size drifted on Linux x86_64" );
+#else
+static_assert( sizeof(BF) == 160, "BF size drifted on 32-bit" );
+#endif
 
 //  Buffer Manager Global Flags
 
@@ -484,26 +489,31 @@ inline BFHash::NativeCounter HashIfmpPgno( const IFMP ifmp, const PGNO pgno )
     return BFHash::NativeCounter( pgno + ( ifmp << 13 ) + ( pgno >> 17 ) );
 }
 
+template<>
 inline BFHash::NativeCounter BFHash::CKeyEntry::Hash( const IFMPPGNO& ifmppgno )
 {
     return HashIfmpPgno( ifmppgno.ifmp, ifmppgno.pgno );
 }
 
+template<>
 inline BFHash::NativeCounter BFHash::CKeyEntry::Hash() const
 {
     return HashIfmpPgno( m_entry.pbf->ifmp, m_entry.pgno );
 }
 
+template<>
 inline BOOL BFHash::CKeyEntry::FEntryMatchesKey( const IFMPPGNO& ifmppgno ) const
 {
     return m_entry.pgno == ifmppgno.pgno && m_entry.pbf->ifmp == ifmppgno.ifmp;
 }
 
+template<>
 inline void BFHash::CKeyEntry::SetEntry( const PGNOPBF& pgnopbf )
 {
     m_entry = pgnopbf;
 }
 
+template<>
 inline void BFHash::CKeyEntry::GetEntry( PGNOPBF* const ppgnopbf ) const
 {
     *ppgnopbf = m_entry;

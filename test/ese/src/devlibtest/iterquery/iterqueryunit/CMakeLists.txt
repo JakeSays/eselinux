@@ -22,3 +22,7 @@ target_link_libraries(IterQueryUnit PRIVATE
     BstfUnitTest
     sync
 )
+
+if (NOT WIN32)
+    target_link_options(IterQueryUnit PRIVATE -Wl,-z,muldefs)
+endif ()

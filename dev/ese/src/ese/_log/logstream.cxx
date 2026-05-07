@@ -126,7 +126,7 @@ LONG LOG_STREAM::GetCurrentFileGen( LOGTIME * ptmCreate ) const
         *ptmCreate = m_plgfilehdr->lgfilehdr.tmCreate;
     }
 
-    return m_plgfilehdr ? m_plgfilehdr->lgfilehdr.le_lGeneration : 0;
+    return m_plgfilehdr ? LONG( m_plgfilehdr->lgfilehdr.le_lGeneration ) : 0;
 }
 
 const LGFILEHDR* LOG_STREAM::GetCurrentFileHdr() const
@@ -571,7 +571,7 @@ ERR LOG_STREAM::ErrLGReadFileHdr(
     {
         const UINT  cbPageT = ( plgfilehdr->lgfilehdr.le_cbPageSize == 0 ?
                                     g_cbPageDefault :
-                                    plgfilehdr->lgfilehdr.le_cbPageSize );
+                                    USHORT( plgfilehdr->lgfilehdr.le_cbPageSize ) );
         if ( cbPageT != (UINT)g_cbPage )
             Call( ErrERRCheck( JET_errPageSizeMismatch ) );
     }
@@ -2321,7 +2321,7 @@ ERR LOG_STREAM::ErrStartAsyncLogFileCreation(
                     ( lGenSignalTempID == lgenDebug && m_plgfilehdrT->lgfilehdr.le_lGeneration > 0 ) );
         if ( lGenSignalTempID == lgenDebug )
         {
-            lgenDebug = ( m_plgfilehdrT && m_plgfilehdrT->lgfilehdr.le_lGeneration > 0 ) ? m_plgfilehdrT->lgfilehdr.le_lGeneration : lGenSignalTempID;
+            lgenDebug = ( m_plgfilehdrT && m_plgfilehdrT->lgfilehdr.le_lGeneration > 0 ) ? LONG( m_plgfilehdrT->lgfilehdr.le_lGeneration ) : lGenSignalTempID;
         }
 
         //  Treat an error in opening like an error in an asynch I/O

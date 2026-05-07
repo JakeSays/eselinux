@@ -188,6 +188,7 @@ LOCAL const WCHAR * const   wszOperFailUnknownError = L"Operation terminated uns
 
 const JET_LGPOS lgposMax = { 0xffff, 0xffff, 0x7fffffff };
 
+#ifndef ESENT
 //  ================================================================
 JET_ERR ErrGetProcAddress(
             const HMODULE hmod,
@@ -202,6 +203,7 @@ JET_ERR ErrGetProcAddress(
     }
     return JET_errSuccess;
 }
+#endif // ESENT
 
 LOCAL WCHAR *GetNextArg();
 LOCAL_BROKEN WCHAR  *GetPrevArg();
@@ -3838,6 +3840,8 @@ WCHAR * rwszRecoverStatus[] = {
 };
 
 
+#ifndef ESENT
+
 LOCAL BOOL FDBUTLLoadLibrary( const WCHAR* wszLibrary, HMODULE *plibrary )
 {
     while ( NULL == ( *plibrary = LoadLibraryExW( wszLibrary, NULL, 0 ) ) )
@@ -3862,8 +3866,6 @@ LOCAL BOOL FDBUTLLoadLibrary( const WCHAR* wszLibrary, HMODULE *plibrary )
 
     return ( NULL != *plibrary );
 }
-
-#ifndef ESENT
 
 LOCAL HRESULT HrDBUTLLoadRestoreEnv( const HMODULE  hESEBCLI2, const WCHAR * wszRestorePath, RESTORE_ENVIRONMENT ** ppREnv, INT cDesc = 0)
 {
@@ -6875,9 +6877,52 @@ Usage:
 
     _wcsupr_s( GetCurArg(), LOSStrLengthW( GetCurArg() ) + 1 );
     EDBUTLHelp( GetCurArg() );
-    
+
     OSTerm();
     // OSPostterm() implicit with oslayer destructor.
     return -1;
 }
+
+#ifndef _WIN32
+//  Linux entry point. Linux doesn't natively call wmain — translate the
+//  narrow argv (assumed UTF-8) to wchar_t buffers, then dispatch into the
+//  shared wmain. Engine wchar_t is 16-bit (-fshort-wchar).
+int main( int argc, char* argv[] )
+{
+    LPWSTR* wargv = (LPWSTR*)calloc( ( argc + 1 ), sizeof( LPWSTR ) );
+    if ( !wargv ) return 1;
+
+    for ( int i = 0; i < argc; ++i )
+    {
+        const char* p   = argv[ i ];
+        size_t      cch = 0;
+        for ( const char* q = p; *q; ++q )
+        {
+            unsigned char b = (unsigned char)*q;
+            if ( b < 0x80 )      { ++cch; }
+            else if ( ( b & 0xE0 ) == 0xC0 ) { ++cch; ++q; }
+            else if ( ( b & 0xF0 ) == 0xE0 ) { ++cch; q += 2; }
+            else                            { ++cch; q += 3; }  // BMP-only fallback
+            if ( !*q ) break;
+        }
+        wargv[ i ] = (LPWSTR)calloc( cch + 1, sizeof( wchar_t ) );
+        if ( !wargv[ i ] ) return 1;
+        wchar_t* w = wargv[ i ];
+        while ( *p )
+        {
+            unsigned char b = (unsigned char)*p++;
+            if ( b < 0x80 )                  { *w++ = (wchar_t)b; }
+            else if ( ( b & 0xE0 ) == 0xC0 ) { wchar_t c = ( b & 0x1F ) << 6;
+                                               c |= ( *p++ & 0x3F ); *w++ = c; }
+            else if ( ( b & 0xF0 ) == 0xE0 ) { wchar_t c = ( b & 0x0F ) << 12;
+                                               c |= ( ( *p++ & 0x3F ) << 6 );
+                                               c |= ( *p++ & 0x3F ); *w++ = c; }
+            else                             { *w++ = L'?'; p += 3; }
+        }
+        *w = L'\0';
+    }
+
+    return wmain( argc, wargv );
+}
+#endif
 

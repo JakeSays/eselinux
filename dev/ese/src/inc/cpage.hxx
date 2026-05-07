@@ -1699,7 +1699,7 @@ C_ASSERT( sizeof( PATCHHDR ) <= g_cbPageMin );
 
 #define ErrCaptureCorruptedPageInfo( mode, wszCorruptionType )                                   ErrCaptureCorruptedPageInfo_( mode, wszCorruptionType, NULL, __FILE__, __LINE__ )
 #define ErrCaptureCorruptedPageInfoSz( mode, wszCorruptionType, wszCorruptionDetails, fLogEvent ) ErrCaptureCorruptedPageInfo_( mode, wszCorruptionType, wszCorruptionDetails, __FILE__, __LINE__, fLogEvent )
-#define PageEnforceSz( cpage, exp, wszType, wszDetails )      ( ( exp ) ? (void) 0 : cpage.ErrCaptureCorruptedPageInfoSz( CPAGE::CheckPageMode::OnErrorEnforce, wszType, wszDetails, fTrue ) )
+#define PageEnforceSz( cpage, exp, wszType, wszDetails )      ( ( exp ) ? (void) 0 : (void) cpage.ErrCaptureCorruptedPageInfoSz( CPAGE::CheckPageMode::OnErrorEnforce, wszType, wszDetails, fTrue ) )
 #define PageEnforce( cpage, exp )   PageEnforceSz( cpage, exp, L#exp, NULL )
 // Notes on PageAssertTrack():
 //  1. Since we are not passing OnErrorFireWall we will not have an HA failure item, so no drastic action will be taken.

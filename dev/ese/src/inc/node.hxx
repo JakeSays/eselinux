@@ -146,9 +146,17 @@ ERR ErrNDDelta(
         const DIRFLAG   dirflag,
         const RCEID     rceid );
 
-// Explicitly instantiatiate the only allowed legal instances of this template
+// Explicitly instantiate the only allowed legal instances of this template.
+// See note in ver.hxx: MSVC instantiates here, clang requires `extern
+// template` here with the actual instantiation in the .cxx that defines the
+// body.
+#ifdef _MSC_VER
 template ERR ErrNDDelta<LONG>( FUCB * const pfucb, CSR * const pcsr, const INT cbOffset, const LONG tDelta, LONG * const pOldValue, const DIRFLAG   dirflag, const RCEID rceid );
 template ERR ErrNDDelta<LONGLONG>( FUCB * const pfucb, CSR * const pcsr, const INT cbOffset, const LONGLONG tDelta, LONGLONG * const pOldValue, const DIRFLAG   dirflag, const RCEID rceid );
+#else
+extern template ERR ErrNDDelta<LONG>( FUCB * const pfucb, CSR * const pcsr, const INT cbOffset, const LONG tDelta, LONG * const pOldValue, const DIRFLAG   dirflag, const RCEID rceid );
+extern template ERR ErrNDDelta<LONGLONG>( FUCB * const pfucb, CSR * const pcsr, const INT cbOffset, const LONGLONG tDelta, LONGLONG * const pOldValue, const DIRFLAG   dirflag, const RCEID rceid );
+#endif
 
 //  set and reset flags on the node
 ERR     ErrNDFlagDelete         (

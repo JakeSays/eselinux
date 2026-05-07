@@ -2499,6 +2499,7 @@ VOID CResource::UnitTest()
 }
 #endif // RTM
 
+#ifdef ENABLE_JET_UNIT_TEST
 //  ================================================================
 template< INT T_cLookasideEntries >
 class CResourceTestFixture : public JetTestFixture
@@ -2675,8 +2676,6 @@ class CResourceTestFixture : public JetTestFixture
             CHECK( pv3 == pv );
         }
 };
-
-#ifdef ENABLE_JET_UNIT_TEST
 
 typedef CResourceTestFixture< cpresLookasideDefault > CResourceTestFixtureDefault;
 typedef CResourceTestFixture< 0 >                     CResourceTestFixtureNoLookaside;

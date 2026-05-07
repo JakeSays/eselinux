@@ -271,7 +271,7 @@ class THashedLRUKCache
                                             ibOffset,
                                             cbData ) );
 
-                    Call( ErrRead( Pcfte()->Pff(), ibOffset, cbData, pbData, iomCacheMiss ) );
+                    Call( this->ErrRead( Pcfte()->Pff(), ibOffset, cbData, pbData, iomCacheMiss ) );
 
                     m_cCachedFileIO++;
 
@@ -292,7 +292,7 @@ class THashedLRUKCache
                                             ibOffset,
                                             cbData ) );
 
-                    Call( ErrWrite( Pcfte()->Pff(), ibOffset, cbData, pbData, iomCacheWriteThrough ) );
+                    Call( this->ErrWrite( Pcfte()->Pff(), ibOffset, cbData, pbData, iomCacheWriteThrough ) );
 
                     m_cCachedFileIO++;
 
@@ -4291,6 +4291,8 @@ class THashedLRUKCache
 
 #include <pshpack1.h>
 
+            protected:
+
                 class CBucket
                 {
                     public:
@@ -4760,7 +4762,7 @@ class THashedLRUKCache
         static BOOL FSuspendBlockedThreadFromStateAccess_(  _In_ CHashedLRUKCacheThreadLocalStorage<I>* const   pctls,
                                                             _In_ const DWORD_PTR                                keyVisitTls )
         {
-            THashedLRUKCacheBase<I>::PfnVisitTls pfnVisitTls = (THashedLRUKCacheBase<I>::PfnVisitTls)FSuspendBlockedThreadFromStateAccess_;
+            typename THashedLRUKCacheBase<I>::PfnVisitTls pfnVisitTls = (typename THashedLRUKCacheBase<I>::PfnVisitTls)FSuspendBlockedThreadFromStateAccess_;
             Unused( pfnVisitTls );
 
             THashedLRUKCache<I>* const pc = (THashedLRUKCache<I>*)keyVisitTls;
@@ -5572,7 +5574,7 @@ ERR THashedLRUKCache<I>::ErrInvalidate( _In_ const VolumeId     volumeid,
     const QWORD                                         ibEnd               = ibOffset >= qwMax - cbData ? qwMax : ibOffset - 1 + cbData;
     COffsets                                            offsets             = COffsets( ibStart, ibEnd );
     CHashedLRUKCachedFileTableEntry<I>*                 pcfte               = NULL;
-    CHashedLRUKCachedFileTableEntry<I>::CIORangeLock*   piorl               = NULL;
+    typename CHashedLRUKCachedFileTableEntry<I>::CIORangeLock*  piorl       = NULL;
     QWORD                                               cbCachedFile        = 0;
     const QWORD                                         cbSlab              = CbChunkPerSlab();
     QWORD                                               cSlab               = 0;
@@ -9332,7 +9334,7 @@ ERR THashedLRUKCache<I>::ErrSuspendBlockedThreadsFromStateAccess()
 
     //  walk all thread local storage
 
-    VisitThreadLocalStorage( (THashedLRUKCacheBase<I>::PfnVisitTls)FSuspendBlockedThreadFromStateAccess_, DWORD_PTR( this ) );
+    VisitThreadLocalStorage( (typename THashedLRUKCacheBase<I>::PfnVisitTls)FSuspendBlockedThreadFromStateAccess_, DWORD_PTR( this ) );
 
     //  sync with error state from enumeration
 

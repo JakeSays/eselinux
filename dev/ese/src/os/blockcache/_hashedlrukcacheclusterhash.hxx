@@ -93,16 +93,19 @@ class CClusterReferenceEntry
 
 typedef CDynamicHashTable<CClusterReferenceKey, CClusterReferenceEntry> CClusterReferenceHash;
 
+template<>
 INLINE typename CClusterReferenceHash::NativeCounter CClusterReferenceHash::CKeyEntry::Hash( _In_ const CClusterReferenceKey& key )
 {
     return CClusterReferenceHash::NativeCounter( key.UiHash() );
 }
 
+template<>
 INLINE typename CClusterReferenceHash::NativeCounter CClusterReferenceHash::CKeyEntry::Hash() const
 {
     return CClusterReferenceHash::NativeCounter( m_entry.UiHash() );
 }
 
+template<>
 INLINE BOOL CClusterReferenceHash::CKeyEntry::FEntryMatchesKey( _In_ const CClusterReferenceKey& key ) const
 {
     if ( m_entry.Clno() != key.Clno() )
@@ -113,11 +116,13 @@ INLINE BOOL CClusterReferenceHash::CKeyEntry::FEntryMatchesKey( _In_ const CClus
     return fTrue;
 }
 
+template<>
 INLINE void CClusterReferenceHash::CKeyEntry::SetEntry( _In_ const CClusterReferenceEntry& entry )
 {
     m_entry = entry;
 }
 
+template<>
 INLINE void CClusterReferenceHash::CKeyEntry::GetEntry( _In_ CClusterReferenceEntry* const pentry ) const
 {
     *pentry = m_entry;

@@ -418,14 +418,14 @@ class PERFInstanceDelayedTotal : public PERFInstance<TData, fHashPerProc>
             return PERFInstance<TData, fHashPerProc>::Get( iInstance );
         }
 
-        using PERFInstance::Clear;
+        using PERFInstance<TData, fHashPerProc>::Clear;
         VOID Clear( TAggregation const * const pobj )
         {
             Assert( NULL != pobj );
             Clear( pobj->m_iInstance );
         }
 
-        using PERFInstance::Inc;
+        using PERFInstance<TData, fHashPerProc>::Inc;
         VOID Inc( TAggregation const * const pobj )
         {
             Assert( NULL != pobj );
@@ -434,7 +434,7 @@ class PERFInstanceDelayedTotal : public PERFInstance<TData, fHashPerProc>
             Inc( pobj->m_iInstance );
         }
 
-        using PERFInstance::Add;
+        using PERFInstance<TData, fHashPerProc>::Add;
         VOID Add( TAggregation const * const pobj, const TData lValue )
         {
             Assert( NULL != pobj );
@@ -443,7 +443,7 @@ class PERFInstanceDelayedTotal : public PERFInstance<TData, fHashPerProc>
             Add( pobj->m_iInstance, lValue );
         }
 
-        using PERFInstance::Set;
+        using PERFInstance<TData, fHashPerProc>::Set;
         VOID Set( TAggregation const * const pobj, const TData lValue )
         {
             Assert( NULL != pobj );
@@ -452,7 +452,7 @@ class PERFInstanceDelayedTotal : public PERFInstance<TData, fHashPerProc>
             Set( pobj->m_iInstance, lValue );
         }
 
-        using PERFInstance::Dec;
+        using PERFInstance<TData, fHashPerProc>::Dec;
         VOID Dec( TAggregation const * const pobj )
         {
             Assert( NULL != pobj );
@@ -551,14 +551,14 @@ class PERFInstanceLiveTotal : public PERFInstance<TData, fHashPerProc>
             Add( iInstance, TData(-1) );
         }
 
-        using PERFInstance::Clear;
+        using PERFInstance<TData, fHashPerProc>::Clear;
         VOID Clear( TAggregation const * const pobj )
         {
             Assert( NULL != pobj );
             Clear( pobj->m_iInstance );
         }
 
-        using PERFInstance::Inc;
+        using PERFInstance<TData, fHashPerProc>::Inc;
         VOID Inc( TAggregation const * const pobj )
         {
             Assert( NULL != pobj );
@@ -567,7 +567,7 @@ class PERFInstanceLiveTotal : public PERFInstance<TData, fHashPerProc>
             Inc( pobj->m_iInstance );
         }
 
-        using PERFInstance::Add;
+        using PERFInstance<TData, fHashPerProc>::Add;
         VOID Add( TAggregation const * const pobj, const TData lValue )
         {
             Assert( NULL != pobj );
@@ -576,7 +576,7 @@ class PERFInstanceLiveTotal : public PERFInstance<TData, fHashPerProc>
             Add( pobj->m_iInstance, lValue );
         }
 
-        using PERFInstance::Set;
+        using PERFInstance<TData, fHashPerProc>::Set;
         VOID Set( TAggregation const * const pobj, const TData lValue )
         {
             Assert( NULL != pobj );
@@ -585,7 +585,7 @@ class PERFInstanceLiveTotal : public PERFInstance<TData, fHashPerProc>
             Set( pobj->m_iInstance, lValue );
         }
 
-        using PERFInstance::Dec;
+        using PERFInstance<TData, fHashPerProc>::Dec;
         VOID Dec( TAggregation const * const pobj )
         {
             Assert( NULL != pobj );

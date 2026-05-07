@@ -4106,28 +4106,10 @@ DECLARE_APPROXIMATE_INDEX( Typedef::TICK, CResource, Typedef::CInvasiveContext::
                                                                                                                                 \
 DECLARE_APPROXIMATE_INDEX( Typedef::TICK, Typedef::CHistory, Typedef::CHistory::OffsetOfAIIC, Typedef##__m_aiHistoryLRU );      \
                                                                                                                                 \
-inline ULONG_PTR Typedef::CHistoryTable::CKeyEntry::                                                                            \
+template<> inline ULONG_PTR Typedef::CHistoryTable::CKeyEntry::                                                                 \
 Hash() const                                                                                                                    \
 {                                                                                                                               \
     return ULONG_PTR( m_entry.m_KeySignature );                                                                                 \
-}                                                                                                                               \
-                                                                                                                                \
-inline BOOL Typedef::CHistoryTable::CKeyEntry::                                                                                 \
-FEntryMatchesKey( const CKey& key ) const                                                                                       \
-{                                                                                                                               \
-    return Hash() == Hash( key ) && m_entry.m_phist->m_key == key;                                                              \
-}                                                                                                                               \
-                                                                                                                                \
-inline void Typedef::CHistoryTable::CKeyEntry::                                                                                 \
-SetEntry( const Typedef::CHistoryEntry& he )                                                                                    \
-{                                                                                                                               \
-    m_entry = he;                                                                                                               \
-}                                                                                                                               \
-                                                                                                                                \
-inline void Typedef::CHistoryTable::CKeyEntry::                                                                                 \
-GetEntry( Typedef::CHistoryEntry* const phe ) const                                                                             \
-{                                                                                                                               \
-    *phe = m_entry;                                                                                                             \
 }                                                                                                                               \
                                                                                                                                 \
 template<>                                                                                                                      \
@@ -4135,6 +4117,24 @@ inline ULONG_PTR Typedef::CHistoryTable::CKeyEntry::                            
 Hash( const CKey& key )                                                                                                         \
 {                                                                                                                               \
     return key.Hash();                                                                                                          \
+}                                                                                                                               \
+                                                                                                                                \
+template<> inline BOOL Typedef::CHistoryTable::CKeyEntry::                                                                      \
+FEntryMatchesKey( const CKey& key ) const                                                                                       \
+{                                                                                                                               \
+    return Hash() == Hash( key ) && m_entry.m_phist->m_key == key;                                                              \
+}                                                                                                                               \
+                                                                                                                                \
+template<> inline void Typedef::CHistoryTable::CKeyEntry::                                                                      \
+SetEntry( const Typedef::CHistoryEntry& he )                                                                                    \
+{                                                                                                                               \
+    m_entry = he;                                                                                                               \
+}                                                                                                                               \
+                                                                                                                                \
+template<> inline void Typedef::CHistoryTable::CKeyEntry::                                                                      \
+GetEntry( Typedef::CHistoryEntry* const phe ) const                                                                             \
+{                                                                                                                               \
+    *phe = m_entry;                                                                                                             \
 }
 
 

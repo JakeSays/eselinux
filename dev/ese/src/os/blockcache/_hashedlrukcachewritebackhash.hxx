@@ -222,16 +222,19 @@ class CSlabWriteBackEntry
 
 typedef CDynamicHashTable<CSlabWriteBackKey, CSlabWriteBackEntry> CSlabWriteBackHash;
 
+template<>
 INLINE typename CSlabWriteBackHash::NativeCounter CSlabWriteBackHash::CKeyEntry::Hash( _In_ const CSlabWriteBackKey& key )
 {
     return CSlabWriteBackHash::NativeCounter( key.UiHash() );
 }
 
+template<>
 INLINE typename CSlabWriteBackHash::NativeCounter CSlabWriteBackHash::CKeyEntry::Hash() const
 {
     return CSlabWriteBackHash::NativeCounter( m_entry.UiHash() );
 }
 
+template<>
 INLINE BOOL CSlabWriteBackHash::CKeyEntry::FEntryMatchesKey( _In_ const CSlabWriteBackKey& key ) const
 {
     if ( m_entry.IbSlab() != key.IbSlab() )
@@ -242,11 +245,13 @@ INLINE BOOL CSlabWriteBackHash::CKeyEntry::FEntryMatchesKey( _In_ const CSlabWri
     return fTrue;
 }
 
+template<>
 INLINE void CSlabWriteBackHash::CKeyEntry::SetEntry( _In_ const CSlabWriteBackEntry& entry )
 {
     m_entry = entry;
 }
 
+template<>
 INLINE void CSlabWriteBackHash::CKeyEntry::GetEntry( _In_ CSlabWriteBackEntry* const pentry ) const
 {
     *pentry = m_entry;

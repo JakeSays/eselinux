@@ -3,6 +3,7 @@
 
 add_custom_command(
     OUTPUT ${GEN_OUTPUT_DIRECTORY}/_etw/Microsoft-ETW-ESE.man
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${GEN_OUTPUT_DIRECTORY}/_etw
     COMMAND perl ${CMAKE_CURRENT_SOURCE_DIR}/genetw.pl ESE_OSS ${CMAKE_CURRENT_SOURCE_DIR}/Microsoft-ETW-ESE.mc ${ESE_DEV}/published/inc/jethdr.w ${ESE_DEV}/src/inc/_jet.hxx ${ESE_DEV}/published/inc/tcconst.hxx ${ESE_DEV}/src/inc/logapi.hxx ${GEN_OUTPUT_DIRECTORY}/_etw/Microsoft-ETW-ESE.man
     DEPENDS
         Microsoft-ETW-ESE.mc
@@ -27,27 +28,32 @@ add_custom_target(gen_etw
         ${GEN_OUTPUT_DIRECTORY}/_etw/Microsoft-ETW-ESE.rc
 )
 
-add_library(EtwEseProviderResources MODULE
-    manifestresource.rc
-)
+# EtwEseProviderResources is a Windows resource-only DLL containing the ETW
+# manifest binary. It has no Linux equivalent; ETW is stubbed to no-ops in
+# the Linux port (LTTng UST integration is the eventual replacement).
+if (WIN32)
+    add_library(EtwEseProviderResources MODULE
+        manifestresource.rc
+    )
 
-add_dependencies(EtwEseProviderResources
-    gen_etw
-)
+    add_dependencies(EtwEseProviderResources
+        gen_etw
+    )
 
-set_target_properties(EtwEseProviderResources
-    PROPERTIES
-        LINK_FLAGS "/NOENTRY"
-)
+    set_target_properties(EtwEseProviderResources
+        PROPERTIES
+            LINK_FLAGS "/NOENTRY"
+    )
 
-target_compile_definitions(EtwEseProviderResources PRIVATE
-    FILETYPE_DLL
-    _UNICODE
-    UNICODE
-)
+    target_compile_definitions(EtwEseProviderResources PRIVATE
+        FILETYPE_DLL
+        _UNICODE
+        UNICODE
+    )
 
-target_include_directories(EtwEseProviderResources PRIVATE
-    ${GEN_OUTPUT_DIRECTORY}/_etw/
-    ${INC_OUTPUT_DIRECTORY}
-    ./
-)
+    target_include_directories(EtwEseProviderResources PRIVATE
+        ${GEN_OUTPUT_DIRECTORY}/_etw/
+        ${INC_OUTPUT_DIRECTORY}
+        ./
+    )
+endif()

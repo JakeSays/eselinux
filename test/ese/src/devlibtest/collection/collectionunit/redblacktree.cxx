@@ -1,7 +1,21 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 #include <algorithm>
+#include <stdlib.h>
 using namespace std;
+
+// std::random_shuffle was removed in C++17. The test uses it for
+// deterministic-shuffle-via-rand() to feed the red-black tree
+// invariants. Provide a polyfill that matches the original semantics
+// (rand()-based Fisher-Yates).
+template <class It>
+inline void random_shuffle( It first, It last )
+{
+    for ( auto i = ( last - first ) - 1; i > 0; --i )
+    {
+        std::swap( first[ i ], first[ rand() % ( i + 1 ) ] );
+    }
+}
 
 #include "collectionunittest.hxx"
 
@@ -699,7 +713,11 @@ public:
         m_ic()
     {
         m_dwStuff = ib;
-        m_dwOtherStuff = ( 1 + rand() ) * ib; // in this variant ... used as the identity ... 
+        // Mask rand() to 15 bits — matches Windows CRT, where the test was
+        // designed. Linux glibc rand() returns 31 bits; multiplying by ib
+        // overflows DWORD and breaks the (m_dwOtherStuff % ib == 0)
+        // invariant the test asserts at line 1340.
+        m_dwOtherStuff = ( 1 + ( rand() & 0x7FFF ) ) * ib; // in this variant ... used as the identity ...
         COLLAssert( m_dwOtherStuff != 0 );
         m_icKeyCheck.m_iFile = iFile;
         m_icKeyCheck.m_ibOffset = ib;
@@ -1264,7 +1282,7 @@ public:
 
         //  Do below what we didn't fine
         iibSearching.m_iFile = 1 + rand() % 2;
-        iibSearching.m_ibOffset = 0 + rand() % max( iibSearching.m_ibOffset, 1 );
+        iibSearching.m_ibOffset = 0 + rand() % max( iibSearching.m_ibOffset, (decltype(iibSearching.m_ibOffset))1 );
         err = ptit->ErrFind( iibSearching, &pioreqRet );
         if ( TITree::ERR::errSuccess == err )
         {

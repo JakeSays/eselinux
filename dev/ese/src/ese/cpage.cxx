@@ -4582,7 +4582,7 @@ class MapPageValidationReason
 
     static const MPQWSZ * PmpqwszMatch( const QWORD eValueMatch, const CHAR * const szNameMatch )
     {
-        #define MpEnumStr( e )    { (QWORD)pgvr::##e, #e }
+        #define MpEnumStr( e )    { (QWORD)pgvr::e, #e }
         static MPQWSZ s_rgsz[] =
         {
             MpEnumStr( Invalid ),

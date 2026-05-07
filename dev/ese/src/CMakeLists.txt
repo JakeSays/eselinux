@@ -12,7 +12,12 @@ add_subdirectory(_res)
 add_subdirectory(_xpress)
 add_subdirectory(checksum)
 add_subdirectory(dht)
-add_subdirectory(embeddedunittest)
+# embeddedunittest links kernel32/advapi32/eselibwithtests/oslite — all
+# Windows-only — and uses GetProcessTimes etc. that aren't shimmed.
+if (WIN32)
+    add_subdirectory(embeddedunittest)
+endif ()
 add_subdirectory(ese)
+add_subdirectory(eseutil)
 add_subdirectory(os)
 add_subdirectory(sync)

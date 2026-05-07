@@ -3,8 +3,14 @@
 
 add_compile_definitions(_MBCS)
 
+if(WIN32)
+    set(SYNC_SOURCES sync.cxx)
+else()
+    set(SYNC_SOURCES sync.cxx sync_posix.cxx)
+endif()
+
 add_library(sync STATIC
-    sync.cxx
+    ${SYNC_SOURCES}
 )
 
 target_include_directories(sync PRIVATE

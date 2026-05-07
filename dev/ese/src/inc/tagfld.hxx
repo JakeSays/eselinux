@@ -1287,8 +1287,8 @@ INLINE BOOL TAGFLD::CmpTagfld2(
     // Mask to preserve FID and derived bit
     const DWORD32 dwMask = dwFlipDerived | ( ( 1 << ( cbitsPerByte * sizeof( tagfld1.m_fid ) ) ) - 1 );
 
-    const DWORD32 dw1 = ::FHostIsLittleEndian() ? ( Unaligned< DWORD32 >& ) tagfld1 : _rotl( ( const Unaligned< DWORD32 >& ) tagfld1, cbitsPerByte * sizeof( tagfld1.m_fid ) );
-    const DWORD32 dw2 = ::FHostIsLittleEndian() ? ( Unaligned< DWORD32 >& ) tagfld2 : _rotl( ( const Unaligned< DWORD32 >& ) tagfld2, cbitsPerByte * sizeof( tagfld1.m_fid ) );
+    const DWORD32 dw1 = ::FHostIsLittleEndian() ? DWORD32( ( Unaligned< DWORD32 >& ) tagfld1 ) : _rotl( ( const Unaligned< DWORD32 >& ) tagfld1, cbitsPerByte * sizeof( tagfld1.m_fid ) );
+    const DWORD32 dw2 = ::FHostIsLittleEndian() ? DWORD32( ( Unaligned< DWORD32 >& ) tagfld2 ) : _rotl( ( const Unaligned< DWORD32 >& ) tagfld2, cbitsPerByte * sizeof( tagfld1.m_fid ) );
 
     // verify that _rotl worked, or (on little endian) that reading TAGFLD straight works as expected
     Assert( dw1 == ( ( DWORD32( tagfld1.m_ib ) << ( cbitsPerByte * sizeof( tagfld1.m_fid ) ) ) | DWORD32( tagfld1.Fid() ) ) );

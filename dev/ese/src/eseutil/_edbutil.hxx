@@ -15,6 +15,34 @@
 
 #include "os.hxx"
 
+#ifndef _MSC_VER
+//  Heterogeneous min/max overloads for clang. Engine uses unqualified
+//  min(a,b)/max(a,b) with mismatched-but-related integer types; std::min
+//  rejects the type-deduction conflict, so provide the same fallback the
+//  engine uses internally (esestd.hxx / osstd_.hxx) here as well.
+#ifndef _ESE_HETEROGENEOUS_MINMAX_DEFINED
+#define _ESE_HETEROGENEOUS_MINMAX_DEFINED
+#include <algorithm>
+#include <type_traits>
+using std::min;
+using std::max;
+template < class A, class B,
+           class = std::enable_if_t< !std::is_same_v< A, B > > >
+constexpr auto min( A a, B b ) -> std::common_type_t< A, B >
+{
+    using T = std::common_type_t< A, B >;
+    return T( a ) < T( b ) ? T( a ) : T( b );
+}
+template < class A, class B,
+           class = std::enable_if_t< !std::is_same_v< A, B > > >
+constexpr auto max( A a, B b ) -> std::common_type_t< A, B >
+{
+    using T = std::common_type_t< A, B >;
+    return T( a ) > T( b ) ? T( a ) : T( b );
+}
+#endif
+#endif
+
 #include "jet.h"
 #ifdef ESENT
 #include "ntverp.h"

@@ -1576,6 +1576,13 @@ HandleError:
     return err;
 }
 
+// Explicit instantiation definitions paired with `extern template` in dir.hxx
+// (non-MSVC arm).
+#ifndef _MSC_VER
+template ERR ErrDIRDelta<LONG>( FUCB *pfucb, INT cbOffset, const LONG delta, LONG *const pOldValue, DIRFLAG dirflag );
+template ERR ErrDIRDelta<LONGLONG>( FUCB *pfucb, INT cbOffset, const LONGLONG delta, LONGLONG *const pOldValue, DIRFLAG dirflag );
+#endif
+
 
 //  ****************************************************************
 //  STATISTICAL ROUTINES
@@ -1991,7 +1998,8 @@ ERR ErrDIRCommitTransaction( PIB *ppib, JET_GRBIT grbit, DWORD cmsecDurableCommi
 
             if ( pCommitId != NULL )
             {
-                pCommitId->signLog = *(JET_SIGNATURE *)&PinstFromPpib( ppib )->m_plog->SignLog();
+                const SIGNATURE signLogCommit = PinstFromPpib( ppib )->m_plog->SignLog();
+                pCommitId->signLog = *(const JET_SIGNATURE *)&signLogCommit;
                 pCommitId->commitId = (__int64)lgposCommitRec.qw;
             }
 

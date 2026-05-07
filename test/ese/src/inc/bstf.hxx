@@ -34,8 +34,16 @@
 
 // Copy some definitions from ESE dev headers rather than include them.  We really don't need much.
 //  We could also get this from Windows headers, but we're avoiding that, too.
+//  On non-Windows the same persisted-format guarantees as cc.hxx require
+//  LONG/ULONG to be 32-bit (which `long` is not on x86_64 Linux).
+#if defined(_MSC_VER) || defined(_WIN32)
 typedef long                LONG;
 typedef unsigned long       ULONG;
+#else
+#include <stdint.h>
+typedef int32_t             LONG;
+typedef uint32_t            ULONG;
+#endif
 typedef long long           LONGLONG;
 typedef unsigned long long  ULONGLONG;
 typedef int                 INT;

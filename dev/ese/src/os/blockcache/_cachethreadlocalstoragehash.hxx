@@ -88,16 +88,19 @@ class CCacheThreadLocalStorageEntry
 
 typedef CDynamicHashTable<CCacheThreadLocalStorageKey, CCacheThreadLocalStorageEntry> CCacheThreadLocalStorageHash;
 
+template<>
 INLINE typename CCacheThreadLocalStorageHash::NativeCounter CCacheThreadLocalStorageHash::CKeyEntry::Hash( _In_ const CCacheThreadLocalStorageKey& key )
 {
     return CCacheThreadLocalStorageHash::NativeCounter( key.UiHash() );
 }
 
+template<>
 INLINE typename CCacheThreadLocalStorageHash::NativeCounter CCacheThreadLocalStorageHash::CKeyEntry::Hash() const
 {
     return CCacheThreadLocalStorageHash::NativeCounter( m_entry.UiHash() );
 }
 
+template<>
 INLINE BOOL CCacheThreadLocalStorageHash::CKeyEntry::FEntryMatchesKey( _In_ const CCacheThreadLocalStorageKey& key ) const
 {
     if ( m_entry.UiHash() != key.UiHash() )
@@ -113,11 +116,13 @@ INLINE BOOL CCacheThreadLocalStorageHash::CKeyEntry::FEntryMatchesKey( _In_ cons
     return fTrue;
 }
 
+template<>
 INLINE void CCacheThreadLocalStorageHash::CKeyEntry::SetEntry( _In_ const CCacheThreadLocalStorageEntry& entry )
 {
     m_entry = entry;
 }
 
+template<>
 INLINE void CCacheThreadLocalStorageHash::CKeyEntry::GetEntry( _In_ CCacheThreadLocalStorageEntry* const pentry ) const
 {
     *pentry = m_entry;

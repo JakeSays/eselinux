@@ -5203,12 +5203,12 @@ void BFRemoveUndoInfo( RCE* const prce, const LGPOS lgposModify )
 
 typedef CTable< DWORD_PTR, CPagePointer >   CReferencedPages;
 
-inline INT CReferencedPages::CKeyEntry:: Cmp( const DWORD_PTR& dw ) const
+template<> inline INT CReferencedPages::CKeyEntry:: Cmp( const DWORD_PTR& dw ) const
 {
     return (INT)( DwPage() - dw );
 }
 
-inline INT CReferencedPages::CKeyEntry:: Cmp( const CReferencedPages::CKeyEntry& keyentry ) const
+template<> inline INT CReferencedPages::CKeyEntry:: Cmp( const CReferencedPages::CKeyEntry& keyentry ) const
 {
     return Cmp( keyentry.DwPage() );
 }
@@ -18742,7 +18742,7 @@ ERR ErrBFIValidatePageSlowly( PBF pbf, const BFLatchType bflt, const CPageEvents
                         cpage.LoadPage( pbf->ifmp, pbf->pgno, pbf->pv, CbBFIBufferSize( pbf ) );
 
                         // not RO database and page is definitely old enough or in redo
-                        if ( !g_rgfmp[ pbf->ifmp ].m_fReadOnlyAttach &&
+                        if ( !g_rgfmp[ pbf->ifmp ].FReadOnlyAttach() &&
                              cpage.Dbtime() < g_rgfmp[ pbf->ifmp ].DbtimeOldestGuaranteed() )
                         {
                             if ( FNDAnyNodeIsVersioned( cpage ) )
@@ -18834,7 +18834,7 @@ ERR ErrBFIValidatePageSlowly( PBF pbf, const BFLatchType bflt, const CPageEvents
                 PagePatching::TryPatchFromCopy( pbf->ifmp, pbf->pgno, pbf->pv, &pbf->err );
                 // This causes problem when called from FBFICompleteFlushPage since it may already have BFFMP locked
                 if ( pbf->err >= JET_errSuccess &&
-                     !g_rgfmp[ pbf->ifmp ].m_fReadOnlyAttach )
+                     !g_rgfmp[ pbf->ifmp ].FReadOnlyAttach() )
                 {
                     BFIDirtyPage( pbf, bfdfFilthy, *TraceContextScope() );
                 }
@@ -24971,7 +24971,7 @@ void BFIAsyncWriteHandoff(  const ERR           err,
                 Expected( !( tc.etc.iorReason.Iorf() & iorfForeground ) );  // today we don't mark ErrBFFlush foreground, even though it usually is technically foreground IO
 
                 // not under PERFOpt because OSTrace from cBFPagesFlushedContextFlush is needed.
-                PERFZeroDisabledAndDiscouraged( cBFPagesFlushedContextFlush.Inc( PinstFromIfmp( pbf->ifmp ), pbf->tce ) );
+                if ( !g_fDisablePerfmon ) { cBFPagesFlushedContextFlush.Inc( PinstFromIfmp( pbf->ifmp ), pbf->tce ); }
                 break;
 
             case iorpBFFilthyFlush:
@@ -25219,7 +25219,7 @@ BOOL FBFICacheRemapPage( __inout PBF pbf, IFileAPI* const pfapi )
     const CPAGE::PGHDR * const ppghdrPre    = (CPAGE::PGHDR*)pbf->pv;
     const XECHECKSUM xechkCheckPre          = ppghdrPre->checksum;  // Don't need full 4 part checksum on large pages b/c change in last 1/2 page trickles up to change primary checksum
     const DBTIME dbtimeCheckPre             = ppghdrPre->dbtimeDirtied;
-    const PGNO pgnoCheckPre                 = ( pbf->icbPage <= icbPage8KB ) ? pbf->pgno : ( ((CPAGE::PGHDR2 *)ppghdrPre)->pgno );
+    const PGNO pgnoCheckPre                 = ( pbf->icbPage <= icbPage8KB ) ? pbf->pgno : (PGNO)( ((CPAGE::PGHDR2 *)ppghdrPre)->pgno );
     Assert( pgnoCheckPre == pbf->pgno );    //  for > 8 KB pages, the pgno off the pghdr2 should match the BF pgno!
 
     Assert( g_rgcbPageSize[pbf->icbPage] % OSMemoryPageCommitGranularity() == 0 );  //  ensure 100% coverage of page by the blocks
@@ -25398,7 +25398,7 @@ BOOL FBFICacheRemapPage( __inout PBF pbf, IFileAPI* const pfapi )
     else
     {
         const CPAGE::PGHDR * const ppghdrPost = (CPAGE::PGHDR*)pbf->pv;
-        const PGNO pgnoCheckPost = ( pbf->icbPage <= icbPage8KB ) ? pbf->pgno : ( ((CPAGE::PGHDR2 *)ppghdrPost)->pgno );
+        const PGNO pgnoCheckPost = ( pbf->icbPage <= icbPage8KB ) ? pbf->pgno : (PGNO)( ((CPAGE::PGHDR2 *)ppghdrPost)->pgno );
 
         BOOL fMarkersSame = fTrue;
         for ( INT iosmmpage2 = 0; iosmmpage2 < cosmmpg; iosmmpage2++ )

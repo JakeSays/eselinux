@@ -1528,7 +1528,7 @@ LOCAL ERR ErrSORTCopyOneRecord(
                 Call( ErrERRCheck( JET_errDatabaseCorrupted ) );
             }
             const QWORD qwCurrAutoInc = f8BytesAutoInc ?
-                                            ( *( (UnalignedLittleEndian< QWORD > *)dataAutoInc.Pv() ) ) :
+                                            (QWORD)( *( (UnalignedLittleEndian< QWORD > *)dataAutoInc.Pv() ) ) :
                                             ( (QWORD)( *( (UnalignedLittleEndian< ULONG > *)dataAutoInc.Pv() ) ) );
             if ( *pqwAutoIncMax < qwCurrAutoInc )
             {

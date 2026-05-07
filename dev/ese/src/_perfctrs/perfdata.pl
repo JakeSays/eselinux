@@ -655,7 +655,7 @@ if( $MaxIndex < 0) {
 }
 
 print DATAFILE<<EOF6;
-long rglPERFNumInstances[$NumObj];
+LONG rglPERFNumInstances[$NumObj];
 wchar_t* rgwszPERFInstanceList[$NumObj];
 unsigned char* rgpbPERFInstanceAggregationIDs[$NumObj];
 

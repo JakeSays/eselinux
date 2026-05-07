@@ -188,14 +188,7 @@ ERR ErrTDBCreate(
         return ErrERRCheck( JET_errTooManyOpenTables );
     }
 
-    if ( JET_errSuccess == PfmpFromIfmp( ifmp )->ErrDBFormatFeatureEnabled( JET_efvLid64 ) )
-    {
-        ptdb->m_fLid64 = fTrue;
-    }
-    else
-    {
-        ptdb->m_fLid64 = fFalse;
-    }
+    ptdb->SetFLid64( JET_errSuccess == PfmpFromIfmp( ifmp )->ErrDBFormatFeatureEnabled( JET_efvLid64 ) ? fTrue : fFalse );
 
     //  propagate TDB flags from the template table
 

@@ -119,23 +119,23 @@ public:
 // 
 
 //  These are used independently for a couple special traces
-template INLINE BOOL FOSEventTraceEnabled< _etguidCacheRequestPage >();
-template INLINE BOOL FOSEventTraceEnabled< _etguidCacheMemoryUsage >();
+extern template BOOL FOSEventTraceEnabled< _etguidCacheRequestPage >();
+extern template BOOL FOSEventTraceEnabled< _etguidCacheMemoryUsage >();
 
 //  These are used by the next set of ::FAnnounceTime() templates (keep same order)
-template INLINE BOOL FOSEventTraceEnabled< _etguidInstStationId >();
-template INLINE BOOL FOSEventTraceEnabled< _etguidDiskStationId >();
-template INLINE BOOL FOSEventTraceEnabled< _etguidFileStationId >();
-template INLINE BOOL FOSEventTraceEnabled< _etguidSysStationId >();
-template INLINE BOOL FOSEventTraceEnabled< _etguidIsamDbfilehdrInfo >();
-template INLINE BOOL FOSEventTraceEnabled< _etguidFmpStationId >();
+extern template BOOL FOSEventTraceEnabled< _etguidInstStationId >();
+extern template BOOL FOSEventTraceEnabled< _etguidDiskStationId >();
+extern template BOOL FOSEventTraceEnabled< _etguidFileStationId >();
+extern template BOOL FOSEventTraceEnabled< _etguidSysStationId >();
+extern template BOOL FOSEventTraceEnabled< _etguidIsamDbfilehdrInfo >();
+extern template BOOL FOSEventTraceEnabled< _etguidFmpStationId >();
 
-template INLINE BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidInstStationId >( const TraceStationIdentificationReason tsidr );
-template INLINE BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidDiskStationId >( const TraceStationIdentificationReason tsidr );
-template INLINE BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidFileStationId >( const TraceStationIdentificationReason tsidr );
-template INLINE BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidSysStationId >( const TraceStationIdentificationReason tsidr );
-template INLINE BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidIsamDbfilehdrInfo >( const TraceStationIdentificationReason tsidr );
-template INLINE BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidFmpStationId >( const TraceStationIdentificationReason tsidr );
+extern template BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidInstStationId >( const TraceStationIdentificationReason tsidr );
+extern template BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidDiskStationId >( const TraceStationIdentificationReason tsidr );
+extern template BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidFileStationId >( const TraceStationIdentificationReason tsidr );
+extern template BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidSysStationId >( const TraceStationIdentificationReason tsidr );
+extern template BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidIsamDbfilehdrInfo >( const TraceStationIdentificationReason tsidr );
+extern template BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidFmpStationId >( const TraceStationIdentificationReason tsidr );
 
 #endif  //  _OS_EVENT_TRACE_HXX_INCLUDED
 

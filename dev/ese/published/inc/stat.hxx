@@ -8,6 +8,8 @@
 //
 //
 
+#include <math.h>  // sqrt, pow, nan
+
 
 //  Assertions
 
@@ -351,7 +353,7 @@ public:
         {
             // We overflowed while accumulating this.  We don't have a valid answer for
             // standard deviation.
-            return nan(NULL); // Not A Number, an invalid double.
+            return nan(""); // Not A Number, an invalid double.
         }
 
         const CHITS cT = c;
@@ -1405,7 +1407,9 @@ class CSegmentedHistogram : public CStats {
         double DblStdDev() const
         {
             // Not Yet Implemented.  We don't track qwTotalOfSquares during AddSample.
-            return nan(NULL); // Not A Number, an invalid double.
+            // Pass an empty string instead of NULL — glibc's nan() crashes
+            // on NULL while MSVC accepts it.
+            return nan(""); // Not A Number, an invalid double.
         }
 };
 
@@ -1760,7 +1764,7 @@ public:
     double DblStdDev() const
     {
         // Not Yet Implemented.  We don't track qwTotalOfSquares during AddSample.
-        return nan(NULL); // Not A Number, an invalid double.
+        return nan(""); // Not A Number, an invalid double.
     }
 
 private:

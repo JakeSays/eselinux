@@ -5,6 +5,8 @@ add_custom_command(
     OUTPUT
         ${GEN_OUTPUT_DIRECTORY}/ese/jetapitable.cxx
     COMMAND
+        ${CMAKE_COMMAND} -E make_directory ${GEN_OUTPUT_DIRECTORY}/ese/
+    COMMAND
         perl ${ESE_DEV}/src/ese/genapitable.pl ${ESE_DEV}/src/inc/_jet.hxx ${GEN_OUTPUT_DIRECTORY}/ese/jetapitable.cxx
     DEPENDS
         ${ESE_DEV}/src/inc/_jet.hxx
@@ -94,10 +96,17 @@ set(ESE_LIBRARIES
     _osu
     checksum
     checksum_avx
-    oswinnt
+    $<$<BOOL:${WIN32}>:oswinnt>
+    $<$<NOT:$<BOOL:${WIN32}>>:osposix>
 )
 
 add_subdirectory(_log)
 add_subdirectory(_osu)
-add_subdirectory(eselibwithtests)
+# eselibwithtests is the engine + ENABLE_JET_UNIT_TEST variant used by
+# the Windows blue/ test harness. It generates an ese.def via `cl`, which
+# isn't available on Linux. The Linux port doesn't need the engine-with-
+# tests build (devlibtest exercises the OS layer without it), so skip it.
+if (WIN32)
+    add_subdirectory(eselibwithtests)
+endif ()
 add_subdirectory(server)

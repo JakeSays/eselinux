@@ -1288,7 +1288,7 @@ INLINE ERR ErrRECISetLid(
     Assert( lid > lidMin );
     Assert( lid.FLidObeysCurrFormat( pfucb ) );
 
-    UnalignedLittleEndian< _LID64 >     lidT    = lid;
+    UnalignedLittleEndian< _LID64 >     lidT    = (_LID64)lid;
     DATA                                dataLV;
 
     dataLV.SetPv( &lidT );
@@ -6750,8 +6750,8 @@ ERR RECCHECKLVSTATS::operator()( const KEYDATAFLAGS& kdf, const PGNO pgno )
         {
             m_plvstats->lidMin = lid;
         }
-        m_plvstats->lidMin = min( lid, m_plvstats->lidMin );
-        m_plvstats->lidMax = max( lid, m_plvstats->lidMax );
+        m_plvstats->lidMin = min( (QWORD)lid, (QWORD)m_plvstats->lidMin );
+        m_plvstats->lidMax = max( (QWORD)lid, (QWORD)m_plvstats->lidMax );
 
         ++(m_plvstats->clv );
 

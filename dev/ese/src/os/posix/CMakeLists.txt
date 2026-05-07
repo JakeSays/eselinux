@@ -1,0 +1,134 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+#
+# Linux/POSIX OS-layer build target. Sibling to os/winnt/ and os/litent/.
+# At Phase 1 of the port the goal is configure-clean only, so this target is
+# a near-empty static library that does NOT yet pull in OS_SOURCES. The .cxx
+# files in os/ migrate in once they compile-clean against the windows-shim
+# and the POSIX-specific implementations land in Phase 5.
+
+# Workaround for CMake's directory scoping; see CMake issue 18399
+add_custom_command(
+    OUTPUT ${INC_OUTPUT_DIRECTORY}/_tracetagimpl.h
+    COMMAND ${CMAKE_COMMAND} -E
+        touch_nocreate ${INC_OUTPUT_DIRECTORY}/_tracetagimpl.h
+    DEPENDS gen_tracetagimpl
+)
+
+# OS sources that have been ported from os/winnt/. As each file compiles
+# cleanly on Linux, move it from the upstream OS_SOURCES list (defined in
+# the parent CMakeLists.txt) into here.
+set(OSPOSIX_PORTED_SOURCES
+    ${ESE_DEV}/src/os/cprintf.cxx
+    ${ESE_DEV}/src/os/dev.cxx
+    ${ESE_DEV}/src/os/event.cxx
+    ${ESE_DEV}/src/os/iostats.cxx
+    ${ESE_DEV}/src/os/math.cxx
+    ${ESE_DEV}/src/os/hapublish.cxx
+    ${ESE_DEV}/src/os/memfile.cxx
+    ${ESE_DEV}/src/os/os.cxx
+    ${ESE_DEV}/src/os/osblockcache.cxx
+    ${ESE_DEV}/src/os/osdiag.cxx
+    ${ESE_DEV}/src/os/ostimerqueue.cxx
+    ${ESE_DEV}/src/os/perfmon.cxx
+    ${ESE_DEV}/src/os/reftrace.cxx
+    ${ESE_DEV}/src/os/string.cxx
+    ${ESE_DEV}/src/os/thread.cxx
+    ${ESE_DEV}/src/os/time.cxx
+    ${ESE_DEV}/src/os/trace.cxx
+)
+
+# POSIX implementations behind windows-shim declarations. Each file
+# fills in a slice of the Win32 surface the engine calls into.
+set(OSPOSIX_WINAPI_SOURCES
+    config_posix.cxx
+    dllentry_posix.cxx
+    encrypt_posix.cxx
+    error_posix.cxx
+    library_posix.cxx
+    memory_posix.cxx
+    memorynotification_posix.cxx
+    norm_posix.cxx
+    osdisk_posix.cxx
+    oseventtrace_posix.cxx
+    osfile_posix.cxx
+    osfs_posix.cxx
+    sysinfo_posix.cxx
+    task_posix.cxx
+    winapi_console.cxx
+    winapi_crt.cxx
+    winapi_critsec.cxx
+    winapi_debug.cxx
+    winapi_eseutil.cxx
+    winapi_file.cxx
+    winapi_filefind.cxx
+    winapi_filelock.cxx
+    winapi_filemeta.cxx
+    winapi_filevolume.cxx
+    winapi_handle.cxx
+    winapi_lasterror.cxx
+    winapi_memory.cxx
+    winapi_message.cxx
+    winapi_nls.cxx
+    winapi_process.cxx
+    winapi_random.cxx
+    winapi_sync.cxx
+    winapi_strsafe.cxx
+    winapi_sysdirs.cxx
+    winapi_thread.cxx
+    winapi_threadpool.cxx
+    winapi_time.cxx
+    winapi_tls.cxx
+    winapi_werapi.cxx
+)
+
+add_library(osposix STATIC
+    ${INC_OUTPUT_DIRECTORY}/_tracetagimpl.h
+    osstd.cxx
+    violated.cxx
+    ${OSPOSIX_WINAPI_SOURCES}
+    ${OSPOSIX_PORTED_SOURCES}
+)
+
+add_dependencies(osposix
+    gen_etw
+    gen_jetmsgex
+)
+
+# DISABLE_EVENT_LOG: route OSEventReportEvent to the no-op path in event.cxx
+# until syslog/journald or LTTng integration lands.
+# The DEBUGGER_EXTENSION_ESE / OS_LAYER_VIOLATIONS / PERFMON_SUPPORT flags
+# that os/winnt/ defines are intentionally OMITTED here, mirroring os/litent/.
+target_compile_definitions(osposix PRIVATE
+    DISABLE_EVENT_LOG
+)
+
+# Override the project-wide -fvisibility=hidden for the OS layer. eseutil
+# is a Linux-only consumer of libese.so; it depends on libese.so to provide
+# every OS layer entry point at runtime so that there's only ONE copy of
+# the OS layer state (g_dwPageReserveGran, g_csError, the kernel semaphore
+# pool, etc.) in the process. With hidden visibility the linker pulls a
+# private osposix-from-static into eseutil too, which yields two diverging
+# state machines — wmain → FOSPreinit hits libese.so but eseutil .o files
+# would read its own zeroed copies. Default visibility on osposix means
+# libese.so re-exports the OS layer.
+if (NOT WIN32)
+    # `-fvisibility-inlines-hidden` (set project-wide) hides all inline
+    # functions even when the symbol's plain visibility is default. The
+    # OS layer has many `__forceinline`/`inline` functions (PefLastThrow,
+    # ErrERRCheck_, UtilMemCpy, ...) that eseutil's TUs reference via
+    # only a declaration — they need a real exported body in libese.so.
+    target_compile_options(osposix PRIVATE
+        -fvisibility=default
+        -fno-visibility-inlines-hidden
+    )
+endif ()
+
+target_include_directories(osposix PRIVATE
+    ${CMAKE_SOURCE_DIR}/windows-shim
+    ./
+)
+
+target_precompile_headers(osposix PRIVATE
+    osstd.hxx
+)

@@ -47,7 +47,7 @@ class CCachedFileHeader : CBlockCacheHeaderHelpers  //  cfh
         FileId FileidCache() const { return m_le_fileidCache; }
         const BYTE* RgbUniqueIdCache() const { return m_rgbUniqueIdCache; }
 
-        DWORD CbPinnedHeader() const { return m_le_cbPinnedHeader ? m_le_cbPinnedHeader : 64 * 1024; }
+        DWORD CbPinnedHeader() const { return m_le_cbPinnedHeader ? (DWORD)m_le_cbPinnedHeader : (DWORD)( 64 * 1024 ); }
 
     private:
 

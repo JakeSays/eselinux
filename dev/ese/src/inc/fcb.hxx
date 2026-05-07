@@ -1230,17 +1230,22 @@ private:
 
 //  FCB hash-table functions (must appear after FCB is defined)
 
+// Explicit member specializations of CDynamicHashTable<...>::CKeyEntry methods;
+// clang requires the `template<>` prefix per C++ rules, MSVC accepts it bare.
+template<>
 inline FCBHash::NativeCounter FCBHash::CKeyEntry::Hash( const FCBHashKey &key )
 {
     return FCBHash::NativeCounter( UiHashIfmpPgnoFDP( key.m_ifmp, key.m_pgnoFDP ) );
 }
 
+template<>
 inline FCBHash::NativeCounter FCBHash::CKeyEntry::Hash() const
 {
     Assert( pfcbNil != m_entry.m_pfcb );
     return FCBHash::NativeCounter( UiHashIfmpPgnoFDP( m_entry.m_pfcb->Ifmp(), m_entry.m_pgnoFDP ) );
 }
 
+template<>
 inline BOOL FCBHash::CKeyEntry::FEntryMatchesKey( const FCBHashKey &key ) const
 {
     //  NOTE: evaluate the local pgnoFDP before faulting in the cache-line for the FCB to compare IFMPs
@@ -1248,11 +1253,13 @@ inline BOOL FCBHash::CKeyEntry::FEntryMatchesKey( const FCBHashKey &key ) const
     return m_entry.m_pgnoFDP == key.m_pgnoFDP && m_entry.m_pfcb->Ifmp() == key.m_ifmp;
 }
 
+template<>
 inline void FCBHash::CKeyEntry::SetEntry( const FCBHashEntry &src )
 {
     m_entry = src;
 }
 
+template<>
 inline void FCBHash::CKeyEntry::GetEntry( FCBHashEntry * const pdst ) const
 {
     *pdst = m_entry;

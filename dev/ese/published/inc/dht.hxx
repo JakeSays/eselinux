@@ -278,7 +278,11 @@ class CDynamicHashTable
 
                 //  array of entries (it will contain 'load-factor' entries)
 
+#ifdef _MSC_VER
                 CKeyEntry           m_rgEntry[];
+#else
+                CKeyEntry           m_rgEntry[1];
+#endif
 
             public:
 

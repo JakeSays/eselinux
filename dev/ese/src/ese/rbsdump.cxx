@@ -278,7 +278,7 @@ VOID RBSRecToSz( const RBSRecord *prbsrec, __out_bcount(cbRBSRec) PSTR szRBSRec,
         case rbsrectypeDbEmptyPages2:
         {
             RBSDbEmptyPagesRecord* prbsemptypgrec = ( RBSDbEmptyPagesRecord* ) prbsrec;
-            ULONG fFlags                       = bRecType == rbsrectypeDbEmptyPages2 ? ( ( RBSDbEmptyPages2Record* ) prbsrec )->m_fFlags : 0;
+            ULONG fFlags                       = bRecType == rbsrectypeDbEmptyPages2 ? (ULONG)( ( RBSDbEmptyPages2Record* ) prbsrec )->m_fFlags : 0;
 
             OSStrCbFormatA( rgchBuf, sizeof(rgchBuf), " [%u:%lu:%lu],[%s]",
                 (DBID)  prbsemptypgrec->m_dbid,

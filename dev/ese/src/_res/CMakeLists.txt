@@ -3,6 +3,7 @@
 
 add_custom_command(
     OUTPUT ${GEN_OUTPUT_DIRECTORY}/_res/jetmsgex.mc
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${GEN_OUTPUT_DIRECTORY}/_res
     COMMAND perl ${CMAKE_CURRENT_SOURCE_DIR}/fixmc.pl ${CMAKE_CURRENT_SOURCE_DIR}/jetmsg.mc ${GEN_OUTPUT_DIRECTORY}/_res/jetmsgex.mc
     DEPENDS
         fixmc.pl

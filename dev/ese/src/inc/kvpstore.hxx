@@ -63,9 +63,9 @@ private:
 
     //  Maximum supported internal upgrades and internal .schema versions
     //  The initial release was version 1.0.0.
-    PERSISTED static const ULONG  p_ulInternalMajorVersion  = 1;
-    PERSISTED static const ULONG  p_ulInternalMinorVersion  = 0;
-    PERSISTED static const ULONG  p_ulInternalUpdateVersion = p_ulUpdateAddLongLongValueType;
+    PERSISTED static constexpr ULONG  p_ulInternalMajorVersion  = 1;
+    PERSISTED static constexpr ULONG  p_ulInternalMinorVersion  = 0;
+    PERSISTED static constexpr ULONG  p_ulInternalUpdateVersion = p_ulUpdateAddLongLongValueType;
 
     // Current supported internal upgrades and internal .schema versions
     ULONG  m_ulInternalMajorVersion;

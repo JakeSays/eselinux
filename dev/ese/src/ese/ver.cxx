@@ -3510,6 +3510,14 @@ TDelta DeltaVERGetDelta( const FUCB * pfucb, const BOOKMARK& bookmark, INT cbOff
     return tDelta;
 }
 
+// Explicit instantiation definitions paired with the `extern template`
+// declarations in ver.hxx (non-MSVC arm). MSVC emits these instantiations
+// from the header itself.
+#ifndef _MSC_VER
+template LONG DeltaVERGetDelta<LONG>( const FUCB * pfucb, const BOOKMARK& bookmark, INT cbOffset );
+template LONGLONG DeltaVERGetDelta<LONGLONG>( const FUCB * pfucb, const BOOKMARK& bookmark, INT cbOffset );
+#endif
+
 
 //  ================================================================
 BOOL FVERDeltaActiveNotByMe( const FUCB * pfucb, const BOOKMARK& bookmark, INT cbOffset )
@@ -5499,8 +5507,8 @@ VOID VERIWaitForTasks( VER *pver, FCB *pfcb, BOOL fInRollback, BOOL fHaveRceClea
         pver->m_critRCEClean.FEnter( cmsecInfiniteNoDeadlock );
     }
     (void)pver->m_rectaskbatcher.ErrPostAllPending();
-    fHaveRceCleanLock ? 0 : pver->m_critRCEClean.Leave();
-    fInRollback ? FOSSetCleanupState( fCleanUpStateSavedSavedSaved ) : 0;
+    fHaveRceCleanLock ? (void)0 : pver->m_critRCEClean.Leave();
+    fInRollback ? (void)FOSSetCleanupState( fCleanUpStateSavedSavedSaved ) : (void)0;
 
     pfcb->WaitForTasksToComplete();
     Assert( pfcb->CTasksActive() == 0 );

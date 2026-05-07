@@ -51,11 +51,13 @@ class TableEntry
 
 typedef CTable< INT, TableEntry > CTestTable;
 
+template<>
 inline INT CTestTable::CKeyEntry:: Cmp( const INT& id ) const
 {
     return m_id - id;
 }
 
+template<>
 inline INT CTestTable::CKeyEntry:: Cmp( const CTestTable::CKeyEntry& keyentry ) const
 {
     return Cmp( keyentry.m_id );

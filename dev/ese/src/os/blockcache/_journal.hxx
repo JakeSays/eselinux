@@ -819,7 +819,7 @@ INLINE ERR TJournal<I>::CSegment::ErrBeginSeal()
 
     //  if we already failed to seal this segment then don't try again
 
-    if ( AtomicCompareExchange( (long*)&m_fSealed, fFalse, fTrue ) )
+    if ( AtomicCompareExchange( (LONG*)&m_fSealed, fFalse, fTrue ) )
     {
         Error( m_errSeal );
     }

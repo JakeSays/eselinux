@@ -13333,7 +13333,7 @@ JET_ERR
 JetBeginDatabaseIncrementalReseedEx(
     _In_ JET_INSTANCE   instance,
     _In_ JET_PCWSTR     wszDatabase,
-    _In_ unsigned long  genFirstDivergedLog,
+    _In_ uint32_t       genFirstDivergedLog,
     _In_ JET_GRBIT      grbit )
 {
     APICALL_INST    apicall( opBeginDatabaseIncrementalReseed );
@@ -13362,7 +13362,7 @@ JET_API
 JetBeginDatabaseIncrementalReseedW(
     _In_ JET_INSTANCE   instance,
     _In_ JET_PCWSTR     wszDatabase,
-    _In_ unsigned long  genFirstDivergedLog,
+    _In_ uint32_t       genFirstDivergedLog,
     _In_ JET_GRBIT      grbit )
 {
     JET_VALIDATE_INSTANCE( instance );
@@ -13374,7 +13374,7 @@ JET_ERR
 JetBeginDatabaseIncrementalReseedExA(
     _In_ JET_INSTANCE   instance,
     _In_ JET_PCSTR      szDatabase,
-    _In_ unsigned long  genFirstDivergedLog,
+    _In_ uint32_t       genFirstDivergedLog,
     _In_ JET_GRBIT      grbit )
 {
     ERR             err             = JET_errSuccess;
@@ -13390,7 +13390,7 @@ JET_API
 JetBeginDatabaseIncrementalReseedA(
     _In_ JET_INSTANCE   instance,
     _In_ JET_PCSTR      szDatabase,
-    _In_ unsigned long  genFirstDivergedLog,
+    _In_ uint32_t       genFirstDivergedLog,
     _In_ JET_GRBIT      grbit )
 {
     JET_VALIDATE_INSTANCE( instance );
@@ -18321,7 +18321,7 @@ ERR ErrINSTPrepareTargetInstance(
         goto HandleError;
     }
 
-    wszTargetInstanceName = pinstTarget->m_wszInstanceName?pinstTarget->m_wszInstanceName:L"";
+    wszTargetInstanceName = pinstTarget->m_wszInstanceName?pinstTarget->m_wszInstanceName:(WCHAR*)L"";
 
     lrextrestore.lrtyp = lrtypExtRestore2;
 
@@ -19795,6 +19795,10 @@ LOCAL JET_ERR JetDBUtilitiesEx( JET_DBUTIL_W *pdbutilW )
     
 #ifdef _WIN64
     C_ASSERT( sizeof(JET_DBUTIL_W) == 136 );
+#elif defined(__LP64__)
+    // Linux LP64 — struct contains JET_API_PTR fields (8 bytes) + 32-bit int32_t fields.
+    // Size is whatever the compiler computes; we don't need cross-platform binary
+    // compatibility on the initial port.
 #else  //  !_WIN64
     C_ASSERT( sizeof(JET_DBUTIL_W) == 84 );
 #endif // !_WIN64
@@ -22050,8 +22054,11 @@ LOCAL JET_ERR JET_API JetGetInstanceMiscInfoEx(
         switch ( InfoLevel )
         {
             case JET_InstanceMiscInfoLogSignature:
-                *(JET_SIGNATURE *)pvResult = *(JET_SIGNATURE *)&( pinst->m_plog->SignLog() );
+            {
+                const SIGNATURE signLogInfo = pinst->m_plog->SignLog();
+                *(JET_SIGNATURE *)pvResult = *(const JET_SIGNATURE *)&signLogInfo;
                 break;
+            }
 
             case JET_InstanceMiscInfoCheckpoint:
             {

@@ -36,10 +36,19 @@
 
 #ifdef OS_LAYER_VIOLATIONS
 class INST;
+#elif defined(__clang__) && !defined(_MSC_VER)
+//  Linux/clang: keep INST as a forward-declared class so OS-layer object
+//  files mangle the same `INST*`-shaped functions as engine TUs (which
+//  define OS_LAYER_VIOLATIONS and see `class INST` from daedef.hxx).
+//  Itanium ABI mangles `class INST*` and `unsigned char*` differently, so
+//  the upstream typedef-to-`unsigned char` would split every cross-layer
+//  symbol (UtilReportEvent, ErrNORMCheckLocaleName, UlParam, ...). The
+//  forward decl is fine because no OS-layer code derefs an INST*.
+class INST;
 #else
-//  This redefining INST to an unsigned char works because nearly every last 
+//  This redefining INST to an unsigned char works because nearly every last
 //  reference to an INST in the OS Layer is an 'INST *', and nothing in the OS
-//  Layer really derefs it, and calls a member of INST::*, mostly just passes 
+//  Layer really derefs it, and calls a member of INST::*, mostly just passes
 //  it through as context to things like UtilReportEvent().
 typedef unsigned char INST;
 #endif
@@ -101,7 +110,7 @@ typedef unsigned char INST;
 #include "edbg.hxx"
 #include "perfmon.hxx"
 #include "oseventtrace.hxx"
-#include "eseeventtrace.g.hxx"
+#include "EseEventTrace.g.hxx"
 #include "hapublish.hxx"
 
 // -----------------------------------------------------------------------------
@@ -112,7 +121,11 @@ typedef unsigned char INST;
 void OSPrepreinitSetUserTLSSize( const ULONG cbUserTLSSize );
 
 #ifdef OS_LAYER_VIOLATIONS
-#if defined(_WIN64)
+#if defined(__linux__)
+// Linux x86_64. wchar_t is 32 bits in libc but the engine uses -fshort-wchar
+// (16-bit). Confirmed against sizeof(TLS) at static-assert.
+#define ESE_USER_TLS_SIZE 176
+#elif defined(_WIN64)
 #define ESE_USER_TLS_SIZE 184
 #else
 #define ESE_USER_TLS_SIZE 160

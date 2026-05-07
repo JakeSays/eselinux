@@ -363,26 +363,34 @@ INLINE CIOThreadInfoTable::NativeCounter IOThreadInfoTableHashIoContext( DWORD_P
     return iocontext / 32;
 }
 
+// Each definition below is an explicit member specialization of a method
+// declared (but not defined) in the CDynamicHashTable<...>::CKeyEntry primary
+// template. clang requires the `template<>` prefix; MSVC accepts it without.
+template<>
 inline CIOThreadInfoTable::NativeCounter CIOThreadInfoTable::CKeyEntry::Hash( const CIOThreadInfoTableKey &key )
 {
     return IOThreadInfoTableHashIoContext( key.m_iocontext );
 }
 
+template<>
 inline CIOThreadInfoTable::NativeCounter CIOThreadInfoTable::CKeyEntry::Hash() const
 {
     return IOThreadInfoTableHashIoContext( m_entry.m_iocontext );
 }
 
+template<>
 inline BOOL CIOThreadInfoTable::CKeyEntry::FEntryMatchesKey( const CIOThreadInfoTableKey &key ) const
 {
     return m_entry.m_iocontext == key.m_iocontext;
 }
 
+template<>
 inline void CIOThreadInfoTable::CKeyEntry::SetEntry( const CIOThreadInfoTableEntry &src )
 {
     m_entry = src;
 }
 
+template<>
 inline void CIOThreadInfoTable::CKeyEntry::GetEntry( CIOThreadInfoTableEntry * const pdst ) const
 {
     *pdst = m_entry;

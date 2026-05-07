@@ -3037,8 +3037,9 @@ VOID DBISetHeaderAfterAttach(
 
     if ( !fKeepBackupInfo )
     {
+        const SIGNATURE signLog = plog->SignLog();
         if ( !g_rgfmp[ifmp].FLogOn()
-            || memcmp( &pdbfilehdr->signLog, &plog->SignLog(), sizeof( SIGNATURE ) ) != 0 )
+            || memcmp( &pdbfilehdr->signLog, &signLog, sizeof( SIGNATURE ) ) != 0 )
         {
             //  if no log or the log signaure is not the same as current log signature,
             //  then the bkinfoIncPrev, bfkinfoFullPrev, bkinfoCopyPrev and bkinfoDiffPrev
@@ -3080,7 +3081,8 @@ VOID DBISetHeaderAfterAttach(
         pdbfilehdr->le_lgposLastReAttach = lgposMin;
 
         //  Set global signature.
-        if ( 0 != memcmp( &pdbfilehdr->signLog, &plog->SignLog(), sizeof(SIGNATURE) ) )
+        const SIGNATURE signLogSet = plog->SignLog();
+        if ( 0 != memcmp( &pdbfilehdr->signLog, &signLogSet, sizeof(SIGNATURE) ) )
         {
             pdbfilehdr->le_lGenPreRedoMinRequired = 0;
             pdbfilehdr->le_lGenPreRedoMinConsistent = 0;
@@ -4492,8 +4494,9 @@ ERR ISAMAPI ErrIsamAttachDatabase(
 
     Assert( ( pfmp->PLogRedoMapZeroed() == NULL ) && ( pfmp->PLogRedoMapBadDbTime() == NULL ) && ( pfmp->PLogRedoMapDbtimeRevert() == NULL ) && ( pfmp->PLogRedoMapDbtimeRevertIgnore() == NULL ) );
 
+    const SIGNATURE signLogCheck = plog->SignLog();
     if ( !plog->FLogDisabled()
-        && 0 == memcmp( &pfmp->Pdbfilehdr()->signLog, &plog->SignLog(), sizeof(SIGNATURE) ) )
+        && 0 == memcmp( &pfmp->Pdbfilehdr()->signLog, &signLogCheck, sizeof(SIGNATURE) ) )
     {
 #if 0
         //  UNDONE: This logic detects if we are trying to detect a database that

@@ -2398,8 +2398,8 @@ class CApproximateIndex
         typename CBucket::ID _IdFromKey( const CKey& key ) const;
         CKey _KeyFromId( const typename CBucket::ID id ) const;
         typename CBucket::ID _DeltaId( const typename CBucket::ID id, const LONG did ) const;
-        LONG _SubId( const typename CBucket::ID id1, typename const CBucket::ID id2 ) const;
-        LONG _CmpId( const typename CBucket::ID id1, typename const CBucket::ID id2 ) const;
+        LONG _SubId( const typename CBucket::ID id1, const typename CBucket::ID id2 ) const;
+        LONG _CmpId( const typename CBucket::ID id1, const typename CBucket::ID id2 ) const;
         CInvasiveContext* _PicFromPentry( CEntry* const pentry ) const;
         BOOL _FExpandIdRange( const typename CBucket::ID idNew );
 
@@ -2478,9 +2478,9 @@ ErrInit(    const CKey      dkeyPrecision,
 
     //  init our parameters
 
-    const CBucket::ID cbucketHashMin = ( dblSpeedSizeTradeoff == 99.9 ) ?
-                                        CBucket::ID( 64 ) :  //  MAXIMUM_PROCESSORS for largest OS
-                                        CBucket::ID( ( 1.0 - dblSpeedSizeTradeoff ) * OSSyncGetProcessorCount() );
+    const typename CBucket::ID cbucketHashMin = ( dblSpeedSizeTradeoff == 99.9 ) ?
+                                        typename CBucket::ID( 64 ) :  //  MAXIMUM_PROCESSORS for largest OS
+                                        typename CBucket::ID( ( 1.0 - dblSpeedSizeTradeoff ) * OSSyncGetProcessorCount() );
 
     CKey maskKey;
     for (   m_shfKeyPrecision = 0, maskKey = 0;
@@ -2494,17 +2494,17 @@ ErrInit(    const CKey      dkeyPrecision,
     {
     }
     for (   m_shfBucketHash = 0, m_maskBucketPtr = 0;
-            cbucketHashMin > CBucket::ID( 1 ) << m_shfBucketHash && m_shfBucketHash < sizeof( CBucket::ID ) * 8;
-            m_maskBucketPtr |= CBucket::ID( 1 ) << m_shfBucketHash++ )
+            cbucketHashMin > typename CBucket::ID( 1 ) << m_shfBucketHash && m_shfBucketHash < sizeof( typename CBucket::ID ) * 8;
+            m_maskBucketPtr |= typename CBucket::ID( 1 ) << m_shfBucketHash++ )
     {
     }
 
-    m_maskBucketKey = CBucket::ID( maskKey >> m_shfKeyUncertainty );
+    m_maskBucketKey = typename CBucket::ID( maskKey >> m_shfKeyUncertainty );
 
-    m_shfFillMSB = sizeof( CBucket::ID ) * 8 - m_shfKeyPrecision + m_shfKeyUncertainty - m_shfBucketHash;
+    m_shfFillMSB = sizeof( typename CBucket::ID ) * 8 - m_shfKeyPrecision + m_shfKeyUncertainty - m_shfBucketHash;
     m_shfFillMSB = max( m_shfFillMSB, 0 );
 
-    m_maskBucketID = ( ~CBucket::ID( 0 ) ) >> m_shfFillMSB;
+    m_maskBucketID = ( ~typename CBucket::ID( 0 ) ) >> m_shfFillMSB;
 
     //  if our parameters leave us with too much or too little precision for
     //  our bucket IDs, fail.  "too much" precision would allow our bucket IDs
@@ -2515,21 +2515,21 @@ ErrInit(    const CKey      dkeyPrecision,
     //  NOTE:  we check for hash efficiency in the worst case so that we don't
     //  suddenly return errInvalidParameter on some new monster machine
 
-    const CBucket::ID cbucketHashMax = CBucket::ID( sizeof( void* ) * 8 );  //  MAXIMUM_PROCESSORS
+    const typename CBucket::ID cbucketHashMax = typename CBucket::ID( sizeof( void* ) * 8 );  //  MAXIMUM_PROCESSORS
 
     LONG shfBucketHashMax;
     for (   shfBucketHashMax = 0;
-            cbucketHashMax > CBucket::ID( 1 ) << shfBucketHashMax && shfBucketHashMax < sizeof( CBucket::ID ) * 8;
+            cbucketHashMax > typename CBucket::ID( 1 ) << shfBucketHashMax && shfBucketHashMax < sizeof( typename CBucket::ID ) * 8;
             shfBucketHashMax++ )
     {
     }
 
     LONG shfFillMSBMin;
-    shfFillMSBMin = sizeof( CBucket::ID ) * 8 - m_shfKeyPrecision + m_shfKeyUncertainty - shfBucketHashMax;
+    shfFillMSBMin = sizeof( typename CBucket::ID ) * 8 - m_shfKeyPrecision + m_shfKeyUncertainty - shfBucketHashMax;
     shfFillMSBMin = max( shfFillMSBMin, 0 );
 
     if (    shfFillMSBMin < 0 ||
-            shfFillMSBMin > LONG( sizeof( CBucket::ID ) * 8 - shfBucketHashMax ) )
+            shfFillMSBMin > LONG( sizeof( typename CBucket::ID ) * 8 - shfBucketHashMax ) )
     {
         return ERR::errInvalidParameter;
     }
@@ -2729,9 +2729,9 @@ template< class CKey, class CEntry, PfnOffsetOf OffsetOfIC >
 inline CKey CApproximateIndex< CKey, CEntry, OffsetOfIC >::
 KeyInsertLeast() const
 {
-    const CBucket::ID cBucketHash = 1 << m_shfBucketHash;
+    const typename CBucket::ID cBucketHash = 1 << m_shfBucketHash;
 
-    CBucket::ID idFirstLeast = m_idRangeLast - m_didRangeMost;
+    typename CBucket::ID idFirstLeast = m_idRangeLast - m_didRangeMost;
     idFirstLeast = idFirstLeast + ( cBucketHash - idFirstLeast % cBucketHash ) % cBucketHash;
 
     return _KeyFromId( idFirstLeast );
@@ -2745,9 +2745,9 @@ template< class CKey, class CEntry, PfnOffsetOf OffsetOfIC >
 inline CKey CApproximateIndex< CKey, CEntry, OffsetOfIC >::
 KeyInsertMost() const
 {
-    const CBucket::ID cBucketHash = 1 << m_shfBucketHash;
+    const typename CBucket::ID cBucketHash = 1 << m_shfBucketHash;
 
-    CBucket::ID idLastMost = m_idRangeFirst + m_didRangeMost;
+    typename CBucket::ID idLastMost = m_idRangeFirst + m_didRangeMost;
     idLastMost = idLastMost - ( idLastMost + 1 ) % cBucketHash;
 
     return _KeyFromId( idLastMost );
@@ -3200,8 +3200,8 @@ _IdFromKeyPtr( const CKey& key, CEntry* const pentry ) const
     //  an entry due to a key change yet we need some property of the entry
     //  over which we can reproducibly hash
 
-    const CBucket::ID   iBucketKey      = CBucket::ID( key >> m_shfKeyUncertainty );
-    const CBucket::ID   iBucketPtr      = CBucket::ID( LONG_PTR( pentry ) / LONG_PTR( sizeof( CEntry ) ) );
+    const typename CBucket::ID   iBucketKey      = typename CBucket::ID( key >> m_shfKeyUncertainty );
+    const typename CBucket::ID   iBucketPtr      = typename CBucket::ID( LONG_PTR( pentry ) / LONG_PTR( sizeof( CEntry ) ) );
 
     return ( ( iBucketKey & m_maskBucketKey ) << m_shfBucketHash ) + ( iBucketPtr & m_maskBucketPtr );
 }
@@ -3230,7 +3230,7 @@ template< class CKey, class CEntry, PfnOffsetOf OffsetOfIC >
 inline typename CApproximateIndex< CKey, CEntry, OffsetOfIC >::CBucket::ID CApproximateIndex< CKey, CEntry, OffsetOfIC >::
 _DeltaId( const typename CBucket::ID id, const LONG did ) const
 {
-    return ( id + CBucket::ID( did ) ) & m_maskBucketID;
+    return ( id + typename CBucket::ID( did ) ) & m_maskBucketID;
 }
 
 //  performs a wrap-around insensitive subtraction of two bucket IDs
@@ -3247,7 +3247,7 @@ _SubId( const typename CBucket::ID id1, const typename CBucket::ID id2 ) const
 
     //  munge the result back into the same scale as the bucket IDs
 
-    return CBucket::ID( ( lid1 - lid2 ) >> m_shfFillMSB );
+    return typename CBucket::ID( ( lid1 - lid2 ) >> m_shfFillMSB );
 }
 
 //  performs a wrap-around insensitive comparison of two bucket IDs
@@ -3287,8 +3287,8 @@ _FExpandIdRange( const typename CBucket::ID idNew )
     //  fetch the current ID range
 
     const LONG          cidRange    = m_cidRange;
-    const CBucket::ID   idFirst     = m_idRangeFirst;
-    const CBucket::ID   idLast      = m_idRangeLast;
+    const typename CBucket::ID   idFirst     = m_idRangeFirst;
+    const typename CBucket::ID   idLast      = m_idRangeLast;
     const LONG          didRange    = _SubId( idLast, idFirst );
 
     COLLAssert( didRange >= 0 );
@@ -3327,8 +3327,8 @@ _FExpandIdRange( const typename CBucket::ID idNew )
     //  idFirst == idLast.  we have added special logic to handle these
     //  cases correctly
 
-    const CBucket::ID   idFirstMic  = _DeltaId( idFirst, -( m_didRangeMost - didRange + 1 ) );
-    const CBucket::ID   idLastMax   = _DeltaId( idLast, m_didRangeMost - didRange + 1 );
+    const typename CBucket::ID   idFirstMic  = _DeltaId( idFirst, -( m_didRangeMost - didRange + 1 ) );
+    const typename CBucket::ID   idLastMax   = _DeltaId( idLast, m_didRangeMost - didRange + 1 );
 
     //  if the new bucket ID is already part of this ID range, no change
     //  is needed
@@ -3352,8 +3352,8 @@ _FExpandIdRange( const typename CBucket::ID idNew )
 
     //  compute the new ID range including this new bucket ID
 
-    CBucket::ID idFirstNew  = idFirst;
-    CBucket::ID idLastNew   = idLast;
+    typename CBucket::ID idFirstNew  = idFirst;
+    typename CBucket::ID idLastNew   = idLast;
 
     if ( _CmpId( idFirstMic, idNew ) < 0 && _CmpId( idNew, idFirst ) < 0 )
     {
@@ -3739,32 +3739,32 @@ _ErrMovePrev( CLock* const plock )
                                                                         \
 typedef CApproximateIndex< CKey, CEntry, OffsetOfIC > Typedef;          \
                                                                         \
-inline ULONG_PTR Typedef::CBucketTable::CKeyEntry::                     \
-Hash( const CBucket::ID& id )                                           \
+template<> inline ULONG_PTR Typedef::CBucketTable::CKeyEntry::          \
+Hash( const typename Typedef::CBucket::ID& id )                                  \
 {                                                                       \
     return id;                                                          \
 }                                                                       \
                                                                         \
-inline ULONG_PTR Typedef::CBucketTable::CKeyEntry::                     \
+template<> inline ULONG_PTR Typedef::CBucketTable::CKeyEntry::          \
 Hash() const                                                            \
 {                                                                       \
     return m_entry.m_id;                                                \
 }                                                                       \
                                                                         \
-inline BOOL Typedef::CBucketTable::CKeyEntry::                          \
-FEntryMatchesKey( const CBucket::ID& id ) const                         \
+template<> inline BOOL Typedef::CBucketTable::CKeyEntry::               \
+FEntryMatchesKey( const typename Typedef::CBucket::ID& id ) const                \
 {                                                                       \
     return m_entry.m_id == id;                                          \
 }                                                                       \
                                                                         \
-inline void Typedef::CBucketTable::CKeyEntry::                          \
-SetEntry( const CBucket& bucket )                                       \
+template<> inline void Typedef::CBucketTable::CKeyEntry::               \
+SetEntry( const Typedef::CBucket& bucket )                              \
 {                                                                       \
     m_entry = bucket;                                                   \
 }                                                                       \
                                                                         \
-inline void Typedef::CBucketTable::CKeyEntry::                          \
-GetEntry( CBucket* const pbucket ) const                                \
+template<> inline void Typedef::CBucketTable::CKeyEntry::               \
+GetEntry( Typedef::CBucket* const pbucket ) const                       \
 {                                                                       \
     *pbucket = m_entry;                                                 \
 }
@@ -4984,7 +4984,7 @@ template< class CKey, class CEntry >
 inline typename CTable< CKey, CEntry >::ERR CTable< CKey, CEntry >::
 ErrLoad( const size_t centry, const CEntry* const rgentry )
 {
-    CArray< CKeyEntry >::ERR    err         = CArray< CKeyEntry >::ERR::errSuccess;
+    typename CArray< CKeyEntry >::ERR    err         = CArray< CKeyEntry >::ERR::errSuccess;
     size_t                      ientry      = 0;
     size_t                      ientryMin   = Size();
     size_t                      ientryMax   = Size() + centry;
@@ -5012,7 +5012,7 @@ template< class CKey, class CEntry >
 inline typename CTable< CKey, CEntry >::ERR CTable< CKey, CEntry >::
 ErrClone( const CTable& table )
 {
-    CArray< CKeyEntry >::ERR err = CArray< CKeyEntry >::ERR::errSuccess;
+    typename CArray< CKeyEntry >::ERR err = CArray< CKeyEntry >::ERR::errSuccess;
 
     if ( ( err = m_arrayKeyEntry.ErrClone( table.m_arrayKeyEntry ) ) != CArray< CKeyEntry >::ERR::errSuccess )
     {
@@ -5030,7 +5030,7 @@ template< class CKey, class CEntry >
 inline typename CTable< CKey, CEntry >::ERR CTable< CKey, CEntry >::
 ErrCloneArray(  const CArray< CEntry >& array )
 {
-    CArray< CKeyEntry >::ERR    err             = CArray< CKeyEntry >::ERR::errSuccess;
+    typename CArray< CKeyEntry >::ERR    err             = CArray< CKeyEntry >::ERR::errSuccess;
     const CArray< CKeyEntry >&  arrayKeyEntry   = reinterpret_cast< const CArray< CKeyEntry >& >( array );
 
     if ( ( err = m_arrayKeyEntry.ErrClone( arrayKeyEntry ) ) != CArray< CKeyEntry >::ERR::errSuccess )
@@ -5082,7 +5082,7 @@ template< class CKey, class CEntry >
 inline void CTable< CKey, CEntry >::
 Clear()
 {
-    CArray< CKeyEntry >::ERR err = m_arrayKeyEntry.ErrSetCapacity(0);
+    typename CArray< CKeyEntry >::ERR err = m_arrayKeyEntry.ErrSetCapacity(0);
     COLLAssert( err == CArray< CKeyEntry >::ERR::errSuccess );
 }
 
@@ -5549,6 +5549,7 @@ inline CStupidQueue::ERR CStupidQueue::ErrAdjustSize( void )
 
     DWORD cNew = m_cAlloc * mGrowth;
     void * rgNew = NULL;
+    DWORD iT = 0;
     if ( NULL == ( rgNew = malloc( m_cbElement * cNew ) ) )
     {
         err = ERR::errOutOfMemory;
@@ -5562,11 +5563,11 @@ inline CStupidQueue::ERR CStupidQueue::ErrAdjustSize( void )
     m_cAlloc = cNew;
     m_rg = rgNew;
 
-    //  So we're not quite right yet ... move front part (from 0 to iTail+1) of 
-    //  queue into newly allocated last half ... 
+    //  So we're not quite right yet ... move front part (from 0 to iTail+1) of
+    //  queue into newly allocated last half ...
     //      Note slightly inefficient O(1.5n) instead of O(n), more cunning coding
     //      could avoid this...
-    DWORD iT = ( m_iTail + 1 ) % ( m_cAlloc / mGrowth );
+    iT = ( m_iTail + 1 ) % ( m_cAlloc / mGrowth );
     if ( iT != 0 )
     {
         memcpy( PvElement( m_cAlloc / mGrowth ), PvElement( 0 ), iT * m_cbElement );
@@ -5861,7 +5862,7 @@ SOMEONEPOST_CHECKIN RedBlackTree renames to match style of collection.hxx
         o is calling the CObject * Pnode here ... I think in various places it's pic vs. pentry ...
  o consider
     static RedBlackTreeNode* ICToNode( typename BaseType::InvasiveContext* pic ) { return (RedBlackTreeNode*) ( ( (BYTE*) pic ) - OffsetOfRedBlackTreeIC() ); }
-    static const RedBlackTreeNode* ICToNode( const typename BaseType::InvasiveContext* const pic ) { return ICToNode( const_cast<BaseType::InvasiveContext*>( pic ) ); }
+    static const RedBlackTreeNode* ICToNode( const typename BaseType::InvasiveContext* const pic ) { return ICToNode( const_cast<typename BaseType::InvasiveContext*>( pic ) ); }
  o try to move RedBlackTreeColor into InvasiveRedBlackTree
  o errDuplicateEntry -> errKeyDuplicate
  o fix comment style
@@ -6797,7 +6798,7 @@ public:
 
 private:
     static CRedBlackTreeNode* ICToNode( typename BaseType::InvasiveContext* pic ) { return (CRedBlackTreeNode*) ( ( (BYTE*) pic ) - OffsetOfRedBlackTreeIC() ); }
-    static const CRedBlackTreeNode* ICToNode( const typename BaseType::InvasiveContext* const pic ) { return ICToNode( const_cast<BaseType::InvasiveContext*>( pic ) ); }
+    static const CRedBlackTreeNode* ICToNode( const typename BaseType::InvasiveContext* const pic ) { return ICToNode( const_cast<typename BaseType::InvasiveContext*>( pic ) ); }
 
 private:    // member variables
     typename BaseType::InvasiveContext  m_icRedBlackTree;
@@ -6973,7 +6974,7 @@ void CRedBlackTree<KEY, DATA>::MakeEmpty()
     if ( m_irbtBase.PnodeRoot() != NULL )
     {
         Node* pnodeRoot = const_cast<Node*>( m_irbtBase.PnodeRoot() );
-        BaseType::InvasiveContext* picRoot = ( BaseType::InvasiveContext* ) ( ( (BYTE*) pnodeRoot ) + Node::OffsetOfRedBlackTreeIC() );
+        typename BaseType::InvasiveContext* picRoot = ( typename BaseType::InvasiveContext* ) ( ( (BYTE*) pnodeRoot ) + Node::OffsetOfRedBlackTreeIC() );
 
         MakeEmpty_( pnodeRoot->PnodeLeft() );
         MakeEmpty_( pnodeRoot->PnodeRight() );

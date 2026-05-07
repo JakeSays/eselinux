@@ -155,7 +155,7 @@ protected:
 public:
     virtual ~IDBMScanReader() {}
 
-    virtual ERR InitDBMScanReader() = NULL;
+    virtual ERR InitDBMScanReader() = 0;
 
     // issue a preread for a set of pages
     virtual void PrereadPages( const PGNO pgnoFirst, const CPG cpg ) = 0;

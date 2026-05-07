@@ -234,8 +234,8 @@ class CFlushMap
             //  671 bytes
 
             // Flag masks.
-            static const ULONG fClean                   = 0x00000001;   // Whether or not the flush map is clean.
-            static const ULONG fPageNewChecksumFormat   = 0x00002000;   // ECC checksum flag.
+            static constexpr ULONG fClean                   = 0x00000001;   // Whether or not the flush map is clean.
+            static constexpr ULONG fPageNewChecksumFormat   = 0x00002000;   // ECC checksum flag.
 
             // Constructor.
             FMFILEHDR() :

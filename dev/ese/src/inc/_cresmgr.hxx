@@ -301,7 +301,7 @@ public:
 #ifdef DEBUG
     friend VOID ::AssertValid( JET_RESID, const VOID * const );
 #endif  //  DEBUG
-    friend CResource::FCallingProgramPassedValidJetHandle( const JET_RESID, const VOID * const );
+    friend BOOL CResource::FCallingProgramPassedValidJetHandle( const JET_RESID, const VOID * const );
 
 #ifdef MEM_CHECK
     enum    { RCI_Free = 0x0, RCI_InLA = 0x1, RCI_Allocated = 0x2 };

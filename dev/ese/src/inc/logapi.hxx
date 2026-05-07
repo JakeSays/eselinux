@@ -446,7 +446,7 @@ class LRSCRUB
         LRSCRUB() : LRNODE_( sizeof( *this ) ) { }
     
     private:
-        static const ULONG m_fLRScrubUnusedPage     = 0x1;
+        static constexpr ULONG m_fLRScrubUnusedPage = 0x1;
         
     public:
         INLINE USHORT CbData() const                        { return mle_cbData; }
@@ -741,11 +741,11 @@ template< typename TDelta >
 struct LRDELTA_TRAITS
 {
     static_assert( sizeof( TDelta ) == -1, "Specialize LRDELTA_TRAITS to map an lrtyp to a specific LRDELTA." );    // sizeof( TDelta) == -1 forces the static_assert evaluation to happen at template instantiation
-    static const LRTYP lrtyp = lrtypNOP;
+    static constexpr LRTYP lrtyp = lrtypNOP;
 };
 
-template<> struct LRDELTA_TRAITS< LONG >            { static const LRTYP lrtyp = lrtypDelta; }; // preserve LRDELTA32 == original LRDELTA log record
-template<> struct LRDELTA_TRAITS< LONGLONG >        { static const LRTYP lrtyp = lrtypDelta64; };
+template<> struct LRDELTA_TRAITS< LONG >            { static constexpr LRTYP lrtyp = lrtypDelta; }; // preserve LRDELTA32 == original LRDELTA log record
+template<> struct LRDELTA_TRAITS< LONGLONG >        { static constexpr LRTYP lrtyp = lrtypDelta64; };
 
 PERSISTED
 template< typename TDelta >
@@ -1666,8 +1666,8 @@ class LRCREATEDB
         INLINE BOOL FSparseEnabledFile() const                  { return !!( m_fLRCreateDbFlags & fLRCreateDbSparseEnabledFile ); }
         INLINE VOID SetFSparseEnabledFile()                     { m_fLRCreateDbFlags = BYTE( m_fLRCreateDbFlags | fLRCreateDbSparseEnabledFile ); }
 
-        INLINE USHORT UsVersion() const                     { return ( FVersionInfo() ? ( (VersionInfo *)m_rgb )->mle_usVersion : 0 ); }
-        INLINE USHORT UsUpdateMajor() const                     { return ( FVersionInfo() ? ( (VersionInfo *)m_rgb )->mle_usUpdateMajor : 0 ); }
+        INLINE USHORT UsVersion() const                     { return ( FVersionInfo() ? USHORT( ( (VersionInfo *)m_rgb )->mle_usVersion ) : USHORT( 0 ) ); }
+        INLINE USHORT UsUpdateMajor() const                     { return ( FVersionInfo() ? USHORT( ( (VersionInfo *)m_rgb )->mle_usUpdateMajor ) : USHORT( 0 ) ); }
 
         INLINE VOID GetNames( __out_bcount(cbAttach-sizeof(ATTACHINFO)) CHAR * const szNames )
                                                             { memcpy( szNames, (CHAR *)( (CHAR *)m_rgb + ( FVersionInfo() ? sizeof(VersionInfo) : 0 ) ), min( CbPath(), cbAttach-sizeof( ATTACHINFO ) ) ); }
@@ -2722,9 +2722,15 @@ ERR ErrLGDelta( const FUCB      *pfucb,
                 const BOOL      fDirtyCSR );    // true - if we must dirty the page inside (in which case dbtime before is in the CSR
                                                 // false - record dbtimeInvalid for dbtimeBefore (insert part of split operations)
 
-// Explicitly instantiatiate the only allowed legal instances of this template
+// Explicit instantiations: MSVC accepts here, clang requires `extern template`
+// here with the actual instantiation paired in the .cxx that defines the body.
+#ifdef _MSC_VER
 template ERR ErrLGDelta<LONG>( const FUCB *pfucb, CSR *pcsr, const BOOKMARK& bm, INT cbOffset, LONG delta, RCEID rceid, DIRFLAG dirflag, LGPOS *plgpos, const BOOL fDirtyCSR );
 template ERR ErrLGDelta<LONGLONG>( const FUCB *pfucb, CSR *pcsr, const BOOKMARK& bm, INT cbOffset, LONGLONG delta, RCEID rceid, DIRFLAG dirflag, LGPOS *plgpos, const BOOL fDirtyCSR );
+#else
+extern template ERR ErrLGDelta<LONG>( const FUCB *pfucb, CSR *pcsr, const BOOKMARK& bm, INT cbOffset, LONG delta, RCEID rceid, DIRFLAG dirflag, LGPOS *plgpos, const BOOL fDirtyCSR );
+extern template ERR ErrLGDelta<LONGLONG>( const FUCB *pfucb, CSR *pcsr, const BOOKMARK& bm, INT cbOffset, LONGLONG delta, RCEID rceid, DIRFLAG dirflag, LGPOS *plgpos, const BOOL fDirtyCSR );
+#endif
 
 ERR ErrLGSetExternalHeader(
     const FUCB* pfucb,

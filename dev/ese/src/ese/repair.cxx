@@ -2687,7 +2687,7 @@ LOCAL VOID REPAIRCheckIndexColumnsOldFormat(
             break;
         }
 
-        const FID fid = ( rgidxseg[iidxseg] < 0 )  ? FID( -rgidxseg[iidxseg] ) : rgidxseg[iidxseg];
+        const FID fid = ( rgidxseg[iidxseg] < 0 )  ? FID( -rgidxseg[iidxseg] ) : (FID)rgidxseg[iidxseg];
         const INFOLIST  * pinfolistT = NULL;
 
         pinfolistT = pTemplateColInfo;

@@ -2335,6 +2335,13 @@ ERR ErrLGDelta( const FUCB      *pfucb,
     return err;
 }
 
+// Explicit instantiation definitions paired with `extern template` in
+// logapi.hxx (non-MSVC arm).
+#ifndef _MSC_VER
+template ERR ErrLGDelta<LONG>( const FUCB *pfucb, CSR *pcsr, const BOOKMARK& bm, INT cbOffset, LONG delta, RCEID rceid, DIRFLAG dirflag, LGPOS *plgpos, const BOOL fDirtyCSR );
+template ERR ErrLGDelta<LONGLONG>( const FUCB *pfucb, CSR *pcsr, const BOOKMARK& bm, INT cbOffset, LONGLONG delta, RCEID rceid, DIRFLAG dirflag, LGPOS *plgpos, const BOOL fDirtyCSR );
+#endif
+
         //**************************************************
         //     Transaction Operations
         //**************************************************
@@ -4667,7 +4674,7 @@ ERR ErrLGLogBackup(
 
     rgdata[0].SetPv( (BYTE *)&lr );
     rgdata[0].SetCb( sizeof(lr) );
-    rgdata[1].SetPv( reinterpret_cast<BYTE *>( L"" ) );
+    rgdata[1].SetPv( const_cast<BYTE *>( reinterpret_cast<const BYTE *>( L"" ) ) );
     rgdata[1].SetCb( lr.le_cbPath );
 
     return plog->ErrLGLogRec( rgdata, 2, fLGFlags, 0, plgposLogRec );
@@ -5646,7 +5653,7 @@ And here was the list of the log file after recovery
     pChangeInfo[cLogRecordsCsvFormats].dbid         = dbidIn;
 
     Assert( lrtypMax > plr->lrtyp );
-    const CHAR * szLRTyp = SzLrtyp( (plr->lrtyp >= lrtypMax) ? lrtypMax : plr->lrtyp );
+    const CHAR * szLRTyp = SzLrtyp( (plr->lrtyp >= lrtypMax) ? lrtypMax : (LRTYP)plr->lrtyp );
 
 #define UlChecksumSimpleLR( plrVar )   LGChecksum::UlChecksumBytes( (BYTE*) (plrVar), ((BYTE*)(plrVar))+sizeof(*(plrVar)), ulCkSumSeed )
 
@@ -7572,7 +7579,7 @@ VOID LrToSz(
                 ERR errT = ErrDownConvertName( (WCHAR*)wszName, szName, sizeof(szName) );
                 Assert( errT >= JET_errSuccess );
 
-                CHAR * szLossy = ( wrnLossy == errT ) ? szLossyUnicodePath : "";
+                const CHAR * szLossy = ( wrnLossy == errT ) ? szLossyUnicodePath : "";
 
                 OSStrCbFormatA( rgchBuf, sizeof(rgchBuf), " (%x,%hs%hs,%u)", (PROCID)plrcreatedb->le_procid, szName, szLossy, (USHORT)plrcreatedb->dbid );
                 OSStrCbAppendA( szLR, cbLR, rgchBuf );
@@ -7628,7 +7635,7 @@ VOID LrToSz(
                 ERR errT = ErrDownConvertName( (WCHAR*)wszName, szName, sizeof(szName) );
                 Assert( errT >= JET_errSuccess );
 
-                CHAR * szLossy = ( wrnLossy == errT ) ? szLossyUnicodePath : "";
+                const CHAR * szLossy = ( wrnLossy == errT ) ? szLossyUnicodePath : "";
 
                 OSStrCbFormatA( rgchBuf, sizeof(rgchBuf), " (%x,%hs%hs,%u)", (PROCID)plrattachdb->le_procid, szName, szLossy, (USHORT) plrattachdb->dbid );
                 OSStrCbAppendA( szLR, cbLR, rgchBuf );
@@ -7677,7 +7684,7 @@ VOID LrToSz(
                 ERR errT = ErrDownConvertName( (WCHAR*)wszName, szName, sizeof(szName) );
                 Assert( errT >= JET_errSuccess );
 
-                CHAR * szLossy = ( wrnLossy == errT ) ? szLossyUnicodePath : "";
+                const CHAR * szLossy = ( wrnLossy == errT ) ? szLossyUnicodePath : "";
 
                 OSStrCbFormatA( rgchBuf, sizeof(rgchBuf), " (%x,%hs%hs,%u)", (PROCID)plrdetachdb->le_procid, szName, szLossy, (USHORT)plrdetachdb->dbid );
             }

@@ -65,7 +65,7 @@ class CHashedLRUKCacheHeader : CBlockCacheHeaderHelpers  // ch
         QWORD IcbwcHash() const { return m_le_icbwcHash; }
         QWORD IcbwcJournal() const { return m_le_icbwcJournal; }
 
-        QWORD CbMaxConfigured() const { return m_le_cbMaxConfigured ? m_le_cbMaxConfigured : IbClustersJournal() + CbClustersJournal(); }
+        QWORD CbMaxConfigured() const { return m_le_cbMaxConfigured ? (QWORD)m_le_cbMaxConfigured : IbClustersJournal() + CbClustersJournal(); }
 
         ERR ErrDump( _In_ CPRINTF* const pcprintf );
 

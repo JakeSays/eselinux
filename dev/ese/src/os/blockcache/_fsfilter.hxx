@@ -2162,16 +2162,19 @@ void TFileSystemFilter<I>::TermFilePathTable()
 template< class I >
 const WCHAR TFileSystemFilter<I>::c_wszFileEverEligibleForCaching[] = L":788638d4-9b8c-4518-99a6-2512769b1676";
 
+template<>
 INLINE typename CFilePathHash::NativeCounter CFilePathHash::CKeyEntry::Hash( const CFilePathHashKey& key )
 {
     return CFilePathHash::NativeCounter( key.UiHash() );
 }
 
+template<>
 INLINE typename CFilePathHash::NativeCounter CFilePathHash::CKeyEntry::Hash() const
 {
     return CFilePathHash::NativeCounter( m_entry.UiHash() );
 }
 
+template<>
 INLINE BOOL CFilePathHash::CKeyEntry::FEntryMatchesKey( const CFilePathHashKey& key ) const
 {
     if ( m_entry.UiHash() != key.UiHash() )
@@ -2187,11 +2190,13 @@ INLINE BOOL CFilePathHash::CKeyEntry::FEntryMatchesKey( const CFilePathHashKey& 
     return fTrue;
 }
 
+template<>
 INLINE void CFilePathHash::CKeyEntry::SetEntry( const CFilePathHashEntry& entry )
 {
     m_entry = entry;
 }
 
+template<>
 INLINE void CFilePathHash::CKeyEntry::GetEntry( CFilePathHashEntry * const pentry ) const
 {
     *pentry = m_entry;

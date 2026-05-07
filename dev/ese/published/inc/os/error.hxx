@@ -36,7 +36,9 @@ BOOL IsDebuggerAttached();
 //  Build Options
 //
 
-#define ENABLE_EXCEPTIONS           //  enable exception handling
+#ifdef _MSC_VER
+#define ENABLE_EXCEPTIONS           //  enable SEH __try/__except (MSVC only)
+#endif
 
 #ifdef DEBUG
 

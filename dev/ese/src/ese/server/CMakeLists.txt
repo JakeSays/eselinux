@@ -11,28 +11,36 @@ add_custom_command(
         gen_jetapitable
 )
 
-add_custom_command(
-    OUTPUT
-        ${GEN_OUTPUT_DIRECTORY}/ese/server/ese.def
-    COMMAND
-        cl /nologo /c /DLIBNAME=ESE /DDEBUGGER_EXTENSION /EP /Tc ${ESE_DEV}/src/ese/esent.def > ${GEN_OUTPUT_DIRECTORY}/ese/server/ese.def
-    DEPENDS
-        ${ESE_DEV}/src/ese/esent.def
-)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    add_custom_command(
+        OUTPUT
+            ${GEN_OUTPUT_DIRECTORY}/ese/server/ese.def
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${GEN_OUTPUT_DIRECTORY}/ese/server/
+        COMMAND
+            cl /nologo /c /DLIBNAME=ESE /DDEBUGGER_EXTENSION /EP /Tc ${ESE_DEV}/src/ese/esent.def > ${GEN_OUTPUT_DIRECTORY}/ese/server/ese.def
+        DEPENDS
+            ${ESE_DEV}/src/ese/esent.def
+    )
+endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Using Microsoft Visual C++
 
     # See documentation for C2712
     string(REPLACE "/EHsc" "/EHs-c-" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    set(_ese_def_source ${GEN_OUTPUT_DIRECTORY}/ese/server/ese.def)
+    set(_ese_rc_source ../ese.rc)
+else()
+    set(_ese_def_source )
+    set(_ese_rc_source )
 endif()
 
 # NOTE: `ese` is a shared library (a DLL), not a static one
 add_library(ese SHARED
-    ${GEN_OUTPUT_DIRECTORY}/ese/server/ese.def
+    ${_ese_def_source}
     ${GEN_OUTPUT_DIRECTORY}/ese/jetapitable.cxx
     ${ESE_SOURCES}
-    ../ese.rc
+    ${_ese_rc_source}
     ../std.cxx
 )
 
@@ -40,6 +48,17 @@ set_target_properties(ese
     PROPERTIES
     DEFINE_SYMBOL "ESE"
 )
+
+if (NOT WIN32)
+    # Drop the project-wide -fvisibility=hidden for the ese shared library:
+    # eseutil/devlibtest link directly against libese.so for the Jet API
+    # exports plus a long tail of engine internals (UtilReportEvent,
+    # FOSRMPreinit, the column-iterator vtables, ...) that the OS layer
+    # references. Without this, only operator new/delete end up visible.
+    # On Windows the same role is played by esent.def, which we don't have
+    # a Linux equivalent of yet.
+    target_compile_options(ese PRIVATE -fvisibility=default)
+endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Using Microsoft Visual C++
@@ -55,9 +74,33 @@ target_precompile_headers(ese PRIVATE
     ../std.hxx
 )
 
-target_link_libraries(ese PRIVATE
-    ${ESE_LIBRARIES}
-)
+if (WIN32)
+    target_link_libraries(ese PRIVATE
+        ${ESE_LIBRARIES}
+    )
+else ()
+    # Wrap the OS-layer + sync archives in --whole-archive so every member
+    # ends up in libese.so even if libese.so itself doesn't reference it.
+    # eseutil is a pure consumer of libese.so on Linux (we deliberately do
+    # not link osposix into eseutil to avoid duplicating OS-layer state),
+    # so the OS layer's full surface — FindNextFileW, DeviceIoControl,
+    # wcscat_s, ... — has to be reachable through libese.so. The other
+    # static libs (lib_log, lib_osu, ...) only need on-demand inclusion.
+    target_link_libraries(ese PRIVATE
+        dht
+        _errstr
+        _xpress
+        _perfctrs
+        _log
+        _osu
+        checksum
+        checksum_avx
+        -Wl,--whole-archive
+        sync
+        osposix
+        -Wl,--no-whole-archive
+    )
+endif ()
 
 target_include_directories(ese PRIVATE
     ${GEN_OUTPUT_DIRECTORY}/_res/

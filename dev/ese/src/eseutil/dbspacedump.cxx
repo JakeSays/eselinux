@@ -637,7 +637,7 @@ VOID PrintHisto(
     {
         CHITS hits = 0;
         CStats::ERR csErr;
-        WCHAR * szSep = ( iDiv == ( cDivisions - 1 ) ) ? L"" : L",";
+        const WCHAR * szSep = ( iDiv == ( cDivisions - 1 ) ) ? L"" : L",";
         if ( pStats &&
                 ( CStats::ERR::errSuccess == ( csErr = pStats->ErrGetSampleHits( rgDivisions[iDiv], &hits ) ) )
             )

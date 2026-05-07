@@ -1604,7 +1604,7 @@ BOOL FBTLogicallyNavigableState( const FUCB * const pfucb )
     if ( !PinstFromPfucb( pfucb )->m_plog->FRecovering() ||                             //  during do-time we're fine
          fRecoveringRedo != PinstFromPfucb( pfucb )->m_plog->FRecoveringMode() ||   //  or during undo-time as well
          !g_rgfmp[ pfucb->ifmp ].FContainsDataFromFutureLogs() ||
-         g_rgfmp[ pfucb->ifmp ].m_fCreatingDB )                                       //  and finally during create DB
+         g_rgfmp[ pfucb->ifmp ].FCreatingDB() )                                       //  and finally during create DB
     {
         return fTrue;
     }
@@ -5657,6 +5657,13 @@ HandleError:
     BTUp( pfucb );
     return err;
 }
+
+// Explicit instantiation definitions paired with `extern template` in bt.hxx
+// (non-MSVC arm).
+#ifndef _MSC_VER
+template ERR ErrBTDelta<LONG>( FUCB *pfucb, INT cbOffset, const LONG delta, LONG *const pOldValue, DIRFLAG dirflag );
+template ERR ErrBTDelta<LONGLONG>( FUCB *pfucb, INT cbOffset, const LONGLONG delta, LONGLONG *const pOldValue, DIRFLAG dirflag );
+#endif
 
 //  inserts key and data into tree
 //  if inserted node does not fit into leaf page, split page and insert
@@ -16466,7 +16473,7 @@ VOID BTIChangeKeyOfPagePointer( FUCB *pfucb, CSR *pcsr, const KEY& key )
     Assert( sizeof( PGNO ) == pfucb->kdfCurr.data.Cb() );
     Assert( !pfucb->kdfCurr.key.FNull() );
 
-    LittleEndian<PGNO>  le_pgno = *((UnalignedLittleEndian< PGNO > *) pfucb->kdfCurr.data.Pv() );
+    LittleEndian<PGNO>  le_pgno = (PGNO)( *((UnalignedLittleEndian< PGNO > *) pfucb->kdfCurr.data.Pv() ) );
     Assert( le_pgno != pgnoNull );
 
     //  delete node and re-insert with given key

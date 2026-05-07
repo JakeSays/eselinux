@@ -34,6 +34,31 @@ typedef __nullterminated const wchar_t* PCWSTR;
 #include <memory>
 using namespace std;
 
+#ifndef _MSC_VER
+#ifndef _ESE_HETEROGENEOUS_MINMAX_DEFINED
+#define _ESE_HETEROGENEOUS_MINMAX_DEFINED
+//  Engine call sites use unqualified `min(a,b)` / `max(a,b)` with arguments
+//  of different (but related) integer types — see osstd_.hxx for the rationale.
+//  Heterogeneous overloads gated by !is_same so they never ambiguate the
+//  same-type std overloads.
+#include <type_traits>
+template < class A, class B,
+           class = std::enable_if_t< !std::is_same_v< A, B > > >
+constexpr auto min( A a, B b ) -> std::common_type_t< A, B >
+{
+    using T = std::common_type_t< A, B >;
+    return T( a ) < T( b ) ? T( a ) : T( b );
+}
+template < class A, class B,
+           class = std::enable_if_t< !std::is_same_v< A, B > > >
+constexpr auto max( A a, B b ) -> std::common_type_t< A, B >
+{
+    using T = std::common_type_t< A, B >;
+    return T( a ) > T( b ) ? T( a ) : T( b );
+}
+#endif
+#endif
+
 #pragma prefast(push)
 #pragma prefast(disable:28196, "Do not bother us with strsafe, someone else owns that.")
 #pragma prefast(disable:28205, "Do not bother us with strsafe, someone else owns that.")

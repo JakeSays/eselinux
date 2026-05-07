@@ -1470,9 +1470,17 @@ BOOL    FVERWriteConflict   ( FUCB * pfucb, const BOOKMARK& bookmark, const OPER
 template< typename TDelta>
 TDelta DeltaVERGetDelta ( const FUCB * pfucb, const BOOKMARK& bookmark, INT cbOffset );
 
-// Explicitly instantiatiate the only allowed legal instances of this template
+// Explicitly instantiate the only allowed legal instances of this template.
+// MSVC accepts the instantiation here even though the body is in ver.cxx.
+// Clang requires the body to be visible to instantiate, so use `extern
+// template` here (declaration) and emit the definition in ver.cxx.
+#ifdef _MSC_VER
 template LONG DeltaVERGetDelta<LONG>( const FUCB * pfucb, const BOOKMARK& bookmark, INT cbOffset );
 template LONGLONG DeltaVERGetDelta<LONGLONG>( const FUCB * pfucb, const BOOKMARK& bookmark, INT cbOffset );
+#else
+extern template LONG DeltaVERGetDelta<LONG>( const FUCB * pfucb, const BOOKMARK& bookmark, INT cbOffset );
+extern template LONGLONG DeltaVERGetDelta<LONGLONG>( const FUCB * pfucb, const BOOKMARK& bookmark, INT cbOffset );
+#endif
 
 BOOL    FVERCheckUncommittedFreedSpace(
     const FUCB      * pfucb,

@@ -229,8 +229,8 @@ INLINE QWORD QwMaskForSmallerTypes( const size_t cbType )
     INT( 2 * sizeof( pointer ) ), \
     __int64( (char*)(pointer) + offset + OffsetOf( CLASS, member ) ), \
     __int64( sizeof( (pointer)->member ) ), \
-    unsigned __int64( (pointer)->member ), \
-    unsigned __int64( (pointer)->member )
+    (unsigned __int64)( (pointer)->member ), \
+    (unsigned __int64)( (pointer)->member )
 
 #define FORMAT_GUID( CLASS, pointer, member, offset )   \
     "\t%*.*s <0x%0*I64X,%3I64u>:  {%08lx-%04hx-%04hx-%02hx%02hx-%02hx%02hx%02hx%02hx%02hx%02hx}\n", \
@@ -260,8 +260,8 @@ INLINE QWORD QwMaskForSmallerTypes( const size_t cbType )
     INT( 2 * sizeof( pointer ) ), \
     __int64( (char*)(pointer) + offset + OffsetOf( CLASS, member ) ), \
     __int64( sizeof( (pointer)->member ) ), \
-    unsigned __int64( (pointer)->member ), \
-    unsigned __int64( (pointer)->member )
+    (unsigned __int64)( (pointer)->member ), \
+    (unsigned __int64)( (pointer)->member )
 
 #define FORMAT_BOOL( CLASS, pointer, member, offset )   \
     "\t%*.*s <0x%0*I64X,%3I64u>:  %s  (0x%I64X)\n", \
@@ -274,7 +274,7 @@ INLINE QWORD QwMaskForSmallerTypes( const size_t cbType )
     ( (pointer)->member ) ? \
         "fTrue" : \
         "fFalse", \
-    unsigned __int64( (pointer)->member )
+    (unsigned __int64)( (pointer)->member )
 
 #define FORMAT_ENUM( CLASS, pointer, member, offset, mpenumsz, enumMin, enumMax )   \
     "\t%*.*s <0x%0*I64X,%3I64u>:  %s (0x%I64X)\n", \
@@ -284,10 +284,10 @@ INLINE QWORD QwMaskForSmallerTypes( const size_t cbType )
     INT( 2 * sizeof( pointer ) ), \
     __int64( (char*)(pointer) + offset + OffsetOf( CLASS, member ) ), \
     __int64( sizeof( (pointer)->member ) ), \
-    ( unsigned __int64( (pointer)->member ) < enumMin || unsigned __int64( (pointer)->member ) >= enumMax ) ? \
+    ( (unsigned __int64)( (pointer)->member ) < enumMin || (unsigned __int64)( (pointer)->member ) >= enumMax ) ? \
         "<Illegal>" : \
-        mpenumsz[ unsigned __int64( (pointer)->member ) - enumMin ], \
-    unsigned __int64( (pointer)->member )
+        mpenumsz[ (unsigned __int64)( (pointer)->member ) - enumMin ], \
+    (unsigned __int64)( (pointer)->member )
 
 #define FORMAT_INT_BF( CLASS, pointer, member, offset ) \
     "\t%*.*s <%-*.*s>:  %I64i (0x%I64X)\n", \
@@ -308,8 +308,8 @@ INLINE QWORD QwMaskForSmallerTypes( const size_t cbType )
     INT( 2 + 2 * sizeof( pointer ) + 1 + 3 ), \
     INT( 2 + 2 * sizeof( pointer ) + 1 + 3 ), \
     "Bit-Field", \
-    unsigned __int64( (pointer)->member ), \
-    unsigned __int64( (pointer)->member )
+    (unsigned __int64)( (pointer)->member ), \
+    (unsigned __int64)( (pointer)->member )
 
 #define FORMAT_UINT_BF_NOLINE( CLASS, pointer, member, offset ) \
     "\t%*.*s <%-*.*s>:  %I64u (0x%I64X)", \
@@ -319,8 +319,8 @@ INLINE QWORD QwMaskForSmallerTypes( const size_t cbType )
     INT( 2 + 2 * sizeof( pointer ) + 1 + 3 ), \
     INT( 2 + 2 * sizeof( pointer ) + 1 + 3 ), \
     "Bit-Field", \
-    unsigned __int64( (pointer)->member ), \
-    unsigned __int64( (pointer)->member )
+    (unsigned __int64)( (pointer)->member ), \
+    (unsigned __int64)( (pointer)->member )
     
 
 #define FORMAT_ENUM_BF( CLASS, pointer, member, offset, mpenumsz, enumMin, enumMax )    \
@@ -331,10 +331,10 @@ INLINE QWORD QwMaskForSmallerTypes( const size_t cbType )
     INT( 2 + 2 * sizeof( pointer ) + 1 + 3 ), \
     INT( 2 + 2 * sizeof( pointer ) + 1 + 3 ), \
     "Bit-Field", \
-    ( unsigned __int64( (pointer)->member ) < enumMin || unsigned __int64( (pointer)->member ) >= enumMax ) ? \
+    ( (unsigned __int64)( (pointer)->member ) < enumMin || (unsigned __int64)( (pointer)->member ) >= enumMax ) ? \
         "<Illegal>" : \
-        mpenumsz[ unsigned __int64( (pointer)->member ) - enumMin ], \
-    unsigned __int64( (pointer)->member )
+        mpenumsz[ (unsigned __int64)( (pointer)->member ) - enumMin ], \
+    (unsigned __int64)( (pointer)->member )
 
 #define FORMAT_ENUM_BF_WSZ( CLASS, pointer, member, offset, mpenumwsz, enumMin, enumMax )   \
     "\t%*.*s <%-*.*s>:	%ws (0x%I64X)\n", \
@@ -344,10 +344,10 @@ INLINE QWORD QwMaskForSmallerTypes( const size_t cbType )
     INT( 2 + 2 * sizeof( pointer ) + 1 + 3 ), \
     INT( 2 + 2 * sizeof( pointer ) + 1 + 3 ), \
     "Bit-Field", \
-    ( unsigned __int64( (pointer)->member ) < enumMin || unsigned __int64( (pointer)->member ) >= enumMax ) ? \
+    ( (unsigned __int64)( (pointer)->member ) < enumMin || (unsigned __int64)( (pointer)->member ) >= enumMax ) ? \
         L"<Illegal>" : \
-        mpenumwsz[ unsigned __int64( (pointer)->member ) - enumMin ], \
-    unsigned __int64( (pointer)->member )
+        mpenumwsz[ (unsigned __int64)( (pointer)->member ) - enumMin ], \
+    (unsigned __int64)( (pointer)->member )
 
 #define FORMAT_BOOL_BF( CLASS, pointer, member, offset )    \
     "\t%*.*s <%-*.*s>:  %s  (0x%I64X)\n", \
@@ -360,7 +360,7 @@ INLINE QWORD QwMaskForSmallerTypes( const size_t cbType )
     ( (pointer)->member ) ? \
         "fTrue" : \
         "fFalse", \
-    unsigned __int64( (pointer)->member )
+    (unsigned __int64)( (pointer)->member )
 
 #define PRINT_METHOD_FLAG( pprintf, method )            \
     if ( method() )                                     \

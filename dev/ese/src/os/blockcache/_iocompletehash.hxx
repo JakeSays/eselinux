@@ -81,16 +81,19 @@ class CIOCompleteEntry
 
 typedef CDynamicHashTable<CIOCompleteKey, CIOCompleteEntry> CIOCompleteHash;
 
+template<>
 INLINE CIOCompleteHash::NativeCounter CIOCompleteHash::CKeyEntry::Hash( _In_ const CIOCompleteKey& key )
 {
     return CIOCompleteHash::NativeCounter( key.UiHash() );
 }
 
+template<>
 INLINE CIOCompleteHash::NativeCounter CIOCompleteHash::CKeyEntry::Hash() const
 {
     return CIOCompleteHash::NativeCounter( m_entry.UiHash() );
 }
 
+template<>
 INLINE BOOL CIOCompleteHash::CKeyEntry::FEntryMatchesKey( _In_ const CIOCompleteKey& key ) const
 {
     if ( m_entry.Piocomplete() != key.Piocomplete() )
@@ -101,11 +104,13 @@ INLINE BOOL CIOCompleteHash::CKeyEntry::FEntryMatchesKey( _In_ const CIOComplete
     return fTrue;
 }
 
+template<>
 INLINE void CIOCompleteHash::CKeyEntry::SetEntry( _In_ const CIOCompleteEntry& entry )
 {
     m_entry = entry;
 }
 
+template<>
 INLINE void CIOCompleteHash::CKeyEntry::GetEntry( _In_ CIOCompleteEntry* const pentry ) const
 {
     *pentry = m_entry;

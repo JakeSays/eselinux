@@ -7,6 +7,7 @@ add_custom_command(
         ${GEN_OUTPUT_DIRECTORY}/_perfctrs/eseperf.ini
         ${GEN_OUTPUT_DIRECTORY}/_perfctrs/perfdata.cxx
         ${GEN_OUTPUT_DIRECTORY}/_perfctrs/perfdisp.cxx
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${GEN_OUTPUT_DIRECTORY}/_perfctrs/
     COMMAND perl ${CMAKE_CURRENT_SOURCE_DIR}/perfdata.pl ESE ${GEN_OUTPUT_DIRECTORY}/_perfctrs/ eseperf.hxx eseperf.ini ${CMAKE_CURRENT_SOURCE_DIR}/perfdata.txt ESE
     DEPENDS
         perfdata.pl

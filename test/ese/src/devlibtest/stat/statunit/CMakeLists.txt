@@ -7,7 +7,7 @@ add_executable(STATUNIT
     histoutil.cxx
     CompoundHistoSuite.cxx
     FixedLinearHistoSuite.cxx
-    functionalstatsuite.cxx
+    FunctionalStatSuite.cxx
     statbasic.cxx
     segmentedhisto.cxx
     linearhisto.cxx
@@ -30,3 +30,7 @@ target_link_libraries(STATUNIT PRIVATE
     BstfUnitTest
     sync
 )
+
+if (NOT WIN32)
+    target_link_options(STATUNIT PRIVATE -Wl,-z,muldefs)
+endif ()

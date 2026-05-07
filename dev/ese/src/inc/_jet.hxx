@@ -469,9 +469,9 @@ typedef CAutoIWSZ< 90 > CAutoWSZPATH;
     }                                                                               \
     ENDEXCEPT                                                                       \
     AssertRTL( err > -65536 && err < 65536 );                                       \
-    fDisableLockCheck ? CLockDeadlockDetectionInfo::DisableLockCheckOnApiExit() : 0;\
+    fDisableLockCheck ? CLockDeadlockDetectionInfo::DisableLockCheckOnApiExit() : (void)0;\
     CLockDeadlockDetectionInfo::AssertCleanApiExit(cDisableDeadlockCheck, cDisableOwnershipCheck, cLocks);                      \
-    fDisableLockCheck ? CLockDeadlockDetectionInfo::EnableLockCheckOnApiExit() : 0; \
+    fDisableLockCheck ? CLockDeadlockDetectionInfo::EnableLockCheckOnApiExit() : (void)0; \
     Assert( FBFApiClean() );                                                        \
     OSEventTrace( _etguidApiCall_Stop, 2, &ulTraceApiId, &err );                    \
                                                                                     \
@@ -499,9 +499,9 @@ typedef CAutoIWSZ< 90 > CAutoWSZPATH;
     }                                                                               \
     ENDEXCEPT                                                                       \
     AssertRTL( err > -65536 && err < 65536 );                                       \
-    fDisableLockCheck ? CLockDeadlockDetectionInfo::DisableLockCheckOnApiExit() : 0;\
+    fDisableLockCheck ? CLockDeadlockDetectionInfo::DisableLockCheckOnApiExit() : (void)0;\
     CLockDeadlockDetectionInfo::AssertCleanApiExit(cDisableDeadlockCheck, cDisableOwnershipCheck, cLocks);                      \
-    fDisableLockCheck ? CLockDeadlockDetectionInfo::EnableLockCheckOnApiExit() : 0; \
+    fDisableLockCheck ? CLockDeadlockDetectionInfo::EnableLockCheckOnApiExit() : (void)0; \
     Assert( FBFApiClean() );                                                        \
     Assert( !FOSRefTraceErrors() || Ptls()->fInCallback );                          \
     OSEventTrace( _etguidApiCall_Stop, 2, &ulTraceApiId, &err );                    \
@@ -521,9 +521,9 @@ typedef CAutoIWSZ< 90 > CAutoWSZPATH;
     const JET_ERR   err     = (func);                                               \
     OSTrace( JET_tracetagAPI, OSFormat( "End %s with error %d (0x%x)", _T( #func ), err, err ) );   \
     AssertRTL( err > -65536 && err < 65536 );                                       \
-    fDisableLockCheck ? CLockDeadlockDetectionInfo::DisableLockCheckOnApiExit() : 0;\
+    fDisableLockCheck ? CLockDeadlockDetectionInfo::DisableLockCheckOnApiExit() : (void)0;\
     CLockDeadlockDetectionInfo::AssertCleanApiExit(cDisableDeadlockCheck, cDisableOwnershipCheck, cLocks);                      \
-    fDisableLockCheck ? CLockDeadlockDetectionInfo::EnableLockCheckOnApiExit() : 0; \
+    fDisableLockCheck ? CLockDeadlockDetectionInfo::EnableLockCheckOnApiExit() : (void)0; \
     OSEventTrace( _etguidApiCall_Stop, 2, &ulTraceApiId, &err );                    \
     return err;                                                                     \
 }

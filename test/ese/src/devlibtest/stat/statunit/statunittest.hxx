@@ -3,6 +3,9 @@
 
 #include <cstdio>
 #include <stdlib.h>
+#include <string.h>          // memcpy is used by stat.hxx below; bstf.hxx
+                             // with BSTF_AVOID_WIN_DEPENDENCE skips windows.h
+                             // and so doesn't transitively pull <string.h>
 
 #include "testerr.h"
 

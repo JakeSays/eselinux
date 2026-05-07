@@ -21,3 +21,14 @@ target_include_directories(ERRVALIDATOR PRIVATE
 target_link_libraries(ERRVALIDATOR PRIVATE
     _errstr
 )
+
+if (NOT WIN32)
+    # ERRVALIDATOR doesn't go through BstfUnitTest, so plug in osposix
+    # directly for the Win32 surface (QueryPerformanceCounter, GetTickCount,
+    # _strnicmp). Match SYNCUNIT's allow-multiple-defs treatment.
+    target_include_directories(ERRVALIDATOR PRIVATE
+        ${CMAKE_SOURCE_DIR}/windows-shim
+    )
+    target_link_libraries(ERRVALIDATOR PRIVATE osposix sync checksum checksum_avx oslite_posix)
+    target_link_options(ERRVALIDATOR PRIVATE -Wl,-z,muldefs)
+endif ()

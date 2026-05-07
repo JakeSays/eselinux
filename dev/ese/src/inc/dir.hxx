@@ -200,9 +200,15 @@ ERR ErrDIRDelta(
         TDelta          *const pOldValue,
         DIRFLAG         dirflag );
 
-// Explicitly instantiatiate the only allowed legal instances of this template
+// Explicit instantiations: MSVC accepts here, clang requires `extern template`
+// here with the actual instantiation paired in the .cxx that defines the body.
+#ifdef _MSC_VER
 template ERR ErrDIRDelta<LONG>( FUCB *pfucb, INT cbOffset, const LONG delta, LONG *const pOldValue, DIRFLAG dirflag );
 template ERR ErrDIRDelta<LONGLONG>( FUCB *pfucb, INT cbOffset, const LONGLONG delta, LONGLONG *const pOldValue, DIRFLAG dirflag );
+#else
+extern template ERR ErrDIRDelta<LONG>( FUCB *pfucb, INT cbOffset, const LONG delta, LONG *const pOldValue, DIRFLAG dirflag );
+extern template ERR ErrDIRDelta<LONGLONG>( FUCB *pfucb, INT cbOffset, const LONGLONG delta, LONGLONG *const pOldValue, DIRFLAG dirflag );
+#endif
 
 //  *****************************************
 //  statistical operations

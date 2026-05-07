@@ -107,7 +107,7 @@ class TJournalEntryBase : public TJournalEntry<T>
     protected:
 
         TJournalEntryBase( _In_ const ULONG cb )
-            : TJournalEntry( JETYP, cb )
+            : TJournalEntry<T>( JETYP, cb )
         {
         }
 
@@ -406,7 +406,7 @@ template<class T, T JETYPCOMPRESSED>
 INLINE TCompressedJournalEntry<T, JETYPCOMPRESSED>::TCompressedJournalEntry(    _In_ const TJournalEntry<T>* const  pje,
                                                                                 _In_ const CompressionAlgorithm     ca,
                                                                                 _In_ const ULONG                    cbCompressed )
-    :   TJournalEntryBase( sizeof( CCompressedJournalEntry) + cbCompressed ),
+    :   TJournalEntryBase<T, JETYPCOMPRESSED>( sizeof( CCompressedJournalEntry) + cbCompressed ),
         m_le_ca( ca ),
         m_le_cbUncompressed( pje->Cb() ),
         m_le_crc32Uncompressed( Crc32Checksum( (const BYTE*)pje, pje->Cb() ) ),

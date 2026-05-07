@@ -196,16 +196,19 @@ class CCachedBlockSlabEntry
 
 typedef CDynamicHashTable<CCachedBlockSlabKey, CCachedBlockSlabEntry> CCachedBlockSlabHash;
 
+template<>
 INLINE typename CCachedBlockSlabHash::NativeCounter CCachedBlockSlabHash::CKeyEntry::Hash( _In_ const CCachedBlockSlabKey& key )
 {
     return CCachedBlockSlabHash::NativeCounter( key.UiHash() );
 }
 
+template<>
 INLINE typename CCachedBlockSlabHash::NativeCounter CCachedBlockSlabHash::CKeyEntry::Hash() const
 {
     return CCachedBlockSlabHash::NativeCounter( m_entry.UiHash() );
 }
 
+template<>
 INLINE BOOL CCachedBlockSlabHash::CKeyEntry::FEntryMatchesKey( _In_ const CCachedBlockSlabKey& key ) const
 {
     if ( m_entry.UiHash() != key.UiHash() )
@@ -221,11 +224,13 @@ INLINE BOOL CCachedBlockSlabHash::CKeyEntry::FEntryMatchesKey( _In_ const CCache
     return fTrue;
 }
 
+template<>
 INLINE void CCachedBlockSlabHash::CKeyEntry::SetEntry( _In_ const CCachedBlockSlabEntry& entry )
 {
     m_entry = entry;
 }
 
+template<>
 INLINE void CCachedBlockSlabHash::CKeyEntry::GetEntry( _In_ CCachedBlockSlabEntry* const pentry ) const
 {
     *pentry = m_entry;

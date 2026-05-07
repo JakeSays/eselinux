@@ -15249,7 +15249,7 @@ CheckCheckpoint:
 
             // set the initial log gen to something sane.
             m_lgenInitial = ( m_lgenInitial > pcheckpointT->checkpoint.le_lgposCheckpoint.le_lGeneration )
-                ?   pcheckpointT->checkpoint.le_lgposCheckpoint.le_lGeneration
+                ?   LONG( pcheckpointT->checkpoint.le_lgposCheckpoint.le_lGeneration )
                   : m_lgenInitial;
 
             m_pinst->m_isdlInit.FixedData().sInitData.lgposRecoveryStartMin = pcheckpointT->checkpoint.le_lgposCheckpoint;

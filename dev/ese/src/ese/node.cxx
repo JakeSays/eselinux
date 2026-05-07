@@ -2052,6 +2052,13 @@ HandleError:
     return err;
 }
 
+// Explicit instantiation definitions paired with `extern template`
+// declarations in node.hxx (non-MSVC arm).
+#ifndef _MSC_VER
+template ERR ErrNDDelta<LONG>( FUCB * const pfucb, CSR * const pcsr, const INT cbOffset, const LONG tDelta, LONG * const ptOldValue, const DIRFLAG dirflag, const RCEID rceid );
+template ERR ErrNDDelta<LONGLONG>( FUCB * const pfucb, CSR * const pcsr, const INT cbOffset, const LONGLONG tDelta, LONGLONG * const ptOldValue, const DIRFLAG dirflag, const RCEID rceid );
+#endif
+
 
 //  ================================================================
 ERR ErrNDFlagDelete(

@@ -2306,7 +2306,7 @@ ERR CRevertSnapshot::ErrGetNextRecord( RBSRecord **ppRecord, RBS_POS* rbsposRecS
     BOOL fValidRecFound = fFalse;
 
     *ppRecord = NULL;
-    rbsposRecStart->lGeneration = m_prbsfilehdrCurrent == NULL ? 0 : m_prbsfilehdrCurrent->rbsfilehdr.le_lGeneration;
+    rbsposRecStart->lGeneration = m_prbsfilehdrCurrent == NULL ? 0 : (LONG)m_prbsfilehdrCurrent->rbsfilehdr.le_lGeneration;
 
     if ( m_pReadBuffer == NULL )
     {
@@ -6112,7 +6112,7 @@ ERR CRBSRevertContext::ErrApplyRBSRecord( RBSRecord* prbsrec, BOOL fCaptureDbHdr
         case rbsrectypeDbEmptyPages2:
         {
             RBSDbEmptyPagesRecord* prbsdbemptypgrec = ( RBSDbEmptyPagesRecord* ) prbsrec;
-            ULONG fFlags                            = bRecType == rbsrectypeDbEmptyPages2 ? ( ( RBSDbEmptyPages2Record* ) prbsrec )->m_fFlags : 0;
+            ULONG fFlags                            = bRecType == rbsrectypeDbEmptyPages2 ? (ULONG)( ( RBSDbEmptyPages2Record* ) prbsrec )->m_fFlags : 0;
             PGNO pgnoLast = prbsdbemptypgrec->m_pgnoFirst + prbsdbemptypgrec->m_cpg - 1;
 
             for ( PGNO pgno = prbsdbemptypgrec->m_pgnoFirst; pgno <= pgnoLast; ++pgno )

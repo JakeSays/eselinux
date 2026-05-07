@@ -2831,7 +2831,7 @@ ERR TAGFIELDS::ErrDereferenceLongValuesInRecord(
                     Assert( !pheader->FSeparated() || sizeof( _LID64 ) == cbLID || sizeof( _LID32 ) == cbLID );
                     LvId lidToDeref     = ( fSeparatedLV ?
                                                     LidOfSeparatedLV( PbData( itagfld ) + sizeof(TAGFLD_HEADER), cbLID ) :
-                                                    0 );
+                                                    LvId( 0 ) );
                     CallR( ErrDIRRelease( pfucb ) );
 
                     if ( fSeparatedLV )

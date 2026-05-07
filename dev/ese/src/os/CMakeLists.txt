@@ -4,8 +4,7 @@
 # E.g., pthreads
 find_package (Threads REQUIRED)
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    # These are GCC-specific flags
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.2")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx")
 
@@ -77,5 +76,9 @@ include_directories(
     ./blockcache
 )
 
-add_subdirectory(litent)
-add_subdirectory(winnt)
+if (WIN32)
+    add_subdirectory(litent)
+    add_subdirectory(winnt)
+else()
+    add_subdirectory(posix)
+endif()

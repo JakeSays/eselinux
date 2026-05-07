@@ -24,12 +24,29 @@ extern "C" {
 #define XPRESS_ALIGNMENT        8
 
 // declare default calling convention used in xpress
-#if !defined (UNIX) && !defined (XPRESS_CALL)
+#if !defined (UNIX) && !defined (XPRESS_CALL) && defined(_MSC_VER)
 #define XPRESS_CALL __stdcall
+#elif !defined (XPRESS_CALL)
+#define XPRESS_CALL
 #endif
 
 #if !defined (XPRESS_EXPORT)
 #define XPRESS_EXPORT
+#endif
+
+// On non-MSVC builds the legacy SAL annotations (__in_opt, __out_ecount, ...)
+// expand to nothing. The newer _In_/_Out_ family is stubbed by cc.hxx.
+#ifndef _MSC_VER
+#define __in_opt
+#define __out_opt
+#define __inout_opt
+#define __in_bcount(x)
+#define __in_ecount(x)
+#define __out_bcount(x)
+#define __out_ecount(x)
+#define __inout_bcount(x)
+#define __inout_ecount(x)
+#define __analysis_assume(x) ((void)0)
 #endif
 
 

@@ -150,7 +150,13 @@ extern "C" {
 #endif  //  _M_IX86
 } // extern "C"
 
-#else // !_MSC_VER
+#elif defined( __clang__ )
+
+// Clang with -fms-extensions exposes the _Interlocked* family as builtin
+// function names. Defining them here would clash; the builtins are picked up
+// directly at the use sites below.
+
+#else // !_MSC_VER && !__clang__ (i.e. GCC)
 
 //  Details:
 //      http://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Atomic-Builtins.html
@@ -186,6 +192,16 @@ inline void* __cdecl _InterlockedCompareExchangePointer( void* volatile *_Destin
 inline LONG __cdecl _InterlockedExchangeAdd( LONG volatile * _Addend, LONG _Value )
 {
     return __sync_fetch_and_add( _Addend, _Value );
+}
+
+inline SHORT _InterlockedExchangeAdd16( SHORT volatile * _Addend, SHORT _Value )
+{
+    return __sync_fetch_and_add( _Addend, _Value );
+}
+
+inline SHORT _InterlockedCompareExchange16( SHORT volatile * _Destination, SHORT _Exchange, SHORT _Comparand )
+{
+    return __sync_val_compare_and_swap( _Destination, _Comparand, _Exchange );
 }
 
 #endif // _MSC_VER
@@ -354,13 +370,13 @@ inline void* AtomicExchangePointer( void** const ppvTarget, const void* const pv
 {
     OSSYNCAssert( IsAtomicallyModifiablePointer( ppvTarget ) );
 
-#ifndef _WIN64
+#if !defined(_WIN64) && !defined(__LP64__)
     //  HACK: cast to LONG_PTR, then to long in order to permit compiling with /Wp64
     //
     return (void *)(DWORD_PTR)AtomicExchange( (LONG* const)ppvTarget, (const LONG)(LONG_PTR)pvValue );
-#else  //  !_WIN64
+#else  //  !_WIN64 && !__LP64__
     return _InterlockedExchangePointer( ppvTarget, (void*)pvValue );
-#endif  //  _M_IX86
+#endif
 }
 
 inline __int64 AtomicRead( __int64 * const pi64Target );
@@ -406,11 +422,11 @@ inline ULONG AtomicRead( ULONG * const pulTarget )
 inline __int64 AtomicRead( __int64 * const pi64Target )
 {
     OSSYNCAssert( IsAtomicallyModifiablePointer( (void *const *)pi64Target ) );
-#ifndef _WIN64
+#if !defined(_WIN64) && !defined(__LP64__)
     return AtomicCompareExchange( (volatile __int64 * const)pi64Target, 0, 0 );
-#else  //  !_WIN64
+#else  //  !_WIN64 && !__LP64__
     return *( (volatile __int64 *)pi64Target );
-#endif  //  _WIN64
+#endif
 }
 
 inline unsigned __int64 AtomicRead( unsigned __int64 * const pui64Target )
@@ -423,11 +439,11 @@ inline unsigned __int64 AtomicRead( unsigned __int64 * const pui64Target )
 //
 inline void* AtomicReadPointer( void** const ppvTarget )
 {
-#ifndef _WIN64
+#if !defined(_WIN64) && !defined(__LP64__)
     return (void*)AtomicRead( (LONG*)ppvTarget );
-#else  //  !_WIN64
+#else  //  !_WIN64 && !__LP64__
     return (void*)AtomicRead( (__int64*)ppvTarget );
-#endif  //  _WIN64
+#endif
 }
 
 //  atomically adds the specified value to the target, returning the target's
@@ -484,13 +500,13 @@ inline void* AtomicCompareExchangePointer( void** const ppvTarget, const void* c
 {
     OSSYNCAssert( IsAtomicallyModifiablePointer( ppvTarget ) );
 
-#ifndef _WIN64
+#if !defined(_WIN64) && !defined(__LP64__)
     //  HACK: cast to LONG_PTR, then to long in order to permit compiling with /Wp64
     //
     return (void *)(DWORD_PTR)AtomicCompareExchange( (LONG* const)ppvTarget, (const LONG)(LONG_PTR)pvInitial, (const LONG)(LONG_PTR)pvFinal );
-#else  //  !_WIN64
+#else  //  !_WIN64 && !__LP64__
     return _InterlockedCompareExchangePointer( ppvTarget, const_cast< void* >( pvFinal ), const_cast< void* >( pvInitial ) );
-#endif  //  _WIN64
+#endif
 }
 
 inline __int64 AtomicCompareExchange( _Inout_ volatile __int64 * const pi64Target, const __int64 i64Initial, const __int64 i64Final )

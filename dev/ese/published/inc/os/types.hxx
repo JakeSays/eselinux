@@ -395,7 +395,10 @@ inline unsigned __int16 ReverseBytes< unsigned __int16 >( const unsigned __int16
     return ReverseTwoBytes( (const unsigned __int16) w );
 }
 
-#if _MSC_FULL_VER < 13009111
+// On modern MSVC and on clang/Linux, SHORT/USHORT alias the same type as
+// __int16/unsigned __int16, so re-specialising would be a redefinition.
+// Only ancient MSVC needed these overloads.
+#if defined(_MSC_FULL_VER) && _MSC_FULL_VER < 13009111
 template<>
 inline SHORT ReverseBytes< SHORT >( const SHORT w )
 {
@@ -421,6 +424,9 @@ inline unsigned __int32 ReverseBytes< unsigned __int32 >( const unsigned __int32
     return ReverseFourBytes( (const unsigned __int32) dw );
 }
 
+// On clang/Linux, LONG/ULONG alias int32_t/uint32_t which are int/unsigned —
+// the same type as __int32. MSVC has LONG=long, distinct from __int32=int.
+#ifdef _MSC_VER
 template<>
 inline LONG ReverseBytes< LONG >( const LONG dw )
 {
@@ -432,6 +438,7 @@ inline ULONG ReverseBytes< ULONG >( const ULONG dw )
 {
     return ReverseFourBytes( (const unsigned __int32) dw );
 }
+#endif
 
 template<>
 inline __int64 ReverseBytes< __int64 >( const __int64 qw )
@@ -625,11 +632,33 @@ class LittleEndian : public COperatorOverloads< LittleEndian<T> >
         LittleEndian< T >() {};
         LittleEndian< T >( const LittleEndian< T >& le_t );
         LittleEndian< T >( const T& t );
+#ifndef _MSC_VER
+        // Companion to operator=( U ): allow rvalue initialization when T is
+        // volatile-qualified (clang refuses const-volatile-ref binding to a
+        // non-volatile rvalue). SFINAE-gated so the non-volatile case still
+        // routes through the by-reference constructor.
+        template< class U,
+                  class = typename std::enable_if<
+                      std::is_volatile< T >::value
+                      && std::is_convertible< U, typename std::remove_cv< T >::type >::value >::type >
+        LittleEndian< T >( U t );
+#endif
 
         operator T() const;
 
         LittleEndian< T >& operator=( const LittleEndian< T >& le_t );
         LittleEndian< T >& operator=( const T& t );
+#ifndef _MSC_VER
+        // Extra by-value overload so that rvalues bind cleanly when T is a
+        // volatile-qualified scalar (clang refuses to bind 'int' rvalue to a
+        // 'const volatile T&' reference). SFINAE-gated to volatile T so
+        // we don't add an ambiguous overload for the common non-volatile case.
+        template< class U,
+                  class = typename std::enable_if<
+                      std::is_volatile< T >::value
+                      && std::is_convertible< U, typename std::remove_cv< T >::type >::value >::type >
+        LittleEndian< T >& operator=( U t );
+#endif
 
     private:
         T m_t;
@@ -651,6 +680,15 @@ inline LittleEndian< T >::LittleEndian( const T& t )
 {
 }
 
+#ifndef _MSC_VER
+template< class T >
+template< class U, class >
+inline LittleEndian< T >::LittleEndian( U t )
+    :   m_t( ReverseBytesOnBE( t ) )
+{
+}
+#endif
+
 template< class T >
 inline LittleEndian< T >::operator T() const
 {
@@ -665,6 +703,16 @@ inline LittleEndian< T >& LittleEndian< T >::operator=( const LittleEndian< T >&
     return *this;
 }
 
+#ifndef _MSC_VER
+template< class T >
+template< class U, class >
+inline LittleEndian< T >& LittleEndian< T >::operator=( U t )
+{
+    m_t = ReverseBytesOnBE( t );
+    return *this;
+}
+#endif
+
 template< class T >
 inline LittleEndian< T >& LittleEndian< T >::operator=( const T& t )
 {
@@ -674,7 +722,10 @@ inline LittleEndian< T >& LittleEndian< T >::operator=( const T& t )
 }
 
 
-#ifndef _M_IX86
+// __unaligned is an MSVC-only type qualifier; clang's MS-extension support
+// rejects it on constructors. On non-MSVC builds we drop the hint, which
+// at worst yields slightly slower unaligned x86_64 loads.
+#if !defined(_M_IX86) && defined(_MSC_VER)
 #define PERMIT_UNALIGNED_ACCESS __unaligned
 #else
 #define PERMIT_UNALIGNED_ACCESS
@@ -855,6 +906,33 @@ inline UnalignedLittleEndian< T >& UnalignedLittleEndian< T >::operator=( const 
 
     return *this;
 }
+
+
+// Heterogeneous min/max where one arg is LittleEndian<T> / UnalignedLittleEndian<T>
+// and the other is plain T. MSVC's <minwindef.h> macros int-promote and do not
+// hit this; libc++ std::min/max require identical types and the heterogeneous
+// fallback in osstd_.hxx fails common_type for these wrapper templates. Provide
+// dedicated overloads so engine code like `min( LONG, le_lGenMinRequired )`
+// resolves without each call site needing an explicit cast.
+#ifndef _MSC_VER
+template< class T >
+constexpr T min( const LittleEndian< T >& a, const T& b ) { return T( a ) < b ? T( a ) : b; }
+template< class T >
+constexpr T min( const T& a, const LittleEndian< T >& b ) { return a < T( b ) ? a : T( b ); }
+template< class T >
+constexpr T max( const LittleEndian< T >& a, const T& b ) { return T( a ) > b ? T( a ) : b; }
+template< class T >
+constexpr T max( const T& a, const LittleEndian< T >& b ) { return a > T( b ) ? a : T( b ); }
+
+template< class T >
+constexpr T min( const UnalignedLittleEndian< T >& a, const T& b ) { return T( a ) < b ? T( a ) : b; }
+template< class T >
+constexpr T min( const T& a, const UnalignedLittleEndian< T >& b ) { return a < T( b ) ? a : T( b ); }
+template< class T >
+constexpr T max( const UnalignedLittleEndian< T >& a, const T& b ) { return T( a ) > b ? T( a ) : b; }
+template< class T >
+constexpr T max( const T& a, const UnalignedLittleEndian< T >& b ) { return a > T( b ) ? a : T( b ); }
+#endif
 
 
 //  special type qualifier to allow unaligned access to variables

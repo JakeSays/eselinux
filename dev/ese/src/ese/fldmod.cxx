@@ -2514,7 +2514,7 @@ LOCAL ERR ErrRECISetIFixedColumn(
 #endif  // DEBUG
 
             const QWORD qwDataValue = ptdb->F8BytesAutoInc() ?
-                                        *(UnalignedLittleEndian< QWORD > *)pdataField->Pv() :
+                                        (QWORD)( *(UnalignedLittleEndian< QWORD > *)pdataField->Pv() ) :
                                         (QWORD)( *(UnalignedLittleEndian< ULONG > *)pdataField->Pv() );
 
             //  0 is never a valid auto-inc because we start at 1 and

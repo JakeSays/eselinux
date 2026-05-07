@@ -26,7 +26,7 @@ ERR CcCountofReturnsCorrectSize::ErrTest()
     TestCheck( 24 == sizeof(rgqw) );
     TestCheck( 3 == _countof(rgqw) );
 
-#ifdef _WIN64
+#if defined(_WIN64) || defined(__LP64__)
     TestCheck( 64 == sizeof(rgpv) );
 #else
     TestCheck( 32 == sizeof(rgpv) );

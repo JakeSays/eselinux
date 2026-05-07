@@ -92,7 +92,7 @@ public:
 
 protected:
     PatchRequest( const IFMP ifmp, const PGNO pgnoRequest );
-    PatchRequest& operator=( PatchRequest& );
+    PatchRequest& operator=( const PatchRequest& );
     
 protected:
     IFMP Ifmp_() const { return m_ifmp; }
@@ -318,7 +318,7 @@ PatchRequest::~PatchRequest()
 }
 
 //  ================================================================
-PatchRequest& PatchRequest::operator=( PatchRequest& rhs)
+PatchRequest& PatchRequest::operator=( const PatchRequest& rhs)
 //  ================================================================
 {
     ASSERT_VALID_RTL( this );
@@ -331,7 +331,7 @@ PatchRequest& PatchRequest::operator=( PatchRequest& rhs)
         m_ulTimeWhenRequestWasLogged    = rhs.UlTimeWhenRequestWasLogged_();
         m_fRequestIsActive              = rhs.FRequestIsActive();
 
-        rhs.m_fRequestIsActive = false;
+        const_cast< PatchRequest& >( rhs ).m_fRequestIsActive = false;
     }
     ASSERT_VALID_RTL( this );
     return *this;
@@ -958,7 +958,8 @@ ERR PagePatching::ErrDoPatch(
     const PAGE_PATCH_TOKEN * const ptoken = (PAGE_PATCH_TOKEN *)pvToken;
     const INST * const pinst = PinstFromIfmp( ifmp );
     const LOG * const plog = pinst->m_plog;
-    if ( 0 != memcmp( &(ptoken->signLog), &plog->SignLog(), sizeof(SIGNATURE) ) )
+    const SIGNATURE signLogPrl = plog->SignLog();
+    if ( 0 != memcmp( &(ptoken->signLog), &signLogPrl, sizeof(SIGNATURE) ) )
     {
         Error( ErrERRCheck( JET_errBadLogSignature ) );
     }

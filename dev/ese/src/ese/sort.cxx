@@ -262,7 +262,7 @@ ERR ErrSORTInsert( FUCB *pfucb, const KEY& key, const DATA& data )
 
         cbData = (LONG)min( pbDest - pspair->rgbKey + 1, CbSRECDataPsrec( psrec ) );
         pbSrc = PbSRECDataPsrec( psrec );
-        pbDestMic = max( pspair->rgbKey, pbDest - cbData + 1 );
+        pbDestMic = max( (BYTE *)pspair->rgbKey, pbDest - cbData + 1 );
 
         while ( pbDest >= pbDestMic )
             *( pbDest-- ) = *( pbSrc++ );

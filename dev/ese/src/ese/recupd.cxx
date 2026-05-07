@@ -290,6 +290,11 @@ public:
         return m_Key;
     }
 
+    KEY& Key()
+    {
+        return m_Key;
+    }
+
     ACTION Action()
     {
         return m_Action;

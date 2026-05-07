@@ -34,7 +34,7 @@ inline ULONG Log2( ULONG x )
     return ret > 0 ? log2 : -1; // log( 0 ) is undefined, represented by -1
 }
 
-#elif defined ( _M_AMD64 ) || defined( _M_ARM64 )
+#elif defined ( _M_AMD64 ) || defined( _M_ARM64 ) || defined( __x86_64__ ) || defined( __aarch64__ )
 inline ULONG Log2( unsigned __int64 x )
 {
     ULONG log2;

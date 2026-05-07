@@ -1814,7 +1814,7 @@ BOOL LOG::FWaypointLatencyEnabled() const
         if ( ifmp >= g_ifmpMax )
             continue;
 
-        if ( g_rgfmp[ ifmp ].m_fNoWaypointLatency )
+        if ( g_rgfmp[ ifmp ].FNoWaypointLatency() )
         {
             return fFalse;
         }
@@ -1987,10 +1987,10 @@ ERR LOG::ErrLGUpdateGenRequired(
 
         if ( lGenMinRequired )
         {
-            const LONG lgenMinRequiredFuture = max( max( lGenMinRequired, pdbfilehdr->le_lgposAttach.le_lGeneration ), pdbfilehdr->le_lGenMinRequired );
+            const LONG lgenMinRequiredFuture = max( max( lGenMinRequired, LONG( pdbfilehdr->le_lgposAttach.le_lGeneration ) ), LONG( pdbfilehdr->le_lGenMinRequired ) );
             fPreHeaderUpdateMinRequired = ( pdbfilehdr->le_lGenMinRequired != lgenMinRequiredFuture );
 
-            const LONG lgenMinConsistentFuture = max( max( lGenMinConsistent, pdbfilehdr->le_lgposAttach.le_lGeneration ), pdbfilehdr->le_lGenMinConsistent );
+            const LONG lgenMinConsistentFuture = max( max( lGenMinConsistent, LONG( pdbfilehdr->le_lgposAttach.le_lGeneration ) ), LONG( pdbfilehdr->le_lGenMinConsistent ) );
             fPreHeaderUpdateMinConsistent = ( pdbfilehdr->le_lGenMinConsistent != lgenMinConsistentFuture );
             } // .dtor releases read header lock.
 
@@ -2024,7 +2024,7 @@ ERR LOG::ErrLGUpdateGenRequired(
         Assert( 0 == memcmp( pdbfilehdrPreimage, pdbfilehdr, g_cbPage ) );
 #endif
 
-        lGenMaxRequiredMin = min( lGenMaxRequiredMin, pdbfilehdr->le_lGenMaxRequired );
+        lGenMaxRequiredMin = min( lGenMaxRequiredMin, LONG( pdbfilehdr->le_lGenMaxRequired ) );
 
         if ( fUpdateGenMaxRequired )
         {

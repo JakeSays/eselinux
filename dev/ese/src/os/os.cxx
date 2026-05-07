@@ -141,6 +141,7 @@ LOCAL VOID InitFailurePointsFromRegistry()
 {
     g_cFailurePoints = 0;
 
+#ifdef _WIN32
     NTOSFuncError( pfnRegOpenKeyExW, g_mwszzRegistryLibs, RegOpenKeyExW, oslfExpectedOnWin5x | oslfRequired );
     NTOSFuncError( pfnRegQueryValueExW, g_mwszzRegistryLibs, RegQueryValueExW, oslfExpectedOnWin5x | oslfRequired );
     NTOSFuncError( pfnRegCloseKey, g_mwszzRegistryLibs, RegCloseKey, oslfExpectedOnWin5x | oslfRequired );
@@ -178,6 +179,13 @@ LOCAL VOID InitFailurePointsFromRegistry()
             g_cFailurePoints = 0 - _wtol( wszBuf );
         }
     }
+#else
+    //  Linux: read failure-point count from env var (decimal, optionally negative).
+    if ( const char* sz = getenv( "ESE_DLL_INIT_FAILURE_POINT" ) )
+    {
+        g_cFailurePoints = 0 - atoi( sz );
+    }
+#endif
 
     return;
 }
