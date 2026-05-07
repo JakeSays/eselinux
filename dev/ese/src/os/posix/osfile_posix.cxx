@@ -11,6 +11,7 @@
 //     the abstract interface so we keep them verbatim from upstream.
 
 #include "osstd.hxx"
+#include "iouring_posix.hxx"
 
 
 ////////////////////////////////////////////////
@@ -41,6 +42,7 @@ BOOL FOSFilePreinit()
 
 void OSFileTerm()
 {
+    osposix::IOUringTerm();
     if ( g_rgbZero )
     {
         OSMemoryPageFree( g_rgbZero );
@@ -58,7 +60,7 @@ ERR  ErrOSFileInit()
             return ErrERRCheck( JET_errOutOfMemory );
         }
     }
-    return JET_errSuccess;
+    return osposix::ErrIOUringInit();
 }
 
 void COSLayerPreInit::SetZeroExtend( QWORD cbZeroExtend )

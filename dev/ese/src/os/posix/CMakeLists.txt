@@ -81,6 +81,7 @@ set(OSPOSIX_WINAPI_SOURCES
     winapi_tls.cxx
     winapi_werapi.cxx
     syncfile_posix.cxx
+    iouring_posix.cxx
 )
 
 add_library(osposix STATIC
@@ -123,6 +124,12 @@ if (NOT WIN32)
         -fvisibility=default
         -fno-visibility-inlines-hidden
     )
+
+    # io_uring backing for the IFileAPI implementation (CIoUringFile in
+    # syncfile_posix.cxx + the global ring in iouring_posix.cxx).
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBURING REQUIRED IMPORTED_TARGET liburing)
+    target_link_libraries(osposix PUBLIC PkgConfig::LIBURING)
 endif ()
 
 target_include_directories(osposix PRIVATE
