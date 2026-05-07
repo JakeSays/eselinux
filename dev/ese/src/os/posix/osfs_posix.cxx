@@ -24,12 +24,21 @@
 #include "osstd.hxx"
 
 #include "_osfs.hxx"
+#include "winapi_path.hxx"
 
 #include "blockcache/_fileidentification.hxx"
 #include "blockcache/_cachetelemetry.hxx"
 #include "blockcache/_cacherepository.hxx"
 
-#include <unistd.h>     // getcwd
+#include <unistd.h>     // getcwd / unlink / rmdir
+#include <sys/stat.h>   // mkdir / stat
+#include <sys/types.h>
+#include <sys/sendfile.h>
+#include <sys/statvfs.h>
+#include <fcntl.h>      // open
+#include <stdlib.h>     // mkstemp
+#include <string.h>     // strlen
+#include <errno.h>
 
 
 ////////////////////////////////////////////////
@@ -162,12 +171,31 @@ COSFileSystem::~COSFileSystem()
 {
 }
 
-ERR COSFileSystem::ErrGetLastError( const DWORD /* error */ )
+ERR COSFileSystem::ErrGetLastError( const DWORD error )
 {
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    //  Translate Win32 error codes (set by SetLastError in winapi_*.cxx)
+    //  into the JET_err codes the engine treats as comparable. Win32
+    //  errors come from our shim's translation of errno at API boundaries.
+    switch ( error )
+    {
+        case ERROR_SUCCESS:                     return JET_errSuccess;
+        case ERROR_FILE_NOT_FOUND:              return ErrERRCheck( JET_errFileNotFound );
+        case ERROR_PATH_NOT_FOUND:              return ErrERRCheck( JET_errInvalidPath );
+        case ERROR_TOO_MANY_OPEN_FILES:         return ErrERRCheck( JET_errOutOfFileHandles );
+        case ERROR_ACCESS_DENIED:               return ErrERRCheck( JET_errFileAccessDenied );
+        case ERROR_HANDLE_EOF:                  return ErrERRCheck( JET_errFileIOBeyondEOF );
+        case ERROR_NOT_ENOUGH_MEMORY:           return ErrERRCheck( JET_errOutOfMemory );
+        case ERROR_OUTOFMEMORY:                 return ErrERRCheck( JET_errOutOfMemory );
+        case ERROR_DISK_FULL:                   return ErrERRCheck( JET_errDiskFull );
+        case ERROR_FILE_EXISTS:                 return ErrERRCheck( JET_errFileAccessDenied );
+        case ERROR_SHARING_VIOLATION:           return ErrERRCheck( JET_errFileAccessDenied );
+        case ERROR_INVALID_PARAMETER:           return ErrERRCheck( JET_errInvalidParameter );
+        case ERROR_INVALID_NAME:                return ErrERRCheck( JET_errInvalidPath );
+        default:                                return ErrERRCheck( JET_errDiskIO );
+    }
 }
 
-ERR COSFileSystem::ErrDiskSpace(    const WCHAR* const  /* wszPath */,
+ERR COSFileSystem::ErrDiskSpace(    const WCHAR* const  wszPath,
                                     QWORD* const        pcbFreeForUser,
                                     QWORD* const        pcbTotalForUser,
                                     QWORD* const        pcbFreeOnDisk )
@@ -175,7 +203,22 @@ ERR COSFileSystem::ErrDiskSpace(    const WCHAR* const  /* wszPath */,
     if ( pcbFreeForUser )  { *pcbFreeForUser = 0; }
     if ( pcbTotalForUser ) { *pcbTotalForUser = 0; }
     if ( pcbFreeOnDisk )   { *pcbFreeOnDisk = 0; }
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+
+    char szPath[ 4096 ];
+    if ( !osposix::WidePathToUtf8( wszPath, szPath, sizeof( szPath ) ) )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+    struct statvfs vfs;
+    if ( statvfs( szPath, &vfs ) != 0 )
+    {
+        return ErrERRCheck( JET_errDiskIO );
+    }
+    const QWORD cbBlock = (QWORD)vfs.f_frsize;
+    if ( pcbFreeForUser )  { *pcbFreeForUser  = (QWORD)vfs.f_bavail * cbBlock; }
+    if ( pcbTotalForUser ) { *pcbTotalForUser = (QWORD)vfs.f_blocks * cbBlock; }
+    if ( pcbFreeOnDisk )   { *pcbFreeOnDisk   = (QWORD)vfs.f_bfree  * cbBlock; }
+    return JET_errSuccess;
 }
 
 ERR COSFileSystem::ErrFileSectorSize( const WCHAR* const /* wszPath */, DWORD* const pcbSize )
@@ -202,8 +245,14 @@ ERR COSFileSystem::ErrFileAtomicWriteSize( const WCHAR* const /* wszPath */, DWO
 ERR COSFileSystem::ErrPathRoot( const WCHAR* const /* wszPath */,
                                 __out_bcount(OSFSAPI_MAX_PATH*sizeof(WCHAR)) WCHAR* const wszAbsRootPath )
 {
-    if ( wszAbsRootPath ) { wszAbsRootPath[0] = L'\0'; }
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    //  Linux has no per-path "drive root" concept; everything roots at "/".
+    //  Engine uses this for volume-id tracking that isn't meaningful on Linux.
+    if ( wszAbsRootPath )
+    {
+        wszAbsRootPath[ 0 ] = L'/';
+        wszAbsRootPath[ 1 ] = L'\0';
+    }
+    return JET_errSuccess;
 }
 
 void COSFileSystem::PathVolumeCanonicalAndDiskId(   const WCHAR* const /* wszAbsRootPath */,
@@ -228,15 +277,87 @@ ERR COSFileSystem::ErrPathComplete( _In_z_ const WCHAR* const                   
     return JET_errSuccess;
 }
 
-ERR COSFileSystem::ErrPathParse(    const WCHAR* const                                              wszPath,
-                                    __out_bcount(OSFSAPI_MAX_PATH*sizeof(WCHAR)) WCHAR* const       wszFolder,
-                                    __out_bcount(OSFSAPI_MAX_PATH*sizeof(WCHAR)) WCHAR* const       wszFileBase,
-                                    __out_bcount(OSFSAPI_MAX_PATH*sizeof(WCHAR)) WCHAR* const       wszFileExt )
+ERR COSFileSystem::ErrPathParse( const WCHAR* const                                              wszPath,
+                                 __out_bcount(OSFSAPI_MAX_PATH*sizeof(WCHAR)) WCHAR* const       wszFolder,
+                                 __out_bcount(OSFSAPI_MAX_PATH*sizeof(WCHAR)) WCHAR* const       wszFileBase,
+                                 __out_bcount(OSFSAPI_MAX_PATH*sizeof(WCHAR)) WCHAR* const       wszFileExt )
 {
-    if ( wszFolder )   { wszFolder[0] = L'\0'; }
-    if ( wszFileBase ) { wszFileBase[0] = L'\0'; }
-    if ( wszFileExt )  { wszFileExt[0] = L'\0'; }
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    if ( wszFolder )
+    {
+        wszFolder[ 0 ] = L'\0';
+    }
+    if ( wszFileBase )
+    {
+        wszFileBase[ 0 ] = L'\0';
+    }
+    if ( wszFileExt )
+    {
+        wszFileExt[ 0 ] = L'\0';
+    }
+    if ( !wszPath )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+
+    //  Find last separator: split folder vs filename.
+    size_t cchPath = 0;
+    while ( wszPath[ cchPath ] )
+    {
+        ++cchPath;
+    }
+    size_t ichSep = cchPath;
+    for ( size_t i = cchPath; i > 0; --i )
+    {
+        const WCHAR c = wszPath[ i - 1 ];
+        if ( c == L'/' || c == L'\\' )
+        {
+            ichSep = i;
+            break;
+        }
+    }
+
+    //  Folder includes the trailing separator (matches Win32's ErrPathParse).
+    if ( wszFolder )
+    {
+        size_t i = 0;
+        for ( ; i < ichSep && i + 1 < OSFSAPI_MAX_PATH; ++i )
+        {
+            wszFolder[ i ] = wszPath[ i ];
+        }
+        wszFolder[ i ] = L'\0';
+    }
+
+    //  Find last '.' after the separator; everything before is the base,
+    //  everything from '.' onward (including '.') is the extension.
+    size_t ichDot = cchPath;
+    for ( size_t i = cchPath; i > ichSep; --i )
+    {
+        if ( wszPath[ i - 1 ] == L'.' )
+        {
+            ichDot = i - 1;
+            break;
+        }
+    }
+
+    if ( wszFileBase )
+    {
+        size_t i = 0;
+        for ( ; i < ichDot - ichSep && i + 1 < OSFSAPI_MAX_PATH; ++i )
+        {
+            wszFileBase[ i ] = wszPath[ ichSep + i ];
+        }
+        wszFileBase[ i ] = L'\0';
+    }
+    if ( wszFileExt )
+    {
+        size_t i = 0;
+        for ( ; ichDot + i < cchPath && i + 1 < OSFSAPI_MAX_PATH; ++i )
+        {
+            wszFileExt[ i ] = wszPath[ ichDot + i ];
+        }
+        wszFileExt[ i ] = L'\0';
+    }
+    return JET_errSuccess;
 }
 
 const WCHAR * const COSFileSystem::WszPathFileName( _In_z_ const WCHAR * const wszOptionalFullPath ) const
@@ -392,10 +513,27 @@ BOOL COSFileSystem::FPathIsRelative( _In_ PCWSTR wszPath )
     return ( wszPath && wszPath[0] != L'/' );
 }
 
-ERR COSFileSystem::ErrPathExists( _In_ PCWSTR /* wszPath */, _Out_opt_ BOOL* pfIsDirectory )
+ERR COSFileSystem::ErrPathExists( _In_ PCWSTR wszPath, _Out_opt_ BOOL* pfIsDirectory )
 {
-    if ( pfIsDirectory ) { *pfIsDirectory = fFalse; }
-    return ErrERRCheck( JET_errFileNotFound );
+    if ( pfIsDirectory )
+    {
+        *pfIsDirectory = fFalse;
+    }
+    char szPath[ 4096 ];
+    if ( !osposix::WidePathToUtf8( wszPath, szPath, sizeof( szPath ) ) )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+    struct stat st;
+    if ( stat( szPath, &st ) != 0 )
+    {
+        return ErrERRCheck( JET_errFileNotFound );
+    }
+    if ( pfIsDirectory )
+    {
+        *pfIsDirectory = S_ISDIR( st.st_mode ) ? fTrue : fFalse;
+    }
+    return JET_errSuccess;
 }
 
 ERR COSFileSystem::ErrPathFolderDefault(    _Out_z_bytecap_(cbSize) PWSTR const wszFolder,
@@ -414,23 +552,109 @@ ERR COSFileSystem::ErrPathFolderDefault(    _Out_z_bytecap_(cbSize) PWSTR const 
 
 ERR COSFileSystem::ErrGetTempFolder( _Out_z_cap_(cchFolder) PWSTR const wszFolder, _In_ const DWORD cchFolder )
 {
-    if ( wszFolder && cchFolder >= 5 )
+    //  Honor $TMPDIR (matches POSIX convention) before falling back to /tmp.
+    const char* sz = getenv( "TMPDIR" );
+    if ( !sz || !*sz )
     {
-        wszFolder[0] = L'/'; wszFolder[1] = L't'; wszFolder[2] = L'm'; wszFolder[3] = L'p'; wszFolder[4] = L'\0';
+        sz = "/tmp";
+    }
+    if ( !wszFolder || cchFolder == 0 )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+    DWORD i = 0;
+    for ( ; sz[ i ] && i + 2 < cchFolder; ++i )
+    {
+        wszFolder[ i ] = (WCHAR)(unsigned char)sz[ i ];
+    }
+    if ( i == 0 || wszFolder[ i - 1 ] != L'/' )
+    {
+        wszFolder[ i++ ] = L'/';
+    }
+    wszFolder[ i ] = L'\0';
+    return JET_errSuccess;
+}
+
+ERR COSFileSystem::ErrGetTempFileName( _In_z_ PWSTR const                          wszFolder,
+                                       _In_z_ PWSTR const                          wszPrefix,
+                                       _Out_z_cap_(OSFSAPI_MAX_PATH) PWSTR const   wszFileName )
+{
+    if ( !wszFileName )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+    wszFileName[ 0 ] = L'\0';
+
+    //  Build "<folder>/<prefix>XXXXXX" template suitable for mkstemp.
+    char szFolder[ 4096 ];
+    char szPrefix[ 256 ];
+    if ( !osposix::WidePathToUtf8( wszFolder, szFolder, sizeof( szFolder ) ) ||
+         !osposix::WidePathToUtf8( wszPrefix, szPrefix, sizeof( szPrefix ) ) )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+
+    char szTemplate[ 4400 ];
+    int n = snprintf( szTemplate, sizeof( szTemplate ), "%s%s%sXXXXXX",
+                      szFolder,
+                      ( szFolder[ 0 ] && szFolder[ strlen( szFolder ) - 1 ] != '/' ) ? "/" : "",
+                      szPrefix );
+    if ( n < 0 || n >= (int)sizeof( szTemplate ) )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+
+    const int fd = mkstemp( szTemplate );
+    if ( fd < 0 )
+    {
+        return ErrERRCheck( JET_errFileAccessDenied );
+    }
+    close( fd );
+
+    //  Convert generated path back to wide for the caller.
+    if ( !osposix::Utf8ToWide( szTemplate, wszFileName, OSFSAPI_MAX_PATH ) )
+    {
+        unlink( szTemplate );
+        return ErrERRCheck( JET_errOutOfBuffers );
     }
     return JET_errSuccess;
 }
 
-ERR COSFileSystem::ErrGetTempFileName( _In_z_ PWSTR const                          /* wszFolder */,
-                                       _In_z_ PWSTR const                          /* wszPrefix */,
-                                       _Out_z_cap_(OSFSAPI_MAX_PATH) PWSTR const   wszFileName )
+ERR COSFileSystem::ErrFolderCreate( const WCHAR* const wszPath )
 {
-    if ( wszFileName ) { wszFileName[0] = L'\0'; }
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    char szPath[ 4096 ];
+    if ( !osposix::WidePathToUtf8( wszPath, szPath, sizeof( szPath ) ) )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+    if ( mkdir( szPath, 0755 ) != 0 )
+    {
+        if ( errno == EEXIST )
+        {
+            return ErrERRCheck( JET_errFileAccessDenied );
+        }
+        return ErrERRCheck( JET_errInvalidPath );
+    }
+    return JET_errSuccess;
 }
 
-ERR COSFileSystem::ErrFolderCreate( const WCHAR* const /* wszPath */ )    { return ErrERRCheck( JET_errFeatureNotAvailable ); }
-ERR COSFileSystem::ErrFolderRemove( const WCHAR* const /* wszPath */ )    { return ErrERRCheck( JET_errFeatureNotAvailable ); }
+ERR COSFileSystem::ErrFolderRemove( const WCHAR* const wszPath )
+{
+    char szPath[ 4096 ];
+    if ( !osposix::WidePathToUtf8( wszPath, szPath, sizeof( szPath ) ) )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+    if ( rmdir( szPath ) != 0 )
+    {
+        if ( errno == ENOENT )
+        {
+            return ErrERRCheck( JET_errInvalidPath );
+        }
+        return ErrERRCheck( JET_errFileAccessDenied );
+    }
+    return JET_errSuccess;
+}
 
 namespace
 {
@@ -443,16 +667,50 @@ namespace
     class CEmptyFileFind : public IFileFindAPI
     {
     public:
-        ~CEmptyFileFind() override {}
-        ERR ErrNext() override { return ErrERRCheck( JET_errFileNotFound ); }
+        ~CEmptyFileFind() override
+        {
+        }
+
+        ERR ErrNext() override
+        {
+            return ErrERRCheck( JET_errFileNotFound );
+        }
+
         ERR ErrIsFolder( BOOL* const pfFolder ) override
-        { if ( pfFolder ) *pfFolder = fFalse; return ErrERRCheck( JET_errFileNotFound ); }
+        {
+            if ( pfFolder )
+            {
+                *pfFolder = fFalse;
+            }
+            return ErrERRCheck( JET_errFileNotFound );
+        }
+
         ERR ErrPath( __out_bcount(OSFSAPI_MAX_PATH*sizeof(WCHAR)) WCHAR* const wszAbsFoundPath ) override
-        { if ( wszAbsFoundPath ) wszAbsFoundPath[0] = L'\0'; return ErrERRCheck( JET_errFileNotFound ); }
+        {
+            if ( wszAbsFoundPath )
+            {
+                wszAbsFoundPath[ 0 ] = L'\0';
+            }
+            return ErrERRCheck( JET_errFileNotFound );
+        }
+
         ERR ErrSize( _Out_ QWORD* const pcbSize, _In_ const IFileAPI::FILESIZE /*file*/ ) override
-        { if ( pcbSize ) *pcbSize = 0; return ErrERRCheck( JET_errFileNotFound ); }
+        {
+            if ( pcbSize )
+            {
+                *pcbSize = 0;
+            }
+            return ErrERRCheck( JET_errFileNotFound );
+        }
+
         ERR ErrIsReadOnly( BOOL* const pfReadOnly ) override
-        { if ( pfReadOnly ) *pfReadOnly = fFalse; return ErrERRCheck( JET_errFileNotFound ); }
+        {
+            if ( pfReadOnly )
+            {
+                *pfReadOnly = fFalse;
+            }
+            return ErrERRCheck( JET_errFileNotFound );
+        }
     };
 }
 
@@ -464,18 +722,123 @@ ERR COSFileSystem::ErrFileFind( const WCHAR* const /* wszFind */, IFileFindAPI**
     return JET_errSuccess;
 }
 
-ERR COSFileSystem::ErrFileDelete( const WCHAR* const /* wszPath */ )      { return ErrERRCheck( JET_errFeatureNotAvailable ); }
-ERR COSFileSystem::ErrFileMove(   const WCHAR* const /* wszPathSource */,
-                                  const WCHAR* const /* wszPathDest */,
-                                  const BOOL         /* fOverwriteExisting */ )
+ERR COSFileSystem::ErrFileDelete( const WCHAR* const wszPath )
 {
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    char szPath[ 4096 ];
+    if ( !osposix::WidePathToUtf8( wszPath, szPath, sizeof( szPath ) ) )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+    if ( unlink( szPath ) != 0 )
+    {
+        if ( errno == ENOENT )
+        {
+            return ErrERRCheck( JET_errFileNotFound );
+        }
+        return ErrERRCheck( JET_errFileAccessDenied );
+    }
+    return JET_errSuccess;
 }
-ERR COSFileSystem::ErrFileCopy(   const WCHAR* const /* wszPathSource */,
-                                  const WCHAR* const /* wszPathDest */,
-                                  const BOOL         /* fOverwriteExisting */ )
+
+ERR COSFileSystem::ErrFileMove( const WCHAR* const  wszPathSource,
+                                const WCHAR* const  wszPathDest,
+                                const BOOL          fOverwriteExisting )
 {
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    char szSrc[ 4096 ];
+    char szDst[ 4096 ];
+    if ( !osposix::WidePathToUtf8( wszPathSource, szSrc, sizeof( szSrc ) ) ||
+         !osposix::WidePathToUtf8( wszPathDest,   szDst, sizeof( szDst ) ) )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+
+    //  rename(2) atomically replaces the destination on Linux even when
+    //  it exists. To honor the !fOverwriteExisting contract, check first
+    //  via stat. There's a TOCTOU window, but ESE only uses the no-
+    //  overwrite path during paranoid bookkeeping (e.g., rolling logs),
+    //  not for security-sensitive moves.
+    if ( !fOverwriteExisting )
+    {
+        struct stat st;
+        if ( stat( szDst, &st ) == 0 )
+        {
+            return ErrERRCheck( JET_errFileAccessDenied );
+        }
+    }
+    if ( rename( szSrc, szDst ) != 0 )
+    {
+        if ( errno == ENOENT )
+        {
+            return ErrERRCheck( JET_errFileNotFound );
+        }
+        return ErrERRCheck( JET_errFileAccessDenied );
+    }
+    return JET_errSuccess;
+}
+
+ERR COSFileSystem::ErrFileCopy( const WCHAR* const  wszPathSource,
+                                const WCHAR* const  wszPathDest,
+                                const BOOL          fOverwriteExisting )
+{
+    char szSrc[ 4096 ];
+    char szDst[ 4096 ];
+    if ( !osposix::WidePathToUtf8( wszPathSource, szSrc, sizeof( szSrc ) ) ||
+         !osposix::WidePathToUtf8( wszPathDest,   szDst, sizeof( szDst ) ) )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+
+    const int fdSrc = open( szSrc, O_RDONLY | O_CLOEXEC );
+    if ( fdSrc < 0 )
+    {
+        if ( errno == ENOENT )
+        {
+            return ErrERRCheck( JET_errFileNotFound );
+        }
+        return ErrERRCheck( JET_errFileAccessDenied );
+    }
+
+    const int flags = O_WRONLY | O_CREAT | O_CLOEXEC | ( fOverwriteExisting ? O_TRUNC : O_EXCL );
+    const int fdDst = open( szDst, flags, 0644 );
+    if ( fdDst < 0 )
+    {
+        const int err = errno;
+        close( fdSrc );
+        if ( err == EEXIST )
+        {
+            return ErrERRCheck( JET_errFileAccessDenied );
+        }
+        return ErrERRCheck( JET_errFileAccessDenied );
+    }
+
+    struct stat st;
+    if ( fstat( fdSrc, &st ) != 0 )
+    {
+        close( fdSrc );
+        close( fdDst );
+        return ErrERRCheck( JET_errDiskIO );
+    }
+
+    off_t cbRemaining = st.st_size;
+    off_t ibCurrent = 0;
+    while ( cbRemaining > 0 )
+    {
+        const ssize_t cb = sendfile( fdDst, fdSrc, &ibCurrent, (size_t)cbRemaining );
+        if ( cb < 0 )
+        {
+            close( fdSrc );
+            close( fdDst );
+            unlink( szDst );
+            return ErrERRCheck( JET_errDiskIO );
+        }
+        cbRemaining -= cb;
+    }
+    close( fdSrc );
+    if ( close( fdDst ) != 0 )
+    {
+        return ErrERRCheck( JET_errDiskIO );
+    }
+    return JET_errSuccess;
 }
 
 extern "C" ERR CSyncFile_ErrFileCreate( const WCHAR* wszPath, IFileAPI::FileModeFlags fmf, IFileAPI** ppfapi );

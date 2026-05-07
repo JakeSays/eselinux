@@ -14,25 +14,52 @@
 
 
 ////////////////////////////////////////////////
-//  Lifecycle
+//  Zero-extend buffer globals + COSLayerPreInit::SetZeroExtend
+//
+//  Engine call sites use g_rgbZero as the source pointer for log-extend
+//  pwrite()s (and other zero-fill IO) — see logwrite.cxx and io.cxx. The
+//  buffer is allocated lazily during ErrOSFileInit so we know g_cbZero is
+//  final. SetZeroExtend may grow the desired size, but the engine resizes
+//  via FOSFileExtendCacheZeroBufferSize that we don't yet implement;
+//  starting at 1 MB matches the upstream default and is plenty for v1.
 
-void OSFilePostterm() {}
-BOOL FOSFilePreinit() { return fTrue; }
-void OSFileTerm()     {}
-ERR  ErrOSFileInit()  { return JET_errSuccess; }
+QWORD           g_cbZero    = 1024 * 1024;   // 1 MB default extension
+BYTE*           g_rgbZero   = NULL;          // allocated by ErrOSFileInit
 
 
 ////////////////////////////////////////////////
-//  Zero-extend buffer globals + COSLayerPreInit::SetZeroExtend
-//
-//  Upstream osfile.cxx defines these alongside its IOCP-flavoured COSFile.
-//  Engine code (cpage.cxx, osblockcache.cxx) and the eseutil binary depend
-//  on the symbols; the buffer itself is allocated/used by the io path that
-//  isn't ported yet (Phase 6), but the size-knob and the static method
-//  exist as part of the COSLayerPreInit param-validation surface.
+//  Lifecycle
 
-QWORD           g_cbZero    = 1024 * 1024;   // 1 MB default extension
-BYTE*           g_rgbZero   = NULL;          // wired up when io_uring path lands
+void OSFilePostterm()
+{
+}
+
+BOOL FOSFilePreinit()
+{
+    return fTrue;
+}
+
+void OSFileTerm()
+{
+    if ( g_rgbZero )
+    {
+        OSMemoryPageFree( g_rgbZero );
+        g_rgbZero = NULL;
+    }
+}
+
+ERR  ErrOSFileInit()
+{
+    if ( !g_rgbZero )
+    {
+        g_rgbZero = (BYTE*)PvOSMemoryPageAlloc( (size_t)g_cbZero, NULL );
+        if ( !g_rgbZero )
+        {
+            return ErrERRCheck( JET_errOutOfMemory );
+        }
+    }
+    return JET_errSuccess;
+}
 
 void COSLayerPreInit::SetZeroExtend( QWORD cbZeroExtend )
 {

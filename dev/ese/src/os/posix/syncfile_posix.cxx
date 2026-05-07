@@ -63,7 +63,10 @@ public:
     //  Identification / properties
     //
 
-    FileModeFlags Fmf() const override { return m_fmf; }
+    FileModeFlags Fmf() const override
+    {
+        return m_fmf;
+    }
 
     ERR ErrPath( __out_bcount(cbOSFSAPI_MAX_PATHW) WCHAR* const wszAbsPath ) override
     {
@@ -91,7 +94,10 @@ public:
         return JET_errSuccess;
     }
 
-    LONG CLogicalCopies() override { return 1; }
+    LONG CLogicalCopies() override
+    {
+        return 1;
+    }
 
     ERR ErrSetSize( const TraceContext& /*tc*/,
                     const QWORD         cbSize,
@@ -151,7 +157,9 @@ public:
         return JET_errSuccess;
     }
 
-    void SetNoFlushNeeded() override {}
+    void SetNoFlushNeeded() override
+    {
+    }
 
     ERR ErrIOSize( DWORD* const pcbSize ) override
     {
@@ -174,7 +182,9 @@ public:
         return JET_errSuccess;
     }
 
-    VOID ReleaseUnusedIOREQ( VOID * /*pioreq*/ ) override {}
+    VOID ReleaseUnusedIOREQ( VOID * /*pioreq*/ ) override
+    {
+    }
 
     ERR ErrIORead(  const TraceContext& tc,
                     const QWORD         ibOffset,
@@ -249,42 +259,110 @@ public:
         return err;
     }
 
-    ERR ErrIOIssue() override { return JET_errSuccess; }
+    ERR ErrIOIssue() override
+    {
+        return JET_errSuccess;
+    }
 
     //  Memory-mapped IO is unsupported in this minimal v1 IFileAPI; the
     //  engine has fallback paths through ErrIORead/Write for everywhere
     //  it would normally MM-cache.
     ERR ErrMMRead( const QWORD /*ibOffset*/, const QWORD /*cbSize*/, void** const ppvMap ) override
-    { if ( ppvMap ) *ppvMap = nullptr; return ErrERRCheck( JET_errFeatureNotAvailable ); }
-    ERR ErrMMCopy( const QWORD /*ibOffset*/, const QWORD /*cbSize*/, void** const ppvMap ) override
-    { if ( ppvMap ) *ppvMap = nullptr; return ErrERRCheck( JET_errFeatureNotAvailable ); }
-    ERR ErrMMIORead( _In_ const QWORD /*ibOffset*/, _Out_writes_bytes_(cb) BYTE * const /*pb*/,
-                     _In_ ULONG /*cb*/, _In_ const FileMmIoReadFlag /*fmmiorf*/ ) override
-    { return ErrERRCheck( JET_errFeatureNotAvailable ); }
-    ERR ErrMMRevert( _In_ const QWORD /*ibOffset*/, _In_reads_bytes_(cbSize) void* const /*pvMap*/,
-                     _In_ const QWORD /*cbSize*/ ) override
-    { return ErrERRCheck( JET_errFeatureNotAvailable ); }
-    ERR ErrMMFree( void* const /*pvMap*/ ) override { return JET_errSuccess; }
+    {
+        if ( ppvMap )
+        {
+            *ppvMap = nullptr;
+        }
+        return ErrERRCheck( JET_errFeatureNotAvailable );
+    }
 
-    VOID RegisterIFilePerfAPI( IFilePerfAPI * const pfpapi ) override { m_pfpapi = pfpapi; }
-    VOID UpdateIFilePerfAPIEngineFileTypeId( _In_ const DWORD /*dwEngineFileType*/, _In_ const QWORD /*qwEngineFileId*/ ) override {}
+    ERR ErrMMCopy( const QWORD /*ibOffset*/, const QWORD /*cbSize*/, void** const ppvMap ) override
+    {
+        if ( ppvMap )
+        {
+            *ppvMap = nullptr;
+        }
+        return ErrERRCheck( JET_errFeatureNotAvailable );
+    }
+
+    ERR ErrMMIORead( _In_ const QWORD /*ibOffset*/,
+                     _Out_writes_bytes_(cb) BYTE * const /*pb*/,
+                     _In_ ULONG /*cb*/,
+                     _In_ const FileMmIoReadFlag /*fmmiorf*/ ) override
+    {
+        return ErrERRCheck( JET_errFeatureNotAvailable );
+    }
+
+    ERR ErrMMRevert( _In_ const QWORD /*ibOffset*/,
+                     _In_reads_bytes_(cbSize) void* const /*pvMap*/,
+                     _In_ const QWORD /*cbSize*/ ) override
+    {
+        return ErrERRCheck( JET_errFeatureNotAvailable );
+    }
+
+    ERR ErrMMFree( void* const /*pvMap*/ ) override
+    {
+        return JET_errSuccess;
+    }
+
+    VOID RegisterIFilePerfAPI( IFilePerfAPI * const pfpapi ) override
+    {
+        m_pfpapi = pfpapi;
+    }
+
+    VOID UpdateIFilePerfAPIEngineFileTypeId( _In_ const DWORD /*dwEngineFileType*/,
+                                              _In_ const QWORD /*qwEngineFileId*/ ) override
+    {
+    }
 
     ERR ErrNTFSAttributeListSize( QWORD* const pcbSize ) override
-    { if ( pcbSize ) *pcbSize = 0; return JET_errSuccess; }
+    {
+        if ( pcbSize )
+        {
+            *pcbSize = 0;
+        }
+        return JET_errSuccess;
+    }
 
     ERR ErrDiskId( ULONG_PTR* const pulDiskId ) const override
-    { if ( pulDiskId ) *pulDiskId = 0; return JET_errSuccess; }
+    {
+        if ( pulDiskId )
+        {
+            *pulDiskId = 0;
+        }
+        return JET_errSuccess;
+    }
 
-    LONG64 CioNonFlushed() const override { return 0; }
+    LONG64 CioNonFlushed() const override
+    {
+        return 0;
+    }
 
-    BOOL FSeekPenalty() const override { return fFalse; }  //  treat as SSD
+    BOOL FSeekPenalty() const override
+    {
+        //  Treat as SSD: skip the optional spinning-disk-friendly seek
+        //  ordering the engine layers on this. Linux block devices expose
+        //  rotational status via /sys/block/<dev>/queue/rotational but
+        //  we don't surface it here.
+        return fFalse;
+    }
 
 #ifdef DEBUG
-    DWORD DwEngineFileType() const override { return 0; }
-    QWORD QwEngineFileId() const override { return 0; }
+    DWORD DwEngineFileType() const override
+    {
+        return 0;
+    }
+
+    QWORD QwEngineFileId() const override
+    {
+        return 0;
+    }
 #endif
 
-    TICK DtickIOElapsed( void* const /*pvIOContext*/ ) override { return 0; }
+    TICK DtickIOElapsed( void* const /*pvIOContext*/ ) override
+    {
+        return 0;
+    }
 };
 
 //  Translate IFileAPI::FileModeFlags into the DesiredAccess + Creation
