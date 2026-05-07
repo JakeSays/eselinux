@@ -2526,7 +2526,13 @@ const ULONG ulDAEVersion550         = 0x00000550;
 const ULONG ulDAEVersionESE97       = 0x00000620;
 const ULONG ulDAEUpdateMajorESE97   = 0x00000002;
 
-const ULONG ulDAEVersionNewLVChunk      = 0x00000620;
+//  The "NewLVChunk" version was historically 0x620,0x11 — the major in which
+//  the LV-chunk-size fix landed on Windows. The Linux port ships only at
+//  0x10000+, well past that fix, so we promote the constant to keep the
+//  Assert( ulDAEVersionMax == ulDAEVersionNewLVChunk ) invariant in
+//  FDBIsLVChunkSizeCompatible (db.cxx) holding. The compatibility branch
+//  inside that function is now effectively dead for Linux-format files.
+const ULONG ulDAEVersionNewLVChunk      = 0x00010000;
 const ULONG ulDAEUpdateMajorNewLVChunk  = 0x00000011;
 
 const USHORT usDAECreateDbVersion       = 0x0002;

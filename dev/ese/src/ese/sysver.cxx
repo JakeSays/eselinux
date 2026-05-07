@@ -18,11 +18,20 @@
 //  These values never decremented.  As an example, version 1568.160.340 could be followed by
 //  1568.160.360 or 1568.180.360, but never by 1568.180.0.
 
-//  Marked PERSISTED because while the whole table is not persisted, individual rows can be 
-//  used to the values in the various ESE file headers.  Entries once added to the table should 
+//  Marked PERSISTED because while the whole table is not persisted, individual rows can be
+//  used to the values in the various ESE file headers.  Entries once added to the table should
 //  not have their values changed.  You should append to the table newer / larger versions.
 //  A service pack / QFE version might be able to be inserted, but should not shift any other
 //  values.
+//
+//  Linux port: ulDbMajorVersion is bumped from 1568 to 0x10000 (65536) so that
+//  Linux-built .edb files are rejected by Windows ESE (and Windows-built .edb
+//  files are rejected by us) at ErrDBFindHighestMatchingDbMajors. The on-disk
+//  format diverges from Windows ESE in places that aren't otherwise self-
+//  flagging (ICU sort-key bytes, libsodium encryption blob, etc.), so the
+//  major-version split is what gives us a hard, symmetric reject. The choice
+//  of 0x10000 is arbitrary except that it's far enough from 1568 that any
+//  hypothetical future Microsoft bump is unlikely to collide.
 PERSISTED
 constexpr FormatVersions g_rgfmtversEngine[] = {
 
@@ -32,12 +41,12 @@ constexpr FormatVersions g_rgfmtversEngine[] = {
 // { JET_efvExchange2000Rtm                            { 1568,0x09,- }, { 7,4,- },  { -,-,- } },  // snapshot of the versions used by Exchange 2000 RTM. Note: Minor - 3704 (not 4000)
 // { JET_efvExchange2003Rtm                            { 1568,0x09,- }, { 7,5,- },  { -,-,- } },  // snapshot of the versions used by Exchange 2003 RTM. Note: Minor - 3704 (not 4000)
 
-    { JET_efvExtHdrRootFieldAutoIncStorageStagedToDebug,{ 1568,20,0 },  { 8,4,3 },   { 0,0,0 } },
+    { JET_efvExtHdrRootFieldAutoIncStorageStagedToDebug,{ 0x10000,20,0 },  { 8,4,3 },   { 0,0,0 } },
 
 #ifdef DEBUG
-    { JET_efvWindows10Rtm, /* 8020 */                   { 1568,20,0 },  { 8,5,11 },  { 0,0,0 } },
+    { JET_efvWindows10Rtm, /* 8020 */                   { 0x10000,20,0 },  { 8,5,11 },  { 0,0,0 } },
 #else
-    { JET_efvWindows10Rtm, /* 8020 */                   { 1568,20,0 },  { 8,4,3 },   { 0,0,0 } },
+    { JET_efvWindows10Rtm, /* 8020 */                   { 0x10000,20,0 },  { 8,4,3 },   { 0,0,0 } },
 #endif
 
 
@@ -49,54 +58,54 @@ constexpr FormatVersions g_rgfmtversEngine[] = {
     // these bad versions.  SOMEONE makes a fair argument we perhaps should not support these versions back
     // this far ... as we did not fully implement it.  It may be worth trimming this table up a little,
     // but that will require a bunch of test fixes.
-    { JET_efvPersistedLostFlushMapStagedToDebug,        { 1568,20,0 },  { 8,5,13 },  { 3,0,0 } },
-    { JET_efvExchange2016Rtm, /* 8520 */                { 1568,20,0 },  { 8,5,14 },  { 3,0,0 } },  //  Final format version for Exchange 2016 RTM.  Actually released summer of 2015.
-    { JET_efvWindows10v2Rtm, /* 8620 */                 { 1568,20,0 },  { 8,5,14 },  { 3,0,0 } },  //  Final format version for Windows 10 Version 1511 (Threshold 2).
-    { JET_efvSupportNlsInvariantLocale,                 { 1568,20,0 },  { 8,5,14 },  { 3,0,0 } },
-    { JET_efvEncryptedColumns,                          { 1568,20,0 },  { 8,5,15 },  { 3,0,0 } },
-    { JET_efvLoggingDeleteOfTableFcbs,                  { 1568,20,0 },  { 8,5,16 },  { 3,0,0 } },
-    { JET_efvExchange2016Cu1Rtm  /* 8920 */,            { 1568,20,0 },  { 8,5,16 },  { 3,0,0 } },
+    { JET_efvPersistedLostFlushMapStagedToDebug,        { 0x10000,20,0 },  { 8,5,13 },  { 3,0,0 } },
+    { JET_efvExchange2016Rtm, /* 8520 */                { 0x10000,20,0 },  { 8,5,14 },  { 3,0,0 } },  //  Final format version for Exchange 2016 RTM.  Actually released summer of 2015.
+    { JET_efvWindows10v2Rtm, /* 8620 */                 { 0x10000,20,0 },  { 8,5,14 },  { 3,0,0 } },  //  Final format version for Windows 10 Version 1511 (Threshold 2).
+    { JET_efvSupportNlsInvariantLocale,                 { 0x10000,20,0 },  { 8,5,14 },  { 3,0,0 } },
+    { JET_efvEncryptedColumns,                          { 0x10000,20,0 },  { 8,5,15 },  { 3,0,0 } },
+    { JET_efvLoggingDeleteOfTableFcbs,                  { 0x10000,20,0 },  { 8,5,16 },  { 3,0,0 } },
+    { JET_efvExchange2016Cu1Rtm  /* 8920 */,            { 0x10000,20,0 },  { 8,5,16 },  { 3,0,0 } },
 
-    { JET_efvSetDbVersion        /* 8940 */,            { 1568,20,20 },  { 8,6,20 },  { 3,0,0 } }, // [2016/03/31]
+    { JET_efvSetDbVersion        /* 8940 */,            { 0x10000,20,20 },  { 8,6,20 },  { 3,0,0 } }, // [2016/03/31]
 
-    { JET_efvExtHdrRootFieldAutoIncStorageReleased,     { 1568,30,40 },  { 8,6,20 },  { 3,0,0 } }, // [2016/03/31]
+    { JET_efvExtHdrRootFieldAutoIncStorageReleased,     { 0x10000,30,40 },  { 8,6,20 },  { 3,0,0 } }, // [2016/03/31]
 
-    { JET_efvXpress9Compression  /* 8980  */,           { 1568,40,60 },  { 8,7,40 },  { 3,0,0} }, // [2016/05/17]
+    { JET_efvXpress9Compression  /* 8980  */,           { 0x10000,40,60 },  { 8,7,40 },  { 3,0,0} }, // [2016/05/17]
 
-    { JET_efvUppercaseTextNormalization, /* 9000 */     { 1568,50,80 },   { 8,7,40 },   { 3,0,0 } }, // [2016/05/21]
-    { JET_efvDbscanHeaderHighestPageSeen, /* 9020 */    { 1568,50,100 },  { 8,7,40 },   { 3,0,0 } }, // [2016/07/11]
-    { JET_efvEscrow64, /* 9040 */                       { 1568,60,120 },  { 8,20,60 },  { 3,0,0 } }, // [2017/01/10]
-    { JET_efvSynchronousLVCleanup, /* 9060 */           { 1568,60,140 },  { 8,20,60 },  { 3,0,0 } }, // [2017/06/12]
-    { JET_efvLid64, /* 9080 */                          { 1568,70,160 },  { 8,20,60 },  { 3,0,0 } }, // [2018/03/04]
-    { JET_efvShrinkEof, /* 9100 */                      { 1568,80,180 },  { 8,30,80 },  { 3,0,0 } }, // [2018/05/03]
-    { JET_efvLogNewPage, /* 9120 */                     { 1568,90,200 },  { 8,40,100 }, { 3,0,0 } }, // [2019/01/31]
-    { JET_efvRootPageMove, /* 9140 */                   { 1568,100,220 }, { 8,50,120 }, { 3,0,0 } }, // [2019/02/13]
-    { JET_efvScanCheck2, /* 9160 */                     { 1568,100,220 }, { 8,60,140 }, { 3,0,0 } }, // [2019/03/20]
-    { JET_efvLgposLastResize, /* 9180 */                { 1568,110,240 }, { 8,60,140 }, { 3,0,0 } }, // [2019/06/13]
-    { JET_efvShelvedPages, /* 9200 */                   { 1568,120,260 }, { 8,60,140 }, { 3,0,0 } }, // [2019/09/12]
-    { JET_efvShelvedPagesRevert, /* 9220 */             { 1568,130,280 }, { 8,60,140 }, { 3,0,0 } }, // [2019/09/27]
-    { JET_efvShelvedPages2, /* 9240 */                  { 1568,140,300 }, { 8,60,140 }, { 3,0,0 } }, // [2019/09/30]
-    { JET_efvLogtimeGenMaxRequired, /* 9260 */          { 1568,150,320 }, { 8,60,140 }, { 3,0,0 } }, // [2019/10/04]
-    { JET_efvVariableDbHdrSignatureSnapshot, /* 9280 */ { 1568,160,340 }, { 8,60,140 }, { 3,0,0 } }, // [2019/11/27]
-    { JET_efvLowerMinReqLogGenOnRedo, /* 9300 */        { 1568,160,360 }, { 8,60,140 }, { 3,0,0 } }, // [2019/12/14]
-    { JET_efvDbTimeShrink, /* 9320 */                   { 1568,160,360 }, { 8,70,160 }, { 3,0,0 } }, // [2019/12/18]
-    { JET_efvXpress10Compression, /* 9340 */            { 1568,170,380 }, { 8,80,180 }, { 3,0,0 } }, // [2020/05/05]
-    { JET_efvRevertSnapshot, /* 9360 */                 { 1568,180,400 }, { 8,90,200 }, { 3,0,0 } }, // [2020/09/23]
-    { JET_efvApplyRevertSnapshot, /* 9380 */            { 1568,190,420 }, { 8,90,200 }, { 3,0,0 } }, // [2020/12/01]
-    { JET_efvExtentPageCountCache, /* 9400 */           { 1568,200,440 }, { 8,90,200 }, { 3,0,0 } }, // [2021/01/15]
-    { JET_efvLz4Compression, /* 9420 */                 { 1568,210,460 }, { 8,100,220 }, { 3,0,0 } }, // [2021/03/26]
+    { JET_efvUppercaseTextNormalization, /* 9000 */     { 0x10000,50,80 },   { 8,7,40 },   { 3,0,0 } }, // [2016/05/21]
+    { JET_efvDbscanHeaderHighestPageSeen, /* 9020 */    { 0x10000,50,100 },  { 8,7,40 },   { 3,0,0 } }, // [2016/07/11]
+    { JET_efvEscrow64, /* 9040 */                       { 0x10000,60,120 },  { 8,20,60 },  { 3,0,0 } }, // [2017/01/10]
+    { JET_efvSynchronousLVCleanup, /* 9060 */           { 0x10000,60,140 },  { 8,20,60 },  { 3,0,0 } }, // [2017/06/12]
+    { JET_efvLid64, /* 9080 */                          { 0x10000,70,160 },  { 8,20,60 },  { 3,0,0 } }, // [2018/03/04]
+    { JET_efvShrinkEof, /* 9100 */                      { 0x10000,80,180 },  { 8,30,80 },  { 3,0,0 } }, // [2018/05/03]
+    { JET_efvLogNewPage, /* 9120 */                     { 0x10000,90,200 },  { 8,40,100 }, { 3,0,0 } }, // [2019/01/31]
+    { JET_efvRootPageMove, /* 9140 */                   { 0x10000,100,220 }, { 8,50,120 }, { 3,0,0 } }, // [2019/02/13]
+    { JET_efvScanCheck2, /* 9160 */                     { 0x10000,100,220 }, { 8,60,140 }, { 3,0,0 } }, // [2019/03/20]
+    { JET_efvLgposLastResize, /* 9180 */                { 0x10000,110,240 }, { 8,60,140 }, { 3,0,0 } }, // [2019/06/13]
+    { JET_efvShelvedPages, /* 9200 */                   { 0x10000,120,260 }, { 8,60,140 }, { 3,0,0 } }, // [2019/09/12]
+    { JET_efvShelvedPagesRevert, /* 9220 */             { 0x10000,130,280 }, { 8,60,140 }, { 3,0,0 } }, // [2019/09/27]
+    { JET_efvShelvedPages2, /* 9240 */                  { 0x10000,140,300 }, { 8,60,140 }, { 3,0,0 } }, // [2019/09/30]
+    { JET_efvLogtimeGenMaxRequired, /* 9260 */          { 0x10000,150,320 }, { 8,60,140 }, { 3,0,0 } }, // [2019/10/04]
+    { JET_efvVariableDbHdrSignatureSnapshot, /* 9280 */ { 0x10000,160,340 }, { 8,60,140 }, { 3,0,0 } }, // [2019/11/27]
+    { JET_efvLowerMinReqLogGenOnRedo, /* 9300 */        { 0x10000,160,360 }, { 8,60,140 }, { 3,0,0 } }, // [2019/12/14]
+    { JET_efvDbTimeShrink, /* 9320 */                   { 0x10000,160,360 }, { 8,70,160 }, { 3,0,0 } }, // [2019/12/18]
+    { JET_efvXpress10Compression, /* 9340 */            { 0x10000,170,380 }, { 8,80,180 }, { 3,0,0 } }, // [2020/05/05]
+    { JET_efvRevertSnapshot, /* 9360 */                 { 0x10000,180,400 }, { 8,90,200 }, { 3,0,0 } }, // [2020/09/23]
+    { JET_efvApplyRevertSnapshot, /* 9380 */            { 0x10000,190,420 }, { 8,90,200 }, { 3,0,0 } }, // [2020/12/01]
+    { JET_efvExtentPageCountCache, /* 9400 */           { 0x10000,200,440 }, { 8,90,200 }, { 3,0,0 } }, // [2021/01/15]
+    { JET_efvLz4Compression, /* 9420 */                 { 0x10000,210,460 }, { 8,100,220 }, { 3,0,0 } }, // [2021/03/26]
 
     // Skipped below efv due to regression and reverted bad build.
-    // { JET_efvRBSNonRevertableTableDeletes, /* 9440 */   { 1568,210,480 }, { 8,100,220 }, { 3,0,0 } }, // [2021/07/29]
-    { JET_efvRBSNonRevertableTableDeletes, /* 9460 */   { 1568,230,500 }, { 8,100,220 }, { 3,0,0 } }, // [2021/09/08]
+    // { JET_efvRBSNonRevertableTableDeletes, /* 9440 */   { 0x10000,210,480 }, { 8,100,220 }, { 3,0,0 } }, // [2021/07/29]
+    { JET_efvRBSNonRevertableTableDeletes, /* 9460 */   { 0x10000,230,500 }, { 8,100,220 }, { 3,0,0 } }, // [2021/09/08]
 
-    { JET_efvScanCheck2Flags, /* 9480 */                { 1568,230,500 }, { 8,110,240 }, { 3,0,0 } }, // [2021/10/22]
-    { JET_efvExtentFreed2, /* 9500 */                   { 1568,230,500 }, { 8,120,260 }, { 3,0,0 } }, // [2021/12/21]
-    { JET_efvKVPStoreV2, /* 9520 */                     { 1568,250,520 }, { 8,120,260 }, { 3,0,0 } }, // [2022/02/17]
-    { JET_efvIndexDeferredPopulate, /* 9540 */          { 1568,260,540 }, { 8,120,260 }, { 3,0,0 } }, // [2022/03/02]  
-    { JET_efvReservedTags, /* 9560 */                   { 1568,270,560 }, { 8,120,260 }, { 3,0,0 } }, // [2022/06/17]
-    { JET_efvRBSTooSoonDeletes, /* 9580 */              { 1568,280,580 }, { 8,130,280 }, { 3,0,0 } }, // [2022/07/14]
-    { JET_efvOptionallyUniqueIndices, /* 9600 */        { 1568,290,600 }, { 8,130,280 }, { 3,0,0 } }, // [2022/07/14]
+    { JET_efvScanCheck2Flags, /* 9480 */                { 0x10000,230,500 }, { 8,110,240 }, { 3,0,0 } }, // [2021/10/22]
+    { JET_efvExtentFreed2, /* 9500 */                   { 0x10000,230,500 }, { 8,120,260 }, { 3,0,0 } }, // [2021/12/21]
+    { JET_efvKVPStoreV2, /* 9520 */                     { 0x10000,250,520 }, { 8,120,260 }, { 3,0,0 } }, // [2022/02/17]
+    { JET_efvIndexDeferredPopulate, /* 9540 */          { 0x10000,260,540 }, { 8,120,260 }, { 3,0,0 } }, // [2022/03/02]  
+    { JET_efvReservedTags, /* 9560 */                   { 0x10000,270,560 }, { 8,120,260 }, { 3,0,0 } }, // [2022/06/17]
+    { JET_efvRBSTooSoonDeletes, /* 9580 */              { 0x10000,280,580 }, { 8,130,280 }, { 3,0,0 } }, // [2022/07/14]
+    { JET_efvOptionallyUniqueIndices, /* 9600 */        { 0x10000,290,600 }, { 8,130,280 }, { 3,0,0 } }, // [2022/07/14]
 };
 
 constexpr INT g_cfmtversEngine = std::size( g_rgfmtversEngine );
@@ -507,9 +516,9 @@ JET_ENGINEFORMATVERSION EfvBeBestMapping( const JET_ENGINEFORMATVERSION efvParam
     {
         //  The value we found is rationally set by this EFV.
         //  This happens in the first 2 entries in this range b/c there are no version differences.
-        //    { JET_efvExchange2016Rtm, /* 8520 */                { 1568,20,0 },  { 8,5,14 },  { 3,0,0 } },  //  Final format version for Exchange 2016 RTM.  Actually released summer of 2015.
-        //    { JET_efvWindows10v2Rtm, /* 8620 */                 { 1568,20,0 },  { 8,5,14 },  { 3,0,0 } },  //  Final format version for Windows 10 Version 1511 (Threshold 2).
-        //    { JET_efvSupportNlsInvariantLocale /* 8880 */,      { 1568,20,0 },  { 8,5,14 },  { 3,0,0 } },
+        //    { JET_efvExchange2016Rtm, /* 8520 */                { 0x10000,20,0 },  { 8,5,14 },  { 3,0,0 } },  //  Final format version for Exchange 2016 RTM.  Actually released summer of 2015.
+        //    { JET_efvWindows10v2Rtm, /* 8620 */                 { 0x10000,20,0 },  { 8,5,14 },  { 3,0,0 } },  //  Final format version for Windows 10 Version 1511 (Threshold 2).
+        //    { JET_efvSupportNlsInvariantLocale /* 8880 */,      { 0x10000,20,0 },  { 8,5,14 },  { 3,0,0 } },
         Assert( efvValue != pfmtversMatchHigh->efv );  //  should be handled couple clauses above.
         efvParam = efvValue | JET_efvAllowHigherPersistedFormat;        
     }
@@ -711,7 +720,7 @@ JETUNITTEST( SysVerEngineFormatVersion, CheckWayLowDbv )
     const ULONG iefv = 17; // pick JET_efvShrinkEof because it has version changes below.
     CHECK( g_rgfmtversEngine[ iefv ].efv == 9100 /* JET_efvShrinkEof */ );  //  in case someone inserts entries above this entry
 
-    DbVersion dbvWayLow = { 1568, 4, 0 };
+    DbVersion dbvWayLow = { 0x10000, 4, 0 };
 
     efvMapped = EfvBeBestMapping( g_rgfmtversEngine[ iefv ].efv | JET_efvAllowHigherPersistedFormat,
                                   fTrue,
@@ -734,7 +743,7 @@ JETUNITTEST( SysVerEngineFormatVersion, CheckWayHighDbv )
     const ULONG iefv = 17; // pick JET_efvShrinkEof because it has version changes above.
     CHECK( g_rgfmtversEngine[ iefv ].efv == 9100 /* JET_efvShrinkEof */ );  //  in case someone inserts entries above this entry
 
-    DbVersion dbvWayHigh = { 1568, 65000, 0 };
+    DbVersion dbvWayHigh = { 0x10000, 65000, 0 };
 
     efvMapped = EfvBeBestMapping( g_rgfmtversEngine[ iefv ].efv | JET_efvAllowHigherPersistedFormat,
                                   fTrue,
