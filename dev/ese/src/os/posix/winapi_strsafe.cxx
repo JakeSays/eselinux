@@ -275,36 +275,41 @@ namespace
             {
             case 's':
             {
-                if ( s.size == 'l' || s.size == 'L' || s.wide )
+                // Win32 convention: in a WIDE format string %s is wide,
+                // in a narrow format string %s is narrow. We're inside
+                // WideVPrintfImpl so default to wide; %hs forces narrow.
+                if ( s.size == 'h' )
                 {
-                    EmitWideString( sink, s, va_arg( args, const wchar_t* ) );
+                    EmitNarrowString( sink, s, va_arg( args, const char* ) );
                 }
                 else
                 {
-                    EmitNarrowString( sink, s, va_arg( args, const char* ) );
+                    EmitWideString( sink, s, va_arg( args, const wchar_t* ) );
                 }
                 break;
             }
             case 'S':  // opposite-width string in Win convention
             {
-                EmitWideString( sink, s, va_arg( args, const wchar_t* ) );
+                // %S in wide-format means narrow string.
+                EmitNarrowString( sink, s, va_arg( args, const char* ) );
                 break;
             }
             case 'c':
             {
-                if ( s.size == 'l' || s.size == 'L' || s.wide )
+                if ( s.size == 'h' )
                 {
-                    sink.Put( static_cast<wchar_t>( va_arg( args, int ) ) );
+                    sink.Put( static_cast<wchar_t>( static_cast<unsigned char>( va_arg( args, int ) ) ) );
                 }
                 else
                 {
-                    sink.Put( static_cast<wchar_t>( static_cast<unsigned char>( va_arg( args, int ) ) ) );
+                    sink.Put( static_cast<wchar_t>( va_arg( args, int ) ) );
                 }
                 break;
             }
             case 'C':
             {
-                sink.Put( static_cast<wchar_t>( va_arg( args, int ) ) );
+                // %C in wide-format means narrow char.
+                sink.Put( static_cast<wchar_t>( static_cast<unsigned char>( va_arg( args, int ) ) ) );
                 break;
             }
             case 'd': case 'i': case 'u': case 'x': case 'X': case 'o':

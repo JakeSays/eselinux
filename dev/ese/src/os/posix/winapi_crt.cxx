@@ -17,6 +17,118 @@
 #include <string.h>
 #include <sys/random.h>
 
+// 16-bit wide-string helpers. Engine + eseutil + tests use the standard
+// wcs* names (wcschr, wcslen, wcscmp, ...) under the assumption that
+// wchar_t is the platform's "wide" type. Glibc's wcs* operate on the
+// native 32-bit wchar_t; -fshort-wchar makes ours 16-bit, so glibc
+// reads two characters per step and produces garbage. Override every
+// wcs* the engine actually uses with a 16-bit-aware implementation.
+// glibc declares wchar_t-fn pairs (const + non-const) in <wchar.h>; we
+// undef them so our extern "C" definitions don't fight the declared
+// signatures.
+#undef wcslen
+#undef wcscmp
+#undef wcsncmp
+#undef wcschr
+#undef wcsrchr
+#undef wcsstr
+#undef wcscspn
+#undef wcscpy
+#undef wcsncpy
+#undef wcscat
+
+// Defined with C++ linkage to match libc++'s declared signatures. Headers
+// like <wchar.h>/<cwchar> declare these in C++ namespace plus pair them
+// with extern "C" — but our overrides have to interpret 16-bit wchar_t,
+// so we just provide them under C++ linkage and let the linker pick ours
+// over libc's by being earlier in the link order via osposix.a.
+
+size_t wcslen( const wchar_t* s ) noexcept
+{
+    const wchar_t* p = s;
+    while ( *p ) ++p;
+    return static_cast<size_t>( p - s );
+}
+
+int wcscmp( const wchar_t* a, const wchar_t* b ) noexcept
+{
+    while ( *a && *a == *b ) { ++a; ++b; }
+    return static_cast<int>( static_cast<unsigned int>( *a ) ) -
+           static_cast<int>( static_cast<unsigned int>( *b ) );
+}
+
+int wcsncmp( const wchar_t* a, const wchar_t* b, size_t n ) noexcept
+{
+    while ( n && *a && *a == *b ) { ++a; ++b; --n; }
+    if ( n == 0 ) return 0;
+    return static_cast<int>( static_cast<unsigned int>( *a ) ) -
+           static_cast<int>( static_cast<unsigned int>( *b ) );
+}
+
+wchar_t* wcschr( wchar_t* s, wchar_t c ) noexcept
+{
+    for ( ; *s; ++s ) if ( *s == c ) return s;
+    return c == 0 ? s : nullptr;
+}
+
+wchar_t* wcsrchr( wchar_t* s, wchar_t c ) noexcept
+{
+    wchar_t* last = nullptr;
+    for ( ; *s; ++s ) if ( *s == c ) last = s;
+    if ( c == 0 ) return s;
+    return last;
+}
+
+wchar_t* wcsstr( wchar_t* hay, const wchar_t* needle ) noexcept
+{
+    if ( !*needle ) return hay;
+    for ( ; *hay; ++hay )
+    {
+        wchar_t* h = hay;
+        const wchar_t* n = needle;
+        while ( *h && *n && *h == *n ) { ++h; ++n; }
+        if ( !*n ) return hay;
+    }
+    return nullptr;
+}
+
+size_t wcscspn( const wchar_t* s, const wchar_t* reject ) noexcept
+{
+    size_t n = 0;
+    while ( s[ n ] )
+    {
+        for ( const wchar_t* r = reject; *r; ++r )
+        {
+            if ( s[ n ] == *r ) return n;
+        }
+        ++n;
+    }
+    return n;
+}
+
+wchar_t* wcscpy( wchar_t* dst, const wchar_t* src ) noexcept
+{
+    wchar_t* p = dst;
+    while ( ( *p++ = *src++ ) ) {}
+    return dst;
+}
+
+wchar_t* wcsncpy( wchar_t* dst, const wchar_t* src, size_t n ) noexcept
+{
+    size_t i = 0;
+    for ( ; i < n && src[ i ]; ++i ) dst[ i ] = src[ i ];
+    for ( ; i < n; ++i ) dst[ i ] = 0;
+    return dst;
+}
+
+wchar_t* wcscat( wchar_t* dst, const wchar_t* src ) noexcept
+{
+    wchar_t* p = dst;
+    while ( *p ) ++p;
+    while ( ( *p++ = *src++ ) ) {}
+    return dst;
+}
+
 extern "C" {
 
 int _wcsicmp( const wchar_t* s1, const wchar_t* s2 )

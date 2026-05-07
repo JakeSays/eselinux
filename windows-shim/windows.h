@@ -823,12 +823,25 @@ static inline errno_t rand_s( unsigned int* pui )
 //  NUL-handling semantics are not byte-identical to MSVC's hard checks,
 //  but matches what the engine relies on at call sites.
 //
-#define swprintf_s    swprintf
-#define vswprintf_s   vswprintf
-#define _snwprintf_s( dst, sz, cnt, fmt, ... )  swprintf( (dst), (sz), (fmt), ##__VA_ARGS__ )
-#define _snprintf_s(  dst, sz, cnt, fmt, ... )  snprintf( (dst), (sz), (fmt), ##__VA_ARGS__ )
-#define _vsnwprintf_s( dst, sz, cnt, fmt, ap )  vswprintf( (dst), (sz), (fmt), (ap) )
-#define _vsnprintf_s(  dst, sz, cnt, fmt, ap )  vsnprintf( (dst), (sz), (fmt), (ap) )
+// libc's swprintf takes 32-bit wchar_t; under -fshort-wchar it writes
+// 4 bytes per output char into a 2-byte-per-char buffer → buffer
+// overflow + garbage. Route every wide formatter to StringCb*PrintfW
+// (16-bit-aware, in winapi_strsafe.cxx). Cb* takes byte count, so
+// scale the wchar count by sizeof(wchar_t).
+#ifdef __cplusplus
+extern "C" {
+#endif
+HRESULT StringCbVPrintfW( wchar_t* dst, size_t cbDst, const wchar_t* fmt, va_list args );
+HRESULT StringCbPrintfW(  wchar_t* dst, size_t cbDst, const wchar_t* fmt, ... );
+#ifdef __cplusplus
+}
+#endif
+#define swprintf_s( dst, cnt, fmt, ... )  StringCbPrintfW( (dst), (cnt) * sizeof( wchar_t ), (fmt), ##__VA_ARGS__ )
+#define vswprintf_s( dst, cnt, fmt, ap )  StringCbVPrintfW( (dst), (cnt) * sizeof( wchar_t ), (fmt), (ap) )
+#define _snwprintf_s( dst, sz, cnt, fmt, ... ) StringCbPrintfW( (dst), (sz), (fmt), ##__VA_ARGS__ )
+#define _vsnwprintf_s( dst, sz, cnt, fmt, ap ) StringCbVPrintfW( (dst), (sz), (fmt), (ap) )
+#define _snprintf_s(  dst, sz, cnt, fmt, ... ) snprintf( (dst), (sz), (fmt), ##__VA_ARGS__ )
+#define _vsnprintf_s( dst, sz, cnt, fmt, ap )  vsnprintf( (dst), (sz), (fmt), (ap) )
 
 //  MSVC stack-allocator macros. _malloca normally falls back to heap for
 //  large requests; we always stack-allocate via alloca() because the
