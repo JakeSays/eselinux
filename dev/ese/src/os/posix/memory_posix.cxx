@@ -425,37 +425,66 @@ void OSMemoryPageFree( void* const pv )
     if ( cb ) munmap( pv, cb );
 }
 
+//  Win32 VirtualAlloc(MEM_COMMIT) / VirtualProtect / VirtualFree(MEM_DECOMMIT)
+//  silently round the address DOWN to the OS page boundary and the size UP
+//  so a sub-page request flips the entire containing page. Linux mprotect /
+//  madvise reject unaligned addresses with EINVAL — replicate the Win32
+//  rounding so the engine's call sites work without per-call adjustments.
+namespace {
+
+void PageAlignRange( const void* pv, size_t cb, void** ppvOut, size_t* pcbOut )
+{
+    const size_t      cbPage      = (size_t)g_dwPageCommitGran;
+    const uintptr_t   uPv         = (uintptr_t)pv;
+    const uintptr_t   uPvAligned  = uPv & ~(uintptr_t)( cbPage - 1 );
+    const uintptr_t   uPvEnd      = ( uPv + cb + cbPage - 1 ) & ~(uintptr_t)( cbPage - 1 );
+    *ppvOut = (void*)uPvAligned;
+    *pcbOut = (size_t)( uPvEnd - uPvAligned );
+}
+
+}  // namespace
+
 BOOL FOSMemoryPageCommit( void* const pv, const size_t cb )
 {
     if ( !pv || !cb ) return fFalse;
-    return mprotect( pv, cb, PROT_READ | PROT_WRITE ) == 0 ? fTrue : fFalse;
+    void* pvAligned; size_t cbAligned;
+    PageAlignRange( pv, cb, &pvAligned, &cbAligned );
+    return mprotect( pvAligned, cbAligned, PROT_READ | PROT_WRITE ) == 0 ? fTrue : fFalse;
 }
 
 void OSMemoryPageDecommit( void* const pv, const size_t cb )
 {
     if ( !pv || !cb ) return;
+    void* pvAligned; size_t cbAligned;
+    PageAlignRange( pv, cb, &pvAligned, &cbAligned );
     //  Drop physical pages but keep the reservation; mark unreadable so
     //  callers that incorrectly touch decommitted memory fault.
-    madvise( pv, cb, MADV_DONTNEED );
-    mprotect( pv, cb, PROT_NONE );
+    madvise( pvAligned, cbAligned, MADV_DONTNEED );
+    mprotect( pvAligned, cbAligned, PROT_NONE );
 }
 
 void OSMemoryPageReset( void* const pv, const size_t cbSize, const BOOL fToss )
 {
     if ( !pv || !cbSize ) return;
-    madvise( pv, cbSize, fToss ? MADV_DONTNEED : MADV_FREE );
+    void* pvAligned; size_t cbAligned;
+    PageAlignRange( pv, cbSize, &pvAligned, &cbAligned );
+    madvise( pvAligned, cbAligned, fToss ? MADV_DONTNEED : MADV_FREE );
 }
 
 void OSMemoryPageProtect( void* const pv, const size_t cbSize )
 {
     if ( !pv || !cbSize ) return;
-    mprotect( pv, cbSize, PROT_READ );
+    void* pvAligned; size_t cbAligned;
+    PageAlignRange( pv, cbSize, &pvAligned, &cbAligned );
+    mprotect( pvAligned, cbAligned, PROT_READ );
 }
 
 void OSMemoryPageUnprotect( void* const pv, const size_t cbSize )
 {
     if ( !pv || !cbSize ) return;
-    mprotect( pv, cbSize, PROT_READ | PROT_WRITE );
+    void* pvAligned; size_t cbAligned;
+    PageAlignRange( pv, cbSize, &pvAligned, &cbAligned );
+    mprotect( pvAligned, cbAligned, PROT_READ | PROT_WRITE );
 }
 
 BOOL FOSMemoryPageLock( void* const pv, const size_t cb )
