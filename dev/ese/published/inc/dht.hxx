@@ -13,7 +13,17 @@
 
 //  Define it to nothing, or sources\test\ese\src\devlibtest\resmgr\resmgrunit\basic.cxx won't compile
 
-#define FOSSetCleanupState( fInCleanupState ) (fInCleanupState)
+// Live engine sets per-thread cleanup state and returns the previous
+// value, so callers do `const BOOL fSaved = FOSSetCleanupState(fFalse)`
+// to capture and `FOSSetCleanupState( fSaved )` to restore. RFS2 disabled
+// here makes both directions a no-op on the value. Define as a static
+// inline (rather than a macro returning the parenthesized argument) so
+// the restore-form's call doesn't trigger Wunused-value at every site
+// — clang only warns on unused result for [[nodiscard]] functions.
+//
+// `int` rather than BOOL to avoid an include-order dependency: this
+// header lands before cc.hxx's BOOL typedef in some translation units.
+static inline int FOSSetCleanupState( int fInCleanupState ) { return fInCleanupState; }
 
 #endif  //  RFS2
 

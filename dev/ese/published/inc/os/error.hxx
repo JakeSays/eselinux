@@ -72,7 +72,11 @@ BOOL FOSSetCleanupState( BOOL fInCleanupState );
 
 #else  //  !DEBUG
 
-#define FOSSetCleanupState( fInCleanupState ) (fInCleanupState)
+// The non-DEBUG no-op definition of FOSSetCleanupState lives in dht.hxx
+// (which is included by tests that don't pull error.hxx). Skip the
+// redefinition here so we don't trip Wmacro-redefined and so consumers
+// see the static-inline form rather than a macro that warns on every
+// statement-form callsite (Wunused-value).
 #define FOSGetCleanupState() (fFalse)
 
 #endif  //  DEBUG

@@ -2326,7 +2326,7 @@ VOID NDGetPtrExternalHeader( _In_ const CPAGE& cpage, _Out_ LINE * pline, _In_ra
     AssertRTL( g_rgcbExternalHeaderSize[noderfRequested] <= pline->cb );
     AssertRTL( pbCursor >= (BYTE*)pline->pv );
     const BYTE* pbLineEnd = (BYTE*)pline->pv + pline->cb;
-    OnNonRTM( pbLineEnd );
+    OnNonRTM( (void)pbLineEnd );
     AssertRTL( pbCursor + g_rgcbExternalHeaderSize[noderfRequested] <= pbLineEnd );
     pline->cb = g_rgcbExternalHeaderSize[noderfRequested];
     pline->pv = pbCursor;

@@ -114,7 +114,7 @@ constexpr INT g_ifmtversLastFeature = g_cfmtversEngine - 1;
 constexpr int IfmtVersSorted()
 {
     int i = 0;
-    for ( i; i < g_cfmtversEngine; i++ )
+    for ( ; i < g_cfmtversEngine; i++ )
     {
         // This efv is when ESE started supporting efvs.
         // Any efvs before that are made up, and maybe out of order.
@@ -124,7 +124,7 @@ constexpr int IfmtVersSorted()
         }
     }
 
-    for ( i; i < g_cfmtversEngine - 1; i++ )
+    for ( ; i < g_cfmtversEngine - 1; i++ )
     {
         if ( g_rgfmtversEngine[ i ].efv >= g_rgfmtversEngine[ i + 1 ].efv )
         {
@@ -312,7 +312,7 @@ void FormatEfvSetting( const JET_ENGINEFORMATVERSION efvFullParam, _Out_writes_b
     Assert( cbEfvSetting >= ( cchFormatEfvSetting * sizeof(WCHAR) ) );
     Assert( wszEfvSetting );
 
-    wszEfvSetting[0];
+    (void)wszEfvSetting[0];
 
     //  Strip the flags one by one ...
     JET_ENGINEFORMATVERSION efvBaseValue = efvFullParam;

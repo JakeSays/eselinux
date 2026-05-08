@@ -6779,7 +6779,7 @@ ERR CPAGE::DumpTags( CPRINTF * pcprintf, DWORD_PTR dwOffset ) const
 
         if ( itag >= CTagReserved_() )
         {
-            kdf;
+            Unused( kdf );
             NDIGetKeydataflags( *this, itag - CTagReserved_(), &kdf );
             if ( FInvisibleSons() )
             {

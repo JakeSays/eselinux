@@ -8,7 +8,10 @@
 
 #define CODECONST(type) type const
 
-#define Unused( var ) ( var )
+// Cast to void so callers don't trip Wunused-value. cc.hxx defines the
+// same idiom on the clang arm; this redefinition kept the MSVC-shaped
+// `(var)` form which clang warns on at every callsite.
+#define Unused( var ) ( (void)( var ) )
 
 typedef ULONG OBJID;
 
