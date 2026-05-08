@@ -249,6 +249,7 @@ struct AES256KEY
     UnalignedLittleEndian<ULONG>    Checksum;
     BYTE                            pbKey[0];
 };
+#include <poppack.h>
 
 ERR ErrOSEncryptionVerifyKey(
         _In_reads_bytes_(cbKey)                         const   BYTE *pbKey,
