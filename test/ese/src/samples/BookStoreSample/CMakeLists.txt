@@ -11,14 +11,17 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     )
 endif()
 
-add_executable(BookStoreSample
-    BookStoreSample.c
-)
-
-# windows-shim/winnt.h pulls in cc.hxx, which has `extern "C"` blocks —
-# compile the sample as C++ on Linux so the shim parses cleanly.
-if (NOT WIN32)
-    set_source_files_properties(BookStoreSample.c PROPERTIES LANGUAGE CXX)
+# BookStoreSample.c is the upstream Windows source, kept verbatim.
+# BookStoreSampleLinux.c is the POSIX-path / no-windows.h variant we use
+# on Linux. The output binary is named BookStoreSample either way so
+# downstream workflows are platform-agnostic.
+if (WIN32)
+    add_executable(BookStoreSample BookStoreSample.c)
+else ()
+    add_executable(BookStoreSample BookStoreSampleLinux.c)
+    # windows-shim's specstrings.h gets pulled in via jet.h — that header
+    # is C++-only territory once SAL macros expand, so compile as C++.
+    set_source_files_properties(BookStoreSampleLinux.c PROPERTIES LANGUAGE CXX)
 endif ()
 
 target_compile_definitions(BookStoreSample PRIVATE
