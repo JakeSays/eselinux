@@ -1048,7 +1048,7 @@ INLINE BOOL FSPValidAllocPGNO( _In_ const PGNO pgno )
 
 #ifdef DEBUG
 PGNO    g_pgnoAllocTrap = 0;
-INLINE VOID SPCheckPgnoAllocTrap( _In_ const PGNO pgnoAlloc, _In_ const CPG cpgAlloc )
+VOID SPCheckPgnoAllocTrap( _In_ const PGNO pgnoAlloc, _In_ const CPG cpgAlloc )
 {
     if ( g_pgnoAllocTrap == pgnoAlloc ||
             ( g_pgnoAllocTrap > pgnoAlloc && g_pgnoAllocTrap <= pgnoAlloc + cpgAlloc -1 ) )
@@ -1057,7 +1057,7 @@ INLINE VOID SPCheckPgnoAllocTrap( _In_ const PGNO pgnoAlloc, _In_ const CPG cpgA
     }
 }
 #else
-INLINE VOID SPCheckPgnoAllocTrap( _In_ const PGNO pgnoAlloc, _In_ const CPG cpgAlloc )
+VOID SPCheckPgnoAllocTrap( _In_ const PGNO pgnoAlloc, _In_ const CPG cpgAlloc )
 {
     ;   // do nothing
 }

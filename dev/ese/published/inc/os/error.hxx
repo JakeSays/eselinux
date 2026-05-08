@@ -527,7 +527,11 @@ public:
 
 };
 
-__forceinline CErrFrameSimple * PefLastThrow();
+// PefLastThrow has an out-of-line body (with __attribute__((used, noinline))
+// on the Linux build) so it can be linked from every TU. Header declares it
+// as plain extern — the previous __forceinline conflicted with the body's
+// noinline attribute and triggered Wundefined-inline at every consumer.
+CErrFrameSimple * PefLastThrow();
 
 __forceinline ERR ErrERRSetLastThrow( _In_ const CHAR* szFile, _In_ const LONG lLine, _In_ const ERR err )
 {

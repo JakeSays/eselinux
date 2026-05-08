@@ -16,10 +16,17 @@ void __cdecl OSEventTrace_( const ULONG etguid,
                             const size_t cData = 0,
                             ... );
 
-INLINE BOOL FOSEventTraceEnabled();
+// Both the non-templated and templated overloads of FOSEventTraceEnabled
+// have inline bodies here (rather than in oseventtrace_posix.cxx as a
+// declaration-only with a separate definition). On the Linux build ETW
+// is disabled and both always return fFalse — see project_port_*
+// memory and the oseventtrace_posix.cxx header comment. The explicit
+// template instantiations in oseventtrace_posix.cxx still bind to this
+// generic body.
+INLINE BOOL FOSEventTraceEnabled() { return fFalse; }
 
 template< OSEventTraceGUID etguid >
-INLINE BOOL FOSEventTraceEnabled();
+INLINE BOOL FOSEventTraceEnabled() { return fFalse; }
 
 #define OSEventTrace if ( FOSEventTraceEnabled() ) OSEventTrace_
 

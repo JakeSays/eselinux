@@ -889,8 +889,13 @@ class CPAGE
         USHORT  CbFree_                 ( ) const;
         //above in public accessors is corresponding CbPageFree()
 
-        INLINE INT CbBufferData         ( ) const;
-        INLINE INT CbPageData           ( ) const;
+        // CbBufferData / CbPageData were INLINE-declared with their bodies
+        // out-of-line in cpage.cxx, which clang flags Wundefined-inline at
+        // every TU including this header. Made plain extern member fns
+        // since the bodies (1-2 lines each) are non-trivial enough that
+        // we don't lose anything observable by skipping the inline hint.
+        INT CbBufferData         ( ) const;
+        INT CbPageData           ( ) const;
 
         //  static versions
 

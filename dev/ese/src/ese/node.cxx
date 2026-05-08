@@ -2255,15 +2255,9 @@ ERR ErrNDDelete( FUCB * pfucb, CSR * pcsr, const DIRFLAG dirflag )
     return err;
 }
 
-//  ================================================================
-//  Get persisted flag out of nodeRootField enum
-LOCAL_BROKEN INLINE BYTE BNDIGetPersistedNrfFlag( _In_range_(noderfSpaceHeader, noderfIsamAutoInc) NodeRootField noderf )
-//  ================================================================
-{
-    Assert( noderf > 0 );
-    Assert( noderf < noderfMax );
-    return ( 0x1 << ( noderf - 1 ) );
-}
+//  Body of BNDIGetPersistedNrfFlag now lives in node.hxx alongside the
+//  NodeRootField enum, so all consumers (here + cpage.cxx) see the same
+//  inline definition rather than declaring it `extern INLINE` ad-hoc.
 
 //  ================================================================
 VOID NDGetPtrExternalHeader( _In_ const CPAGE& cpage, _Out_ LINE * pline, _In_range_( 0, noderfMax - 1 ) const NodeRootField noderfRequested )

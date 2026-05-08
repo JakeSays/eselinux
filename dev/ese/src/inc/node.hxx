@@ -40,6 +40,17 @@ enum NodeRootField {
         noderfMax,               // Not persisted
     };
 
+//  Get persisted flag out of NodeRootField enum.
+//  Body lives in the header so cpage.cxx (and any other consumer) gets it
+//  inline instead of resorting to a local `extern INLINE` forward
+//  declaration that triggers Wundefined-inline.
+INLINE BYTE BNDIGetPersistedNrfFlag( _In_range_(noderfSpaceHeader, noderfIsamAutoInc) NodeRootField noderf )
+{
+    Assert( noderf > 0 );
+    Assert( noderf < noderfMax );
+    return ( 0x1 << ( noderf - 1 ) );
+}
+
 PERSISTED
 enum NodeResvTagId : BYTE
 {

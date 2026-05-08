@@ -67,7 +67,12 @@ struct EXTENTINFO
     }
 };
 
-INLINE VOID SPCheckPgnoAllocTrap( _In_ const PGNO pgnoAlloc, _In_ const CPG cpgAlloc = 1 );
+// SPCheckPgnoAllocTrap was INLINE-declared with a body in space.cxx,
+// triggering Wundefined-inline at every TU that included fcb.hxx but
+// didn't have the body in scope. Plain extern declaration here; body
+// stays in space.cxx (DEBUG and non-DEBUG arms both lose the inline
+// keyword in the .cxx so the linkage matches).
+VOID SPCheckPgnoAllocTrap( _In_ const PGNO pgnoAlloc, _In_ const CPG cpgAlloc = 1 );
 
 PERSISTED
 class SPLIT_BUFFER

@@ -42,16 +42,11 @@ void __cdecl OSEventTrace_( const ULONG /* etguid */,
 //  ESE actually checks. We provide the explicit instantiations here so the
 //  engine links; all return fFalse so trace blocks are skipped.
 
-BOOL FOSEventTraceEnabled()
-{
-    return fFalse;
-}
-
-template< OSEventTraceGUID etguid >
-BOOL FOSEventTraceEnabled()
-{
-    return fFalse;
-}
+//  Both FOSEventTraceEnabled overloads now have inline bodies in
+//  oseventtrace.hxx (return fFalse). The explicit template
+//  instantiations below still bind to the generic templated body
+//  there, so the engine links for code paths that use the templated
+//  form (e.g. `FOSEventTraceEnabled< _etguidCacheRequestPage >()`).
 
 template BOOL FOSEventTraceEnabled< _etguidCacheRequestPage >();
 template BOOL FOSEventTraceEnabled< _etguidCacheMemoryUsage >();

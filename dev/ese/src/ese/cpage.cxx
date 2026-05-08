@@ -1665,7 +1665,7 @@ INLINE USHORT CPAGE::CbAdjustForPage() const
 }
 
 //  ================================================================
-INLINE INT CPAGE::CbBufferData() const
+INT CPAGE::CbBufferData() const
 //  ================================================================
 //
 //  Returns the size of the data space of the current buffer.  Also
@@ -1677,7 +1677,7 @@ INLINE INT CPAGE::CbBufferData() const
 }
 
 //  ================================================================
-INLINE INT CPAGE::CbPageData() const
+INT CPAGE::CbPageData() const
 //  ================================================================
 //
 //  Returns the size of the data space of the naturally sized page.
@@ -6888,8 +6888,8 @@ VOID CPAGE::DumpTag( CPRINTF * pcprintf, const INT iline, const DWORD_PTR dwOffs
 // external header size array for different type of data stored in external header.
 extern USHORT g_rgcbExternalHeaderSize[];
 
-//  Get persisted flag out of nodeRootField enum
-extern INLINE BYTE BNDIGetPersistedNrfFlag( _In_range_(noderfSpaceHeader, noderfIsamAutoInc) NodeRootField noderf );
+//  BNDIGetPersistedNrfFlag is now defined inline in node.hxx; no local
+//  forward declaration needed.
 
 // Not worth changing the FORMAT_xxx macros for bit shift warnings.
 #pragma warning(disable:4293)
