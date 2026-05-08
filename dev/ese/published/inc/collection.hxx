@@ -2787,7 +2787,7 @@ template< class CKey, class CEntry, PfnOffsetOf OffsetOfIC >
 inline typename CApproximateIndex< CKey, CEntry, OffsetOfIC >::ERR CApproximateIndex< CKey, CEntry, OffsetOfIC >::
 ErrInsertEntry( CLock* const plock, CEntry* const pentry, const BOOL fNextMost )
 {
-    CBucketTable::ERR err;
+    typename CBucketTable::ERR err;
 
     //  this entry had better not already be in the index
 
@@ -2861,7 +2861,7 @@ ErrDeleteEntry( CLock* const plock )
         //  update the bucket in the bucket table.  it is OK if the bucket is
         //  empty because empty buckets are deleted in _ErrMoveNext/_ErrMovePrev
 
-        const CBucketTable::ERR err = m_bt.ErrReplaceEntry( &plock->m_lock, plock->m_bucket );
+        const typename CBucketTable::ERR err = m_bt.ErrReplaceEntry( &plock->m_lock, plock->m_bucket );
         COLLAssert( err == CBucketTable::ERR::errSuccess );
 
         //  set our currency to no current entry
@@ -2899,7 +2899,7 @@ ErrReserveEntry( CLock* const plock )
     //  we failed to update the pin count on the bucket in the index because the
     //  bucket doesn't exist
 
-    CBucketTable::ERR errBT;
+    typename CBucketTable::ERR errBT;
 
     if ( ( errBT = m_bt.ErrReplaceEntry( &plock->m_lock, plock->m_bucket ) ) != CBucketTable::ERR::errSuccess )
     {
@@ -2938,7 +2938,7 @@ UnreserveEntry( CLock* const plock )
     //  update the pin count on the bucket in the index.  this cannot fail
     //  because we know the bucket exists because it is pinned
 
-    CBucketTable::ERR errBT = m_bt.ErrReplaceEntry( &plock->m_lock, plock->m_bucket );
+    typename CBucketTable::ERR errBT = m_bt.ErrReplaceEntry( &plock->m_lock, plock->m_bucket );
     COLLAssert( errBT == CBucketTable::ERR::errSuccess );
 }
 
@@ -3407,7 +3407,7 @@ _ErrInsertBucket( CLock* const plock )
 
     //  the bucket does not yet exist, so try to insert it in the bucket table
 
-    CBucketTable::ERR err;
+    typename CBucketTable::ERR err;
 
     if ( ( err = m_bt.ErrInsertEntry( &plock->m_lock, plock->m_bucket ) ) != CBucketTable::ERR::errSuccess )
     {
@@ -3498,7 +3498,7 @@ _ErrMoveNext( CLock* const plock )
         {
             //  delete this empty bucket (if it exists)
 
-            const CBucketTable::ERR err = m_bt.ErrDeleteEntry( &plock->m_lock );
+            const typename CBucketTable::ERR err = m_bt.ErrDeleteEntry( &plock->m_lock );
             COLLAssert( err == CBucketTable::ERR::errSuccess ||
                     err == CBucketTable::ERR::errNoCurrentEntry );
 
@@ -3628,7 +3628,7 @@ _ErrMovePrev( CLock* const plock )
         {
             //  delete this empty bucket (if it exists)
 
-            const CBucketTable::ERR err = m_bt.ErrDeleteEntry( &plock->m_lock );
+            const typename CBucketTable::ERR err = m_bt.ErrDeleteEntry( &plock->m_lock );
             COLLAssert( err == CBucketTable::ERR::errSuccess ||
                     err == CBucketTable::ERR::errNoCurrentEntry );
 

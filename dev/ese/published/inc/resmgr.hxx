@@ -1385,13 +1385,13 @@ Term()
 
     if ( m_fInitialized )
     {
-        CHistoryLRUK::CLock lockHLRUK;
+        typename CHistoryLRUK::CLock lockHLRUK;
 
         m_HistoryLRUK.MoveBeforeFirst( &lockHLRUK );
         while ( m_HistoryLRUK.ErrMoveNext( &lockHLRUK ) == CHistoryLRUK::ERR::errSuccess )
         {
             CHistory* phist;
-            CHistoryLRUK::ERR errHLRUK = m_HistoryLRUK.ErrRetrieveEntry( &lockHLRUK, &phist );
+            typename CHistoryLRUK::ERR errHLRUK = m_HistoryLRUK.ErrRetrieveEntry( &lockHLRUK, &phist );
             RESMGRAssert( errHLRUK == CHistoryLRUK::ERR::errSuccess );
 
             errHLRUK = m_HistoryLRUK.ErrDeleteEntry( &lockHLRUK );
@@ -1429,7 +1429,7 @@ inline typename CLRUKResourceUtilityManager< m_Kmax, CResource, OffsetOfIC, CKey
 ErrCacheResource( const CKey& key, CResource* const pres, _In_ TICK tickNowExternal, const ULONG_PTR pctCachePriorityExternal, const BOOL fUseHistory, __out_opt BOOL * pfInHistory, const CResource* const presHistoryProvided )
 {
     CLock lock;
-    CResourceLRUK::ERR errLRUK;
+    typename CResourceLRUK::ERR errLRUK;
     BOOL fRecoveredFromHistory = fFalse;
     CInvasiveContext* const pic = _PicFromPres( pres );
     const WORD pctCachePriority = _AdjustCachePriority( pctCachePriorityExternal );
@@ -1891,7 +1891,7 @@ ErrGetCurrentResource( CLock* const plock, CResource** const ppres )
 
     if ( plock->m_StuckList.FEmpty() )
     {
-        CResourceLRUK::ERR errLRUK;
+        typename CResourceLRUK::ERR errLRUK;
 
         //  get the current resource in the resource LRUK
 
@@ -1927,7 +1927,7 @@ template< INT m_Kmax, class CResource, PfnOffsetOf OffsetOfIC, class CKey >
 inline typename CLRUKResourceUtilityManager< m_Kmax, CResource, OffsetOfIC, CKey >::ERR CLRUKResourceUtilityManager< m_Kmax, CResource, OffsetOfIC, CKey >::
 ErrGetNextResource( CLock* const plock, CResource** const ppres )
 {
-    CResourceLRUK::ERR errLRUK;
+    typename CResourceLRUK::ERR errLRUK;
 
 #ifdef DEBUG
 #ifdef _OS_HXX_INCLUDED
@@ -1966,7 +1966,7 @@ ErrGetNextResource( CLock* const plock, CResource** const ppres )
             while ( ( errLRUK = m_ResourceLRUK.ErrMoveNext( &plock->m_lock ) ) == CResourceLRUK::ERR::errSuccess )
             {
                 plock->m_fHasLrukLock = fTrue;
-                CResourceLRUK::ERR errLRUK2 = CResourceLRUK::ERR::errSuccess;
+                typename CResourceLRUK::ERR errLRUK2 = CResourceLRUK::ERR::errSuccess;
                 CResource* pres;
 
                 RS_STATISTICS( plock->m_stats.m_cEntriesScanned++ );
@@ -1988,7 +1988,7 @@ ErrGetNextResource( CLock* const plock, CResource** const ppres )
                 RESMGRAssert( pic->m_tickIndex != TICK( tickUnindexed ) );
 #ifdef DEBUG
                 {
-                CResourceLRUK::CLock lockValidate;
+                typename CResourceLRUK::CLock lockValidate;
 
                 RESMGRAssert( plock->m_fHasLrukLock );
                 BOOL fLockSucceeded = m_ResourceLRUK.FTryLockKeyPtr( pic->m_tickIndex,  // current bucket
@@ -2167,7 +2167,7 @@ ErrGetNextResource( CLock* const plock, CResource** const ppres )
                         plock->m_fHasLrukLock = fFalse;
                     }
 
-                    const CResourceLRUK::ERR errLRUK2 = _ErrInsertResource( plock, pres, &plock->m_tickIndexCurrent );
+                    const typename CResourceLRUK::ERR errLRUK2 = _ErrInsertResource( plock, pres, &plock->m_tickIndexCurrent );
 
                     if ( errLRUK2 == CResourceLRUK::ERR::errSuccess )
                     {
@@ -2267,7 +2267,7 @@ ErrGetNextResource( CLock* const plock, CResource** const ppres )
                 while ( !plock->m_StuckList.FEmpty() )
                 {
                     CResource*          pres        = plock->m_StuckList.PrevMost();
-                    CResourceLRUK::ERR  errLRUK2    = CResourceLRUK::ERR::errSuccess;
+                    typename CResourceLRUK::ERR  errLRUK2    = CResourceLRUK::ERR::errSuccess;
 
                     RESMGRTrace( rmttScanProcessing, L"\t\t\t\tStucklist, %p:%p (tickLast = %u) returning to original location = %u\n",
                                     pres, _PicFromPres( pres ), _PicFromPres( pres )->m_tickLast,
@@ -2348,7 +2348,7 @@ inline typename CLRUKResourceUtilityManager< m_Kmax, CResource, OffsetOfIC, CKey
 ErrEvictCurrentResource( CLock* const plock, const CKey& key, const BOOL fKeepHistory )
 {
     ERR                     err;
-    CResourceLRUK::ERR      errLRUK;
+    typename CResourceLRUK::ERR      errLRUK;
     CResource*              pres;
 
     //  get the current resource in the resource LRUK, if any
@@ -2490,7 +2490,7 @@ EndResourceScan( CLock* const plock )
             plock->m_UpdateList.Remove( pres );
 
 
-            const CResourceLRUK::ERR errLRUK = _ErrInsertResource( plock, pres, nullptr );
+            const typename CResourceLRUK::ERR errLRUK = _ErrInsertResource( plock, pres, nullptr );
 
             if ( errLRUK == CResourceLRUK::ERR::errSuccess )
             {
@@ -2525,7 +2525,7 @@ EndResourceScan( CLock* const plock )
     while ( !plock->m_StuckList.FEmpty() )
     {
         CResource*          pres    = plock->m_StuckList.PrevMost();
-        CResourceLRUK::ERR  errLRUK = CResourceLRUK::ERR::errSuccess;
+        typename CResourceLRUK::ERR  errLRUK = CResourceLRUK::ERR::errSuccess;
 
         plock->m_StuckList.Remove( pres );
 
@@ -2900,7 +2900,7 @@ _ErrInsertResource( CLock * const plock, CResource * const pres, const TICK * pt
     CInvasiveContext * const pic = _PicFromPres( pres );
     
 
-    CResourceLRUK::ERR errLRUK;
+    typename CResourceLRUK::ERR errLRUK;
 
 
     RESMGRAssert( !plock->m_fHasLrukLock );
@@ -2984,9 +2984,9 @@ template< INT m_Kmax, class CResource, PfnOffsetOf OffsetOfIC, class CKey >
 inline void CLRUKResourceUtilityManager< m_Kmax, CResource, OffsetOfIC, CKey >::
 _MarkForFastEviction( CInvasiveContext* const pic )
 {
-    CResourceLRUK::ERR   errLRUK;
-    CResourceLRUK::CLock lockSource;
-    CResourceLRUK::CLock lockDestination;
+    typename CResourceLRUK::ERR   errLRUK;
+    typename CResourceLRUK::CLock lockSource;
+    typename CResourceLRUK::CLock lockDestination;
     CResource* const     pres           = _PresFromPic( pic );
     BOOL                 fLockedSrc     = fFalse;
     BOOL                 fLockedDst     = fFalse;
@@ -3249,7 +3249,7 @@ _RestoreHistory( const CKey& key, CInvasiveContext* const pic, const TICK tickNo
         return;
     }
 
-    CHistoryTable::CLock    lockHist;
+    typename CHistoryTable::CLock    lockHist;
     CHistoryEntry           he;
 
     _SanityCheckTick( tickNow );
@@ -3381,12 +3381,12 @@ template< INT m_Kmax, class CResource, PfnOffsetOf OffsetOfIC, class CKey >
 inline typename CLRUKResourceUtilityManager< m_Kmax, CResource, OffsetOfIC, CKey >::CHistory* CLRUKResourceUtilityManager< m_Kmax, CResource, OffsetOfIC, CKey >::
 _PhistAllocHistory( const CKey& key )
 {
-    CHistoryTable::ERR      errHist;
-    CHistoryTable::CLock    lockHist;
+    typename CHistoryTable::ERR      errHist;
+    typename CHistoryTable::CLock    lockHist;
     CHistoryEntry           he;
 
-    CHistoryLRUK::ERR       errHLRUK;
-    CHistoryLRUK::CLock     lockHLRUK;
+    typename CHistoryLRUK::ERR       errHLRUK;
+    typename CHistoryLRUK::CLock     lockHLRUK;
 
     CHistory*               phist;
 
@@ -3556,13 +3556,13 @@ template< INT m_Kmax, class CResource, PfnOffsetOf OffsetOfIC, class CKey >
 inline BOOL CLRUKResourceUtilityManager< m_Kmax, CResource, OffsetOfIC, CKey >::
 _FInsertHistory( CHistory* const phist )
 {
-    CHistoryLRUK::ERR       errHLRUK;
-    CHistoryLRUK::CLock     lockHLRUK;
+    typename CHistoryLRUK::ERR       errHLRUK;
+    typename CHistoryLRUK::CLock     lockHLRUK;
 
     CHistoryEntry           he;
 
-    CHistoryTable::ERR      errHist;
-    CHistoryTable::CLock    lockHist;
+    typename CHistoryTable::ERR      errHist;
+    typename CHistoryTable::CLock    lockHist;
 
     //  try to insert our history into the history LRUK
     //  we'll attempt to lock the history record in its hash table as well
