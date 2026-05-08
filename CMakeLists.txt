@@ -260,6 +260,17 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         # (the inner /* is just text inside the open comment), but
         # warning-noisy to the tune of ~900 sites.
         -Wno-comment
+        # The published JET API spells string-pointer struct fields and
+        # parameters as `char*` / `WCHAR*` (not const) for legacy ABI
+        # reasons — Microsoft's own ESE compiles with the same types
+        # and suppresses this warning. Engine code instantiates those
+        # structs with string literals (e.g. `{ ..., "objid", ...}` in
+        # cat.cxx) and clang fires Wwritable-strings on every literal.
+        # Const-correcting would require diverging from the public
+        # headers; the literals live in read-only memory and any
+        # actual write attempt traps at runtime, so the warning's
+        # "real-bug" value is low. Suppress.
+        -Wno-writable-strings
         -Wpragma-pack-suspicious-include
     )
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
