@@ -250,6 +250,16 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         -Wno-microsoft-enum-forward-reference
         -Wno-microsoft-extra-qualification
         -Wno-deprecated-anon-enum-enum-conversion
+        # The engine uses a banner style of block comment that nests
+        # `/*` characters inside an outer /* ... */, e.g.
+        #
+        #     /*  SYSTEM errors
+        #     /**/
+        #
+        # which clang flags as "/* within block comment". Valid C++
+        # (the inner /* is just text inside the open comment), but
+        # warning-noisy to the tune of ~900 sites.
+        -Wno-comment
         -Wpragma-pack-suspicious-include
     )
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
