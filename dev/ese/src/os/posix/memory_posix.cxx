@@ -275,24 +275,6 @@ size_t IbUtilLastNonZeroed( __in_bcount(cbData) const BYTE * pbData, _In_ const 
 }
 
 
-//  Page allocation — backed by mmap.
-
-void* PvOSMemoryPageAlloc__( const size_t cbSize, void* const pvHint, const BOOL /*fAllocTopDown*/ )
-{
-    if ( cbSize == 0 ) return NULL;
-    void* pv = mmap( pvHint, cbSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0 );
-    if ( pv == MAP_FAILED ) return NULL;
-    return pv;
-}
-
-void* PvOSMemoryPageReserve__( const size_t cbSize, void* const pvHint )
-{
-    if ( cbSize == 0 ) return NULL;
-    void* pv = mmap( pvHint, cbSize, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0 );
-    if ( pv == MAP_FAILED ) return NULL;
-    return pv;
-}
-
 //  We track the size of every reserve/alloc so OSMemoryPageFree() can release it.
 //  Linux munmap() requires the original length, so we stash it in a thin map.
 //  A simpler scheme: prepend the size to the allocation. But we need the
@@ -365,6 +347,76 @@ size_t RegionLookup( const void* pv )
 }
 
 } // namespace
+
+
+//  Page allocation — backed by mmap. Returns memory aligned to the engine's
+//  reserve granularity (g_dwPageReserveGran, 64K on this build) — *not* just
+//  to the OS page size. Win32 VirtualAlloc gives 64K-aligned allocations
+//  natively; mmap only guarantees page (4K) alignment, so we over-allocate
+//  and trim. The engine's resource manager (cresmgr.cxx) masks low bits off
+//  pointers to find the section header (`pv & maskSection`), so a sub-64K-
+//  aligned chunk would point that mask into unrelated memory and SIGSEGV
+//  on free.
+
+namespace {
+
+void* PvAlignedMmap( const size_t cbSize, void* const pvHint, const int prot, const int flags )
+{
+    const size_t cbAlign = (size_t)g_dwPageReserveGran;
+    Assert( cbAlign && ( ( cbAlign & ( cbAlign - 1 ) ) == 0 ) );
+
+    //  If the OS page granularity already meets the engine's reserve
+    //  granularity, fast-path: a single mmap of cbSize.
+    const size_t cbPage = (size_t)g_dwPageCommitGran;
+    if ( cbAlign <= cbPage )
+    {
+        void* pv = mmap( pvHint, cbSize, prot, flags, -1, 0 );
+        return ( pv == MAP_FAILED ) ? NULL : pv;
+    }
+
+    //  Over-allocate by (alignment - page) so that within the mapping there
+    //  is at least one cbAlign-aligned address with cbSize of room after it.
+    const size_t cbExtra = cbAlign - cbPage;
+    const size_t cbTotal = cbSize + cbExtra;
+    void* base = mmap( pvHint, cbTotal, prot, flags, -1, 0 );
+    if ( base == MAP_FAILED )
+    {
+        return NULL;
+    }
+
+    const uintptr_t uBase    = (uintptr_t)base;
+    const uintptr_t uAligned = ( uBase + cbAlign - 1 ) & ~(uintptr_t)( cbAlign - 1 );
+    const size_t cbPrefix    = (size_t)( uAligned - uBase );
+    const size_t cbSuffix    = cbExtra - cbPrefix;
+
+    if ( cbPrefix )
+    {
+        munmap( base, cbPrefix );
+    }
+    if ( cbSuffix )
+    {
+        munmap( (char*)uAligned + cbSize, cbSuffix );
+    }
+    return (void*)uAligned;
+}
+
+}  // namespace
+
+void* PvOSMemoryPageAlloc__( const size_t cbSize, void* const pvHint, const BOOL /*fAllocTopDown*/ )
+{
+    if ( cbSize == 0 ) return NULL;
+    void* pv = PvAlignedMmap( cbSize, pvHint, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS );
+    if ( pv ) RegionRecord( pv, cbSize );
+    return pv;
+}
+
+void* PvOSMemoryPageReserve__( const size_t cbSize, void* const pvHint )
+{
+    if ( cbSize == 0 ) return NULL;
+    void* pv = PvAlignedMmap( cbSize, pvHint, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE );
+    if ( pv ) RegionRecord( pv, cbSize );
+    return pv;
+}
 
 void OSMemoryPageFree( void* const pv )
 {
