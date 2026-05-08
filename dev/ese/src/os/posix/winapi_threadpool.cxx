@@ -22,6 +22,7 @@
 #include "osstd.hxx"
 
 #include <atomic>
+#include <errno.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
@@ -53,7 +54,13 @@ namespace
     void TpCommonInit( TpCommon* c )
     {
         pthread_mutex_init( &c->lock, nullptr );
-        pthread_cond_init( &c->cond, nullptr );
+        //  Bind cond to CLOCK_MONOTONIC so TimerRunner's pthread_cond_timedwait
+        //  can use the same monotonic deadline format as fireAt.
+        pthread_condattr_t attr;
+        pthread_condattr_init( &attr );
+        pthread_condattr_setclock( &attr, CLOCK_MONOTONIC );
+        pthread_cond_init( &c->cond, &attr );
+        pthread_condattr_destroy( &attr );
         c->inflight  = 0;
         c->cancelled = false;
     }
@@ -124,12 +131,30 @@ namespace
     void* TimerRunner( void* arg )
     {
         auto* const t = static_cast<TpTimer*>( arg );
-        // Sleep until fireAt.
-        clock_nanosleep( CLOCK_MONOTONIC, TIMER_ABSTIME, &t->fireAt, nullptr );
-        if ( t->armed.load() && !t->common.cancelled && t->callback )
+
+        //  Wait until fireAt OR a cancel/rearm wakes us. We can't use
+        //  clock_nanosleep here — it would block the cancel path forever
+        //  (WaitForThreadpoolTimerCallbacks waits for inflight==0, and
+        //  only this thread decrements inflight). The cond is bound to
+        //  CLOCK_MONOTONIC in TpCommonInit so the absolute deadline lines
+        //  up with fireAt.
+        pthread_mutex_lock( &t->common.lock );
+        while ( !t->common.cancelled && t->armed.load() )
+        {
+            const int rc = pthread_cond_timedwait( &t->common.cond, &t->common.lock, &t->fireAt );
+            if ( rc == ETIMEDOUT )
+            {
+                break;
+            }
+        }
+        const bool fFire = t->armed.load() && !t->common.cancelled && t->callback != nullptr;
+        pthread_mutex_unlock( &t->common.lock );
+
+        if ( fFire )
         {
             t->callback( nullptr, t->context, reinterpret_cast<PTP_TIMER>( t ) );
         }
+
         pthread_mutex_lock( &t->common.lock );
         --t->common.inflight;
         pthread_cond_broadcast( &t->common.cond );
@@ -386,8 +411,13 @@ void WaitForThreadpoolTimerCallbacks( PTP_TIMER pti, BOOL fCancelPending )
     if ( !t ) return;
     if ( fCancelPending )
     {
+        //  Wake TimerRunner if it's parked on cond_timedwait so it sees the
+        //  cancel flag and exits without waiting for fireAt.
+        pthread_mutex_lock( &t->common.lock );
         t->common.cancelled = true;
         t->armed.store( false );
+        pthread_cond_broadcast( &t->common.cond );
+        pthread_mutex_unlock( &t->common.lock );
     }
     TpCommonWait( &t->common );
 }
