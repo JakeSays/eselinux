@@ -48,7 +48,7 @@ typedef class _tagCArrayElement
 
         CInvasiveConcurrentModSet< _tagCArrayElement, _tagCArrayElement::OffsetOfIAE>::CElement m_iae;
 
-        _tagCArrayElement() { memset(this, 0, sizeof(*this) ); }
+        _tagCArrayElement() { memset( (void*)this, 0, sizeof(*this) ); }
 } CArrayElement;
 
 typedef CInvasiveConcurrentModSet< CArrayElement, CArrayElement::OffsetOfIAE > CTestArray;

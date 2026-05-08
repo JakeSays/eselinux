@@ -1257,7 +1257,7 @@ ERR ErrDBRedoSetDbVersion(
     //  applied and check against that. :P
 
     Alloc( pdbfilehdrTestUpdate = (DBFILEHDR*)PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
-    memcpy( pdbfilehdrTestUpdate, pdbfilehdr.get(), g_cbPage );
+    memcpy( (void*)pdbfilehdrTestUpdate, pdbfilehdr.get(), g_cbPage );
     Assert( CmpDbVer( pdbfilehdr->Dbv(), pdbfilehdrTestUpdate->Dbv() ) == 0 );
     //DBISetVersion( pinst, pfmp->WszDatabaseName(), ifmp, dbvSet, pdbfilehdrTestUpdate, fT );
     if ( CmpDbVer( pdbfilehdrTestUpdate->Dbv(), dbvSet ) < 0 )
@@ -1323,7 +1323,7 @@ void InitDBDbfilehdr(
 {
     // This memset() is needed (calling the struct CZeroInit .ctor would NOT be sufficient) to set the whole of the 
     // header past the actual struct size to zero, to ensure easy upgrade paths.
-    memset( pdbfilehdr, 0, g_cbPage );
+    memset( (void*)pdbfilehdr, 0, g_cbPage );
 
     // Other versions are set latter with ErrDBSetVersion
     pdbfilehdr->le_ulMagic = ulDAEMagic;
@@ -1364,7 +1364,7 @@ void InitDBDbfilehdr(
 
     if ( plog->FLogDisabled() || ( grbit & JET_bitDbRecoveryOff ) )
     {
-        memset( &pdbfilehdr->signLog, 0, sizeof( SIGNATURE ) );
+        memset( (void*)&pdbfilehdr->signLog, 0, sizeof( SIGNATURE ) );
     }
     else
     {
@@ -2663,7 +2663,7 @@ ERR ErrDBReadHeaderCheckConsistency(
 
     //  need to zero out header because we try to read it
     //  later even on failure
-    memset( pdbfilehdr, 0, g_cbPage );
+    memset( (void*)pdbfilehdr, 0, g_cbPage );
 
     Call( CIOFilePerf::ErrFileOpen(
                             pfsapi,
@@ -3045,18 +3045,18 @@ VOID DBISetHeaderAfterAttach(
             //  then the bkinfoIncPrev, bfkinfoFullPrev, bkinfoCopyPrev and bkinfoDiffPrev
             //  are not meaningful.
 
-            memset( &pdbfilehdr->bkinfoIncPrev, 0, sizeof( BKINFO ) );
-            memset( &pdbfilehdr->bkinfoFullPrev, 0, sizeof( BKINFO ) );
-            memset( &pdbfilehdr->bkinfoCopyPrev, 0, sizeof( BKINFO ) );
-            memset( &pdbfilehdr->bkinfoDiffPrev, 0, sizeof( BKINFO ) );
+            memset( (void*)&pdbfilehdr->bkinfoIncPrev, 0, sizeof( BKINFO ) );
+            memset( (void*)&pdbfilehdr->bkinfoFullPrev, 0, sizeof( BKINFO ) );
+            memset( (void*)&pdbfilehdr->bkinfoCopyPrev, 0, sizeof( BKINFO ) );
+            memset( (void*)&pdbfilehdr->bkinfoDiffPrev, 0, sizeof( BKINFO ) );
             pdbfilehdr->bkinfoTypeFullPrev = DBFILEHDR::backupNormal;
             pdbfilehdr->bkinfoTypeIncPrev = DBFILEHDR::backupNormal;
             pdbfilehdr->bkinfoTypeCopyPrev = DBFILEHDR::backupNormal;
             pdbfilehdr->bkinfoTypeDiffPrev = DBFILEHDR::backupNormal;
         }
-        memset( &pdbfilehdr->bkinfoFullCur, 0, sizeof( BKINFO ) );
+        memset( (void*)&pdbfilehdr->bkinfoFullCur, 0, sizeof( BKINFO ) );
         // reset the snapshot data as well
-        memset( &pdbfilehdr->bkinfoSnapshotCur, 0, sizeof( BKINFO ) );
+        memset( (void*)&pdbfilehdr->bkinfoSnapshotCur, 0, sizeof( BKINFO ) );
     }
 
     if ( g_fRepair )
@@ -4262,9 +4262,9 @@ ERR ISAMAPI ErrIsamAttachDatabase(
             Expected( pfmp->m_isdlAttach.FActiveSequence() );
 
             //  reset bkinfo
-            memset( &pdbfilehdr->bkinfoFullCur, 0, sizeof( BKINFO ) );
+            memset( (void*)&pdbfilehdr->bkinfoFullCur, 0, sizeof( BKINFO ) );
             // reset the snapshot data as well
-            memset( &pdbfilehdr->bkinfoSnapshotCur, 0, sizeof( BKINFO ) );
+            memset( (void*)&pdbfilehdr->bkinfoSnapshotCur, 0, sizeof( BKINFO ) );
 
             if ( fDbNeedsUpdate )
             {
@@ -5689,9 +5689,9 @@ StartDetaching:
             pdbfilehdr->bkinfoTypeFullPrev = bkinfoType;
         }
 
-        memset( &pdbfilehdr->bkinfoFullCur, 0, sizeof( BKINFO ) );
-        memset( &pdbfilehdr->bkinfoIncPrev, 0, sizeof( BKINFO ) );
-        memset( &pdbfilehdr->bkinfoSnapshotCur, 0, sizeof( BKINFO ) );
+        memset( (void*)&pdbfilehdr->bkinfoFullCur, 0, sizeof( BKINFO ) );
+        memset( (void*)&pdbfilehdr->bkinfoIncPrev, 0, sizeof( BKINFO ) );
+        memset( (void*)&pdbfilehdr->bkinfoSnapshotCur, 0, sizeof( BKINFO ) );
         pdbfilehdr->bkinfoTypeIncPrev = DBFILEHDR::backupNormal;
     }
     } // .dtor releases PdbfilehdrReadWrite
@@ -5703,7 +5703,7 @@ StartDetaching:
 
     if ( pfmp->FHardRecovery() )
     {
-        memset( &pfmp->PdbfilehdrUpdateable()->bkinfoFullPrev, 0, sizeof( BKINFO ) );
+        memset( (void*)&pfmp->PdbfilehdrUpdateable()->bkinfoFullPrev, 0, sizeof( BKINFO ) );
         pfmp->PdbfilehdrUpdateable()->bkinfoTypeFullPrev = DBFILEHDR::backupNormal;
         pfmp->PdbfilehdrUpdateable()->bkinfoTypeIncPrev = DBFILEHDR::backupNormal;
     }
@@ -5783,7 +5783,7 @@ StartDetaching:
         pfmp->PdbfilehdrUpdateable()->le_dbtimeLastScrub    = pfmp->DbtimeLastScrub();
         pfmp->PdbfilehdrUpdateable()->logtimeScrub      = pfmp->LogtimeScrub();
 
-        memset( &pfmp->PdbfilehdrUpdateable()->bkinfoSnapshotCur, 0, sizeof( BKINFO ) );
+        memset( (void*)&pfmp->PdbfilehdrUpdateable()->bkinfoSnapshotCur, 0, sizeof( BKINFO ) );
 
         Assert( pfmp->Pdbfilehdr()->le_objidLast );
 

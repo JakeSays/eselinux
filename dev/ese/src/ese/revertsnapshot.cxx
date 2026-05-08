@@ -4243,7 +4243,7 @@ ERR CRBSDatabaseRevertContext::ErrSetDbstateAfterRevert( SIGNATURE* psignRbsHdrF
         memcpy( &dbfilehdrToSet->logtimeRevertTo, &m_pdbfilehdr->logtimeRevertTo, sizeof( LOGTIME ) );
     }
 
-    memcpy( &dbfilehdrToSet->signRBSHdrFlush, psignRbsHdrFlush, sizeof( SIGNATURE ) );
+    memcpy( (void*)&dbfilehdrToSet->signRBSHdrFlush, psignRbsHdrFlush, sizeof( SIGNATURE ) );
 
     dbfilehdrToSet->le_lgposCommitBeforeRevert  = lgposMax;
 
@@ -5367,7 +5367,7 @@ ERR CRBSRevertContext::ErrRevertCheckpointInit()
     Assert( !m_pfapirbsrchk );
 
     Alloc( m_prbsrchk = (RBSREVERTCHECKPOINT *)PvOSMemoryPageAlloc(  sizeof( RBSREVERTCHECKPOINT ), nullptr ) );
-    memset( m_prbsrchk, 0, sizeof( RBSREVERTCHECKPOINT ) );
+    memset( (void*)m_prbsrchk, 0, sizeof( RBSREVERTCHECKPOINT ) );
 
     Call( ErrRBSDirPrefix( m_wszRBSBaseName, wszChkFileBase, sizeof( wszChkFileBase ) ) );
     Call( pfsapi->ErrPathBuild( m_wszRBSAbsRootDirPath, wszChkFileBase, wszNewChkExt, wszChkFullName ) );
@@ -5390,7 +5390,7 @@ ERR CRBSRevertContext::ErrRevertCheckpointInit()
         if ( err < JET_errSuccess )
         {
             // Assume we don't have a checkpoint if checkpoint file is corrupt.
-            memset( m_prbsrchk, 0, sizeof( RBSREVERTCHECKPOINT ) );
+            memset( (void*)m_prbsrchk, 0, sizeof( RBSREVERTCHECKPOINT ) );
         }
     }
     else

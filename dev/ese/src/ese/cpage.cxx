@@ -4034,7 +4034,7 @@ PAGECHECKSUM CPAGE::LoggedDataChecksum() const
     PGHDR2 pghdr2T;
     const USHORT cbPageHeader = CbPageHeader();
     AssertPREFIX( cbPageHeader <= sizeof( pghdr2T ) );
-    memcpy( &pghdr2T, ppghdr2, cbPageHeader );
+    memcpy( (void*)&pghdr2T, ppghdr2, cbPageHeader );
     pghdr2T.pghdr.checksum          = 0;
     pghdr2T.pghdr.cbUncommittedFree = 0;
     pghdr2T.pghdr.cbFree            = 0;
@@ -6156,7 +6156,7 @@ VOID CPAGE::TAG::ErrTest( _In_ VOID * const pvBuffer, ULONG cbPageSize )
 //  ================================================================
 {
     PGHDR* ppgHdr = ( PGHDR* )pvBuffer;
-    memset( ppgHdr, 0, sizeof( *ppgHdr ) );
+    memset( (void*)ppgHdr, 0, sizeof( *ppgHdr ) );
 
     ppgHdr->itagState = 2;
     ppgHdr->fFlags = 0;

@@ -2180,7 +2180,7 @@ INLINE ERR FCB::ErrEnableSplitbuf( const BOOL fAvailExt )
         SetPsplitbufdangling_( (SPLITBUF_DANGLING *)PvOSMemoryHeapAlloc( sizeof(SPLITBUF_DANGLING) ) );
         if ( nullptr == Psplitbufdangling_() )
             return ErrERRCheck( JET_errOutOfMemory );
-        memset( Psplitbufdangling_(), 0, sizeof(SPLITBUF_DANGLING) );
+        memset( (void*)Psplitbufdangling_(), 0, sizeof(SPLITBUF_DANGLING) );
     }
 
     if ( fAvailExt )

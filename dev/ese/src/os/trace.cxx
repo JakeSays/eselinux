@@ -2655,7 +2655,7 @@ HandleError:
 
 CFastTraceLog::CFTLReader::CFTLReader( CFastTraceLog * pftl, BOOL fKeepStats )
 {
-    memset( this, 0, sizeof(*this) );
+    memset( (void*)this, 0, sizeof(*this) );
 
     m_pftl = pftl;
 

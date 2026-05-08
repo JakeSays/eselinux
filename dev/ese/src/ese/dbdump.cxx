@@ -381,9 +381,9 @@ ERR LOCAL ErrDUMPHeaderStandard( INST *pinst, _In_ const DB_HEADER_READER* const
 
         PATCHHDR * ppatchHdr = (PATCHHDR *)pdbfilehdr;
 
-        memcpy( &signLog, &pdbfilehdr->signLog, sizeof(signLog) );
-        memcpy( &signDb, &pdbfilehdr->signDb, sizeof(signLog) );
-        memcpy( &bkinfoFullCur, &pdbfilehdr->bkinfoFullCur, sizeof(BKINFO) );
+        memcpy( (void*)&signLog, &pdbfilehdr->signLog, sizeof(signLog) );
+        memcpy( (void*)&signDb, &pdbfilehdr->signDb, sizeof(signLog) );
+        memcpy( (void*)&bkinfoFullCur, &pdbfilehdr->bkinfoFullCur, sizeof(BKINFO) );
 
         //  the patch file is always on the OS file-system
         Call ( ErrDBReadAndCheckDBTrailer( pinst, pinst->m_pfsapi, pdbHdrReader->wszFileName, (BYTE *)ppatchHdr, g_cbPage ) );
@@ -712,10 +712,10 @@ ERR ErrDUMPFixupHeader( INST *pinst, _In_ PCWSTR wszDatabase, const BOOL fVerbos
     }
 
     pdbfilehdrPrimary->SetDbstate( JET_dbstateCleanShutdown );
-    memset( &pdbfilehdrPrimary->le_lgposConsistent, 0, sizeof( pdbfilehdrPrimary->le_lgposConsistent ) );
+    memset( (void*)&pdbfilehdrPrimary->le_lgposConsistent, 0, sizeof( pdbfilehdrPrimary->le_lgposConsistent ) );
     memset( &pdbfilehdrPrimary->logtimeConsistent, 0, sizeof( pdbfilehdrPrimary->logtimeConsistent ) );
-    memset( &pdbfilehdrPrimary->le_lgposAttach, 0, sizeof( pdbfilehdrPrimary->le_lgposAttach ) );
-    memset( &pdbfilehdrPrimary->le_lgposLastResize, 0, sizeof( pdbfilehdrPrimary->le_lgposLastResize ) );
+    memset( (void*)&pdbfilehdrPrimary->le_lgposAttach, 0, sizeof( pdbfilehdrPrimary->le_lgposAttach ) );
+    memset( (void*)&pdbfilehdrPrimary->le_lgposLastResize, 0, sizeof( pdbfilehdrPrimary->le_lgposLastResize ) );
     pdbfilehdrPrimary->le_lGenMinRequired = 0;
     pdbfilehdrPrimary->le_lGenMaxRequired = 0;
     pdbfilehdrPrimary->le_lGenMinConsistent = 0;

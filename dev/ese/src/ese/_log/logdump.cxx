@@ -1712,7 +1712,7 @@ HandleError:
     if ( nullptr != m_pLogStream->GetCurrentFileHdr() && LOGDUMP_LOGHDR_VALIDADJACENT == plogdumpOp->m_loghdr )
     {
         Assert( NULL != plgfilehdr );
-        memcpy( plgfilehdr, m_pLogStream->GetCurrentFileHdr(), sizeof( LGFILEHDR ) );
+        memcpy( (void*)plgfilehdr, m_pLogStream->GetCurrentFileHdr(), sizeof( LGFILEHDR ) );
         *pLastSegChecksum = m_pLogStream->GetAccumulatedSectorChecksum();
     }
 

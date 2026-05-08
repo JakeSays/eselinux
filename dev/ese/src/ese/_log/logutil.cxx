@@ -49,7 +49,7 @@ ERR ErrLGCheckDBFiles(
     }
 
     // fill in the RSTMAP the found database signature
-    memcpy ( &pDbMapEntry->signDatabase, &pdbfilehdrDb->signDb , sizeof(SIGNATURE) );
+    memcpy( (void*)&pDbMapEntry->signDatabase, &pdbfilehdrDb->signDb , sizeof(SIGNATURE) );
 
     // should be a db header or patch file header
     if ( attribDb != pdbfilehdrDb->le_attrib )

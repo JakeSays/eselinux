@@ -4090,18 +4090,18 @@ ERR BACKUP_CONTEXT::ErrBKUpdateHdrBackupInfo(
             {
                 // new full, nullifies prev incremental
                 pdbfilehdr->bkinfoTypeIncPrev = DBFILEHDR::backupNormal;
-                memset( &pdbfilehdr->bkinfoIncPrev, 0, sizeof( BKINFO ) );
+                memset( (void*)&pdbfilehdr->bkinfoIncPrev, 0, sizeof( BKINFO ) );
 
                 // new full, nullifies prev diff as well
                 pdbfilehdr->bkinfoTypeDiffPrev = DBFILEHDR::backupNormal;
-                memset( &pdbfilehdr->bkinfoDiffPrev, 0, sizeof( pdbfilehdr->bkinfoDiffPrev ) );
+                memset( (void*)&pdbfilehdr->bkinfoDiffPrev, 0, sizeof( pdbfilehdr->bkinfoDiffPrev ) );
             }
 
             switch( bkinfoType )
             {
                 case DBFILEHDR::backupNormal:
                     // clean the snapshot info after a normal full backup
-                    memset( &(pdbfilehdr->bkinfoSnapshotCur), 0, sizeof( BKINFO ) );
+                    memset( (void*)&(pdbfilehdr->bkinfoSnapshotCur), 0, sizeof( BKINFO ) );
                     pdbfilehdr->bkinfoTypeIncPrev = DBFILEHDR::backupNormal;
                     break;
 

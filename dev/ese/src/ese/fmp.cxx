@@ -1308,7 +1308,7 @@ ERR FMP::ErrNewAndWriteLatch(
                     pdbfilehdr = (DBFILEHDR_FIX*)PvOSMemoryPageAlloc( g_cbPage, nullptr );
                     if ( pdbfilehdr )
                     {
-                        memset( pdbfilehdr, 0, g_cbPage );
+                        memset( (void*)pdbfilehdr, 0, g_cbPage );
                         // read in db header
                         // note: read will fail from the newly created database path (when createdatabase() calls us)
                         const ERR errRH = ErrUtilReadShadowedHeader( pinst, pfsapi, wszDatabaseName, (BYTE*)pdbfilehdr, g_cbPage, -1, UtilReadHeaderFlags( urhfReadOnly | urhfNoEventLogging ) );

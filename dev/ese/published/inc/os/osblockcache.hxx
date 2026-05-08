@@ -799,7 +799,7 @@ class CCachedBlock  //  cbl
 
         CCachedBlock( _In_ const CCachedBlock& other )
         {
-            memcpy( this, &other, sizeof( *this ) );
+            memcpy( (void*)this, &other, sizeof( *this ) );
         }
 
         const CCachedBlockId& Cbid() const { return m_cbid; }

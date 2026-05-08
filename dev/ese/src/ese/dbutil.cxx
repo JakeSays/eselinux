@@ -4224,7 +4224,7 @@ LOCAL ERR ErrDBUTLDumpOneIndex( PIB * ppib, FUCB * pfucbCatalog, VOID * pfnCallb
 
     QWORD qwSortVersion = 0;
     
-    memset( &indexdef, 0, sizeof( indexdef ) );
+    memset( (void*)&indexdef, 0, sizeof( indexdef ) );
     memset( rgretrievecolumn, 0, sizeof( rgretrievecolumn ) );
 
     //  objectId of owning table
@@ -5757,7 +5757,7 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
                 JET_ENGINEFORMATVERSION efvSourceDb = JET_efvExchange55Rtm;
 
                 AllocR( pdbfilehdr = (DBFILEHDR * )PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
-                memset( pdbfilehdr, 0, g_cbPage );
+                memset( (void*)pdbfilehdr, 0, g_cbPage );
 
                 IFileAPI * pfapi = nullptr;
                 if ( CIOFilePerf::ErrFileOpen(

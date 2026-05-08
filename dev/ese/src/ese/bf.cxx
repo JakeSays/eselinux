@@ -19115,11 +19115,11 @@ ERR ErrBFIVerifyPageSimplyWork( const PBF pbf, const PAGEValidationReason pgvr )
     {
         if ( FIsSmallPage() )                       // 2. copy off the page header ...
         {
-            memcpy( &(pghdr2.pghdr), pbf->pv, sizeof(pghdr2.pghdr) );
+            memcpy( (void*)&(pghdr2.pghdr), pbf->pv, sizeof(pghdr2.pghdr) );
         }
         else
         {
-            memcpy( &(pghdr2), pbf->pv, sizeof(pghdr2) );
+            memcpy( (void*)&(pghdr2), pbf->pv, sizeof(pghdr2) );
         }
         Assert( pbf->icbPage == pbf->icbBuffer );
         pvPage = _alloca( CbBFIPageSize( pbf ) );           // 3. now go for the gold,

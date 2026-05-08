@@ -649,7 +649,7 @@ class CLRUKResourceUtilityManager
                     m_tickIndexCurrent( (TICK)tickUnindexed ),
                     m_fHasLrukLock( fFalse )
                 {
-                    memset( &m_icCurrentBI, 0, sizeof(m_icCurrentBI) );
+                    memset( (void*)&m_icCurrentBI, 0, sizeof(m_icCurrentBI) );
 #ifdef DEBUG
                     m_picCheckBI = NULL;
 #endif
@@ -1945,7 +1945,7 @@ ErrGetNextResource( CLock* const plock, CResource** const ppres )
     RESMGRTrace( rmttScanProcessing, L"\t\t\tErrGetNextRes()\n" );
 
     *ppres  = nullptr;
-    memset( &plock->m_icCurrentBI, 0, sizeof(plock->m_icCurrentBI) );
+    memset( (void*)&plock->m_icCurrentBI, 0, sizeof(plock->m_icCurrentBI) );
 #ifdef DEBUG
     plock->m_picCheckBI = NULL;
 #endif

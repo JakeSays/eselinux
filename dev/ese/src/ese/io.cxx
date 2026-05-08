@@ -805,9 +805,9 @@ LOCAL ERR ErrIOTermUpdateAndWriteDatabaseHeader(
             {
                 pdbfilehdr->bkinfoFullPrev = (*pbkInfoToCopy);
             }
-            memset( &pdbfilehdr->bkinfoFullCur, 0, sizeof( BKINFO ) );
-            memset( &pdbfilehdr->bkinfoSnapshotCur, 0, sizeof( BKINFO ) );
-            memset( &pdbfilehdr->bkinfoIncPrev, 0, sizeof( BKINFO ) );
+            memset( (void*)&pdbfilehdr->bkinfoFullCur, 0, sizeof( BKINFO ) );
+            memset( (void*)&pdbfilehdr->bkinfoSnapshotCur, 0, sizeof( BKINFO ) );
+            memset( (void*)&pdbfilehdr->bkinfoIncPrev, 0, sizeof( BKINFO ) );
         }
 
         // delete the previous backup info on any hard recovery
@@ -817,10 +817,10 @@ LOCAL ERR ErrIOTermUpdateAndWriteDatabaseHeader(
 
         if ( pfmp->FHardRecovery( pdbfilehdr.get() ) )
         {
-            memset( &pdbfilehdr->bkinfoFullPrev, 0, sizeof( BKINFO ) );
-            memset( &pdbfilehdr->bkinfoIncPrev, 0, sizeof( BKINFO ) );
-            memset( &pdbfilehdr->bkinfoCopyPrev, 0, sizeof( BKINFO ) );
-            memset( &pdbfilehdr->bkinfoDiffPrev, 0, sizeof( BKINFO ) );
+            memset( (void*)&pdbfilehdr->bkinfoFullPrev, 0, sizeof( BKINFO ) );
+            memset( (void*)&pdbfilehdr->bkinfoIncPrev, 0, sizeof( BKINFO ) );
+            memset( (void*)&pdbfilehdr->bkinfoCopyPrev, 0, sizeof( BKINFO ) );
+            memset( (void*)&pdbfilehdr->bkinfoDiffPrev, 0, sizeof( BKINFO ) );
             pdbfilehdr->bkinfoTypeFullPrev = DBFILEHDR::backupNormal;
             pdbfilehdr->bkinfoTypeIncPrev = DBFILEHDR::backupNormal;
         }
@@ -5450,7 +5450,7 @@ ERR ErrIsamEndDatabaseIncrementalReseed(
     CHECKPOINT*             pcheckpoint                                     = nullptr;
     ULONG                   lGen;
 
-    memset( &attachinfo, 0, sizeof(attachinfo) );
+    memset( (void*)&attachinfo, 0, sizeof(attachinfo) );
 
     //  validate generic parameters
     //
@@ -5864,7 +5864,7 @@ RestartFromLowerLogGeneration:
         {
             //  if the checkpoint is corrupt then we will simply overwrite it with a new one
             //
-            memset( pcheckpoint, 0, sizeof( CHECKPOINT ) );
+            memset( (void*)pcheckpoint, 0, sizeof( CHECKPOINT ) );
             pcheckpoint->checkpoint.le_lgposCheckpoint.le_lGeneration   = pinst->m_plog->LgenInitial();
             pcheckpoint->checkpoint.le_lgposCheckpoint.le_isec          = (USHORT)pinst->m_plog->CSecLGHeader();
             pcheckpoint->checkpoint.le_lgposCheckpoint.le_ib            = 0;
@@ -5942,30 +5942,30 @@ RestartFromLowerLogGeneration:
     //
     if ( pdbfilehdr->bkinfoFullPrev.le_genHigh >= genMinRequired )
     {
-        memset( &pdbfilehdr->bkinfoFullPrev, 0, sizeof( pdbfilehdr->bkinfoFullPrev ) );
+        memset( (void*)&pdbfilehdr->bkinfoFullPrev, 0, sizeof( pdbfilehdr->bkinfoFullPrev ) );
         pdbfilehdr->bkinfoTypeFullPrev = DBFILEHDR::backupNormal;
     }
     if ( pdbfilehdr->bkinfoIncPrev.le_genHigh >= genMinRequired )
     {
-        memset( &pdbfilehdr->bkinfoIncPrev, 0, sizeof( pdbfilehdr->bkinfoIncPrev ) );
+        memset( (void*)&pdbfilehdr->bkinfoIncPrev, 0, sizeof( pdbfilehdr->bkinfoIncPrev ) );
         pdbfilehdr->bkinfoTypeIncPrev = DBFILEHDR::backupNormal;
     }
     if ( pdbfilehdr->bkinfoFullCur.le_genHigh >= genMinRequired )
     {
-        memset( &pdbfilehdr->bkinfoFullCur, 0, sizeof( pdbfilehdr->bkinfoFullCur ) );
+        memset( (void*)&pdbfilehdr->bkinfoFullCur, 0, sizeof( pdbfilehdr->bkinfoFullCur ) );
     }
     if ( pdbfilehdr->bkinfoSnapshotCur.le_genHigh >= genMinRequired )
     {
-        memset( &pdbfilehdr->bkinfoSnapshotCur, 0, sizeof( pdbfilehdr->bkinfoSnapshotCur ) );
+        memset( (void*)&pdbfilehdr->bkinfoSnapshotCur, 0, sizeof( pdbfilehdr->bkinfoSnapshotCur ) );
     }
     if ( pdbfilehdr->bkinfoCopyPrev.le_genHigh >= genMinRequired )
     {
-        memset( &pdbfilehdr->bkinfoCopyPrev, 0, sizeof( pdbfilehdr->bkinfoCopyPrev ) );
+        memset( (void*)&pdbfilehdr->bkinfoCopyPrev, 0, sizeof( pdbfilehdr->bkinfoCopyPrev ) );
         pdbfilehdr->bkinfoTypeCopyPrev = DBFILEHDR::backupNormal;
     }
     if ( pdbfilehdr->bkinfoDiffPrev.le_genHigh >= genMinRequired )
     {
-        memset( &pdbfilehdr->bkinfoDiffPrev, 0, sizeof( pdbfilehdr->bkinfoDiffPrev ) );
+        memset( (void*)&pdbfilehdr->bkinfoDiffPrev, 0, sizeof( pdbfilehdr->bkinfoDiffPrev ) );
         pdbfilehdr->bkinfoTypeDiffPrev = DBFILEHDR::backupNormal;
     }
 
@@ -5992,16 +5992,16 @@ RestartFromLowerLogGeneration:
     //
     if ( (ULONG)pcheckpoint->checkpoint.le_lgposLastFullBackupCheckpoint.le_lGeneration >= genMinRequired )
     {
-        memset( &pcheckpoint->checkpoint.le_lgposLastFullBackupCheckpoint, 0, sizeof( pcheckpoint->checkpoint.le_lgposLastFullBackupCheckpoint ) );
+        memset( (void*)&pcheckpoint->checkpoint.le_lgposLastFullBackupCheckpoint, 0, sizeof( pcheckpoint->checkpoint.le_lgposLastFullBackupCheckpoint ) );
     }
     if ( (ULONG)pcheckpoint->checkpoint.le_lgposFullBackup.le_lGeneration >= genMinRequired )
     {
-        memset( &pcheckpoint->checkpoint.le_lgposFullBackup, 0, sizeof( pcheckpoint->checkpoint.le_lgposFullBackup ) );
+        memset( (void*)&pcheckpoint->checkpoint.le_lgposFullBackup, 0, sizeof( pcheckpoint->checkpoint.le_lgposFullBackup ) );
         memset( &pcheckpoint->checkpoint.logtimeFullBackup, 0, sizeof( pcheckpoint->checkpoint.logtimeFullBackup ) );
     }
     if ( (ULONG)pcheckpoint->checkpoint.le_lgposIncBackup.le_lGeneration >= genMinRequired )
     {
-        memset( &pcheckpoint->checkpoint.le_lgposIncBackup, 0, sizeof( pcheckpoint->checkpoint.le_lgposIncBackup ) );
+        memset( (void*)&pcheckpoint->checkpoint.le_lgposIncBackup, 0, sizeof( pcheckpoint->checkpoint.le_lgposIncBackup ) );
         memset( &pcheckpoint->checkpoint.logtimeIncBackup, 0, sizeof( pcheckpoint->checkpoint.logtimeIncBackup ) );
     }
 
@@ -6423,7 +6423,7 @@ LOCAL VOID PossiblyZeroBkinfo(
     Assert( lGeneration >= pbkinfo->le_lgposMark.le_lGeneration );
     if( lGeneration == pbkinfo->le_lgposMark.le_lGeneration )
     {
-        memset( pbkinfo, 0, sizeof( BKINFO ) );
+        memset( (void*)pbkinfo, 0, sizeof( BKINFO ) );
         *pbkinfotype = DBFILEHDR::backupNormal;
     }
 }

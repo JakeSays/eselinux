@@ -1168,7 +1168,7 @@ public:
 
     CIterQuery( IEntryDescriptor * pied )
     {
-        memset( this, 0, sizeof( *this ) );
+        memset( (void*)this, 0, sizeof( *this ) );
         m_pied = pied;
     }
 

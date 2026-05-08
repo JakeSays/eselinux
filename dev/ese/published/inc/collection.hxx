@@ -868,7 +868,7 @@ inline typename CInvasiveConcurrentModSet< CObject, OffsetOfIAE>::ERR CInvasiveC
     }
     else
     {
-        memcpy( prgValueArray, m_prgValueArray, m_ulArrayAllocated * sizeof( m_prgValueArray[ 0 ] ) );
+        memcpy( (void*)prgValueArray, m_prgValueArray, m_ulArrayAllocated * sizeof( m_prgValueArray[ 0 ] ) );
         delete [] m_prgValueArray;
     }
 
@@ -962,7 +962,7 @@ inline VOID CInvasiveConcurrentModSet< CObject, OffsetOfIAE >::Compact_()
             ARRAY_VALUE *prgValueArray =  new ARRAY_VALUE [ ulArrayAllocated ];
             if ( nullptr != prgValueArray )
             {
-                memcpy( prgValueArray, m_prgValueArray, ulArrayAllocated * sizeof( m_prgValueArray[ 0 ] ) );
+                memcpy( (void*)prgValueArray, m_prgValueArray, ulArrayAllocated * sizeof( m_prgValueArray[ 0 ] ) );
                 delete [] m_prgValueArray;
                 m_prgValueArray = prgValueArray;
                 m_ulArrayAllocated = ulArrayAllocated;

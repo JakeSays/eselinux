@@ -18,7 +18,7 @@ struct LOG_VERIFY_STATE
         : m_state( LogVerifyHeader )
     {
 #ifdef ENABLE_LOG_V7_RECOVERY_COMPAT
-        memset( &m_lrck, 0, sizeof( m_lrck ) );
+        memset( (void*)&m_lrck, 0, sizeof( m_lrck ) );
 #endif
     }
 

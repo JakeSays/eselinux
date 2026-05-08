@@ -2624,7 +2624,7 @@ ERR LOG_STREAM::ErrLGIStartNewLogFile(
     {
         //  reset file header
 
-        memset( m_plgfilehdr, 0, sizeof( LGFILEHDR ) );
+        memset( (void*)m_plgfilehdr, 0, sizeof( LGFILEHDR ) );
     }
 
     m_pLogWriteBuffer->AdvanceLgposToWriteToNewGen( lgenToClose + 1 );
@@ -3822,7 +3822,7 @@ ERR LOG_STREAM::ErrLGRICleanupMismatchedLogFiles( BOOL fExtCleanup )
         m_pLog->ErrLGSetSignLog( nullptr, fFalse );
 
         m_pLogWriteBuffer->LockBuffer();
-        memcpy( m_plgfilehdr, m_plgfilehdrT, sizeof( LGFILEHDR ) );
+        memcpy( (void*)m_plgfilehdr, m_plgfilehdrT, sizeof( LGFILEHDR ) );
         m_pLogWriteBuffer->ResetWritePosition();
         m_pLog->LGResetFlushTipWithLock( lgposMin );
         m_pLogWriteBuffer->UnlockBuffer();

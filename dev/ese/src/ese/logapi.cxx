@@ -5621,7 +5621,7 @@ And here was the list of the log file after recovery
 
 #define SetLogCsvChangeInfo(chk1, chk2, pgnoIn, objidIn, dbidIn, dbtimePreIn, dbtimePostIn) \
     Assert( cLogRecordsCsvFormats < (cCsvLines-1) ); \
-    memset( &(pChangeInfo[cLogRecordsCsvFormats]), 0, sizeof(SIMPLE_CSV_CHG_INFO) ); \
+    memset( (void*)&(pChangeInfo[cLogRecordsCsvFormats]), 0, sizeof(SIMPLE_CSV_CHG_INFO) ); \
     pChangeInfo[cLogRecordsCsvFormats].ulChecksum1  = chk1;         \
     pChangeInfo[cLogRecordsCsvFormats].ulChecksum2  = chk2;         \
     pChangeInfo[cLogRecordsCsvFormats].pgno         = pgnoIn;       \
@@ -5632,13 +5632,13 @@ And here was the list of the log file after recovery
 
 #define SetLogCsvChecksumInfo(chk1, chk2) \
     Assert( cLogRecordsCsvFormats < (cCsvLines-1) ); \
-    memset( &(pChangeInfo[cLogRecordsCsvFormats]), 0, sizeof(SIMPLE_CSV_CHG_INFO) ); \
+    memset( (void*)&(pChangeInfo[cLogRecordsCsvFormats]), 0, sizeof(SIMPLE_CSV_CHG_INFO) ); \
     pChangeInfo[cLogRecordsCsvFormats].ulChecksum1  = chk1;     \
     pChangeInfo[cLogRecordsCsvFormats].ulChecksum2  = chk2;
 
 #define SetLogCsvDatabaseInfo(chk1, chk2, dbidIn, szDb, signDbIn ) \
     Assert( cLogRecordsCsvFormats < (cCsvLines-1) ); \
-    memset( &(pChangeInfo[cLogRecordsCsvFormats]), 0, sizeof(SIMPLE_CSV_CHG_INFO) ); \
+    memset( (void*)&(pChangeInfo[cLogRecordsCsvFormats]), 0, sizeof(SIMPLE_CSV_CHG_INFO) ); \
     pChangeInfo[cLogRecordsCsvFormats].ulChecksum1  = chk1;     \
     pChangeInfo[cLogRecordsCsvFormats].ulChecksum2  = chk2;     \
     pChangeInfo[cLogRecordsCsvFormats].dbid         = dbidIn;   \
@@ -5647,7 +5647,7 @@ And here was the list of the log file after recovery
 
 #define SetLogCsvResizeInfo(chk1, chk2, dbidIn ) \
     Assert( cLogRecordsCsvFormats < (cCsvLines-1) ); \
-    memset( &(pChangeInfo[cLogRecordsCsvFormats]), 0, sizeof(SIMPLE_CSV_CHG_INFO) ); \
+    memset( (void*)&(pChangeInfo[cLogRecordsCsvFormats]), 0, sizeof(SIMPLE_CSV_CHG_INFO) ); \
     pChangeInfo[cLogRecordsCsvFormats].ulChecksum1  = chk1;     \
     pChangeInfo[cLogRecordsCsvFormats].ulChecksum2  = chk2;     \
     pChangeInfo[cLogRecordsCsvFormats].dbid         = dbidIn;
@@ -5986,7 +5986,7 @@ And here was the list of the log file after recovery
             }
             SetLogCsvTypeSz( szLogRecordDatabaseInfo );
             SIGNATURE signatureNil;
-            memset( &signatureNil, 0, sizeof( signatureNil ) );
+            memset( (void*)&signatureNil, 0, sizeof( signatureNil ) );
             SetLogCsvDatabaseInfo( 0, UlChecksumDataLR( plrdetachdb, cb ), (DBID)plrdetachdb->dbid, wszDbPath, signatureNil );
             cLogRecordsCsvFormats++;
             eProcessed = eConsumed;

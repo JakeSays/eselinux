@@ -2643,11 +2643,11 @@ LOCAL ERR ErrSPIFixSpaceTreeRootPage( FUCB *pfucb, SPLIT_BUFFER **ppspbuf )
         //  if in-memory copy of split buffer exists, move it to the page
         if ( fSplitbufDangling )
         {
-            memcpy( &spbuf, pfucb->u.pfcb->Psplitbuf( fAvailExt ), sizeof(SPLIT_BUFFER) );
+            memcpy( (void*)&spbuf, pfucb->u.pfcb->Psplitbuf( fAvailExt ), sizeof(SPLIT_BUFFER) );
         }
         else
         {
-            memset( &spbuf, 0, sizeof(SPLIT_BUFFER) );
+            memset( (void*)&spbuf, 0, sizeof(SPLIT_BUFFER) );
         }
 
         data.SetPv( &spbuf );
@@ -2849,7 +2849,7 @@ INLINE VOID SPIInitSplitBuffer( FUCB *pfucb, CSR *pcsr )
     DATA            data;
     SPLIT_BUFFER    spbuf;
 
-    memset( &spbuf, 0, sizeof(SPLIT_BUFFER) );
+    memset( (void*)&spbuf, 0, sizeof(SPLIT_BUFFER) );
 
     Assert( FBTIUpdatablePage( *pcsr ) );       //  check is already performed by caller
     Assert( latchWrite == pcsr->Latch() );
@@ -3002,7 +3002,7 @@ ERR ErrSPIImproveLastAlloc( FUCB * pfucb, const SPACE_HEADER * const psph, CPG c
     Assert( psph->FMultipleExtent() );
 
     SPACE_HEADER sphSet;
-    memcpy( &sphSet, psph, sizeof(sphSet) );
+    memcpy( (void*)&sphSet, psph, sizeof(sphSet) );
 
     sphSet.SetCpgLast( cpgLast );
 

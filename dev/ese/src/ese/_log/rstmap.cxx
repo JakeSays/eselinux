@@ -298,7 +298,7 @@ ERR LOG::ErrBuildRstmapForRestore( PCWSTR wszRestorePath )
         if ( irstmap + 1 >= irstmapMac )
         {
             Alloc( prstmap = static_cast<RSTMAP *>( PvOSMemoryHeapAlloc( sizeof(RSTMAP) * ( irstmap + 8 ) ) ) );
-            memset( prstmap + irstmap, 0, sizeof( RSTMAP ) * 8 );
+            memset( (void*)( prstmap + irstmap ), 0, sizeof( RSTMAP ) * 8 );
             if ( rgrstmap != nullptr )
             {
                 UtilMemCpy( prstmap, rgrstmap, sizeof(RSTMAP) * irstmap );
@@ -603,9 +603,9 @@ ERR ErrRstmapSoftCheckDBFiles( INST *pinst, RSTMAP * pDbMapEntry )
     }
 
     // fill in the RSTMAP the found database signature
-    memcpy ( &pDbMapEntry->signDatabase, &pdbfilehdrDb->signDb , sizeof(SIGNATURE) );
-    memcpy ( &pDbMapEntry->signDatabaseHdrFlush, &pdbfilehdrDb->signDbHdrFlush , sizeof(SIGNATURE) );
-    memcpy ( &pDbMapEntry->signRBSHdrFlush, &pdbfilehdrDb->signRBSHdrFlush , sizeof(SIGNATURE) );
+    memcpy( (void*)&pDbMapEntry->signDatabase, &pdbfilehdrDb->signDb , sizeof(SIGNATURE) );
+    memcpy( (void*)&pDbMapEntry->signDatabaseHdrFlush, &pdbfilehdrDb->signDbHdrFlush , sizeof(SIGNATURE) );
+    memcpy( (void*)&pDbMapEntry->signRBSHdrFlush, &pdbfilehdrDb->signRBSHdrFlush , sizeof(SIGNATURE) );
 
     // Capture stuff needed to figure out checkpoint from file
     pDbMapEntry->dbstate = pdbfilehdrDb->le_dbstate;
@@ -798,7 +798,7 @@ ERR LOG::ErrBuildRstmapForSoftRecovery( const JET_RSTMAP2_W * const rgjrstmap, c
     // the actual count was checked above, no danger for overflow
     //
     AllocR( rgrstmap = static_cast<RSTMAP *>( PvOSMemoryHeapAlloc( sizeof(RSTMAP) * cjrstmap ) ) );
-    memset( rgrstmap, 0, sizeof(RSTMAP) * cjrstmap );
+    memset( (void*)rgrstmap, 0, sizeof(RSTMAP) * cjrstmap );
 
     m_irstmapMac    = cjrstmap;
     m_rgrstmap      = rgrstmap;
@@ -972,7 +972,7 @@ ERR LOG::ErrBuildRstmapForExternalRestore( JET_RSTMAP_W *rgjrstmap, INT cjrstmap
     // the actual count was checked above, no danger for overflow
     //
     AllocR( rgrstmap = static_cast<RSTMAP *>( PvOSMemoryHeapAlloc( sizeof(RSTMAP) * cjrstmap ) ) );
-    memset( rgrstmap, 0, sizeof( RSTMAP ) * cjrstmap );
+    memset( (void*)rgrstmap, 0, sizeof( RSTMAP ) * cjrstmap );
 
     for ( irstmap = 0; irstmap < cjrstmap; irstmap++ )
     {

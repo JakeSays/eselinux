@@ -5713,7 +5713,7 @@ ERR LOG::ErrLGRICheckAttachedDb(
     //  up defer-attaching the database, but still compare
     //  against stuff in this memory
     //
-    memset( pdbfilehdr, 0, g_cbPage );
+    memset( (void*)pdbfilehdr, 0, g_cbPage );
 
     Assert( !pfmp->FReadOnlyAttach() );
     if ( redoattachmodeCreateDbLR == redoattachmode )
@@ -12786,7 +12786,7 @@ ProcessNextRec:
 
                 Alloc( pAttachInfo = static_cast<ATTACHINFO *>( PvOSMemoryHeapAlloc( cbAttachInfo ) ) );
 
-                memset( pAttachInfo, 0, cbAttachInfo );
+                memset( (void*)pAttachInfo, 0, cbAttachInfo );
                 pAttachInfo->SetDbid( plrcreatedb->dbid );
                 pAttachInfo->SetCbNames( plrcreatedb->CbPath() );
                 pAttachInfo->SetDbtime( 0 );
@@ -12794,7 +12794,7 @@ ProcessNextRec:
                 pAttachInfo->SetCpgDatabaseSizeMax( plrcreatedb->le_cpgDatabaseSizeMax );
                 pAttachInfo->le_lgposAttach = m_lgposRedo;
                 pAttachInfo->le_lgposConsistent = lgposMin;
-                memcpy( &pAttachInfo->signDb, &plrcreatedb->signDb, sizeof(SIGNATURE) );
+                memcpy( (void*)&pAttachInfo->signDb, &plrcreatedb->signDb, sizeof(SIGNATURE) );
 
                 // We will keep ASCII is needed at this point
                 // becuase the ATTACHINFO has support for both
@@ -13005,7 +13005,7 @@ ProcessNextRec:
 
                 Alloc( pAttachInfo = static_cast<ATTACHINFO *>( PvOSMemoryHeapAlloc( cbAttachInfo ) ) );
 
-                memset( pAttachInfo, 0, cbAttachInfo );
+                memset( (void*)pAttachInfo, 0, cbAttachInfo );
                 pAttachInfo->SetDbid( plrattachdb->dbid );
 
                 pAttachInfo->SetCbNames( plrattachdb->CbPath() );
@@ -13024,7 +13024,7 @@ ProcessNextRec:
                 {
                     pAttachInfo->le_lgposConsistent = plrattachdb->lgposConsistent;
                 }
-                memcpy( &pAttachInfo->signDb, &plrattachdb->signDb, sizeof(SIGNATURE) );
+                memcpy( (void*)&pAttachInfo->signDb, &plrattachdb->signDb, sizeof(SIGNATURE) );
 
                 // We will keep ASCII if needed at this point
                 // becuase the ATTACHINFO has support for both
@@ -15103,7 +15103,7 @@ CheckCheckpoint:
                 // we really on the log header below if we had it already opened 
                 // (like we found an EDB.LOG above) so initialize it here to 0 
                 //
-                memset( plgfilehdrT, 0, sizeof(LGFILEHDR) );
+                memset( (void*)plgfilehdrT, 0, sizeof(LGFILEHDR) );
             }
 
             if ( pcheckpointT == nullptr )

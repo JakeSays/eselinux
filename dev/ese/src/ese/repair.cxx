@@ -6283,7 +6283,7 @@ LOCAL ERR ErrREPAIRCheckSPLITBUFFERInSpaceTree(
 
     SPLIT_BUFFER    spb;
 
-    memset( &spb, 0, sizeof( SPLIT_BUFFER ) );
+    memset( (void*)&spb, 0, sizeof( SPLIT_BUFFER ) );
 
 
     CSR csr;
@@ -8149,23 +8149,23 @@ LOCAL ERR ErrREPAIRChangeDBSignature(
 
         pdbfilehdr->ResetUpgradeDb();
 
-        memset( &pdbfilehdr->signLog, 0, sizeof( SIGNATURE ) );
+        memset( (void*)&pdbfilehdr->signLog, 0, sizeof( SIGNATURE ) );
 
-        memset( &pdbfilehdr->le_lgposConsistent, 0, sizeof( LGPOS ) );
+        memset( (void*)&pdbfilehdr->le_lgposConsistent, 0, sizeof( LGPOS ) );
         memset( &pdbfilehdr->logtimeConsistent, 0, sizeof( LOGTIME ) );
 
         memset( &pdbfilehdr->logtimeAttach, 0, sizeof( LOGTIME ) );
-        memset( &pdbfilehdr->le_lgposAttach, 0, sizeof( LGPOS ) );
-        memset( &pdbfilehdr->le_lgposLastResize, 0, sizeof( LGPOS ) );
+        memset( (void*)&pdbfilehdr->le_lgposAttach, 0, sizeof( LGPOS ) );
+        memset( (void*)&pdbfilehdr->le_lgposLastResize, 0, sizeof( LGPOS ) );
 
         memset( &pdbfilehdr->logtimeDetach, 0, sizeof( LOGTIME ) );
-        memset( &pdbfilehdr->le_lgposDetach, 0, sizeof( LGPOS ) );
+        memset( (void*)&pdbfilehdr->le_lgposDetach, 0, sizeof( LGPOS ) );
 
-        memset( &pdbfilehdr->bkinfoFullPrev, 0, sizeof( BKINFO ) );
-        memset( &pdbfilehdr->bkinfoIncPrev, 0, sizeof( BKINFO ) );
-        memset( &pdbfilehdr->bkinfoCopyPrev, 0, sizeof( BKINFO ) );
-        memset( &pdbfilehdr->bkinfoDiffPrev, 0, sizeof( BKINFO ) );
-        memset( &pdbfilehdr->bkinfoFullCur, 0, sizeof( BKINFO ) );
+        memset( (void*)&pdbfilehdr->bkinfoFullPrev, 0, sizeof( BKINFO ) );
+        memset( (void*)&pdbfilehdr->bkinfoIncPrev, 0, sizeof( BKINFO ) );
+        memset( (void*)&pdbfilehdr->bkinfoCopyPrev, 0, sizeof( BKINFO ) );
+        memset( (void*)&pdbfilehdr->bkinfoDiffPrev, 0, sizeof( BKINFO ) );
+        memset( (void*)&pdbfilehdr->bkinfoFullCur, 0, sizeof( BKINFO ) );
 
         pdbfilehdr->bkinfoTypeFullPrev = DBFILEHDR::backupNormal;
         pdbfilehdr->bkinfoTypeIncPrev = DBFILEHDR::backupNormal;
@@ -8634,7 +8634,7 @@ LOCAL ERR ErrREPAIRRepairCatalogs(
         (*popts->pcprintfVerbose)( "rebuilding indexes for %s\r\n", szMSO );
 
         REPAIRTABLE repairtable;
-        memset( &repairtable, 0, sizeof( REPAIRTABLE ) );
+        memset( (void*)&repairtable, 0, sizeof( REPAIRTABLE ) );
         repairtable.objidFDP = objidFDPMSO;
         repairtable.objidLV  = objidNil;
         repairtable.pgnoFDP  = pgnoFDPMSO;

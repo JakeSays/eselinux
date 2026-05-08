@@ -416,7 +416,7 @@ ERR LOG::ErrLGInit( BOOL *pfNewCheckpointFile )
     //  off LGTasksInit before this is init'd.
     Call( ErrLGICheckpointInit( pfNewCheckpointFile ) );
 
-    memset( &m_signLog, 0, sizeof( m_signLog ) );
+    memset( (void*)&m_signLog, 0, sizeof( m_signLog ) );
     m_fSignLogSet = fFalse;
 
     //  determine if we are in "log sequence end" mode
@@ -1698,7 +1698,7 @@ ERR LOG::ErrLGOpenPagePatchRequestCallback(
         PAGE_PATCH_TOKEN token;
         token.cbStruct = sizeof(token);
         token.dbtime = dbtime;
-        memcpy(&token.signLog, &m_signLog, sizeof(SIGNATURE));
+        memcpy( (void*)&token.signLog, &m_signLog, sizeof(SIGNATURE));
 
         JET_SNPATCHREQUEST snPatch;
         snPatch.cbStruct = sizeof(snPatch);
@@ -2312,7 +2312,7 @@ LOG::LGLoadAttachmentsFromFMP(
             //  verify we don't overrun buffer (ensure we have enough room for sentinel)
             EnforceSz( pbBuf + cbAttach > (BYTE *)pattachinfo + sizeof(ATTACHINFO), "TooManyDbsForAttachInfoBefore" );
 
-            memset( pattachinfo, 0, sizeof(ATTACHINFO) );
+            memset( (void*)pattachinfo, 0, sizeof(ATTACHINFO) );
 
             Assert( !pfmpT->FVersioningOff() );
             Assert( !pfmpT->FReadOnlyAttach() );

@@ -266,13 +266,13 @@ BOOL FSIGSignSet( const SIGNATURE *psign )
 {
     SIGNATURE   signNull;
 
-    memset( &signNull, 0, sizeof(SIGNATURE) );
+    memset( (void*)&signNull, 0, sizeof(SIGNATURE) );
     return ( 0 != memcmp( psign, &signNull, sizeof(SIGNATURE) ) );
 }
 
 VOID SIGResetSignature( SIGNATURE *psign )
 {
-    memset( psign, 0, sizeof(SIGNATURE) );
+    memset( (void*)psign, 0, sizeof(SIGNATURE) );
 }
 
 VOID LOG_WRITE_BUFFER::GetLgposOfPbEntry( LGPOS *plgpos ) const

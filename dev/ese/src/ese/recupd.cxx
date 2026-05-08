@@ -449,8 +449,8 @@ struct TRACK_INDEX_ENTRY_CONTEXT : INDEX_ENTRY_CALLBACK_CONTEXT
             // reflect the fact that we've taken responsibility for all the pointers out of
             // the pDataOldT and placed them into pDataNewT so the destructor on pDataOldT
             // doesn't free memory we're still using.
-            memcpy( pDataNewT, pDataOldT, m_cDataUsed * sizeof( TRACK_INDEX_ENTRY_DATA ) );
-            memset( pDataOldT, 0, m_cDataUsed * sizeof( TRACK_INDEX_ENTRY_DATA ) );
+            memcpy( (void*)pDataNewT, pDataOldT, m_cDataUsed * sizeof( TRACK_INDEX_ENTRY_DATA ) );
+            memset( (void*)pDataOldT, 0, m_cDataUsed * sizeof( TRACK_INDEX_ENTRY_DATA ) );
             m_pData = pDataNewT;
             m_cDataAlloced = cNeeded;
 

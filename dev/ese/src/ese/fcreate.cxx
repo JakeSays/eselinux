@@ -5353,7 +5353,7 @@ ERR ErrFILEBuildAllIndexes(
 
     //  allocate space for index contexts, index context pointers, primary key buffers, and secondary key buffers
     Alloc( rgidxcontext = (CREATEINDEXCONTEXT *)PvOSMemoryHeapAlloc( ( sizeof(CREATEINDEXCONTEXT) + sizeof(CREATEINDEXCONTEXT *) + cbKeyAlloc + cbKeyAlloc ) * cProcs ) );
-    memset( rgidxcontext, 0, sizeof(CREATEINDEXCONTEXT) * cProcs );
+    memset( (void*)rgidxcontext, 0, sizeof(CREATEINDEXCONTEXT) * cProcs );
 
     //  allocate space for sort cursors and entry counts
     Alloc( rgpfucbSort = (FUCB **)PvOSMemoryHeapAlloc( ( sizeof(FUCB *) + sizeof(ULONG) ) * cIndexBatchMax ) );

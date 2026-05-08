@@ -5865,7 +5865,7 @@ ERR CJetParam::CloneDefault(    CJetParam* const    pjetparamSrc,
                                 INST* const         pinstDst,
                                 PIB* const          ppibDst )
 {
-    memcpy( pjetparamDst, pjetparamSrc, sizeof( CJetParam ) );
+    memcpy( (void*)pjetparamDst, pjetparamSrc, sizeof( CJetParam ) );
 
     return JET_errSuccess;
 }
@@ -5894,7 +5894,7 @@ ERR CJetParam::CloneString(     CJetParam* const    pjetparamSrc,
         memcpy( wszNewValue, (void*)pjetparamSrc->m_valueCurrent, (cchValue + 1)*sizeof(WCHAR) );
         Assert( !pjetparamDst->m_fFreeValue );
         
-        memcpy( pjetparamDst, pjetparamSrc, sizeof( CJetParam ) );
+        memcpy( (void*)pjetparamDst, pjetparamSrc, sizeof( CJetParam ) );
         pjetparamDst->m_valueCurrent = (ULONG_PTR)wszNewValue;
 
         Assert( pjetparamDst->m_fFreeValue );
@@ -5903,7 +5903,7 @@ ERR CJetParam::CloneString(     CJetParam* const    pjetparamSrc,
     else
     {
         Assert( !pjetparamDst->m_fFreeValue );
-        memcpy( pjetparamDst, pjetparamSrc, sizeof( CJetParam ) );
+        memcpy( (void*)pjetparamDst, pjetparamSrc, sizeof( CJetParam ) );
     }
 
 HandleError:
@@ -6162,7 +6162,7 @@ CloneCommitDefault( CJetParam* const    pjetparamSrc,
     ERR err = JET_errSuccess;
     ULONG_PTR ulParam = 0;
 
-    memcpy( pjetparamDst, pjetparamSrc, sizeof( CJetParam ) );
+    memcpy( (void*)pjetparamDst, pjetparamSrc, sizeof( CJetParam ) );
     Call( GetCommitDefault( pjetparamSrc, pinstSrc, ppibSrc, &ulParam, nullptr, 0 ) );
     Call( SetCommitDefault( pjetparamDst, pinstDst, ppibDst, ulParam, nullptr ) );
 
@@ -6539,7 +6539,7 @@ CloneUnicodeIndexDefault(   CJetParam* const    pjetparamSrc,
     ERR err = JET_errSuccess;
     JET_UNICODEINDEX idxUnicode;
 
-    memcpy( pjetparamDst, pjetparamSrc, sizeof( CJetParam ) );
+    memcpy( (void*)pjetparamDst, pjetparamSrc, sizeof( CJetParam ) );
     Call( GetUnicodeIndexDefault( pjetparamSrc, pinstSrc, ppibSrc, (ULONG_PTR*)&idxUnicode, nullptr, sizeof( JET_UNICODEINDEX ) ) );
     Call( SetUnicodeIndexDefault( pjetparamDst, pinstDst, ppibDst, (ULONG_PTR)&idxUnicode, nullptr ) );
 
@@ -7231,7 +7231,7 @@ CloneConfiguration( CJetParam* const    pjetparamSrc,
 
     Assert( pinstDst != NULL );
 
-    memcpy( pjetparamDst, pjetparamSrc, sizeof( CJetParam ) );
+    memcpy( (void*)pjetparamDst, pjetparamSrc, sizeof( CJetParam ) );
 #ifdef DEBUG
     ULONG_PTR ulParam;
     if ( GetConfiguration( pjetparamSrc, pinstSrc, ppibSrc, &ulParam, NULL, 0 ) >= JET_errSuccess )
@@ -13006,7 +13006,7 @@ LOCAL JET_ERR JetGetDatabaseFileInfoEx(
 
             //  need to zero out header because we try to read it
             //  later on even on failure
-            memset( pdbfilehdr, 0, g_cbPage );
+            memset( (void*)pdbfilehdr, 0, g_cbPage );
 
             //  verify flags initialised
             Assert( !pdbinfoupgd->fUpgradable );
