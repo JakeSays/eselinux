@@ -1795,7 +1795,7 @@ JET_ERR ErrSpaceDumpCtxSetFields(
     //  Parse the fields from the wszFields argument
     ULONG cb = sizeof(E_SP_FIELD);
     WCHAR * pchSep = (WCHAR*)wszFields;
-    while ( pchSep = wcschr( (WCHAR*)pchSep, L',' ) )
+    while ( ( pchSep = wcschr( (WCHAR*)pchSep, L',' ) ) )
     {
         pchSep++;
         cb += sizeof(E_SP_FIELD);

@@ -9576,7 +9576,7 @@ ErrIssue( const BOOL fSync )
     ERR     err         = JET_errSuccess;
     CEntry* pentry      = nullptr;
 
-    while ( pentry = m_il.PrevMost() )
+    while ( ( pentry = m_il.PrevMost() ) )
     {
         switch ( pentry->Oper() )
         {
@@ -9621,7 +9621,7 @@ AbandonLogOps()
 {
     CEntry* pentry      = nullptr;
 
-    while ( pentry = m_il.PrevMost() )
+    while ( ( pentry = m_il.PrevMost() ) )
     {
         switch ( pentry->Oper() )
         {
@@ -26232,7 +26232,7 @@ VOID BFLogHistogram::ReBase( IFMP ifmp, LONG lgenLatest )
     {
         // allocate bigger memory
         delete[] pDataNew->m_rgc;
-        if ( pDataNew->m_rgc = new LONG[ cgenActual ] )
+        if ( ( pDataNew->m_rgc = new LONG[ cgenActual ] ) )
         {
             pDataNew->m_cgen = cgenActual;
         }

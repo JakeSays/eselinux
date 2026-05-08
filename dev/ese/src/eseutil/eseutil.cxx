@@ -2987,19 +2987,19 @@ LOCAL BOOL FEDBUTLParseOptions(
             switch ( popts->mode )
             {
                 case modeRecovery:
-                    if ( fResult = ( nullptr == popts->wszBase ) )
+                    if ( ( fResult = ( nullptr == popts->wszBase ) ) )
                     {
                         popts->wszBase = arg;
                     }
                     break;
                 case modeBackup:
-                    if ( fResult = ( nullptr == popts->wszBackup ) )
+                    if ( ( fResult = ( nullptr == popts->wszBackup ) ) )
                     {
                         popts->wszBackup = arg;
                     }
                     break;
                 default:
-                    if ( fResult = ( nullptr == popts->wszSourceDB ) )
+                    if ( ( fResult = ( nullptr == popts->wszSourceDB ) ) )
                     {
                         popts->wszSourceDB = arg;
                     }

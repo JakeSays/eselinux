@@ -439,7 +439,7 @@ INT _cdecl main( INT argc, __in_ecount( argc ) char * argv[] )
     INT rgcerrCategoryErrs[JET_errcatMax] = { 0 };
     INT rgcerrCategoryWrns[JET_errcatMax] = { 0 };
     const ErrData * perrdata = nullptr;
-    while ( perrdata = PerrdataEntryI( cerrData ) )
+    while ( ( perrdata = PerrdataEntryI( cerrData ) ) )
     {
         if ( perrdata->flags & fErrExternal )
         {
@@ -525,7 +525,7 @@ INT _cdecl main( INT argc, __in_ecount( argc ) char * argv[] )
     wprintf( L"\n" );
 
     #define FailTestSuite( func )                       \
-        if ( err = func )                               \
+        if ( ( err = func ) )                           \
             {                                           \
             wprintf( L"Test %hs failed!\n", #func );    \
             return err;                                 \

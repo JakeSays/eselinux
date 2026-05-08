@@ -9559,7 +9559,7 @@ ERR LOG::ErrLGRIRedoScanCheck( const LRSCANCHECK2 * const plrscancheck, BOOL* co
     if ( fDbScan && fPreviouslyCached )
     {
         void * pvPages = nullptr;
-        if ( pvPages = (BYTE *)PvOSMemoryPageAlloc( g_cbPage * 1, nullptr ) )
+        if ( ( pvPages = (BYTE *)PvOSMemoryPageAlloc( g_cbPage * 1, nullptr ) ) )
         {
             (void)pfmp->PdbmFollower()->ErrDBMScanReadThroughCache( ifmp, plrscancheck->Pgno(), pvPages, 1 );
             OSMemoryPageFree( pvPages );

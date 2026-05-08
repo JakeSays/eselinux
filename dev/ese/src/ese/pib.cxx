@@ -650,7 +650,7 @@ VOID PIBTerm( INST *pinst )
     //  delete all sessions
     //
     pinst->m_critPIB.Enter();
-    while ( ppib = pinst->m_ppibGlobal )
+    while ( ( ppib = pinst->m_ppibGlobal ) )
     {
         Assert( !ppib->FLGWaiting() );
 

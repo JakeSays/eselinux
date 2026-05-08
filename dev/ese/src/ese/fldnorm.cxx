@@ -2746,7 +2746,7 @@ ERR VTAPI ErrIsamMakeKey(
     fDescending = idxseg.FDescending();
     columnid = idxseg.Columnid();
 
-    if ( fFixedField = FCOLUMNIDFixed( columnid ) )
+    if ( ( fFixedField = FCOLUMNIDFixed( columnid ) ) )
     {
         Assert( fUseDMLLatch
                 || idxseg.FTemplateColumn()
