@@ -401,7 +401,7 @@ ERR COSFileSystem::ErrPathBuild(    __in_z const WCHAR* const                   
         if ( !s ) return JET_errSuccess;
         for ( ; *s; ++s )
         {
-            if ( i + 1 >= cchMax ) return ErrERRCheck( JET_errOutOfBuffers );
+            if ( i + 1 >= cchMax ) return ErrERRCheck( JET_errBufferTooSmall );
             wszPath[ i++ ] = *s;
         }
         return JET_errSuccess;
@@ -411,13 +411,13 @@ ERR COSFileSystem::ErrPathBuild(    __in_z const WCHAR* const                   
     //  ensure trailing separator before appending the basename
     if ( i > 0 && wszPath[ i - 1 ] != L'/' && wszPath[ i - 1 ] != L'\\' )
     {
-        if ( i + 1 >= cchMax ) return ErrERRCheck( JET_errOutOfBuffers );
+        if ( i + 1 >= cchMax ) return ErrERRCheck( JET_errBufferTooSmall );
         wszPath[ i++ ] = L'/';
     }
     Call( append( wszFileBase ) );
     if ( wszFileExt && wszFileExt[ 0 ] && wszFileExt[ 0 ] != L'.' )
     {
-        if ( i + 1 >= cchMax ) return ErrERRCheck( JET_errOutOfBuffers );
+        if ( i + 1 >= cchMax ) return ErrERRCheck( JET_errBufferTooSmall );
         wszPath[ i++ ] = L'.';
     }
     Call( append( wszFileExt ) );
@@ -459,7 +459,7 @@ ERR COSFileSystem::ErrPathFolderNorm( __inout_bcount(cbSize) PWSTR const wszFold
         char cwdBuf[ 4096 ];
         if ( !getcwd( cwdBuf, sizeof( cwdBuf ) ) )
         {
-            return ErrERRCheck( JET_errOutOfBuffers );
+            return ErrERRCheck( JET_errBufferTooSmall );
         }
         for ( size_t i = 0; cwdBuf[ i ] && cchTmp + 1 < _countof( wszTmp ); ++i )
         {
@@ -467,7 +467,7 @@ ERR COSFileSystem::ErrPathFolderNorm( __inout_bcount(cbSize) PWSTR const wszFold
         }
         if ( cchTmp == 0 || wszTmp[ cchTmp - 1 ] != L'/' )
         {
-            if ( cchTmp + 1 >= _countof( wszTmp ) ) return ErrERRCheck( JET_errOutOfBuffers );
+            if ( cchTmp + 1 >= _countof( wszTmp ) ) return ErrERRCheck( JET_errBufferTooSmall );
             wszTmp[ cchTmp++ ] = L'/';
         }
         //  Strip a leading "./" from wszFolder before appending — we already
@@ -476,7 +476,7 @@ ERR COSFileSystem::ErrPathFolderNorm( __inout_bcount(cbSize) PWSTR const wszFold
         while ( tail[ 0 ] == L'.' && tail[ 1 ] == L'/' ) tail += 2;
         for ( ; *tail; ++tail )
         {
-            if ( cchTmp + 1 >= _countof( wszTmp ) ) return ErrERRCheck( JET_errOutOfBuffers );
+            if ( cchTmp + 1 >= _countof( wszTmp ) ) return ErrERRCheck( JET_errBufferTooSmall );
             wszTmp[ cchTmp++ ] = *tail;
         }
     }
@@ -484,7 +484,7 @@ ERR COSFileSystem::ErrPathFolderNorm( __inout_bcount(cbSize) PWSTR const wszFold
     {
         for ( WCHAR* p = wszFolder; *p; ++p )
         {
-            if ( cchTmp + 1 >= _countof( wszTmp ) ) return ErrERRCheck( JET_errOutOfBuffers );
+            if ( cchTmp + 1 >= _countof( wszTmp ) ) return ErrERRCheck( JET_errBufferTooSmall );
             wszTmp[ cchTmp++ ] = *p;
         }
     }
@@ -492,14 +492,14 @@ ERR COSFileSystem::ErrPathFolderNorm( __inout_bcount(cbSize) PWSTR const wszFold
     //  Ensure trailing '/'.
     if ( cchTmp == 0 || wszTmp[ cchTmp - 1 ] != L'/' )
     {
-        if ( cchTmp + 1 >= _countof( wszTmp ) ) return ErrERRCheck( JET_errOutOfBuffers );
+        if ( cchTmp + 1 >= _countof( wszTmp ) ) return ErrERRCheck( JET_errBufferTooSmall );
         wszTmp[ cchTmp++ ] = L'/';
     }
     wszTmp[ cchTmp ] = L'\0';
 
     if ( cchTmp + 1 > cchMax )
     {
-        return ErrERRCheck( JET_errOutOfBuffers );
+        return ErrERRCheck( JET_errBufferTooSmall );
     }
     for ( size_t i = 0; i <= cchTmp; ++i )
     {
@@ -615,7 +615,7 @@ ERR COSFileSystem::ErrGetTempFileName( _In_z_ PWSTR const                       
     if ( !osposix::Utf8ToWide( szTemplate, wszFileName, OSFSAPI_MAX_PATH ) )
     {
         unlink( szTemplate );
-        return ErrERRCheck( JET_errOutOfBuffers );
+        return ErrERRCheck( JET_errBufferTooSmall );
     }
     return JET_errSuccess;
 }
