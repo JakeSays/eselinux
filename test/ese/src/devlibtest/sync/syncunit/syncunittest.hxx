@@ -79,7 +79,7 @@ extern CHAR*    g_szCapturedAssert;
         {                                                                                           \
         g_cTestsFailed++;                                                                           \
         wprintf( L"\t\t\tAssert( %hs ) ... Failed @ %d (in %hs)!\n", _sz, _line, _filename );       \
-        *(INT*)NULL = 0x42;                                                                         \
+        __builtin_trap();                                                                           \
         exit( 1 );                                                                                  \
     }
 

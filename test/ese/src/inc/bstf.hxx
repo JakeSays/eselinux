@@ -198,7 +198,7 @@ inline void TestReportFail_( const char * const szTestType, const char * const s
     wprintf( L"\t\t\t%hs( %hs ) ... Failed @ %d!\n", szTestType, szReason, ulLine );
 #endif
 #ifdef BSTF_AVOID_WIN_DEPENDENCE
-    *(int*)nullptr = 0x42;
+    __builtin_trap();   // deliberate crash; clang may delete *(int*)nullptr = ...
 #else
     DebugBreak();
 #endif

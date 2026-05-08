@@ -21383,7 +21383,7 @@ LOCAL JET_ERR JetInitEx(
     Assert( JET_errSuccess == ErrFaultInjection( 50587 ) ); // Used by the assert handling unit-test
     if ( JET_errSuccess != ErrFaultInjection( 47515 ) ) // Used by the exception handling unit-test
     {
-        *( char* )nullptr = 0;
+        __builtin_trap();   // deliberate crash for the exception-handling test
     }
     
     INST::EnterCritInst();

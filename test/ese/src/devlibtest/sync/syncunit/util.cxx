@@ -52,13 +52,15 @@ void AssertFail( const char * szMessage, const char * szFilename, LONG lLine, ..
     }
     
     TestAssertSzFnLn( false, szMessage, szFilename, lLine );
-    *((INT*)nullptr) = 0;
+    __builtin_trap();   // deliberate crash; previous *(INT*)nullptr = 0 is UB
+                        // that clang may delete rather than trap.
     exit(-1);
 }
 
 void EnforceFail( const CHAR * szMessage, const CHAR * szFilename, LONG lLine )
 {
     TestAssertSzFnLn( false, szMessage, szFilename, lLine );
-    *((INT*)nullptr) = 0;
+    __builtin_trap();   // deliberate crash; previous *(INT*)nullptr = 0 is UB
+                        // that clang may delete rather than trap.
     exit(-1);
 }
