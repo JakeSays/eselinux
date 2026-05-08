@@ -16,7 +16,7 @@ struct ErrData
     DWORD       flags;
     JET_ERR     errOrdinal;
     JET_ERR     errSymbol;
-    CHAR *      szSymbol;
+    const CHAR *      szSymbol;
     JET_ERRCAT  errorCategory;
 };
 

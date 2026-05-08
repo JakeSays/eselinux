@@ -2,4 +2,4 @@
 # Licensed under the MIT License.
 
 add_subdirectory(BookStoreSample)
-add_subdirectory(SvcInitSample)
+#add_subdirectory(SvcInitSample)
