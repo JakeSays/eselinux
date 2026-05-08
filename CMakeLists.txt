@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-cmake_minimum_required (VERSION 3.19)
+cmake_minimum_required (VERSION 3.20)
 project (ese)
 
 # Keeping at verbose while the project build files are still in flux
