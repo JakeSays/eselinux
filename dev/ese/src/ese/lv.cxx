@@ -7130,7 +7130,7 @@ LOCAL ERR ErrSCRUBIZeroLV(  PIB * const     ppib,
         if( ilineT == pcsr->Cpage().Clines() )
         {
             const PGNO pgnoNext = pcsr->Cpage().PgnoNext();
-            if( NULL == pgnoNext )
+            if( 0 == pgnoNext )
             {
                 //  end of the tree
                 break;

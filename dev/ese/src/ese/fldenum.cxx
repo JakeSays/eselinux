@@ -1414,9 +1414,9 @@ ERR VTAPI ErrIsamRetrieveColumnByReference(
     BOOL        fRetrievedValue         = fFalse;
     LvId        lid                     = lidMin;
     const BYTE* rgbBookmark             = NULL;
-    ULONG       cbBookmark              = NULL;
+    ULONG       cbBookmark              = 0;
     const CHAR* rgchColumnName          = NULL;
-    ULONG       cchColumnName           = NULL;
+    ULONG       cchColumnName           = 0;
     ULONG       itagSequence            = 0;
 #ifdef DEBUG
     BYTE*       rgbDataVerify           = NULL;

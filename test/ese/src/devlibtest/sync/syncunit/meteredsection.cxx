@@ -289,7 +289,7 @@ ERR CMeteredSectionConcurrentBashTest::ErrTest()
     }
     wprintf( L"Finished phase 1 (%d ms)\n", GetTickCount() - tickStart );
 
-    msTest.Partition( PartitionAsyncThunk, NULL );
+    msTest.Partition( PartitionAsyncThunk, 0 );
 
     tickStart = GetTickCount();
     g_cbashphase = 2;
@@ -413,7 +413,7 @@ ERR CMeteredSectionLimitTest::ErrTest()
     OnRetail( TestCheck( CMeteredSection::groupTooManyActiveErr == msTest.GroupEnter() ) );
     OnRetail( TestCheck( msTest.CActiveUsers() == 0x7ffe ) );
 
-    msTest.Partition( PartitionAsyncThunk, NULL );
+    msTest.Partition( PartitionAsyncThunk, 0 );
     
     TestCheck( !msTest.FEmpty() );
     TestCheck( msTest.GroupActive() == 1 );
@@ -572,7 +572,7 @@ ERR CMeteredSectionCaptureNonEmptyDtorAssert::ErrTest()
     pmsTest = new CMeteredSection;
     TestCheck( NULL != pmsTest );
     TestCheck( 0 == pmsTest->GroupEnter() );
-    pmsTest->Partition( PartitionAsyncThunk, NULL );
+    pmsTest->Partition( PartitionAsyncThunk, 0 );
     OnRetail( TestCheck( pmsTest->FQuiescing() ) );
     OnRetail( TestCheck( pmsTest->CQuiescingUsers() == 1 ) );
     OnRetail( TestCheck( pmsTest->CActiveUsers() == 0 ) );

@@ -159,7 +159,7 @@ struct BF                                           //  BF  --  IFMP/PGNO buffer
             pv( NULL ),
             bfrs( bfrsNotCommitted ),
             fLazyIO( fFalse ),
-            pWriteSignalComplete( NULL ), // and thus pbfNext( NULL )
+            pWriteSignalComplete( 0 ), // and thus pbfNext( NULL )
             icbPage( icbPageInvalid ),
             icbBuffer( icbPageInvalid ),
             fSuspiciouslySlowRead( fFalse ),

@@ -44,7 +44,7 @@ class OLD_STATUS_
                 const IFMP ifmp,
                 const PUTIL_THREAD_PROC pfn );
         VOID ThreadEnd();
-        BOOL FRunning() const                           { return ( NULL != m_thread ); }
+        BOOL FRunning() const                           { return ( 0 != m_thread ); }
 
         VOID SetFTermRequested()                    { m_fTermRequested = fTrue; }
         BOOL FTermRequested() const                 { return m_fTermRequested; }
@@ -77,7 +77,7 @@ class OLD_STATUS_
 
 INLINE VOID OLD_STATUS_::Reset_()
 {
-    m_thread = NULL;
+    m_thread = 0;
     m_ulFlags = 0;
     m_cPasses = 0;
     m_cPassesMax = 0;
@@ -108,7 +108,7 @@ INLINE VOID OLD_STATUS_::ThreadEnd()
     Assert( FRunning() );
 
     UtilThreadEnd( m_thread );
-    m_thread = NULL;
+    m_thread = 0;
 
     Assert( !FRunning() );
 }

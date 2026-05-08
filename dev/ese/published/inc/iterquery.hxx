@@ -885,7 +885,7 @@ ERR MinMaxTargetAction( const IEntryDescriptor * const pied, QwEntryAddr qwEntry
 
     const bool fMatches = ( ( pC->fMin && iEval < 0 ) ||
                             ( !pC->fMin && iEval > 0 ) ||
-                            ( iEval == 0 && pC->qwTargetAddr == NULL ) );
+                            ( iEval == 0 && pC->qwTargetAddr == 0 ) );
 
     if ( fMatches )
     {
@@ -915,7 +915,7 @@ ERR MinMaxTargetFinalAction( const IEntryDescriptor * const pied, void * pContex
 {
     ITQU_MINMAX_TARGET_CONTEXT * pC = (ITQU_MINMAX_TARGET_CONTEXT *)pContext;
 
-    if ( pC->qwTargetAddr == NULL )
+    if ( pC->qwTargetAddr == 0 )
     {
         ITQUPrintf( " No best match found.\n" );
     }

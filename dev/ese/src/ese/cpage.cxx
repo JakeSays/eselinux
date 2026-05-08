@@ -635,7 +635,7 @@ public:
     {
         BFFree( pbfl->pv );
         pbfl->pv        = NULL;
-        pbfl->dwContext = NULL;
+        pbfl->dwContext = 0;
     }
 };
 CAllocatedLoadedPageLatchManager g_allocatedPageLatchManager;
@@ -695,7 +695,7 @@ public:
         OSMemoryPageDecommit( pbfl->pv, CbBuffer( *pbfl ) );
         OSMemoryPageFree( (BYTE*)(pbfl->pv) - s_cbProtectedArea );
         pbfl->pv        = NULL;
-        pbfl->dwContext = NULL;
+        pbfl->dwContext = 0;
     }
 
     virtual void SetBufferSize( BFLatch * const pbfl, _In_ ULONG cbNewSize ) const
@@ -1977,7 +1977,7 @@ CPAGE::CPAGE( ) :
     C_ASSERT( sizeof( CPAGE::TAG ) == 4 );
     C_ASSERT( ctagReservedLegacy > 0 );
     m_bfl.pv        = NULL;
-    m_bfl.dwContext = NULL;
+    m_bfl.dwContext = 0;
 }
 
 //  ================================================================
@@ -2274,7 +2274,7 @@ ERR CPAGE::ErrGetReadPage ( PIB * ppib,
     //  if we were given a hint for this page or it is the same page that
     //  we latched last time, we will attempt to use the hint to latch the
     //  page more quickly
-    m_bfl.dwContext = m_pgno == pgno ? m_bfl.dwContext : NULL;
+    m_bfl.dwContext = m_pgno == pgno ? m_bfl.dwContext : 0;
     m_bfl.dwContext = pbflHint ? pbflHint->dwContext : m_bfl.dwContext;
     m_platchManager = &g_bfLatchManager;
     m_fSmallFormat  = FIsSmallPage( g_rgfmp[ifmp].CbPage() );
@@ -2440,7 +2440,7 @@ ERR CPAGE::ErrGetRDWPage(   PIB * ppib,
     //  if we were given a hint for this page or it is the same page that
     //  we latched last time, we will attempt to use the hint to latch the
     //  page more quickly
-    m_bfl.dwContext = m_pgno == pgno ? m_bfl.dwContext : NULL;
+    m_bfl.dwContext = m_pgno == pgno ? m_bfl.dwContext : 0;
     m_bfl.dwContext = pbflHint ? pbflHint->dwContext : m_bfl.dwContext;
     m_platchManager = &g_bfLatchManager;
     m_fSmallFormat  = FIsSmallPage( g_rgfmp[ifmp].CbPage() );

@@ -14,7 +14,7 @@ class TESTINJECTION
 public:
     TESTINJECTION() :
         m_ulID( ulIDInvalid ),
-        m_pv( NULL ),
+        m_pv( 0 ),
         m_ulProb( 0 ),
         m_grbit( 0x0 ),
         m_cEvals( 0 ),

@@ -1355,7 +1355,7 @@ ERR ErrIONewSize(
                     Expected( cpgAsyncExtension == 0 );
                     cbFsFileSizeAsyncTargetNew = cbNewSizePartial; // just in case.
 
-                    DWORD_PTR dwRangeLockContext = NULL;
+                    DWORD_PTR dwRangeLockContext = 0;
 
                     //  synchronously shrink db
                     //
@@ -1772,7 +1772,7 @@ ERR ErrIOTrim(
 {
     ERR         err                 = JET_errSuccess;
     FMP *       pfmp                = g_rgfmp + ifmp;
-    DWORD_PTR   dwRangeLockContext  = NULL;
+    DWORD_PTR   dwRangeLockContext  = 0;
     TraceContextScope tcScope( iorpDatabaseTrim );
     if ( tcScope->nParentObjectClass == pocNone )
     {
@@ -1817,13 +1817,13 @@ ERR ErrIOTrim(
 
                 // Lock, purge and trim. It's OK if we purge and fail the trim because we're already discarding the pages anyways,
                 // so it means they are useless and this point (i.e., emptied out of data and any useful state).
-                dwRangeLockContext = NULL;
+                dwRangeLockContext = 0;
                 Call( ErrBFLockPageRangeForExternalZeroing( ifmp, pgnoTrimRangeThis, cpgTrimRangeThis, fTrue, *tcScope, &dwRangeLockContext ) );
                 BFPurgeLockedPageRangeForExternalZeroing( dwRangeLockContext, *tcScope );
                 Call( pfmp->Pfapi()->ErrIOTrim( *tcScope, OffsetOfPgno( pgnoTrimRangeThis ), pfmp->CbOfCpg( cpgTrimRangeThis ) ) );
 
                 BFUnlockPageRangeForExternalZeroing( dwRangeLockContext, *tcScope );
-                dwRangeLockContext = NULL;
+                dwRangeLockContext = 0;
 
                 pgnoTrimRangeThis += cpgTrimRangeThis;
             }

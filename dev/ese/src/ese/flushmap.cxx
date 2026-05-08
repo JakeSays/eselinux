@@ -1342,7 +1342,7 @@ ERR CFlushMap::ErrReadFmPage_( FlushMapPageDescriptor* const pfmd, const BOOL fS
 {
     ERR err = JET_errSuccess;
     const IFileAPI::PfnIOComplete pfnIoComplete = fSync ? NULL : OsReadIoComplete_;
-    const DWORD_PTR keyIoComplete = fSync ? NULL : (DWORD_PTR)this;
+    const DWORD_PTR keyIoComplete = fSync ? 0 : (DWORD_PTR)this;
 
     OnDebug( AssertPreIo_( fFalse, pfmd ) );
 
@@ -1377,7 +1377,7 @@ ERR CFlushMap::ErrWriteFmPage_( FlushMapPageDescriptor* const pfmd, const BOOL f
 {
     ERR err = JET_errSuccess;
     const IFileAPI::PfnIOComplete pfnIoComplete = fSync ? NULL : OsWriteIoComplete_;
-    const DWORD_PTR keyIoComplete = fSync ? NULL : (DWORD_PTR)this;
+    const DWORD_PTR keyIoComplete = fSync ? 0 : (DWORD_PTR)this;
     
     OnDebug( AssertPreIo_( fTrue, pfmd ) );
 

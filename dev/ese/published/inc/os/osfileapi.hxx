@@ -444,7 +444,7 @@ class IFileAPI  //  fapi
         __out_bcount( cbData )  BYTE* const         pbData,
                                 const OSFILEQOS     grbitQOS,
                                 const PfnIOComplete pfnIOComplete   = NULL,
-                                const DWORD_PTR     keyIOComplete   = NULL,
+                                const DWORD_PTR     keyIOComplete   = 0,
                                 const PfnIOHandoff  pfnIOHandoff    = NULL,
                                 const VOID *        pioreq          = NULL ) = 0;
         virtual ERR ErrIOWrite( const TraceContext& tc,
@@ -453,7 +453,7 @@ class IFileAPI  //  fapi
                                 const BYTE* const   pbData,
                                 const OSFILEQOS     grbitQOS,
                                 const PfnIOComplete pfnIOComplete   = NULL,
-                                const DWORD_PTR     keyIOComplete   = NULL,
+                                const DWORD_PTR     keyIOComplete   = 0,
                                 const PfnIOHandoff  pfnIOHandoff    = NULL ) = 0;
 
         //  causes any unissued asynchronous I/Os for the current file to be

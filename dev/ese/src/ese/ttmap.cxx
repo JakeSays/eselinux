@@ -559,7 +559,7 @@ ERR TTARRAY::ErrSetValue( PIB * const ppib, const ULONG ulEntry, const ULONG ulV
     RUN runT;
     runT.pgno           = pgnoNull;
     runT.bfl.pv         = NULL;
-    runT.bfl.dwContext  = NULL;
+    runT.bfl.dwContext  = 0;
     runT.fWriteLatch    = fFalse;
     RUN * const  prunT = prun ? prun : &runT;
     PIBTraceContextScope tcRef = ppib->InitTraceContextScope( );
@@ -656,7 +656,7 @@ ERR TTARRAY::ErrGetValue( PIB * const ppib, const ULONG ulEntry, ULONG * const p
     RUN runT;
     runT.pgno           = pgnoNull;
     runT.bfl.pv         = NULL;
-    runT.bfl.dwContext  = NULL;
+    runT.bfl.dwContext  = 0;
     runT.fWriteLatch    = fFalse;
     RUN * const  prunT = prun ? prun : &runT;
     PIBTraceContextScope tcScope = ppib->InitTraceContextScope();

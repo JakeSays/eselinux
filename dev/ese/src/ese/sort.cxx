@@ -736,7 +736,7 @@ VOID SORTICloseRun( PIB * const ppib, SCB * const pscb )
     {
         BFWriteUnlatch( &pscb->bflOut );
         pscb->bflOut.pv         = NULL;
-        pscb->bflOut.dwContext  = NULL;
+        pscb->bflOut.dwContext  = 0;
     }
 
     // Versioning doesn't occur on sorts.
@@ -1119,7 +1119,7 @@ LOCAL ERR ErrSORTIOutputRun( SCB * pscb )
         //  reset sort/merge run output
         //
         pscb->bflOut.pv         = NULL;
-        pscb->bflOut.dwContext  = NULL;
+        pscb->bflOut.dwContext  = 0;
 
         //  reset merge run input
         //
@@ -1589,7 +1589,7 @@ LOCAL ERR ErrSORTIRunStart( SCB *pscb, QWORD cb, RUNINFO *pruninfo )
 
     pscb->pgnoNext          = pruninfo->run;
     pscb->bflOut.pv         = NULL;
-    pscb->bflOut.dwContext  = NULL;
+    pscb->bflOut.dwContext  = 0;
     pscb->pbOutMac          = NULL;
     pscb->pbOutMax          = NULL;
 
@@ -1635,7 +1635,7 @@ LOCAL ERR ErrSORTIRunInsert( SCB *pscb, RUNINFO* pruninfo, SREC *psrec )
         {
             BFWriteUnlatch( &pscb->bflOut );
             pscb->bflOut.pv         = NULL;
-            pscb->bflOut.dwContext  = NULL;
+            pscb->bflOut.dwContext  = 0;
         }
 
         FUCB* pFucb = pscb->fcb.Pfucb( );
@@ -1692,7 +1692,7 @@ INLINE VOID SORTIRunEnd( SCB * pscb, RUNINFO* pruninfo )
     {
         BFWriteUnlatch( &pscb->bflOut );
         pscb->bflOut.pv         = NULL;
-        pscb->bflOut.dwContext  = NULL;
+        pscb->bflOut.dwContext  = 0;
     }
 
     //  trim our space usage for this run
@@ -1818,7 +1818,7 @@ LOCAL ERR ErrSORTIRunOpen( SCB *pscb, RUNINFO *pruninfo, RCB **pprcb )
     for ( ipbf = 0; ipbf < cpgClusterSize; ipbf++ )
     {
         prcb->rgbfl[ipbf].pv        = NULL;
-        prcb->rgbfl[ipbf].dwContext = NULL;
+        prcb->rgbfl[ipbf].dwContext = 0;
     }
 
     prcb->ipbf          = cpgClusterSize;
@@ -1895,7 +1895,7 @@ LOCAL ERR ErrSORTIRunNext( RCB * prcb, SREC **ppsrec )
         BFRenouncePage( &pscb->bflLast, fTrue );
         CLockDeadlockDetectionInfo::EnableOwnershipTracking();
         pscb->bflLast.pv        = NULL;
-        pscb->bflLast.dwContext = NULL;
+        pscb->bflLast.dwContext = 0;
     }
 
     //  are there no more records to read?
@@ -1909,7 +1909,7 @@ LOCAL ERR ErrSORTIRunNext( RCB * prcb, SREC **ppsrec )
             pscb->bflLast.pv        = prcb->rgbfl[prcb->ipbf].pv;
             pscb->bflLast.dwContext = prcb->rgbfl[prcb->ipbf].dwContext;
             prcb->rgbfl[prcb->ipbf].pv          = NULL;
-            prcb->rgbfl[prcb->ipbf].dwContext   = NULL;
+            prcb->rgbfl[prcb->ipbf].dwContext   = 0;
         }
 
         //  return No Current Record
@@ -1961,7 +1961,7 @@ LOCAL ERR ErrSORTIRunNext( RCB * prcb, SREC **ppsrec )
         pscb->bflLast.pv        = prcb->rgbfl[prcb->ipbf].pv;
         pscb->bflLast.dwContext = prcb->rgbfl[prcb->ipbf].dwContext;
         prcb->rgbfl[prcb->ipbf].pv          = NULL;
-        prcb->rgbfl[prcb->ipbf].dwContext   = NULL;
+        prcb->rgbfl[prcb->ipbf].dwContext   = 0;
     }
     else
     {
@@ -2067,7 +2067,7 @@ HandleError:
             BFRenouncePage( &prcb->rgbfl[ipbf], fTrue );
             CLockDeadlockDetectionInfo::EnableOwnershipTracking();
             prcb->rgbfl[ipbf].pv        = NULL;
-            prcb->rgbfl[ipbf].dwContext = NULL;
+            prcb->rgbfl[ipbf].dwContext = 0;
         }
     *ppsrec = NULL;
     return err;
@@ -2096,7 +2096,7 @@ LOCAL VOID SORTIRunClose( RCB *prcb )
             BFRenouncePage( &prcb->rgbfl[ipbf], fTrue );
             CLockDeadlockDetectionInfo::EnableOwnershipTracking();
             prcb->rgbfl[ipbf].pv        = NULL;
-            prcb->rgbfl[ipbf].dwContext = NULL;
+            prcb->rgbfl[ipbf].dwContext = 0;
         }
 
     //  free RCB
@@ -2233,7 +2233,7 @@ LOCAL ERR ErrSORTIMergeStart( SCB *pscb, RUNLINK *prunlinkSrc )
     /**/
     pscb->crunMerge             = crun;
     pscb->bflLast.pv            = NULL;
-    pscb->bflLast.dwContext     = NULL;
+    pscb->bflLast.dwContext     = 0;
     pscb->pvAssyLast            = NULL;
 
     OSTrace( JET_tracetagSortPerf, OSFormat( "MERGE:  %ld runs -(details to follow)", crun ) );
@@ -2339,7 +2339,7 @@ LOCAL VOID SORTIMergeEnd( SCB *pscb )
         BFRenouncePage( &pscb->bflLast, fTrue );
         CLockDeadlockDetectionInfo::EnableOwnershipTracking();
         pscb->bflLast.pv        = NULL;
-        pscb->bflLast.dwContext = NULL;
+        pscb->bflLast.dwContext = 0;
     }
     if ( pscb->pvAssyLast != NULL )
     {

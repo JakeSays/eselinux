@@ -55,7 +55,7 @@ public:
     __out_bcount( cbData )  BYTE* const         pbData,
                             const OSFILEQOS     grbitQOS,
                             const PfnIOComplete pfnIOComplete   = NULL,
-                            const DWORD_PTR     keyIOComplete   = NULL,
+                            const DWORD_PTR     keyIOComplete   = 0,
                             const PfnIOHandoff  pfnIOHandoff    = NULL,
                             const VOID *        pioreq          = NULL  ) override;
     ERR ErrIOWrite( const TraceContext& tc,
@@ -64,7 +64,7 @@ public:
                             const BYTE* const       pbData,
                             const OSFILEQOS     grbitQOS,
                             const PfnIOComplete pfnIOComplete   = NULL,
-                            const DWORD_PTR     keyIOComplete   = NULL,
+                            const DWORD_PTR     keyIOComplete   = 0,
                             const PfnIOHandoff  pfnIOHandoff    = NULL ) override { AssertSz( fFalse, "NYI!" ); return ErrERRCheck( JET_errNyi ); }
     ERR ErrIOIssue() override { AssertSz( fFalse, "NYI!" ); return ErrERRCheck( JET_errNyi ); }
     ERR ErrMMRead(  const QWORD     ibOffset,

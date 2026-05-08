@@ -3943,11 +3943,11 @@ VOID RBSCleaner::TermCleaner()
 {
     m_msigRBSCleanerStop.Set();
 
-    if ( m_threadRBSCleaner != NULL )
+    if ( m_threadRBSCleaner != 0 )
     {
         UtilThreadEnd( m_threadRBSCleaner );
     }
-    m_threadRBSCleaner = NULL;
+    m_threadRBSCleaner = 0;
   
     Assert( !FIsCleanerRunning() );
 }
@@ -4855,7 +4855,7 @@ ERR CRBSDatabaseRevertContext::ErrRBSPageFDPDeleteState( const PGNO pgno, const 
     //
     if ( fPageInCache )
     {
-        CPagePointer pageptr( NULL, pgno );
+        CPagePointer pageptr( 0, pgno );
         ientryExisting = m_rgRBSDbPage->SearchLinear( &pageptr, CRBSDatabaseRevertContext::ICRBSDatabaseRevertContextPgEquals );
         Assert( ientryExisting != CArray< CPagePointer >::iEntryNotFound );
 

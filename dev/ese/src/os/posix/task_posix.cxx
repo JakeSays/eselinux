@@ -76,7 +76,7 @@ ERR CTaskManager::ErrTMInit(    const ULONG                     cThread,
 
     for ( size_t iThread = 0; iThread < cThread; iThread++ )
     {
-        m_rgThreadContext[iThread].dwThreadContext = rgThreadContext ? rgThreadContext[iThread] : NULL;
+        m_rgThreadContext[iThread].dwThreadContext = rgThreadContext ? rgThreadContext[iThread] : 0;
         m_rgThreadContext[iThread].ptm = this;
     }
 

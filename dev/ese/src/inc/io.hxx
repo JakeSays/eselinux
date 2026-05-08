@@ -295,7 +295,7 @@ class CIOThreadInfoTableKey
     public:
 
         CIOThreadInfoTableKey()
-            : m_iocontext( NULL )
+            : m_iocontext( 0 )
         {
         }
 
@@ -326,7 +326,7 @@ class CIOThreadInfoTableEntry
     public:
 
         CIOThreadInfoTableEntry()
-            : m_iocontext( NULL ), m_cDatabaseReadsPending( 0 )
+            : m_iocontext( 0 ), m_cDatabaseReadsPending( 0 )
         {
         }
 
@@ -414,7 +414,7 @@ class CIOFilePerf
             const DWORD     diskQueueDepth,
             const BOOL      fWrite )
         {
-            DWORD_PTR       iocontext   = NULL;
+            DWORD_PTR       iocontext   = 0;
             const IOTYPE    iotypeT     = ( fWrite ? iotypeWrite : iotypeRead );
             const IOFILE    iofileT     = IOFILE( m_dwEngineFileType );
 
@@ -437,7 +437,7 @@ class CIOFilePerf
                 {
                     err = g_iothreadinfotable.ErrInsertEntry( &lock, newEntry );
                 }
-                iocontext = err == CIOThreadInfoTable::ERR::errSuccess ? key.m_iocontext : NULL;
+                iocontext = err == CIOThreadInfoTable::ERR::errSuccess ? key.m_iocontext : 0;
                 g_iothreadinfotable.WriteUnlockKey( &lock );
 
                 ptls->threadstats.cDatabaseReads++;

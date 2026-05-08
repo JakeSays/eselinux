@@ -529,7 +529,7 @@ ERR CResourceManager::ErrSetParam(
         switch ( resop )
         {
             case JET_resoperTag:
-                if ( NULL != dwParam )
+                if ( 0 != dwParam )
                 {
                     memcpy( m_rgchTag, (void *)dwParam, sizeof( m_rgchTag ) );
                 }

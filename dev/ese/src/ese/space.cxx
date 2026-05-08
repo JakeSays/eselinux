@@ -11627,7 +11627,7 @@ LOCAL ERR ErrSPIWriteZeroesDatabase(
     Assert( 0 != cbZeroes );
 
     ERR err = JET_errSuccess;
-    DWORD_PTR dwRangeLockContext = NULL;
+    DWORD_PTR dwRangeLockContext = 0;
     const PGNO pgnoStart = PgnoOfOffset( ibOffsetStart );
     const PGNO pgnoEnd = PgnoOfOffset( ibOffsetStart + cbZeroes ) - 1;
 
@@ -11662,7 +11662,7 @@ LOCAL ERR ErrSPIWriteZeroesDatabase(
     {
         const CPG cpgZeroRangeThis = LFunctionalMin( cpgZeroOptimal, (CPG)( pgnoEnd - pgnoZeroRangeThis + 1 ) );
 
-        dwRangeLockContext = NULL;
+        dwRangeLockContext = 0;
         Call( ErrBFLockPageRangeForExternalZeroing( ifmp, pgnoZeroRangeThis, cpgZeroRangeThis, fTrue, *tcScope, &dwRangeLockContext ) );
 
         Call( pfmp->Pfapi()->ErrIOWrite(
@@ -11675,7 +11675,7 @@ LOCAL ERR ErrSPIWriteZeroesDatabase(
         BFPurgeLockedPageRangeForExternalZeroing( dwRangeLockContext, *tcScope );
 
         BFUnlockPageRangeForExternalZeroing( dwRangeLockContext, *tcScope );
-        dwRangeLockContext = NULL;
+        dwRangeLockContext = 0;
 
         pgnoZeroRangeThis += cpgZeroRangeThis;
     }

@@ -6897,7 +6897,7 @@ class CMeteredSection
         void Leave( const Group group );
 
         void Partition( const PFNPARTITIONCOMPLETE  pfnPartitionComplete    = NULL,
-                        const DWORD_PTR             dwCompletionKey         = NULL );
+                        const DWORD_PTR             dwCompletionKey         = 0 );
 
         //    accessors
 
@@ -7000,7 +7000,7 @@ class CMeteredSection
 inline CMeteredSection::CMeteredSection()
     :   m_cw( 0x80000000 ),
         m_pfnPartitionComplete( NULL ),
-        m_dwPartitionCompleteKey( NULL )
+        m_dwPartitionCompleteKey( 0 )
 {
 }
 

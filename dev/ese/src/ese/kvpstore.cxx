@@ -1915,15 +1915,15 @@ ERR ErrKVPStoreTestGetRidOfTable( JET_SESID sesid, JET_DBID dbid, JET_TABLEID cu
 {
     JET_ERR err = JET_errSuccess;
 
-    if ( cursor != NULL && cursor != JET_tableidNil )
+    if ( cursor != 0 && cursor != JET_tableidNil )
     {
         Call( JetCloseTable( sesid, cursor ) );
     }
-    if ( dbid != NULL && dbid != JET_dbidNil )
+    if ( dbid != 0 && dbid != JET_dbidNil )
     {
         Call( JetCloseDatabase( sesid, dbid, NO_GRBIT ) );
     }
-    if ( sesid != NULL && sesid != JET_sesidNil )
+    if ( sesid != 0 && sesid != JET_sesidNil )
     {
         Call( JetEndSession( sesid, NO_GRBIT ) );
     }

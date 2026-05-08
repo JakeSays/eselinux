@@ -3521,7 +3521,7 @@ void BFAbandonNewPage( BFLatch* const pbfl, const TraceContext& tc )
     BFIPurgeNewPage( pbf, tc );
 
     pbfl->pv = NULL;
-    pbfl->dwContext = NULL;
+    pbfl->dwContext = 0;
 }
 
 //
@@ -4158,7 +4158,7 @@ void BFPurge( IFMP ifmp, PGNO pgno, CPG cpg )
             pbffmp->bfob0.Term();
             pbffmp->BFFMPContext::~BFFMPContext();
             OSMemoryHeapFreeAlign( pbffmp );
-            pfmp->SetDwBFContext( NULL );
+            pfmp->SetDwBFContext( 0 );
         }
         pfmp->LeaveBFContextAsWriter();
     }
@@ -5432,7 +5432,7 @@ ErrBFIInspectForInclusionInCrashDump(
 
         //  want to see pages that have completed IO for now ...
 
-        else if (   NULL != pbf->pWriteSignalComplete )
+        else if (   0 != pbf->pWriteSignalComplete )
         {
             *pfIncludeVMPage = fTrue;
             cBFIOIncludedInCrashDump++;
@@ -9783,7 +9783,7 @@ ERR ErrBFIMaintInit()
 
     Call( ErrOSCreateLowMemoryNotification(
                 BFIMaintLowMemoryCallback,
-                NULL,
+                0,
                 &g_pMemoryNotification ) );
 
     g_semMaintAvailPoolRequestUrgent.Release();
@@ -16529,7 +16529,7 @@ ERR ErrBFIAllocPage( PBF* const ppbf, _In_ const ICBPage icbBufferSize, const BO
         AssertTrack( !(*ppbf)->bfbitfield.FRangeLocked(), "BFAllocRangeAlreadyLocked" );
         Enforce( (*ppbf)->err != errBFIPageFaultPending );
         Enforce( (*ppbf)->err != wrnBFPageFlushPending );
-        Enforce( (*ppbf)->pWriteSignalComplete == NULL );
+        Enforce( (*ppbf)->pWriteSignalComplete == 0 );
         Enforce( PvBFIAcquireIOContext( *ppbf ) == NULL );
 
         Enforce( (*ppbf)->pbfTimeDepChainNext == NULL );
@@ -16861,7 +16861,7 @@ void BFIFreePage( PBF pbf, const BOOL fMRU, const BFFreePageFlags bffpfDangerous
 
     Enforce( pbf->err != errBFIPageFaultPending );
     Enforce( pbf->err != wrnBFPageFlushPending );
-    Enforce( pbf->pWriteSignalComplete == NULL );
+    Enforce( pbf->pWriteSignalComplete == 0 );
     Enforce( PvBFIAcquireIOContext( pbf ) == NULL );
     AssertSz( !pbf->bfbitfield.FRangeLocked() || pbf->fAbandoned, "BFFreeRangeStillLocked" );
 
@@ -17191,7 +17191,7 @@ ERR ErrBFICachePage(    PBF* const ppbf,
 
     Enforce( wrnBFPageFlushPending != pgnopbf.pbf->err );
     Enforce( JET_errSuccess == pgnopbf.pbf->err );
-    Enforce( NULL == pgnopbf.pbf->pWriteSignalComplete );
+    Enforce( 0 == pgnopbf.pbf->pWriteSignalComplete );
     Enforce( NULL == PvBFIAcquireIOContext( pgnopbf.pbf ) );
 
     Assert( FBFIValidPvAllocType( pgnopbf.pbf ) );
@@ -21398,7 +21398,7 @@ ERR ErrBFIPrepareFlushPage(
     Assert( FBFIUpdatablePage( pbf ) );
     Enforce( pbf->err != errBFIPageFaultPending );
     Enforce( pbf->err != wrnBFPageFlushPending );
-    Enforce( pbf->pWriteSignalComplete == NULL );
+    Enforce( pbf->pWriteSignalComplete == 0 );
     Enforce( PvBFIAcquireIOContext( pbf ) == NULL );
 
     Assert( pbf->sxwl.FOwnExclusiveLatch() || pbf->sxwl.FOwnWriteLatch() );
@@ -22933,7 +22933,7 @@ ERR ErrBFIEvictPage( PBF pbf, BFLRUK::CLock* plockLRUK, const BFEvictFlags bfefD
                                     !BoolParam( JET_paramEnableViewCache );
     Enforce( pbf->err != errBFIPageFaultPending );
     Enforce( pbf->err != wrnBFPageFlushPending );
-    Enforce( pbf->pWriteSignalComplete == NULL );
+    Enforce( pbf->pWriteSignalComplete == 0 );
     Enforce( PvBFIAcquireIOContext( pbf ) == NULL );
 
     if ( fKeepHistory )
@@ -23295,7 +23295,7 @@ void BFIPurgeAllPageVersions( _Inout_ BFLatch* const pbfl, const TraceContext& t
     }
 
     pbfl->pv = NULL;
-    pbfl->dwContext = NULL;
+    pbfl->dwContext = 0;
 }
 
 //  Purges the current abandoned page version of a new page. The buffer passed in must be the
@@ -23461,7 +23461,7 @@ void BFIRenouncePage( _Inout_ PBF pbf, _In_ const BOOL fRenounceDirty )
 
     Enforce( pbf->err != errBFIPageFaultPending );
     Enforce( pbf->err != wrnBFPageFlushPending );
-    Enforce( pbf->pWriteSignalComplete == NULL );
+    Enforce( pbf->pWriteSignalComplete == 0 );
 
     //  the BF is clean or we can renounce dirty BFs (unless there are older versions)
 
@@ -23703,7 +23703,7 @@ void BFICleanPage( __inout PBF pbf, _In_ const BFLatchType bfltHave, _In_ const 
 
     Enforce( pbf->err != errBFIPageFaultPending );  // should be true
     //Enforce( pbf->err != wrnBFPageFlushPending ); // not true.
-    Enforce( pbf->pWriteSignalComplete == NULL );       // true because we reset the signal before BFICleanPage.
+    Enforce( pbf->pWriteSignalComplete == 0 );       // true because we reset the signal before BFICleanPage.
     Enforce( PvBFIAcquireIOContext( pbf ) == NULL );
 
     //  remove every BF above us and ourself from the time dependency chain
@@ -24185,7 +24185,7 @@ void BFIPrepareReadPage( PBF pbf )
 
     Enforce( pbf->err != errBFIPageFaultPending );
     Enforce( pbf->err != wrnBFPageFlushPending );
-    Enforce( pbf->pWriteSignalComplete == NULL );
+    Enforce( pbf->pWriteSignalComplete == 0 );
     Enforce( PvBFIAcquireIOContext( pbf ) == NULL );
 
     ERR errT = ErrERRCheck( errBFIPageFaultPending );
@@ -24212,7 +24212,7 @@ void BFIPrepareWritePage( PBF pbf )
 
     Enforce( pbf->err != errBFIPageFaultPending );
     Enforce( pbf->err != wrnBFPageFlushPending );
-    Enforce( pbf->pWriteSignalComplete == NULL );
+    Enforce( pbf->pWriteSignalComplete == 0 );
 
     ERR errT = ErrERRCheck( wrnBFPageFlushPending );
     pbf->err = SHORT( errT );
@@ -24988,7 +24988,7 @@ void BFIAsyncWriteHandoff(  const ERR           err,
 
     Assert( !FBFIUpdatablePage( pbf ) );
     Assert( ErrBFIWriteSignalState( pbf ) == wrnBFPageFlushPending );
-    Enforce( NULL == pbf->pWriteSignalComplete );
+    Enforce( 0 == pbf->pWriteSignalComplete );
 
     //  Ok, ok, let the IO Manager have this one ...
     pbf->sxwl.ReleaseExclusiveLatch();
@@ -25095,7 +25095,7 @@ void BFIWriteSignalSetComplete( PBF pbf, const ERR err )
     }
 
     const ULONG_PTR pInitial = pbf->pWriteSignalComplete;
-    Enforce( NULL == pInitial );    // right now we support no other next states in conjunction with this ...
+    Enforce( 0 == pInitial );    // right now we support no other next states in conjunction with this ...
 
     Assert( ErrBFIWriteSignalIError( pSignal ) == err );
 

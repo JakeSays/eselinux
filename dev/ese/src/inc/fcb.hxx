@@ -1329,7 +1329,7 @@ INLINE FCB::~FCB()
             (VOID *)m_ls,
             NULL,
             NULL,
-            NULL );
+            0 );
     }
 }
 

@@ -1728,7 +1728,7 @@ void CFastTraceLog::FTLIResetWriteBuffering( void )
 
     C_ASSERT( _countof(m_rgfBufferState) == _countof(m_rgpbWriteBuffers) );
 
-    m_ibWriteBufferCurrent = NULL;
+    m_ibWriteBufferCurrent = 0;
     m_ipbWriteBufferCurrent = ibufUninitialized;
     m_cbWriteBufferFull = 0;
 }

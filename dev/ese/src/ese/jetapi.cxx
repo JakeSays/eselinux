@@ -5176,7 +5176,7 @@ LOCAL JET_ERR ErrInit(  INST        *pinst,
                         NULL,
                         NULL,
                         NULL,
-                        NULL ) );
+                        0 ) );
     }
 
     // init HA publish api
@@ -7866,7 +7866,7 @@ ERR ErrSysParamLoadDefaults( const BOOL fHasCritInst, INST * pinst, CConfigStore
 
             if ( err == JET_errSuccess )
             {
-                err = ErrSetSystemParameter( pinst, NULL, iparamid, ulpValue, NULL, !fHasCritInst );
+                err = ErrSetSystemParameter( pinst, 0, iparamid, ulpValue, NULL, !fHasCritInst );
                 if ( err < JET_errSuccess )
                 {
                     WCHAR wszParamName[100];
@@ -7956,7 +7956,7 @@ ErrSetConfigStoreSpec(  CJetParam* const    pjetparam,
         {
             delete [] (void*)pjetparam->m_valueCurrent;
         }
-        pjetparam->m_valueCurrent   = NULL;
+        pjetparam->m_valueCurrent   = 0;
         pjetparam->m_fWritten       = fTrue;
         pjetparam->m_fFreeValue     = fFalse;
         //  Note SetConfiguration() --> pjetparamT->Reset() does this, and expects success.
@@ -17070,7 +17070,7 @@ JET_ERR JET_API JetRestoreA(    _In_ JET_PCSTR szSource, __in_opt JET_PFNSTATUS 
 
     Assert( fInitd == ( g_rgpinst != NULL ) );
 
-    err = JetRestoreInstanceA( g_rgpinst ? (JET_INSTANCE)g_rgpinst[0] : NULL, szSource, NULL, pfn );
+    err = JetRestoreInstanceA( g_rgpinst ? (JET_INSTANCE)g_rgpinst[0] : 0, szSource, NULL, pfn );
 
     //  I am not sure this holds ...
     Assert( fInitd == ( RUNINSTGetMode() != runInstModeNoSet ) );
@@ -17089,7 +17089,7 @@ JET_ERR JET_API JetRestoreW(    _In_ JET_PCWSTR wszSource, __in_opt JET_PFNSTATU
 
     Assert( fInitd == ( g_rgpinst != NULL ) );
 
-    err = JetRestoreInstanceW( g_rgpinst ? (JET_INSTANCE)g_rgpinst[0] : NULL, wszSource, NULL, pfn );
+    err = JetRestoreInstanceW( g_rgpinst ? (JET_INSTANCE)g_rgpinst[0] : 0, wszSource, NULL, pfn );
 
     //  I am not sure this holds ...
     Assert( fInitd == ( RUNINSTGetMode() != runInstModeNoSet ) );
@@ -17109,7 +17109,7 @@ JET_ERR JET_API JetRestore2A( _In_ JET_PCSTR sz, __in_opt JET_PCSTR szDest, __in
 
     Assert( fInitd == ( g_rgpinst != NULL ) );
 
-    err = JetRestoreInstanceA( g_rgpinst ? (JET_INSTANCE)g_rgpinst[0] : NULL, sz, szDest, pfn );
+    err = JetRestoreInstanceA( g_rgpinst ? (JET_INSTANCE)g_rgpinst[0] : 0, sz, szDest, pfn );
 
     //  I am not sure this holds ...
     Assert( fInitd == ( RUNINSTGetMode() != runInstModeNoSet ) );
@@ -17129,7 +17129,7 @@ JET_ERR JET_API JetRestore2W(_In_ JET_PCWSTR wsz, __in_opt JET_PCWSTR wszDest, _
 
     Assert( fInitd == ( g_rgpinst != NULL ) );
 
-    err = JetRestoreInstanceW( g_rgpinst ? (JET_INSTANCE)g_rgpinst[0] : NULL, wsz, wszDest, pfn );
+    err = JetRestoreInstanceW( g_rgpinst ? (JET_INSTANCE)g_rgpinst[0] : 0, wsz, wszDest, pfn );
 
     //  I am not sure this holds ...
     Assert( fInitd == ( RUNINSTGetMode() != runInstModeNoSet ) );
@@ -17514,7 +17514,7 @@ LOCAL JET_ERR JetGetAttachInfoInstanceExA(
     CAutoWSZ        lwszz;
     size_t  cchActual;
 
-    Call( JetGetAttachInfoInstanceEx( instance, 0, NULL, &cbActual ) );
+    Call( JetGetAttachInfoInstanceEx( instance, 0, 0, &cbActual ) );
 
     Call( lwszz.ErrAlloc( cbActual ));
 
@@ -17947,7 +17947,7 @@ LOCAL JET_ERR JetGetLogInfoInstanceExA(
         Call( lLogInfoW.ErrReset() );
     }
 
-    Call( JetGetLogInfoInstanceEx( instance, 0, NULL, &cbActual, (JET_LOGINFO_W*)lLogInfoW ) );
+    Call( JetGetLogInfoInstanceEx( instance, 0, 0, &cbActual, (JET_LOGINFO_W*)lLogInfoW ) );
 
     Call( lwsz.ErrAlloc( cbActual ) );
 
@@ -18079,7 +18079,7 @@ LOCAL JET_ERR JetGetTruncateLogInfoInstanceExA(
     ULONG   cbActual;
     size_t      cchActual;
 
-    Call( JetGetTruncateLogInfoInstanceEx( instance, 0, NULL, &cbActual ) );
+    Call( JetGetTruncateLogInfoInstanceEx( instance, 0, 0, &cbActual ) );
 
     Call( lwszz.ErrAlloc( cbActual ) );
 
@@ -21517,7 +21517,7 @@ TermAlloc:
             ErrTermAlloc( (JET_INSTANCE)pinst );
             if ( NULL != pinstance )
             {
-                *pinstance = NULL;
+                *pinstance = 0;
             }
         }
     }

@@ -1130,7 +1130,7 @@ class ICachedBlockSlab  //  cbs
                                         _In_                const size_t                                cb,
                                         _In_reads_( cb )    const BYTE* const                           rgb,
                                         _In_opt_            const ICachedBlockSlab::PfnClusterWritten   pfnClusterWritten   = NULL,
-                                        _In_opt_            const DWORD_PTR                             keyClusterWritten   = NULL,
+                                        _In_opt_            const DWORD_PTR                             keyClusterWritten   = 0,
                                         _In_opt_            const ICachedBlockSlab::PfnClusterHandoff   pfnClusterHandoff   = NULL ) = 0;
 
         //  Updates the state for the given cached block.
@@ -1152,7 +1152,7 @@ class ICachedBlockSlab  //  cbs
                                     _In_                const size_t                                cb,
                                     _Out_writes_( cb )  BYTE* const                                 rgb,
                                     _In_opt_            const ICachedBlockSlab::PfnClusterRead      pfnClusterRead      = NULL,
-                                    _In_opt_            const DWORD_PTR                             keyClusterRead      = NULL,
+                                    _In_opt_            const DWORD_PTR                             keyClusterRead      = 0,
                                     _In_opt_            const ICachedBlockSlab::PfnClusterHandoff   pfnClusterHandoff   = NULL ) = 0;
 
         //  Verifies that the cluster data matches the cluster state.
@@ -1251,7 +1251,7 @@ class ICachedBlockSlab  //  cbs
         //  saved.
 
         virtual ERR ErrSave(    _In_opt_    const ICachedBlockSlab::PfnClusterRead  pfnSlabSaved    = NULL,
-                                _In_opt_    const DWORD_PTR                         keySlabSaved    = NULL ) = 0;
+                                _In_opt_    const DWORD_PTR                         keySlabSaved    = 0 ) = 0;
 };
 
 //  Cached Block Slab Manager

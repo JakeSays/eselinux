@@ -766,7 +766,7 @@ HandleError:
 
 VOID RFSSuppressFaultInjection( const ULONG ulID )
 {
-    TESTINJECTION injectionTarget( ulID, NULL, 0, 0 );
+    TESTINJECTION injectionTarget( ulID, 0, 0, 0 );
 
     Assert( g_fcsTestInjectionsInit );
     EnterCriticalSection( &g_csTestInjections );
@@ -787,7 +787,7 @@ VOID RFSSuppressFaultInjection( const ULONG ulID )
 
 VOID RFSUnsuppressFaultInjection( const ULONG ulID )
 {
-    TESTINJECTION injectionTarget( ulID, NULL, 0, 0 );
+    TESTINJECTION injectionTarget( ulID, 0, 0, 0 );
 
     Assert( g_fcsTestInjectionsInit );
     EnterCriticalSection( &g_csTestInjections );
@@ -816,7 +816,7 @@ INLINE TESTINJECTION* PinjectionFind_( const ULONG ulID )
         return NULL;
     }
 
-    TESTINJECTION injectionSearch( ulID, NULL, 0, 0x0 );
+    TESTINJECTION injectionSearch( ulID, 0, 0, 0x0 );
 
     TESTINJECTION* pinjection;
     const TESTINJECTION* const pinjectionTail = g_rgTestInjections + g_cTestInjections;

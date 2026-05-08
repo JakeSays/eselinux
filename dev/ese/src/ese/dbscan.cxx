@@ -327,7 +327,7 @@ private:
     DWORD DwDBMScan_();
 
     // starting/stopping
-    bool FIsDBMScanRunning_() const { return ( NULL != m_threadDBMScan ); }
+    bool FIsDBMScanRunning_() const { return ( 0 != m_threadDBMScan ); }
     ERR ErrStartDBMScan_();
     void PrepareToTerm_();
     void TermDBMScan_();
@@ -4796,11 +4796,11 @@ void DBMScan::TermDBMScan_()
     // Let the observers know that we are terminating.
     PrepareToTerm_();
 
-    if ( m_threadDBMScan != NULL )
+    if ( m_threadDBMScan != 0 )
     {
         UtilThreadEnd( m_threadDBMScan );
     }
-    m_threadDBMScan = NULL;
+    m_threadDBMScan = 0;
     ResetScanStop_();
     if ( m_pidbmScanSerializationObj != NULL )
     {

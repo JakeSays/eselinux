@@ -15,7 +15,7 @@ class TTARRAY
                         fWriteLatch( fFalse )
                 {
                     bfl.pv          = NULL;
-                    bfl.dwContext   = NULL;
+                    bfl.dwContext   = 0;
                 }
             
             public:

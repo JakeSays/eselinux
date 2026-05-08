@@ -59,7 +59,7 @@ FUCB::~FUCB()
             (VOID *)ls,
             NULL,
             NULL,
-            NULL );
+            0 );
     }
 }
 

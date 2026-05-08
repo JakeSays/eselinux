@@ -247,7 +247,7 @@ public:
         __out_bcount( cbData )  BYTE* const         pbData,
                     const OSFILEQOS     grbitQOS,
                     const PfnIOComplete pfnIOComplete   = NULL,
-                    const DWORD_PTR     keyIOComplete   = NULL,
+                    const DWORD_PTR     keyIOComplete   = 0,
                     const PfnIOHandoff  pfnIOHandoff    = NULL,
                     const VOID *        /*pioreq*/      = NULL ) override
     {
@@ -301,7 +301,7 @@ public:
                     const BYTE* const   pbData,
                     const OSFILEQOS     grbitQOS,
                     const PfnIOComplete pfnIOComplete   = NULL,
-                    const DWORD_PTR     keyIOComplete   = NULL,
+                    const DWORD_PTR     keyIOComplete   = 0,
                     const PfnIOHandoff  pfnIOHandoff    = NULL ) override
     {
         if ( pfnIOHandoff )

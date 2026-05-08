@@ -3487,7 +3487,7 @@ LOCAL JET_ERR ErrEDBUTLUserSystemParameters( JET_INSTANCE *pinstance, UTILOPTS *
 
     if ( NULL != popts->wszBase )
     {
-        Call( JetSetSystemParameterW( pinstance, 0, JET_paramBaseName, NULL, popts->wszBase ) );
+        Call( JetSetSystemParameterW( pinstance, 0, JET_paramBaseName, 0, popts->wszBase ) );
     }
 
     if ( popts->lMaxCacheSize != 0 )
@@ -5431,7 +5431,7 @@ JET_ERR ErrDetachFile( _In_z_ const WCHAR* const wszPath )
 
     Call( COSBlockCacheFactory::ErrCreate( &pbcf ) );
 
-    Call( pbcf->ErrDetachFile( wszPath, DetachFileStatus, NULL ) );
+    Call( pbcf->ErrDetachFile( wszPath, DetachFileStatus, 0 ) );
 
     TermStatus();
 

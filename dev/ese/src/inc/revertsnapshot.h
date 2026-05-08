@@ -622,7 +622,7 @@ public:
     ERR ErrStartCleaner( );
     VOID SetFirstValidGen( long lrbsgen );
     VOID SetFileTimeCreateCurrentRBS( __int64 ftCreate );
-    BOOL FIsCleanerRunning( ) const { return ( NULL != m_threadRBSCleaner ); }
+    BOOL FIsCleanerRunning( ) const { return ( 0 != m_threadRBSCleaner ); }
 
 private:
 

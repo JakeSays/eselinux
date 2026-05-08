@@ -6052,7 +6052,7 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
             if ( dbccinfo.grbitOptions & JET_bitDBUtilOptionDumpVerbose )
             {
                 printf( "******************************* MSysLocales **********************************\n" );
-                err = ErrCATDumpMSLocales( NULL, dbccinfo.ifmp );
+                err = ErrCATDumpMSLocales( 0, dbccinfo.ifmp );
                 if ( err != JET_errSuccess )
                 {
                     printf( "Failed to dump %hs table with: %d (continuing on ...).\n", szMSLocales, err );

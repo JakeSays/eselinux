@@ -22,7 +22,7 @@ inline HMODULE PvToHmodule( void* p ) { return (HMODULE)p; }
 
 BOOL FUtilLoadLibrary( const WCHAR* wszLibrary, LIBRARY* plibrary, const BOOL /* fPermitDialog */ )
 {
-    *plibrary = NULL;
+    *plibrary = 0;
 
     if ( wszLibrary == NULL )
     {
