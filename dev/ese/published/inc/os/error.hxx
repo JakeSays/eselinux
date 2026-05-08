@@ -510,7 +510,7 @@ public:
 
     const CHAR * SzFile() const
     {
-        if ( NULL == m_szFile )
+        if ( nullptr == m_szFile )
         {
             return "";
         }

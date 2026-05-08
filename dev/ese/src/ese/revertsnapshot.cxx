@@ -41,25 +41,25 @@ VOID RBSResourcesCleanUpFromInst( _In_ INST* const pinst )
     if( pinst->m_prbs )
     {
         delete pinst->m_prbs;
-        pinst->m_prbs = NULL;
+        pinst->m_prbs = nullptr;
     }
 
     if( pinst->m_prbsfp )
     {
         delete pinst->m_prbsfp;
-        pinst->m_prbsfp = NULL;
+        pinst->m_prbsfp = nullptr;
     }
 
     if ( pinst->m_prbscleaner )
     {
         delete pinst->m_prbscleaner;
-        pinst->m_prbscleaner = NULL;
+        pinst->m_prbscleaner = nullptr;
     }
 
     if ( pinst->m_prbsrc )
     {
         delete pinst->m_prbsrc;
-        pinst->m_prbsrc = NULL;
+        pinst->m_prbsrc = nullptr;
     }
 }
 
@@ -88,7 +88,7 @@ LOCAL ERR ErrRBSAbsRootDir( INST* pinst, __out_bcount( cbRBSRootDir ) PWSTR wszR
     PCWSTR wszRBSFilePath   = SzParam( pinst, JET_paramRBSFilePath );
     WCHAR wszAbsDirRootPath[ IFileSystemAPI::cchPathMax ];
 
-    if ( NULL == wszRBSFilePath || 0 == *wszRBSFilePath )
+    if ( nullptr == wszRBSFilePath || 0 == *wszRBSFilePath )
     {
         return ErrERRCheck(JET_errInvalidParameter);
     }
@@ -115,7 +115,7 @@ LOCAL ERR ErrRBSInitPaths_( INST* pinst, _Out_ WCHAR** wszRBSAbsRootDir, _Out_ W
     PCWSTR  wszBaseName     = SzParam( pinst, JET_paramBaseName );
     ERR     err             = JET_errSuccess;
 
-    if ( NULL == wszBaseName || 0 == *wszBaseName )
+    if ( nullptr == wszBaseName || 0 == *wszBaseName )
     {
         return ErrERRCheck(JET_errInvalidParameter);
     }
@@ -144,7 +144,7 @@ LOCAL BOOL FRBSCheckForDbConsistency(
 LOCAL ERR ErrRBSGetDirSize( IFileSystemAPI *pfsapi, PCWSTR wszDirPath, _Out_ QWORD* pcbSize )
 {
     ERR err;
-    IFileFindAPI    *pffapi = NULL;
+    IFileFindAPI    *pffapi = nullptr;
     QWORD dirSize = 0;
     *pcbSize = 0;
 
@@ -197,7 +197,7 @@ LOCAL ERR ErrRBSGetDirSize( IFileSystemAPI *pfsapi, PCWSTR wszDirPath, _Out_ QWO
 
 HandleError:
 
-    if ( pffapi != NULL )
+    if ( pffapi != nullptr )
     {
         delete pffapi;
     }
@@ -214,7 +214,7 @@ LOCAL ERR ErrRBSDeleteAllFiles( IFileSystemAPI *const pfsapi, PCWSTR wszDir, PCW
     Assert( pfsapi );
 
     ERR             err     = JET_errSuccess;
-    IFileFindAPI*   pffapi  = NULL;
+    IFileFindAPI*   pffapi  = nullptr;
 
     Assert( LOSStrLengthW( wszDir ) + 1 + 1 < IFileSystemAPI::cchPathMax );
 
@@ -272,7 +272,7 @@ LOCAL ERR ErrRBSDeleteAllFiles( IFileSystemAPI *const pfsapi, PCWSTR wszDir, PCW
     err = JET_errSuccess;
 
     // If there is filter then we can't remove the folder as not all files might have been deleted.
-    if ( fRecursive && wszFilter == NULL )
+    if ( fRecursive && wszFilter == nullptr )
     {
         Call( pfsapi->ErrFolderRemove( wszDir ) );
     }
@@ -284,7 +284,7 @@ HandleError:
     /**/
     Assert( wszDir[LOSStrLengthW(wszDir)] != L'*' );
 
-    if ( pffapi != NULL )
+    if ( pffapi != nullptr )
     {
         delete pffapi;
     }
@@ -326,7 +326,7 @@ LOCAL ERR ErrRBSGetLowestAndHighestGen_(
 
     WCHAR       wszRBSDirPrefix[ IFileSystemAPI::cchPathMax ];
     ERR             err                 = JET_errSuccess;
-    IFileFindAPI*   pffapi              = NULL;
+    IFileFindAPI*   pffapi              = nullptr;
     LONG            lRBSGen                = 0;
     ULONG           cCurrentRBSDigits   = 0;
 
@@ -578,7 +578,7 @@ LOCAL VOID RBSLoadRequiredGenerationFromFMP( INST* pinst, _Out_ LONG* plgenLow, 
 
         FMP         *pfmp   = &g_rgfmp[ifmp];
         PdbfilehdrReadOnly pdbfilehdr    = pfmp->Pdbfilehdr();
-        if ( pdbfilehdr == NULL || ( pdbfilehdr->le_dbstate != JET_dbstateDirtyShutdown && pdbfilehdr->le_dbstate != JET_dbstateDirtyAndPatchedShutdown ) )
+        if ( pdbfilehdr == nullptr || ( pdbfilehdr->le_dbstate != JET_dbstateDirtyShutdown && pdbfilehdr->le_dbstate != JET_dbstateDirtyAndPatchedShutdown ) )
             continue;
 
         fDatabaseFound      = fTrue;
@@ -682,7 +682,7 @@ HandleError:
 LOCAL ERR ErrFolderCopy( IFileSystemAPI *const pfsapi, PCWSTR wszSrcDir, PCWSTR wszDestDir, PCWSTR wszFilter, BOOL fOverwriteExisting, BOOL fRecursive )
 {
     ERR             err     = JET_errSuccess;
-    IFileFindAPI*   pffapi  = NULL;
+    IFileFindAPI*   pffapi  = nullptr;
 
     Assert( wszSrcDir );
     Assert( wszDestDir );
@@ -750,7 +750,7 @@ LOCAL ERR ErrFolderCopy( IFileSystemAPI *const pfsapi, PCWSTR wszSrcDir, PCWSTR 
     err = JET_errSuccess;
 
 HandleError:
-    if ( pffapi != NULL )
+    if ( pffapi != nullptr )
     {
         delete pffapi;
     }
@@ -776,7 +776,7 @@ LOCAL VOID RBSLogCreateSkippedEvent( INST* pinst, PCWSTR wszRBSFilePath, ERR err
         3,
         rgcwsz,
         0,
-        NULL,
+        nullptr,
         pinst );
 }
 
@@ -798,7 +798,7 @@ LOCAL VOID RBSLogCreateOrLoadEvent( INST* pinst, PCWSTR wszRBSFilePath, BOOL fNe
             3,
             rgcwsz,
             0,
-            NULL,
+            nullptr,
             pinst );
 }
 
@@ -817,7 +817,7 @@ LOCAL VOID RBSLogRBSRemovedEvent( const INST* pinst, PCWSTR wszDirPath, PCWSTR w
         2,
         rgcwsz,
         0,
-        NULL,
+        nullptr,
         pinst );
 }
 
@@ -835,7 +835,7 @@ LOCAL ERR ErrRBSLoadRbsGen(
     Assert( wszRBSAbsDirPath || !fDeleteCorruptUninitializedRBS );
 
     ERR err             = JET_errSuccess;
-    IFileAPI* pfapiRBS  = NULL;
+    IFileAPI* pfapiRBS  = nullptr;
 
     Call( CIOFilePerf::ErrFileOpen( 
             pinst->m_pfsapi,
@@ -861,8 +861,8 @@ LOCAL ERR ErrRBSLoadRbsGen(
         {
             // Release file handle so that it can be deleted.
             delete pfapiRBS;
-            pfapiRBS = NULL;
-            Call( ErrRBSDeleteAllFiles( pinst->m_pfsapi, wszRBSAbsDirPath, NULL, fTrue ) );
+            pfapiRBS = nullptr;
+            Call( ErrRBSDeleteAllFiles( pinst->m_pfsapi, wszRBSAbsDirPath, nullptr, fTrue ) );
             RBSLogRBSRemovedEvent( pinst, wszRBSAbsDirPath, L"CorruptUninitializedRBS");
             Error( ErrERRCheck( errRBSCorruptUninitializedRBSRemoved ) );
         }
@@ -893,9 +893,9 @@ LOCAL ERR ErrRBSLoadRbsGen(
     return JET_errSuccess;
 
 HandleError:
-    *ppfapiRBS = NULL;
+    *ppfapiRBS = nullptr;
 
-    if ( pfapiRBS != NULL )
+    if ( pfapiRBS != nullptr )
     {
         delete pfapiRBS;
     }
@@ -926,7 +926,7 @@ LOCAL ERR ErrRBSPerformLogChecks(
     PCWSTR  wszBaseName     = SzParam( pinst, JET_paramBaseName );
     BOOL    fLogsDiverged   = fFalse;
     ERR     err             = JET_errSuccess;
-    IFileAPI* pfapirbs      = NULL;
+    IFileAPI* pfapirbs      = nullptr;
 
     IFileSystemAPI* pfsapi = pinst->m_pfsapi;
     Assert( pfsapi );
@@ -1091,7 +1091,7 @@ LOCAL ERR ErrRBSRollAttachInfo(
     SIGNATURE signDb, 
     SIGNATURE signDbHdrFlush )
 {
-    RBSATTACHINFO* prbsattachinfoOld           = NULL;
+    RBSATTACHINFO* prbsattachinfoOld           = nullptr;
     JET_ERR err                             = fPrevRBSValid ? ErrRBSFindAttachInfoForDBName( prbsfilehdrPrev, wszDatabaseName, &prbsattachinfoOld ) : JET_errRBSHeaderCorrupt;
     LittleEndian<DBTIME>  dbtimePrevDirtied = ( err == JET_errSuccess ) ? prbsattachinfoOld->DbtimeDirtied() : 0;
 
@@ -1153,7 +1153,7 @@ HandleError:
 }
 
 // static
-VOID *CSnapshotBuffer::s_pReserveBuffer = NULL;
+VOID *CSnapshotBuffer::s_pReserveBuffer = nullptr;
 LONG CSnapshotBuffer::s_cAllocatedBuffers = 0;
 
 //  ================================================================
@@ -1168,8 +1168,8 @@ CRevertSnapshot::CRevertSnapshot( _In_ INST* const pinst ) :
 {
     PERFOpt( cSnapshotStall.Clear( m_pinst ) );
     Assert( pinst );
-    m_wszRBSAbsRootDirPath  = NULL;
-    m_wszRBSBaseName        = NULL;
+    m_wszRBSAbsRootDirPath  = nullptr;
+    m_wszRBSBaseName        = nullptr;
     m_fInitialized          = 0;
     m_fInvalid              = 0;
     m_fDumping              = 0;
@@ -1178,15 +1178,15 @@ CRevertSnapshot::CRevertSnapshot( _In_ INST* const pinst ) :
     m_cNextWriteSegment     = 0;
     m_cNextFlushSegment     = 0;
     m_fWriteInProgress      = fFalse;
-    m_pActiveBuffer         = NULL;
-    m_pBuffersToWrite       = NULL;
-    m_pBuffersToWriteLast   = NULL;
-    m_pReadBuffer           = NULL;
+    m_pActiveBuffer         = nullptr;
+    m_pBuffersToWrite       = nullptr;
+    m_pBuffersToWriteLast   = nullptr;
+    m_pReadBuffer           = nullptr;
     m_tickLastFlush         = 0;
-    m_prbsfilehdrCurrent    = NULL;
-    m_wszRBSCurrentFile     = NULL;
-    m_wszRBSCurrentLogDir   = NULL;
-    m_pfapiRBS              = NULL;
+    m_prbsfilehdrCurrent    = nullptr;
+    m_wszRBSCurrentFile     = nullptr;
+    m_wszRBSCurrentLogDir   = nullptr;
+    m_pfapiRBS              = nullptr;
 }
 
 CRevertSnapshot::~CRevertSnapshot( )
@@ -1200,24 +1200,24 @@ CRevertSnapshot::~CRevertSnapshot( )
     if ( m_pActiveBuffer )
     {
         delete m_pActiveBuffer;
-        m_pActiveBuffer = NULL;
+        m_pActiveBuffer = nullptr;
     }
 
-    for ( CSnapshotBuffer *pBuffer = m_pBuffersToWrite; pBuffer != NULL; )
+    for ( CSnapshotBuffer *pBuffer = m_pBuffersToWrite; pBuffer != nullptr; )
     {
         CSnapshotBuffer *pBufferNext = pBuffer->m_pNextBuffer;
         delete pBuffer;
         pBuffer = pBufferNext;
     }
-    m_pBuffersToWrite = NULL;
-    m_pBuffersToWriteLast = NULL;
+    m_pBuffersToWrite = nullptr;
+    m_pBuffersToWriteLast = nullptr;
 
     m_cresRBSBuf.Term();
 
     if ( m_pReadBuffer )
     {
         delete m_pReadBuffer;
-        m_pReadBuffer = NULL;
+        m_pReadBuffer = nullptr;
     }
 
     CSnapshotBuffer::FreeReserveBuffer();
@@ -1227,10 +1227,10 @@ ERR CRevertSnapshot::ErrResetHdr( )
 {
     ERR err = JET_errSuccess;
     FreeHdr( );
-    Alloc( m_prbsfilehdrCurrent = (RBSFILEHDR *)PvOSMemoryPageAlloc( sizeof(RBSFILEHDR), NULL ) );
+    Alloc( m_prbsfilehdrCurrent = (RBSFILEHDR *)PvOSMemoryPageAlloc( sizeof(RBSFILEHDR), nullptr ) );
 
     // Reset the file time create of current RBS gen on the cleaner.
-    if ( m_pinst->m_prbscleaner != NULL )
+    if ( m_pinst->m_prbscleaner != nullptr )
     {
         m_pinst->m_prbscleaner->SetFileTimeCreateCurrentRBS( 0 );
     }
@@ -1241,7 +1241,7 @@ HandleError:
 
 VOID CRevertSnapshot::EnterDbHeaderFlush( CRevertSnapshot* prbs, _Out_ SIGNATURE* const psignRBSHdrFlush )
 {
-    if ( prbs != NULL && prbs->m_fInitialized && !prbs->m_fInvalid )
+    if ( prbs != nullptr && prbs->m_fInitialized && !prbs->m_fInvalid )
     {
         UtilMemCpy( psignRBSHdrFlush, &prbs->m_prbsfilehdrCurrent->rbsfilehdr.signRBSHdrFlush, sizeof( SIGNATURE ) );
     }
@@ -1273,13 +1273,13 @@ ERR CRevertSnapshot::ErrSetRBSFileApi( _In_ IFileAPI *pfapiRBS )
     Alloc( m_wszRBSCurrentFile = static_cast<WCHAR *>( PvOSMemoryHeapAlloc( cchRBSName ) ) );
     Call( ErrOSStrCbCopyW( m_wszRBSCurrentFile, cchRBSName, wszRBSAbsFilePath ) );
 
-    Alloc( m_prbsfilehdrCurrent = (RBSFILEHDR *)PvOSMemoryPageAlloc( sizeof(RBSFILEHDR), NULL ) );    
+    Alloc( m_prbsfilehdrCurrent = (RBSFILEHDR *)PvOSMemoryPageAlloc( sizeof(RBSFILEHDR), nullptr ) );    
 
     // Load the header in the snapshot based on the set file api
     Call( ErrUtilReadShadowedHeader( m_pinst, m_pinst->m_pfsapi, m_pfapiRBS, (BYTE*) m_prbsfilehdrCurrent, sizeof( RBSFILEHDR ), -1, urhfNoAutoDetectPageSize | urhfReadOnly | urhfNoEventLogging ) );
 
     // Set the file time create of current RBS gen on the cleaner.
-    if ( m_pinst->m_prbscleaner != NULL )
+    if ( m_pinst->m_prbscleaner != nullptr )
     {
         m_pinst->m_prbscleaner->SetFileTimeCreateCurrentRBS( ConvertLogTimeToFileTime( &m_prbsfilehdrCurrent->rbsfilehdr.tmCreate ) );
     }
@@ -1311,7 +1311,7 @@ ERR CRevertSnapshot::ErrRBSCreateOrLoadRbsGen(
     BOOL        fRBSGenDirCreated       = fFalse;
     QWORD       cbDefaultFileSize       = QWORD( 2 * sizeof( RBSFILEHDR ) );
 
-    if ( NULL == wszBaseName || 0 == *wszBaseName )
+    if ( nullptr == wszBaseName || 0 == *wszBaseName )
     {
         return ErrERRCheck(JET_errInvalidParameter);
     }
@@ -1329,7 +1329,7 @@ ERR CRevertSnapshot::ErrRBSCreateOrLoadRbsGen(
 
     if ( !fRBSGenDirExists )
     {
-        Call( ErrUtilCreatePathIfNotExist( m_pinst->m_pfsapi, wszRBSAbsFilePath, NULL, 0 ) );
+        Call( ErrUtilCreatePathIfNotExist( m_pinst->m_pfsapi, wszRBSAbsFilePath, nullptr, 0 ) );
         fRBSGenDirCreated = fTrue;
     }
 
@@ -1345,7 +1345,7 @@ ERR CRevertSnapshot::ErrRBSCreateOrLoadRbsGen(
 
         if ( fDeleteCorruptUninitializedRBS )
         {
-            Call( ErrRBSDeleteAllFiles( m_pinst->m_pfsapi, wszRBSAbsDirPath, NULL, fTrue ) );
+            Call( ErrRBSDeleteAllFiles( m_pinst->m_pfsapi, wszRBSAbsDirPath, nullptr, fTrue ) );
             RBSLogRBSRemovedEvent( m_pinst, wszRBSAbsDirPath, L"MissingRBSFile" );
             Error( ErrERRCheck( errRBSCorruptUninitializedRBSRemoved ) );
         }
@@ -1371,7 +1371,7 @@ ERR CRevertSnapshot::ErrRBSCreateOrLoadRbsGen(
         // Used to test corrupt uninitialized RBS handling.
         CallR( ErrFaultInjection( 51913 ) );
 
-        Call( ErrUtilWriteRBSHeaders( m_pinst, m_pinst->m_pfsapi, NULL, m_prbsfilehdrCurrent, m_pfapiRBS ) );
+        Call( ErrUtilWriteRBSHeaders( m_pinst, m_pinst->m_pfsapi, nullptr, m_prbsfilehdrCurrent, m_pfapiRBS ) );
     }
     else
     {
@@ -1379,13 +1379,13 @@ ERR CRevertSnapshot::ErrRBSCreateOrLoadRbsGen(
     }
 
     // Set the file time create of current RBS gen on the cleaner.
-    if ( m_pinst->m_prbscleaner != NULL )
+    if ( m_pinst->m_prbscleaner != nullptr )
     {
         m_pinst->m_prbscleaner->SetFileTimeCreateCurrentRBS( ConvertLogTimeToFileTime( &m_prbsfilehdrCurrent->rbsfilehdr.tmCreate ) );
     }
 
     m_cNextFlushSegment = m_cNextWriteSegment = m_cNextActiveSegment = IsegRBSSegmentOfFileOffset( m_prbsfilehdrCurrent->rbsfilehdr.le_cbLogicalFileSize );
-    if ( m_pActiveBuffer != NULL )
+    if ( m_pActiveBuffer != nullptr )
     {
         m_pActiveBuffer->Reset( m_cNextActiveSegment );
     }
@@ -1394,7 +1394,7 @@ ERR CRevertSnapshot::ErrRBSCreateOrLoadRbsGen(
 
     if ( ErrUtilPathExists( m_pinst->m_pfsapi, wszRBSAbsLogPath ) != JET_errSuccess )
     {
-        Call( ErrUtilCreatePathIfNotExist( m_pinst->m_pfsapi, wszRBSAbsLogPath, NULL, 0 ) );
+        Call( ErrUtilCreatePathIfNotExist( m_pinst->m_pfsapi, wszRBSAbsLogPath, nullptr, 0 ) );
         fLogDirCreated = fTrue;
     }
 
@@ -1486,7 +1486,7 @@ ERR CRevertSnapshot::ErrRBSInit( BOOL fRBSCreateIfRequired, ERR createSkippedErr
         Call( ErrResetHdr() );
         FreeFileApi();
 
-        if ( m_pinst->m_prbscleaner != NULL )
+        if ( m_pinst->m_prbscleaner != nullptr )
         {
             m_pinst->m_prbscleaner->SetFirstValidGen( rbsGenMax + 1 );
         }
@@ -1546,7 +1546,7 @@ HandleError:
     FreeFileApi();
     FreeHdr();
     delete m_pActiveBuffer;
-    m_pActiveBuffer = NULL;
+    m_pActiveBuffer = nullptr;
 
     return err;
 }
@@ -1561,12 +1561,12 @@ ERR CRevertSnapshot::ErrRBSInvalidate()
     SIGResetSignature( &m_prbsfilehdrCurrent->rbsfilehdr.signRBSHdrFlush );
 
     // Reset the file time create of current RBS gen on the cleaner.
-    if ( m_pinst->m_prbscleaner != NULL )
+    if ( m_pinst->m_prbscleaner != nullptr )
     {
         m_pinst->m_prbscleaner->SetFileTimeCreateCurrentRBS( 0 );
     }
 
-    return ErrUtilWriteRBSHeaders( m_pinst, m_pinst->m_pfsapi, NULL, m_prbsfilehdrCurrent, m_pfapiRBS );
+    return ErrUtilWriteRBSHeaders( m_pinst, m_pinst->m_pfsapi, nullptr, m_prbsfilehdrCurrent, m_pfapiRBS );
 }
 
 VOID RBSICompressPreImage(
@@ -1931,7 +1931,7 @@ ERR CRevertSnapshot::ErrCapturePreimage(
     Assert( !m_fInvalid );
 
     ERR err = JET_errSuccess;
-    BYTE *pbDataDehydrated = NULL, *pbDataCompressed = NULL;
+    BYTE *pbDataDehydrated = nullptr, *pbDataCompressed = nullptr;
     IFMP ifmp = ifmpNil;
 
     RBSDbPageRecord dbRec;
@@ -2052,12 +2052,12 @@ ERR CRevertSnapshot::ErrQueueCurrentAndAllocBuffer()
 
     Assert( m_critBufferLock.FOwner() );
 
-    if ( m_pActiveBuffer != NULL && m_pActiveBuffer->m_pBuffer != NULL )
+    if ( m_pActiveBuffer != nullptr && m_pActiveBuffer->m_pBuffer != nullptr )
     {
         Assert( m_pActiveBuffer->m_ibNextRecord >= cbRBSBufferSize );
 
         m_pActiveBuffer->m_cbValidData = cbRBSBufferSize;
-        if ( m_pBuffersToWrite == NULL )
+        if ( m_pBuffersToWrite == nullptr )
         {
             m_pBuffersToWrite = m_pBuffersToWriteLast = m_pActiveBuffer;
         }
@@ -2068,7 +2068,7 @@ ERR CRevertSnapshot::ErrQueueCurrentAndAllocBuffer()
         }
         Assert( m_pActiveBuffer->m_pNextBuffer == NULL );
         m_cNextActiveSegment += CsegRBSCountSegmentOfOffset( m_pActiveBuffer->m_cbValidData );
-        m_pActiveBuffer = NULL;
+        m_pActiveBuffer = nullptr;
         if ( !m_fWriteInProgress )
         {
             m_fWriteInProgress = fTrue;
@@ -2083,7 +2083,7 @@ ERR CRevertSnapshot::ErrQueueCurrentAndAllocBuffer()
             return ErrERRCheck( JET_errOutOfRBSSpace );
         }
     }
-    if ( m_pActiveBuffer == NULL )
+    if ( m_pActiveBuffer == nullptr )
     {
         AllocR( m_pActiveBuffer = new (&m_cresRBSBuf) CSnapshotBuffer( m_cNextActiveSegment, &m_cresRBSBuf ) );
     }
@@ -2120,8 +2120,8 @@ ERR CRevertSnapshot::ErrCaptureRec(
     do
     {
         // If this buffer is full, queue it to be written and get a fresh one
-        if ( m_pActiveBuffer == NULL ||
-             m_pActiveBuffer->m_pBuffer == NULL ||
+        if ( m_pActiveBuffer == nullptr ||
+             m_pActiveBuffer->m_pBuffer == nullptr ||
              m_pActiveBuffer->m_ibNextRecord >= cbRBSBufferSize )
         {
             Call( ErrQueueCurrentAndAllocBuffer() );
@@ -2236,7 +2236,7 @@ ERR CRevertSnapshot::ErrCaptureRec(
 
 HandleError:
     delete m_pActiveBuffer;
-    m_pActiveBuffer = NULL;
+    m_pActiveBuffer = nullptr;
     return err;
 }
 
@@ -2246,7 +2246,7 @@ ERR CRevertSnapshot::ErrSetReadBuffer( ULONG iStartSegment )
     Assert( !m_fInvalid );
 
     // Free the existing read buffer
-    if ( m_pReadBuffer != NULL )
+    if ( m_pReadBuffer != nullptr )
     {
         delete m_pReadBuffer;
     }
@@ -2282,7 +2282,7 @@ VOID CRevertSnapshot::LogCorruptionEvent( PCWSTR wszReason, __int64 checksumExpe
             6,
             rgcwsz,
             0,
-            NULL,
+            nullptr,
             m_pinst );
 
     if ( m_fDumping )
@@ -2305,14 +2305,14 @@ ERR CRevertSnapshot::ErrGetNextRecord( RBSRecord **ppRecord, RBS_POS* rbsposRecS
     // If the first record on the page we are starting from has a FragContinue record, we want to keep moving on till we find the first valid record.
     BOOL fValidRecFound = fFalse;
 
-    *ppRecord = NULL;
-    rbsposRecStart->lGeneration = m_prbsfilehdrCurrent == NULL ? 0 : (LONG)m_prbsfilehdrCurrent->rbsfilehdr.le_lGeneration;
+    *ppRecord = nullptr;
+    rbsposRecStart->lGeneration = m_prbsfilehdrCurrent == nullptr ? 0 : (LONG)m_prbsfilehdrCurrent->rbsfilehdr.le_lGeneration;
 
-    if ( m_pReadBuffer == NULL )
+    if ( m_pReadBuffer == nullptr )
     {
         Alloc( m_pReadBuffer = new CSnapshotReadBuffer( 0 ) );
     }
-    if ( m_pReadBuffer->m_pBuffer == NULL )
+    if ( m_pReadBuffer->m_pBuffer == nullptr )
     {
         Call( m_pReadBuffer->ErrAllocBuffer() );
     }
@@ -2484,7 +2484,7 @@ DWORD CRevertSnapshot::WriteBuffers_( VOID *pvThis )
 ERR CRevertSnapshot::ErrWriteBuffers()
 {
     ERR err = JET_errSuccess;
-    CSnapshotBuffer *pBuffer, *pBufferToDelete = NULL;
+    CSnapshotBuffer *pBuffer, *pBufferToDelete = nullptr;
     BOOL fLogSpaceUsage = fFalse;
 
     Assert( FInitialized() );
@@ -2496,11 +2496,11 @@ ERR CRevertSnapshot::ErrWriteBuffers()
     {
         // ErrCaptureRec can only add and not remove from the list, so only need to take buffer lock if list is empty
         pBuffer = m_pBuffersToWrite;
-        if ( pBuffer == NULL )
+        if ( pBuffer == nullptr )
         {
             ENTERCRITICALSECTION critBuf( &m_critBufferLock );
             pBuffer = m_pBuffersToWrite;
-            if ( pBuffer == NULL )
+            if ( pBuffer == nullptr )
             {
                 m_fWriteInProgress = fFalse;
                 break;
@@ -2530,20 +2530,20 @@ ERR CRevertSnapshot::ErrWriteBuffers()
         OSTrace( JET_tracetagRBS, OSFormat( "RBS write position:%u,%u\n", (LONG) m_prbsfilehdrCurrent->rbsfilehdr.le_lGeneration, m_cNextWriteSegment ) );
         pBufferToDelete = pBuffer;
 
-        if ( m_pBuffersToWrite == NULL )
+        if ( m_pBuffersToWrite == nullptr )
         {
-            m_pBuffersToWriteLast = NULL;
+            m_pBuffersToWriteLast = nullptr;
             m_fWriteInProgress = fFalse;
             break;
         }
         }
 
         delete pBufferToDelete;
-        pBufferToDelete = NULL;
+        pBufferToDelete = nullptr;
     }
 
     delete pBufferToDelete;
-    pBufferToDelete = NULL;
+    pBufferToDelete = nullptr;
 
     // TODO: SOMEONE: make flush interval configurable?
     if ( m_cNextFlushSegment - m_cNextWriteSegment >= ( cbRBSSegmentsInBuffer ) * 2 )
@@ -2578,7 +2578,7 @@ ERR CRevertSnapshot::ErrFlush()
 
         m_prbsfilehdrCurrent->rbsfilehdr.le_cbLogicalFileSize = IbRBSFileOffsetOfSegment( cNextWriteSegment );
         
-        Call( ErrUtilWriteRBSHeaders( m_pinst, m_pinst->m_pfsapi, NULL, m_prbsfilehdrCurrent, m_pfapiRBS ) );
+        Call( ErrUtilWriteRBSHeaders( m_pinst, m_pinst->m_pfsapi, nullptr, m_prbsfilehdrCurrent, m_pfapiRBS ) );
 
         m_cNextFlushSegment = cNextWriteSegment;
         m_tickLastFlush = TickOSTimeCurrent();
@@ -2595,11 +2595,11 @@ ERR CRevertSnapshot::ErrFlushAll()
     Assert( m_fInitialized );
     Assert( !m_fInvalid );
 
-    if ( m_pActiveBuffer != NULL )
+    if ( m_pActiveBuffer != nullptr )
     {
         ENTERCRITICALSECTION critBuf( &m_critBufferLock );
 
-        if ( m_pActiveBuffer != NULL )
+        if ( m_pActiveBuffer != nullptr )
         {
             ULONG ibOffset = IbRBSSegmentOffsetFromFullOffset( m_pActiveBuffer->m_ibNextRecord );
             Assert( ibOffset >= sizeof( RBSSEGHDR ) );
@@ -2623,7 +2623,7 @@ ERR CRevertSnapshot::ErrFlushAll()
             if ( m_pActiveBuffer->m_cbValidData > 0 )
             {
                 // Move filled segments to write buffer
-                if ( m_pBuffersToWrite == NULL )
+                if ( m_pBuffersToWrite == nullptr )
                 {
                     m_pBuffersToWrite = m_pBuffersToWriteLast = m_pActiveBuffer;
                 }
@@ -2634,7 +2634,7 @@ ERR CRevertSnapshot::ErrFlushAll()
                 }
                 Assert( m_pActiveBuffer->m_pNextBuffer == NULL );
                 m_cNextActiveSegment += CsegRBSCountSegmentOfOffset( m_pActiveBuffer->m_cbValidData );
-                m_pActiveBuffer = NULL;
+                m_pActiveBuffer = nullptr;
             }
         }
     }
@@ -2669,7 +2669,7 @@ DBTIME CRevertSnapshotForAttachedDbs::GetDbtimeForFmp( FMP *pfmp )
     Assert( FInitialized() );
     Assert( !FInvalid() );
 
-    RBSATTACHINFO *pAttachInfo = NULL;
+    RBSATTACHINFO *pAttachInfo = nullptr;
     ERR err = ErrRBSFindAttachInfoForDBName( m_prbsfilehdrCurrent, pfmp->WszDatabaseName(), &pAttachInfo );
     CallS( err );
     Assert( pAttachInfo != NULL );
@@ -2682,13 +2682,13 @@ ERR CRevertSnapshotForAttachedDbs::ErrSetDbtimeForFmp( FMP *pfmp, DBTIME dbtime 
     Assert( !FInvalid() );
 
     ENTERCRITICALSECTION critWrite( &m_critWriteLock );
-    RBSATTACHINFO *pAttachInfo = NULL;
+    RBSATTACHINFO *pAttachInfo = nullptr;
     ERR err = ErrRBSFindAttachInfoForDBName( m_prbsfilehdrCurrent, pfmp->WszDatabaseName(), &pAttachInfo );
     CallS( err );
     Assert( pAttachInfo != NULL );
     Assert( pAttachInfo->DbtimeDirtied() == 0 );
     pAttachInfo->SetDbtimeDirtied( dbtime );
-    return ErrUtilWriteRBSHeaders( m_pinst, m_pinst->m_pfsapi, NULL, m_prbsfilehdrCurrent, m_pfapiRBS );
+    return ErrUtilWriteRBSHeaders( m_pinst, m_pinst->m_pfsapi, nullptr, m_prbsfilehdrCurrent, m_pfapiRBS );
 }
 
 ERR CRevertSnapshotForAttachedDbs::ErrRBSInvalidateFmps()
@@ -2813,7 +2813,7 @@ VOID CRevertSnapshotForAttachedDbs::RBSCheckSpaceUsage()
         5,
         rgcwsz,
         0,
-        NULL,
+        nullptr,
         m_pinst );
 
     OSTraceResumeGC();
@@ -2845,7 +2845,7 @@ ERR CRevertSnapshotForAttachedDbs::ErrRBSRecordDbAttach( _In_ FMP* const pfmp )
         return JET_errSuccess;
     }
 
-    RBSATTACHINFO* prbsattachinfo   = NULL;
+    RBSATTACHINFO* prbsattachinfo   = nullptr;
 
     err = ErrRBSFindAttachInfoForDBName( m_prbsfilehdrCurrent, pfmp->WszDatabaseName(), &prbsattachinfo );
 
@@ -2881,7 +2881,7 @@ ERR CRevertSnapshotForAttachedDbs::ErrRBSRecordDbAttach( _In_ FMP* const pfmp )
                 //OSTrace( JET_tracetagRBS, OSFormat( "\tErrRBSRecordDbAttach copied logs(DBName - %ls, Min - %ld, Max - %ld)\n", pfmp->WszDatabaseName(), (LONG) pdbfilehdr->le_lGenMinRequired, (LONG) pdbfilehdr->le_lGenMaxRequired ) );
 
                 Call( ErrRBSInitAttachInfo( prbsattachinfo, pfmp->WszDatabaseName(), pdbfilehdr->le_lGenMinRequired, pdbfilehdr->le_lGenMaxRequired, 0, pdbfilehdr->signDb, pdbfilehdr->signDbHdrFlush ) );
-                Call( ErrUtilWriteRBSHeaders( m_pinst, m_pinst->m_pfsapi, NULL, m_prbsfilehdrCurrent, m_pfapiRBS ) );
+                Call( ErrUtilWriteRBSHeaders( m_pinst, m_pinst->m_pfsapi, nullptr, m_prbsfilehdrCurrent, m_pfapiRBS ) );
             }
         }
     }
@@ -2913,7 +2913,7 @@ ERR CRevertSnapshotForAttachedDbs::ErrRBSInitDBFromRstmap( _In_ const RSTMAP* co
 
     //OSTrace( JET_tracetagRBS, OSFormat( "\tErrRBSInitDBFromRstmap(DBName - %ls, RBSEnabled - %d )\n", prstmap->wszNewDatabaseName, BoolParam( m_pinst, JET_paramEnableRBS ) ) );
 
-    RBSATTACHINFO* prbsattachinfo   = NULL;
+    RBSATTACHINFO* prbsattachinfo   = nullptr;
 
     err = ErrRBSFindAttachInfoForDBName( m_prbsfilehdrCurrent, prstmap->wszNewDatabaseName, &prbsattachinfo );
 
@@ -2946,7 +2946,7 @@ ERR CRevertSnapshotForAttachedDbs::ErrRBSInitDBFromRstmap( _In_ const RSTMAP* co
         //OSTrace( JET_tracetagRBS, OSFormat( "\tErrRBSInitDBFromRstmap copied logs(DBName - %ls, Min - %ld, Max - %ld)\n", prstmap->wszNewDatabaseName, (LONG) prstmap->lGenMinRequired, (LONG) prstmap->lGenMaxRequired ) );
 
         Call( ErrRBSInitAttachInfo( prbsattachinfo, prstmap->wszNewDatabaseName, prstmap->lGenMinRequired, prstmap->lGenMaxRequired, 0, prstmap->signDatabase, prstmap->signDatabaseHdrFlush ) );
-        Call( ErrUtilWriteRBSHeaders( m_pinst, m_pinst->m_pfsapi, NULL, m_prbsfilehdrCurrent, m_pfapiRBS ) );
+        Call( ErrUtilWriteRBSHeaders( m_pinst, m_pinst->m_pfsapi, nullptr, m_prbsfilehdrCurrent, m_pfapiRBS ) );
     }
 
 HandleError:
@@ -2979,7 +2979,7 @@ ERR CRevertSnapshotForAttachedDbs::ErrRBSInitFromRstmap( INST* const pinst )
     LONG lgenLow = 0;
     LONG lgenHigh = 0;
     BOOL fRBSCreateIfRequired = fFalse;
-    CRevertSnapshotForAttachedDbs* prbs = NULL;
+    CRevertSnapshotForAttachedDbs* prbs = nullptr;
 
     if ( pinst->m_plog->FLogDisabled() ||
         !BoolParam( pinst, JET_paramEnableRBS ) || 
@@ -3047,10 +3047,10 @@ ERR CRevertSnapshotForAttachedDbs::ErrRBSInitFromRstmap( INST* const pinst )
     return JET_errSuccess;
 
 HandleError:
-    if ( prbs != NULL )
+    if ( prbs != nullptr )
     {
         delete prbs;
-        prbs = NULL;
+        prbs = nullptr;
     }
 
     // No current usable snapshot and we don't want to create a new one at this point. So just return success.
@@ -3086,7 +3086,7 @@ ERR CRevertSnapshotForAttachedDbs::ErrRBSSetRequiredLogs( BOOL fInferFromRstmap 
 
     m_prbsfilehdrCurrent->rbsfilehdr.le_lGenMinLogCopied = lgenLow;
     m_prbsfilehdrCurrent->rbsfilehdr.le_lGenMaxLogCopied = lgenHigh;
-    return ErrUtilWriteRBSHeaders( m_pinst, m_pinst->m_pfsapi, NULL, m_prbsfilehdrCurrent, m_pfapiRBS );
+    return ErrUtilWriteRBSHeaders( m_pinst, m_pinst->m_pfsapi, nullptr, m_prbsfilehdrCurrent, m_pfapiRBS );
 }
 
 ERR CRevertSnapshotForAttachedDbs::ErrRBSCopyRequiredLogs( BOOL fInferFromRstmap )
@@ -3119,13 +3119,13 @@ CopyLogs:
         fTrue ) );
 
     // We will flush the buffers to the disk before we set LogsCopied to true in the file header
-    if ( m_pfapiRBS != NULL )
+    if ( m_pfapiRBS != nullptr )
     {
         Call( ErrUtilFlushFileBuffers( m_pfapiRBS, iofrRBS ) );
     }
 
     m_prbsfilehdrCurrent->rbsfilehdr.bLogsCopied = 1;
-    Call( ErrUtilWriteRBSHeaders( m_pinst, m_pinst->m_pfsapi, NULL, m_prbsfilehdrCurrent, m_pfapiRBS ) );
+    Call( ErrUtilWriteRBSHeaders( m_pinst, m_pinst->m_pfsapi, nullptr, m_prbsfilehdrCurrent, m_pfapiRBS ) );
 
 HandleError:
     return err;
@@ -3155,7 +3155,7 @@ ERR CRevertSnapshotForAttachedDbs::ErrRollSnapshot( BOOL fPrevRBSValid, BOOL fIn
         Call( ErrFlushAll() );
     }
 
-    Alloc( m_prbsfilehdrCurrent = (RBSFILEHDR *)PvOSMemoryPageAlloc( sizeof(RBSFILEHDR), NULL ) );
+    Alloc( m_prbsfilehdrCurrent = (RBSFILEHDR *)PvOSMemoryPageAlloc( sizeof(RBSFILEHDR), nullptr ) );
 
     // Go through all dbs corresponding to this instance and add their corresponding rbs attach infos.
     Call( ErrRBSRollAttachInfos( m_pinst, m_prbsfilehdrCurrent, prbsfilehdrPrev, fPrevRBSValid, fInferFromRstmap ) );
@@ -3164,11 +3164,11 @@ ERR CRevertSnapshotForAttachedDbs::ErrRollSnapshot( BOOL fPrevRBSValid, BOOL fIn
 
     // Free previous instances.
     delete m_pfapiRBS;
-    m_pfapiRBS = NULL;
+    m_pfapiRBS = nullptr;
     FreeCurrentFilePath();
     FreeCurrentLogDirPath();
     OSMemoryPageFree( prbsfilehdrPrev );
-    prbsfilehdrPrev = NULL;
+    prbsfilehdrPrev = nullptr;
 
     // TODO SOMEONE: Copy any required data from the previous snapshot.
     Call( ErrRBSCreateOrLoadRbsGen( 
@@ -3200,7 +3200,7 @@ HandleError:
 
 BOOL CRevertSnapshotForAttachedDbs::FRollSnapshot()
 {
-    if ( !FInitialized() || FInvalid() || m_prbsfilehdrCurrent == NULL )
+    if ( !FInitialized() || FInvalid() || m_prbsfilehdrCurrent == nullptr )
     {
         return fFalse;
     }
@@ -3283,7 +3283,7 @@ ERR CRevertSnapshotForPatch::ErrRBSInvalidateIrs( PCWSTR wszReason )
         2,
         rgcwsz,
         0,
-        NULL,
+        nullptr,
         m_pinst );
 
 HandleError:
@@ -3300,7 +3300,7 @@ ERR CRevertSnapshotForPatch::ErrRBSInitDB( CIrsOpContext* const pirs )
     Assert( pirs->Pdbfilehdr() );
 
     ERR err                         = JET_errSuccess;
-    RBSATTACHINFO* prbsattachinfo   = NULL;
+    RBSATTACHINFO* prbsattachinfo   = nullptr;
     DBFILEHDR* pdbfilehdr           = pirs->Pdbfilehdr();
 
     err = ErrRBSFindAttachInfoForDBName( m_prbsfilehdrCurrent, pirs->WszDatabasePath(), &prbsattachinfo );
@@ -3345,7 +3345,7 @@ ERR CRevertSnapshotForPatch::ErrRBSInitForPatch( INST* const pinst )
     }
 
     ERR err = JET_errSuccess;
-    CRevertSnapshotForPatch* prbsfp = NULL;
+    CRevertSnapshotForPatch* prbsfp = nullptr;
 
     Alloc( prbsfp = new CRevertSnapshotForPatch( pinst ) );
 
@@ -3368,10 +3368,10 @@ ERR CRevertSnapshotForPatch::ErrRBSInitForPatch( INST* const pinst )
     return JET_errSuccess;
 
 HandleError:
-    if ( prbsfp != NULL )
+    if ( prbsfp != nullptr )
     {
         delete prbsfp;
-        prbsfp = NULL;
+        prbsfp = nullptr;
     }
 
     // We couldn't load the existing RBS either because it is corrupted or it doesn't exist. Nothing to patch here.
@@ -3426,8 +3426,8 @@ RBSCleanerIOOperator::RBSCleanerIOOperator( INST* pinst )
 {
     Assert( pinst );
     m_pinst = pinst;
-    m_wszRBSAbsRootDirPath = NULL;
-    m_wszRBSBaseName = NULL;
+    m_wszRBSAbsRootDirPath = nullptr;
+    m_wszRBSBaseName = nullptr;
 }
 
 RBSCleanerIOOperator::~RBSCleanerIOOperator( )
@@ -3435,13 +3435,13 @@ RBSCleanerIOOperator::~RBSCleanerIOOperator( )
     if ( m_wszRBSAbsRootDirPath )
     {
         OSMemoryHeapFree( m_wszRBSAbsRootDirPath );
-        m_wszRBSAbsRootDirPath = NULL;
+        m_wszRBSAbsRootDirPath = nullptr;
     }
 
     if ( m_wszRBSBaseName )
     {
         OSMemoryHeapFree( m_wszRBSBaseName );
-        m_wszRBSBaseName = NULL;
+        m_wszRBSBaseName = nullptr;
     }
 }
 
@@ -3467,7 +3467,7 @@ ERR RBSCleanerIOOperator::ErrRemoveFolder( PCWSTR wszDirPath, PCWSTR wszRBSRemov
     Assert( m_pinst->m_pfsapi );
 
     ERR err = JET_errSuccess;
-    Call( ErrRBSDeleteAllFiles( m_pinst->m_pfsapi, wszDirPath, NULL, fTrue ) );
+    Call( ErrRBSDeleteAllFiles( m_pinst->m_pfsapi, wszDirPath, nullptr, fTrue ) );
     RBSLogRBSRemovedEvent( m_pinst, wszDirPath, wszRBSRemoveReason );
 
 HandleError:
@@ -3531,7 +3531,7 @@ ERR RBSCleanerIOOperator::ErrRBSFileHeader( PCWSTR wszRBSFilePath, _Out_ RBSFILE
     Assert( prbsfilehdr );
 
     ERR             err         = JET_errSuccess;
-    IFileAPI        *pfapiRBS   = NULL;
+    IFileAPI        *pfapiRBS   = nullptr;
     IFileSystemAPI  *pfsapi  = m_pinst->m_pfsapi;
 
     Assert( pfsapi );
@@ -3543,7 +3543,7 @@ HandleError:
     if ( pfapiRBS )
     {
         delete pfapiRBS;
-        pfapiRBS = NULL;
+        pfapiRBS = nullptr;
     }
 
     return err;
@@ -3904,7 +3904,7 @@ HandleError:
             5,
             rgcwsz,
             0,
-            NULL,
+            nullptr,
             m_pinst );
         OSTraceResumeGC();
     }
@@ -3970,43 +3970,43 @@ CRBSDatabaseRevertContext::~CRBSDatabaseRevertContext()
     if ( m_wszDatabaseName )
     {
         OSMemoryHeapFree( m_wszDatabaseName );
-        m_wszDatabaseName = NULL;
+        m_wszDatabaseName = nullptr;
     }
 
     if ( m_pdbfilehdr )
     {
         OSMemoryPageFree( m_pdbfilehdr );
-        m_pdbfilehdr = NULL;
+        m_pdbfilehdr = nullptr;
     }
 
     if ( m_pdbfilehdrFromRBS )
     {
         OSMemoryPageFree( m_pdbfilehdrFromRBS );
-        m_pdbfilehdrFromRBS = NULL;
+        m_pdbfilehdrFromRBS = nullptr;
     }
 
     if ( m_pfapiDb )
     {
         delete m_pfapiDb;
-        m_pfapiDb = NULL;
+        m_pfapiDb = nullptr;
     }
 
     if ( m_psbmDbPages )
     {
         delete m_psbmDbPages;
-        m_psbmDbPages = NULL;
+        m_psbmDbPages = nullptr;
     }
 
     if ( m_psbmCachedDbPages )
     {
         delete m_psbmCachedDbPages;
-        m_psbmCachedDbPages = NULL;
+        m_psbmCachedDbPages = nullptr;
     }
     
     if ( m_pfm )
     {
         delete m_pfm;
-        m_pfm = NULL;
+        m_pfm = nullptr;
     }
 
     if ( m_rgRBSDbPage )
@@ -4027,28 +4027,28 @@ CRBSDatabaseRevertContext::~CRBSDatabaseRevertContext()
         }
 
         delete m_rgRBSDbPage;
-        m_rgRBSDbPage = NULL;
+        m_rgRBSDbPage = nullptr;
     }
 
     if ( m_rgrootpagerec )
     {
         delete m_rgrootpagerec;
-        m_rgrootpagerec = NULL;
+        m_rgrootpagerec = nullptr;
     }
 
-    if ( m_pcprintfIRSTrace != NULL &&
+    if ( m_pcprintfIRSTrace != nullptr &&
         CPRINTFNULL::PcprintfInstance() != m_pcprintfIRSTrace )
     {
         (*m_pcprintfIRSTrace)( "Closing IRS tracing file from revert.\r\n" );
         delete m_pcprintfIRSTrace;
     }
 
-    m_pcprintfIRSTrace = NULL;
+    m_pcprintfIRSTrace = nullptr;
 
     if ( m_pbDiskPageRead )
     {
         OSMemoryPageFree( m_pbDiskPageRead );
-        m_pbDiskPageRead = NULL;
+        m_pbDiskPageRead = nullptr;
     }
 }
 
@@ -4062,7 +4062,7 @@ ERR CRBSDatabaseRevertContext::ErrResetSbmPages( IBitmapAPI** ppsbm )
     if ( *ppsbm )
     {
         delete *ppsbm;
-        *ppsbm = NULL;
+        *ppsbm = nullptr;
     }
 
     // Reserve bitmap space for maximum number of pages the database is allowed to have.
@@ -4099,7 +4099,7 @@ ERR CRBSDatabaseRevertContext::ErrRBSDBRCInit( RBSATTACHINFO* prbsattachinfo, SI
                 &m_pfapiDb ) );
 
     //  get some other resources together
-    Alloc( m_pdbfilehdr = (DBFILEHDR*)PvOSMemoryPageAlloc( g_cbPage, NULL ) );
+    Alloc( m_pdbfilehdr = (DBFILEHDR*)PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
 
     //  read in the header of this database
     //
@@ -4166,7 +4166,7 @@ ERR CRBSDatabaseRevertContext::ErrSetDbstateForRevert( ULONG rbsrchkstate, LOGTI
     if ( m_pdbfilehdr->Dbstate() != JET_dbstateRevertInProgress )
     {
         m_currentDbHeaderState = m_pdbfilehdr->Dbstate();
-        m_pdbfilehdr->SetDbstate( JET_dbstateRevertInProgress, lGenerationInvalid, lGenerationInvalid, NULL, fTrue );
+        m_pdbfilehdr->SetDbstate( JET_dbstateRevertInProgress, lGenerationInvalid, lGenerationInvalid, nullptr, fTrue );
         m_pdbfilehdr->le_ulRevertCount++;
         LGIGetDateTime( &m_pdbfilehdr->logtimeRevertFrom );
         m_pdbfilehdr->le_ulRevertPageCount = 0;
@@ -4205,12 +4205,12 @@ ERR CRBSDatabaseRevertContext::ErrSetDbstateAfterRevert( SIGNATURE* psignRbsHdrF
     }
 
     ERR err                                 = JET_errSuccess;
-    DBFILEHDR*  dbfilehdrToSet              = m_pdbfilehdrFromRBS == NULL ? m_pdbfilehdr : m_pdbfilehdrFromRBS;
+    DBFILEHDR*  dbfilehdrToSet              = m_pdbfilehdrFromRBS == nullptr ? m_pdbfilehdr : m_pdbfilehdrFromRBS;
     LONG        lgenCommitBeforeRevertPrev  = m_pdbfilehdr->le_lgposCommitBeforeRevert.le_lGeneration;
     LONG        lgenConsistentPrev          = m_pdbfilehdr->le_lgposConsistent.le_lGeneration;
     LONG        lGenMaxRequiredPrev         = m_pdbfilehdr->le_lGenMaxRequired;
 
-    if ( m_pdbfilehdrFromRBS == NULL )
+    if ( m_pdbfilehdrFromRBS == nullptr )
     {
         Call( ErrFaultInjection( 62138 ) );
 
@@ -4306,7 +4306,7 @@ ERR CRBSDatabaseRevertContext::ErrRBSCaptureDbHdrFromRBS( RBSDbHdrRecord* prbsdb
 
     ERR err = JET_errSuccess;
 
-    Alloc( m_pdbfilehdrFromRBS = (DBFILEHDR*)PvOSMemoryPageAlloc( g_cbPage, NULL ) );
+    Alloc( m_pdbfilehdrFromRBS = (DBFILEHDR*)PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
 
     // Change some db header states as per current db header.
     DBFILEHDR* pdbfilehdr               = (DBFILEHDR*) prbsdbhdrrec->m_rgbHeader;
@@ -4355,9 +4355,9 @@ ERR CRBSDatabaseRevertContext::ErrDBDiskPageFDPRootDelete( void* pvPage, PGNO pg
     *pfPgnoFDPRootDelete = fFalse;
 
     // There can be only read at a time. So don't have to worry about the buffer being used by someone else.
-    if ( m_pbDiskPageRead == NULL )
+    if ( m_pbDiskPageRead == nullptr )
     {
-        Alloc( m_pbDiskPageRead = (BYTE*) PvOSMemoryPageAlloc( cbDbPageSize, NULL ) );
+        Alloc( m_pbDiskPageRead = (BYTE*) PvOSMemoryPageAlloc( cbDbPageSize, nullptr ) );
     }
 
     //  read the table root page from disk.
@@ -4550,7 +4550,7 @@ ERR CRBSDatabaseRevertContext::ErrAddRootPageRecord( BOOL fDeleteOperation, PGNO
 
     CArray< CRootPageRecord >::ERR errArray = CArray< CRootPageRecord >::ERR::errSuccess;
 
-    if ( m_rgrootpagerec == NULL )
+    if ( m_rgrootpagerec == nullptr )
     {
         m_rgrootpagerec = new CArray< CRootPageRecord >( 32 );
     }
@@ -4570,7 +4570,7 @@ ERR CRBSDatabaseRevertContext::ErrAddRootPageRecord( BOOL fDeleteOperation, PGNO
 //
 ERR CRBSDatabaseRevertContext::ErrCapturePageFDPDeleteState( const LONG lRBSGen, const USHORT cbDbPageSize, _In_ PCWSTR wszDirPath, _In_ PCWSTR wszRBSBaseName )
 {
-    if ( m_rgrootpagerec == NULL || m_rgrootpagerec->Size() == 0 )
+    if ( m_rgrootpagerec == nullptr || m_rgrootpagerec->Size() == 0 )
     {
         return JET_errSuccess;
     }
@@ -4581,7 +4581,7 @@ ERR CRBSDatabaseRevertContext::ErrCapturePageFDPDeleteState( const LONG lRBSGen,
     TraceContextScope tcScope( iorpRBSRevertCheckpoint );
 
     IFileSystemAPI* pfsapi  = m_pinst->m_pfsapi;
-    IFileAPI* pfapi         = NULL;
+    IFileAPI* pfapi         = nullptr;
 
     CArray< CPageFDPDeleteState >::ERR errArray = CArray< CPageFDPDeleteState >::ERR::errSuccess;
 
@@ -4618,7 +4618,7 @@ ERR CRBSDatabaseRevertContext::ErrCapturePageFDPDeleteState( const LONG lRBSGen,
         if ( !m_rgrootpagerec->Entry( i ).FDeleteOperation() )
         {
             BOOL fPgnoFDPRootDelete;
-            Call( ErrDBDiskPageFDPRootDelete( NULL, m_rgrootpagerec->Entry( i ).PgnoDest(), fTrue, fFalse, cbDbPageSize, &fPgnoFDPRootDelete));
+            Call( ErrDBDiskPageFDPRootDelete( nullptr, m_rgrootpagerec->Entry( i ).PgnoDest(), fTrue, fFalse, cbDbPageSize, &fPgnoFDPRootDelete));
 
             CPageFDPDeleteState pagefdpdeletestate( m_rgrootpagerec->Entry( i ).PgnoDest(), fPgnoFDPRootDelete);
             errArray = rgpagefdpdeletestate->ErrSetEntry( rgpagefdpdeletestate->Size(), pagefdpdeletestate );
@@ -4712,7 +4712,7 @@ ERR CRBSDatabaseRevertContext::ErrRBSInitRootPageDeleteState( const LONG lRBSGen
 {
     WCHAR wszFilePath[ IFileSystemAPI::cchPathMax ];
     IFileSystemAPI* pfsapi                  = m_pinst->m_pfsapi;
-    IFileAPI* pfapi                         = NULL;
+    IFileAPI* pfapi                         = nullptr;
     BOOL    fPageFDPDeleteStateFileExists   = fFalse;
     ULONG   crc32ChecksumExpected           = 0;
     ERR     err                             = JET_errSuccess;
@@ -4720,9 +4720,9 @@ ERR CRBSDatabaseRevertContext::ErrRBSInitRootPageDeleteState( const LONG lRBSGen
 
     TraceContextScope tcScope( iorpRBSRevertCheckpoint );
     CArray< CPageFDPDeleteState >::ERR errArray         = CArray< CPageFDPDeleteState >::ERR::errSuccess;
-    CArray< CPageFDPDeleteState >* rgpagefdpdeletestate = NULL;
-    BYTE* pbread                                        = NULL;
-    PagesFDPDeleteState* pagesFDPDeleteState            = NULL;
+    CArray< CPageFDPDeleteState >* rgpagefdpdeletestate = nullptr;
+    BYTE* pbread                                        = nullptr;
+    PagesFDPDeleteState* pagesFDPDeleteState            = nullptr;
 
     Assert( pfsapi );
     Assert( m_dbidCurrent < dbidMax );
@@ -4756,7 +4756,7 @@ ERR CRBSDatabaseRevertContext::ErrRBSInitRootPageDeleteState( const LONG lRBSGen
     QWORD cbOffset      = 0;
     QWORD cbRemaining   = cbSize;
 
-    pbread = (BYTE*)PvOSMemoryPageAlloc( cbSize, NULL );
+    pbread = (BYTE*)PvOSMemoryPageAlloc( cbSize, nullptr );
     Alloc( pbread );
 
     while ( cbRemaining > 0 )
@@ -4807,7 +4807,7 @@ ERR CRBSDatabaseRevertContext::ErrRBSInitRootPageDeleteState( const LONG lRBSGen
 
     for ( size_t iEntry = 0; iEntry < cEntries; ++iEntry )
     {
-        VOID* pvPage = PvOSMemoryPageAlloc( cbDbPageSize, NULL );
+        VOID* pvPage = PvOSMemoryPageAlloc( cbDbPageSize, nullptr );
         Alloc( pvPage );
 
         BOOL fPageAddedToCache = fTrue;
@@ -4820,12 +4820,12 @@ ERR CRBSDatabaseRevertContext::ErrRBSInitRootPageDeleteState( const LONG lRBSGen
     }
 
 HandleError:
-    if ( pbread != NULL )
+    if ( pbread != nullptr )
     {
         OSMemoryPageFree( (void*) pbread );
     }
 
-    if ( pfapi != NULL )
+    if ( pfapi != nullptr )
     {
         delete pfapi;
     }
@@ -4868,7 +4868,7 @@ ERR CRBSDatabaseRevertContext::ErrRBSPageFDPDeleteState( const PGNO pgno, const 
     else
     {
         // Need to get the state from the disk.
-        Call( ErrDBDiskPageFDPRootDelete( NULL, pgno, fTrue, fFalse, cbDbPageSize, pfPgnoFDPRootDelete ) );
+        Call( ErrDBDiskPageFDPRootDelete( nullptr, pgno, fTrue, fFalse, cbDbPageSize, pfPgnoFDPRootDelete ) );
     }
 
 HandleError:
@@ -4879,7 +4879,7 @@ HandleError:
 //
 ERR CRBSDatabaseRevertContext::ErrRBSApplyRootPageRecords( const USHORT cbDbPageSize, _In_ CPG cpgCacheMax, _Out_ CPG* pcpgCached, _Out_ QWORD* pcpgReverted, _Out_ CPG* pcpgRootPageCreateMoves, _Out_ CPG* pcpgRootPageShrinkMoves )
 {
-    if ( m_rgrootpagerec == NULL || m_rgrootpagerec->Size() == 0 )
+    if ( m_rgrootpagerec == nullptr || m_rgrootpagerec->Size() == 0 )
     {
         return JET_errSuccess;
     }
@@ -4891,7 +4891,7 @@ ERR CRBSDatabaseRevertContext::ErrRBSApplyRootPageRecords( const USHORT cbDbPage
     // Go through the root page records in the reverse order and override the PageFDPDelete flag accordingly.
     for ( CPG iEntry = cpgRootPageRecords - 1; iEntry >= 0; --iEntry )
     {
-        VOID* pvPage = PvOSMemoryPageAlloc( cbDbPageSize, NULL );
+        VOID* pvPage = PvOSMemoryPageAlloc( cbDbPageSize, nullptr );
         Alloc( pvPage );
 
         BOOL fPageAddedToCache  = fTrue;
@@ -4921,7 +4921,7 @@ ERR CRBSDatabaseRevertContext::ErrRBSApplyRootPageRecords( const USHORT cbDbPage
                     *pcpgRootPageShrinkMoves = *pcpgRootPageShrinkMoves + 1;
 
                     // Allocate memory for storing src page data.
-                    pvPage = PvOSMemoryPageAlloc( cbDbPageSize, NULL );
+                    pvPage = PvOSMemoryPageAlloc( cbDbPageSize, nullptr );
 
                     // Set it on the source pages since after the revert the page would have been on the src of the move.
                     Call( ErrAddPage( pvPage, rootpagerec.PgnoSrc(), fTrue, fFalse, fTrue, fTrue, cbDbPageSize, &fPageAddedToCache ) );
@@ -4963,7 +4963,7 @@ VOID CRBSDatabaseRevertContext::ResetRootPageRecords()
 {
     CArray< CRootPageRecord >::ERR errArray = CArray< CRootPageRecord >::ERR::errSuccess;
 
-    if ( m_rgrootpagerec != NULL )
+    if ( m_rgrootpagerec != nullptr )
     {
         errArray = m_rgrootpagerec->ErrSetSize( 0 );
     }
@@ -5202,25 +5202,25 @@ CRBSRevertContext::~CRBSRevertContext()
     if ( m_prbsrchk )
     {
         OSMemoryPageFree( (void*)m_prbsrchk );
-        m_prbsrchk = NULL;
+        m_prbsrchk = nullptr;
     }
 
     if ( m_pfapirbsrchk )
     {
         delete m_pfapirbsrchk;
-        m_pfapirbsrchk = NULL;
+        m_pfapirbsrchk = nullptr;
     }
 
     if ( m_wszRBSAbsRootDirPath )
     {
         OSMemoryHeapFree( m_wszRBSAbsRootDirPath );
-        m_wszRBSAbsRootDirPath = NULL;
+        m_wszRBSAbsRootDirPath = nullptr;
     }
 
     if ( m_wszRBSBaseName )
     {
         OSMemoryHeapFree( m_wszRBSBaseName );
-        m_wszRBSBaseName = NULL;
+        m_wszRBSBaseName = nullptr;
     }
 
     for ( IRBSDBRC irbsdbrc = 0; irbsdbrc <= m_irbsdbrcMaxInUse; ++irbsdbrc )
@@ -5228,18 +5228,18 @@ CRBSRevertContext::~CRBSRevertContext()
         if ( m_rgprbsdbrcAttached[ irbsdbrc ] )
         {
             delete m_rgprbsdbrcAttached[ irbsdbrc ];
-            m_rgprbsdbrcAttached[ irbsdbrc ] = NULL;
+            m_rgprbsdbrcAttached[ irbsdbrc ] = nullptr;
         }
     }
 
-    if ( m_pcprintfRevertTrace != NULL &&
+    if ( m_pcprintfRevertTrace != nullptr &&
         CPRINTFNULL::PcprintfInstance() != m_pcprintfRevertTrace )
     {
         (*m_pcprintfRevertTrace)( "Closing revert tracing file.\r\n" );
         delete m_pcprintfRevertTrace;
     }
 
-    m_pcprintfRevertTrace = NULL;
+    m_pcprintfRevertTrace = nullptr;
 }
 
 ERR CRBSRevertContext::ErrMakeRevertTracingNames(
@@ -5279,7 +5279,7 @@ ERR CRBSRevertContext::ErrBeginRevertTracing( bool fDeleteOldTraceFile )
     WCHAR wszRBSRCRawFile[ IFileSystemAPI::cchPathMax ]   = { 0 };
     WCHAR wszRBSRCRawBackupFile[ IFileSystemAPI::cchPathMax ] = { 0 };
 
-    IFileAPI *      pfapiSizeCheck  = NULL;
+    IFileAPI *      pfapiSizeCheck  = nullptr;
     IFileSystemAPI* pfsapi          = m_pinst->m_pfsapi;
 
     //  initialize to NULL tracer, in case we fail ...
@@ -5300,7 +5300,7 @@ ERR CRBSRevertContext::ErrBeginRevertTracing( bool fDeleteOldTraceFile )
         QWORD cbSize;
         Call( pfapiSizeCheck->ErrSize( &cbSize, IFileAPI::filesizeLogical ) );
         delete pfapiSizeCheck;  // delete here b/c we may be about rename it
-        pfapiSizeCheck = NULL;
+        pfapiSizeCheck = nullptr;
 
         if ( cbSize > ( 50 * 1024 * 1024 )  )
         {
@@ -5323,7 +5323,7 @@ HandleError:
     if ( pfapiSizeCheck )
     {
         delete pfapiSizeCheck;
-        pfapiSizeCheck = NULL;
+        pfapiSizeCheck = nullptr;
     }
 
     return err;
@@ -5366,7 +5366,7 @@ ERR CRBSRevertContext::ErrRevertCheckpointInit()
     Assert( !m_prbsrchk );
     Assert( !m_pfapirbsrchk );
 
-    Alloc( m_prbsrchk = (RBSREVERTCHECKPOINT *)PvOSMemoryPageAlloc(  sizeof( RBSREVERTCHECKPOINT ), NULL ) );
+    Alloc( m_prbsrchk = (RBSREVERTCHECKPOINT *)PvOSMemoryPageAlloc(  sizeof( RBSREVERTCHECKPOINT ), nullptr ) );
     memset( m_prbsrchk, 0, sizeof( RBSREVERTCHECKPOINT ) );
 
     Call( ErrRBSDirPrefix( m_wszRBSBaseName, wszChkFileBase, sizeof( wszChkFileBase ) ) );
@@ -5410,7 +5410,7 @@ ERR CRBSRevertContext::ErrRevertCheckpointInit()
         Call( ErrUtilWriteRBSRevertCheckpointHeaders(
             m_pinst,
             m_pinst->m_pfsapi,
-            NULL,
+            nullptr,
             m_prbsrchk,
             m_pfapirbsrchk ) );
     }
@@ -5428,7 +5428,7 @@ ERR CRBSRevertContext::ErrRevertCheckpointCleanup()
     m_pfapirbsrchk->ErrPath( wszChkFullName );
 
     delete m_pfapirbsrchk;
-    m_pfapirbsrchk = NULL;
+    m_pfapirbsrchk = nullptr;
 
     return m_pinst->m_pfsapi->ErrFileDelete( wszChkFullName );
 }
@@ -5493,7 +5493,7 @@ ERR CRBSRevertContext::ErrComputeRBSRangeToApply( PCWSTR wszRBSAbsRootDirPath, L
     WCHAR       wszRBSAbsFilePath[ IFileSystemAPI::cchPathMax ];
     LOGTIME     tmPrevRBSGen;
     SIGNATURE   signPrevRBSHdrFlush;
-    IFileAPI*   pfileapi            = NULL;
+    IFileAPI*   pfileapi            = nullptr;
     ERR         err                 = JET_errSuccess;    
 
     Call( ErrRBSGetLowestAndHighestGen_( m_pinst->m_pfsapi, wszRBSAbsRootDirPath, m_wszRBSBaseName, &lRBSGenMin, &lRBSGenMax ) );
@@ -5553,10 +5553,10 @@ ERR CRBSRevertContext::ErrComputeRBSRangeToApply( PCWSTR wszRBSAbsRootDirPath, L
             break;
         }
 
-        if ( pfileapi != NULL )
+        if ( pfileapi != nullptr )
         {
             delete pfileapi;
-            pfileapi = NULL;
+            pfileapi = nullptr;
         }
     }
 
@@ -5573,7 +5573,7 @@ HandleError:
         err = ErrERRCheck( JET_errRBSRCInvalidRBS );
     }
 
-    if ( pfileapi != NULL )
+    if ( pfileapi != nullptr )
     {
         delete pfileapi;
     }
@@ -5740,7 +5740,7 @@ ERR CRBSRevertContext::ErrUpdateRevertCheckpoint( ULONG revertstate, RBS_POS rbs
     return ErrUtilWriteRBSRevertCheckpointHeaders(
                 m_pinst,
                 m_pinst->m_pfsapi,
-                NULL,
+                nullptr,
                 m_prbsrchk,
                 m_pfapirbsrchk );
 }
@@ -5807,7 +5807,7 @@ ERR CRBSRevertContext::ErrRBSRevertContextInit(
     Assert( *pprbsrc == NULL );
 
     ERR      err     = JET_errSuccess;
-    CRBSRevertContext*  prbsrc  = NULL;
+    CRBSRevertContext*  prbsrc  = nullptr;
 
     Alloc( prbsrc = new CRBSRevertContext( pinst ) );
     Call( prbsrc->ErrInitContext( ltRevertExpected, pltRevertActual, cpgCache, grbit & JET_bitDeleteAllExistingLogs ) );   
@@ -5815,7 +5815,7 @@ ERR CRBSRevertContext::ErrRBSRevertContextInit(
     return JET_errSuccess;
 
 HandleError:
-    if ( prbsrc != NULL )
+    if ( prbsrc != nullptr )
     {
         delete prbsrc;
     }
@@ -5872,11 +5872,11 @@ VOID CRBSRevertContext::SetPageCaptured( DBID dbid, PGNO pgno )
 ERR CRBSRevertContext::ErrAddRevertedNewPage( DBID dbid, PGNO pgnoRevertNew, const BOOL fPageFDPNonRevertableDelete )
 {
     ERR err         = JET_errSuccess;
-    void*   pvPage  = NULL;
+    void*   pvPage  = nullptr;
 
     if ( !FPageAlreadyCaptured( dbid, pgnoRevertNew ) )
     {
-        pvPage = PvOSMemoryPageAlloc( m_cbDbPageSize, NULL );
+        pvPage = PvOSMemoryPageAlloc( m_cbDbPageSize, nullptr );
         Alloc( pvPage );
 
         CPAGE cpage;
@@ -5939,7 +5939,7 @@ HandleError:
 ERR CRBSRevertContext::ErrApplyRBSRecord( RBSRecord* prbsrec, BOOL fCaptureDbHdrFromRBS, BOOL fDbHeaderOnly, BOOL fRevertStateRootPageRecords, BOOL* pfGivenDbfilehdrCaptured )
 {
     BYTE                bRecType        = prbsrec->m_bRecType;
-    void*               pvPage          = NULL;
+    void*               pvPage          = nullptr;
     ERR                 err             = JET_errSuccess;
 
     if ( pfGivenDbfilehdrCaptured )
@@ -5968,7 +5968,7 @@ ERR CRBSRevertContext::ErrApplyRBSRecord( RBSRecord* prbsrec, BOOL fCaptureDbHdr
             Assert( prbsdbhdrrec->m_dbid < dbidMax );
 
             IRBSDBRC irbsdbrc               = m_mpdbidirbsdbrc[ prbsdbhdrrec->m_dbid ];
-            CRBSDatabaseRevertContext* prbsdbrc              = NULL;
+            CRBSDatabaseRevertContext* prbsdbrc              = nullptr;
 
             Assert( irbsdbrc != irbsdbrcInvalid );
             Assert( irbsdbrc <= m_irbsdbrcMaxInUse );
@@ -5987,7 +5987,7 @@ ERR CRBSRevertContext::ErrApplyRBSRecord( RBSRecord* prbsrec, BOOL fCaptureDbHdr
         {
             IRBSDBRC irbsdbrc                   = irbsdbrcInvalid;
             BOOL     fRBSDBRC                   = fFalse;
-            CRBSDatabaseRevertContext* prbsdbrc = NULL;
+            CRBSDatabaseRevertContext* prbsdbrc = nullptr;
             RBSDbAttachRecord* prbsdbatchrec    = ( RBSDbAttachRecord* ) prbsrec;
             CAutoWSZPATH wszDbName;
             Call( wszDbName.ErrSet( prbsdbatchrec->m_wszDbName ) );
@@ -6063,7 +6063,7 @@ ERR CRBSRevertContext::ErrApplyRBSRecord( RBSRecord* prbsrec, BOOL fCaptureDbHdr
             // If either revert always flag is set or if we have not already captured page preimage to revert to, capture the page record.
             if ( prbsdbpgrec->m_fFlags & fRBSPreimageRevertAlways || !fPageAlreadyCaptured )
             {
-                pvPage = PvOSMemoryPageAlloc( m_cbDbPageSize, NULL );
+                pvPage = PvOSMemoryPageAlloc( m_cbDbPageSize, nullptr );
                 Alloc( pvPage );
 
                 if ( prbsdbpgrec->m_fFlags )
@@ -6193,7 +6193,7 @@ BOOL CRBSRevertContext::FAllDbHeaderCaptured()
 
     for ( IRBSDBRC irbsdbrc = 0; irbsdbrc <= m_irbsdbrcMaxInUse; ++irbsdbrc )
     {
-        fAllCaptured = fAllCaptured && ( m_rgprbsdbrcAttached[ irbsdbrc ]->PDbfilehdrFromRBS() != NULL );
+        fAllCaptured = fAllCaptured && ( m_rgprbsdbrcAttached[ irbsdbrc ]->PDbfilehdrFromRBS() != nullptr );
     }
 
     return fAllCaptured;
@@ -6214,9 +6214,9 @@ ERR CRBSRevertContext::ErrRBSGenApply( LONG lRBSGen, RBSFILEHDR* prbsfilehdr, BO
     WCHAR wszErrorReason[ cbOSFSAPI_MAX_PATHW ];
     
     RBS_POS             rbsposRecStart          = rbsposMin;
-    CRevertSnapshot*    prbs                    = NULL;
-    IFileAPI*           pfapirbs                = NULL;
-    RBSRecord*          prbsRecord              = NULL;
+    CRevertSnapshot*    prbs                    = nullptr;
+    IFileAPI*           pfapirbs                = nullptr;
+    RBSRecord*          prbsRecord              = nullptr;
     RBS_POS             rbspos                  = { 0, lRBSGen };
     BOOL                fGivenDbfilehdrCaptured = fFalse;
 
@@ -6242,7 +6242,7 @@ ERR CRBSRevertContext::ErrRBSGenApply( LONG lRBSGen, RBSFILEHDR* prbsfilehdr, BO
     Assert( prbs->RBSFileHdr() );
 
     // We will copy and return rbs file header for the last snapshot we are applying.
-    if ( lRBSGen == m_lRBSMinGenToApply && prbsfilehdr != NULL )
+    if ( lRBSGen == m_lRBSMinGenToApply && prbsfilehdr != nullptr )
     {
         UtilMemCpy( prbsfilehdr, prbs->RBSFileHdr(), sizeof( RBSFILEHDR ) );
     }
@@ -6304,7 +6304,7 @@ HandleError:
     {
         // This should the delete the file handle as well.
         delete prbs;
-        prbs = NULL;
+        prbs = nullptr;
     }
 
     if ( m_pcprintfRevertTrace )
@@ -6344,7 +6344,7 @@ ERR CRBSRevertContext::ErrUpdateDbStatesAfterRevert( SIGNATURE* psignRbsHdrFlush
     // We are the end of the revert and some databases don't have their header captured. We will go through the next RBS generation and capture it from that.
     for ( LONG lRBSGen = m_lRBSMinGenToApply; lRBSGen <= m_lRBSMaxGenToApply && !FAllDbHeaderCaptured(); ++lRBSGen )
     {
-        Call( ErrRBSGenApply( lRBSGen, NULL, fTrue, fTrue, fFalse ) );
+        Call( ErrRBSGenApply( lRBSGen, nullptr, fTrue, fTrue, fFalse ) );
     }
 
     for ( IRBSDBRC irbsdbrc = 0; irbsdbrc <= m_irbsdbrcMaxInUse; ++irbsdbrc )
@@ -6431,7 +6431,7 @@ ERR CRBSRevertContext::ErrBackupRBSAfterRevert()
         WCHAR wszRBSGenAbsFilePath[ IFileSystemAPI::cchPathMax ];
         Call( ErrRBSFilePathForGen_( wszRBSAbsBackupDirPath, m_wszRBSBaseName, m_pinst->m_pfsapi, wszRBSGenAbsBackupDirPath, sizeof( wszRBSGenAbsBackupDirPath ), wszRBSGenAbsFilePath, sizeof( wszRBSGenAbsFilePath ), rbsGenToBackup ) );
         Call( ErrRBSFilePathForGen_( m_wszRBSAbsRootDirPath, m_wszRBSBaseName, m_pinst->m_pfsapi, wszRBSGenAbsSrcDirPath, sizeof( wszRBSGenAbsSrcDirPath ), wszRBSGenAbsFilePath, sizeof( wszRBSGenAbsFilePath ), rbsGenToBackup ) );
-        Call( ErrFolderCopy( m_pinst->m_pfsapi, wszRBSGenAbsSrcDirPath, wszRBSGenAbsBackupDirPath, NULL, fTrue, fTrue ) );
+        Call( ErrFolderCopy( m_pinst->m_pfsapi, wszRBSGenAbsSrcDirPath, wszRBSGenAbsBackupDirPath, nullptr, fTrue, fTrue ) );
     }
 
     // Also backup any PageFDPDeleteFiles we created to help with root page move operations.
@@ -6474,7 +6474,7 @@ ERR CRBSRevertContext::ErrRemoveRBSAfterRevert()
         WCHAR wszRBSGenAbsSrcDirPath[ IFileSystemAPI::cchPathMax ];
         WCHAR wszRBSGenAbsFilePath[ IFileSystemAPI::cchPathMax ];
         Call( ErrRBSFilePathForGen_( m_wszRBSAbsRootDirPath, m_wszRBSBaseName, m_pinst->m_pfsapi, wszRBSGenAbsSrcDirPath, sizeof( wszRBSGenAbsSrcDirPath ), wszRBSGenAbsFilePath, sizeof( wszRBSGenAbsFilePath ), rbsGenToBackup ) );
-        Call( ErrRBSDeleteAllFiles( m_pinst->m_pfsapi, wszRBSGenAbsSrcDirPath, NULL, fTrue ) );
+        Call( ErrRBSDeleteAllFiles( m_pinst->m_pfsapi, wszRBSGenAbsSrcDirPath, nullptr, fTrue ) );
     }
 
     // Also delete all the .jdf files in the Snapshot directory.
@@ -6534,7 +6534,7 @@ ERR CRBSRevertContext::ErrExecuteRevert( JET_GRBIT grbit, JET_RBSREVERTINFOMISC*
             Call( ErrOSStrCbCopyW( wszRBSAbsBackupDirPath, sizeof( wszRBSAbsBackupDirPath ), m_wszRBSAbsRootDirPath ) );
             Call( ErrOSStrCbAppendW( wszRBSAbsBackupDirPath, sizeof( wszRBSAbsBackupDirPath ), wszRBSBackupDir ) );
 
-            Call( ErrRBSDeleteAllFiles( m_pinst->m_pfsapi, wszRBSAbsBackupDirPath, NULL, fTrue ) );
+            Call( ErrRBSDeleteAllFiles( m_pinst->m_pfsapi, wszRBSAbsBackupDirPath, nullptr, fTrue ) );
         }
         case JET_revertstateCaptureRootPageRecords:
         case JET_revertstateApplyRootPageRecords:
@@ -6626,7 +6626,7 @@ ERR CRBSRevertContext::ErrExecuteRevert( JET_GRBIT grbit, JET_RBSREVERTINFOMISC*
                         3,
                         rgcwsz,
                         0,
-                        NULL,
+                        nullptr,
                         m_pinst );
 
                     OSTraceResumeGC();
@@ -6743,7 +6743,7 @@ HandleError:
         3,
         rgcwsz,
         0,
-        NULL,
+        nullptr,
         m_pinst );
 
     if ( err < JET_errSuccess )

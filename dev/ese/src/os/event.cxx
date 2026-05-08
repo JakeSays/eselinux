@@ -134,7 +134,7 @@ LOCAL BOOL  g_fOSSuppressEvents   = fFalse;
 //  our in memory cache of emitted events
 
 const size_t    g_cLastEvent                        = 10;
-WCHAR*          g_rgwszLastEvent[ g_cLastEvent ]    = { NULL };
+WCHAR*          g_rgwszLastEvent[ g_cLastEvent ]    = { nullptr };
 size_t          g_iLastEvent                        = 0;
 
 
@@ -176,7 +176,7 @@ void OSEventReportEvent(    const WCHAR*        szSourceEventKey,
     g_fOSSuppressEvents = fTrue;
 #endif
 
-    LPWSTR wszEvent = NULL;
+    LPWSTR wszEvent = nullptr;
     if ( FormatMessageW( (  FORMAT_MESSAGE_ALLOCATE_BUFFER |
                             FORMAT_MESSAGE_ARGUMENT_ARRAY |
                             FORMAT_MESSAGE_FROM_HMODULE |
@@ -196,13 +196,13 @@ void OSEventReportEvent(    const WCHAR*        szSourceEventKey,
             //  or should we use TickOSTimeCurrent(), or DateTime?
             OSStrCbFormatW( wszLogStr, cchLogStr*sizeof(WCHAR), wszLogStrFormatter, msgid, msgid, HrtHRTCount(), wszEvent );
             LocalFree( wszEvent );
-            wszEvent = NULL;
+            wszEvent = nullptr;
         }
         else
         {
             //  fallback to just wszEvent which was already allocated
             wszLogStr = wszEvent;
-            wszEvent = NULL;
+            wszEvent = nullptr;
         }
 
         if ( eventfacility & eventfacilityOsTrace )
@@ -233,16 +233,16 @@ void OSEventReportEvent(    const WCHAR*        szSourceEventKey,
             if ( g_rgwszLastEvent[ g_iLastEvent ] )
             {
                 LocalFree( g_rgwszLastEvent[ g_iLastEvent ] );
-                g_rgwszLastEvent[ g_iLastEvent ] = NULL;
+                g_rgwszLastEvent[ g_iLastEvent ] = nullptr;
             }
             g_rgwszLastEvent[ g_iLastEvent ] = wszLogStr;
-            wszLogStr = NULL;
+            wszLogStr = nullptr;
             g_iLastEvent = ( g_iLastEvent + 1 ) % g_cLastEvent;
         }
         else
         {
             LocalFree( wszLogStr );
-            wszLogStr = NULL;
+            wszLogStr = nullptr;
         }
 
         Assert( wszEvent == NULL );
@@ -517,7 +517,7 @@ void OSEventPostterm()
         if ( g_rgwszLastEvent[ iLastEvent ] )
         {
             LocalFree( g_rgwszLastEvent[ iLastEvent ] );
-            g_rgwszLastEvent[ iLastEvent ] = NULL;
+            g_rgwszLastEvent[ iLastEvent ] = nullptr;
         }
     }
     g_iLastEvent = 0;
@@ -551,7 +551,7 @@ BOOL FOSEventPreinit()
 
     for ( size_t iLastEvent = 0; iLastEvent < g_cLastEvent; iLastEvent++ )
     {
-        g_rgwszLastEvent[ iLastEvent ] = NULL;
+        g_rgwszLastEvent[ iLastEvent ] = nullptr;
     }
     g_iLastEvent = 0;
 

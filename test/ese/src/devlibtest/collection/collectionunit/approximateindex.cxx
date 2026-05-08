@@ -150,7 +150,7 @@ ERR ApproximateIndexTest::ErrInsertRetrieve( const bool fAscending, const bool f
     CTestApproximateIndex index( 1000000 );
     CTestApproximateIndex::CLock lock;
 
-    CTestResource* pres = NULL;
+    CTestResource* pres = nullptr;
     CTestResource rgres[ cElements ];
     CTestResource rgresOlder[ cElements ];
     CTestResource rgresNewer[ cElements ];
@@ -320,7 +320,7 @@ ERR ApproximateIndexTest::ErrInsertRetrieve( const bool fAscending, const bool f
     for ( DWORD i = 0; i < cElements; i++ )
     {
         // MoveBeforeKeyPtr.
-        index.MoveBeforeKeyPtr( rgresActual[ i ].m_dw, (CTestResource*)DWORD_PTR( 0 ), &lock );
+        index.MoveBeforeKeyPtr( rgresActual[ i ].m_dw, (CTestResource*)nullptr, &lock );
         TestCheck( CTestApproximateIndex::ERR::errEntryNotFound == index.ErrRetrieveEntry( &lock, &pres ) );
 
         TestCheck( CTestApproximateIndex::ERR::errSuccess == index.ErrMoveNext( &lock ) );
@@ -388,7 +388,7 @@ ERR ApproximateIndexTest::ErrInsertRetrieve( const bool fAscending, const bool f
     }
 
     // Position cursor right before the original first element and scan the new elements.
-    index.MoveBeforeKeyPtr( rgresActual[ 0 ].m_dw, (CTestResource*)DWORD_PTR( 0 ), &lock );
+    index.MoveBeforeKeyPtr( rgresActual[ 0 ].m_dw, (CTestResource*)nullptr, &lock );
     TestCheck( CTestApproximateIndex::ERR::errEntryNotFound == index.ErrRetrieveEntry( &lock, &pres ) );
     cCount = 0;
     while ( index.ErrMovePrev( &lock ) == CTestApproximateIndex::ERR::errSuccess )

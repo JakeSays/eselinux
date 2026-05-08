@@ -126,7 +126,7 @@ LOCAL ERR ErrDBICheck200And400( INST *const pinst, IFileSystemAPI *const pfsapi,
                             qwLegacyFileID,
                             &pfapi ) );
 
-    Alloc( ppage = (PAGE *)PvOSMemoryPageAlloc( cbPageOld, NULL ) );
+    Alloc( ppage = (PAGE *)PvOSMemoryPageAlloc( cbPageOld, nullptr ) );
     Call( pfapi->ErrIORead( *tcScope, QWORD( 0 ), cbPageOld, (BYTE* const)ppage, qosIONormal ) );
 
     IbCbFromPtag(ibTag, cbTag, &ppage->rgtag[0]);
@@ -166,7 +166,7 @@ LOCAL ERR ErrDBICheck200And400( INST *const pinst, IFileSystemAPI *const pfsapi,
         err = ErrERRCheck( JET_errDatabaseCorrupted );
 
 HandleError:
-    if ( ppage != NULL )
+    if ( ppage != nullptr )
         OSMemoryPageFree( (VOID *)ppage );
 
     delete pfapi;
@@ -380,8 +380,8 @@ VOID DBReportTachmentEvent( const INST * const pinst, const IFMP ifmp, const Mes
 
     __int64 usecTach = 0;
     ULONG cbTimingResourceDataSequence = 0;
-    WCHAR * wszTimingResourceDataSequence = NULL;
-    CIsamSequenceDiagLog * pisdl = NULL;
+    WCHAR * wszTimingResourceDataSequence = nullptr;
+    CIsamSequenceDiagLog * pisdl = nullptr;
     switch( msgidTachment )
     {
         case CREATE_DATABASE_DONE_ID:
@@ -434,7 +434,7 @@ VOID DBReportTachmentEvent( const INST * const pinst, const IFMP ifmp, const Mes
         _countof( rgszT ),
         rgszT,
         0,
-        NULL,
+        nullptr,
         pinst );
 }
 
@@ -539,13 +539,13 @@ ERR ISAMAPI ErrIsamCreateDatabase(
 
     CallR( ErrDBCreateDatabase(
                 ppib,
-                NULL,
+                nullptr,
                 wszDatabaseName,
                 &ifmp,
                 dbidMax,
                 CpgDBInitialUserDatabaseSize( PinstFromPpib( ppib ) ),
                 fSparseEnabledFile,
-                NULL,
+                nullptr,
                 rgsetdbparam,
                 csetdbparam,
                 grbit ) );
@@ -598,7 +598,7 @@ ERR ErrDBGetDesiredVersion(
     
         if ( pdbfilehdr )
         {
-            const FormatVersions * pfmtvers = NULL;
+            const FormatVersions * pfmtvers = nullptr;
             CallR( ErrDBFindHighestMatchingDbMajors( pdbfilehdr->Dbv(), &pfmtvers, pinst ) );
             if ( err >= JET_errSuccess )
             {
@@ -607,7 +607,7 @@ ERR ErrDBGetDesiredVersion(
                 efv = pfmtvers->efv;
             }
 
-            CallR( ErrGetDesiredVersion( NULL, efv, ppfmtvers ) );
+            CallR( ErrGetDesiredVersion( nullptr, efv, ppfmtvers ) );
             Assert( (*ppfmtvers) != NULL );
             CallS( err );
             return err;
@@ -640,7 +640,7 @@ ERR ErrDBICheckVersions(
     _In_    const DBFILEHDR_FIX * const     pdbfilehdr,
     _In_    const DbVersion&                dbvDesired,
     _In_    const BOOL                      fAllowPersistedFormat,
-    _Out_   BOOL * const                    pfDbNeedsUpdate = NULL )
+    _Out_   BOOL * const                    pfDbNeedsUpdate = nullptr )
 {
     ERR     err     = JET_errSuccess;
 
@@ -665,7 +665,7 @@ ERR ErrDBICheckVersions(
                 _countof( rgszT ),
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 pinst );
 
         Assert( FNegTest( fInvalidAPIUsage ) || FInEseutilPossibleUsageError() );
@@ -699,7 +699,7 @@ ERR ErrDBICheckVersions(
                     _countof( rgszT ),
                     rgszT,
                     0,
-                    NULL,
+                    nullptr,
                     pinst );
 #endif
         }
@@ -713,7 +713,7 @@ ERR ErrDBICheckVersions(
                     _countof( rgszT ),
                     rgszT,
                     0,
-                    NULL,
+                    nullptr,
                     pinst );
             Assert( FNegTest( fInvalidAPIUsage ) || FInEseutilPossibleUsageError() );
             Call( ErrERRCheck( JET_errEngineFormatVersionSpecifiedTooLowForDatabaseVersion ) );
@@ -775,12 +775,12 @@ ERR ErrDBIValidateUserVersions(
     _In_    const IFMP                      ifmp,
     _In_    const DBFILEHDR_FIX * const     pdbfilehdr,
     _Out_   const FormatVersions ** const   ppfmtversDesired,
-    _Out_   BOOL * const                    pfDbNeedsUpdate = NULL )
+    _Out_   BOOL * const                    pfDbNeedsUpdate = nullptr )
 {
     ERR     err     = JET_errSuccess;
 
     BOOL fAllowPersistedFormat = fFalse;
-    const FormatVersions * pfmtversDesired = NULL;
+    const FormatVersions * pfmtversDesired = nullptr;
 
     //  Compute the desired DB version we want ...
 
@@ -788,13 +788,13 @@ ERR ErrDBIValidateUserVersions(
             // We could remove this silly ifmpNil thing?  AND FFMPIsTempDB thing?  If we fixedrepair to run through 
             // regular attach so it checks and updates (DBISetVersion()) through normal paths. Note: Not actually
             // sure it would be worth it.
-            ( ifmp == ifmpNil /* from repair, pre-attach */ || !FFMPIsTempDB( ifmp ) ) ? pdbfilehdr : NULL,
+            ( ifmp == ifmpNil /* from repair, pre-attach */ || !FFMPIsTempDB( ifmp ) ) ? pdbfilehdr : nullptr,
             &pfmtversDesired,
             &fAllowPersistedFormat );
     //  these are used as signal errors from ErrDBICheckVersions()
     Assert( err != JET_errEngineFormatVersionSpecifiedTooLowForDatabaseVersion );
     Call( err );
-    if ( ppfmtversDesired != NULL )
+    if ( ppfmtversDesired != nullptr )
     {
         *ppfmtversDesired = pfmtversDesired;
     }
@@ -817,7 +817,7 @@ ERR ErrDBIValidateUserVersions(
                 _countof( rgszT ),
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 pinst );
         OSTrace( JET_tracetagUpgrade, OSFormat( "Holding EFV at %ws due to param setting %ws, skipping any upgrades to latest EFV %ws.", wszEfvDesired, wszEfvSetting, wszEfvDefault ) );
     }
@@ -987,7 +987,7 @@ void DBISetVersion(
                         _countof( rgszT ),
                         rgszT,
                         0,
-                        NULL,
+                        nullptr,
                         pinst );
             }
         }
@@ -1145,7 +1145,7 @@ ERR ErrDBUpdateAndFlushVersion(
 
     DbVersion dbvBefore;
     BOOL fDbNeedsUpdate = fFalse;
-    const FormatVersions * pfmtversDesired = NULL;
+    const FormatVersions * pfmtversDesired = nullptr;
 
     {
     PdbfilehdrReadOnly pdbfilehdr = pfmp->Pdbfilehdr();
@@ -1233,7 +1233,7 @@ ERR ErrDBRedoSetDbVersion(
         _In_    const DbVersion&                dbvSet )
     {
     ERR err = JET_errSuccess;
-    DBFILEHDR * pdbfilehdrTestUpdate = NULL;
+    DBFILEHDR * pdbfilehdrTestUpdate = nullptr;
 
     OSTrace( JET_tracetagDatabases, OSFormat( "Evaluating SetDbVersion LR( %d.%d.%d )\n", dbvSet.ulDbMajorVersion, dbvSet.ulDbUpdateMajor, dbvSet.ulDbUpdateMinor ) );
 
@@ -1256,7 +1256,7 @@ ERR ErrDBRedoSetDbVersion(
     //  for user settings ... the easiest way is to create a false header as if the update was
     //  applied and check against that. :P
 
-    Alloc( pdbfilehdrTestUpdate = (DBFILEHDR*)PvOSMemoryPageAlloc( g_cbPage, NULL ) );
+    Alloc( pdbfilehdrTestUpdate = (DBFILEHDR*)PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
     memcpy( pdbfilehdrTestUpdate, pdbfilehdr.get(), g_cbPage );
     Assert( CmpDbVer( pdbfilehdr->Dbv(), pdbfilehdrTestUpdate->Dbv() ) == 0 );
     //DBISetVersion( pinst, pfmp->WszDatabaseName(), ifmp, dbvSet, pdbfilehdrTestUpdate, fT );
@@ -1266,7 +1266,7 @@ ERR ErrDBRedoSetDbVersion(
         pdbfilehdrTestUpdate->le_ulDaeUpdateMajor = dbvSet.ulDbUpdateMajor;
         pdbfilehdrTestUpdate->le_ulDaeUpdateMinor = dbvSet.ulDbUpdateMinor;
     }
-    const FormatVersions * pfmtversCheckT = NULL;
+    const FormatVersions * pfmtversCheckT = nullptr;
     Call( ErrDBIValidateUserVersions( pinst, pfmp->WszDatabaseName(), ifmp, pdbfilehdrTestUpdate, &pfmtversCheckT ) );
 
     const BOOL fAllowPersistedFormat = ( UlParam( pinst, JET_paramEngineFormatVersion ) & JET_efvAllowHigherPersistedFormat ) == JET_efvAllowHigherPersistedFormat;
@@ -1348,7 +1348,7 @@ void InitDBDbfilehdr(
     }
 
     pdbfilehdr->le_dbid = pfmp->Dbid();
-    if ( psignDb == NULL )
+    if ( psignDb == nullptr )
     {
         SIGGetSignature( &pdbfilehdr->signDb );
     }
@@ -1394,7 +1394,7 @@ ERR ErrDBParseDbParams(
     ULONG ulRawMaintainExtentPageCountCache = 0;
     BOOL fFoundMaintainExtentPageCountCache = fFalse;
 
-    if ( ( rgsetdbparam == NULL ) && ( csetdbparam > 0 ) )
+    if ( ( rgsetdbparam == nullptr ) && ( csetdbparam > 0 ) )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -1405,17 +1405,17 @@ ERR ErrDBParseDbParams(
     // Set all Db parameter defaults.
     //
 
-    if ( pcpgDatabaseSizeMax != NULL )
+    if ( pcpgDatabaseSizeMax != nullptr )
     {
         *pcpgDatabaseSizeMax = 0;
     }
 
-    if ( ppctCachePriority != NULL )
+    if ( ppctCachePriority != nullptr )
     {
         *ppctCachePriority = g_pctCachePriorityUnassigned;
     }
 
-    if ( pgrbitShrinkDatabaseOptions != NULL )
+    if ( pgrbitShrinkDatabaseOptions != nullptr )
     {
 #ifdef DEBUG
         *pgrbitShrinkDatabaseOptions = JET_bitShrinkDatabaseEofOnAttach;
@@ -1424,22 +1424,22 @@ ERR ErrDBParseDbParams(
 #endif
     }
 
-    if ( pdtickShrinkDatabaseTimeQuota != NULL )
+    if ( pdtickShrinkDatabaseTimeQuota != nullptr )
     {
         *pdtickShrinkDatabaseTimeQuota = -1;
     }
 
-    if ( pcpgShrinkDatabaseSizeLimit != NULL )
+    if ( pcpgShrinkDatabaseSizeLimit != nullptr )
     {
         *pcpgShrinkDatabaseSizeLimit = 0;
     }
 
-    if ( pfLeakReclaimerEnabled != NULL )
+    if ( pfLeakReclaimerEnabled != nullptr )
     {
         *pfLeakReclaimerEnabled = fFalse;
     }
 
-    if ( pdtickLeakReclaimerTimeQuota != NULL )
+    if ( pdtickLeakReclaimerTimeQuota != nullptr )
     {
         *pdtickLeakReclaimerTimeQuota = -1;
     }
@@ -1449,7 +1449,7 @@ ERR ErrDBParseDbParams(
         *pfcMaintainExtentPageCountCache = fc::NotSpecified;
     }
 
-    if ( pfSelfAllocSpBufReservation != NULL )
+    if ( pfSelfAllocSpBufReservation != nullptr )
     {
 #ifdef DEBUG
         *pfSelfAllocSpBufReservation = fTrue;
@@ -1467,7 +1467,7 @@ ERR ErrDBParseDbParams(
         const ULONG dbparamid = rgsetdbparam[ isetdbparam ].dbparamid;
         const void* const pvParam = rgsetdbparam[ isetdbparam ].pvParam;
         const ULONG cbParam = rgsetdbparam[ isetdbparam ].cbParam;
-        void* pvParamDest = NULL;
+        void* pvParamDest = nullptr;
         ULONG cbParamDest = 0;
 
         // Collect size and memory location of each user input.
@@ -1529,7 +1529,7 @@ ERR ErrDBParseDbParams(
         //
 
         // Caller is not expecting this parameter, do nothing.
-        if ( pvParamDest == NULL )
+        if ( pvParamDest == nullptr )
         {
             continue;
         }
@@ -1541,7 +1541,7 @@ ERR ErrDBParseDbParams(
         }
 
         // Invalid pointer.
-        if ( ( pvParam == NULL ) && ( cbParam > 0 ) )
+        if ( ( pvParam == nullptr ) && ( cbParam > 0 ) )
         {
             return ErrERRCheck( JET_errInvalidBufferSize );
         }
@@ -1565,7 +1565,7 @@ ERR ErrDBParseDbParams(
     //
 
     // JET_dbparamCachePriority.
-    if ( ( ppctCachePriority != NULL ) &&
+    if ( ( ppctCachePriority != nullptr ) &&
             FIsCachePriorityAssigned( *ppctCachePriority ) &&
             !FIsCachePriorityValid( *ppctCachePriority ) )
     {
@@ -1573,7 +1573,7 @@ ERR ErrDBParseDbParams(
     }
 
     // JET_dbparamShrinkDatabaseOptions.
-    if ( ( pgrbitShrinkDatabaseOptions != NULL ) &&
+    if ( ( pgrbitShrinkDatabaseOptions != nullptr ) &&
         ( ( *pgrbitShrinkDatabaseOptions &
           ~( JET_bitShrinkDatabaseEofOnAttach |
              JET_bitShrinkDatabaseFullCategorizationOnAttach |
@@ -1585,7 +1585,7 @@ ERR ErrDBParseDbParams(
     }
 
     // JET_dbparamShrinkDatabaseTimeQuota.
-    if ( ( pdtickShrinkDatabaseTimeQuota != NULL ) &&
+    if ( ( pdtickShrinkDatabaseTimeQuota != nullptr ) &&
             ( *pdtickShrinkDatabaseTimeQuota > ( 7 * 24 * 60 * 60 * 1000 ) ) &&
             ( *pdtickShrinkDatabaseTimeQuota != -1 ) )
     {
@@ -1593,7 +1593,7 @@ ERR ErrDBParseDbParams(
     }
 
     // JET_dbparamLeakReclaimerTimeQuota.
-    if ( ( pdtickLeakReclaimerTimeQuota != NULL ) &&
+    if ( ( pdtickLeakReclaimerTimeQuota != nullptr ) &&
             ( *pdtickLeakReclaimerTimeQuota > ( 7 * 24 * 60 * 60 * 1000 ) ) &&
             ( *pdtickLeakReclaimerTimeQuota != -1 ) )
     {
@@ -1601,7 +1601,7 @@ ERR ErrDBParseDbParams(
     }
 
     // JET_dbparamShrinkDatabaseSizeLimit.
-    if ( ( pcpgShrinkDatabaseSizeLimit != NULL ) && ( *pcpgShrinkDatabaseSizeLimit < 0 ) )
+    if ( ( pcpgShrinkDatabaseSizeLimit != nullptr ) && ( *pcpgShrinkDatabaseSizeLimit < 0 ) )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -1655,11 +1655,11 @@ ERR ErrDBCreateDatabase(
                                csetdbparam,
                                &cpgDatabaseSizeMax,
                                &pctCachePriority,
-                               NULL,                 // JET_dbparamShrinkDatabaseOptions (not used here).
-                               NULL,                 // JET_dbparamShrinkDatabaseTimeQuota (not used here).
-                               NULL,                 // JET_dbparamShrinkDatabaseSizeLimit (not used here).
-                               NULL,                 // JET_dbparamLeakReclaimerEnabled (not used here).
-                               NULL,                 // JET_dbparamLeakReclaimerTimeQuota (not used here).
+                               nullptr,                 // JET_dbparamShrinkDatabaseOptions (not used here).
+                               nullptr,                 // JET_dbparamShrinkDatabaseTimeQuota (not used here).
+                               nullptr,                 // JET_dbparamShrinkDatabaseSizeLimit (not used here).
+                               nullptr,                 // JET_dbparamLeakReclaimerEnabled (not used here).
+                               nullptr,                 // JET_dbparamLeakReclaimerTimeQuota (not used here).
                                &fcMaintainExtentPageCountCache,
                                &fSelfAllocSpBufReservation ) );
 
@@ -1721,7 +1721,7 @@ ERR ErrDBCreateDatabase(
     Assert( fRecoveringUndo != plog->FRecoveringMode() );
     Assert( !(grbit & bitCreateDbImplicitly) || plog->FRecoveringMode() );
 
-    if ( NULL != pfsapiDest )
+    if ( nullptr != pfsapiDest )
     {
         pfsapi = pfsapiDest;
     }
@@ -1748,13 +1748,13 @@ ERR ErrDBCreateDatabase(
             dbidGiven,
             fTrue,
             fTrue,
-            NULL ) );
+            nullptr ) );
 
         wszDbFullName = g_rgfmp[ifmp].WszDatabaseName();
     }
     else
     {
-        if ( NULL == wszDatabaseName || 0 == *wszDatabaseName )
+        if ( nullptr == wszDatabaseName || 0 == *wszDatabaseName )
         {
             return ErrERRCheck( JET_errDatabaseInvalidPath );
         }
@@ -1783,7 +1783,7 @@ ERR ErrDBCreateDatabase(
                 dbidGiven,
                 fTrue,
                 !(grbit & JET_bitDbRecoveryOff) && !plog->FLogDisabled(),
-                NULL );
+                nullptr );
 
         if ( err != JET_errSuccess )
         {
@@ -1910,8 +1910,8 @@ ERR ErrDBCreateDatabase(
     // Create & initialize & set database header
 
     {
-    DBFILEHDR * pdbfilehdrInit = NULL;
-    Alloc( pdbfilehdrInit = (DBFILEHDR_FIX * )PvOSMemoryPageAlloc( g_cbPage, NULL ) );
+    DBFILEHDR * pdbfilehdrInit = nullptr;
+    Alloc( pdbfilehdrInit = (DBFILEHDR_FIX * )PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
 
     InitDBDbfilehdr( pfmp, plog, grbit, psignDb, pdbfilehdrInit );
 
@@ -2154,7 +2154,7 @@ ERR ErrDBCreateDatabase(
     {
         PGNO  pgnoFDP;
         OBJID objidFDP;
-        const WCHAR * rgwsz[] = { pfmp->WszDatabaseName(), NULL };
+        const WCHAR * rgwsz[] = { pfmp->WszDatabaseName(), nullptr };
 
         MessageId evtId = PLAIN_TEXT_ID;                   // No-logging marker value.
         FEATURECONTROL fcT = fc::NotSpecified; // Assume nothing to do.
@@ -2204,7 +2204,7 @@ ERR ErrDBCreateDatabase(
                 _countof( rgwsz ),
                 rgwsz,
                 0,
-                NULL,
+                nullptr,
                 pinst );
         }
         
@@ -2233,7 +2233,7 @@ ERR ErrDBCreateDatabase(
         {
             pfmp->m_isdlCreate.TermSequence();
 
-            const ERR errDetach = ErrIsamDetachDatabase( (JET_SESID) ppib, NULL, wszDatabaseName );
+            const ERR errDetach = ErrIsamDetachDatabase( (JET_SESID) ppib, nullptr, wszDatabaseName );
             if ( ( errDetach >= JET_errSuccess ) )
             {
                 Expected( !FIODatabaseOpen( ifmp ) ); // added during FFB feature, b/c I(SOMEONE) didn't understand how on successful detach is there a DB Pfapi() left?
@@ -2504,7 +2504,7 @@ ErrDBCreateDBFinish(
         //  we can replay old logs and end up with the exact same database after
         //  CreateDB is done (nesc. b/c create DB is an unlogged operation).
         QWORD qwSortVersion;
-        CallS( ErrNORMGetSortVersion( wszLocaleNameDefault, &qwSortVersion, NULL ) );
+        CallS( ErrNORMGetSortVersion( wszLocaleNameDefault, &qwSortVersion, nullptr ) );
         pdbfilehdr->le_qwSortVersion = qwSortVersion;
     }
     Assert( pdbfilehdr->le_objidLast );
@@ -2595,7 +2595,7 @@ ErrDBCreateDBFinish(
         {
             pfmp->m_isdlCreate.TermSequence();
 
-            const ERR errDetach = ErrIsamDetachDatabase( (JET_SESID) ppib, NULL, pfmp->WszDatabaseName() );
+            const ERR errDetach = ErrIsamDetachDatabase( (JET_SESID) ppib, nullptr, pfmp->WszDatabaseName() );
             if ( ( errDetach >= JET_errSuccess ) )
             {
                 Expected( !FIODatabaseOpen( ifmp ) ); // added during FFB feature, b/c I(SOMEONE) didn't understand how on successful detach is there a DB Pfapi() left?
@@ -2659,7 +2659,7 @@ ERR ErrDBReadHeaderCheckConsistency(
 
     //  bring in the database and check its header
     //
-    AllocR( pdbfilehdr = (DBFILEHDR * )PvOSMemoryPageAlloc( g_cbPage, NULL ) );
+    AllocR( pdbfilehdr = (DBFILEHDR * )PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
 
     //  need to zero out header because we try to read it
     //  later even on failure
@@ -2685,7 +2685,7 @@ ERR ErrDBReadHeaderCheckConsistency(
                                         pfmp->FReadOnlyAttach() ? urhfReadOnly : urhfNone );
 
     delete pfapi;
-    pfapi = NULL;
+    pfapi = nullptr;
 
     if ( err < JET_errSuccess )
     {
@@ -2771,7 +2771,7 @@ ERR ErrDBReadHeaderCheckConsistency(
                 _countof( rgszT ),
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 pfmp->Pinst() );
     }
 
@@ -2801,7 +2801,7 @@ ERR ErrDBReadHeaderCheckConsistency(
                         1,
                         rgszT,
                         0,
-                        NULL,
+                        nullptr,
                         pfmp->Pinst() );
                 err = ErrERRCheck( JET_errDatabaseIncompleteUpgrade );
             }
@@ -2833,7 +2833,7 @@ ERR ErrDBReadHeaderCheckConsistency(
                             1,
                             rgszT,
                             0,
-                            NULL,
+                            nullptr,
                             pfmp->Pinst() );
                     
                     err = ErrERRCheck( JET_errSoftRecoveryOnBackupDatabase );
@@ -2864,7 +2864,7 @@ ERR ErrDBReadHeaderCheckConsistency(
                 1,
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 pfmp->Pinst() );
         
         OSUHAPublishEvent(  HaDbFailureTagCorruption,
@@ -3028,7 +3028,7 @@ VOID DBISetHeaderAfterAttach(
                 1,
                 rgpszT,
                 0,
-                NULL,
+                nullptr,
                 PinstFromIfmp( ifmp ) );
     }
 
@@ -3129,8 +3129,8 @@ ERR ErrDBProbeOrCreateSystemTable(
     const CHAR * const szTableName,
     ERR (*pfnCreate)(PIB * const, const IFMP, PGNO *, OBJID *),
     const JET_GRBIT grbit,
-    PGNO *ppgnoFDP = NULL,
-    OBJID *pobjidFDP = NULL )
+    PGNO *ppgnoFDP = nullptr,
+    OBJID *pobjidFDP = nullptr )
 //  ================================================================
 //
 //  Used to add dynamically created system tables at attach time.
@@ -3145,14 +3145,14 @@ ERR ErrDBProbeOrCreateSystemTable(
 
     ERR             err             = JET_errSuccess;
     WCHAR * const   wszDatabaseName = g_rgfmp[ifmp].WszDatabaseName();
-    BOOL            fTryCreate      = ( ( grbit & JET_bitDbReadOnly ) == 0 ) && ( NULL != pfnCreate );
+    BOOL            fTryCreate      = ( ( grbit & JET_bitDbReadOnly ) == 0 ) && ( nullptr != pfnCreate );
     IFMP            ifmpT;
 
-    if ( NULL != ppgnoFDP )
+    if ( nullptr != ppgnoFDP )
     {
         *ppgnoFDP = pgnoNull;
     }
-    if ( NULL != pobjidFDP )
+    if ( nullptr != pobjidFDP )
     {
         *pobjidFDP = objidNil;
     }
@@ -3307,7 +3307,7 @@ INLINE ERR ErrDBUpgradeForLocalisation( PIB *ppib, const IFMP ifmp, const JET_GR
                 5,
                 rgsz,
                 0,
-                NULL,
+                nullptr,
                 PinstFromPpib( ppib ) );
     }
     else
@@ -3340,7 +3340,7 @@ INLINE ERR ErrDBUpgradeForLocalisation( PIB *ppib, const IFMP ifmp, const JET_GR
                 9,
                 rgsz,
                 0,
-                NULL,
+                nullptr,
                 PinstFromPpib( ppib ) );
     }
 
@@ -3387,7 +3387,7 @@ INLINE ERR ErrDBUpgradeForLocalisation( PIB *ppib, const IFMP ifmp, const JET_GR
             1,
             rgsz,
             0,
-            NULL,
+            nullptr,
             PinstFromPpib( ppib ) );
 
     //  Update the header with the new version info
@@ -3453,7 +3453,7 @@ LOCAL VOID DBReportPartiallyAttachedDb(
             3,
             rgszT,
             0,
-            NULL,
+            nullptr,
             pinst );
 }
 
@@ -3473,7 +3473,7 @@ LOCAL VOID DBReportPartiallyDetachedDb(
             2,
             rgszT,
             0,
-            NULL,
+            nullptr,
             pinst );
 }
 
@@ -3528,7 +3528,7 @@ LOCAL ERR ErrDBReadDBTrailer(
     Assert( g_cbPage == cbTrailer );
     
     ERR         err     = JET_errSuccess;
-    IFileAPI *  pfapi   = NULL;
+    IFileAPI *  pfapi   = nullptr;
     QWORD       cbSize  = 0;
     TraceContextScope tcScope( iorpHeader );
     tcScope->SetDwEngineObjid( objidSystemRoot );
@@ -3577,14 +3577,14 @@ ERR ErrDBTryToZeroDBTrailer(
     Assert( wszDatabase );
     
     ERR         err     = JET_errSuccess;
-    IFileAPI *  pfapi   = NULL;
+    IFileAPI *  pfapi   = nullptr;
     QWORD       cbSize  = 0;
 
-    BYTE *      pbTrailer = NULL;;
+    BYTE *      pbTrailer = nullptr;;
     TraceContextScope tcScope( iorpHeader );
     tcScope->SetDwEngineObjid( objidSystemRoot );
 
-    Alloc( pbTrailer = static_cast<BYTE *> ( PvOSMemoryPageAlloc( g_cbPage, NULL ) ) );
+    Alloc( pbTrailer = static_cast<BYTE *> ( PvOSMemoryPageAlloc( g_cbPage, nullptr ) ) );
 
     // Check the trailer page to see if it really is a trailer page.
     err = ErrDBReadAndCheckDBTrailer( pinst, pfsapi, wszDatabase, pbTrailer, g_cbPage );
@@ -3711,7 +3711,7 @@ ERR ErrDBCheckDBHeaderAndTrailer(
 
         rgwszT[0] = wszDatabase;
         UtilReportEvent( eventError, LOGGING_RECOVERY_CATEGORY,
-                    DATABASE_PATCH_FILE_MISMATCH_ERROR_ID, csz, rgwszT, 0, NULL, pinstNil );
+                    DATABASE_PATCH_FILE_MISMATCH_ERROR_ID, csz, rgwszT, 0, nullptr, pinstNil );
         CallR( ErrERRCheck( JET_errDatabasePatchFileMismatch ) );
     }
     CallS( err );
@@ -3874,9 +3874,9 @@ ERR ErrDBUpdateHeaderFromTrailer(
     Assert( wszDatabase );
 
     ERR             err         = JET_errSuccess;
-    PATCHHDR *      ppatchhdr   = NULL;;
+    PATCHHDR *      ppatchhdr   = nullptr;;
 
-    Alloc( ppatchhdr = static_cast<PATCHHDR *>( PvOSMemoryPageAlloc( g_cbPage, NULL ) ) );
+    Alloc( ppatchhdr = static_cast<PATCHHDR *>( PvOSMemoryPageAlloc( g_cbPage, nullptr ) ) );
 
     // should be a db header
     if( attribDb != pdbfilehdr->le_attrib )
@@ -3924,7 +3924,7 @@ HandleError:
                 1,
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 pinst );
 
         OSUHAEmitFailureTag( pinst, HaDbFailureTagCorruption, L"a03c9107-e57b-45f9-96f8-1bcee797c960" );
@@ -3952,9 +3952,9 @@ LOCAL ERR ErrDBIUpdateHeaderFromTrailer(
     Assert( wszDatabase );
 
     ERR         err         = JET_errSuccess;
-    DBFILEHDR * pdbfilehdr  = NULL;
+    DBFILEHDR * pdbfilehdr  = nullptr;
 
-    Alloc( pdbfilehdr = static_cast<DBFILEHDR * >( PvOSMemoryPageAlloc( g_cbPage, NULL ) ) );
+    Alloc( pdbfilehdr = static_cast<DBFILEHDR * >( PvOSMemoryPageAlloc( g_cbPage, nullptr ) ) );
 
     err = ErrUtilReadShadowedHeader(
             pinst,
@@ -3988,7 +3988,7 @@ ERR ErrDBUpdateHeaderFromTrailer( const WCHAR * const wszDatabase, BOOL fSkipMin
     Assert( wszDatabase );
 
     ERR             err     = JET_errSuccess;
-    IFileSystemAPI* pfsapi  = NULL;
+    IFileSystemAPI* pfsapi  = nullptr;
     
     Call( ErrOSFSCreate( g_pfsconfigGlobal, &pfsapi ) );
     Call( ErrDBIUpdateHeaderFromTrailer( pinstNil, pfsapi, wszDatabase, fSkipMinLogChecks ) );
@@ -4026,7 +4026,7 @@ ERR ISAMAPI ErrIsamAttachDatabase(
     BOOL                fDeleteMSUTable                 = fFalse;
     BOOL                fCacheAlive                     = fFalse;
     BOOL                fDirtyCacheAlive                = fFalse;
-    FMP                 *pfmp                           = NULL;
+    FMP                 *pfmp                           = nullptr;
     IFileSystemAPI      *pfsapi;
     FEATURECONTROL      fcMaintainExtentPageCountCache;
     PGNO                pgnoFDP;
@@ -4085,7 +4085,7 @@ ERR ISAMAPI ErrIsamAttachDatabase(
     if ( grbit & JET_bitDbVersioningOff )
         return ErrERRCheck( JET_errCannotDisableVersioning );
 
-    if ( NULL == wszDatabaseName || 0 == *wszDatabaseName )
+    if ( nullptr == wszDatabaseName || 0 == *wszDatabaseName )
         return ErrERRCheck( JET_errDatabaseInvalidPath );
 
     // We cannot delete indices and call this a read-only attach.
@@ -4192,7 +4192,7 @@ ERR ISAMAPI ErrIsamAttachDatabase(
                                       dtickLeakReclaimerTimeQuota,
                                       fSelfAllocSpBufReservation );
 
-            const FormatVersions * pfmtversDesired = NULL;
+            const FormatVersions * pfmtversDesired = nullptr;
             BOOL fDbNeedsUpdate = fFalse;
             DbVersion dbvBefore;
             {
@@ -4238,7 +4238,7 @@ ERR ISAMAPI ErrIsamAttachDatabase(
             if ( pdbfilehdr->Dbstate() != JET_dbstateDirtyShutdown )
             {
                 FireWall( "NotDirtyOnReAttach" );
-                pdbfilehdr->SetDbstate( JET_dbstateDirtyShutdown, lGenerationInvalid, lGenerationInvalid, NULL, fTrue );
+                pdbfilehdr->SetDbstate( JET_dbstateDirtyShutdown, lGenerationInvalid, lGenerationInvalid, nullptr, fTrue );
             }
 
             if ( pdbfilehdr->le_objidLast > objidMaxWarningThreshold )
@@ -4251,7 +4251,7 @@ ERR ISAMAPI ErrIsamAttachDatabase(
                         1,
                         rgpszT,
                         0,
-                        NULL,
+                        nullptr,
                         PinstFromIfmp( ifmp ) );
             }
 
@@ -4350,7 +4350,7 @@ ERR ISAMAPI ErrIsamAttachDatabase(
                        ppib,
                        ifmp,
                        szMSExtentPageCountCache,
-                       NULL,
+                       nullptr,
                        NO_GRBIT,
                        &pgnoFDP,
                        &objidFDP ),
@@ -4377,14 +4377,14 @@ ERR ISAMAPI ErrIsamAttachDatabase(
                 // Fail the attach if we hit a corruption error, as safety measure to prevent the corruption from spreading.
                 // Also, JET_errDatabaseInUse is used to signal that codepaths that require/assume exclusive access to the
                 // database could not guarantee exclusivity, so fail the attach in that case for safety.
-                const ErrData* perrdata = NULL;
+                const ErrData* perrdata = nullptr;
                 if ( ( errT < JET_errSuccess ) &&
                      ( errT != JET_errReadVerifyFailure ) &&
                      ( errT != JET_errPageNotInitialized ) &&
                      ( errT != JET_errReadLostFlushVerifyFailure ) &&
                      ( errT != JET_errDiskReadVerificationFailure ) &&
                      ( ( errT == JET_errDatabaseIdInUse ) ||
-                       ( ( perrdata = PerrdataLookupErrValue( errT ) ) == NULL ) ||
+                       ( ( perrdata = PerrdataLookupErrValue( errT ) ) == nullptr ) ||
                        ( perrdata->errorCategory == JET_errcatCorruption ) ) )
                 {
                     AssertTrack( fFalse, OSFormat( "ShrinkFailAttachAlreadyAttached:%d", errT ) );
@@ -4707,7 +4707,7 @@ ERR ISAMAPI ErrIsamAttachDatabase(
                ppib,
                ifmp,
                szMSExtentPageCountCache,
-               NULL,
+               nullptr,
                NO_GRBIT,
                &pgnoFDP,
                &objidFDP ),
@@ -4744,14 +4744,14 @@ ERR ISAMAPI ErrIsamAttachDatabase(
             // Fail the attach if we hit a corruption error, as safety measure to prevent the corruption from spreading.
             // Also, JET_errDatabaseInUse is used to signal that codepaths that require/assume exclusive access to the
             // database could not guarantee exclusivity, so fail the attach in that case for safety.
-            const ErrData* perrdata = NULL;
+            const ErrData* perrdata = nullptr;
             if ( ( errT < JET_errSuccess ) &&
                  ( errT != JET_errReadVerifyFailure ) &&
                  ( errT != JET_errPageNotInitialized ) &&
                  ( errT != JET_errReadLostFlushVerifyFailure ) &&
                  ( errT != JET_errDiskReadVerificationFailure ) &&
                  ( ( errT == JET_errDatabaseIdInUse ) ||
-                   ( ( perrdata = PerrdataLookupErrValue( errT ) ) == NULL ) ||
+                   ( ( perrdata = PerrdataLookupErrValue( errT ) ) == nullptr ) ||
                    ( perrdata->errorCategory == JET_errcatCorruption ) ) )
             {
                 AssertTrack( fFalse, OSFormat( "ShrinkFailAttach:%d", errT ) );
@@ -4836,14 +4836,14 @@ PostAttachTasks:
         !pfmp->FReadOnlyAttach()
         )
     {
-        const WCHAR * rgwsz[] = { pfmp->WszDatabaseName(), NULL };
+        const WCHAR * rgwsz[] = { pfmp->WszDatabaseName(), nullptr };
 
         // See if the table is there or not.
         CallJ( ErrDBProbeOrCreateSystemTable(
                    ppib,
                    ifmp,
                    szMSExtentPageCountCache,
-                   NULL,
+                   nullptr,
                    NO_GRBIT,
                    &pgnoFDP,
                    &objidFDP ),
@@ -4915,7 +4915,7 @@ PostAttachTasks:
                 _countof( rgwsz ),
                 rgwsz,
                 0,
-                NULL,
+                nullptr,
                 pinst );
         }
 
@@ -5240,7 +5240,7 @@ Detach:
     Assert( err < JET_errSuccess );
     Assert( pfmp != NULL );
     //  detach the database, ignoring any errors since an error already occurred
-    (VOID)ErrIsamDetachDatabase( (JET_SESID) ppib, NULL, pfmp->WszDatabaseName() );
+    (VOID)ErrIsamDetachDatabase( (JET_SESID) ppib, nullptr, pfmp->WszDatabaseName() );
     return err;
 }
 
@@ -5291,17 +5291,17 @@ VOID DBResetFMP( FMP *pfmp, const LOG *plog )
     //  indicate this db entry is detached.
 
     OSMemoryHeapFree( pfmp->Patchchk() );
-    pfmp->SetPatchchk( NULL );
+    pfmp->SetPatchchk( nullptr );
 
     if ( pfmp->Pdbfilehdr() )
     {
         pfmp->FreePdbfilehdr();
     }
 
-    if ( NULL != pfmp->Ppatchhdr() )
+    if ( nullptr != pfmp->Ppatchhdr() )
     {
         OSMemoryPageFree( pfmp->Ppatchhdr() );
-        pfmp->SetPpatchhdr( NULL );
+        pfmp->SetPpatchhdr( nullptr );
     }
 
     //  g_rgfmp[ifmp].szDatabaseName will be released within rwlFMPPool.
@@ -5342,7 +5342,7 @@ LOCAL ERR ErrIsamDetachAllDatabase( JET_SESID sesid, const INT flags )
 
             FMP::AssertVALIDIFMP( pinst->m_mpdbidifmp[ dbidDetach ] );
             Assert ( NULL != g_rgfmp[ pinst->m_mpdbidifmp[ dbidDetach ] ].WszDatabaseName() );
-            Call ( ErrIsamDetachDatabase( sesid, NULL, g_rgfmp[ pinst->m_mpdbidifmp[ dbidDetach ] ].WszDatabaseName(), flags ) );
+            Call ( ErrIsamDetachDatabase( sesid, nullptr, g_rgfmp[ pinst->m_mpdbidifmp[ dbidDetach ] ].WszDatabaseName(), flags ) );
 
             FMP::EnterFMPPoolAsWriter();
         }
@@ -5377,7 +5377,7 @@ ERR ISAMAPI ErrIsamDetachDatabase( JET_SESID sesid, IFileSystemAPI* const pfsapi
     }
 
     IFMP                ifmp            = ifmpNil;
-    FMP                 *pfmp           = NULL;
+    FMP                 *pfmp           = nullptr;
     LGPOS               lgposLogRec;
     INST                *pinst          = PinstFromPpib( ppib );
     LOG                 *plog           = pinst->m_plog;
@@ -5395,9 +5395,9 @@ ERR ISAMAPI ErrIsamDetachDatabase( JET_SESID sesid, IFileSystemAPI* const pfsapi
 
     //  this should never be called on the temp database (e.g. we do not need to force the OS file-system)
 
-    IFileSystemAPI  *pfsapi         = ( NULL == pfsapiDB ) ? pinst->m_pfsapi : pfsapiDB;
+    IFileSystemAPI  *pfsapi         = ( nullptr == pfsapiDB ) ? pinst->m_pfsapi : pfsapiDB;
 
-    if ( NULL == wszDatabaseName || 0 == *wszDatabaseName )
+    if ( nullptr == wszDatabaseName || 0 == *wszDatabaseName )
     {
         // this function will go through m_mpdbidifmp and call ErrIsamDetachDatabase for each one
         return ErrIsamDetachAllDatabase( sesid, flags );
@@ -5660,7 +5660,7 @@ StartDetaching:
 
     // Clean flush map.
     CFlushMapForAttachedDb* const pfm = pfmp->PFlushMap();
-    if ( !pfmp->FReadOnlyAttach() && ( pfm != NULL ) )
+    if ( !pfmp->FReadOnlyAttach() && ( pfm != nullptr ) )
     {
         Call( pfm->ErrCleanFlushMap() );
     }
@@ -5675,7 +5675,7 @@ StartDetaching:
      */
     { // .ctor acquires PdbfilehdrReadWrite
     PdbfilehdrReadWrite pdbfilehdr = pfmp->PdbfilehdrUpdateable();
-    const BKINFO *              pbkInfoToCopy   = pdbfilehdr ? &(pdbfilehdr->bkinfoFullCur) : NULL;
+    const BKINFO *              pbkInfoToCopy   = pdbfilehdr ? &(pdbfilehdr->bkinfoFullCur) : nullptr;
     const DBFILEHDR::BKINFOTYPE     bkinfoType      = DBFILEHDR::backupNormal;
 
     if ( pbkInfoToCopy && pbkInfoToCopy->le_genLow != 0 && !pfmp->FReadOnlyAttach() )
@@ -5797,7 +5797,7 @@ StartDetaching:
     //  to its redo maps, if any,
     pfmp->SnapshotHeaderSignature();
 
-    if ( pfm != NULL )
+    if ( pfm != nullptr )
     {
         pfm->TermFlushMap();
     }
@@ -5868,7 +5868,7 @@ HandleError:
         Assert( NULL != pfmp );
         pfmp->ReleaseWriteLatch( ppib );
     }
-    else if ( NULL != pfmp )
+    else if ( nullptr != pfmp )
     {
         Assert( pfmp->FDetachingDB() );
         pfmp->ResetFDontRegisterOLD2Tasks();
@@ -6006,7 +6006,7 @@ ERR ErrDBOpenDatabase(
     WCHAR               *wszFileName;
     IFMP                ifmp = ifmpNil;
     INST                *pinst = PinstFromPpib( ppib );
-    IFileSystemAPI      *pfsapi = NULL;
+    IFileSystemAPI      *pfsapi = nullptr;
     const BOOL          fOpenForRecovery = !!( grbit & bitDbOpenForRecovery );
 
     if ( fOpenForRecovery )
@@ -6023,7 +6023,7 @@ ERR ErrDBOpenDatabase(
     }
     else
     {
-        if ( NULL == wszDatabaseName || 0 == *wszDatabaseName )
+        if ( nullptr == wszDatabaseName || 0 == *wszDatabaseName )
         {
             return ErrERRCheck( JET_errDatabaseInvalidPath );
         }
@@ -6162,11 +6162,11 @@ ERR ISAMAPI ErrIsamSetDatabaseSize( JET_SESID sesid, const WCHAR *wszDatabase, D
     ERR             err         = JET_errSuccess;
     PIB*            ppib        = (PIB *)sesid;
     IFileSystemAPI* pfsapi      = PinstFromPpib( ppib )->m_pfsapi;
-    DBFILEHDR_FIX*  pdbfilehdr  = NULL;
-    IFileAPI*       pfapi       = NULL;
+    DBFILEHDR_FIX*  pdbfilehdr  = nullptr;
+    IFileAPI*       pfapi       = nullptr;
     QWORD           cbFileSize;
 
-    if ( NULL == wszDatabase || 0 == *wszDatabase )
+    if ( nullptr == wszDatabase || 0 == *wszDatabase )
         return ErrERRCheck( JET_errDatabaseInvalidPath );
 
     if ( cpg < cpgDatabaseApiMinReserved )
@@ -6174,7 +6174,7 @@ ERR ISAMAPI ErrIsamSetDatabaseSize( JET_SESID sesid, const WCHAR *wszDatabase, D
         return ErrERRCheck( JET_errInvalidParameter );
     }
 
-    AllocR( pdbfilehdr = (DBFILEHDR_FIX*)PvOSMemoryPageAlloc( g_cbPage, NULL ) );
+    AllocR( pdbfilehdr = (DBFILEHDR_FIX*)PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
 
     //  this should never be called on the temp database (e.g. we will not need to force the OS file-system)
     Call( CIOFilePerf::ErrFileOpen( pfsapi,
@@ -6239,7 +6239,7 @@ ERR ISAMAPI ErrIsamSetDatabaseSize( JET_SESID sesid, const WCHAR *wszDatabase, D
 
 HandleError:
     OSMemoryPageFree( (void*)pdbfilehdr );
-    if ( err < JET_errSuccess && pfapi != NULL )
+    if ( err < JET_errSuccess && pfapi != nullptr )
     {
         Call( ErrUtilFlushFileBuffers( pfapi, iofrDefensiveErrorPath ) );
     }
@@ -6266,7 +6266,7 @@ ERR ISAMAPI ErrIsamResizeDatabase(
     CPG     cpgActual = 0;
     BOOL    fTrimmed = fFalse;
 
-    if ( pcpgActual != NULL )
+    if ( pcpgActual != nullptr )
     {
         *pcpgActual = cpgActual;
     }
@@ -6381,7 +6381,7 @@ DoneWithResizing:
     Assert( JET_errSuccess == err );
 
 HandleError:
-    if ( pcpgActual != NULL )
+    if ( pcpgActual != nullptr )
     {
         *pcpgActual = cpgActual;
     }
@@ -6568,8 +6568,8 @@ ERR ErrDBFormatFeatureEnabled_( const JET_ENGINEFORMATVERSION efvFormatFeature, 
     //  Slow path - search version table for EFV and check directly ...
     //
 
-    const FormatVersions * pfmtversFormatFeature = NULL;
-    CallS( ErrGetDesiredVersion( NULL /* must be NULL to bypass staging */, efvFormatFeature, &pfmtversFormatFeature ) );
+    const FormatVersions * pfmtversFormatFeature = nullptr;
+    CallS( ErrGetDesiredVersion( nullptr /* must be NULL to bypass staging */, efvFormatFeature, &pfmtversFormatFeature ) );
     if ( pfmtversFormatFeature )
     {
         return ErrDBFormatFeatureEnabled_( pfmtversFormatFeature, dbvCurrentFromFile );

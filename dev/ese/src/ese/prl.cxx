@@ -166,7 +166,7 @@ namespace PagePatching
     CCriticalSection g_critPRL( CLockBasicInfo( CSyncBasicInfo( szPRL ), rankPRL, 0 ) );
     
     const size_t g_crequests = 256;
-    PatchRequest* g_rgrequests = NULL;
+    PatchRequest* g_rgrequests = nullptr;
     bool g_fHasAtLeastOneRequest = false;
     volatile INT g_iprlMac = -1;
 
@@ -754,7 +754,7 @@ void PagePatching::TryToRequestPatch( const IFMP ifmp, const PGNO pgno )
             _countof( rgcwszT ),
             rgcwszT,
             0,
-            NULL,
+            nullptr,
             pinst );
 
         OSUHAPublishEvent(
@@ -780,7 +780,7 @@ VOID PagePatching::TryPatchFromCopy( const IFMP ifmp, const PGNO pgno, VOID *pv,
 //-
 {
     ERR err = JET_errSuccess;
-    BYTE *pvPage = NULL;
+    BYTE *pvPage = nullptr;
 
     // Note: This pv,perr is actually a pointer to pbf->pv,pbf->err in the BF itself!
     // Ensure we have the page write latched.
@@ -1163,12 +1163,12 @@ ERR PagePatching::ErrValidatePatchArguments(
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
 
-    if ( NULL == pvData )
+    if ( nullptr == pvData )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
 
-    if ( NULL == pvToken )
+    if ( nullptr == pvToken )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
@@ -1227,7 +1227,7 @@ void PagePatching::LogPatchEvent( const IFMP ifmp, const PGNO pgno )
         isz,
         rgcwszT,
         0,
-        NULL,
+        nullptr,
         pinst );
 }
 
@@ -1310,7 +1310,7 @@ PagePatching::RequestPagePatchOnNewThread(
                     RequestPagePatch_,
                     pPatchData ) );
     // pPatchData now owned by the task
-    pPatchData = NULL;
+    pPatchData = nullptr;
 
 HandleError:
     delete pPatchData;

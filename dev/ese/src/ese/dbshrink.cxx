@@ -91,7 +91,7 @@ LOCAL ERR ErrSHKIMoveLastExtent(
     FMP* const pfmp = g_rgfmp + ifmp;
     EXTENTINFO eiLastOE;
     const LONG dtickQuota = pfmp->DtickShrinkDatabaseTimeQuota();
-    SpaceCatCtx* pSpCatCtx = NULL;
+    SpaceCatCtx* pSpCatCtx = nullptr;
     BFLatch bfl;
     BOOL fPageLatched = fFalse;
     BOOL fPageCategorization = fFalse;
@@ -732,7 +732,7 @@ LOCAL ERR ErrSHKIMoveLastExtent(
                         pgnoCurrent,
                         FSPSpaceCatStrictlyLeaf( spcatfCurrent ),
                         fSPNoFlags,
-                        NULL );
+                        nullptr );
 
                 // If this is a space tree, we may need to retry because reserving split buffers
                 // for the move might have changed the page we're trying to move itself, which
@@ -873,7 +873,7 @@ ERR ErrSHKShrinkDbFromEof(
     QWORD cbSizeFileFinal = 0;
     QWORD cbSizeOwnedInitial = 0;
     QWORD cbSizeOwnedFinal = 0;
-    CPRINTF* pcprintfShrinkTraceRaw = NULL;
+    CPRINTF* pcprintfShrinkTraceRaw = nullptr;
     const HRT hrtStarted = HrtHRTCount();
     CPG cpgMoved = 0, cpgShelved = 0, cpgUnleaked = 0;
     ShrinkDoneReason sdr = sdrNone;
@@ -1188,7 +1188,7 @@ HandleError:
             _countof( rgwsz ),
             rgwsz,
             0,
-            NULL,
+            nullptr,
             pfmp->Pinst() );
         OSTraceResumeGC();
     }
@@ -1200,7 +1200,7 @@ HandleError:
         fDbOpen = fFalse;
     }
 
-    if ( pcprintfShrinkTraceRaw != NULL )
+    if ( pcprintfShrinkTraceRaw != nullptr )
     {
         (*pcprintfShrinkTraceRaw)( "ShrinkDone[%d:%d:%I32d:%I32d:%I32d]\r\n", err, (int)sdr, pfmp->CpgOfCb( cbSizeOwnedInitial ), pfmp->CpgOfCb( cbSizeOwnedFinal ), pfmp->CpgOfCb( cbSizeFileFinal ) );
     }
@@ -1220,9 +1220,9 @@ HandleError:
             AssertTrack( fFalse, OSFormat( "ShrinkEofEndVerCleanErr:%d", errVerClean ) );
 
             // Only clobber the error if it's not a corruption or it's success.
-            const ErrData* perrdata = NULL;
+            const ErrData* perrdata = nullptr;
             if ( ( err >= JET_errSuccess ) ||
-                 ( ( perrdata = PerrdataLookupErrValue( err ) ) == NULL ) ||
+                 ( ( perrdata = PerrdataLookupErrValue( err ) ) == nullptr ) ||
                  ( perrdata->errorCategory != JET_errcatCorruption ) )
             {
                 err = ErrERRCheck( JET_errDatabaseInUse );
@@ -1268,7 +1268,7 @@ LOCAL VOID SHKIRootMoveRevertDbTime( ROOTMOVE* const prm )
 
     // Children objects.
     for ( ROOTMOVECHILD* prmc = prm->prootMoveChildren;
-            prmc != NULL;
+            prmc != nullptr;
             prmc = prmc->prootMoveChildNext )
     {
         if ( prmc->csrChildFDP.Latch() == latchWrite )
@@ -1295,7 +1295,7 @@ LOCAL VOID SHKIRootMoveRevertDbTime( ROOTMOVE* const prm )
 LOCAL VOID SHKIRootMoveGetPagePreImage( const IFMP ifmp, const PGNO pgno, CSR* const pcsr, DATA* const pdata )
 {
     CPAGE cpage;
-    void* pv = NULL;
+    void* pv = nullptr;
 
     Assert( pcsr->Cpage().CbBuffer() == (ULONG)g_rgfmp[ ifmp ].CbPage() );
     Assert( pcsr->Cpage().CbPage() == (ULONG)g_rgfmp[ ifmp ].CbPage() );
@@ -1321,7 +1321,7 @@ LOCAL ERR ErrSHKIRootMoveSetCatRecPostImage(
     DATA* const pdataPostImage,
     const PGNO pgnoNewFDP )
 {
-    VOID* pv = NULL;
+    VOID* pv = nullptr;
     ERR err  = JET_errSuccess;
 
     BFAlloc( bfasTemporary, &pv, pdataPreImage->Cb() );
@@ -1420,7 +1420,7 @@ LOCAL ERR ErrSHKICreateRootMove( ROOTMOVE* const prm, FUCB* const pfucb, const O
         {
             // Get child's pgnoFDP.
             PGNO pgnoFDPChild = pgnoNull;
-            Call( ErrCATSeekObjectByObjid( ppib, ifmp, objidTable, sysobjChild, objidChild, NULL, 0, &pgnoFDPChild ) );
+            Call( ErrCATSeekObjectByObjid( ppib, ifmp, objidTable, sysobjChild, objidChild, nullptr, 0, &pgnoFDPChild ) );
 
             // Allocate and set up child root move object.
             ROOTMOVECHILD* const prmc = new ROOTMOVECHILD;
@@ -1656,7 +1656,7 @@ LOCAL ERR ErrSHKIRootMoveUpgradeLatches( ROOTMOVE* const prm, PIB* const ppib, c
 
     // Children objects.
     for ( ROOTMOVECHILD* prmc = prm->prootMoveChildren;
-            prmc != NULL;
+            prmc != nullptr;
             prmc = prmc->prootMoveChildNext )
     {
         prmc->csrChildFDP.UpgradeFromRIWLatch();
@@ -1714,7 +1714,7 @@ LOCAL ERR ErrSHKIRootMoveUpgradeLatches( ROOTMOVE* const prm, PIB* const ppib, c
 
     // Children objects (post-image).
     for ( ROOTMOVECHILD* prmc = prm->prootMoveChildren;
-            prmc != NULL;
+            prmc != nullptr;
             prmc = prmc->prootMoveChildNext )
     {
         prmc->sphNew.SetPgnoParent( prm->pgnoNewFDP );
@@ -1758,7 +1758,7 @@ LOCAL ERR ErrSHKIRootMoveUpgradeLatches( ROOTMOVE* const prm, PIB* const ppib, c
 
     // Children objects.
     for ( ROOTMOVECHILD* prmc = prm->prootMoveChildren;
-            prmc != NULL;
+            prmc != nullptr;
             prmc = prmc->prootMoveChildNext )
     {
         Assert( prmc->csrChildFDP.Dbtime() == prmc->dbtimeBeforeChildFDP );
@@ -1802,7 +1802,7 @@ LOCAL VOID SHKIRootMoveSetLgposModify( ROOTMOVE* const prm, const LGPOS &lgpos )
 
     // Children objects.
     for ( ROOTMOVECHILD* prmc = prm->prootMoveChildren;
-            prmc != NULL;
+            prmc != nullptr;
             prmc = prmc->prootMoveChildNext )
     {
         prmc->csrChildFDP.Cpage().SetLgposModify( lgpos );
@@ -1849,7 +1849,7 @@ LOCAL VOID SHKIRootMoveReleaseLatches( ROOTMOVE* const prm )
 
     // Children objects.
     for ( ROOTMOVECHILD* prmc = prm->prootMoveChildren;
-            prmc != NULL;
+            prmc != nullptr;
             prmc = prmc->prootMoveChildNext )
     {
         prmc->csrChildFDP.ReleasePage();
@@ -1908,7 +1908,7 @@ LOCAL ERR ErrSHKIRootMoveCheck( const ROOTMOVE& rm, FUCB* const pfucb, const OBJ
                 ( err >= JET_errSuccess ) && ( objidChild != objidNil );
                 err = ErrCATGetNextNonRootObject( ppib, ifmp, objidTable, &pfucbCatalog, &objidChild, &sysobjChild ) )
         {
-            if ( prmc == NULL )
+            if ( prmc == nullptr )
             {
                 AssertTrack( fFalse, "RootMoveTooManyPostChildren" );
                 Error( ErrERRCheck( JET_errDatabaseCorrupted ) );
@@ -1916,7 +1916,7 @@ LOCAL ERR ErrSHKIRootMoveCheck( const ROOTMOVE& rm, FUCB* const pfucb, const OBJ
 
             // Get child's pgnoFDP.
             PGNO pgnoFDPChild = pgnoNull;
-            Call( ErrCATSeekObjectByObjid( ppib, ifmp, objidTable, sysobjChild, objidChild, NULL, 0, &pgnoFDPChild ) );
+            Call( ErrCATSeekObjectByObjid( ppib, ifmp, objidTable, sysobjChild, objidChild, nullptr, 0, &pgnoFDPChild ) );
 
             Call( ErrBTIOpen( ppib, ifmp, pgnoFDPChild, objidNil, openNormal, &pfucbChild, fFalse ) );
             Call( ErrBTIGotoRoot( pfucbChild, latchRIW ) );
@@ -1938,7 +1938,7 @@ LOCAL ERR ErrSHKIRootMoveCheck( const ROOTMOVE& rm, FUCB* const pfucb, const OBJ
         }
         Call( err );
 
-        if ( prmc != NULL )
+        if ( prmc != nullptr )
         {
             AssertTrack( fFalse, "RootMoveTooManyPreChildren" );
             Error( ErrERRCheck( JET_errDatabaseCorrupted ) );
@@ -2421,7 +2421,7 @@ VOID SHKPerformRootMove(
 
     // Change children objects to point to new root.
     for ( ROOTMOVECHILD* prmc = prm->prootMoveChildren;
-            prmc != NULL;
+            prmc != nullptr;
             prmc = prmc->prootMoveChildNext )
     {
         if ( FBTIUpdatablePage( prmc->csrChildFDP ) )

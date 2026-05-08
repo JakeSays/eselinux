@@ -422,8 +422,8 @@ void COSLayerPreInit::SetDefaults()
 
     //  performance data
     //
-    SetThreadWaitBeginNotification( NULL );
-    SetThreadWaitEndNotification( NULL );
+    SetThreadWaitBeginNotification( nullptr );
+    SetThreadWaitEndNotification( nullptr );
 }
 
 //  While it's called "fDllUp() really it means CRT & OSPreinit has run, so for library-challenged binaries (such as .exes) we

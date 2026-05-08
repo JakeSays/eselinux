@@ -39,7 +39,7 @@ DWORD               g_fSkipAssert = fFalse;
 __attribute__((used, noinline))
 CErrFrameSimple * PefLastThrow()
 {
-    return Postls() ? ( &(Postls()->m_efLastErr) ) : NULL;
+    return Postls() ? ( &(Postls()->m_efLastErr) ) : nullptr;
 }
 
 ULONG UlLineLastCall()
@@ -434,8 +434,8 @@ void __stdcall AssertFail( PCSTR szMessageFormat, PCSTR szFilename, LONG lLine, 
 
     OSDiagTrackAssertFail( szAssertText, wszIssueSource );
 
-    if ( FUtilSystemBetaFeatureEnabled_( NULL, NULL,
-                                         (UtilSystemBetaSiteMode)UlParam( NULL, JET_paramStageFlighting ),
+    if ( FUtilSystemBetaFeatureEnabled_( nullptr, nullptr,
+                                         (UtilSystemBetaSiteMode)UlParam( nullptr, JET_paramStageFlighting ),
                                          EseTestFeatures, L"EseFeatureTestOnly" ) )
     {
         EnterCriticalSection( &g_csError );
@@ -508,9 +508,9 @@ void (__stdcall *g_pfnEnforceContextFail)( const WCHAR* wszContext, const CHAR* 
 
 void __stdcall EnforceFail( const CHAR* szMessage, const CHAR* szFilename, LONG lLine )
 {
-    if ( g_pfnEnforceContextFail != NULL )
+    if ( g_pfnEnforceContextFail != nullptr )
     {
-        g_pfnEnforceContextFail( NULL, szMessage, szFilename, lLine );
+        g_pfnEnforceContextFail( nullptr, szMessage, szFilename, lLine );
     }
 }
 
@@ -522,7 +522,7 @@ void __stdcall EnforceContextFail( const WCHAR* wszContext, const CHAR* szMessag
 
     g_fNoWriteAssertEvent = 1;
 
-    if ( g_pfnReportEnforceFailure != NULL )
+    if ( g_pfnReportEnforceFailure != nullptr )
     {
         WCHAR wszIssueSource[ g_cchIssueSourceMax ] = L"FORMAT STRING FAIL";
         C_ASSERT( _countof( wszIssueSource ) < 260 );
@@ -813,7 +813,7 @@ INLINE TESTINJECTION* PinjectionFind_( const ULONG ulID )
 {
     if ( 0 == g_cTestInjections )
     {
-        return NULL;
+        return nullptr;
     }
 
     TESTINJECTION injectionSearch( ulID, 0, 0, 0x0 );
@@ -826,7 +826,7 @@ INLINE TESTINJECTION* PinjectionFind_( const ULONG ulID )
         return pinjection;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 INLINE BOOL FTestInjection_( const ULONG ulID, JET_API_PTR* const ppv )
@@ -1378,11 +1378,11 @@ const CHAR * g_szBadSourceFileName = "#BadFileName#";
 
 const CHAR * SzSourceFileName( const CHAR * szFilePath )
 {
-    if ( NULL == szFilePath || szFilePath[0] == '\0' )
+    if ( nullptr == szFilePath || szFilePath[0] == '\0' )
     {
         return "";
     }
-    if ( NULL == strrchr( szFilePath, chPathDelimiter ) )
+    if ( nullptr == strrchr( szFilePath, chPathDelimiter ) )
     {
         return szFilePath;
     }

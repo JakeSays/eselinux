@@ -190,7 +190,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgcolumncreateT[0].coltyp = JET_coltypLong;
     rgcolumncreateT[0].cbMax = 0;
     rgcolumncreateT[0].grbit = JET_bitColumnAutoincrement;
-    rgcolumncreateT[0].pvDefault = NULL;
+    rgcolumncreateT[0].pvDefault = nullptr;
     rgcolumncreateT[0].cbDefault = 0;
     rgcolumncreateT[0].cp = CP_ANSI;
     rgcolumncreateT[0].columnid = 0;
@@ -204,7 +204,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgcolumncreateT[1].coltyp = JET_coltypText;
     rgcolumncreateT[1].cbMax = 0;
     rgcolumncreateT[1].grbit = NO_GRBIT;
-    rgcolumncreateT[1].pvDefault = NULL;
+    rgcolumncreateT[1].pvDefault = nullptr;
     rgcolumncreateT[1].cbDefault = 0;
     rgcolumncreateT[1].cp = CP_ANSI;
     rgcolumncreateT[1].columnid = 0;
@@ -220,7 +220,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgindexcreateT[0].ulDensity = 100;
     rgindexcreateT[0].lcid = MAKELCID( 0x409, SORT_DEFAULT );
     rgindexcreateT[0].cbVarSegMac = 0;
-    rgindexcreateT[0].rgconditionalcolumn = NULL;
+    rgindexcreateT[0].rgconditionalcolumn = nullptr;
     rgindexcreateT[0].cConditionalColumn = 0;
     rgindexcreateT[0].err = JET_errSuccess;
     
@@ -235,13 +235,13 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgindexcreateT[1].ulDensity = 80;
     rgindexcreateT[1].lcid = MAKELCID( 0x409, SORT_DEFAULT );
     rgindexcreateT[1].cbVarSegMac = 0;
-    rgindexcreateT[1].rgconditionalcolumn = NULL;
+    rgindexcreateT[1].rgconditionalcolumn = nullptr;
     rgindexcreateT[1].cConditionalColumn = 0;
     rgindexcreateT[1].err = JET_errSuccess;
     
     tablecreateT.cbStruct = sizeof(tablecreateT);
     tablecreateT.szTableName = szCustomersTable;
-    tablecreateT.szTemplateTableName = NULL;
+    tablecreateT.szTemplateTableName = nullptr;
     tablecreateT.ulPages = 16;
     tablecreateT.ulDensity = 80;
     tablecreateT.rgcolumncreate = rgcolumncreateT;
@@ -267,7 +267,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgcolumncreateT[0].coltyp = JET_coltypLong;
     rgcolumncreateT[0].cbMax = 0;
     rgcolumncreateT[0].grbit = JET_bitColumnAutoincrement;
-    rgcolumncreateT[0].pvDefault = NULL;
+    rgcolumncreateT[0].pvDefault = nullptr;
     rgcolumncreateT[0].cbDefault = 0;
     rgcolumncreateT[0].cp = CP_ANSI;
     rgcolumncreateT[0].columnid = 0;
@@ -281,7 +281,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgcolumncreateT[1].coltyp = JET_coltypLong;
     rgcolumncreateT[1].cbMax = 0;
     rgcolumncreateT[1].grbit = JET_bitColumnNotNULL;
-    rgcolumncreateT[1].pvDefault = NULL;
+    rgcolumncreateT[1].pvDefault = nullptr;
     rgcolumncreateT[1].cbDefault = 0;
     rgcolumncreateT[1].cp = CP_ANSI;
     rgcolumncreateT[1].columnid = 0;
@@ -295,7 +295,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgcolumncreateT[2].coltyp = JET_coltypDateTime;
     rgcolumncreateT[2].cbMax = 0;
     rgcolumncreateT[2].grbit = NO_GRBIT;
-    rgcolumncreateT[2].pvDefault = NULL;
+    rgcolumncreateT[2].pvDefault = nullptr;
     rgcolumncreateT[2].cbDefault = 0;
     rgcolumncreateT[2].cp = CP_ANSI;
     rgcolumncreateT[2].columnid = 0;
@@ -309,7 +309,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgcolumncreateT[3].coltyp = JET_coltypCurrency;
     rgcolumncreateT[3].cbMax = 0;
     rgcolumncreateT[3].grbit = NO_GRBIT;
-    rgcolumncreateT[3].pvDefault = NULL;
+    rgcolumncreateT[3].pvDefault = nullptr;
     rgcolumncreateT[3].cbDefault = 0;
     rgcolumncreateT[3].cp = CP_ANSI;
     rgcolumncreateT[3].columnid = 0;
@@ -323,7 +323,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgcolumncreateT[4].coltyp = JET_coltypBit;
     rgcolumncreateT[4].cbMax = 0;
     rgcolumncreateT[4].grbit = JET_bitColumnTagged;
-    rgcolumncreateT[4].pvDefault = NULL;
+    rgcolumncreateT[4].pvDefault = nullptr;
     rgcolumncreateT[4].cbDefault = 0;
     rgcolumncreateT[4].cp = CP_ANSI;
     rgcolumncreateT[4].columnid = 0;
@@ -337,7 +337,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgcolumncreateT[5].coltyp = JET_coltypLong;
     rgcolumncreateT[5].cbMax = 0;
     rgcolumncreateT[5].grbit = JET_bitColumnTagged|JET_bitColumnMultiValued;
-    rgcolumncreateT[5].pvDefault = NULL;
+    rgcolumncreateT[5].pvDefault = nullptr;
     rgcolumncreateT[5].cbDefault = 0;
     rgcolumncreateT[5].cp = CP_ANSI;
     rgcolumncreateT[5].columnid = 0;
@@ -353,7 +353,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgindexcreateT[0].ulDensity = 80;
     rgindexcreateT[0].lcid = MAKELCID( 0x409, SORT_DEFAULT );
     rgindexcreateT[0].cbVarSegMac = 0;
-    rgindexcreateT[0].rgconditionalcolumn = NULL;
+    rgindexcreateT[0].rgconditionalcolumn = nullptr;
     rgindexcreateT[0].cConditionalColumn = 0;
     rgindexcreateT[0].err = JET_errSuccess;
 
@@ -378,7 +378,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     
     tablecreateT.cbStruct = sizeof(tablecreateT);
     tablecreateT.szTableName = szOrdersTable;
-    tablecreateT.szTemplateTableName = NULL;
+    tablecreateT.szTemplateTableName = nullptr;
     tablecreateT.ulPages = 16;
     tablecreateT.ulDensity = 80;
     tablecreateT.rgcolumncreate = rgcolumncreateT;
@@ -405,7 +405,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgcolumncreateT[0].coltyp = JET_coltypLong;
     rgcolumncreateT[0].cbMax = 0;
     rgcolumncreateT[0].grbit = JET_bitColumnAutoincrement;
-    rgcolumncreateT[0].pvDefault = NULL;
+    rgcolumncreateT[0].pvDefault = nullptr;
     rgcolumncreateT[0].cbDefault = 0;
     rgcolumncreateT[0].cp = CP_ANSI;
     rgcolumncreateT[0].columnid = 0;
@@ -418,7 +418,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgcolumncreateT[1].coltyp = JET_coltypText;
     rgcolumncreateT[1].cbMax = 0;
     rgcolumncreateT[1].grbit = NO_GRBIT;
-    rgcolumncreateT[1].pvDefault = NULL;
+    rgcolumncreateT[1].pvDefault = nullptr;
     rgcolumncreateT[1].cbDefault = 0;
     rgcolumncreateT[1].cp = CP_UNICODE;
     rgcolumncreateT[1].columnid = 0;
@@ -432,7 +432,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgcolumncreateT[2].coltyp = JET_coltypText;
     rgcolumncreateT[2].cbMax = 0;
     rgcolumncreateT[2].grbit = JET_bitColumnTagged|JET_bitColumnMultiValued;
-    rgcolumncreateT[2].pvDefault = NULL;
+    rgcolumncreateT[2].pvDefault = nullptr;
     rgcolumncreateT[2].cbDefault = 0;
     rgcolumncreateT[2].cp = CP_UNICODE;
     rgcolumncreateT[2].columnid = 0;
@@ -446,7 +446,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgcolumncreateT[3].coltyp = JET_coltypLongBinary;
     rgcolumncreateT[3].cbMax = 0;
     rgcolumncreateT[3].grbit = JET_bitColumnTagged|JET_bitColumnMultiValued;
-    rgcolumncreateT[3].pvDefault = NULL;
+    rgcolumncreateT[3].pvDefault = nullptr;
     rgcolumncreateT[3].cbDefault = 0;
     rgcolumncreateT[3].cp = CP_ANSI;
     rgcolumncreateT[3].columnid = 0;
@@ -460,7 +460,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgcolumncreateT[4].coltyp = JET_coltypCurrency;
     rgcolumncreateT[4].cbMax = 0;
     rgcolumncreateT[4].grbit = NO_GRBIT;
-    rgcolumncreateT[4].pvDefault = NULL;
+    rgcolumncreateT[4].pvDefault = nullptr;
     rgcolumncreateT[4].cbDefault = 0;
     rgcolumncreateT[4].cp = CP_ANSI;
     rgcolumncreateT[4].columnid = 0;
@@ -474,7 +474,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgcolumncreateT[5].coltyp = JET_coltypLongText;
     rgcolumncreateT[5].cbMax = 0;
     rgcolumncreateT[5].grbit = NO_GRBIT;
-    rgcolumncreateT[5].pvDefault = NULL;
+    rgcolumncreateT[5].pvDefault = nullptr;
     rgcolumncreateT[5].cbDefault = 0;
     rgcolumncreateT[5].cp = CP_ANSI;
     rgcolumncreateT[5].columnid = 0;
@@ -490,7 +490,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgindexcreateT[0].ulDensity = 80;
     rgindexcreateT[0].lcid = MAKELCID( 0x409, SORT_DEFAULT );
     rgindexcreateT[0].cbVarSegMac = 0;
-    rgindexcreateT[0].rgconditionalcolumn = NULL;
+    rgindexcreateT[0].rgconditionalcolumn = nullptr;
     rgindexcreateT[0].cConditionalColumn = 0;
     rgindexcreateT[0].err = JET_errSuccess;
 
@@ -505,7 +505,7 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgindexcreateT[1].ulDensity = 80;
     rgindexcreateT[1].lcid = MAKELCID( 0x409, SORT_DEFAULT );
     rgindexcreateT[1].cbVarSegMac = 0;
-    rgindexcreateT[1].rgconditionalcolumn = NULL;
+    rgindexcreateT[1].rgconditionalcolumn = nullptr;
     rgindexcreateT[1].cConditionalColumn = 0;
     rgindexcreateT[1].err = JET_errSuccess;
 
@@ -520,13 +520,13 @@ JET_ERR ErrCreateTablesColumnsAndIndexes( JET_SESID sesidT, JET_DBID dbidDatabas
     rgindexcreateT[2].ulDensity = 80;
     rgindexcreateT[2].lcid = MAKELCID( 0x409, SORT_DEFAULT );
     rgindexcreateT[2].cbVarSegMac = 0;
-    rgindexcreateT[2].rgconditionalcolumn = NULL;
+    rgindexcreateT[2].rgconditionalcolumn = nullptr;
     rgindexcreateT[2].cConditionalColumn = 0;
     rgindexcreateT[2].err = JET_errSuccess;
     
     tablecreateT.cbStruct = sizeof(tablecreateT);
     tablecreateT.szTableName = szBooksTable;
-    tablecreateT.szTemplateTableName = NULL;
+    tablecreateT.szTemplateTableName = nullptr;
     tablecreateT.ulPages = 16;
     tablecreateT.ulDensity = 80;
     tablecreateT.rgcolumncreate = rgcolumncreateT;
@@ -610,7 +610,7 @@ JET_ERR ErrProcessOrder( JET_SESID sesidT, JET_TABLEID tableidOrders, JET_TABLEI
     //  before being added to the table.
     //
     Call( JetPrepareUpdate( sesidT, tableidOrders, JET_prepInsert ) );
-    Call( JetSetColumn( sesidT, tableidOrders, columnidOrderCustomerID, &lCustomerID, sizeof(lCustomerID), 0, NULL ) );
+    Call( JetSetColumn( sesidT, tableidOrders, columnidOrderCustomerID, &lCustomerID, sizeof(lCustomerID), 0, nullptr ) );
 
     //  compute sum total amount for order by seeking into Books table for book price
     //  As each item is summed, the item itself is set in the order copy buffer.
@@ -636,7 +636,7 @@ JET_ERR ErrProcessOrder( JET_SESID sesidT, JET_TABLEID tableidOrders, JET_TABLEI
             sizeof(llBookPrice), 
             &ulT, 
             0, 
-            NULL ) );
+            nullptr ) );
         llSumTotalAmount += llBookPrice;
 
         //  add item to Order record
@@ -648,10 +648,10 @@ JET_ERR ErrProcessOrder( JET_SESID sesidT, JET_TABLEID tableidOrders, JET_TABLEI
     
     //  set sum total amount in Order record and insert Order record
     //
-    Call( JetSetColumn( sesidT, tableidOrders, columnidOrderAmount, &llSumTotalAmount, sizeof(llSumTotalAmount), 0, NULL ) );
+    Call( JetSetColumn( sesidT, tableidOrders, columnidOrderAmount, &llSumTotalAmount, sizeof(llSumTotalAmount), 0, nullptr ) );
     GetLocalTimeAsLongLong( rgbDate );
-    Call( JetSetColumn( sesidT, tableidOrders, columnidOrderDate, rgbDate, sizeof(rgbDate), 0, NULL ) );
-    Call( JetUpdate( sesidT, tableidOrders, NULL, 0, NULL ) );
+    Call( JetSetColumn( sesidT, tableidOrders, columnidOrderDate, rgbDate, sizeof(rgbDate), 0, nullptr ) );
+    Call( JetUpdate( sesidT, tableidOrders, nullptr, 0, nullptr ) );
 
     //  here JET_bitCommitLazyFlush is not used because we may want to ensure that an update will be made as soon as we see
     //  success returned from this function.
@@ -688,24 +688,24 @@ JET_ERR ErrAddDataToTables( JET_SESID sesidT, JET_DBID dbidDatabase, JET_TABLEID
     //  use per-column set column operation since only one column is being set
     //
     Call( JetPrepareUpdate( sesidT, tableidCustomers, JET_prepInsert ) );
-    Call( JetSetColumn( sesidT, tableidCustomers, columnidCustomerName, szCustomerName1, sizeof(szCustomerName1), 0, NULL ) );
-    Call( JetUpdate( sesidT, tableidCustomers, NULL, 0, NULL ) );
+    Call( JetSetColumn( sesidT, tableidCustomers, columnidCustomerName, szCustomerName1, sizeof(szCustomerName1), 0, nullptr ) );
+    Call( JetUpdate( sesidT, tableidCustomers, nullptr, 0, nullptr ) );
 
     Call( JetPrepareUpdate( sesidT, tableidCustomers, JET_prepInsert ) );
-    Call( JetSetColumn( sesidT, tableidCustomers, columnidCustomerName, szCustomerName2, sizeof(szCustomerName2), 0, NULL ) );
-    Call( JetUpdate( sesidT, tableidCustomers, NULL, 0, NULL ) );
+    Call( JetSetColumn( sesidT, tableidCustomers, columnidCustomerName, szCustomerName2, sizeof(szCustomerName2), 0, nullptr ) );
+    Call( JetUpdate( sesidT, tableidCustomers, nullptr, 0, nullptr ) );
 
     Call( JetPrepareUpdate( sesidT, tableidCustomers, JET_prepInsert ) );
-    Call( JetSetColumn( sesidT, tableidCustomers, columnidCustomerName, szCustomerName3, sizeof(szCustomerName3), 0, NULL ) );
-    Call( JetUpdate( sesidT, tableidCustomers, NULL, 0, NULL ) );
+    Call( JetSetColumn( sesidT, tableidCustomers, columnidCustomerName, szCustomerName3, sizeof(szCustomerName3), 0, nullptr ) );
+    Call( JetUpdate( sesidT, tableidCustomers, nullptr, 0, nullptr ) );
 
     Call( JetPrepareUpdate( sesidT, tableidCustomers, JET_prepInsert ) );
-    Call( JetSetColumn( sesidT, tableidCustomers, columnidCustomerName, szCustomerName4, sizeof(szCustomerName4), 0, NULL ) );
-    Call( JetUpdate( sesidT, tableidCustomers, NULL, 0, NULL ) );
+    Call( JetSetColumn( sesidT, tableidCustomers, columnidCustomerName, szCustomerName4, sizeof(szCustomerName4), 0, nullptr ) );
+    Call( JetUpdate( sesidT, tableidCustomers, nullptr, 0, nullptr ) );
 
     Call( JetPrepareUpdate( sesidT, tableidCustomers, JET_prepInsert ) );
-    Call( JetSetColumn( sesidT, tableidCustomers, columnidCustomerName, szCustomerName5, sizeof(szCustomerName5), 0, NULL ) );
-    Call( JetUpdate( sesidT, tableidCustomers, NULL, 0, NULL ) );
+    Call( JetSetColumn( sesidT, tableidCustomers, columnidCustomerName, szCustomerName5, sizeof(szCustomerName5), 0, nullptr ) );
+    Call( JetUpdate( sesidT, tableidCustomers, nullptr, 0, nullptr ) );
 
 
     //  create three books
@@ -748,7 +748,7 @@ JET_ERR ErrAddDataToTables( JET_SESID sesidT, JET_DBID dbidDatabase, JET_TABLEID
     rgsetcolumnT[4].itagSequence = 1;
     rgsetcolumnT[4].err = JET_errSuccess;
     Call( JetSetColumns( sesidT, tableidBooks, rgsetcolumnT, 5 ) );
-    Call( JetUpdate( sesidT, tableidBooks, NULL, 0, NULL ) );
+    Call( JetUpdate( sesidT, tableidBooks, nullptr, 0, nullptr ) );
 
     Call( JetPrepareUpdate( sesidT, tableidBooks, JET_prepInsert ) );
     rgsetcolumnT[0].columnid = columnidBookTitle;
@@ -794,7 +794,7 @@ JET_ERR ErrAddDataToTables( JET_SESID sesidT, JET_DBID dbidDatabase, JET_TABLEID
     rgsetcolumnT[5].itagSequence = 1;
     rgsetcolumnT[5].err = JET_errSuccess;
     Call( JetSetColumns( sesidT, tableidBooks, rgsetcolumnT, 6 ) );
-    Call( JetUpdate( sesidT, tableidBooks, NULL, 0, NULL ) );
+    Call( JetUpdate( sesidT, tableidBooks, nullptr, 0, nullptr ) );
 
     Call( JetPrepareUpdate( sesidT, tableidBooks, JET_prepInsert ) );
     rgsetcolumnT[0].columnid = columnidBookTitle;
@@ -812,7 +812,7 @@ JET_ERR ErrAddDataToTables( JET_SESID sesidT, JET_DBID dbidDatabase, JET_TABLEID
     rgsetcolumnT[1].itagSequence = 1;
     rgsetcolumnT[1].err = JET_errSuccess;
     rgsetcolumnT[2].columnid = columnidBookCover;
-    rgsetcolumnT[2].pvData = NULL;
+    rgsetcolumnT[2].pvData = nullptr;
     rgsetcolumnT[2].cbData = 0;
     rgsetcolumnT[2].grbit = NO_GRBIT;
     rgsetcolumnT[2].ibLongValue = 0;
@@ -833,7 +833,7 @@ JET_ERR ErrAddDataToTables( JET_SESID sesidT, JET_DBID dbidDatabase, JET_TABLEID
     rgsetcolumnT[4].itagSequence = 1;
     rgsetcolumnT[4].err = JET_errSuccess;
     Call( JetSetColumns( sesidT, tableidBooks, rgsetcolumnT, 5 ) );
-    Call( JetUpdate( sesidT, tableidBooks, NULL, 0, NULL ) );
+    Call( JetUpdate( sesidT, tableidBooks, nullptr, 0, nullptr ) );
     
     //  process four orders
     //
@@ -1073,7 +1073,7 @@ JET_ERR ErrQueryTopThreeOrdersByOrderAmount( JET_SESID sesidT, JET_DBID dbidData
             //
             Call( JetPrepareUpdate( sesidT, tableidTemp, JET_prepInsert ) );
             Call( JetSetColumns( sesidT, tableidTemp, rgsetcolumnTemp, 3 ) );
-            Call( JetUpdate( sesidT, tableidTemp, NULL, 0, NULL ) );
+            Call( JetUpdate( sesidT, tableidTemp, nullptr, 0, nullptr ) );
             }
     }
     err = JET_errSuccess;
@@ -1138,7 +1138,7 @@ JET_ERR ErrQueryTopThreeOrdersByOrderAmount( JET_SESID sesidT, JET_DBID dbidData
             sizeof(szCustomerNameT), 
             &ulT,
             0, 
-            NULL ) );
+            nullptr ) );
 
         printf( "%-32s", szCustomerNameT );
         printf( "$%d\n", llOrderAmount/10000 );
@@ -1197,7 +1197,7 @@ int main(int argc, char ** argv)
     //  This prevents replaying a backup all the way to the current point in time 
     //  but reduces the need for regular backup to remove log files.
     //
-    Call( JetSetSystemParameter( &instance, 0, JET_paramCircularLog, 1, NULL ) );
+    Call( JetSetSystemParameter( &instance, 0, JET_paramCircularLog, 1, nullptr ) );
 
     //  below system parameters should not need to be set in most cases
     //
@@ -1238,7 +1238,7 @@ int main(int argc, char ** argv)
     err = JetAttachDatabase( sesidT, szDatabase, 0 );
     if ( JET_errFileNotFound == err )
     {
-        Call( JetCreateDatabase( sesidT, szDatabase, NULL, &dbidDatabase, 0 ) );
+        Call( JetCreateDatabase( sesidT, szDatabase, nullptr, &dbidDatabase, 0 ) );
     }
     else
         {
@@ -1248,11 +1248,11 @@ int main(int argc, char ** argv)
 
     //  look for table and create if not found
     //
-    err = JetOpenTable( sesidT, dbidDatabase, szCustomersTable, NULL, 0, 0L, &tableidCustomers );
+    err = JetOpenTable( sesidT, dbidDatabase, szCustomersTable, nullptr, 0, 0L, &tableidCustomers );
     if ( JET_errObjectNotFound == err )
     {
         Call( ErrCreateTablesColumnsAndIndexes( sesidT, dbidDatabase ) );
-        Call( JetOpenTable( sesidT, dbidDatabase, szCustomersTable, NULL, 0, 0L, &tableidCustomers ) );
+        Call( JetOpenTable( sesidT, dbidDatabase, szCustomersTable, nullptr, 0, 0L, &tableidCustomers ) );
     }
     Call( err );
 
@@ -1276,7 +1276,7 @@ int main(int argc, char ** argv)
         JET_ColInfo ) );
     columnidCustomerName = columndefT.columnid;
     
-    Call( JetOpenTable( sesidT, dbidDatabase, szOrdersTable, NULL, 0, 0L, &tableidOrders ) );
+    Call( JetOpenTable( sesidT, dbidDatabase, szOrdersTable, nullptr, 0, 0L, &tableidOrders ) );
     Call( JetGetTableColumnInfo(
         sesidT,
         tableidOrders,
@@ -1326,7 +1326,7 @@ int main(int argc, char ** argv)
         JET_ColInfo ) );
     columnidOrderItems = columndefT.columnid;
 
-    Call( JetOpenTable( sesidT, dbidDatabase, szBooksTable, NULL, 0, 0L, &tableidBooks ) );
+    Call( JetOpenTable( sesidT, dbidDatabase, szBooksTable, nullptr, 0, 0L, &tableidBooks ) );
     Call( JetGetTableColumnInfo(
         sesidT,
         tableidBooks,

@@ -215,7 +215,7 @@ inline BOOL FUtilSystemBetaFeatureEnabled_( const INST * const pinst, BOOL * con
         Assert( fInstCurrent == fUninitBetaFeature || fInstCurrent == fFalse || fInstCurrent == fTrue );    // only values should be in use in here.
     }
 
-    if ( rgfStaticFeatures != NULL  && rgfStaticFeatures[featureid] != fUninitBetaFeature )
+    if ( rgfStaticFeatures != nullptr  && rgfStaticFeatures[featureid] != fUninitBetaFeature )
     {
         Assert( g_rgbetaconfigs[featureid].fStaticFeature == fFeatureStatic );  // should be configured a static feature, or rgfStaticFeatures[featureid] should not have been updated.
         Assert( rgfStaticFeatures[featureid] == fFalse || rgfStaticFeatures[ featureid ] == fTrue );    // should have rational answer

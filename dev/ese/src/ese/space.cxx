@@ -947,7 +947,7 @@ HandleError:
 
 //  Init / Term
 
-POSTIMERTASK g_posttSPITrimDBITask = NULL;
+POSTIMERTASK g_posttSPITrimDBITask = nullptr;
 CSemaphore g_semSPTrimDBScheduleCancel( CSyncBasicInfo( "g_semSPTrimDBScheduleCancel" ) );
 LOCAL VOID SPITrimDBITask( VOID*, VOID* );
 
@@ -971,7 +971,7 @@ VOID SPTerm()
     {
         OSTimerTaskCancelTask( g_posttSPITrimDBITask );
         OSTimerTaskDelete( g_posttSPITrimDBITask );
-        g_posttSPITrimDBITask = NULL;
+        g_posttSPITrimDBITask = nullptr;
     }
 
     Assert( g_semSPTrimDBScheduleCancel.CAvail() <= 1 );
@@ -2370,7 +2370,7 @@ ERR ErrSPGetLastExtent( _Inout_ PIB * ppib, _In_ const IFMP ifmp, _Out_ EXTENTIN
 
     dib.dirflag = fDIRNull;
     dib.pos     = posLast;
-    dib.pbm     = NULL;
+    dib.pbm     = nullptr;
     err = ErrBTDown( pfucbOE, &dib, latchReadTouch );
 
     // We must have at least one owned extent.
@@ -2625,7 +2625,7 @@ LOCAL ERR ErrSPIFixSpaceTreeRootPage( FUCB *pfucb, SPLIT_BUFFER **ppspbuf )
 
     if ( fNotEnoughPageSpace )
     {
-        if ( NULL == pfucb->u.pfcb->Psplitbuf( fAvailExt ) )
+        if ( nullptr == pfucb->u.pfcb->Psplitbuf( fAvailExt ) )
         {
             CallR( pfucb->u.pfcb->ErrEnableSplitbuf( fAvailExt ) );
             SPITraceSplitBufferMsg( pfucb, "Allocated" );
@@ -2635,7 +2635,7 @@ LOCAL ERR ErrSPIFixSpaceTreeRootPage( FUCB *pfucb, SPLIT_BUFFER **ppspbuf )
     }
     else
     {
-        const BOOL      fSplitbufDangling   = ( NULL != pfucb->u.pfcb->Psplitbuf( fAvailExt ) );
+        const BOOL      fSplitbufDangling   = ( nullptr != pfucb->u.pfcb->Psplitbuf( fAvailExt ) );
         SPLIT_BUFFER    spbuf;
         DATA            data;
         Assert( 0 == pfucb->kdfCurr.data.Cb() );
@@ -4400,7 +4400,7 @@ VOID SPFreeSpaceCatCtx( _Inout_ SpaceCatCtx** const ppSpCatCtx )
 {
     Assert( ppSpCatCtx != NULL );
     SpaceCatCtx* const pSpCatCtx = *ppSpCatCtx;
-    if ( pSpCatCtx == NULL )
+    if ( pSpCatCtx == nullptr )
     {
         return;
     }
@@ -4418,15 +4418,15 @@ VOID SPFreeSpaceCatCtx( _Inout_ SpaceCatCtx** const ppSpCatCtx )
     pSpCatCtx->pfucbParent = pfucbNil;
     pSpCatCtx->pfucb = pfucbNil;
 
-    if ( pSpCatCtx->pbm != NULL )
+    if ( pSpCatCtx->pbm != nullptr )
     {
         delete pSpCatCtx->pbm;
-        pSpCatCtx->pbm = NULL;
+        pSpCatCtx->pbm = nullptr;
     }
 
     delete pSpCatCtx;
 
-    *ppSpCatCtx = NULL;
+    *ppSpCatCtx = nullptr;
 }
 
 // Gets the object ID from a page.
@@ -4479,8 +4479,8 @@ ERR ErrSPIGetSpaceCategoryObject(
     CPAGE cpage;
     BOOL fPageLatched = fFalse;
     KEYDATAFLAGS kdf;
-    SpaceCatCtx* pSpCatCtx = NULL;
-    BOOKMARK_COPY* pbm = NULL;
+    SpaceCatCtx* pSpCatCtx = nullptr;
+    BOOKMARK_COPY* pbm = nullptr;
 
     Assert( objid != objidNil );
     Assert( objid != objidParent );
@@ -4495,7 +4495,7 @@ ERR ErrSPIGetSpaceCategoryObject(
     // Initialize out vars.
     *pspcatf = spcatfUnknown;
     *pfOwned = fFalse;
-    *ppSpCatCtx = NULL;
+    *ppSpCatCtx = nullptr;
 
     Alloc( pSpCatCtx = new SpaceCatCtx );
     Alloc( pbm = new BOOKMARK_COPY );
@@ -4967,21 +4967,21 @@ HandleError:
             ( pfucbSpace != pfucbNil ))
     {
         BTClose( pfucbSpace );
-        pfucbSpace = NULL;
+        pfucbSpace = nullptr;
     }
 
     // Only return bookmark if this is an internal or leaf page.
     if ( ( err >= JET_errSuccess ) &&
             !FSPSpaceCatStrictlyInternal( spcatf ) &&
             !FSPSpaceCatStrictlyLeaf( spcatf ) &&
-            ( pbm != NULL ) )
+            ( pbm != nullptr ) )
     {
         delete pbm;
-        pbm = NULL;
+        pbm = nullptr;
     }
 
     // Fill out the context struct, either to clean it up or return it.
-    if ( pSpCatCtx != NULL )
+    if ( pSpCatCtx != nullptr )
     {
         pSpCatCtx->pfucbParent = pfucbParent;
         pSpCatCtx->pfucb = pfucb;
@@ -5028,7 +5028,7 @@ ERR ErrSPIGetSpaceCategoryObjectAndChildren(
     FUCB* pfucbCatalog = pfucbNil;
     OBJID objidChild = objidNil;
     SYSOBJ sysobjChild = sysobjNil;
-    SpaceCatCtx* pSpCatCtxParent = NULL;
+    SpaceCatCtx* pSpCatCtxParent = nullptr;
 
     // Parent.
     BOOL fParentOwned = fFalse;
@@ -5047,7 +5047,7 @@ ERR ErrSPIGetSpaceCategoryObjectAndChildren(
     }
 
     pSpCatCtxParent = *ppSpCatCtx;
-    *ppSpCatCtx = NULL;
+    *ppSpCatCtx = nullptr;
 
     // Children.
     for ( err = ErrCATGetNextNonRootObject( ppib, ifmp, objid, &pfucbCatalog, &objidChild, &sysobjChild );
@@ -5085,7 +5085,7 @@ ERR ErrSPIGetSpaceCategoryObjectAndChildren(
     *pobjid = objid;
     *pspcatf = spcatfLeaked;
     *ppSpCatCtx = pSpCatCtxParent;
-    pSpCatCtxParent = NULL;
+    pSpCatCtxParent = nullptr;
 
 HandleError:
     if ( pfucbCatalog != pfucbNil )
@@ -5180,7 +5180,7 @@ ERR ErrSPGetSpaceCategory(
     OBJID objidHintExclude = objidNil;
     BOOL fSearchedRoot = fFalse;
     BOOL fOwned = fFalse;
-    SpaceCatCtx* pSpCatCtxRoot = NULL;
+    SpaceCatCtx* pSpCatCtxRoot = nullptr;
 
     // Try hinted object first, if any, unless it's the system root (will be done later).
     if ( ( objidHint != objidNil ) &&
@@ -5277,7 +5277,7 @@ ERR ErrSPGetSpaceCategory(
 
         Assert( pSpCatCtxRoot == NULL );
         pSpCatCtxRoot = *ppSpCatCtx;
-        *ppSpCatCtx = NULL;
+        *ppSpCatCtx = nullptr;
     }
 
     Assert( FSPSpaceCatUnknown( spcatf ) );
@@ -5387,7 +5387,7 @@ ERR ErrSPGetSpaceCategory(
 
         Assert( pSpCatCtxRoot == NULL );
         pSpCatCtxRoot = *ppSpCatCtx;
-        *ppSpCatCtx = NULL;
+        *ppSpCatCtx = nullptr;
     }
 
     Assert( FSPSpaceCatUnknown( spcatf ) );
@@ -5407,7 +5407,7 @@ ERR ErrSPGetSpaceCategory(
 
             Assert( pSpCatCtxRoot != NULL );
             *ppSpCatCtx = pSpCatCtxRoot;
-            pSpCatCtxRoot = NULL;
+            pSpCatCtxRoot = nullptr;
         }
     }
     else
@@ -5583,7 +5583,7 @@ ERR ErrSPGetSpaceCategory(
     _Out_ OBJID* const pobjid,
     _Out_ SpaceCategoryFlags* const pspcatf )
 {
-    SpaceCatCtx* pSpCatCtx = NULL;
+    SpaceCatCtx* pSpCatCtx = nullptr;
     const ERR err = ErrSPGetSpaceCategory( ppib, ifmp, pgno, objidHint, fRunFullSpaceCat, pobjid, pspcatf, &pSpCatCtx );
     SPFreeSpaceCatCtx( &pSpCatCtx );
     return err;
@@ -5602,7 +5602,7 @@ ERR ErrSPGetSpaceCategoryRange(
     ERR err = JET_errSuccess;
     BOOL fMSysObjidsReady = fFalse;
 
-    if ( ( pgnoFirst < 1 ) || ( pgnoLast > pgnoSysMax ) || ( pgnoFirst > pgnoLast ) || ( pfnCallback == NULL ) )
+    if ( ( pgnoFirst < 1 ) || ( pgnoLast > pgnoSysMax ) || ( pgnoFirst > pgnoLast ) || ( pfnCallback == nullptr ) )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
@@ -5968,9 +5968,9 @@ LOCAL ERR ErrSPIGetExt(
     _Out_ PGNO      *ppgnoFirst,
     _In_ ULONG      fSPFlags = 0,
     _In_ UINT       fPageFlags = 0,
-    _Out_opt_ OBJID *pobjidFDP = NULL,
-    _Out_opt_ CPG   *pcpgOEFDP = NULL,
-    _Out_opt_ CPG   *pcpgAEFDP = NULL,
+    _Out_opt_ OBJID *pobjidFDP = nullptr,
+    _Out_opt_ CPG   *pcpgOEFDP = nullptr,
+    _Out_opt_ CPG   *pcpgAEFDP = nullptr,
     _In_ const BOOL fMayViolateMaxSize = fFalse )
 {
     ERR         err;
@@ -6014,15 +6014,15 @@ LOCAL ERR ErrSPIGetExt(
             pfcbDstTracingOnly->PgnoFDP()
             ) );
 
-    if ( NULL != pobjidFDP )
+    if ( nullptr != pobjidFDP )
     {
         *pobjidFDP = objidNil;
     }
-    if ( NULL != pcpgOEFDP )
+    if ( nullptr != pcpgOEFDP )
     {
         *pcpgOEFDP = 0;
     }
-    if ( NULL != pcpgAEFDP )
+    if ( nullptr != pcpgAEFDP )
     {
         *pcpgAEFDP = 0;
     }
@@ -6482,7 +6482,7 @@ ERR ErrSPISPGetPage(
 
 
     // Pages in the split buffers are not counted in the Extent Page Count Cache.
-    if ( NULL == pfucb->u.pfcb->Psplitbuf( fAvailExt ) )
+    if ( nullptr == pfucb->u.pfcb->Psplitbuf( fAvailExt ) )
     {
         CSR             *pcsrRoot   = pfucb->pcsrRoot;
         SPLIT_BUFFER    spbuf;
@@ -6748,7 +6748,7 @@ ERR ErrSPIAEFindPage(
                 Call( ErrERRCheck( JET_errSPOwnExtCorrupted ) );
             }
 
-            if ( NULL == pcpgFindInsertionRegionMarker )
+            if ( nullptr == pcpgFindInsertionRegionMarker )
             {
                 spoePreviousExtSize.Unset();
                 Error( ErrERRCheck( errSPNoSpaceForYou ) );
@@ -6887,7 +6887,7 @@ HandleError:
 
         Assert( Pcsr( pfucbAE )->FLatched() );
 
-        if ( NULL == pcpgFindInsertionRegionMarker || 0 == *pcpgFindInsertionRegionMarker )
+        if ( nullptr == pcpgFindInsertionRegionMarker || 0 == *pcpgFindInsertionRegionMarker )
         {
             //  We should have appropriate space.
 
@@ -7098,19 +7098,19 @@ ERR ErrSPIAEGetAnyPage(
 
     //  First we will at least try to find a contiguous page
     //
-    err = ErrSPIAEFindPage( pfucbAE, fSPFindContinuousPage, spp::ContinuousPool, pgnoLastHint, pspaeiAlloc, NULL );
+    err = ErrSPIAEFindPage( pfucbAE, fSPFindContinuousPage, spp::ContinuousPool, pgnoLastHint, pspaeiAlloc, nullptr );
 
     if ( errSPNoSpaceForYou == err )
     {
         //  First we will at least try to find a contiguous or greater page anyway
         //
-        err = ErrSPIAEFindPage( pfucbAE, fSPFindAnyGreaterPage, spp::AvailExtLegacyGeneralPool, pgnoLastHint, pspaeiAlloc, NULL );
+        err = ErrSPIAEFindPage( pfucbAE, fSPFindAnyGreaterPage, spp::AvailExtLegacyGeneralPool, pgnoLastHint, pspaeiAlloc, nullptr );
 
         if ( errSPNoSpaceForYou == err )
         {
             //  If that fails, any random page will do (greater than 0)
             //
-            err = ErrSPIAEFindPage( pfucbAE, fSPFindAnyGreaterPage, spp::AvailExtLegacyGeneralPool, pgnoNull, pspaeiAlloc, NULL );
+            err = ErrSPIAEFindPage( pfucbAE, fSPFindAnyGreaterPage, spp::AvailExtLegacyGeneralPool, pgnoNull, pspaeiAlloc, nullptr );
         }
     }
 
@@ -7606,7 +7606,7 @@ LOCAL_BROKEN VOID SPIReportLostPages(
             4,
             rgcwszT,
             0,
-            NULL,
+            nullptr,
             PinstFromIfmp( ifmp ) );
 }
 
@@ -7618,7 +7618,7 @@ ERR ErrSPISPFreeExt( __inout FUCB * pfucb, _In_ const PGNO pgnoFirst, _In_ const
     //  must be returning space due to split failure
     Assert( 1 == cpgSize );
 
-    if ( NULL == pfucb->u.pfcb->Psplitbuf( fAvailExt ) )
+    if ( nullptr == pfucb->u.pfcb->Psplitbuf( fAvailExt ) )
     {
         CSR             *pcsrRoot   = pfucb->pcsrRoot;
         SPLIT_BUFFER    spbuf;
@@ -8035,7 +8035,7 @@ LOCAL VOID SPIReportSpaceLeak( _In_ const FUCB* const pfucb, _In_ const ERR err,
         _countof( rgcwsz ),
         rgcwsz,
         0,
-        NULL,
+        nullptr,
         g_rgfmp[ pfucb->ifmp ].Pinst() );
     OSTraceResumeGC();
 }
@@ -8575,7 +8575,7 @@ ERR ErrSPCaptureNonRevertableFDPRootPage( PIB *ppib, FCB* pfcbFDPToFree, const P
         }
     }
 
-    if ( pcpgCaptured != NULL )
+    if ( pcpgCaptured != nullptr )
     {
         *pcpgCaptured = cpgCaptured;
     }
@@ -8610,7 +8610,7 @@ ERR ErrSPCaptureSpaceTreePages( FUCB* const pfucbParent, FCB* pfcb, CPG* pcpgSna
     CSPExtentKeyBM spoebmStart( SPEXTKEY::fSPExtentTypeOE, 0, SpacePool::MinPool );
     CSPExtentKeyBM spoebmEnd( SPEXTKEY::fSPExtentTypeOE, pgnoSysMax, SpacePool::AvailExtLegacyGeneralPool );
     LONG cbmPreread;
-    PGNO* rgPgnos   = NULL;
+    PGNO* rgPgnos   = nullptr;
     CPG   cpgno     = 0;
     PGNO pgnoFirst  = pgnoNull;
     LONG cpgExtent  = 0;
@@ -8629,7 +8629,7 @@ ERR ErrSPCaptureSpaceTreePages( FUCB* const pfucbParent, FCB* pfcb, CPG* pcpgSna
         lMax,
         lMax,
         JET_bitPrereadForward | bitPrereadSkip | bitIncludeNonLeafRead,
-        NULL ) );
+        nullptr ) );
 
     PGNO* rgLeafPgnos       = context.RgPgno( PrereadContext::PrereadPgType::LeafPages );
     PGNO* rgNonLeafPgnos    = context.RgPgno( PrereadContext::PrereadPgType::NonLeafPages );
@@ -9839,7 +9839,7 @@ LOCAL ERR ErrSPILRProcessObjectSpaceOwnership(
         BTUp( pfucbSpace );
         for ( int iSpaceTree = 1; iSpaceTree <= 2; iSpaceTree++ )
         {
-            SPLIT_BUFFER* pspbuf = NULL;
+            SPLIT_BUFFER* pspbuf = nullptr;
             Call( ErrBTIGotoRoot( pfucbSpace, latchRIW ) );
             Call( ErrSPIGetSPBuf( pfucbSpace, &pspbuf ) );
             if ( pspbuf->CpgBuffer1() > 0 )
@@ -9923,7 +9923,7 @@ LOCAL ERR ErrSPILRProcessPotentiallyLeakedPage(
     ERR err = JET_errSuccess;
     OBJID objid = objidNil;
     SpaceCategoryFlags spcatf = spcatfNone;
-    SpaceCatCtx* pSpCatCtx = NULL;
+    SpaceCatCtx* pSpCatCtx = nullptr;
     BOOL fNotLeaked = fFalse;
 
     *pfLeaked = fFalse;
@@ -9945,7 +9945,7 @@ LOCAL ERR ErrSPILRProcessPotentiallyLeakedPage(
             &pSpCatCtx ) );
 
     // To be safe, only proceed if we get one of the expected categories.
-    const BOOL fRootDb = ( ( pSpCatCtx != NULL ) && ( pSpCatCtx->pfucb != pfucbNil ) ) ?
+    const BOOL fRootDb = ( ( pSpCatCtx != nullptr ) && ( pSpCatCtx->pfucb != pfucbNil ) ) ?
                              ( PgnoFDP( pSpCatCtx->pfucb ) == pgnoSystemRoot ) :
                              fFalse ;
     *pfLeaked = FSPSpaceCatIndeterminate( spcatf );
@@ -10460,7 +10460,7 @@ HandleError:
         _countof( rgwsz ),
         rgwsz,
         0,
-        NULL,
+        nullptr,
         pfmp->Pinst() );
     OSTraceResumeGC();
 
@@ -10572,8 +10572,8 @@ LOCAL ERR ErrSPIFreeAllOwnedExtents( FUCB* pfucbParent, FCB* pfcb, const BOOL fP
     Assert( wrnNDFoundGreater != err );
 
     EXTENTINFO  extinfo[ cOEListEntriesInit ];
-    OWNEXT_LIST *pOEList = NULL;
-    OWNEXT_LIST *pOEListCurr = NULL;
+    OWNEXT_LIST *pOEList = nullptr;
+    OWNEXT_LIST *pOEListCurr = nullptr;
     ULONG       cOEListEntries = 0;
 
     //  Collect all Own extent and free them all at once.
@@ -10625,10 +10625,10 @@ LOCAL ERR ErrSPIFreeAllOwnedExtents( FUCB* pfucbParent, FCB* pfcb, const BOOL fP
             {
                 Assert( ( NULL == pOEListCurr && NULL == pOEList )
                     || ( NULL != pOEListCurr && NULL != pOEList ) );
-                if ( NULL == pOEListCurr || pOEListCurr->CEntries() == cOEListEntriesMax )
+                if ( nullptr == pOEListCurr || pOEListCurr->CEntries() == cOEListEntriesMax )
                 {
                     pOEListCurr = (OWNEXT_LIST *)PvOSMemoryHeapAlloc( sizeof( OWNEXT_LIST ) );
-                    if ( NULL == pOEListCurr )
+                    if ( nullptr == pOEListCurr )
                     {
                         Assert( pfucbNil != pfucbOE );
                         BTClose( pfucbOE );
@@ -10688,7 +10688,7 @@ LOCAL ERR ErrSPIFreeAllOwnedExtents( FUCB* pfucbParent, FCB* pfcb, const BOOL fP
             fRevertableFDP ) );
 
     for ( pOEListCurr = pOEList;
-        pOEListCurr != NULL;
+        pOEListCurr != nullptr;
         pOEListCurr = pOEListCurr->POEListNext() )
     {
         Assert( cOEListEntries > cOEListEntriesInit );
@@ -10709,7 +10709,7 @@ LOCAL ERR ErrSPIFreeAllOwnedExtents( FUCB* pfucbParent, FCB* pfcb, const BOOL fP
             OSTraceSuspendGC();
             WCHAR wszTableName[JET_cbNameMost+1] = L"";
 
-            if ( pfcb->Ptdb() != NULL && pfcb->Ptdb()->SzTableName() != NULL )
+            if ( pfcb->Ptdb() != nullptr && pfcb->Ptdb()->SzTableName() != nullptr )
             {
                 OSStrCbFormatW( wszTableName, sizeof(wszTableName), L"%hs", pfcb->Ptdb()->SzTableName() );
             }
@@ -10730,7 +10730,7 @@ LOCAL ERR ErrSPIFreeAllOwnedExtents( FUCB* pfucbParent, FCB* pfcb, const BOOL fP
                 _countof( rgcwsz ),
                 rgcwsz,
                 0,
-                NULL,
+                nullptr,
                 PinstFromPfucb( pfucbParent ) );
 
             OSTraceResumeGC();
@@ -10744,7 +10744,7 @@ HandleError:
     AssertSPIPfucbNullOrUnlatched( pfucbParent );
 
     pOEListCurr = pOEList;
-    while ( pOEListCurr != NULL )
+    while ( pOEListCurr != nullptr )
     {
         OWNEXT_LIST *pOEListKill = pOEListCurr;
 
@@ -11199,7 +11199,7 @@ LOCAL ERR ErrSPIAddToOwnExt(
     // 
     //  
     // 
-    if ( NULL != pcpgCoalesced && FFMPIsTempDB( pfucb->ifmp ) )
+    if ( nullptr != pcpgCoalesced && FFMPIsTempDB( pfucb->ifmp ) )
     {
         DIB         dib;
 
@@ -11424,7 +11424,7 @@ LOCAL ERR ErrSPIAddSecondaryExtent(
 
     //  Release the extra chunks of available space.
     //
-    if ( ( parreiReleased != NULL ) && ( parreiReleased->Size() > 0 ) )
+    if ( ( parreiReleased != nullptr ) && ( parreiReleased->Size() > 0 ) )
     {
         Assert( !Pcsr( pfucbAE )->FLatched() );
 
@@ -11692,7 +11692,7 @@ ERR ErrSPITrimUpdateDatabaseHeader( const IFMP ifmp )
 
     Assert( pfmp->Pdbfilehdr() );
 
-    if ( NULL != pfmp->Pdbfilehdr() )   // for insurance
+    if ( nullptr != pfmp->Pdbfilehdr() )   // for insurance
     {
         BOOL fUpdateHeader = fTrue;
 
@@ -11816,7 +11816,7 @@ HandleError:
         _countof( rgwsz ),
         rgwsz,
         0,
-        NULL,
+        nullptr,
         pfmp->Pinst() );
     OSTraceResumeGC();
 }
@@ -12131,7 +12131,7 @@ LOCAL ERR ErrSPISeekRootOELast( _In_ FUCB* const pfucbOE, _Out_ CSPExtentInfo* c
     // Get the last page for the OE.
     dib.pos = posLast;
     dib.dirflag = fDIRNull;
-    dib.pbm = NULL;
+    dib.pbm = nullptr;
     err = ErrBTDown( pfucbOE, &dib, latchReadTouch );
 
     // We must have at least one owned extent.
@@ -12771,13 +12771,13 @@ LOCAL ERR ErrSPIReserveSPBufPagesForSpaceTree(
     FUCB* const pfucb,
     FUCB* const pfucbSpace,
     FUCB* const pfucbParent,
-    CArray<EXTENTINFO>* const parreiReleased = NULL,
+    CArray<EXTENTINFO>* const parreiReleased = nullptr,
     const CPG cpgAddlReserve = 0,
     const PGNO pgnoReplace = pgnoNull )
 {
     ERR             err  = JET_errSuccess;
     ERR             wrn  = JET_errSuccess;
-    SPLIT_BUFFER    *pspbuf = NULL;
+    SPLIT_BUFFER    *pspbuf = nullptr;
     CPG             cpgMinForSplit = 0;
     FMP*            pfmp = g_rgfmp + pfucb->ifmp;
 
@@ -12987,7 +12987,7 @@ LOCAL ERR ErrSPIReserveSPBufPagesForSpaceTree(
                 // space hierarchically, since we already handle that case ourselves below.
 
                 BTUp( pfucbSpace );
-                pspbuf = NULL;
+                pspbuf = nullptr;
 
                 PGNO pgnoFirst = pgnoNull;
                 cpgNewSpace = cpgRequest;
@@ -13077,9 +13077,9 @@ LOCAL ERR ErrSPIReserveSPBufPagesForSpaceTree(
                             &pgnoFirst,
                             0,
                             0,
-                            NULL,
-                            NULL,
-                            NULL,
+                            nullptr,
+                            nullptr,
+                            nullptr,
                             fMayViolateMaxSize );
 
                 BTUp( pfucbParent );
@@ -13103,9 +13103,9 @@ LOCAL ERR ErrSPIReserveSPBufPagesForSpaceTree(
                 cpgRequest = CpgSPICpgPrefFromCpgRequired( cpgRequired, cpgMinForSplit );
 
 
-                AssertTrack( NULL == pfucbSpace->u.pfcb->Psplitbuf( fAvailExt ), "NonNullRootAvailSplitBuff" ); //  not really handled
+                AssertTrack( nullptr == pfucbSpace->u.pfcb->Psplitbuf( fAvailExt ), "NonNullRootAvailSplitBuff" ); //  not really handled
                 BTUp( pfucbSpace );
-                pspbuf = NULL;
+                pspbuf = nullptr;
 
                 cpgNewSpace = cpgRequest;
                 Call( ErrSPIExtendDB(
@@ -13149,10 +13149,10 @@ LOCAL ERR ErrSPIReserveSPBufPagesForSpaceTree(
                  ( fSpBuffersAvailableEnough || fSingleAndAvailableEnough ) ) ) )
         {
             BTUp( pfucbSpace );
-            pspbuf = NULL;
+            pspbuf = nullptr;
 
             Call( errFaultAddToOe );
-            Call( ErrSPIAddToOwnExt( pfucb, pgnoLast, cpgNewSpace, NULL ) );
+            Call( ErrSPIAddToOwnExt( pfucb, pgnoLast, cpgNewSpace, nullptr ) );
             fAddedToOwnExt = fTrue;
 
             if ( fUpdatingDbRoot )
@@ -13179,7 +13179,7 @@ LOCAL ERR ErrSPIReserveSPBufPagesForSpaceTree(
         // Refill split buffer.
         // Space in the split buffer is not counted in pfcb->CpgAE()
         BYTE ispbuf = 0;
-        if ( NULL == pfucbSpace->u.pfcb->Psplitbuf( fAvailExt ) )
+        if ( nullptr == pfucbSpace->u.pfcb->Psplitbuf( fAvailExt ) )
         {
             // CASE 1: we have a persisted external header in the page,
             // so set up the external header and store it in the page.
@@ -13223,7 +13223,7 @@ LOCAL ERR ErrSPIReserveSPBufPagesForSpaceTree(
         }
 
         BTUp( pfucbSpace );
-        pspbuf = NULL;
+        pspbuf = nullptr;
 
         EXTENTINFO extinfoReleased;
 
@@ -13236,7 +13236,7 @@ LOCAL ERR ErrSPIReserveSPBufPagesForSpaceTree(
         if ( extinfoReleased.CpgExtent() > 0 )
         {
             // Make sure we have enough room in the array.
-            if ( parreiReleased != NULL )
+            if ( parreiReleased != nullptr )
             {
                 Call( ( parreiReleased->ErrSetEntry( parreiReleased->Size(), extinfoReleased ) == CArray<EXTENTINFO>::ERR::errSuccess ) ?
                                                                                                   JET_errSuccess :
@@ -13279,7 +13279,7 @@ LOCAL ERR ErrSPIReserveSPBufPagesForSpaceTree(
                 pfmp->SetOwnedFileSize( CbFileSizeOfPgnoLast( pgnoLast ) );
             }
 
-            Call( ErrSPIAddToOwnExt( pfucb, pgnoLast, cpgNewSpace, NULL ) );
+            Call( ErrSPIAddToOwnExt( pfucb, pgnoLast, cpgNewSpace, nullptr ) );
             fAddedToOwnExt = fTrue;
 
             // Signal to upper layers that we need to rerun split buffer refill.
@@ -13301,7 +13301,7 @@ LOCAL ERR ErrSPIReserveSPBufPagesForSpaceTree(
 
 HandleError:
     BTUp( pfucbSpace );
-    pspbuf = NULL;
+    pspbuf = nullptr;
 
     AssertSPIPfucbOnRoot( pfucb );
     AssertSPIPfucbNullOrUnlatched( pfucbParent );
@@ -13907,9 +13907,9 @@ LOCAL ERR ErrSPIGetSe(
                    &pgnoSEFirst,
                    fSPFlags & ( fSplitting | fSPExactExtent ),
                    0,
-                   NULL,
-                   NULL,
-                   NULL,
+                   nullptr,
+                   nullptr,
+                   nullptr,
                    fMayViolateMaxSize ), CloseParent );
 
         AssertSPIPfucbOnRoot( pfucbParentLocal );
@@ -13964,7 +13964,7 @@ LOCAL ERR ErrSPIGetSe(
                     pgnoSELast,
                     cpgSEReq,
                     cpgSEReq,
-                    NULL,
+                    nullptr,
                     sppPool );
     Assert( errSPOutOfOwnExtCacheSpace != err );
     Assert( errSPOutOfAvailExtCacheSpace != err );
@@ -15048,7 +15048,7 @@ LOCAL VOID SPIReportAnyExtentCacheError(
     ERR err;
     CPG cpgOECached2;
     CPG cpgAECached2;
-    PSTR szReasonNotValidated = NULL;
+    PSTR szReasonNotValidated = nullptr;
     
     // There's a decent chance this is a false positive and that we're the victim of a race condition.
     // Lets try to decrease the number of false positives.  Sleep to yield to another thread.
@@ -15359,12 +15359,12 @@ ERR ErrSPGetInfo(
     //  This is followed by extent list for both trees
     //
     CPG * pcpgT = (CPG *)pbResult;
-    pcpgOwnExtTotal = NULL;
-    pcpgAvailExtTotal = NULL;
-    pcpgSplitBuffersTotal = NULL;
-    pcpgReservedExtTotal = NULL;
-    pcpgShelvedExtTotal = NULL;
-    pcpgReachableTotal = NULL;
+    pcpgOwnExtTotal = nullptr;
+    pcpgAvailExtTotal = nullptr;
+    pcpgSplitBuffersTotal = nullptr;
+    pcpgReservedExtTotal = nullptr;
+    pcpgShelvedExtTotal = nullptr;
+    pcpgReachableTotal = nullptr;
     if ( FSPOwnedExtent( fSPExtents ) )
     {
         pcpgOwnExtTotal = pcpgT;
@@ -15590,7 +15590,7 @@ ERR ErrSPGetInfo(
         SPIInitFCB( pfucbT, fTrue );
         if( !FSPIIsSmall( pfucbT->u.pfcb ) )
         {
-            BFPrereadPageRange( pfucbT->ifmp, pfucbT->u.pfcb->PgnoOE(), 2, NULL, NULL, bfprfDefault, ppib->BfpriPriority( pfucbT->ifmp ), *tcScope );
+            BFPrereadPageRange( pfucbT->ifmp, pfucbT->u.pfcb->PgnoOE(), 2, nullptr, nullptr, bfprfDefault, ppib->BfpriPriority( pfucbT->ifmp ), *tcScope );
         }
     }
 
@@ -15670,8 +15670,8 @@ ERR ErrSPGetInfo(
             Call( ErrSPIGetInfo(
                 pfucbSpace,
                 pcpgOwnExtTotal,
-                NULL,
-                NULL,
+                nullptr,
+                nullptr,
                 &iext,
                 cext,
                 rgext,
@@ -16286,7 +16286,7 @@ ERR ErrSPGetExtentInfo(
     _Deref_post_cap_(*pulExtentList) BTREE_SPACE_EXTENT_INFO ** pprgExtentList )
 {
     ERR                         err = JET_errSuccess;
-    BTREE_SPACE_EXTENT_INFO *   prgext = NULL;
+    BTREE_SPACE_EXTENT_INFO *   prgext = nullptr;
     FUCB *                      pfucbT              = pfucbNil;
 
     //  must specify either owned extent or available extent (or both) to retrieve
@@ -16767,7 +16767,7 @@ HandleError:
         BTClose( pfucbT );
     }
 
-    if ( pcpgTrimmed != NULL )
+    if ( pcpgTrimmed != nullptr )
     {
         *pcpgTrimmed = 0;
         if ( ( err >= JET_errSuccess ) &&
@@ -17210,9 +17210,9 @@ LOCAL ERR ErrSPITrimDBITaskPerIFMP( const IFMP ifmp )
             GENERAL_CATEGORY,
             DB_TRIM_TASK_STARTED,
             0,
-            NULL,
+            nullptr,
             0,
-            NULL,
+            nullptr,
             PinstFromIfmp( ifmp ) );
 
         OnDebug( s_fLoggedStartEvent = fTrue );
@@ -17266,7 +17266,7 @@ HandleError:
             _countof(rgcwsz),
             rgcwsz,
             0,
-            NULL,
+            nullptr,
             PinstFromIfmp( ifmp ) );
     }
     else
@@ -17282,7 +17282,7 @@ HandleError:
                 _countof(rgcwsz),
                 rgcwsz,
                 0,
-                NULL,
+                nullptr,
                 PinstFromIfmp( ifmp ) );
         }
         else
@@ -17296,9 +17296,9 @@ HandleError:
                     GENERAL_CATEGORY,
                     DB_TRIM_TASK_NO_TRIM,
                     0,
-                    NULL,
+                    nullptr,
                     0,
-                    NULL,
+                    nullptr,
                     PinstFromIfmp( ifmp ) );
 
                 OnDebug( s_fLoggedStopNoActionEvent = fTrue );
@@ -17377,7 +17377,7 @@ FinishTask:
     // Reschedule it if we need to.
     if ( fReschedule )
     {
-        OSTimerTaskScheduleTask( g_posttSPITrimDBITask, NULL, g_dtickTrimDBPeriod, g_dtickTrimDBPeriod );
+        OSTimerTaskScheduleTask( g_posttSPITrimDBITask, nullptr, g_dtickTrimDBPeriod, g_dtickTrimDBPeriod );
     }
     else
     {
@@ -17404,7 +17404,7 @@ VOID SPTrimDBTaskStop( INST * pinst, const WCHAR * cwszDatabaseFullName )
             continue;
         }
 
-        if ( NULL != cwszDatabaseFullName &&
+        if ( nullptr != cwszDatabaseFullName &&
             ( g_rgfmp[ ifmp ].Pinst() != pinst || UtilCmpFileName( cwszDatabaseFullName, g_rgfmp[ ifmp ].WszDatabaseName() ) != 0 ) )
         {
             continue;
@@ -17498,7 +17498,7 @@ ERR ErrSPTrimDBTaskInit( const IFMP ifmp )
     if ( !g_fSPTrimDBTaskScheduled )
     {
         g_fSPTrimDBTaskScheduled = fTrue;
-        OSTimerTaskScheduleTask( g_posttSPITrimDBITask, NULL, g_dtickTrimDBPeriod, g_dtickTrimDBPeriod );
+        OSTimerTaskScheduleTask( g_posttSPITrimDBITask, nullptr, g_dtickTrimDBPeriod, g_dtickTrimDBPeriod );
     }
 
     Assert( g_semSPTrimDBScheduleCancel.CAvail() == 0 );

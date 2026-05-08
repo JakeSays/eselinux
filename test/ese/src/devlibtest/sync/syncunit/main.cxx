@@ -35,7 +35,7 @@ static void PrintHelp( const char * const szApplication )
 //
 
 BOOL    g_fCaptureAssert = fFalse;
-CHAR*   g_szCapturedAssert = NULL;
+CHAR*   g_szCapturedAssert = nullptr;
 
 //  ================================================================
 INT __cdecl main( INT argc, _In_count_( argc ) char * argv[] )

@@ -186,7 +186,7 @@ ERR CONVERTPAGETASKPOOL::ErrConvertPages( const PGNO pgnoFirst, const CPG cpg )
 //  ================================================================
 {
     CONVERTPAGETASK * ptask = new CONVERTPAGETASK( m_ifmp, pgnoFirst, cpg, &m_stats );
-    if( NULL == ptask )
+    if( nullptr == ptask )
     {
         return ErrERRCheck( JET_errOutOfMemory );
     }
@@ -282,11 +282,11 @@ ERR ErrDBUTLConvertRecords( JET_SESID sesid, const JET_DBUTIL_W * const pdbutil 
 {
     ERR err = JET_errSuccess;
     PIB * const ppib = reinterpret_cast<PIB *>( sesid );
-    CONVERTPAGETASKPOOL * pconverttasks = NULL;
+    CONVERTPAGETASKPOOL * pconverttasks = nullptr;
     PIBTraceContextScope tcScope = ((PIB*)sesid)->InitTraceContextScope();
     //tcScope->iorReason.SetIort( iortUtilities );
 
-    Call( ErrIsamAttachDatabase( sesid, pdbutil->szDatabase, fFalse, NULL, 0, NO_GRBIT ) );
+    Call( ErrIsamAttachDatabase( sesid, pdbutil->szDatabase, fFalse, nullptr, 0, NO_GRBIT ) );
 
     //  WARNING: must set ifmp to 0 to ensure high-dword is
     //  initialised on 64-bit, because we'll be casting this
@@ -296,7 +296,7 @@ ERR ErrDBUTLConvertRecords( JET_SESID sesid, const JET_DBUTIL_W * const pdbutil 
     Call( ErrIsamOpenDatabase(
         sesid,
         pdbutil->szDatabase,
-        NULL,
+        nullptr,
         reinterpret_cast<JET_DBID *>( &ifmp ),
         NO_GRBIT
         ) );
@@ -305,7 +305,7 @@ ERR ErrDBUTLConvertRecords( JET_SESID sesid, const JET_DBUTIL_W * const pdbutil 
     pgnoLast = g_rgfmp[ifmp].PgnoLast();
 
     pconverttasks = new CONVERTPAGETASKPOOL( ifmp );
-    if( NULL == pconverttasks )
+    if( nullptr == pconverttasks )
     {
         return ErrERRCheck( JET_errOutOfMemory );
     }
@@ -320,9 +320,9 @@ ERR ErrDBUTLConvertRecords( JET_SESID sesid, const JET_DBUTIL_W * const pdbutil 
     JET_PFNSTATUS pfnStatus;
     pfnStatus = reinterpret_cast<JET_PFNSTATUS>( pdbutil->pfnCallback );
 
-    if ( NULL != pfnStatus )
+    if ( nullptr != pfnStatus )
     {
-        (VOID)pfnStatus( sesid, JET_snpUpgradeRecordFormat, JET_sntBegin, NULL );
+        (VOID)pfnStatus( sesid, JET_snpUpgradeRecordFormat, JET_sntBegin, nullptr );
     }
 
     PGNO pgno;
@@ -338,7 +338,7 @@ ERR ErrDBUTLConvertRecords( JET_SESID sesid, const JET_DBUTIL_W * const pdbutil 
         pgno += cpgPreread;
 
         snprog.cunitDone = pconverttasks->Stats().cpgSeen;
-        if ( NULL != pfnStatus )
+        if ( nullptr != pfnStatus )
         {
             (VOID)pfnStatus( sesid, JET_snpUpgradeRecordFormat, JET_sntProgress, &snprog );
         }
@@ -347,7 +347,7 @@ ERR ErrDBUTLConvertRecords( JET_SESID sesid, const JET_DBUTIL_W * const pdbutil 
                 && JET_errSuccess == pconverttasks->Stats().err )
         {
             snprog.cunitDone = pconverttasks->Stats().cpgSeen;
-            if ( NULL != pfnStatus )
+            if ( nullptr != pfnStatus )
             {
                 (VOID)pfnStatus( sesid, JET_snpUpgradeRecordFormat, JET_sntProgress, &snprog );
             }
@@ -356,16 +356,16 @@ ERR ErrDBUTLConvertRecords( JET_SESID sesid, const JET_DBUTIL_W * const pdbutil 
     }
 
     snprog.cunitDone = pconverttasks->Stats().cpgSeen;
-    if ( NULL != pfnStatus )
+    if ( nullptr != pfnStatus )
     {
         (VOID)pfnStatus( sesid, JET_snpUpgradeRecordFormat, JET_sntProgress, &snprog );
     }
 
     Call( pconverttasks->ErrTerm() );
 
-    if ( NULL != pfnStatus )
+    if ( nullptr != pfnStatus )
     {
-        (VOID)pfnStatus( sesid, JET_snpUpgradeRecordFormat, JET_sntComplete, NULL );
+        (VOID)pfnStatus( sesid, JET_snpUpgradeRecordFormat, JET_sntComplete, nullptr );
     }
 
     (*CPRINTFSTDOUT::PcprintfInstance())( "%d pages seen\n", pconverttasks->Stats().cpgSeen );
@@ -373,12 +373,12 @@ ERR ErrDBUTLConvertRecords( JET_SESID sesid, const JET_DBUTIL_W * const pdbutil 
     err = pconverttasks->Stats().err;
 
     delete pconverttasks;
-    pconverttasks = NULL;
+    pconverttasks = nullptr;
 
     Call( err );
 
 HandleError:
-    if( NULL != pconverttasks )
+    if( nullptr != pconverttasks )
     {
         const ERR errT = pconverttasks->ErrTerm();
         if( err >= 0 && errT < 0 )
@@ -589,7 +589,7 @@ ERR ErrUPGRADEConvertNode(
 
     const TAGFLD_OLD * const ptagfldoldMin      = reinterpret_cast<const TAGFLD_OLD *>( prec->PbTaggedData() );
     const TAGFLD_OLD * const ptagfldoldMax      = reinterpret_cast<const TAGFLD_OLD *>( pbRecMax );
-    const TAGFLD_OLD *  ptagfldold              = NULL;
+    const TAGFLD_OLD *  ptagfldold              = nullptr;
 
     BOOL                fRecordHasMultivalues   = fFalse;
     INT                 cTAGFLD                 = 0;        //  number of unique multi-values
@@ -759,7 +759,7 @@ ERR ErrUPGRADEConvertNode(
                 BYTE * pbIbOffsets = pbData;
                 pbData += sizeof( USHORT ) * cMULTIVALUES;
 
-                const TAGFLD_OLD *  ptagfldoldT     = NULL;
+                const TAGFLD_OLD *  ptagfldoldT     = nullptr;
                 for(    ptagfldoldT = ptagfldold;
                         ptagfldoldT < ptagfldoldNextFid;
                         ptagfldoldT = ptagfldoldT->PtagfldNext() )
@@ -931,7 +931,7 @@ HandleError:
                 isz,
                 rgcwsz,
                 0,
-                NULL,
+                nullptr,
                 pinst );
 
         }

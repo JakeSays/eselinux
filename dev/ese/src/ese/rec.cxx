@@ -99,7 +99,7 @@ ERR VTAPI ErrIsamGetLock( JET_SESID sesid, JET_VTID vtid, JET_GRBIT grbit )
         }
 
         if ( pfucbUsed->dataSearchKey.FNull() ||
-             NULL == pfucbUsed->dataSearchKey.Pv() )
+             nullptr == pfucbUsed->dataSearchKey.Pv() )
         {
             Expected( fFalse );
             Error( ErrERRCheck( JET_errKeyNotMade ) );
@@ -140,11 +140,11 @@ VOID RECRemoveMoveFilter(
 {
     MOVE_FILTER_CONTEXT *   pmoveFilterContextRemovedT;
     MOVE_FILTER_CONTEXT *&  pmoveFilterContextRemoved   = ppmoveFilterContextRemoved ? *ppmoveFilterContextRemoved : pmoveFilterContextRemovedT;
-                            pmoveFilterContextRemoved   = NULL;
+                            pmoveFilterContextRemoved   = nullptr;
 
     Assert( pfucbNil != pfucb );
 
-    MOVE_FILTER_CONTEXT** ppmoveFilterContext = NULL;
+    MOVE_FILTER_CONTEXT** ppmoveFilterContext = nullptr;
     for (   ppmoveFilterContext = &pfucb->pmoveFilterContext;
             *ppmoveFilterContext && ( *ppmoveFilterContext )->pfnMoveFilter != pfnMoveFilter;
             ppmoveFilterContext = &( *ppmoveFilterContext )->pmoveFilterContextPrev )
@@ -218,11 +218,11 @@ LOCAL ERR ErrRECICheckCursorFilter( FUCB * const pfucb, CURSOR_FILTER_CONTEXT * 
     //  take .Net GUID normalization flag from current index
     //
     BOOL    fDotNetGuid = fFalse;
-    if ( pfucb->pfucbCurIndex != NULL )
+    if ( pfucb->pfucbCurIndex != nullptr )
     {
         fDotNetGuid = pfucb->pfucbCurIndex->u.pfcb->Pidb()->FDotNetGuid();
     }
-    else if ( pfucb->u.pfcb->Pidb() != NULL )
+    else if ( pfucb->u.pfcb->Pidb() != nullptr )
     {
         fDotNetGuid = pfucb->u.pfcb->Pidb()->FDotNetGuid();
     }
@@ -250,7 +250,7 @@ LOCAL ERR ErrRECICheckCursorFilter( FUCB * const pfucb, CURSOR_FILTER_CONTEXT * 
                 pFilter->columnid,
                 pfucb->kdfCurr.data,
                 &dataField,
-                NULL /* pfieldFixed */ ) ); //  this is only required as a perf optimisation to avoid grabbing the DML latch
+                nullptr /* pfieldFixed */ ) ); //  this is only required as a perf optimisation to avoid grabbing the DML latch
         }
 
         CallSx( err, JET_wrnColumnNull );
@@ -447,7 +447,7 @@ HandleError:
 
 VOID RECRemoveCursorFilter( FUCB * const pfucb )
 {
-    CURSOR_FILTER_CONTEXT* pcursorFilterContext = NULL;
+    CURSOR_FILTER_CONTEXT* pcursorFilterContext = nullptr;
     RECRemoveMoveFilter( pfucb, (PFN_MOVE_FILTER)ErrRECICheckCursorFilter, (MOVE_FILTER_CONTEXT**)&pcursorFilterContext );
     if ( pcursorFilterContext )
     {
@@ -488,8 +488,8 @@ ERR ErrRECIValidateOneMoveFilter(
     FIELDFLAG           ffield          = 0;
 
     if ( ( ( pFilter->grbit & ~JET_bitZeroLength ) != 0 ) ||
-         ( pFilter->cb == 0 && pFilter->pv != NULL ) ||
-         ( pFilter->cb != 0 && ( pFilter->pv == NULL || pFilter->grbit == JET_bitZeroLength ) ) )
+         ( pFilter->cb == 0 && pFilter->pv != nullptr ) ||
+         ( pFilter->cb != 0 && ( pFilter->pv == nullptr || pFilter->grbit == JET_bitZeroLength ) ) )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
@@ -562,7 +562,7 @@ ERR ErrRECIValidateOneMoveFilter(
             Error( ErrERRCheck( JET_errInvalidParameter ) );
         }
     }
-    else if ( coltyp != JET_coltypBinary && pFilter->cb != UlCATColumnSize( coltyp, 0, NULL ) )
+    else if ( coltyp != JET_coltypBinary && pFilter->cb != UlCATColumnSize( coltyp, 0, nullptr ) )
     {
         //  for non-binary columns, if the specified size is non-zero,
         //  it must match the size of the column type
@@ -595,7 +595,7 @@ ERR ErrRECSetCursorFilter(
 {
     ERR                     err                     = JET_errSuccess;
     JET_COLTYP              coltyp                  = JET_coltypNil;
-    CURSOR_FILTER_CONTEXT*  pcursorFilterContext    = NULL;
+    CURSOR_FILTER_CONTEXT*  pcursorFilterContext    = nullptr;
 
     Assert( pfucbNil != pfucb );
     Assert( pfcbNil != pfucb->u.pfcb );
@@ -605,11 +605,11 @@ ERR ErrRECSetCursorFilter(
     //  take .Net GUID normalization flag from current index
     //
     BOOL                fDotNetGuid = fFalse;
-    if ( pfucb->pfucbCurIndex != NULL )
+    if ( pfucb->pfucbCurIndex != nullptr )
     {
         fDotNetGuid = pfucb->pfucbCurIndex->u.pfcb->Pidb()->FDotNetGuid();
     }
-    else if ( pfucb->u.pfcb->Pidb() != NULL )
+    else if ( pfucb->u.pfcb->Pidb() != nullptr )
     {
         fDotNetGuid = pfucb->u.pfcb->Pidb()->FDotNetGuid();
     }
@@ -720,7 +720,7 @@ ERR ErrRECSetCursorFilter(
             //  nothing to copy, but set the pointer to NULL
             //  for safety
             //
-            pcursorFilterContext->rgFilters[i].pv = NULL;
+            pcursorFilterContext->rgFilters[i].pv = nullptr;
             Assert( pcursorFilterContext->rgFilters[i].cb == 0 );
         }
 
@@ -730,7 +730,7 @@ ERR ErrRECSetCursorFilter(
     pcursorFilterContext->cFilters = cFilters;
 
     RECAddMoveFilter( pfucb, (PFN_MOVE_FILTER)ErrRECICheckCursorFilter, pcursorFilterContext );
-    pcursorFilterContext = NULL;
+    pcursorFilterContext = nullptr;
 
 HandleError:
     if ( err < JET_errSuccess )
@@ -835,7 +835,7 @@ ERR VTAPI ErrIsamMove( JET_SESID sesid, JET_VTID vtid, LONG crow, JET_GRBIT grbi
     CheckTable( ppib, pfucb );
     CheckSecondary( pfucb );
 
-    if ( pfucb->pfucbCurIndex == NULL && pfucb->pmoveFilterContext && crow == 0 )
+    if ( pfucb->pfucbCurIndex == nullptr && pfucb->pmoveFilterContext && crow == 0 )
     {
         return ErrERRCheck( JET_errFilteredMoveNotSupported );
     }
@@ -2172,7 +2172,7 @@ LOCAL ERR ErrRECIJoinFindDuplicates(
                 sesid,
                 rgcolumndefJoinlist,
                 sizeof( rgcolumndefJoinlist ) / sizeof( rgcolumndefJoinlist[0] ),
-                NULL,
+                nullptr,
                 NO_GRBIT,
                 &(precordlist->tableid),
                 &(precordlist->columnidBookmark ),
@@ -2275,9 +2275,9 @@ LOCAL ERR ErrRECIJoinFindDuplicates(
                         rgpfucbSort[isortMin]->kdfCurr.key.suffix.Pv(),
                         rgpfucbSort[isortMin]->kdfCurr.key.suffix.Cb(),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
 
-            Call( ErrDispUpdate( sesid, precordlist->tableid, NULL, 0, NULL, NO_GRBIT ) );
+            Call( ErrDispUpdate( sesid, precordlist->tableid, nullptr, 0, nullptr, NO_GRBIT ) );
 
             ++(precordlist->cRecord);
         }
@@ -2330,7 +2330,7 @@ ERR ErrIsamIntersectIndexes(
     CallR( ErrPIBCheck( ppib ) );
     AssertDIRNoLatch( ppib );
 
-    if( NULL == precordlist
+    if( nullptr == precordlist
         || sizeof( JET_RECORDLIST ) != precordlist->cbStruct )
     {
         return ErrERRCheck( JET_errInvalidParameter );
@@ -2421,7 +2421,7 @@ LOCAL ERR ErrIsamValidatePrereadKeysArguments(
 {
     ERR err = JET_errSuccess;
 
-    if( NULL == ppib || NULL == pfucb || NULL == rgpvKeys || NULL == rgcbKeys )
+    if( nullptr == ppib || nullptr == pfucb || nullptr == rgpvKeys || nullptr == rgcbKeys )
     {
         Call( ErrERRCheck( JET_errInvalidParameter ) );
     }
@@ -2444,7 +2444,7 @@ LOCAL ERR ErrIsamValidatePrereadKeysArguments(
     // validate the arguments
     for( INT ikey = 0; ikey < ckeys; ++ikey )
     {
-        if( NULL == rgpvKeys[ikey] )
+        if( nullptr == rgpvKeys[ikey] )
         {
             Call( ErrERRCheck( JET_errInvalidParameter ) );
         }
@@ -2552,7 +2552,7 @@ LOCAL ERR ErrRECIMakeKey(
 {
     ERR err = JET_errSuccess;
 
-    *ppKey = NULL;
+    *ppKey = nullptr;
     *pcKey = 0;
 
     for ( DWORD i = 0; i < cIndexColumns; i++ )
@@ -2597,7 +2597,7 @@ LOCAL ERR ErrRECIMakeKey(
         Call( ErrIsamMakeKey( ppib, pfucb, rgIndexColumns[i].pv, rgIndexColumns[i].cb, grbitMakeKey ) );
     }
 
-    Call( ErrIsamRetrieveKey( ppib, pfucb, NULL, 0, pcKey, JET_bitRetrieveCopy ) );
+    Call( ErrIsamRetrieveKey( ppib, pfucb, nullptr, 0, pcKey, JET_bitRetrieveCopy ) );
     Alloc( *ppKey = new BYTE[*pcKey] );
     CallS( ErrIsamRetrieveKey( ppib, pfucb, *ppKey, *pcKey, pcKey, JET_bitRetrieveCopy ) );
 
@@ -2606,7 +2606,7 @@ HandleError:
     if ( err < JET_errSuccess )
     {
         delete *ppKey;
-        *ppKey = NULL;
+        *ppKey = nullptr;
         *pcKey = 0;
     }
     return err;
@@ -2780,13 +2780,13 @@ ERR ErrIsamIPrereadKeyRanges(
         Call( ErrERRCheck( JET_errInvalidPreread ) );
     }
 
-    if ( pEndKeys == NULL && endKeyLengths != NULL ||
-         pEndKeys != NULL && endKeyLengths == NULL )
+    if ( pEndKeys == nullptr && endKeyLengths != nullptr ||
+         pEndKeys != nullptr && endKeyLengths == nullptr )
     {
         Call( ErrERRCheck( JET_errInvalidParameter ) );
     }
 
-    if ( pEndKeys == NULL )
+    if ( pEndKeys == nullptr )
     {
         pEndKeys = pStartKeys;
         endKeyLengths = startKeyLengths;
@@ -2801,7 +2801,7 @@ ERR ErrIsamIPrereadKeyRanges(
     FCB                 * const pfcbTable = pfucb->u.pfcb;
     pfcbTable->EnterDML();
     TDB                 *ptdbT = pfcbTable->Ptdb();
-    FIELD               *pfieldT = NULL;
+    FIELD               *pfieldT = nullptr;
     err = JET_errSuccess;
     for ( icolumnidT = 0; icolumnidT < ccolumnidPreread; icolumnidT++ )
     {
@@ -2833,7 +2833,7 @@ ERR ErrIsamIPrereadKeyRanges(
             Call( ErrERRCheck( JET_errInvalidParameter ) );
         }
 
-        if ( pcRangesPreread != NULL && iindexrangeT > 0 )
+        if ( pcRangesPreread != nullptr && iindexrangeT > 0 )
         {
             // If client wants to know number of ranges read, enforce sorting
             cmp = CmpKey( pEndKeys[iindexrangeT-1], endKeyLengths[iindexrangeT-1], pStartKeys[iindexrangeT], startKeyLengths[iindexrangeT] );
@@ -2848,7 +2848,7 @@ ERR ErrIsamIPrereadKeyRanges(
         }
     }
 
-    if ( pcRangesPreread == NULL )
+    if ( pcRangesPreread == nullptr )
     {
         Call( ErrRECIInsertionSort( (BYTE **)pStartKeys, startKeyLengths, (BYTE **)pEndKeys, endKeyLengths, cIndexRanges, fForward ) );
     }
@@ -3029,10 +3029,10 @@ ERR ErrIsamIPrereadIndexRanges(
 {
     ERR     err = JET_errSuccess;
     LONG    iindexrangeT = 0;
-    BYTE    **pStartKeys = NULL;
-    BYTE    **pEndKeys = NULL;
-    DWORD   *startKeyLengths = NULL;
-    DWORD   *endKeyLengths = NULL;
+    BYTE    **pStartKeys = nullptr;
+    BYTE    **pEndKeys = nullptr;
+    DWORD   *startKeyLengths = nullptr;
+    DWORD   *endKeyLengths = nullptr;
     PIB     *const ppib = reinterpret_cast<PIB *>( sesid );
     FUCB    *pfucb = reinterpret_cast<FUCB *>( vtid );
     BOOL    fAllSingletonRanges = fTrue;
@@ -3092,8 +3092,8 @@ ERR ErrIsamIPrereadIndexRanges(
                                    vtid,
                                    (VOID **)pStartKeys,
                                    startKeyLengths,
-                                   fAllSingletonRanges ? NULL : (VOID **)pEndKeys,
-                                   fAllSingletonRanges ? NULL : endKeyLengths,
+                                   fAllSingletonRanges ? nullptr : (VOID **)pEndKeys,
+                                   fAllSingletonRanges ? nullptr : endKeyLengths,
                                    cIndexRanges,
                                    pcRangesPreread,
                                    rgcolumnidPreread,
@@ -3149,7 +3149,7 @@ ERR VTAPI ErrIsamPrereadIndexRanges(
         0,
         ulMax,
         grbit,
-        NULL
+        nullptr
         );
 }
 
@@ -3180,7 +3180,7 @@ ERR VTAPI ErrIsamPrereadKeyRanges(
         0,
         ulMax,
         grbit,
-        NULL
+        nullptr
         );
 }
 
@@ -3195,7 +3195,7 @@ ERR VTAPI ErrIsamPrereadIndexRange(
     _Out_opt_ ULONG * const     pcPageCacheActual )
 //  =================================================================
 {
-    if ( pIndexRange == NULL )
+    if ( pIndexRange == nullptr )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -3221,8 +3221,8 @@ ERR VTAPI ErrIsamPrereadIndexRange(
         vtid,
         pIndexRange,
         1,
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
         0,
         cPageCacheMin,
         cPageCacheMax,
@@ -3250,7 +3250,7 @@ LOCAL ERR ErrRECIGotoBookmark(
     Assert( pfucb->u.pfcb->FPrimaryIndex() );
     CheckSecondary( pfucb );
 
-    if( 0 == cbBookmark || NULL == pvBookmark )
+    if( 0 == cbBookmark || nullptr == pvBookmark )
     {
         //  don't pass a NULL bookmark into the DIR level
         return ErrERRCheck( JET_errInvalidBookmark );
@@ -3306,10 +3306,10 @@ LOCAL ERR ErrRECIGotoBookmark(
 
         //  allocate goto bookmark resources
         //
-        if ( NULL == pfucbIdx->dataSearchKey.Pv() )
+        if ( nullptr == pfucbIdx->dataSearchKey.Pv() )
         {
             pfucbIdx->dataSearchKey.SetPv( RESKEY.PvRESAlloc() );
-            if ( NULL == pfucbIdx->dataSearchKey.Pv() )
+            if ( nullptr == pfucbIdx->dataSearchKey.Pv() )
                 return ErrERRCheck( JET_errOutOfMemory );
             pfucbIdx->dataSearchKey.SetCb( cbKeyAlloc );
         }
@@ -3437,7 +3437,7 @@ ERR VTAPI ErrIsamGotoIndexBookmark(
     Assert( FFUCBSecondary( pfucbIdx ) );
     Assert( pfucbIdx->u.pfcb->FTypeSecondaryIndex() );
 
-    if( 0 == cbSecondaryKey || NULL == pvSecondaryKey )
+    if( 0 == cbSecondaryKey || nullptr == pvSecondaryKey )
     {
         //  don't pass a NULL bookmark into the DIR level
         return ErrERRCheck( JET_errInvalidBookmark );
@@ -3454,7 +3454,7 @@ ERR VTAPI ErrIsamGotoIndexBookmark(
     }
     else
     {
-        if ( 0 == cbPrimaryBookmark || NULL == pvPrimaryBookmark )
+        if ( 0 == cbPrimaryBookmark || nullptr == pvPrimaryBookmark )
             return ErrERRCheck( JET_errInvalidBookmark );
 
         bm.data.SetPv( const_cast<VOID *>( pvPrimaryBookmark ) );
@@ -3926,11 +3926,11 @@ ERR ErrIsamSetCurrentIndex(
     //
     //  a null or empty index name indicates switching to primary index
     //
-    if ( NULL != pindexid
-        || NULL == szName
+    if ( nullptr != pindexid
+        || nullptr == szName
         || '\0' == *szName )
     {
-        szIndex = NULL;
+        szIndex = nullptr;
     }
     else
     {
@@ -4044,14 +4044,14 @@ ERR ErrRECSetCurrentIndex(
             "Session=[0x%p:0x%x] setting current index to '%s' of objid=[0x%x:0x%x]",
             pfucb->ppib,
             ( ppibNil != pfucb->ppib ? pfucb->ppib->trxBegin0 : trxMax ),
-            ( NULL != pindexid ? "<indexid>" : ( NULL != szIndex ? szIndex : "<primary>" ) ),
+            ( nullptr != pindexid ? "<indexid>" : ( nullptr != szIndex ? szIndex : "<primary>" ) ),
             (ULONG)pfcbTable->Ifmp(),
             pfcbTable->ObjidFDP() ) );
 
     //  NOTE: index name is ignored if an indexid
     //  is specified
     //
-    if ( NULL != pindexid )
+    if ( nullptr != pindexid )
     {
         if ( sizeof(INDEXID) != pindexid->cbStruct )
         {
@@ -4070,7 +4070,7 @@ ERR ErrRECSetCurrentIndex(
             }
         }
 
-        else if ( NULL != *ppfucbCurIdx && pfcbIndex == (*ppfucbCurIdx)->u.pfcb )
+        else if ( nullptr != *ppfucbCurIdx && pfcbIndex == (*ppfucbCurIdx)->u.pfcb )
         {
             //  switching to the current index
             //
@@ -4135,7 +4135,7 @@ ERR ErrRECSetCurrentIndex(
 
     //  a null index name indicates switching to primary index
     //
-    else if ( NULL == szIndex )
+    else if ( nullptr == szIndex )
     {
         fSettingToPrimaryIndex = fTrue;
     }
@@ -4269,7 +4269,7 @@ ERR ErrRECSetCurrentIndex(
         Assert( pfcbSecondaryIdx->Pidb()->CrefCurrentIndex() > 0
             || pfcbSecondaryIdx->Pidb()->FTemplateIndex() );
 
-        if ( NULL != pindexid )
+        if ( nullptr != pindexid )
         {
             //  already verified above that we're not
             //  switching to the current index
@@ -4354,7 +4354,7 @@ ERR ErrRECSetCurrentIndex(
     Assert( pfucbNil == *ppfucbCurIdx );
     Assert( !fInDMLLatch );
 
-    if ( NULL != pindexid )
+    if ( nullptr != pindexid )
     {
         //  IDB was already pinned above
         pfcbSecondary = pindexid->pfcbIndex;

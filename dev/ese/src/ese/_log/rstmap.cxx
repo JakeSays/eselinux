@@ -20,13 +20,13 @@ ERR LOG::ErrReplaceRstMapEntryBySignature( const WCHAR *wszName, const SIGNATURE
 
             //  if source name doesn't exist or doesn't match, update it
             //
-            if ( NULL == m_rgrstmap[irstmap].wszDatabaseName
+            if ( nullptr == m_rgrstmap[irstmap].wszDatabaseName
                 || 0 != UtilCmpFileName( m_rgrstmap[irstmap].wszDatabaseName, wszName ) )
             {
                 const ULONG     cbName              = (ULONG)( sizeof( WCHAR ) * ( LOSStrLengthW( wszName ) + 1 ) );
                 WCHAR * const   wszSrcDatabaseName  = static_cast<WCHAR *>( PvOSMemoryHeapAlloc( cbName ) );
 
-                if ( NULL == wszSrcDatabaseName )
+                if ( nullptr == wszSrcDatabaseName )
                     return ErrERRCheck( JET_errOutOfMemory );
 
                 CallR( ErrOSStrCbCopyW( wszSrcDatabaseName, cbName, wszName ) );
@@ -59,7 +59,7 @@ ERR LOG::ErrReplaceRstMapEntryBySignature( const WCHAR *wszName, const SIGNATURE
                         csz,
                         rgszT,
                         0,
-                        NULL,
+                        nullptr,
                         m_pinst );
             }
 
@@ -119,7 +119,7 @@ ERR LOG::ErrReplaceRstMapEntryByName( const WCHAR *wszName, const SIGNATURE * pD
         // we found a match so we will replace the map entry with the full name we matched against
         if ( 0 != UtilCmpFileName(m_rgrstmap[irstmapBestFit].wszDatabaseName, wszName) )
         {
-            if ( ( wszSrcDatabaseName = static_cast<WCHAR *>( PvOSMemoryHeapAlloc( cbName ) ) ) == NULL )
+            if ( ( wszSrcDatabaseName = static_cast<WCHAR *>( PvOSMemoryHeapAlloc( cbName ) ) ) == nullptr )
                 return ErrERRCheck( JET_errOutOfMemory );
 
             CallR( ErrOSStrCbCopyW( wszSrcDatabaseName, cbName, wszName ) );
@@ -146,7 +146,7 @@ INT LOG::IrstmapGetRstMapEntry( const WCHAR *wszName )
     {
         WCHAR           wszPathT[IFileSystemAPI::cchPathMax];
         WCHAR           wszFNameT[IFileSystemAPI::cchPathMax] = { 0 };
-        const WCHAR *   wszT = NULL;
+        const WCHAR *   wszT = nullptr;
         const WCHAR *   wszRst;
 
         // we are using the generic name only during JetRestore
@@ -191,7 +191,7 @@ INT LOG::IrstmapSearchNewName( _In_z_ const WCHAR *wszName, _Deref_out_opt_z_ WC
         if ( m_rgrstmap[irstmap].wszNewDatabaseName && 0 == UtilCmpFileName( m_rgrstmap[irstmap].wszNewDatabaseName, wszName ) )
         {
             Assert ( m_rgrstmap[irstmap].wszDatabaseName );
-            if ( pwszRstmapDbName != NULL )
+            if ( pwszRstmapDbName != nullptr )
             {
                 *pwszRstmapDbName = m_rgrstmap[irstmap].wszDatabaseName;
             }
@@ -199,16 +199,16 @@ INT LOG::IrstmapSearchNewName( _In_z_ const WCHAR *wszName, _Deref_out_opt_z_ WC
         }
     }
 
-    if ( pwszRstmapDbName != NULL )
+    if ( pwszRstmapDbName != nullptr )
     {
-        *pwszRstmapDbName = NULL;
+        *pwszRstmapDbName = nullptr;
     }
     return -1;
 }
 
 VOID LOG::FreeRstmap( VOID )
 {
-    if ( NULL != m_rgrstmap )
+    if ( nullptr != m_rgrstmap )
     {
         RSTMAP* prstmapCur = m_rgrstmap;
         RSTMAP* const prstmapMax = m_rgrstmap + m_irstmapMac;
@@ -253,7 +253,7 @@ VOID LOG::FreeRstmap( VOID )
         }
 
         OSMemoryHeapFree( m_rgrstmap );
-        m_rgrstmap = NULL;
+        m_rgrstmap = nullptr;
     }
 
     m_irstmapMac = 0;
@@ -266,13 +266,13 @@ ERR LOG::ErrBuildRstmapForRestore( PCWSTR wszRestorePath )
     ERR             err         = JET_errSuccess;
     INT             irstmap     = 0;
     INT             irstmapMac  = 0;
-    RSTMAP*         rgrstmap    = NULL;
+    RSTMAP*         rgrstmap    = nullptr;
     RSTMAP*         prstmap;
     WCHAR           wszSearch[IFileSystemAPI::cchPathMax];
     WCHAR           wszFileName[IFileSystemAPI::cchPathMax];
     WCHAR           wszFile[IFileSystemAPI::cchPathMax];
     WCHAR           wszT[IFileSystemAPI::cchPathMax];
-    IFileFindAPI*   pffapi      = NULL;
+    IFileFindAPI*   pffapi      = nullptr;
 
     /*  build rstmap, scan all *.pat files and build RSTMAP
      *  build generic name for search the destination. If szDest is null, then
@@ -299,7 +299,7 @@ ERR LOG::ErrBuildRstmapForRestore( PCWSTR wszRestorePath )
         {
             Alloc( prstmap = static_cast<RSTMAP *>( PvOSMemoryHeapAlloc( sizeof(RSTMAP) * ( irstmap + 8 ) ) ) );
             memset( prstmap + irstmap, 0, sizeof( RSTMAP ) * 8 );
-            if ( rgrstmap != NULL )
+            if ( rgrstmap != nullptr )
             {
                 UtilMemCpy( prstmap, rgrstmap, sizeof(RSTMAP) * irstmap );
                 OSMemoryHeapFree( rgrstmap );
@@ -354,7 +354,7 @@ ERR ErrLGCheckDBFiles(
     RSTMAP * pDbMapEntry,
     INT genLow,
     INT genHigh,
-    LGPOS *plgposSnapshotRestore = NULL );
+    LGPOS *plgposSnapshotRestore = nullptr );
 
 #define cRestoreStatusPadding   0.10    // Padding to add to account for DB copy.
 
@@ -474,7 +474,7 @@ ERR LOG::ErrGetDestDatabaseName(
     m_rgrstmap[irstmap].fDestDBReady = fTrue;
     *pirstmap = irstmap;
 
-    if ( plgstat != NULL )
+    if ( plgstat != nullptr )
     {
         JET_SNPROG  *psnprog = &plgstat->snprog;
         ULONG       cPercentSoFar;
@@ -522,8 +522,8 @@ ERR ErrRstmapSoftCheckDBFiles( INST *pinst, RSTMAP * pDbMapEntry )
 
     /*  try to read the header of the database.
     /**/
-    pdbfilehdrDb = (DBFILEHDR_FIX * )PvOSMemoryPageAlloc( g_cbPage, NULL );
-    if ( pdbfilehdrDb == NULL )
+    pdbfilehdrDb = (DBFILEHDR_FIX * )PvOSMemoryPageAlloc( g_cbPage, nullptr );
+    if ( pdbfilehdrDb == nullptr )
         return ErrERRCheck( JET_errOutOfMemory );
 
     //  don't just call ErrUtilReadShadowedHeader() without first
@@ -649,7 +649,7 @@ HandleError:
                 csz,
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 pinst );
     }
     OSMemoryPageFree( pdbfilehdrDb );
@@ -791,7 +791,7 @@ ERR LOG::ErrBuildRstmapForSoftRecovery( const JET_RSTMAP2_W * const rgjrstmap, c
     if ( cjrstmap == 0 )
     {
         m_irstmapMac = 0;
-        m_rgrstmap = NULL;
+        m_rgrstmap = nullptr;
         return JET_errSuccess;
     }
 
@@ -813,7 +813,7 @@ ERR LOG::ErrBuildRstmapForSoftRecovery( const JET_RSTMAP2_W * const rgjrstmap, c
         //  basic checking on the destination (ie new) name as this
         //  is the most important
         //
-        if ( NULL == pjrstmap->szNewDatabaseName )
+        if ( nullptr == pjrstmap->szNewDatabaseName )
         {
             Error( ErrERRCheck( JET_errDatabaseInvalidName ) );
         }
@@ -846,7 +846,7 @@ ERR LOG::ErrBuildRstmapForSoftRecovery( const JET_RSTMAP2_W * const rgjrstmap, c
 
         //  determine if we have a source name
         //
-        if ( NULL != pjrstmap->szDatabaseName )
+        if ( nullptr != pjrstmap->szDatabaseName )
         {
             err = ErrUtilPathComplete( m_pinst->m_pfsapi, pjrstmap->szDatabaseName, wszFullName, fFalse );
             if ( err < JET_errSuccess )
@@ -879,7 +879,7 @@ ERR LOG::ErrBuildRstmapForSoftRecovery( const JET_RSTMAP2_W * const rgjrstmap, c
 
         //  perform a deep copy of the parameter array
         //
-        if ( ( pjrstmap->rgsetdbparam == NULL ) && ( pjrstmap->csetdbparam > 0 ) )
+        if ( ( pjrstmap->rgsetdbparam == nullptr ) && ( pjrstmap->csetdbparam > 0 ) )
         {
             Error( ErrERRCheck( JET_errInvalidParameter ) );
         }

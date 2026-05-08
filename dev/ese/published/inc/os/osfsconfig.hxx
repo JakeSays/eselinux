@@ -85,7 +85,7 @@ class IFileSystemConfiguration  //  fsconfig
 
         virtual void EmitFailureTag(    const int           haTag,
                                         const WCHAR* const  wszGuid,
-                                        const WCHAR* const  wszAdditional = NULL ) = 0;
+                                        const WCHAR* const  wszAdditional = nullptr ) = 0;
 
         virtual const void* const PvTraceContext() = 0;
 };

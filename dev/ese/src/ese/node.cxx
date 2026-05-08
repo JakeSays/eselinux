@@ -130,7 +130,7 @@ LOCAL ERR ErrNDIReportBadLineCount(
             _countof( rgsz ),
             rgsz,
             0,
-            NULL,
+            nullptr,
             PinstFromPfucb( pfucb ) );
 
     FireWall( "InconsistentLineRequestedVsLineCount" );
@@ -177,7 +177,7 @@ LOCAL VOID NDILineToKeydataflags( const CPAGE& cpage, const LINE * pline, KEYDAT
 
     if ( pline->cb <= (ULONG)cbKeyCountTotal )
     {
-        if ( perrNoEnforce == NULL )
+        if ( perrNoEnforce == nullptr )
         {
             //  client doesn't know / have path to handle error yet.
             PageEnforce( cpage, cbSuffix < pline->cb );
@@ -198,7 +198,7 @@ LOCAL VOID NDILineToKeydataflags( const CPAGE& cpage, const LINE * pline, KEYDAT
         if ( cbSuffix >= pline->cb ) //  Maybe > someday, but all nodes have some data for now (so suffix must be < line->cb).
 #endif
         {
-            if ( perrNoEnforce == NULL )
+            if ( perrNoEnforce == nullptr )
             {
                 //  client doesn't know / have path to handle error yet.
                 PageEnforce( cpage, cbSuffix < pline->cb );
@@ -390,9 +390,9 @@ VOID NDIGetKeydataflags( const CPAGE& cpage, INT iline, KEYDATAFLAGS * pkdf, _Ou
             OnDebug( g_condGetKdfBadGetPtrNullPv.Hit( line.pv == NULL ) );
             OnDebug( g_condGetKdfBadGetPtrNonNullPv.Hit( line.pv != NULL ) );
 
-            if ( line.pv == NULL )
+            if ( line.pv == nullptr )
             {
-                AssertTrack( perrNoEnforce == NULL || *perrNoEnforce < JET_errSuccess, "GetPtrLineNullPvErrInconsistent" );
+                AssertTrack( perrNoEnforce == nullptr || *perrNoEnforce < JET_errSuccess, "GetPtrLineNullPvErrInconsistent" );
                 pkdf->Nullify();
                 return;
             }
@@ -437,9 +437,9 @@ VOID NDIGetKeydataflags( const CPAGE& cpage, INT iline, KEYDATAFLAGS * pkdf, _Ou
             {
                 OnDebug( g_condGetKdfBadGetPtrExtHdrOffPage.Hit( line.pv == NULL ) );
 
-                if ( line.pv == NULL )
+                if ( line.pv == nullptr )
                 {
-                    AssertTrack( perrNoEnforce == NULL || *perrNoEnforce < JET_errSuccess, "GetPtrExtHdrLineNullPvErrInconsistent" );
+                    AssertTrack( perrNoEnforce == nullptr || *perrNoEnforce < JET_errSuccess, "GetPtrExtHdrLineNullPvErrInconsistent" );
                     pkdf->key.prefix.Nullify();
                     return;
                 }
@@ -463,7 +463,7 @@ VOID NDIGetKeydataflags( const CPAGE& cpage, INT iline, KEYDATAFLAGS * pkdf, _Ou
             }
             else
             {
-                pkdf->key.prefix.SetPv( NULL );
+                pkdf->key.prefix.SetPv( nullptr );
                 pkdf->key.prefix.SetCb( 0 );
             }
         }
@@ -475,7 +475,7 @@ VOID NDIGetKeydataflags( const CPAGE& cpage, INT iline, KEYDATAFLAGS * pkdf, _Ou
         {
             if ( (ULONG)pkdf->key.prefix.Cb() > line.cb && line.cb != 0 )
             {
-                if ( perrNoEnforce != NULL )
+                if ( perrNoEnforce != nullptr )
                 {
                     if ( *perrNoEnforce >= JET_errSuccess )
                     {
@@ -496,7 +496,7 @@ VOID NDIGetKeydataflags( const CPAGE& cpage, INT iline, KEYDATAFLAGS * pkdf, _Ou
     else
     {
         Assert( 0 == pkdf->key.prefix.Cb() );
-        pkdf->key.prefix.SetPv( NULL );
+        pkdf->key.prefix.SetPv( nullptr );
     }
 
     //  If we started with no enforce, we should end in same mode or someone updated perrNoEnforce = &errThrowAway without 
@@ -729,7 +729,7 @@ INT IlineNDISeekGEQInternal(
         ilineMid = (ilineFirst + ilineLast)/2;
 
         cpage.GetPtr( ilineMid, &line );
-        NDILineToKeydataflags< pgnbcNoChecks >( cpage, &line, &kdfNode, NULL );
+        NDILineToKeydataflags< pgnbcNoChecks >( cpage, &line, &kdfNode, nullptr );
         Assert( kdfNode.key.prefix.Pv() == lineExternalHeader.pv );
 
         //  Note we validated the checking of this in read IO ErrCheckPage(), so the
@@ -1079,7 +1079,7 @@ ERR ErrNDVisibleToCursor( FUCB * pfucb, BOOL * pfVisibleToCursor, NS * pns )
     }
 
     *pfVisibleToCursor = fVisible;
-    if ( NULL != pns )
+    if ( nullptr != pns )
         *pns = ns;
 
 HandleError:
@@ -1355,7 +1355,7 @@ NOINLINE VOID NDIReportSeekOnEmptyPage( const FUCB * const pfucb, const CSR * co
             _countof( rgwsz ),
             rgwsz,
             0,
-            NULL,
+            nullptr,
             PinstFromPfucb( pfucb ) );
 }
 
@@ -1549,7 +1549,7 @@ INLINE ERR ErrNDILogReplace(
     BOOL *          pfEmptyDiff )
 {
     ERR     err             = JET_errSuccess;
-    void*   pvDiffBuffer    = NULL;
+    void*   pvDiffBuffer    = nullptr;
     DATA    dataDiff;
     BOOL    fOverflow       = fTrue;
     SIZE_T  cbDiff          = 0;
@@ -1581,7 +1581,7 @@ INLINE ERR ErrNDILogReplace(
             Error( ErrERRCheck( JET_errInternalError ) );
         }
 
-        if ( NULL != dataDiff.Pv() )
+        if ( nullptr != dataDiff.Pv() )
         {
             LGSetColumnDiffs(
                     pfucb,
@@ -1611,7 +1611,7 @@ INLINE ERR ErrNDILogReplace(
             Error( ErrERRCheck( JET_errInternalError ) );
         }
 
-        if ( NULL != dataDiff.Pv() )
+        if ( nullptr != dataDiff.Pv() )
         {
             LGSetLVDiffs(
                     pfucb,
@@ -1640,7 +1640,7 @@ INLINE ERR ErrNDILogReplace(
                         pcsr,
                         pfucb->kdfCurr.data,
                         data,
-                        ( cbDiff > 0 ? &dataDiff : NULL ),
+                        ( cbDiff > 0 ? &dataDiff : nullptr ),
                         rceid,
                         dirflag,
                         &lgpos,
@@ -2315,7 +2315,7 @@ VOID NDGetPtrExternalHeader( _In_ const CPAGE& cpage, _Out_ LINE * pline, _In_ra
 
     if ( ( fStoredFlag & fRequestFlag ) != fRequestFlag )
     {
-        pline->pv = NULL;
+        pline->pv = nullptr;
         pline->cb = 0;
         return;
     }
@@ -2405,7 +2405,7 @@ VOID NDGetPrefix( FUCB * pfucb, const CSR * pcsr )
     }
     else
     {
-        pfucb->kdfCurr.key.prefix.SetPv( NULL );
+        pfucb->kdfCurr.key.prefix.SetPv( nullptr );
         pfucb->kdfCurr.key.prefix.SetCb( 0 );
     }
     return;
@@ -2873,7 +2873,7 @@ ERR ErrNDScrubOneUnusedPage(
     {
         //  log the operation, getting the lgpos
         LGPOS   lgpos;
-        Call( ErrLGScrub( ppib, ifmp, pcsr, fTrue, NULL, 0, &lgpos ) );
+        Call( ErrLGScrub( ppib, ifmp, pcsr, fTrue, nullptr, 0, &lgpos ) );
         pcsr->Cpage().SetLgposModify( lgpos );
     }
     else

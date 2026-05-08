@@ -552,7 +552,7 @@ inline void* PvAtomicRetrieveLinklist( void* volatile* const ppvHead )
     // pvNode is a pointer, but technically doesn't have to be atomically modifiable.
     OSSYNCAssert( IsAtomicallyModifiablePointer( (void *const *)ppvHead ) );
 
-    return AtomicExchangePointer( (void **const)ppvHead, NULL );
+    return AtomicExchangePointer( (void **const)ppvHead, nullptr );
 }
 
 
@@ -1372,7 +1372,7 @@ class CKernelSemaphoreState
 
         //    ctors / dtors
 
-        CKernelSemaphoreState( const CSyncStateInitNull& null ) : m_handle( 0 ) {}
+        CKernelSemaphoreState( const CSyncStateInitNull& null ) : m_handle( nullptr ) {}
 
         //    manipulators
 
@@ -1495,7 +1495,7 @@ inline const BOOL CKernelSemaphore::FReset()
 
 inline const BOOL CKernelSemaphore::FInitialized()
 {
-    return State().Handle() != 0;
+    return State().Handle() != nullptr;
 }
 
 
@@ -1773,7 +1773,7 @@ inline CKernelSemaphore& CKernelSemaphorePool::Ksem( const IRKSEM irksem, const 
 
 inline const BOOL CKernelSemaphorePool::FInitialized() const
 {
-    return m_mpirksemrksem != NULL;
+    return m_mpirksemrksem != nullptr;
 }
 
 //  frees the given IRKSEM back to the allocation stack
@@ -5022,7 +5022,7 @@ inline void CNestableCriticalSection::Leave()
     {
         //  reset the owner id
 
-        State().SetOwner( 0 );
+        State().SetOwner( nullptr );
 
         //  remove ourself as the owner
 
@@ -6896,7 +6896,7 @@ class CMeteredSection
         Group GroupEnter();
         void Leave( const Group group );
 
-        void Partition( const PFNPARTITIONCOMPLETE  pfnPartitionComplete    = NULL,
+        void Partition( const PFNPARTITIONCOMPLETE  pfnPartitionComplete    = nullptr,
                         const DWORD_PTR             dwCompletionKey         = 0 );
 
         //    accessors
@@ -6999,7 +6999,7 @@ class CMeteredSection
 
 inline CMeteredSection::CMeteredSection()
     :   m_cw( 0x80000000 ),
-        m_pfnPartitionComplete( NULL ),
+        m_pfnPartitionComplete( nullptr ),
         m_dwPartitionCompleteKey( 0 )
 {
 }

@@ -222,8 +222,8 @@ class SPLITBUF_DANGLING
         };
 
     private:
-        SPLIT_BUFFER *PsplitbufOE()                     { return ( FOwnExtDangling() ? &m_splitbufOE : NULL ); }
-        SPLIT_BUFFER *PsplitbufAE()                     { return ( FAvailExtDangling() ? &m_splitbufAE : NULL ); }
+        SPLIT_BUFFER *PsplitbufOE()                     { return ( FOwnExtDangling() ? &m_splitbufOE : nullptr ); }
+        SPLIT_BUFFER *PsplitbufAE()                     { return ( FAvailExtDangling() ? &m_splitbufAE : nullptr ); }
 
         BOOL FOwnExtDangling()                          { return m_fOwnExtDangling; }
         VOID SetFOwnExtDangling()                       { m_fOwnExtDangling = fTrue; }
@@ -734,7 +734,7 @@ private:
     public:
         TABLECLASS Tableclass() const
         {
-            if ( (PfcbTable() != NULL)  && ( FTypeLV() || FTypeSecondaryIndex() ) )
+            if ( (PfcbTable() != nullptr)  && ( FTypeLV() || FTypeSecondaryIndex() ) )
             {
                 Assert( !PfcbTable()->FTypeLV() );
                 Assert( !PfcbTable()->FTypeSecondaryIndex() );
@@ -1064,7 +1064,7 @@ private:
     // =====================================================================
     // FCB creation/deletion.
     public:
-        static FCB *PfcbFCBGet( const IFMP ifmp, const PGNO pgnoFDP, FCBStateFlags* const pfcbsf = NULL, const BOOL fIncrementRefCount = fTrue, const BOOL fInitForRecovery = fFalse );
+        static FCB *PfcbFCBGet( const IFMP ifmp, const PGNO pgnoFDP, FCBStateFlags* const pfcbsf = nullptr, const BOOL fIncrementRefCount = fTrue, const BOOL fInitForRecovery = fFalse );
         static ERR ErrCreate( PIB *ppib, IFMP ifmp, PGNO pgnoFDP, FCB **ppfcb );
         VOID CreateComplete_( ERR err, PCSTR szFile, const LONG lLine );
         VOID PrepareForPurge( const BOOL fPrepareChildren = fTrue );
@@ -1141,7 +1141,7 @@ private:
         VOID InsertHashTable();
         VOID DeleteHashTable();
         VOID Release();
-        static BOOL FInHashTable( IFMP ifmp, PGNO pgnoFDB, FCB **ppfcb = NULL );
+        static BOOL FInHashTable( IFMP ifmp, PGNO pgnoFDB, FCB **ppfcb = nullptr );
 
     private:
     // =====================================================================
@@ -1300,7 +1300,7 @@ INLINE FCB::FCB( IFMP ifmp, PGNO pgnoFDP )
 
 INLINE FCB::~FCB()
 {
-    for ( RECDANGLING * precdangling = Precdangling(); NULL != precdangling; )
+    for ( RECDANGLING * precdangling = Precdangling(); nullptr != precdangling; )
     {
         RECDANGLING * const precToFree  = precdangling;
 
@@ -1309,7 +1309,7 @@ INLINE FCB::~FCB()
         OSMemoryHeapFree( precToFree );
     }
 
-    if ( NULL != Psplitbufdangling_() )
+    if ( nullptr != Psplitbufdangling_() )
     {
         //  UNDONE: all space in the splitbuf is lost
         OSMemoryHeapFree( Psplitbufdangling_() );
@@ -1327,8 +1327,8 @@ INLINE FCB::~FCB()
             JET_tableidNil,
             JET_cbtypFreeTableLS,
             (VOID *)m_ls,
-            NULL,
-            NULL,
+            nullptr,
+            nullptr,
             0 );
     }
 }
@@ -1996,7 +1996,7 @@ INLINE BOOL FCB::FInHashTable( IFMP ifmp, PGNO pgnoFDP, FCB **ppfcb )
 
     pinst->m_pfcbhash->ReadUnlockKey( &lockFCBHash );
 
-    if ( ppfcb != NULL )
+    if ( ppfcb != nullptr )
     {
 
         //  return the entry
@@ -2163,8 +2163,8 @@ INLINE SPLIT_BUFFER *FCB::Psplitbuf( const BOOL fAvailExt )
 {
     SPLITBUF_DANGLING   * const psplitbufdangling = Psplitbufdangling_();
 
-    if ( NULL == psplitbufdangling )
-        return NULL;
+    if ( nullptr == psplitbufdangling )
+        return nullptr;
 
     return ( fAvailExt ? psplitbufdangling->PsplitbufAE() : psplitbufdangling->PsplitbufOE() );
 }
@@ -2175,10 +2175,10 @@ INLINE ERR FCB::ErrEnableSplitbuf( const BOOL fAvailExt )
 
     //  HACK: can't fit split buffer on the page - store in FCB instead until a natural
     //  split happens on the page (and hope we don't crash or purge the FCB before that)
-    if ( NULL == Psplitbufdangling_() )
+    if ( nullptr == Psplitbufdangling_() )
     {
         SetPsplitbufdangling_( (SPLITBUF_DANGLING *)PvOSMemoryHeapAlloc( sizeof(SPLITBUF_DANGLING) ) );
-        if ( NULL == Psplitbufdangling_() )
+        if ( nullptr == Psplitbufdangling_() )
             return ErrERRCheck( JET_errOutOfMemory );
         memset( Psplitbufdangling_(), 0, sizeof(SPLITBUF_DANGLING) );
     }
@@ -2217,7 +2217,7 @@ INLINE VOID FCB::DisableSplitbuf( const BOOL fAvailExt )
     if ( fFree )
     {
         OSMemoryHeapFree( psplitbufdangling );
-        SetPsplitbufdangling_( NULL );
+        SetPsplitbufdangling_( nullptr );
     }
 }
 
@@ -2233,7 +2233,7 @@ INLINE VOID FCB::SetPrecdangling( RECDANGLING * const precdangling )
 INLINE VOID FCB::RemovePrecdangling( RECDANGLING * const precdanglingRemove )
 {
     for ( RECDANGLING ** pprecdangling = &m_precdangling;
-        NULL != *pprecdangling;
+        nullptr != *pprecdangling;
         pprecdangling = &( (*pprecdangling)->precdanglingNext ) )
     {
         if ( *pprecdangling == precdanglingRemove )

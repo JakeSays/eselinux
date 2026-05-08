@@ -74,8 +74,8 @@ JET_ERR ErrCheckErrorSpaceConsistent( _In_ const INT cerrData, _In_ const INT ce
 
     for( JET_ERR errCheck = errCheckMin; errCheck <= errCheckMax; errCheck++ )
     {
-        const CHAR * pszError = NULL;
-        const CHAR * pszErrorDesc = NULL;
+        const CHAR * pszError = nullptr;
+        const CHAR * pszErrorDesc = nullptr;
         JetErrorToString( errCheck, &pszError, &pszErrorDesc );
 
         const ErrData * perrdata = PerrdataLookupErrValue( errCheck );
@@ -90,14 +90,14 @@ JET_ERR ErrCheckErrorSpaceConsistent( _In_ const INT cerrData, _In_ const INT ce
                 wprintf( L"\n\tReserved client space error in error string table (from jethdr.w). errCheck = %d\n", errCheck );
                 return errCodeInconsistency;
             }
-            if ( NULL != perrdata )
+            if ( nullptr != perrdata )
             {
                 wprintf( L"\n\tReserved client space error in errdata.txt. errCheck = %d\n", errCheck );
                 return errCodeInconsistency;
             }
         }
         
-        if ( NULL != perrdata )
+        if ( nullptr != perrdata )
         {
             cerrDataCheck++;
         }
@@ -107,12 +107,12 @@ JET_ERR ErrCheckErrorSpaceConsistent( _In_ const INT cerrData, _In_ const INT ce
             cerrStrCheck++;
         }
 
-        if ( !FNullError( pszError ) && NULL == perrdata )
+        if ( !FNullError( pszError ) && nullptr == perrdata )
         {
             wprintf( L"\n\tError expressed in error string table (from jethdr.w) and not in errdata.txt. errCheck = %d\n", errCheck );
             return errCodeInconsistency;
         }
-        if ( perrdata != NULL && FNullError( pszError ) )
+        if ( perrdata != nullptr && FNullError( pszError ) )
         {
             if ( perrdata->flags & fErrExternal )
             {
@@ -303,10 +303,10 @@ JET_ERR ErrCheckExtErrorsInStrTable( _In_ const INT cerr )
             return errCodeInconsistency;
         }
 
-        const CHAR * pszErrorSymbolRetrieved = NULL;
-        const CHAR * pszErrorDescRetrieved = NULL;
+        const CHAR * pszErrorSymbolRetrieved = nullptr;
+        const CHAR * pszErrorDescRetrieved = nullptr;
         JetErrorToString( perrdata->errSymbol, &pszErrorSymbolRetrieved, &pszErrorDescRetrieved );
-        if ( FNullError( pszErrorSymbolRetrieved ) || NULL == pszErrorDescRetrieved )
+        if ( FNullError( pszErrorSymbolRetrieved ) || nullptr == pszErrorDescRetrieved )
         {
             wprintf( L"\n\tCould not retrieve an external error by error value (%d) from the string table.", perrdata->errSymbol );
             return errCodeInconsistency;
@@ -438,7 +438,7 @@ INT _cdecl main( INT argc, __in_ecount( argc ) char * argv[] )
     INT cerrObsWrn = 0;
     INT rgcerrCategoryErrs[JET_errcatMax] = { 0 };
     INT rgcerrCategoryWrns[JET_errcatMax] = { 0 };
-    const ErrData * perrdata = NULL;
+    const ErrData * perrdata = nullptr;
     while ( perrdata = PerrdataEntryI( cerrData ) )
     {
         if ( perrdata->flags & fErrExternal )

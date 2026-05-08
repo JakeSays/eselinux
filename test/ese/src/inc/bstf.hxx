@@ -198,7 +198,7 @@ inline void TestReportFail_( const char * const szTestType, const char * const s
     wprintf( L"\t\t\t%hs( %hs ) ... Failed @ %d!\n", szTestType, szReason, ulLine );
 #endif
 #ifdef BSTF_AVOID_WIN_DEPENDENCE
-    *(int*)NULL = 0x42;
+    *(int*)nullptr = 0x42;
 #else
     DebugBreak();
 #endif

@@ -1289,7 +1289,7 @@ public:
 // Member retrieval.
 
 INLINE WCHAR * FMP::WszDatabaseName() const     { return m_wszDatabaseName; }
-INLINE BOOL FMP::FInUse() const                 { Assert( FMP::FAllocatedFmp( this ) ); return NULL != WszDatabaseName(); }
+INLINE BOOL FMP::FInUse() const                 { Assert( FMP::FAllocatedFmp( this ) ); return nullptr != WszDatabaseName(); }
 INLINE CCriticalSection& FMP::CritLatch()       { return m_critLatch; }
 INLINE CCriticalSection& FMP::CritOpenDbCheck() { return m_critOpenDbCheck; }
 INLINE CSemaphore& FMP::SemIOSizeChange()       { return m_semIOSizeChange; }
@@ -1629,7 +1629,7 @@ INLINE VOID FMP::SetPctCachePriorityFmp( const ULONG_PTR pctCachePriority )
 
     //  Resolve cache priority back to the sessions.
     m_pinst->m_critPIB.Enter();
-    for ( PIB* ppibCurr = m_pinst->m_ppibGlobal; ppibCurr != NULL; ppibCurr = ppibCurr->ppibNext )
+    for ( PIB* ppibCurr = m_pinst->m_ppibGlobal; ppibCurr != nullptr; ppibCurr = ppibCurr->ppibNext )
     {
         ppibCurr->ResolveCachePriorityForDb( Dbid() );
     }
@@ -1991,9 +1991,9 @@ INLINE VOID FMP::SetPiostats( CIoStats * const piostatsDbRead, CIoStats * const 
 INLINE VOID FMP::FreeIostats()
 {
     delete m_rgpiostats[iotypeRead];
-    m_rgpiostats[iotypeRead] = NULL;
+    m_rgpiostats[iotypeRead] = nullptr;
     delete m_rgpiostats[iotypeWrite];
-    m_rgpiostats[iotypeWrite] = NULL;
+    m_rgpiostats[iotypeWrite] = nullptr;
 }
 
 INLINE VOID FMP::SetExclusiveOpen( PIB *ppib )
@@ -2127,7 +2127,7 @@ INLINE VOID FMP::FreePdbfilehdr()
     Assert( RwlDetaching().FWriter() );
     Assert( NULL != Pdbfilehdr() );
     DBFILEHDR *pdbfilehdr;
-    CallS( ErrSetPdbfilehdr( NULL, &pdbfilehdr ) );
+    CallS( ErrSetPdbfilehdr( nullptr, &pdbfilehdr ) );
     OSMemoryPageFree( pdbfilehdr );
     SetDbtimeLast( 0 );
     SetObjidLast( 0 );

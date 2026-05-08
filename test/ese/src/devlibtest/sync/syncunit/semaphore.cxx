@@ -95,8 +95,8 @@ ERR SyncSemaphoreConcurrentlyCorrectCWaitAndAvail::ErrTest()
     TestCheck( psemaphore->CAvail() == 1 );
 
     HANDLE rghThreads[2];
-    rghThreads[0] = CreateThread( NULL, 0, AcquireForever, psemaphore, 0, NULL );
-    rghThreads[1] = CreateThread( NULL, 0, AcquireForever, psemaphore, 0, NULL );
+    rghThreads[0] = CreateThread( nullptr, 0, AcquireForever, psemaphore, 0, nullptr );
+    rghThreads[1] = CreateThread( nullptr, 0, AcquireForever, psemaphore, 0, nullptr );
 
     while ( psemaphore->CWait() == 0 );
 
@@ -141,7 +141,7 @@ ERR SyncSemaphorePerformsConcurrentAcquireRelease::ErrTest()
     HANDLE rghThreads[cThreads];
     for ( DWORD iThread = 0; iThread < cThreads; iThread++ )
     {
-        rghThreads[iThread] = CreateThread( NULL, 0, AcquireForever, psemaphore, 0, NULL );
+        rghThreads[iThread] = CreateThread( nullptr, 0, AcquireForever, psemaphore, 0, nullptr );
     }
 
     while ( psemaphore->CWait() != cThreads )
@@ -204,7 +204,7 @@ ERR SyncSemaphorePerformsConcurrentTestFAcquireRelease::ErrTest()
     HANDLE rghThreads[cThreads];
     for ( DWORD iThread = 0; iThread < cThreads; iThread++ )
     {
-        rghThreads[iThread] = CreateThread( NULL, 0, AcquireForeverSpin, psemaphore, 0, NULL );
+        rghThreads[iThread] = CreateThread( nullptr, 0, AcquireForeverSpin, psemaphore, 0, nullptr );
     }
 
     TestCheck( psemaphore->CAvail() == 0 );
@@ -255,7 +255,7 @@ ERR SyncSemaphoreMultiThreadedAcquireTimesOutWithoutRelease::ErrTest()
 
     g_dwTimeout = 2000;
     DWORD dwDelay = GetTickCount();
-    HANDLE hThread = CreateThread( NULL, 0, AcquireOneTimeout, psemaphore, 0, NULL );
+    HANDLE hThread = CreateThread( nullptr, 0, AcquireOneTimeout, psemaphore, 0, nullptr );
 
     while ( psemaphore->CWait() == 0 );
 
@@ -294,7 +294,7 @@ ERR SyncSemaphoreMultiThreadedAcquireDoesNotTimeoutIfReleased::ErrTest()
     TestCheck( psemaphore->CAvail() == 0 );
 
     g_dwTimeout = 10 * 60 * 1000;
-    HANDLE hThread = CreateThread( NULL, 0, AcquireOneTimeout, psemaphore, 0, NULL );
+    HANDLE hThread = CreateThread( nullptr, 0, AcquireOneTimeout, psemaphore, 0, nullptr );
 
     while ( psemaphore->CWait() == 0 );
 
@@ -351,8 +351,8 @@ ERR SyncSemaphoreCheckWaitDoesNotPermanentlyAcquireResourcesWorker( const DWORD 
     TestCheck( cThreads <= _countof( rghThreads ) );
     for ( DWORD iThread = 0; iThread < cThreads; iThread++ )
     {
-        rghThreads[iThread] = CreateThread( NULL, 0, WaitForever, psemaphore, 0, NULL );
-        TestAssert( rghThreads[iThread] != NULL );
+        rghThreads[iThread] = CreateThread( nullptr, 0, WaitForever, psemaphore, 0, nullptr );
+        TestAssert( rghThreads[iThread] != nullptr );
     }
 
     cAvail = psemaphore->CAvail();
@@ -465,8 +465,8 @@ ERR SyncSemaphoreFWaitDoesNotPermanentlyAcquireResourcesWorker( const DWORD cThr
     TestCheck( cThreads <= _countof( rghThreads ) );
     for ( DWORD iThread = 0; iThread < cThreads; iThread++ )
     {
-        rghThreads[iThread] = CreateThread( NULL, 0, WaitForeverSpin, psemaphore, 0, NULL );
-        TestAssert( rghThreads[iThread] != NULL );
+        rghThreads[iThread] = CreateThread( nullptr, 0, WaitForeverSpin, psemaphore, 0, nullptr );
+        TestAssert( rghThreads[iThread] != nullptr );
     }
 
     TestCheck( psemaphore->CAvail() == 0 );
@@ -551,7 +551,7 @@ ERR SyncSemaphoreMultiThreadedWaitTimesOutWithoutRelease::ErrTest()
 
     g_dwTimeout = 2000;
     DWORD dwDelay = GetTickCount();
-    HANDLE hThread = CreateThread( NULL, 0, WaitOneTimeout, psemaphore, 0, NULL );
+    HANDLE hThread = CreateThread( nullptr, 0, WaitOneTimeout, psemaphore, 0, nullptr );
 
     while ( psemaphore->CWait() == 0 );
 
@@ -590,7 +590,7 @@ ERR SyncSemaphoreMultiThreadedWaitDoesNotTimeoutIfReleased::ErrTest()
     TestCheck( psemaphore->CAvail() == 0 );
 
     g_dwTimeout = 60 * 10 * 1000;
-    HANDLE hThread = CreateThread( NULL, 0, WaitOneTimeout, psemaphore, 0, NULL );
+    HANDLE hThread = CreateThread( nullptr, 0, WaitOneTimeout, psemaphore, 0, nullptr );
 
     while ( psemaphore->CWait() == 0 );
 

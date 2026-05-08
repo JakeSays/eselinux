@@ -126,7 +126,7 @@ C_ASSERT( sizeof( CAtomicBfBitField ) == sizeof( FLAG32 ) );
 
 struct BF;
 typedef BF* PBF;
-const PBF pbfNil = PBF( 0 );
+const PBF pbfNil = PBF( nullptr );
 typedef LONG_PTR IBF;
 const IBF ibfNil = IBF( -1 );
 typedef IBF CBF;
@@ -156,7 +156,7 @@ struct BF                                           //  BF  --  IFMP/PGNO buffer
             tce( tceNone ),
             pbfTimeDepChainPrev( pbfNil ),
             pbfTimeDepChainNext( pbfNil ),
-            pv( NULL ),
+            pv( nullptr ),
             bfrs( bfrsNotCommitted ),
             fLazyIO( fFalse ),
             pWriteSignalComplete( 0 ), // and thus pbfNext( NULL )
@@ -166,7 +166,7 @@ struct BF                                           //  BF  --  IFMP/PGNO buffer
             fSyncRead( fFalse ),
             bfat( bfatNone ),
             fAbandoned( fFalse ),
-            pvIOContext( NULL )
+            pvIOContext( nullptr )
     {
         const TICK tickNow = TickOSTimeCurrent();
 
@@ -690,14 +690,14 @@ struct LogHistData
     LogHistData( void )
         :   m_lgenBase( 0 ),
             m_cgen( 0 ),
-            m_rgc( NULL ),
+            m_rgc( nullptr ),
             m_cOverflow( 0 )
     {
     }
     ~LogHistData( void )
     {
         delete[] m_rgc;
-        m_rgc = NULL;
+        m_rgc = nullptr;
     }
 };
 
@@ -968,7 +968,7 @@ class CCacheRAM
 
 extern CCacheRAM g_cacheram;
 
-bool FBFIFaultInBuffer( const PBF pbf, LONG * pcmmpgReclaimed = NULL );
+bool FBFIFaultInBuffer( const PBF pbf, LONG * pcmmpgReclaimed = nullptr );
 
 
 //  Issue List
@@ -1432,7 +1432,7 @@ ERR ErrBFILatchPage(    _Out_ BFLatch* const    pbfl,
                         const BFLatchType       bfltReq,
                         const BFPriority        bfpri,
                         const TraceContext&     tc,
-                        _Out_ BOOL* const       pfCachedNewPage = NULL );
+                        _Out_ BOOL* const       pfCachedNewPage = nullptr );
 void BFIReleaseSXWL( __inout PBF const pbf, const BFLatchType bfltHave );
 void BFIUnlatchMaintPage( __inout PBF const pbf, _In_ const BFLatchType bfltHave );
 
@@ -1451,7 +1451,7 @@ ERR ErrBFIPrepareFlushPage(
                         _In_       IOREASON     ior,
                         _In_ const OSFILEQOS    qos,
                         _In_ const BOOL         fRemoveDependencies = fTrue,
-                        _Out_opt_ BOOL * const  pfPermanentErr      = NULL );
+                        _Out_opt_ BOOL * const  pfPermanentErr      = nullptr );
 BOOL FBFITryAcquireExclusiveLatchForMaint( const PBF pbf );
 ERR ErrBFIAcquireExclusiveLatchForFlush( PBF pbf, _In_ const BOOL fUnencumberedPath );
 ERR ErrBFIFlushExclusiveLatchedAndPreparedBF(   __inout const PBF       pbf,
@@ -1463,7 +1463,7 @@ ERR ErrBFIFlushPage(    __inout const PBF       pbf,
                         _In_ const OSFILEQOS    qos,
                         _In_ const BFDirtyFlags bfdfFlushMin    = bfdfDirty,
                         _In_ const BOOL         fOpportune      = fFalse,
-                        __out_opt BOOL * const  pfPermanentErr  = NULL );
+                        __out_opt BOOL * const  pfPermanentErr  = nullptr );
 bool FBFICompleteFlushPage( _Inout_ PBF pbf, _In_ const BFLatchType bflt, _In_ const BOOL fUnencumberedPath = fFalse, _In_ const BOOL fCompleteRemapReVerify = fTrue, _In_ const BOOL fAllowTearDownClean = fFalse );
 
 INLINE BOOL FBFIIsCleanEnoughForEvict( const PBF pbf );
@@ -1501,9 +1501,9 @@ struct BFIPageRangeLock
         pgnoLast( pgnoNull ),
         pgnoDbLast( pgnoNull ),
         cpg( 0 ),
-        rgbfl( NULL ),
-        rgfLatched( NULL ),
-        rgfUncached( NULL ),
+        rgbfl( nullptr ),
+        rgfLatched( nullptr ),
+        rgfUncached( nullptr ),
         fRangeLocked( fFalse ),
         irangelock( CMeteredSection::groupTooManyActiveErr )
     {

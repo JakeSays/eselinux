@@ -74,7 +74,7 @@ LOCAL ERR ErrBTICreateMergePath(
     const PGNO pgnoSearch,
     const BOOL fLeafPage,
     MERGEPATH **ppmergePath,
-    _Inout_opt_ PrereadInfo * const pPrereadInfo = NULL );
+    _Inout_opt_ PrereadInfo * const pPrereadInfo = nullptr );
 
 ERR ErrBTINewSplitPath( SPLITPATH **ppsplitPath );
 LOCAL ERR ErrBTICreateSplitPath( FUCB               *pfucb,
@@ -104,7 +104,7 @@ VOID BTISplitCalcUncFree( SPLIT *psplit );
 VOID BTISelectAppend( SPLIT *psplit, FUCB *pfucb );
 VOID BTISelectVerticalSplit( SPLIT *psplit, FUCB *pfucb );
 VOID BTISelectRightSplit( SPLIT *psplit, FUCB *pfucb );
-BOOL FBTISplitCausesNoOverflow( SPLIT *psplit, INT cLineSplit, BOOL * pfSplitPageOverflow = NULL, BOOL * pfNewPageOverflow = NULL );
+BOOL FBTISplitCausesNoOverflow( SPLIT *psplit, INT cLineSplit, BOOL * pfSplitPageOverflow = nullptr, BOOL * pfNewPageOverflow = nullptr );
 VOID BTIRecalcWeightsLE( SPLIT *psplit );
 VOID BTISelectSplitWithOperNone( SPLIT *psplit, FUCB *pfucb );
 ERR ErrBTINewSplit( FUCB *pfucb, SPLITPATH *psplitPath, KEYDATAFLAGS *pkdf, DIRFLAG dirflag );
@@ -386,7 +386,7 @@ LONG LBTVerticalSplitCEFLPv( LONG iInstance, VOID *pvBuf )
 
 LONG LBTSplitCEFLPv( LONG iInstance, VOID *pvBuf )
 {
-    if ( NULL != pvBuf )
+    if ( nullptr != pvBuf )
     {
         *(LONG*)pvBuf = cBTAppendSplit.Get( iInstance ) + cBTRightSplit.Get( iInstance ) + cBTVerticalSplit.Get( iInstance );
     }
@@ -437,7 +437,7 @@ LONG LBTPageMoveCEFLPv( LONG iInstance, VOID *pvBuf )
 
 LONG LBTMergeCEFLPv( LONG iInstance, VOID *pvBuf )
 {
-    if ( NULL != pvBuf )
+    if ( nullptr != pvBuf )
     {
         *(LONG*)pvBuf =
             cBTEmptyPageMerge.Get( iInstance )
@@ -538,7 +538,7 @@ ERR ErrBTOpen( PIB *ppib, FCB *pfcb, FUCB **ppfucb, BOOL fAllowReuse )
                     FUCBResetFlags( pfucb );
                     Assert( !FFUCBDeferClosed( pfucb ) );
 
-                    pfucb->pfucbTable = NULL;
+                    pfucb->pfucbTable = nullptr;
 
                     FUCBResetPreread( pfucb );
                     FUCBResetOpportuneRead( pfucb );
@@ -654,7 +654,7 @@ ERR ErrBTOpenByProxy( PIB *ppib, FCB *pfcb, FUCB **ppfucb, const LEVEL level )
             FUCBResetFlags( pfucb );
             Assert( !FFUCBDeferClosed( pfucb ) );
 
-            pfucb->pfucbTable = NULL;
+            pfucb->pfucbTable = nullptr;
 
             FUCBResetPreread( pfucb );
             FUCBResetOpportuneRead( pfucb );
@@ -749,7 +749,7 @@ VOID BTClose( FUCB *pfucb )
         if( pfucb->pvRCEBuffer )
         {
             OSMemoryHeapFree( pfucb->pvRCEBuffer );
-            pfucb->pvRCEBuffer = NULL;
+            pfucb->pvRCEBuffer = nullptr;
         }
         Pcsr( pfucb )->ReleasePage( pfucb->u.pfcb->FNoCache() );
     }
@@ -868,7 +868,7 @@ ERR ErrBTGet( FUCB *pfucb )
     Assert( Pcsr( pfucb )->FLatched() );
 
     BOOL    fVisible;
-    err = ErrNDVisibleToCursor( pfucb, &fVisible, NULL );
+    err = ErrNDVisibleToCursor( pfucb, &fVisible, nullptr );
     if ( err < 0 )
     {
         BTUp( pfucb );
@@ -923,10 +923,10 @@ ERR ErrBTRelease( FUCB  *pfucb )
 
         // release page anyway, return previous error
         Pcsr( pfucb )->ReleasePage( pfucb->u.pfcb->FNoCache() );
-        if( NULL != pfucb->pvRCEBuffer )
+        if( nullptr != pfucb->pvRCEBuffer )
         {
             OSMemoryHeapFree( pfucb->pvRCEBuffer );
-            pfucb->pvRCEBuffer = NULL;
+            pfucb->pvRCEBuffer = nullptr;
         }
     }
 
@@ -1097,7 +1097,7 @@ LOCAL ERR ErrBTIReportBadPageLink(
                 _countof( rgwsz ),
                 rgwsz,
                 0,
-                NULL,
+                nullptr,
                 PinstFromPfucb( pfucb ) );
         if ( fFatal )
         {
@@ -1411,7 +1411,7 @@ public:
         if ( fReportEvent )
         {
             ULONG           cbKey       = pfucb->bmCurr.key.Cb();
-            BYTE *          pbKey       = NULL;
+            BYTE *          pbKey       = nullptr;
             const ULONG     csz         = 21;
             WCHAR           rgszDw[csz][16];
             WCHAR           szDbtimes[80];
@@ -1517,7 +1517,7 @@ public:
                 //  key of the node we started the move from
                 //
                 pbKey = (BYTE *)RESKEY.PvRESAlloc();
-                if ( NULL != pbKey )
+                if ( nullptr != pbKey )
                 {
                     pfucb->bmCurr.key.CopyIntoBuffer( pbKey, cbKeyAlloc );
                 }
@@ -1620,7 +1620,7 @@ ERR ErrBTNext( FUCB *pfucb, DIRFLAG dirflag )
 
     ERR         err;
     CSR * const pcsr                        = Pcsr( pfucb );
-    BYTE*       pbkeySave                   = NULL;
+    BYTE*       pbkeySave                   = nullptr;
     ULONG       cbKeySave                   = 0;
     ULONG       cNeighbourKeysSkipped       = 0;
     BOOL        fNodesSkippedOnCurrentPage  = fFalse;
@@ -1793,7 +1793,7 @@ Start:
                         //  if we need to do neighbour-key check, must save off
                         //  bookmark
                         if ( ( dirflag & fDIRNeighborKey )
-                            && NULL == pbkeySave )
+                            && nullptr == pbkeySave )
                         {
                             Alloc( pbkeySave = ( BYTE *)RESKEY.PvRESAlloc() );
                             cbKeySave = pfucb->bmCurr.key.Cb();
@@ -1840,7 +1840,7 @@ Start:
     //
     if ( dirflag & fDIRNeighborKey )
     {
-        const BOOL  fSkip   = ( NULL == pbkeySave ?
+        const BOOL  fSkip   = ( nullptr == pbkeySave ?
                                     FKeysEqual( pfucb->kdfCurr.key, pfucb->bmCurr.key ) :
                                     FKeysEqual( pfucb->kdfCurr.key, pbkeySave, cbKeySave ) );
         if ( fSkip )
@@ -2000,7 +2000,7 @@ ERR ErrBTPrev( FUCB *pfucb, DIRFLAG dirflag )
 
     ERR         err;
     CSR * const pcsr                        = Pcsr( pfucb );
-    BYTE*       pbkeySave                   = NULL;
+    BYTE*       pbkeySave                   = nullptr;
     ULONG       cbKeySave                   = 0;
     ULONG       cLatchConflicts             = 0;
     ULONG       cNeighbourKeysSkipped       = 0;
@@ -2116,7 +2116,7 @@ Start:
                 //  if we need to do neighbour-key check, must save off
                 //  bookmark
                 if ( ( dirflag & fDIRNeighborKey )
-                    && NULL == pbkeySave )
+                    && nullptr == pbkeySave )
                 {
                     Alloc( pbkeySave = ( BYTE* )RESKEY.PvRESAlloc() );
                     cbKeySave = pfucb->bmCurr.key.Cb();
@@ -2229,7 +2229,7 @@ Start:
                             //  if we need to do neighbour-key check, must save off
                             //  bookmark
                             if ( ( dirflag & fDIRNeighborKey )
-                                && NULL == pbkeySave )
+                                && nullptr == pbkeySave )
                             {
                                 Alloc( pbkeySave = ( BYTE* )RESKEY.PvRESAlloc() );
                                 cbKeySave = pfucb->bmCurr.key.Cb();
@@ -2272,7 +2272,7 @@ Start:
     //
     if ( dirflag & fDIRNeighborKey )
     {
-        const BOOL  fSkip   = ( NULL == pbkeySave ?
+        const BOOL  fSkip   = ( nullptr == pbkeySave ?
                                     FKeysEqual( pfucb->kdfCurr.key, pfucb->bmCurr.key ) :
                                     FKeysEqual( pfucb->kdfCurr.key, pbkeySave, cbKeySave ) );
         if ( fSkip )
@@ -2489,7 +2489,7 @@ PrereadContext::PrereadContext( PIB * const ppib, FUCB * const pfucb ) :
     {
         m_cpgPreread[ i ]       = 0;
         m_cpgPrereadAlloc[ i ]  = 0;
-        m_rgpgnoPreread[ i ]    = NULL;
+        m_rgpgnoPreread[ i ]    = nullptr;
     }
 }
 
@@ -2519,7 +2519,7 @@ void PrereadContext::CheckSpaceFragmentation_( const CSR& csr )
 //  ================================================================
 {
     ERR err;
-    PGNO * rgpgno = NULL;
+    PGNO * rgpgno = nullptr;
 
     const INT clines = csr.Cpage().Clines();
     Alloc( rgpgno = new PGNO[clines] );
@@ -3178,12 +3178,12 @@ ERR PrereadContext::ErrAddPrereadCandidate(
     // realloc preread page buffer if it is too small to accept the new page
     const CPG cpgPrereadAllocMin = 128;
     const CPG cpgPrereadNew = m_cpgPreread[prpgtyp] + 1;
-    if ( m_rgpgnoPreread[prpgtyp] == NULL || m_cpgPrereadAlloc[prpgtyp] < cpgPrereadNew )
+    if ( m_rgpgnoPreread[prpgtyp] == nullptr || m_cpgPrereadAlloc[prpgtyp] < cpgPrereadNew )
     {
         CPG     cpgPrereadAllocNew  = max( cpgPrereadAllocMin, max( cpgPrereadNew, m_cpgPrereadAlloc[prpgtyp] * 2 ) );
-        PGNO*   rgpgnoPrereadNew    = NULL;
+        PGNO*   rgpgnoPrereadNew    = nullptr;
         Alloc( rgpgnoPrereadNew = new PGNO[cpgPrereadAllocNew] );
-        if ( m_rgpgnoPreread[prpgtyp] != NULL )
+        if ( m_rgpgnoPreread[prpgtyp] != nullptr )
         {
             memcpy( rgpgnoPrereadNew, m_rgpgnoPreread[prpgtyp], sizeof( PGNO ) * m_cpgPrereadAlloc[prpgtyp] );
             delete[] m_rgpgnoPreread[prpgtyp];
@@ -3232,7 +3232,7 @@ ERR PrereadContext::ErrPrereadKeys(
 {
     ERR err;
 
-    BOOKMARK * rgbm = NULL;
+    BOOKMARK * rgbm = nullptr;
     Alloc( rgbm = new BOOKMARK[ckeys] );
 
     for( INT ikey = 0; ikey < ckeys; ++ikey )
@@ -3251,7 +3251,7 @@ ERR PrereadContext::ErrPrereadKeys(
             0,
             cpgPrereadSequential,
             grbit | bitPrereadSingletonRanges,
-            NULL ) );
+            nullptr ) );
 
 HandleError:
     delete[] rgbm;
@@ -3302,7 +3302,7 @@ ERR  ErrBTPrereadBookmarks(
             0,
             cpgPrereadSequential,
             grbit | bitPrereadSingletonRanges,
-            NULL );
+            nullptr );
 }
 
 
@@ -3515,8 +3515,8 @@ ERR PrereadContext::ErrPrereadKeyRanges(
 {
     ERR err;
 
-    BOOKMARK * rgbmStart = NULL;
-    BOOKMARK * rgbmEnd = NULL;
+    BOOKMARK * rgbmStart = nullptr;
+    BOOKMARK * rgbmEnd = nullptr;
     Alloc( rgbmStart = new BOOKMARK[cRanges] );
     Alloc( rgbmEnd = new BOOKMARK[cRanges] );
 
@@ -3896,7 +3896,7 @@ public:
     enum AllocState { eDeferAlloc = 7 };
 
     CAutoKey( void ) : m_pvKey( RESKEY.PvRESAlloc() ) { }
-    CAutoKey( const AllocState eAllocState ) : m_pvKey( NULL ) { Assert( eAllocState == eDeferAlloc ); }
+    CAutoKey( const AllocState eAllocState ) : m_pvKey( nullptr ) { Assert( eAllocState == eDeferAlloc ); }
 
     ERR ErrAlloc()
     {
@@ -4375,7 +4375,7 @@ ERR ErrBTDown( FUCB *pfucb, DIB *pdib, LATCH latch )
         Assert( !( pdib->dirflag & fDIRAllNodesNoCommittedDeleted ) );
 
         BOOL    fVisible;
-        Call( ErrNDVisibleToCursor( pfucb, &fVisible, NULL ) );
+        Call( ErrNDVisibleToCursor( pfucb, &fVisible, nullptr ) );
         Assert( !fVisible || JET_errNoCurrentRecord != err );
 
         BOOL fIgnoreRecord = fFalse;
@@ -5197,9 +5197,9 @@ ERR ErrBTLock( FUCB *pfucb, DIRLOCK dirlock, BOOKMARK &bm )
                 bm,
                 oper,
                 &prce,
-                NULL ) );
+                nullptr ) );
         Assert( prceNil != prce );
-        VERInsertRCEIntoLists( pfucb, pcsrNil, prce, NULL );
+        VERInsertRCEIntoLists( pfucb, pcsrNil, prce, nullptr );
     }
     Assert( !Pcsr( pfucb )->FLatched() );
 
@@ -5381,7 +5381,7 @@ Start:
         Assert( prceNil == prceReplace );
         VER *pver = PverFromIfmp( pfucb->ifmp );
         Call( pver->ErrVERCheckTransactionSize( pfucb->ppib ) );
-        Call( pver->ErrVERModify( pfucb, pfucb->bmCurr, operReplace, &prceReplace, NULL ) );
+        Call( pver->ErrVERModify( pfucb, pfucb->bmCurr, operReplace, &prceReplace, nullptr ) );
         Assert( prceNil != prceReplace );
         rceidReplace = Rceid( prceReplace );
     }
@@ -5434,7 +5434,7 @@ Start:
                     rceidNull,
                     prceReplace,
                     cbDataOld,
-                    NULL );
+                    nullptr );
 
         if ( errBTOperNone == err )
         {
@@ -5457,7 +5457,7 @@ Start:
     if( prceNil != prceReplace )
     {
         Assert( fVersion );
-        VERInsertRCEIntoLists( pfucb, Pcsr( pfucb ), prceReplace, NULL );
+        VERInsertRCEIntoLists( pfucb, Pcsr( pfucb ), prceReplace, nullptr );
     }
     else
     {
@@ -5637,7 +5637,7 @@ Start:
             }
         }
 
-        VERInsertRCEIntoLists( pfucb, Pcsr( pfucb ), prce, NULL );
+        VERInsertRCEIntoLists( pfucb, Pcsr( pfucb ), prce, nullptr );
     }
     else
     {
@@ -5714,7 +5714,7 @@ ERR ErrBTInsert(
         verproxy.proxy          = proxyCreateIndex;
     }
 
-    const VERPROXY * const pverproxy = ( prceNil != prcePrimary ) ? &verproxy : NULL;
+    const VERPROXY * const pverproxy = ( prceNil != prcePrimary ) ? &verproxy : nullptr;
 
     KEYDATAFLAGS    kdf;
     LATCH           latch   = latchReadTouch;
@@ -6165,7 +6165,7 @@ Retry:
     {
         VER *pver = PverFromIfmp( pfucb->ifmp );
         Call( pver->ErrVERCheckTransactionSize( pfucb->ppib ) );
-        Call( pver->ErrVERModify( pfucb, bookmark, operPreInsert, &prceInsert, NULL ) );
+        Call( pver->ErrVERModify( pfucb, bookmark, operPreInsert, &prceInsert, nullptr ) );
         Assert( prceInsert );
     }
 
@@ -6229,7 +6229,7 @@ Retry:
                            rceidNull,
                            prceNil,
                            0,
-                           NULL );
+                           nullptr );
 
         if ( errBTOperNone == err && !FFUCBRepair( pfucb ) )
         {
@@ -6251,7 +6251,7 @@ Retry:
 
             DIB dib;
             dib.pos = posLast;
-            dib.pbm = NULL;
+            dib.pbm = nullptr;
             dib.dirflag = fDIRNull;
             Call( ErrBTDown( pfucb, &dib, latchRIW ) );
             Call( Pcsr( pfucb )->ErrUpgrade() );
@@ -6266,7 +6266,7 @@ Retry:
 
         //  insert node
         //
-        err = ErrNDInsert( pfucb, &kdf, dirflag, Rceid( prceInsert ), NULL );
+        err = ErrNDInsert( pfucb, &kdf, dirflag, Rceid( prceInsert ), nullptr );
         Assert ( errPMOutOfPageSpace != err );
     }
 
@@ -6280,7 +6280,7 @@ Retry:
     {
         Assert( fVersion );
         prceInsert->ChangeOper( operInsert );
-        VERInsertRCEIntoLists( pfucb, Pcsr( pfucb ), prceInsert, NULL );
+        VERInsertRCEIntoLists( pfucb, Pcsr( pfucb ), prceInsert, nullptr );
     }
 #ifdef DEBUG
     else
@@ -6321,7 +6321,7 @@ LOCAL ERR ErrBTITryAvailExtMerge( FUCB * const pfucb )
                                                 pfucb->ifmp,
                                                 pfucb->bmCurr );
 
-    if( NULL == ptask )
+    if( nullptr == ptask )
     {
         CallR ( ErrERRCheck( JET_errOutOfMemory ) );
     }
@@ -6399,7 +6399,7 @@ ERR ErrBTFlagDelete( FUCB *pfucb, DIRFLAG dirflag, RCE *prcePrimary )
         verproxy.proxy          = proxyCreateIndex;
     }
 
-    const VERPROXY * const pverproxy = ( prceNil != prcePrimary ) ? &verproxy : NULL;
+    const VERPROXY * const pverproxy = ( prceNil != prcePrimary ) ? &verproxy : nullptr;
 
     RCE * prce = prceNil;
     RCEID rceid = rceidNull;
@@ -6552,7 +6552,7 @@ ERR ErrBTCopyTree( FUCB * pfucbSrc, FUCB * pfucbDest, DIRFLAG dirflag )
 
     DIB dib;
     dib.pos     = posFirst;
-    dib.pbm     = NULL;
+    dib.pbm     = nullptr;
     dib.dirflag = fDIRNull;
     err = ErrBTDown( pfucbSrc, &dib, latchReadTouch );
 
@@ -6597,7 +6597,7 @@ ERR ErrBTCopyTree( FUCB * pfucbSrc, FUCB * pfucbDest, DIRFLAG dirflag )
         data.SetCb( pfucbSrc->kdfCurr.data.Cb() );
 
         Call( ErrBTRelease( pfucbSrc ) );
-        Call( ErrBTInsert( pfucbDest, key, data, dirflag, NULL ) );
+        Call( ErrBTInsert( pfucbDest, key, data, dirflag, nullptr ) );
         BTUp( pfucbDest );
 
         err = ErrBTNext( pfucbSrc, fDIRNull );
@@ -6629,7 +6629,7 @@ ERR ErrBTComputeStats( FUCB *pfucb, INT *pcnode, INT *pckey, INT *pcpage )
     INT     cnode = 0;
     INT     ckey = 0;
     INT     cpage = 0;
-    BYTE    *pbKey = NULL;
+    BYTE    *pbKey = nullptr;
     KEY     key;
 
 
@@ -7179,7 +7179,7 @@ ERR ErrBTIGetBookmarkFromPage(
 
     ERR err;
     CSR csr;
-    BYTE * pb = NULL;
+    BYTE * pb = nullptr;
 
     pcsr->SetILine( iline );
     NDGet( pfucb, pcsr );
@@ -7198,7 +7198,7 @@ ERR ErrBTIGetBookmarkFromPage(
     pfucb->kdfCurr.key.CopyIntoBuffer(pb, cbKey);
     pbm->key.suffix.SetPv( pb );
     pbm->key.suffix.SetCb( cbKey );
-    pb = NULL;
+    pb = nullptr;
 
 HandleError:
     csr.ReleasePage();
@@ -7234,7 +7234,7 @@ ERR ErrBTIFindFragmentedRangeInParentOfLeafPage(
     Assert( pbmRangeEnd->key.FNull() );
 
     ERR err;
-    PGNO * rgpgno = NULL;
+    PGNO * rgpgno = nullptr;
 
     const INT ilineStart    = pcsr->ILine();
     const INT clines        = pcsr->Cpage().Clines();
@@ -7483,7 +7483,7 @@ ERR ErrBTDumpPageUsage( PIB * ppib, const IFMP ifmp, const PGNO pgnoFDP )
         pcsr = Pcsr( pfucb );
 
         dib.pos = posFirst;
-        dib.pbm = NULL;
+        dib.pbm = nullptr;
         dib.dirflag = fDIRAllNode;
 
         err = ErrBTDown( pfucb, &dib, latchReadNoTouch );
@@ -7962,7 +7962,7 @@ ERR ErrBTIIRefresh( FUCB *pfucb, LATCH latch )
                                          pfucb->ifmp,
                                          Pcsr( pfucb )->Pgno(),
                                          latch,
-                                         NULL,
+                                         nullptr,
                                          fTrue );
 
         //  this may be a trimmed or shrunk page, so take the slow path to re-establish currency. If we have a real
@@ -8070,7 +8070,7 @@ LOCAL BOOL FBTIEligibleForOLD2( FUCB * const pfucb )
 LOCAL ERR ErrBTIRegisterForOLD2( FUCB * const pfucb )
 {
     ERR err = JET_errSuccess;
-    DBREGISTEROLD2TASK * ptask = NULL;
+    DBREGISTEROLD2TASK * ptask = nullptr;
 
     OnDebug( BOOL fTaskPosted = fFalse );
 
@@ -8083,7 +8083,7 @@ LOCAL ERR ErrBTIRegisterForOLD2( FUCB * const pfucb )
             pfucb->u.pfcb->EnterDML();
             OSStrCbCopyA( szTableName, sizeof( szTableName ), pfucb->u.pfcb->Ptdb()->SzTableName() );
             pfucb->u.pfcb->LeaveDML();
-            Alloc( ptask = new DBREGISTEROLD2TASK( pfucb->ifmp, szTableName, NULL, defragtypeTable ) );
+            Alloc( ptask = new DBREGISTEROLD2TASK( pfucb->ifmp, szTableName, nullptr, defragtypeTable ) );
         }
 
         if ( PinstFromIfmp( pfucb->ifmp )->m_pver->m_fSyncronousTasks || g_rgfmp[ pfucb->ifmp ].FDetachingDB() )
@@ -8097,7 +8097,7 @@ LOCAL ERR ErrBTIRegisterForOLD2( FUCB * const pfucb )
 
         OnDebug( fTaskPosted = fTrue; );
 
-        ptask = NULL;
+        ptask = nullptr;
         // WARNING: Please do not overwrite the err after this point. 
         // Otherwise successfully posted task may get deleted by its caller.
     }
@@ -8139,7 +8139,7 @@ INLINE ERR ErrBTIDelete( FUCB *pfucb, const BOOKMARK& bm )
         //
 
         MERGETYPE mergetype;
-        err = ErrBTIMultipageCleanup( pfucb, bm, NULL, NULL, &mergetype, fTrue );
+        err = ErrBTIMultipageCleanup( pfucb, bm, nullptr, nullptr, &mergetype, fTrue );
         if ( errBTMergeNotSynchronous == err )
         {
             //  ignore merge conflicts
@@ -8147,7 +8147,7 @@ INLINE ERR ErrBTIDelete( FUCB *pfucb, const BOOKMARK& bm )
         }
         else if ( mergetypeNone == mergetype )
         {
-            err = ErrBTIMultipageCleanup( pfucb, bm, NULL, NULL, &mergetype, fFalse );
+            err = ErrBTIMultipageCleanup( pfucb, bm, nullptr, nullptr, &mergetype, fFalse );
             if ( errBTMergeNotSynchronous == err )
             {
                 //  ignore merge conflicts
@@ -8410,7 +8410,7 @@ ERR ErrBTISplit( FUCB           * const pfucb,
 {
     ERR         err;
     BOOL        fOperNone   = fFalse;
-    SPLITPATH   *psplitPath = NULL;
+    SPLITPATH   *psplitPath = nullptr;
     INST        *pinst = PinstFromIfmp( pfucb->ifmp );
 
     Assert( rceid2 == Rceid( prceReplace )
@@ -8480,7 +8480,7 @@ ERR ErrBTISplit( FUCB           * const pfucb,
     //
     Call( ErrBTISelectSplit( pfucb, psplitPath, pkdf, dirflag ) );
     BTISplitCheckPath( psplitPath );
-    if ( NULL == psplitPath->psplit ||
+    if ( nullptr == psplitPath->psplit ||
          splitoperNone == psplitPath->psplit->splitoper )
     {
         //  save err if operNone
@@ -8590,7 +8590,7 @@ ERR ErrBTISplit( FUCB           * const pfucb,
 HandleError:
     //  release splitPath
     //
-    if ( psplitPath != NULL )
+    if ( psplitPath != nullptr )
     {
         BTIReleaseSplitPaths( pinst, psplitPath );
     }
@@ -8882,7 +8882,7 @@ LOCAL ERR   ErrBTICreateSplitPath( FUCB             *pfucb,
         {
             const SPLITPATH * const     psplitPathParent        = (*ppsplitPath)->psplitPathParent;
 
-            if ( NULL != psplitPathParent )
+            if ( nullptr != psplitPathParent )
             {
                 Assert( !( (*ppsplitPath)->csr.Cpage().FRootPage() ) );
 
@@ -8967,7 +8967,7 @@ ERR ErrBTINewSplitPath( SPLITPATH **ppsplitPath )
 
     psplitPath->psplitPathParent = *ppsplitPath;
 
-    if ( psplitPath->psplitPathParent != NULL )
+    if ( psplitPath->psplitPathParent != nullptr )
     {
         Assert( NULL == psplitPath->psplitPathParent->psplitPathChild );
         psplitPath->psplitPathParent->psplitPathChild = psplitPath;
@@ -9070,7 +9070,7 @@ LOCAL ERR ErrBTISelectSplit( FUCB           *pfucb,
                                  &psplit->kdfParent,
                                  dirflag ) );
 
-        if ( NULL == psplitPath->psplitPathParent->psplit ||
+        if ( nullptr == psplitPath->psplitPathParent->psplit ||
              splitoperNone == psplitPath->psplitPathParent->psplit->splitoper )
         {
             //  somewhere up the tree, split could not bepsplit->kdfParent performed
@@ -9078,7 +9078,7 @@ LOCAL ERR ErrBTISelectSplit( FUCB           *pfucb,
             //  so reset psplit at this level
             //
             delete psplit;
-            psplitPath->psplit = NULL;
+            psplitPath->psplit = nullptr;
             return err;
         }
     }
@@ -9108,7 +9108,7 @@ ERR ErrBTINewSplit(
     INT             iLineTo;
     INT             iLineFrom;
     BOOL            fPossibleHotpoint       = fFalse;
-    VOID *          pvHighest               = NULL;
+    VOID *          pvHighest               = nullptr;
 
     Assert( psplitPath != NULL );
     Assert( psplitPath->psplit == NULL );
@@ -9543,13 +9543,13 @@ LOCAL BOOL FBTISplitAppendLeaf( _In_ const SPLIT * const psplit )
     {
         const SPLITPATH *psplitPath = psplit->psplitPath;
 
-        for ( ; psplitPath->psplitPathChild != NULL; psplitPath = psplitPath->psplitPathChild )
+        for ( ; psplitPath->psplitPathChild != nullptr; psplitPath = psplitPath->psplitPathChild )
         {
         }
 
         Assert( psplitPath->psplitPathChild == NULL );
         Assert( psplitPath->csr.Cpage().FLeafPage() );
-        if ( NULL != psplitPath->psplit &&
+        if ( nullptr != psplitPath->psplit &&
              splittypeAppend == psplitPath->psplit->splittype )
         {
             fAppendLeaf = fTrue;
@@ -10505,7 +10505,7 @@ ERR ErrBTISplitAllocAndCopyPrefix( const KEY &key, DATA *pdata )
     Assert( !key.FNull() );
 
     pdata->SetPv( RESBOOKMARK.PvRESAlloc() );
-    if ( pdata->Pv() == NULL )
+    if ( pdata->Pv() == nullptr )
     {
         return ErrERRCheck( JET_errOutOfMemory );
     }
@@ -10618,7 +10618,7 @@ ERR ErrBTIComputeSeparatorKey( FUCB                 *pfucb,
     //
     Assert( pkey->FNull() );
     pkey->suffix.SetPv( RESBOOKMARK.PvRESAlloc() );
-    if ( pkey->suffix.Pv() == NULL )
+    if ( pkey->suffix.Pv() == nullptr )
     {
         return ErrERRCheck( JET_errOutOfMemory );
     }
@@ -11260,7 +11260,7 @@ LOCAL ERR ErrBTIGetNewPages( FUCB *pfucb, SPLITPATH *psplitPathLeaf, DIRFLAG dir
     //
     Assert( pfucb->pcsrRoot == pcsrNil );
     for ( psplitPath = psplitPathLeaf;
-          psplitPath->psplitPathParent != NULL;
+          psplitPath->psplitPathParent != nullptr;
           psplitPath = psplitPath->psplitPathParent )
     {
         //  all logic in for loop
@@ -11271,9 +11271,9 @@ LOCAL ERR ErrBTIGetNewPages( FUCB *pfucb, SPLITPATH *psplitPathLeaf, DIRFLAG dir
     //  get a new page for every split
     //
     Assert( psplitPath->psplitPathParent == NULL );
-    for ( ; psplitPath != NULL; psplitPath = psplitPath->psplitPathChild )
+    for ( ; psplitPath != nullptr; psplitPath = psplitPath->psplitPathChild )
     {
-        if ( psplitPath->psplit != NULL )
+        if ( psplitPath->psplit != nullptr )
         {
             SPLIT * psplit      = psplitPath->psplit;
 
@@ -11363,10 +11363,10 @@ HandleError:
     //  free all allocated pages
     //
     for ( psplitPath = psplitPathLeaf;
-          psplitPath != NULL;
+          psplitPath != nullptr;
           psplitPath = psplitPath->psplitPathParent )
     {
-        if ( psplitPath->psplit != NULL &&
+        if ( psplitPath->psplit != nullptr &&
              pgnoNull != psplitPath->psplit->pgnoNew )
         {
             SPLIT   *psplit = psplitPath->psplit;
@@ -11408,18 +11408,18 @@ HandleError:
 LOCAL VOID BTISplitReleaseUnneededPages( INST *pinst, SPLITPATH **ppsplitPathLeaf )
 {
     SPLITPATH   *psplitPath;
-    SPLITPATH   *psplitPathNewLeaf = NULL;
+    SPLITPATH   *psplitPathNewLeaf = nullptr;
 
     //  go to root
     //  since we need to latch top-down
     //
     for ( psplitPath = *ppsplitPathLeaf;
-          psplitPath->psplitPathParent != NULL;
+          psplitPath->psplitPathParent != nullptr;
           psplitPath = psplitPath->psplitPathParent )
     {
     }
 
-    for ( ; NULL != psplitPath;  )
+    for ( ; nullptr != psplitPath;  )
     {
         //  check if page is needed
         //      -- either there is a split at this level
@@ -11428,9 +11428,9 @@ LOCAL VOID BTISplitReleaseUnneededPages( INST *pinst, SPLITPATH **ppsplitPathLea
         //
         SPLIT   *psplit = psplitPath->psplit;
 
-        if ( psplit == NULL &&
-             ( psplitPath->psplitPathChild == NULL ||
-               psplitPath->psplitPathChild->psplit == NULL ) )
+        if ( psplit == nullptr &&
+             ( psplitPath->psplitPathChild == nullptr ||
+               psplitPath->psplitPathChild->psplit == nullptr ) )
         {
             //  release latch and psplitPath at this level
             //
@@ -11476,13 +11476,13 @@ LOCAL ERR ErrBTISplitUpgradeLatches( const IFMP ifmp, SPLITPATH * const psplitPa
     //  since we need to latch top-down
     //
     for ( psplitPath = psplitPathLeaf;
-          psplitPath->psplitPathParent != NULL;
+          psplitPath->psplitPathParent != nullptr;
           psplitPath = psplitPath->psplitPathParent )
     {
     }
 
     Assert( NULL == psplitPath->psplitPathParent );
-    for ( ; NULL != psplitPath;  psplitPath = psplitPath->psplitPathChild )
+    for ( ; nullptr != psplitPath;  psplitPath = psplitPath->psplitPathChild )
     {
         //  assert write latch is needed
         //      -- either there is a split at this level
@@ -11505,7 +11505,7 @@ LOCAL ERR ErrBTISplitUpgradeLatches( const IFMP ifmp, SPLITPATH * const psplitPa
         psplitPath->dbtimeBefore = dbtimeNil;
         psplitPath->fFlagsBefore = 0;
 
-        if ( psplitPath->psplitPathChild == NULL &&
+        if ( psplitPath->psplitPathChild == nullptr &&
             pgnoNull != psplit->csrRight.Pgno() )
         {
             Assert( psplit );
@@ -11542,7 +11542,7 @@ LOCAL ERR ErrBTISplitUpgradeLatches( const IFMP ifmp, SPLITPATH * const psplitPa
         //  new page will already be write latched
         //  dirty it and update max dbtime
         //
-        if ( psplit != NULL )
+        if ( psplit != nullptr )
         {
             Assert( psplit->csrNew.Latch() == latchWrite );
             psplit->csrNew.CoordinatedDirty( dbtimeSplit );
@@ -11550,7 +11550,7 @@ LOCAL ERR ErrBTISplitUpgradeLatches( const IFMP ifmp, SPLITPATH * const psplitPa
 
         //  write latch right page at leaf-level
         //
-        if ( psplitPath->psplitPathChild == NULL )
+        if ( psplitPath->psplitPathChild == nullptr )
         {
             Assert( psplit != NULL );
             Assert( psplitPath->csr.Cpage().FLeafPage()
@@ -11602,7 +11602,7 @@ VOID BTISplitRevertDbtime( SPLITPATH *psplitPathLeaf )
 
     Assert( NULL == psplitPath->psplitPathChild );
 
-    for ( ; NULL != psplitPath;
+    for ( ; nullptr != psplitPath;
             psplitPath = psplitPath->psplitPathParent )
     {
 
@@ -11624,7 +11624,7 @@ VOID BTISplitRevertDbtime( SPLITPATH *psplitPathLeaf )
 
         //  set dbtime for sibling and new pages
         //
-        if ( psplit != NULL && pgnoNull != psplit->csrRight.Pgno() )
+        if ( psplit != nullptr && pgnoNull != psplit->csrRight.Pgno() )
         {
 
             Assert( psplit->splittype != splittypeAppend );
@@ -11650,7 +11650,7 @@ LOCAL VOID BTISplitSetLgpos( SPLITPATH *psplitPathLeaf, const LGPOS& lgpos )
 {
     SPLITPATH   *psplitPath = psplitPathLeaf;
 
-    for ( ; psplitPath != NULL ; psplitPath = psplitPath->psplitPathParent )
+    for ( ; psplitPath != nullptr ; psplitPath = psplitPath->psplitPathParent )
     {
         Assert( psplitPath->csr.FDirty() );
 
@@ -11658,7 +11658,7 @@ LOCAL VOID BTISplitSetLgpos( SPLITPATH *psplitPathLeaf, const LGPOS& lgpos )
 
         SPLIT   *psplit = psplitPath->psplit;
 
-        if ( psplit != NULL )
+        if ( psplit != nullptr )
         {
             psplit->csrNew.Cpage().SetLgposModify( lgpos );
 
@@ -11831,16 +11831,16 @@ VOID BTIPerformSplit( FUCB          *pfucb,
     //  since we need to latch top-down
     //
     for ( psplitPath = psplitPathLeaf;
-          psplitPath->psplitPathParent != NULL;
+          psplitPath->psplitPathParent != nullptr;
           psplitPath = psplitPath->psplitPathParent )
     {
     }
 
-    for ( ; psplitPath != NULL; psplitPath = psplitPath->psplitPathChild )
+    for ( ; psplitPath != nullptr; psplitPath = psplitPath->psplitPathChild )
     {
         SPLIT   *psplit = psplitPath->psplit;
 
-        if ( psplit == NULL )
+        if ( psplit == nullptr )
         {
             Assert( psplitPath->psplitPathChild != NULL &&
                     psplitPath->psplitPathChild->psplit != NULL );
@@ -11863,7 +11863,7 @@ VOID BTIPerformSplit( FUCB          *pfucb,
 
         if ( splitoperNone == psplit->splitoper )
         {
-            pkdfOper = NULL;
+            pkdfOper = nullptr;
         }
         else if ( psplit->fNewPageFlags & CPAGE::fPageLeaf )
         {
@@ -11927,8 +11927,8 @@ VOID BTIPerformSplit( FUCB          *pfucb,
                 NDInsert( pfucb, pcsrRoot, &kdf );
             }
 
-            if ( psplitPath->psplitPathChild != NULL &&
-                 psplitPath->psplitPathChild->psplit != NULL )
+            if ( psplitPath->psplitPathChild != nullptr &&
+                 psplitPath->psplitPathChild->psplit != nullptr )
             {
                 //  replace data in ilineOper + 1 with pgnoNew
                 //  assert data in ilineOper is pgnoSplit
@@ -12628,7 +12628,7 @@ INLINE const LINEINFO *PlineinfoFromIline( SPLIT *psplit, INT iline )
     Assert( iline < psplit->clines );
     if ( iline < 0 || iline >= psplit->clines )
     {
-        return NULL;
+        return nullptr;
     }
 
     if ( psplit->splitoper != splitoperInsert ||
@@ -12754,7 +12754,7 @@ VOID BTISplitShrinkPages( SPLITPATH *psplitPathLeaf )
 {
     SPLITPATH *psplitPath = psplitPathLeaf;
 
-    for ( ; psplitPath != NULL; )
+    for ( ; psplitPath != nullptr; )
     {
         //  attempt to optimize internal frag if nesc and we can piggy back on 
         //  an existing DBTIME update
@@ -12782,7 +12782,7 @@ VOID BTIReleaseSplitPaths( INST *pinst, SPLITPATH *psplitPathLeaf )
 {
     SPLITPATH *psplitPath = psplitPathLeaf;
 
-    for ( ; psplitPath != NULL; )
+    for ( ; psplitPath != nullptr; )
     {
         //  save parent
         //
@@ -13193,7 +13193,7 @@ ERR ErrBTINewMergePath( MERGEPATH **ppmergePath )
     }
 
     pmergePath->pmergePathParent = *ppmergePath;
-    if ( pmergePath->pmergePathParent != NULL )
+    if ( pmergePath->pmergePathParent != nullptr )
     {
         Assert( NULL == pmergePath->pmergePathParent->pmergePathChild );
         pmergePath->pmergePathParent->pmergePathChild = pmergePath;
@@ -13347,7 +13347,7 @@ LOCAL ERR ErrBTISPCDeleteNodes( FUCB *pfucb, CSR *pcsr )
                 DATA data;
                 data.SetPv(&bNull);
                 data.SetCb(sizeof(bNull));
-                err = ErrNDReplace( pfucb, pcsr, &data, fDIRNoVersion, rceidNull, NULL );
+                err = ErrNDReplace( pfucb, pcsr, &data, fDIRNoVersion, rceidNull, nullptr );
                 pfucb->bmCurr = bmSaved;
                 Call( err );
 
@@ -13395,7 +13395,7 @@ LOCAL ERR ErrBTIMergeEmptyTree(
     //  go to root
     //  since we need to latch top-down
     for ( pmergePath = pmergePathLeaf;
-          pmergePath->pmergePathParent != NULL;
+          pmergePath->pmergePathParent != nullptr;
           pmergePath = pmergePath->pmergePathParent )
     {
         Assert( latchRIW == pmergePath->csr.Latch() );
@@ -13412,7 +13412,7 @@ LOCAL ERR ErrBTIMergeEmptyTree(
     //  latch and dirty all pages
     Assert( NULL != pmergePathRoot->pmergePathChild );
     for ( pmergePath = pmergePathRoot->pmergePathChild;
-        NULL != pmergePath;
+        nullptr != pmergePath;
         pmergePath = pmergePath->pmergePathChild )
     {
         pmergePath->csr.UpgradeFromRIWLatch();
@@ -13443,7 +13443,7 @@ LOCAL ERR ErrBTIMergeEmptyTree(
         //  update all child pages with dbtime of root, mark them as empty, and update lgpos
         const DBTIME    dbtime      = pcsrRoot->Dbtime();
         for ( pmergePath = pmergePathRoot->pmergePathChild;
-            NULL != pmergePath;
+            nullptr != pmergePath;
             pmergePath = pmergePath->pmergePathChild )
         {
             pmergePath->csr.CoordinatedDirty( dbtime );
@@ -13529,7 +13529,7 @@ ERR ErrBTIMultipageCleanup(
     __inout_opt PrereadInfo * const pPrereadInfo )
 {
     ERR             err;
-    MERGEPATH       *pmergePath     = NULL;
+    MERGEPATH       *pmergePath     = nullptr;
     PIBTraceContextScope tcScope       = TcBTICreateCtxScope( pfucb, iorsBTMerge );
 
     if ( pmergetype )
@@ -13541,7 +13541,7 @@ ERR ErrBTIMultipageCleanup(
     {
         //  btree is scheduled for deletion - don't bother attempting cleanup
         //
-        if ( NULL != pbmNext )
+        if ( nullptr != pbmNext )
         {
             pbmNext->key.suffix.SetCb( 0 );
             pbmNext->data.SetCb( 0 );
@@ -13555,7 +13555,7 @@ ERR ErrBTIMultipageCleanup(
     Call( ErrBTICreateMergePath( pfucb, bm, pgnoNull, fTrue, &pmergePath, pPrereadInfo ) );
     if ( wrnBTShallowTree == err )
     {
-        if ( NULL != pbmNext )
+        if ( nullptr != pbmNext )
         {
             pbmNext->key.suffix.SetCb( 0 );
             pbmNext->data.SetCb( 0 );
@@ -13571,7 +13571,7 @@ ERR ErrBTIMultipageCleanup(
 
     if ( mergetypeEmptyTree == pmergePath->pmerge->mergetype )
     {
-        if ( NULL != pbmNext )
+        if ( nullptr != pbmNext )
         {
             pbmNext->key.suffix.SetCb( 0 );
             pbmNext->data.SetCb( 0 );
@@ -13825,7 +13825,7 @@ LOCAL ERR ErrBTISinglePageCleanup( FUCB *pfucb, const BOOKMARK& bm )
 
     CallR( ErrBTISPCSeek( pfucb, bm ) );
 
-    LINEINFO    *rglineinfo = NULL;
+    LINEINFO    *rglineinfo = nullptr;
     BOOL        fEmptyPage;
     INT         pctFull;
 
@@ -13855,9 +13855,9 @@ LOCAL ERR ErrBTISinglePageCleanup( FUCB *pfucb, const BOOKMARK& bm )
                 pfucb,
                 Pcsr( pfucb ),
                 &rglineinfo,
-                NULL,
+                nullptr,
                 &fEmptyPage,
-                NULL,
+                nullptr,
                 &pctFull ) );
 
     //  if page is empty, needs MultipageOLC (note that
@@ -13891,7 +13891,7 @@ LOCAL ERR ErrBTISinglePageCleanup( FUCB *pfucb, const BOOKMARK& bm )
     }
 
 HandleError:
-    if ( rglineinfo != NULL )
+    if ( rglineinfo != nullptr )
     {
         delete [] rglineinfo;
     }
@@ -14230,7 +14230,7 @@ LOCAL ERR ErrBTISelectMerge(
 
     //  if we want the next bookmark, then we have to latch the sibling page to
     //  obtain it, even if no merge will occur with the current page
-    if ( mergetypeNone == pmerge->mergetype && NULL == pbmNext )
+    if ( mergetypeNone == pmerge->mergetype && nullptr == pbmNext )
     {
         return err;
     }
@@ -14247,7 +14247,7 @@ LOCAL ERR ErrBTISelectMerge(
 
     //  copy next bookmark to seek for online defrag
     //
-    if ( NULL != pbmNext )
+    if ( nullptr != pbmNext )
     {
         BTIMergeCopyNextBookmark( pfucb, pmergePathLeaf, pbmNext, fRightMerges );
     }
@@ -14266,7 +14266,7 @@ LOCAL ERR ErrBTISelectMerge(
         pmergePathLeaf->iLine = SHORT( pmergePathLeaf->csr.ILine() );
 
         //  we don't want to check the same node multiple times so we don't bother with the reccheck
-        Call( ErrBTIMergeCollectPageInfo( pfucb, pmergePathLeaf, NULL, fRightMerges ) );
+        Call( ErrBTIMergeCollectPageInfo( pfucb, pmergePathLeaf, nullptr, fRightMerges ) );
     }
 
     // ErrBTIMergeCollectPageInfo only chooses these types of merges
@@ -14355,10 +14355,10 @@ ERR ErrBTINewMerge( MERGEPATH *pmergePath )
 
 INLINE VOID BTIReleaseMergeLineinfo( MERGE *pmerge )
 {
-    if ( pmerge->rglineinfo != NULL )
+    if ( pmerge->rglineinfo != nullptr )
     {
         delete [] pmerge->rglineinfo;
-        pmerge->rglineinfo = NULL;
+        pmerge->rglineinfo = nullptr;
     }
 }
 
@@ -14370,14 +14370,14 @@ VOID BTIMergeRevertDbtime( MERGEPATH *pmergePathTip )
     MERGEPATH *pmergePath = pmergePathTip;
 
     Assert( NULL == pmergePath->pmergePathChild );
-    for ( ; NULL != pmergePath;
+    for ( ; nullptr != pmergePath;
             pmergePath = pmergePath->pmergePathParent )
     {
         MERGE   *pmerge = pmergePath->pmerge;
 
         //  set dbtime for left sibling
         //
-        if ( NULL != pmerge )
+        if ( nullptr != pmerge )
         {
             if ( pgnoNull != pmerge->csrLeft.Pgno() &&
                 latchWrite == pmergePath->pmerge->csrLeft.Latch() &&
@@ -14413,7 +14413,7 @@ VOID BTIMergeRevertDbtime( MERGEPATH *pmergePathTip )
 
         //  set dbtime for right sibling
         //
-        if ( pmerge != NULL )
+        if ( pmerge != nullptr )
         {
             if ( pgnoNull != pmerge->csrRight.Pgno() &&
                 latchWrite == pmerge->csrRight.Latch() &&
@@ -14549,7 +14549,7 @@ ERR ErrBTISPCCollectLeafPageInfo(
     Assert( NULL == *pplineinfo );
     *pplineinfo = new LINEINFO[clines];
 
-    if ( NULL == *pplineinfo )
+    if ( nullptr == *pplineinfo )
     {
         return ErrERRCheck( JET_errOutOfMemory );
     }
@@ -14574,7 +14574,7 @@ ERR ErrBTISPCCollectLeafPageInfo(
 
         if ( !FNDDeleted( pfucb->kdfCurr ) )
         {
-            if( NULL != preccheck )
+            if( nullptr != preccheck )
             {
                 (*preccheck)( pfucb->kdfCurr, Pcsr( pfucb )->Pgno() );
             }
@@ -14604,11 +14604,11 @@ ERR ErrBTISPCCollectLeafPageInfo(
         }
     }
 
-    if ( NULL != pfExistsFlagDeletedNodeWithActiveVersion )
+    if ( nullptr != pfExistsFlagDeletedNodeWithActiveVersion )
     {
         *pfExistsFlagDeletedNodeWithActiveVersion = fExistsFlagDeletedNodeWithActiveVersion;
     }
-    if ( NULL != ppctFull )
+    if ( nullptr != ppctFull )
     {
         *ppctFull = ( cbSizeMaxTotal * 100 ) / CbNDPageAvailMostNoInsert( g_rgfmp[ pfucb->ifmp ].CbPage() );
     }
@@ -14651,14 +14651,14 @@ LOCAL ERR ErrBTIMergeCollectPageInfo(
             preccheck,
             &fEmptyPage,
             &fExistsFlagDeletedNodeWithActiveVersion,
-            NULL ) );
+            nullptr ) );
     Assert( NULL != pmerge->rglineinfo );
 
     Assert( pmergePath->pmergePathParent != NULL ||
             PgnoRoot( pfucb ) == pmergePath->csr.Pgno() &&
             pmergePath->csr.Cpage().FRootPage() );
 
-    if ( NULL == pmergePath->pmergePathParent )
+    if ( nullptr == pmergePath->pmergePathParent )
     {
         //  no merge/empty page possible if single-page tree    
         pmerge->mergetype = mergetypeNone;
@@ -15246,7 +15246,7 @@ LOCAL ERR ErrBTISelectMergeInternalPages( FUCB * const pfucb, MERGEPATH * const 
         pmergePathLeaf->fEmptyPage = fTrue;
     }
 
-    for ( ; pmergePath != NULL; pmergePath = pmergePath->pmergePathParent )
+    for ( ; pmergePath != nullptr; pmergePath = pmergePath->pmergePathParent )
     {
         Assert( pmergePath->pmerge == NULL );
         Assert( !pmergePath->csr.Cpage().FLeafPage() );
@@ -15260,7 +15260,7 @@ LOCAL ERR ErrBTISelectMergeInternalPages( FUCB * const pfucb, MERGEPATH * const 
             MERGEPATH * const pmergePathChild = pmergePath->pmergePathChild;
             Assert( NULL != pmergePathChild );
 
-            const BOOL fParentOfLeaf = ( NULL == pmergePathChild->pmergePathChild );
+            const BOOL fParentOfLeaf = ( nullptr == pmergePathChild->pmergePathChild );
             if( fParentOfLeaf )
             {
                 const INT       ilineMerge              = pmergeLeaf->ilineMerge;
@@ -15307,7 +15307,7 @@ LOCAL ERR ErrBTISelectMergeInternalPages( FUCB * const pfucb, MERGEPATH * const 
 
             // this loop works from the bottom up so the parent-of-leaf level should
             // have caused the loop to exit at the 'break' below
-            const BOOL fParentOfLeaf = ( NULL == pmergePathChild->pmergePathChild );
+            const BOOL fParentOfLeaf = ( nullptr == pmergePathChild->pmergePathChild );
             Assert( fParentOfLeaf );
 
             // all nodes up to and including ilineMerge will move to the left page
@@ -15367,7 +15367,7 @@ LOCAL ERR ErrBTISelectMergeInternalPages( FUCB * const pfucb, MERGEPATH * const 
 
             // this loop works from the bottom up so the parent-of-leaf level should
             // have caused the loop to exit at the 'break' below
-            const BOOL fParentOfLeaf = ( NULL == pmergePathChild->pmergePathChild );
+            const BOOL fParentOfLeaf = ( nullptr == pmergePathChild->pmergePathChild );
             Assert( fParentOfLeaf );
 
             // Updating the parent-of-leaf level when a full left merge is done requires
@@ -15629,7 +15629,7 @@ ERR ErrBTIMergeCopySeparatorKey( MERGEPATH  *pmergePath,
 
     pmergeLeaf->kdfParentSep.key.Nullify();
     pmergeLeaf->kdfParentSep.key.suffix.SetPv( RESBOOKMARK.PvRESAlloc() );
-    if ( pmergeLeaf->kdfParentSep.key.suffix.Pv() == NULL )
+    if ( pmergeLeaf->kdfParentSep.key.suffix.Pv() == nullptr )
     {
         return ErrERRCheck( JET_errOutOfMemory );
     }
@@ -15656,7 +15656,7 @@ VOID BTIReleaseMergePaths( MERGEPATH *pmergePathTip )
 {
     MERGEPATH *pmergePath = pmergePathTip;
 
-    for ( ; pmergePath != NULL; )
+    for ( ; pmergePath != nullptr; )
     {
         //  save parent
         //
@@ -15828,7 +15828,7 @@ LOCAL VOID BTIMergeSetPcsrRoot(
 
     MERGEPATH * pmergePath;
     for ( pmergePath = pmergePathTip;
-          pmergePath->pmergePathParent != NULL;
+          pmergePath->pmergePathParent != nullptr;
           pmergePath = pmergePath->pmergePathParent )
     {
     }
@@ -15893,7 +15893,7 @@ LOCAL ERR ErrBTIPageMoveAllocatePage(
     Ptls()->threadstats.cPageUpdateAllocated++;
 
 HandleError:
-    pfucb->pcsrRoot = NULL;
+    pfucb->pcsrRoot = nullptr;
     return err;
 }
 
@@ -16157,7 +16157,7 @@ ERR ErrBTPageMove(
 
     ERR err = JET_errSuccess;
     PIBTraceContextScope tcScope = TcBTICreateCtxScope( pfucb, iorsBTMerge );
-    MERGEPATH * pmergePath = NULL;
+    MERGEPATH * pmergePath = nullptr;
 
     // If it's a space page, we may need refill the split buffers first, including
     // reservation for the page we're moving data to.
@@ -16217,14 +16217,14 @@ VOID BTIPerformMerge( FUCB *pfucb, MERGEPATH *pmergePathLeaf )
     //  since we need to process pages top-down
     //
     for ( pmergePath = pmergePathLeaf;
-          pmergePath->pmergePathParent != NULL;
+          pmergePath->pmergePathParent != nullptr;
           pmergePath = pmergePath->pmergePathParent )
     {
     }
 
     //  process pages top-down
     //
-    for ( ; pmergePath != NULL; pmergePath = pmergePath->pmergePathChild )
+    for ( ; pmergePath != nullptr; pmergePath = pmergePath->pmergePathChild )
     {
         // If this goes off, it means we've started consuming pgnoNew for "regular" (as opposed
         // to page-move) merges. Make sure pgnoNew gets flagged as initialized (do-time) in this function.
@@ -16294,7 +16294,7 @@ VOID BTIPerformOneMerge( FUCB       *pfucb,
     //      if not partial merge
     //          fix siblings
     //
-    if ( NULL == pmergePath->pmergePathChild )
+    if ( nullptr == pmergePath->pmergePathChild )
     {
         Assert( pmergePath->pmerge == pmergeLeaf );
         const MERGETYPE mergetype = pmergeLeaf->mergetype;
@@ -16501,13 +16501,13 @@ VOID BTIMergeReleaseUnneededPages( MERGEPATH *pmergePathTip )
     //  release latches top-down
     //
     for ( pmergePath = pmergePathTip;
-          pmergePath->pmergePathParent != NULL;
+          pmergePath->pmergePathParent != nullptr;
           pmergePath = pmergePath->pmergePathParent )
     {
     }
 
     Assert( NULL == pmergePath->pmergePathParent );
-    for ( ; NULL != pmergePath;  )
+    for ( ; nullptr != pmergePath;  )
     {
 
         //  check if page is needed
@@ -16519,7 +16519,7 @@ VOID BTIMergeReleaseUnneededPages( MERGEPATH *pmergePathTip )
         if ( !pmergePath->fKeyChange &&
              !pmergePath->fEmptyPage &&
              !pmergePath->fDeleteNode &&
-             pmergePath->pmergePathChild != NULL )
+             pmergePath->pmergePathChild != nullptr )
         {
             Assert( NULL == pmergePath->pmergePathParent );
 
@@ -16581,13 +16581,13 @@ LOCAL ERR ErrBTIMergeUpgradeLatches( const IFMP ifmp, MERGEPATH * const pmergePa
     //  since we need to latch top-down
     //
     for ( pmergePath = pmergePathTip;
-          pmergePath->pmergePathParent != NULL;
+          pmergePath->pmergePathParent != nullptr;
           pmergePath = pmergePath->pmergePathParent )
     {
     }
 
     Assert( NULL == pmergePath->pmergePathParent );
-    for ( ; NULL != pmergePath;  )
+    for ( ; nullptr != pmergePath;  )
     {
         //  check if write latch is needed
         //      -- either there is a merge/empty page at this level
@@ -16600,12 +16600,12 @@ LOCAL ERR ErrBTIMergeUpgradeLatches( const IFMP ifmp, MERGEPATH * const pmergePa
         if ( pmergePath->fKeyChange ||
              pmergePath->fEmptyPage ||
              pmergePath->fDeleteNode ||
-             pmergePath->pmergePathChild == NULL )
+             pmergePath->pmergePathChild == nullptr )
         {
             Assert( latchWrite == pmergePath->csr.Latch()
                     || latchRIW == pmergePath->csr.Latch() );
 
-            if ( pmergePath->pmergePathChild == NULL )
+            if ( pmergePath->pmergePathChild == nullptr )
             {
                 //  tip-level
                 //  write latch left, current and right pages in order
@@ -16783,7 +16783,7 @@ VOID BTIMergeSetLgpos( MERGEPATH *pmergePathTip, const LGPOS& lgpos )
     Assert( pmergePath != NULL );
 
     const BOOL fLeafPage = pmergePath->csr.Cpage().FLeafPage();
-    for ( ; pmergePath != NULL && pmergePath->csr.Latch() == latchWrite;
+    for ( ; pmergePath != nullptr && pmergePath->csr.Latch() == latchWrite;
           pmergePath = pmergePath->pmergePathParent )
     {
         Assert( pmergePath->csr.FDirty() );
@@ -16792,7 +16792,7 @@ VOID BTIMergeSetLgpos( MERGEPATH *pmergePathTip, const LGPOS& lgpos )
 
         MERGE   *pmerge = pmergePath->pmerge;
 
-        if ( pmerge != NULL )
+        if ( pmerge != nullptr )
         {
             if ( pmerge->csrLeft.Pgno() != pgnoNull )
             {
@@ -16831,7 +16831,7 @@ VOID BTIMergeShrinkPages( MERGEPATH *pmergePathLeaf )
 {
     MERGEPATH   *pmergePath = pmergePathLeaf;
 
-    for ( ; pmergePath != NULL; pmergePath = pmergePath->pmergePathParent )
+    for ( ; pmergePath != nullptr; pmergePath = pmergePath->pmergePathParent )
     {
         Assert( pmergePath->csr.FLatched() );
         if ( pmergePath->csr.Latch() == latchWrite )
@@ -16843,7 +16843,7 @@ VOID BTIMergeShrinkPages( MERGEPATH *pmergePathLeaf )
             }
         }
 
-        if ( pmergePath->pmerge != NULL )
+        if ( pmergePath->pmerge != nullptr )
         {
             if ( pmergePath->pmerge->csrLeft.FLatched() &&
                     pmergePath->pmerge->csrLeft.Latch() == latchWrite )
@@ -16881,12 +16881,12 @@ VOID BTIMergeReleaseLatches( MERGEPATH *pmergePathTip )
 {
     MERGEPATH   *pmergePath = pmergePathTip;
 
-    for ( ; pmergePath != NULL; pmergePath = pmergePath->pmergePathParent )
+    for ( ; pmergePath != nullptr; pmergePath = pmergePath->pmergePathParent )
     {
         Assert( pmergePath->csr.FLatched() );
         pmergePath->csr.ReleasePage();
 
-        if ( pmergePath->pmerge != NULL )
+        if ( pmergePath->pmerge != nullptr )
         {
             if ( pmergePath->pmerge->csrLeft.FLatched() )
             {
@@ -16934,7 +16934,7 @@ VOID BTIReleaseEmptyPages( FUCB *pfucb, MERGEPATH *pmergePathTip )
     Assert( !PinstFromIfmp( pfucb->ifmp )->m_plog->FRecovering() ||
             fRecoveringUndo == PinstFromIfmp( pfucb->ifmp )->m_plog->FRecoveringMode() );
 
-    for ( ; pmergePath != NULL; pmergePath = pmergePath->pmergePathParent )
+    for ( ; pmergePath != nullptr; pmergePath = pmergePath->pmergePathParent )
     {
         //  if empty page
         //      release space to FDP
@@ -17446,7 +17446,7 @@ class CBTAcrossQueue {
 
         Assert( !( ppghdr->fFlags & CPAGE::fPageLeaf ) );
 
-        if ( pkdf == NULL )
+        if ( pkdf == nullptr )
         {
             // we don't process the external header as a regular node...
             Assert( itag == 0 );
@@ -17485,7 +17485,7 @@ public:
         m_pgnoFDP( pgnoFDP )
     {
         memset( m_rgpgnoLevelLeftStart, 0, sizeof(m_rgpgnoLevelLeftStart) );    // set all pgnoLevelLeftStarts to 0x0
-        m_pQ = NULL;
+        m_pQ = nullptr;
         m_iNextLevel = 0x0;
         m_cPages = 0x0;
     }
@@ -17506,10 +17506,10 @@ public:
         //
         //  We deferred init/allocation of the queue until the first dequeue.
         //
-        if ( m_pQ == NULL )
+        if ( m_pQ == nullptr )
         {
             m_pQ = new CStupidQueue( sizeof( PGNO ) );
-            if ( m_pQ == NULL )
+            if ( m_pQ == nullptr )
             {
                 return CStupidQueue::ERR::errOutOfMemory;
             }
@@ -17595,12 +17595,12 @@ ERR ErrBTUTLAcross(
     ERR                     err         = JET_errSuccess;
     IFileAPI *              pfapi = g_rgfmp[ifmp].Pfapi();
 
-    CBTAcrossQueue *    pBreadthFirst = NULL;
+    CBTAcrossQueue *    pBreadthFirst = nullptr;
 
     PGNO                pgnoCurr = 0x0;
     ULONG               iCurrLevel = 0;
 
-    VOID *              pvPageBuffer = NULL;
+    VOID *              pvPageBuffer = nullptr;
 
 
     //  Setup the variables required to implement our breadth first search of the B+ Tree.
@@ -17610,7 +17610,7 @@ ERR ErrBTUTLAcross(
     //  Get buffer to hold page.    
     //
     Assert( g_rgfmp[ ifmp ].CbPage() >= g_cbPageMin );
-    Alloc( pvPageBuffer = PvOSMemoryPageAlloc( g_rgfmp[ ifmp ].CbPage(), NULL ) );
+    Alloc( pvPageBuffer = PvOSMemoryPageAlloc( g_rgfmp[ ifmp ].CbPage(), nullptr ) );
     memset( pvPageBuffer, 0x42, g_rgfmp[ ifmp ].CbPage() );
 
     //  Walk the queue of pages ...
@@ -17638,7 +17638,7 @@ ERR ErrBTUTLAcross(
             }
             if ( rgpfnzErrVisitNode )
             {
-                for( ULONG iVisitFunc = 0; rgpfnzErrVisitNode[iVisitFunc] != NULL; iVisitFunc++ )
+                for( ULONG iVisitFunc = 0; rgpfnzErrVisitNode[iVisitFunc] != nullptr; iVisitFunc++ )
                 {
                     Call( cpage.ErrEnumTags( rgpfnzErrVisitNode[iVisitFunc], rgpvzVisitNodeCtx[iVisitFunc] ) );
                 }

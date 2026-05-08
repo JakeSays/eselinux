@@ -220,7 +220,7 @@ ERR ErrDIRComputeStats( FUCB *pfucb, INT *pcitem, INT *pckey, INT *pcpage );
 //  transaction operations
 //
 ERR ErrDIRBeginTransaction( PIB *ppib, const TRXID trxid, const JET_GRBIT grbit );
-ERR ErrDIRCommitTransaction( PIB *ppib, JET_GRBIT grbit, DWORD cmsecDurableCommit = 0, JET_COMMIT_ID *pCommitId = NULL );
+ERR ErrDIRCommitTransaction( PIB *ppib, JET_GRBIT grbit, DWORD cmsecDurableCommit = 0, JET_COMMIT_ID *pCommitId = nullptr );
 ERR ErrDIRRollback( PIB *ppib, JET_GRBIT grbit = 0 );
 
 //  *****************************************

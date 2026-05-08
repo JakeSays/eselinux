@@ -9,13 +9,13 @@ ERR ErrUtilWriteAttachedDatabaseHeaders(    const INST* const           pinst,
                                             IFileSystemAPI *const       pfsapi,
                                             const WCHAR                 *wszFileName,
                                             FMP *const                  pfmp,
-                                            IFileAPI *const             pfapi = NULL );
+                                            IFileAPI *const             pfapi = nullptr );
 ERR ErrUtilWriteUnattachedDatabaseHeaders(  const INST* const               pinst,
                                             IFileSystemAPI *const           pfsapi,
                                             const WCHAR                     *wszFileName,
                                             DBFILEHDR                       *pdbfilehdr,
-                                            IFileAPI *const                 pfapi = NULL,
-                                            CFlushMapForUnattachedDb *const pfm = NULL,
+                                            IFileAPI *const                 pfapi = nullptr,
+                                            CFlushMapForUnattachedDb *const pfm = nullptr,
                                             BOOL                            fResetRBSHdrFlush = fTrue );
 
 void AssertDatabaseHeaderConsistent( const DBFILEHDR * const pdbfilehdr,
@@ -81,7 +81,7 @@ ERR ErrDBGetDesiredVersion(
     _In_ const INST * const                 pinst,
     _In_ const DBFILEHDR_FIX * const        pdbfilehdr,
     _Out_ const FormatVersions ** const     ppfmtvers,
-    _Out_ BOOL * const                      pfAllowPersistedFormat = NULL );
+    _Out_ BOOL * const                      pfAllowPersistedFormat = nullptr );
 ERR ErrDBCloseAllDBs( PIB *ppib );
 
 ERR ErrDBSetUserDbHeaderInfo(

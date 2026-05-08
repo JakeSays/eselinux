@@ -110,7 +110,7 @@ class CFixedColumnIter
 INLINE CFixedColumnIter::
 CFixedColumnIter()
     :   m_pfcb( pfcbNil ),
-        m_prec( NULL ),
+        m_prec( nullptr ),
         m_errCurr( errRECNoCurrentColumnValue )
 {
 }
@@ -126,7 +126,7 @@ ErrInit( FCB* const pfcb )
     }
 
     m_pfcb  = pfcb;
-    m_prec  = NULL;
+    m_prec  = nullptr;
 
     Call( ErrMoveBeforeFirst() );
 
@@ -243,7 +243,7 @@ class CVariableColumnIter
         virtual const FIELD* const PField() const
         {
             EnforceSz( fFalse, "FeatureNAVariableColumnIterPField" );
-            return NULL;
+            return nullptr;
         }
 
     private:
@@ -257,7 +257,7 @@ class CVariableColumnIter
 INLINE CVariableColumnIter::
 CVariableColumnIter()
     :   m_pfcb( pfcbNil ),
-        m_prec( NULL ),
+        m_prec( nullptr ),
         m_errCurr( errRECNoCurrentColumnValue )
 {
 }
@@ -273,7 +273,7 @@ ErrInit( FCB* const pfcb )
     }
 
     m_pfcb  = pfcb;
-    m_prec  = NULL;
+    m_prec  = nullptr;
 
     Call( ErrMoveBeforeFirst() );
 
@@ -497,7 +497,7 @@ class CSingleValuedTaggedColumnValueIter
 
 INLINE CSingleValuedTaggedColumnValueIter::
 CSingleValuedTaggedColumnValueIter()
-    :   m_rgbData( NULL )
+    :   m_rgbData( nullptr )
 {
 }
 
@@ -609,7 +609,7 @@ class CDualValuedTaggedColumnValueIter
 
 INLINE CDualValuedTaggedColumnValueIter::
 CDualValuedTaggedColumnValueIter()
-    :   m_ptwovalues( NULL )
+    :   m_ptwovalues( nullptr )
 {
 }
 
@@ -710,7 +710,7 @@ class CMultiValuedTaggedColumnValueIter
 
 INLINE CMultiValuedTaggedColumnValueIter::
 CMultiValuedTaggedColumnValueIter()
-    :   m_pmultivalues( NULL ),
+    :   m_pmultivalues( nullptr ),
         m_fCompressed( false )
 {
 }
@@ -817,7 +817,7 @@ class CTaggedColumnIter
         virtual const FIELD* const PField() const
         {
             EnforceSz( fFalse, "FeatureNATaggedColumnIterPField" );
-            return NULL;
+            return nullptr;
         }
 
         ERR ErrCalcCbESE97Format( size_t* const pcbESE97Format ) const;
@@ -841,7 +841,7 @@ class CTaggedColumnIter
 INLINE CTaggedColumnIter::
 CTaggedColumnIter()
     :   m_pfcb( pfcbNil ),
-        m_ptagfields( NULL ),
+        m_ptagfields( nullptr ),
         m_errCurr( errRECNoCurrentColumnValue )
 {
 }
@@ -857,7 +857,7 @@ ErrInit( FCB* const pfcb )
     }
 
     m_pfcb          = pfcb;
-    m_ptagfields    = NULL;
+    m_ptagfields    = nullptr;
 
     Call( ErrMoveBeforeFirst() );
 
@@ -902,7 +902,7 @@ HandleError:
 INLINE ERR CTaggedColumnIter::
 ErrMoveBeforeFirst()
 {
-    m_ptagfldCurr   = m_ptagfields ? m_ptagfields->Rgtagfld() - 1 : NULL;
+    m_ptagfldCurr   = m_ptagfields ? m_ptagfields->Rgtagfld() - 1 : nullptr;
     m_errCurr       = errRECNoCurrentColumnValue;
     return JET_errSuccess;
 }
@@ -1046,9 +1046,9 @@ class CUnionIter
 
 INLINE CUnionIter::
 CUnionIter()
-    :   m_pciterLHS( NULL ),
-        m_pciterRHS( NULL ),
-        m_pciterCurr( NULL )
+    :   m_pciterLHS( nullptr ),
+        m_pciterRHS( nullptr ),
+        m_pciterCurr( nullptr )
 {
 }
 

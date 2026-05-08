@@ -374,7 +374,7 @@ private:
             VOID    MarkAsFreed__( VOID * const pv );
 #endif  //  MEM_CHECK
 
-            INT     CalcObjectsPerSection(INT *pcbSectionHeader = NULL) const;
+            INT     CalcObjectsPerSection(INT *pcbSectionHeader = nullptr) const;
 
     static  BOOL        fMemoryLeak;
     static  DWORD_PTR   AllocatedResource;
@@ -419,7 +419,7 @@ extern CRMContainer *g_pRMContainer;
 //  Class CLookaside
 
 INLINE CLookaside::CLookaside() :
-    m_ppvData( NULL ),
+    m_ppvData( nullptr ),
     m_cItems( cbCacheLine/sizeof( VOID * ) )
 {
 #ifdef RM_STATISTICS
@@ -434,7 +434,7 @@ INLINE CLookaside::CLookaside() :
 
 
 INLINE BOOL CLookaside::FInit() const
-    { return NULL != m_ppvData? fTrue: fFalse; }
+    { return nullptr != m_ppvData? fTrue: fFalse; }
 
 INLINE INT CLookaside::CSize() const { return m_cItems; }
 
@@ -443,7 +443,7 @@ INLINE INT CLookaside::CSize() const { return m_cItems; }
 //  Class CResourceFreeObjectList
 
 INLINE CResourceFreeObjectList::CResourceFreeObjectList() :
-        m_pRFOLNext( NULL )
+        m_pRFOLNext( nullptr )
     {}
 
 
@@ -477,7 +477,7 @@ INLINE VOID CResourceFreeObjectList::RFOLAddObject(
 
     pRFOLToAdd->m_pRFOLNext = NULL;
 #else // RM_DEFERRED_FREE
-    CResourceFreeObjectList *pRFOL      = NULL;
+    CResourceFreeObjectList *pRFOL      = nullptr;
 
     OSSYNC_FOREVER
     {
@@ -501,7 +501,7 @@ INLINE CResourceFreeObjectList * CResourceFreeObjectList::PRFOLRemoveObject(
 #endif // !RM_DEFERRED_FREE
     )
 {
-    CResourceFreeObjectList *pRFOL      = NULL;
+    CResourceFreeObjectList *pRFOL      = nullptr;
 
 #ifdef RM_DEFERRED_FREE
     Assert( NULL != *ppRFOLTail );
@@ -540,15 +540,15 @@ INLINE VOID CResourceFreeObjectList::RFOLLoopCheck(
 //  How? use to different pointers to go with two steps and one step ahead
 //  if they meet each other it means the list contains loop.
 {
-    CResourceFreeObjectList *pRFOL  = NULL;
-    CResourceFreeObjectList *pRFOL2 = NULL;
+    CResourceFreeObjectList *pRFOL  = nullptr;
+    CResourceFreeObjectList *pRFOL2 = nullptr;
     pRFOL = *ppRFOL;
     pRFOL2 = pRFOL;
-    while ( NULL != pRFOL && NULL != pRFOL2 )
+    while ( nullptr != pRFOL && nullptr != pRFOL2 )
     {
         pRFOL = pRFOL->m_pRFOLNext;
         pRFOL2 = pRFOL2->m_pRFOLNext;
-        if ( NULL != pRFOL2 )
+        if ( nullptr != pRFOL2 )
         {
             pRFOL2 = pRFOL2->m_pRFOLNext;
         }
@@ -571,14 +571,14 @@ INLINE CResourceChunkInfo::CResourceChunkInfo( CResourceManager *pRMOwner ) :
         m_pRFOLTail( NULL ),
         m_cDeferredFrees( 0 ),
 #else // RM_DEFERRED_FREE
-        m_pRFOL( NULL ),
+        m_pRFOL( nullptr ),
 #endif // !RM_DEFERRED_FREE
-        m_pvData( NULL ),
+        m_pvData( nullptr ),
         m_cUsed( -1 ),
         m_cNextAlloc( 0 ),
 //      m_pRCINext( NULL ), Don't ever change m_pRCI next. every alive RCI should be in the list of RCIs
-        m_pRCINextNotFull( NULL ),
-        m_pRCINextFree( NULL ),
+        m_pRCINextNotFull( nullptr ),
+        m_pRCINextFree( nullptr ),
         m_critAlloc( CLockBasicInfo( CSyncBasicInfo( "CResourceChunkInfo::m_critAlloc" ), 0, 0 ) ),
         m_pRMOwner( pRMOwner )
 {
@@ -591,7 +591,7 @@ INLINE CResourceChunkInfo::CResourceChunkInfo( CResourceManager *pRMOwner ) :
 
 //======================================
 INLINE CResourceSection::CResourceSection() :
-        m_pRCI( NULL ),
+        m_pRCI( nullptr ),
         m_cbSectionHeader( 0 )
 {
     memset( m_rgchTag, 0, sizeof( m_rgchTag ) );

@@ -53,8 +53,8 @@ LOCAL ERR ErrSORTTableOpen(
     INT             icolumndefMax           = (INT)ccolumndef;
     FUCB            *pfucb                  = pfucbNil;
     TDB             *ptdb                   = ptdbNil;
-    JET_COLUMNDEF   *pcolumndef             = NULL;
-    JET_COLUMNID    *pcolumnid              = NULL;
+    JET_COLUMNDEF   *pcolumndef             = nullptr;
+    JET_COLUMNID    *pcolumnid              = nullptr;
     JET_COLUMNDEF   *pcolumndefMax          = rgcolumndef+icolumndefMax;
     TCIB            tcib;
     WORD            ibRec;
@@ -250,7 +250,7 @@ LOCAL ERR ErrSORTTableOpen(
 
         idb.ResetFlags();
 
-        if ( NULL != pidxunicode )
+        if ( nullptr != pidxunicode )
         {
             const BOOL fUppercaseTextNormalization = ( FNORMLCMapFlagsHasUpperCase( pidxunicode->dwMapFlags ) ) &&
                 ( g_rgfmp[pfucb->ifmp].ErrDBFormatFeatureEnabled( JET_efvUppercaseTextNormalization ) >= JET_errSuccess );
@@ -303,8 +303,8 @@ LOCAL ERR ErrSORTTableOpen(
 
     //  reset copy buffer
     //
-    pfucb->pvWorkBuf = NULL;
-    pfucb->dataWorkBuf.SetPv( NULL );
+    pfucb->pvWorkBuf = nullptr;
+    pfucb->dataWorkBuf.SetPv( nullptr );
     FUCBResetUpdateFlags( pfucb );
 
     //  reset key buffer
@@ -658,7 +658,7 @@ ERR VTAPI ErrIsamSortGotoBookmark(
     Assert( !FFUCBUpdatePrepared( pfucb ) );
 
     if ( cbBookmark != sizeof( LONG )
-        || NULL == pvBookmark )
+        || nullptr == pvBookmark )
     {
         return ErrERRCheck( JET_errInvalidBookmark );
     }
@@ -709,8 +709,8 @@ ERR VTAPI ErrIsamSortUpdate(
     ULONG           cbKeyMost;
     const size_t    cbKeyStack              = 256;
     BYTE            rgbKeyStack[ cbKeyStack ];
-    BYTE            *pbKeyRes               = NULL;
-    BYTE            *pbKeyAlloc             = NULL;
+    BYTE            *pbKeyRes               = nullptr;
+    BYTE            *pbKeyAlloc             = nullptr;
     KEY             key;
     ULONG           iidxsegT;
 
@@ -838,8 +838,8 @@ ERR VTAPI ErrIsamSortDupCursor(
 
     /*  initialize working buffer to unallocated
     /**/
-    pfucbDup->pvWorkBuf = NULL;
-    pfucbDup->dataWorkBuf.SetPv( NULL );
+    pfucbDup->pvWorkBuf = nullptr;
+    pfucbDup->dataWorkBuf.SetPv( nullptr );
     FUCBResetUpdateFlags( pfucbDup );
 
     /*  move currency to the first record and ignore error if no records
@@ -998,7 +998,7 @@ ERR ErrSORTIncrementLVRefcountDest(
     // If ErrCMPGetSLongFieldFirst returns JET_errRecordNotFound, either because there is no LV tree, or there
     // is no LV with non-zero ref-count, we never create the LIDMAP. If we subsequently find a record with a LVID
     // reference, that is a corrupt database. Return corruption instead of crashing.
-    if ( plidmap == NULL )
+    if ( plidmap == nullptr )
     {
         return ErrERRCheck( JET_errDatabaseCorrupted );
     }
@@ -1076,8 +1076,8 @@ INLINE SIZE_T CbSORTCopyFixedVarColumns(
     FID                                     fidFixedLastDest;
     FID                                     fidVarLastDest;
     FID                                     fidT;
-    BYTE                                    *pbChunkSrc = 0;
-    BYTE                                    *pbChunkDest = 0;
+    BYTE                                    *pbChunkSrc = nullptr;
+    BYTE                                    *pbChunkDest = nullptr;
     INT                                     cbChunk;
 
     const FID       fidFixedLastSrc = precSrc->FidFixedLastInRec();
@@ -1477,8 +1477,8 @@ LOCAL ERR ErrSORTCopyOneRecord(
     _Inout_ QWORD   * pqwAutoIncMax )
 {
     ERR             err             = JET_errSuccess;
-    BYTE            * pbRecSrc      = 0;
-    BYTE            * pbRecDest     = 0;
+    BYTE            * pbRecSrc      = nullptr;
+    BYTE            * pbRecDest     = nullptr;
     ULONG           cbRecSrc;
     SIZE_T          cbRecSrcFixedVar;
     SIZE_T          cbRecDestFixedVar;
@@ -1645,7 +1645,7 @@ LOCAL ERR ErrSORTCopyOneRecord(
         pstatus ) );
 
 InsertRecord:
-    if ( pstatus != NULL )
+    if ( pstatus != nullptr )
     {
         const FID   fidFixedLast    = ( (REC *)pbRecDest )->FidFixedLastInRec();
         const FID   fidVarLast      = ( (REC *)pbRecDest )->FidVarLastInRec();
@@ -1849,8 +1849,8 @@ ERR ErrSORTCopyRecords(
     TDB             *ptdb                   = ptdbNil;
     INT             fColumnsDeleted         = 0;
     LONG            dsrid                   = 0;
-    BYTE            *pbRecBuf               = NULL;     // buffer for source record
-    VOID            *pvWorkBuf              = NULL;     // buffer for destination record
+    BYTE            *pbRecBuf               = nullptr;     // buffer for source record
+    VOID            *pvWorkBuf              = nullptr;     // buffer for destination record
     BOOL            fDoAll                  = ( 0 == crecMax );
     PGNO            pgnoCurrPage;
     FCB             *pfcbSecondaryIndexes   = pfcbNil;
@@ -1861,11 +1861,11 @@ ERR ErrSORTCopyRecords(
     BOOL            fBuildIndexWhileCopying = fFalse;
     FUCB            *rgpfucbSort[cFILEIndexBatchSizeDefault];
     ULONG           rgcRecInput[cFILEIndexBatchSizeDefault];
-    BOOKMARK        *pbmPrimary             = NULL;
+    BOOKMARK        *pbmPrimary             = nullptr;
     BOOKMARK        bmPrimary;
     KEY             keyBuffer;
-    BYTE            *pbPrimaryKey           = NULL;
-    BYTE            *pbSecondaryKey         = NULL;
+    BYTE            *pbPrimaryKey           = nullptr;
+    BYTE            *pbSecondaryKey         = nullptr;
     ULONG           cIndexesToBuild         = 0;
     ULONG           iindex;
 
@@ -1890,7 +1890,7 @@ ERR ErrSORTCopyRecords(
             CallS( plidmap->ErrTerm( ppib ) );
             Assert( JET_tableidNil == plidmap->Tableid() );
             delete plidmap;
-            g_rgfmp[pfucbSrc->ifmp].SetLidmap( NULL );
+            g_rgfmp[pfucbSrc->ifmp].SetLidmap( nullptr );
         }
         return err;
     }
@@ -2104,7 +2104,7 @@ ERR ErrSORTCopyRecords(
             {
                 if ( g_fRepair )
                 {
-                    UtilReportEvent( eventWarning, REPAIR_CATEGORY, REPAIR_BAD_RECORD_ID, 0, NULL );
+                    UtilReportEvent( eventWarning, REPAIR_CATEGORY, REPAIR_BAD_RECORD_ID, 0, nullptr );
                 }
                 else
                 {
@@ -2158,7 +2158,7 @@ ERR ErrSORTCopyRecords(
             if ( err != JET_errNoCurrentRecord  )
                 goto HandleError;
 
-            if ( pstatus != NULL )
+            if ( pstatus != nullptr )
             {
                 pstatus->cLeafPagesTraversed++;
                 Call( ErrSORTCopyProgress( pstatus, 1 ) );
@@ -2167,7 +2167,7 @@ ERR ErrSORTCopyRecords(
             break;
         }
 
-        else if ( pstatus != NULL && pgnoCurrPage != Pcsr( pfucbSrc )->Pgno() )
+        else if ( pstatus != nullptr && pgnoCurrPage != Pcsr( pfucbSrc )->Pgno() )
         {
             pgnoCurrPage = Pcsr( pfucbSrc )->Pgno();
             pstatus->cLeafPagesTraversed++;
@@ -2280,7 +2280,7 @@ HandleError:
         CallS( plidmap->ErrTerm( ppib ) );
         Assert( JET_tableidNil == plidmap->Tableid() );
         delete plidmap;
-        g_rgfmp[pfucbSrc->ifmp].SetLidmap( NULL );
+        g_rgfmp[pfucbSrc->ifmp].SetLidmap( nullptr );
     }
 
     if ( fInTrx )
@@ -2330,13 +2330,13 @@ LOCAL ERR ErrIsamSortMaterialize( PIB * const ppib, FUCB * const pfucbSort, cons
     JET_TABLECREATE5_A tablecreate  = {
         sizeof(JET_TABLECREATE5_A),
         szName,
-        NULL,
+        nullptr,
         16,                         // Pages
         100,                        // Density
-        NULL, 0, NULL, 0, NULL, 0,  // Columns and indexes and callbacks
+        nullptr, 0, nullptr, 0, nullptr, 0,  // Columns and indexes and callbacks
         NO_GRBIT,                   // grbit
-        NULL,                       // sequential index space hints
-        NULL,                       // LV tree space hints
+        nullptr,                       // sequential index space hints
+        nullptr,                       // LV tree space hints
         0,                          // cbSeparateLV set a little lower ...
         0,                          // cbLVChunkMax
         JET_TABLEID( pfucbNil ),    // returned tableid
@@ -2595,7 +2595,7 @@ LOCAL ERR ErrIsamSortMaterialize( PIB * const ppib, FUCB * const pfucbSort, cons
     Assert( NULL == ptdbSort->PdataDefaultRecord() );
     Assert( NULL == ptdbTable->PdataDefaultRecord() );
     ptdbTable->SetPdataDefaultRecord( ptdbSort->PdataDefaultRecord() );
-    ptdbSort->SetPdataDefaultRecord( NULL );
+    ptdbSort->SetPdataDefaultRecord( nullptr );
 
     //  switch sort and table IDB
     Assert( pfcbTable->Pidb() == pidbNil );
@@ -2782,7 +2782,7 @@ CODECONST(VTFNDEF) vtfndefIsam =
 {
     sizeof(VTFNDEF),
     0,
-    NULL,
+    nullptr,
     ErrIsamAddColumn,
     ErrIsamCloseTable,
     ErrIsamComputeStats,
@@ -2843,7 +2843,7 @@ const VTFNDEF vtfndefIsamMustRollback =
 {
     sizeof(VTFNDEF),
     0,
-    NULL,
+    nullptr,
     ErrIllegalAddColumn,
     ErrIsamCloseTable,
     ErrIllegalComputeStats,
@@ -2904,7 +2904,7 @@ CODECONST(VTFNDEF) vtfndefTTSortIns =
 {
     sizeof(VTFNDEF),
     0,
-    NULL,
+    nullptr,
     ErrIllegalAddColumn,
     ErrIsamSortClose,           // WARNING: Must be same as vtfndefTTSortClose
     ErrIllegalComputeStats,
@@ -2965,7 +2965,7 @@ CODECONST(VTFNDEF) vtfndefTTSortRet =
 {
     sizeof(VTFNDEF),
     0,
-    NULL,
+    nullptr,
     ErrIllegalAddColumn,
     ErrIsamSortClose,           // WARNING: Must be same as vtfndefTTSortClose
     ErrIllegalComputeStats,
@@ -3027,7 +3027,7 @@ CODECONST(VTFNDEF) vtfndefTTBase =
 {
     sizeof(VTFNDEF),
     0,
-    NULL,
+    nullptr,
     ErrIllegalAddColumn,
     ErrIsamSortClose,
     ErrIllegalComputeStats,
@@ -3088,7 +3088,7 @@ const VTFNDEF vtfndefTTBaseMustRollback =
 {
     sizeof(VTFNDEF),
     0,
-    NULL,
+    nullptr,
     ErrIllegalAddColumn,
     ErrIsamSortClose,
     ErrIllegalComputeStats,
@@ -3150,7 +3150,7 @@ LOCAL CODECONST(VTFNDEF) vtfndefTTSortClose =
 {
     sizeof(VTFNDEF),
     0,
-    NULL,
+    nullptr,
     ErrIllegalAddColumn,
     ErrIsamSortClose,
     ErrIllegalComputeStats,
@@ -3511,7 +3511,7 @@ ERR ErrCMPCopyLVTree(
     LVROOT2     lvroot;
     DATA        dataNull;
     PGNO        pgnoLastLV      = pgnoNull;
-    LIDMAP*     plidmapAlloc    = NULL;
+    LIDMAP*     plidmapAlloc    = nullptr;
 
     dataNull.Nullify();
 
@@ -3536,7 +3536,7 @@ ERR ErrCMPCopyLVTree(
     Call( plidmapAlloc->ErrLIDMAPInit( ppib ) );
     Assert( JET_tableidNil != plidmapAlloc->Tableid() );
     g_rgfmp[pfucbSrc->ifmp].SetLidmap( plidmapAlloc );
-    plidmapAlloc = NULL;
+    plidmapAlloc = nullptr;
 
     do
     {
@@ -3610,7 +3610,7 @@ ERR ErrCMPCopyLVTree(
                 ibLongValue += cbLVChunkMost;                   // Prepare for next chunk.
 
                 Assert( Pcsr( pfucbGetLV )->Pgno() != pgnoNull );
-                if ( NULL != pstatus )
+                if ( nullptr != pstatus )
                 {
                     pstatus->cbRawDataLV += cbReturnedPhysical;
                     if( Pcsr( pfucbGetLV )->Pgno() != pgnoLastLV )

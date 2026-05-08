@@ -301,11 +301,11 @@ JET_ERR ErrCopyFile(
 {
     ERR                 err             = JET_errSuccess;
 
-    IFileSystemAPI*     pfsapi          = NULL;
-    IFileAPI*           pfapiSrc        = NULL;
-    IFileAPI*           pfapiDest       = NULL;
-    BYTE*               pbBlock         = NULL;
-    CCopyContext*       pcopycontext    = NULL;
+    IFileSystemAPI*     pfsapi          = nullptr;
+    IFileAPI*           pfapiSrc        = nullptr;
+    IFileAPI*           pfapiDest       = nullptr;
+    BYTE*               pbBlock         = nullptr;
+    CCopyContext*       pcopycontext    = nullptr;
 
     COPYFILECONTROL     copyfilecontrol = { 0 };
     CSemaphore          sem( CSyncBasicInfo( "FChecksumFile" ) );
@@ -360,9 +360,9 @@ JET_ERR ErrCopyFile(
 
     for ( iblockio = 0; iblockio < cblocks; ++iblockio )
     {
-        Alloc( pbBlock = (BYTE*)PvOSMemoryPageAlloc( cbWrite, NULL ) );
+        Alloc( pbBlock = (BYTE*)PvOSMemoryPageAlloc( cbWrite, nullptr ) );
         Alloc( pcopycontext = new CCopyContext( &copyfilecontrol, &sem, pfapiSrc, pfapiDest, pbBlock ) );
-        pbBlock = NULL;
+        pbBlock = nullptr;
 
         err = ErrIssueNextRead( pcopycontext );
         if ( err == JET_errFileIOBeyondEOF )
@@ -371,7 +371,7 @@ JET_ERR ErrCopyFile(
             err = JET_errSuccess;
         }
         Call( err );
-        pcopycontext = NULL;
+        pcopycontext = nullptr;
     }
 
     Call( pfapiSrc->ErrIOIssue() );

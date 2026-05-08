@@ -1167,7 +1167,7 @@ extern const VTFNDEF vtfndefInvalidTableid =
     sizeof(VTFNDEF),
     0,
 #ifndef DEBUG
-    NULL,
+    nullptr,
 #else   /* DEBUG */
     &vtdbgdefInvalidTableid,
 #endif  /* !DEBUG */
@@ -1231,7 +1231,7 @@ const VTFNDEF vtfndefIsamCallback =
 {
     sizeof(VTFNDEF),
     0,
-    NULL,
+    nullptr,
     ErrIllegalAddColumn,
     ErrIllegalCloseTable,
     ErrIllegalComputeStats,
@@ -1380,17 +1380,17 @@ LONG g_cbPlsMemRequiredPerPerfInstance = 0;
 LOCAL LONG g_lRefreshPerfInstanceList = 0;  // "Instance" here refers to performance counter instances.
 
 // "Database ==> Instances" performance counter support.
-WCHAR*      g_wszInstanceNames              = NULL;
-WCHAR*      g_wszInstanceNamesOut           = NULL;
+WCHAR*      g_wszInstanceNames              = nullptr;
+WCHAR*      g_wszInstanceNamesOut           = nullptr;
 __range( 0, ( g_cpinstMax + 1 ) * ( cchPerfmonInstanceNameMax + 1 ) + 1 ) ULONG g_cchInstanceNames = 0;
-BYTE*       g_rgbInstanceAggregationIDs     = NULL;
+BYTE*       g_rgbInstanceAggregationIDs     = nullptr;
 LOCAL const BYTE bInstanceNameAggregationID = 1;
 
 // "Database ==> Databases" performance counter support.
-WCHAR*      g_wszDatabaseNames              = NULL;
-WCHAR*      g_wszDatabaseNamesOut           = NULL;
+WCHAR*      g_wszDatabaseNames              = nullptr;
+WCHAR*      g_wszDatabaseNamesOut           = nullptr;
 __range( 0, g_ifmpMax * ( cchPerfmonInstanceNameMax + 1 ) + 1 ) ULONG g_cchDatabaseNames = 0;
-BYTE*       g_rgbDatabaseAggregationIDs     = NULL;
+BYTE*       g_rgbDatabaseAggregationIDs     = nullptr;
 
 
 INT g_cInstances = 0;
@@ -1515,9 +1515,9 @@ VOID PERFSetDatabaseNames( IFileSystemAPI* const pfsapi )
 
     for ( IFMP ifmp = 0; ifmp <= FMP::IfmpMacInUse(); ++ifmp )
     {
-        const FMP* pfmp = NULL;
+        const FMP* pfmp = nullptr;
         
-        if ( ( ifmp >= FMP::IfmpMinInUse() ) && ( ( pfmp = &g_rgfmp[ ifmp ] ) != NULL ) && ( pfmp->FInUse() ) )
+        if ( ( ifmp >= FMP::IfmpMinInUse() ) && ( ( pfmp = &g_rgfmp[ ifmp ] ) != nullptr ) && ( pfmp->FInUse() ) )
         {
             const WCHAR * const wszDatabasePath = pfmp->WszDatabaseName();
 
@@ -1664,7 +1664,7 @@ void CIsamSequenceDiagLog::Trigger( _In_ const BYTE seqTrigger )
     //  detach in attach paths.  I have solved all known cases of this.
     Assert( m_tidOwner == DwUtilThreadId() );
     //  We want this class to be able to be used in-light of alloc/memory failures.
-    if( m_rgDiagInfo == NULL )
+    if( m_rgDiagInfo == nullptr )
     {
         //  This actually happens regularly is well, it is for a Term(), here is the interesting stack ...
         //      ese!CIsamSequenceDiagLog::Trigger   ese\src\inc\daedef.hxx @ 3559
@@ -1711,7 +1711,7 @@ void CIsamSequenceDiagLog::AddCallbackTime( const double secsCallback, const __i
 {
     Assert( m_tidOwner == DwUtilThreadId() );
     Assert( FValidSequence_( m_cseqMac ) ); // just in case
-    if( m_rgDiagInfo == NULL || m_cseqMac <= 0 )
+    if( m_rgDiagInfo == nullptr || m_cseqMac <= 0 )
     {
         Assert( m_fAllocFailure );
         return; // see comments in Trigger() about this.
@@ -1725,7 +1725,7 @@ double CIsamSequenceDiagLog::GetCallbackTime( __int64 *pcCallbacks )
 {
     Assert( m_tidOwner == DwUtilThreadId() );
     Assert( FValidSequence_( m_cseqMac ) ); // just in case
-    if( m_rgDiagInfo == NULL || m_cseqMac <= 0 )
+    if( m_rgDiagInfo == nullptr || m_cseqMac <= 0 )
     {
         Assert( m_fAllocFailure );
         *pcCallbacks = 0;
@@ -1740,7 +1740,7 @@ void CIsamSequenceDiagLog::AddThrottleTime( const double secsThrottle, const __i
 {
     Assert( m_tidOwner == DwUtilThreadId() );
     Assert( FValidSequence_( m_cseqMac ) ); // just in case
-    if( m_rgDiagInfo == NULL || m_cseqMac <= 0 )
+    if( m_rgDiagInfo == nullptr || m_cseqMac <= 0 )
     {
         Assert( m_fAllocFailure );
         return; // see comments in Trigger() about this.
@@ -1754,7 +1754,7 @@ double CIsamSequenceDiagLog::GetThrottleTime( __int64 *pcThrottled )
 {
     Assert( m_tidOwner == DwUtilThreadId() );
     Assert( FValidSequence_( m_cseqMac ) ); // just in case
-    if( m_rgDiagInfo == NULL || m_cseqMac <= 0 )
+    if( m_rgDiagInfo == nullptr || m_cseqMac <= 0 )
     {
         Assert( m_fAllocFailure );
         *pcThrottled = 0;
@@ -1772,7 +1772,7 @@ __int64 CIsamSequenceDiagLog::UsecTimer( _In_ INT seqBegin, _In_ const INT seqEn
               ( ( seqBegin == eSequenceStart ) && ( seqEnd == ( m_cseqMax - 1 ) ) ) );
 
     //  We want this class to be able to be used in-light of alloc/memory failures.
-    if( m_rgDiagInfo == NULL )
+    if( m_rgDiagInfo == nullptr )
     {
         Assert( m_fAllocFailure );
         return 0;
@@ -1930,7 +1930,7 @@ void CIsamSequenceDiagLog::SprintTimings( _Out_writes_bytes_(cbTimeSeq) WCHAR * 
 
     const BOOL fWithLineReturns = fTrue;    // leaving in, useful for debugging ...
     //  We want this class to be able to be used in-light of alloc/memory failures.
-    if( m_rgDiagInfo == NULL )
+    if( m_rgDiagInfo == nullptr )
     {
         OSStrCbCopyW( wszTimeSeq, cbTimeSeq, L"[*] = *." );
         return;
@@ -2192,7 +2192,7 @@ void CIsamSequenceDiagLog::TermSequence()
     {
         delete [] m_rgDiagInfo;
     }
-    m_rgDiagInfo = NULL;
+    m_rgDiagInfo = nullptr;
     m_fAllocFailure = fFalse;
     m_cseqMax = 0;
     m_cseqMac = 0;
@@ -2208,7 +2208,7 @@ INST::INST( INT iInstance )
 #ifdef DEBUGGER_EXTENSION
         m_rgEDBGGlobals( rgEDBGGlobalsArray ),
 #else
-        m_rgEDBGGlobals( NULL ),
+        m_rgEDBGGlobals( nullptr ),
 #endif
         m_rgfmp( &g_rgfmp ),
         m_rgpinst( g_rgpinst ),
@@ -2285,22 +2285,22 @@ INST::~INST()
     ListNodePPIB *plnppib;
     // close system sessions
     m_critLNPPIB.Enter();
-    if ( NULL != m_plnppibEnd )
+    if ( nullptr != m_plnppibEnd )
     {
         Assert( 0 == m_cUsedSystemPibs );   // otherwise there is a thread still using a system PIB
         Assert( NULL != m_plnppibBegin );
         //  all the system session must be returned to the session pool
         Assert( m_plnppibEnd->pNext == m_plnppibBegin );
         plnppib     = m_plnppibEnd;
-        m_plnppibEnd    = NULL;
-        m_plnppibBegin  = NULL;
+        m_plnppibEnd    = nullptr;
+        m_plnppibBegin  = nullptr;
     }
     else
     {
-        plnppib = NULL;
+        plnppib = nullptr;
     }
     m_critLNPPIB.Leave();
-    if ( NULL != plnppib )
+    if ( nullptr != plnppib )
     {
         //  all the sessions should be terminated already
         //  so just free nodes
@@ -2396,14 +2396,14 @@ VOID INST::SaveDBMSParams( DBMS_PARAM *pdbms_param )
     // for display information / debug only.
     //
     if ( JET_errSuccess > ErrOSSTRUnicodeToAscii( SzParam( this, JET_paramSystemPath ),
-        pdbms_param->szSystemPathDebugOnly, sizeof(pdbms_param->szSystemPathDebugOnly), NULL, OSSTR_ALLOW_LOSSY )   )
+        pdbms_param->szSystemPathDebugOnly, sizeof(pdbms_param->szSystemPathDebugOnly), nullptr, OSSTR_ALLOW_LOSSY )   )
     {
         OSStrCbCopyA( pdbms_param->szSystemPathDebugOnly, sizeof(pdbms_param->szSystemPathDebugOnly), "???" );
     }
 
     Assert( LOSStrLengthW( SzParam( this, JET_paramLogFilePath ) ) <= IFileSystemAPI::cchPathMax );
     if ( JET_errSuccess > ErrOSSTRUnicodeToAscii( SzParam( this, JET_paramLogFilePath ),
-        pdbms_param->szLogFilePathDebugOnly, sizeof(pdbms_param->szLogFilePathDebugOnly), NULL, OSSTR_ALLOW_LOSSY ) )
+        pdbms_param->szLogFilePathDebugOnly, sizeof(pdbms_param->szLogFilePathDebugOnly), nullptr, OSSTR_ALLOW_LOSSY ) )
     {
         OSStrCbCopyA( pdbms_param->szLogFilePathDebugOnly, sizeof(pdbms_param->szLogFilePathDebugOnly), "???" );
     }
@@ -2436,7 +2436,7 @@ BOOL INST::FSetInstanceName( PCWSTR wszInstanceName )
     if (m_wszInstanceName)
     {
         delete [] m_wszInstanceName;
-        m_wszInstanceName = NULL;
+        m_wszInstanceName = nullptr;
     }
     Assert ( NULL ==  m_wszInstanceName);
     if ( 0 == newSize)
@@ -2445,7 +2445,7 @@ BOOL INST::FSetInstanceName( PCWSTR wszInstanceName )
     }
 
     m_wszInstanceName = new WCHAR[newSize + 1];
-    if ( NULL == m_wszInstanceName)
+    if ( nullptr == m_wszInstanceName)
     {
         return fFalse;
     }
@@ -2466,7 +2466,7 @@ BOOL INST::FSetDisplayName( PCWSTR wszDisplayName )
     if (m_wszDisplayName)
     {
         delete [] m_wszDisplayName;
-        m_wszDisplayName = NULL;
+        m_wszDisplayName = nullptr;
     }
     Assert ( NULL ==  m_wszDisplayName);
     if ( 0 == newSize)
@@ -2475,7 +2475,7 @@ BOOL INST::FSetDisplayName( PCWSTR wszDisplayName )
     }
 
     m_wszDisplayName = new WCHAR[newSize + 1];
-    if ( NULL == m_wszDisplayName)
+    if ( nullptr == m_wszDisplayName)
     {
         return fFalse;
     }
@@ -2492,7 +2492,7 @@ BOOL INST::FSetDisplayName( PCWSTR wszDisplayName )
 ERR INST::ErrGetSystemPib( PIB **pppib )
 {
     ERR err = JET_errSuccess;
-    ListNodePPIB *plnppib = NULL;
+    ListNodePPIB *plnppib = nullptr;
     OPERATION_CONTEXT opContext = { OCUSER_INTERNAL, 0, 0, 0, 0 };
     ENTERCRITICALSECTION enter( &m_critLNPPIB );
     Assert( NULL != m_plnppibEnd );
@@ -2553,7 +2553,7 @@ ERR INST::ErrGetSystemPib( PIB **pppib )
         plnppib->ppib   = NULL;
 #endif // DEBUG
         m_plnppibEnd->pNext = plnppib;
-        plnppib = NULL;
+        plnppib = nullptr;
     }
 
 HandleError:
@@ -2584,7 +2584,7 @@ VOID INST::ReleaseSystemPib( PIB *ppib )
 
 CCriticalSection g_critInst( CLockBasicInfo( CSyncBasicInfo( szInstance ), rankInstance, 0 ) );
 
-INST**  g_rgpinst                       = NULL;
+INST**  g_rgpinst                       = nullptr;
 ULONG   g_cpinstMax                     = 0;    //  The total size of the usable (but not necessarily IN USE) array g_rgpinst (set before allocated in system init)
 
 //  Tracking in-use g_rgpinst info.
@@ -2593,7 +2593,7 @@ CRITPOOL< INST* > g_critpoolPinstAPI;
 
 ULONG   g_cTermsInProgress              = 0;
 
-POSTRACEREFLOG g_pJetApiTraceLog        = NULL;
+POSTRACEREFLOG g_pJetApiTraceLog        = nullptr;
 
 //  PIF for the current process information
 
@@ -2601,12 +2601,12 @@ PM_PIF_PROC ProcInfoPIFPwszPf;
 
 void ProcInfoPIFPwszPf( const wchar_t** const pwszFileName, bool* const pfRefreshInstanceList )
 {
-    if ( pwszFileName != NULL )
+    if ( pwszFileName != nullptr )
     {
         *pwszFileName = WszUtilProcessFileName();
     }
 
-    if ( pfRefreshInstanceList != NULL )
+    if ( pfRefreshInstanceList != nullptr )
     {
         const bool fRefreshPerfInstanceList = ( AtomicExchange( &g_lRefreshPerfInstanceList, 0 ) > 0 );
         *pfRefreshInstanceList = fRefreshPerfInstanceList;
@@ -2643,7 +2643,7 @@ LONG LProcFriendlyNameICFLPwszPpb( _In_ LONG icf, _Inout_opt_ void* const pvPara
             wchar_t** const pwszInstanceNames = (wchar_t**)pvParam1;
             unsigned char** const prgbAggregationIDs = (unsigned char**)pvParam2;
 
-            if ( pwszInstanceNames != NULL && prgbAggregationIDs != NULL )
+            if ( pwszInstanceNames != nullptr && prgbAggregationIDs != nullptr )
             {
                 *pwszInstanceNames = g_wszProcName;
                 *prgbAggregationIDs = (BYTE*)&bProcFriendlyNameAggregationID;
@@ -2765,7 +2765,7 @@ VOID InitTableClassNames()
         //  get tableclass from TCE
         INT tableclass = (INT) TableClassFromTCE( tce );
 
-        const WCHAR * wszSuffix = NULL;
+        const WCHAR * wszSuffix = nullptr;
         if ( FIsIndex( tce ) )
         {
             wszSuffix = g_wszIndex;
@@ -2847,7 +2847,7 @@ LONG LTableClassNamesICFLPwszPpb( _In_ LONG icf, _Inout_opt_ void* const pvParam
             wchar_t** const pwszInstanceNames = (wchar_t**)pvParam1;
             unsigned char** const prgbAggregationIDs = (unsigned char**)pvParam2;
 
-            if ( pwszInstanceNames != NULL && prgbAggregationIDs != NULL )
+            if ( pwszInstanceNames != nullptr && prgbAggregationIDs != nullptr )
             {
                 InitTableClassNames();
                 WCHAR* const wszTableClassNames = g_tableclassnames.WszTableClassNames();
@@ -3001,7 +3001,7 @@ INLINE BOOL FINSTInvalid( const JET_INSTANCE instance )
 
 BOOL FINSTSomeInitialized()
 {
-    const BOOL  fInitAlready    = ( g_rgpinst != NULL );
+    const BOOL  fInitAlready    = ( g_rgpinst != nullptr );
 #ifdef DEBUG
     ULONG cinsts = 0;
     if ( g_rgpinst )
@@ -3267,9 +3267,9 @@ class CInstanceFileSystemConfiguration : public CDefaultFileSystemConfiguration
                                     _countof( rgwszDrive ),
                                     rgwszFolder,
                                     _countof( rgwszFolder ),
-                                    NULL,
+                                    nullptr,
                                     0,
-                                    NULL,
+                                    nullptr,
                                     0 ) ||
                     _wmakepath_s(   wszAbsPathCachingFile,
                                     OSFSAPI_MAX_PATH,
@@ -3297,11 +3297,11 @@ class CInstanceFileSystemConfiguration : public CDefaultFileSystemConfiguration
                     GetCachingFileFromInst( pinst, m_wszAbsPathCachingFile );
 
                     if ( _wsplitpath_s( wszKeyPathCachedFile,
-                                        NULL,
+                                        nullptr,
                                         0,
-                                        NULL,
+                                        nullptr,
                                         0,
-                                        NULL,
+                                        nullptr,
                                         0,
                                         rgwszExt,
                                         _countof( rgwszExt ) ) ||
@@ -3407,7 +3407,7 @@ class CInstanceFileSystemConfiguration : public CDefaultFileSystemConfiguration
                                 cString,
                                 rgpszString,
                                 0,
-                                NULL,
+                                nullptr,
                                 m_pinst,
                                 lEventLoggingLevel);
         }
@@ -3482,7 +3482,7 @@ ERR ErrNewInst(
     INT *           pipinst )
 {
     ERR             err         = JET_errSuccess;
-    INST *          pinst       = NULL;
+    INST *          pinst       = nullptr;
     BOOL            fOSUInit    = fFalse;
     BOOL            fSysInit    = fFalse;
     ULONG           ipinst;
@@ -3529,13 +3529,13 @@ ERR ErrNewInst(
         {
             continue;
         }
-        if ( NULL == wszInstanceName &&
-             NULL == g_rgpinst[ ipinst ]->m_wszInstanceName )
+        if ( nullptr == wszInstanceName &&
+             nullptr == g_rgpinst[ ipinst ]->m_wszInstanceName )
         {
             Error( ErrERRCheck( JET_errInstanceNameInUse ) );
         }
-        if ( NULL != wszInstanceName &&
-             NULL != g_rgpinst[ ipinst ]->m_wszInstanceName &&
+        if ( nullptr != wszInstanceName &&
+             nullptr != g_rgpinst[ ipinst ]->m_wszInstanceName &&
              0 == LOSStrCompareW( wszInstanceName, g_rgpinst[ ipinst ]->m_wszInstanceName ) )
         {
             Error( ErrERRCheck( JET_errInstanceNameInUse ) );
@@ -3671,7 +3671,7 @@ ERR ErrNewInst(
     Alloc( pinst->m_rgoldstatDB = new OLDDB_STATUS[ dbidMax ] );
 
     pinst->m_cpls = OSSyncGetProcessorCountMax();
-    Alloc( pinst->m_rgpls = (INST::PLS*)PvOSMemoryPageAlloc( pinst->m_cpls * sizeof( INST::PLS ), NULL ) );
+    Alloc( pinst->m_rgpls = (INST::PLS*)PvOSMemoryPageAlloc( pinst->m_cpls * sizeof( INST::PLS ), nullptr ) );
     for ( size_t iProc = 0; pinst->m_rgpls && iProc < pinst->m_cpls; iProc++ )
     {
         new(&pinst->m_rgpls[iProc]) INST::PLS;
@@ -3716,7 +3716,7 @@ HandleError:
             //  on failure, restore our situation to before.
             RUNINSTSetMode( runInstModeNoSet );
         }
-        *ppinst = NULL;
+        *ppinst = nullptr;
         if ( pipinst )
         {
             *pipinst = -1;
@@ -3808,7 +3808,7 @@ INLINE VOID SetPinst( JET_INSTANCE *pinstance, JET_SESID sesid, INST **ppinst )
     }
 }
 
-LOCAL ERR ErrFindPinst( JET_INSTANCE jinst, INST **ppinst, INT *pipinst = NULL )
+LOCAL ERR ErrFindPinst( JET_INSTANCE jinst, INST **ppinst, INT *pipinst = nullptr )
 {
     INST                *pinst  = (INST *)jinst;
     UINT                ipinst;
@@ -3864,7 +3864,7 @@ INLINE INST *PinstFromSesid( JET_SESID sesid )
     AssertSzRTL( JET_SESID( ppibNil ) != sesid, "Invalid (NULL) Session ID parameter." );
     AssertSzRTL( JET_sesidNil != sesid, "Invalid (JET_sesidNil) Session ID parameter." );
     INST *pinst = PinstFromPpib( (PIB*)sesid );
-    AssertSzRTL( NULL != pinst, "Invalid Session ID parameter - has NULL as an instance." );
+    AssertSzRTL( nullptr != pinst, "Invalid Session ID parameter - has NULL as an instance." );
     AssertSzRTL( (INST*)JET_instanceNil != pinst, "Invalid Session ID parameter - has (JET_instanceNil) as an instance." );
     return pinst;
 }
@@ -4048,7 +4048,7 @@ class APICALL_INST : public APICALL
         INST *      m_pinst;
 
     public:
-        APICALL_INST( const INT op ) : APICALL( op ), m_pinst( NULL )   {}
+        APICALL_INST( const INT op ) : APICALL( op ), m_pinst( nullptr )   {}
         ~APICALL_INST()                                                 {}
 
         INST * Pinst()                                  { return m_pinst; }
@@ -4058,7 +4058,7 @@ class APICALL_INST : public APICALL
             AssertRTL( m_err > -65536 && m_err < 65536 );
             if ( m_err < JET_errSuccess )
             {
-                const WCHAR* wszInstDisplayName = ( m_pinst != NULL && m_pinst->m_wszDisplayName != NULL ? m_pinst->m_wszDisplayName : L"_unknown_" );
+                const WCHAR* wszInstDisplayName = ( m_pinst != nullptr && m_pinst->m_wszDisplayName != nullptr ? m_pinst->m_wszDisplayName : L"_unknown_" );
                 OSDiagTrackJetApiError( wszInstDisplayName, m_op, m_err );
             }
             return m_err;
@@ -4148,7 +4148,7 @@ class APICALL_INST : public APICALL
         VOID LeaveAfterTerm( const ERR err )
         {
             LeaveAfterCall( err );
-            m_pinst = NULL;
+            m_pinst = nullptr;
         }
 };
 
@@ -4161,7 +4161,7 @@ class APICALL_SESID : public APICALL
     public:
         APICALL_SESID( const INT op ) :
             APICALL( op ),
-            m_ppib( NULL ),
+            m_ppib( nullptr ),
             m_putcOuter( PutcTLSGetUserContext() )
             {}
         ~APICALL_SESID()                                    {}
@@ -4173,7 +4173,7 @@ class APICALL_SESID : public APICALL
             AssertRTL( m_err > -65536 && m_err < 65536 );
             if ( m_err < JET_errSuccess )
             {
-                const WCHAR* wszInstDisplayName = ( m_ppib != NULL && PinstFromPpib( m_ppib )->m_wszDisplayName != NULL ? PinstFromPpib( m_ppib )->m_wszDisplayName : L"_unknown_" );
+                const WCHAR* wszInstDisplayName = ( m_ppib != nullptr && PinstFromPpib( m_ppib )->m_wszDisplayName != nullptr ? PinstFromPpib( m_ppib )->m_wszDisplayName : L"_unknown_" );
                 OSDiagTrackJetApiError( wszInstDisplayName, m_op, m_err );
             }
             return m_err;
@@ -4343,7 +4343,7 @@ class APICALL_SESID : public APICALL
 
             if ( cInJetAPI == 0 )
             {
-                m_ppib->ptlsApi = NULL;
+                m_ppib->ptlsApi = nullptr;
             }
         }
         VOID LeaveAfterEndSession( const ERR err )
@@ -4360,7 +4360,7 @@ class APICALL_SESID : public APICALL
 
             if ( err >= JET_errSuccess )
             {
-                m_ppib = NULL;
+                m_ppib = nullptr;
                 Assert( PutcTLSGetUserContext() == NULL );   // PIBEndSession() should've cleaned up the TLS
             }
             else
@@ -4374,7 +4374,7 @@ class APICALL_SESID : public APICALL
                 LONG cInJetAPI = AtomicDecrement( &m_ppib->m_cInJetAPI );
                 if ( cInJetAPI == 0 )
                 {
-                    m_ppib->ptlsApi = NULL;
+                    m_ppib->ptlsApi = nullptr;
                 }
             }
 
@@ -4391,7 +4391,7 @@ INST::PLS* INST::Ppls()
 
 INST::PLS* INST::Ppls( const size_t iProc )
 {
-    return iProc < m_cpls ? &m_rgpls[ iProc ] : NULL;
+    return iProc < m_cpls ? &m_rgpls[ iProc ] : nullptr;
 }
 
 ERR INST::ErrAPIAbandonEnter_( const LONG lOld )
@@ -4729,7 +4729,7 @@ VOID INST::INSTSystemTerm()
 #endif
 
     delete [] g_rgpinst;
-    g_rgpinst = NULL;
+    g_rgpinst = nullptr;
 
 #ifdef PROFILE_JET_API
     if ( NULL != profile_pFile )
@@ -4785,7 +4785,7 @@ LONG LInstanceNamesICFLPwszPpb( _In_ LONG icf, _Inout_opt_ void* const pvParam1,
             wchar_t** const pwszInstanceNames = (wchar_t**)pvParam1;
             unsigned char** const prgbAggregationIDs = (unsigned char**)pvParam2;
 
-            if ( pwszInstanceNames != NULL && prgbAggregationIDs != NULL )
+            if ( pwszInstanceNames != nullptr && prgbAggregationIDs != nullptr )
             {
                 if ( g_runInstMode != runInstModeNoSet )
                 {
@@ -4842,7 +4842,7 @@ LONG LDatabaseNamesICFLPwszPpb( _In_ LONG icf, _Inout_opt_ void* const pvParam1,
             wchar_t** const pwszDatabaseNames = (wchar_t**)pvParam1;
             unsigned char** const prgbAggregationIDs = (unsigned char**)pvParam2;
 
-            if ( pwszDatabaseNames != NULL && prgbAggregationIDs != NULL )
+            if ( pwszDatabaseNames != nullptr && prgbAggregationIDs != nullptr )
             {
                 if ( g_runInstMode != runInstModeNoSet )
                 {
@@ -4888,9 +4888,9 @@ VOID JET_API DBGFPrintF( _In_ PCSTR sz )
     OSStrCbFormatW( wszJetTxt, sizeof(wszJetTxt), L"%ws.txt", SzParam( JET_paramBaseName ) );
 
     critDBGPrint.Enter();
-    FILE* f = NULL;
+    FILE* f = nullptr;
     (void) _wfopen_s( &f, wszJetTxt, L"a+" );
-    if ( f != NULL )
+    if ( f != nullptr )
     {
         fprintf( f, "%s", sz );
         fflush( f );
@@ -4906,7 +4906,7 @@ ERR ErrCheckUniquePath( INST *pinst )
     ERR                 errFullPath                 = JET_errSuccess;
     const BOOL          fTempDbForThisInst          = ( UlParam( pinst, JET_paramMaxTemporaryTables ) > 0 && !pinst->FRecovering() );
     const BOOL          fRecoveryForThisInst        = !pinst->FComputeLogDisabled();
-    IFileSystemAPI *    pfsapi                      = NULL;
+    IFileSystemAPI *    pfsapi                      = nullptr;
     ULONG               ipinstChecked               = 0;
     ULONG               ipinst;
     WCHAR               rgwchFullNameNew[IFileSystemAPI::cchPathMax];
@@ -5085,7 +5085,7 @@ LOCAL JET_ERR ErrInit(  INST        *pinst,
     else
     {
         //  a failure here used to return only JET_errOutOfMemory but can now also return JET_errInvalidParameter
-        Call( pinst->m_pfsapi->ErrPathBuild( SzParam( pinst, JET_paramSystemPath ), SzParam( pinst, JET_paramTempPath ), NULL, wszT ) );
+        Call( pinst->m_pfsapi->ErrPathBuild( SzParam( pinst, JET_paramSystemPath ), SzParam( pinst, JET_paramTempPath ), nullptr, wszT ) );
         Call( Param( pinst, JET_paramTempPath )->Set( pinst, ppibNil, 0, wszT ) );
     }
 
@@ -5134,10 +5134,10 @@ LOCAL JET_ERR ErrInit(  INST        *pinst,
 
     // allocate the version store hash table
     //
-    if ( pinst->m_pver != NULL )
+    if ( pinst->m_pver != nullptr )
     {
         VER::VERFree( pinst->m_pver );
-        pinst->m_pver = NULL;
+        pinst->m_pver = nullptr;
     }
     Alloc( pinst->m_pver = VER::VERAlloc( pinst ) );
 
@@ -5154,13 +5154,13 @@ LOCAL JET_ERR ErrInit(  INST        *pinst,
     {
         DWORD_PTR cFCBPreferred;
         cFCBPreferred = max( cfcbCachedClosedTablesDefault, DWORD_PTR( 0.15 * cFCBQuota ) );
-        Call( Param( pinst, JET_paramCachedClosedTables )->Set( pinst, ppibNil, cFCBPreferred, NULL ) );
+        Call( Param( pinst, JET_paramCachedClosedTables )->Set( pinst, ppibNil, cFCBPreferred, nullptr ) );
     }
     if ( FDefaultParam( pinst, JET_paramPreferredVerPages ) )
     {
         DWORD_PTR cVERBUCKETPreferred;
         cVERBUCKETPreferred = DWORD_PTR( 0.9 * UlParam( pinst, JET_paramMaxVerPages ) );
-        Call( Param( pinst, JET_paramPreferredVerPages )->Set( pinst, ppibNil, cVERBUCKETPreferred, NULL ) );
+        Call( Param( pinst, JET_paramPreferredVerPages )->Set( pinst, ppibNil, cVERBUCKETPreferred, nullptr ) );
     }
 
     //  make a dummy callback to the runtime callback to verify its existence.
@@ -5173,9 +5173,9 @@ LOCAL JET_ERR ErrInit(  INST        *pinst,
                         JET_dbidNil,
                         JET_tableidNil,
                         JET_cbtypNull,
-                        NULL,
-                        NULL,
-                        NULL,
+                        nullptr,
+                        nullptr,
+                        nullptr,
                         0 ) );
     }
 
@@ -5717,7 +5717,7 @@ ERR CJetParam::SetString(
 {
     ERR     err         = JET_errSuccess;
     size_t  cchParam    = 0;
-    WCHAR*  wszNewValue = NULL;
+    WCHAR*  wszNewValue = nullptr;
 
     Call( ValidateSet( pjetparam, pinst, ppib, ulParam, wszParam, fTrue ) );
 
@@ -5738,7 +5738,7 @@ ERR CJetParam::SetString(
     pjetparam->m_fWritten       = fTrue;
     pjetparam->m_fFreeValue     = fTrue;
 
-    wszNewValue = NULL;
+    wszNewValue = nullptr;
 
 HandleError:
     delete [] wszNewValue;
@@ -5771,10 +5771,10 @@ ERR CJetParam::SetFolder(
             PCWSTR              wszParam )
 {
     ERR             err         = JET_errSuccess;
-    IFileSystemAPI* pfsapi      = NULL;
+    IFileSystemAPI* pfsapi      = nullptr;
     WCHAR           rgwchPath[ IFileSystemAPI::cchPathMax ];
     size_t          cchPath     = 0;
-    WCHAR*          wszNewValue = NULL;
+    WCHAR*          wszNewValue = nullptr;
 
     Call( ValidateSet( pjetparam, pinst, ppib, ulParam, wszParam, fTrue ) );
 
@@ -5798,7 +5798,7 @@ ERR CJetParam::SetFolder(
     pjetparam->m_fWritten       = fTrue;
     pjetparam->m_fFreeValue     = fTrue;
 
-    wszNewValue = NULL;
+    wszNewValue = nullptr;
 
 HandleError:
     delete [] wszNewValue;
@@ -5814,10 +5814,10 @@ ERR CJetParam::SetPath(
         PCWSTR      wszParam )
 {
     ERR             err         = JET_errSuccess;
-    IFileSystemAPI* pfsapi      = NULL;
+    IFileSystemAPI* pfsapi      = nullptr;
     WCHAR           rgwchPath[ IFileSystemAPI::cchPathMax ];
     size_t          cchPath     = 0;
-    WCHAR*          wszNewValue = NULL;
+    WCHAR*          wszNewValue = nullptr;
 
     Call( ValidateSet( pjetparam, pinst, ppib, ulParam, wszParam, fTrue ) );
 
@@ -5850,7 +5850,7 @@ ERR CJetParam::SetPath(
     pjetparam->m_fWritten       = fTrue;
     pjetparam->m_fFreeValue     = fTrue;
 
-    wszNewValue = NULL;
+    wszNewValue = nullptr;
 
 HandleError:
     delete [] wszNewValue;
@@ -5880,7 +5880,7 @@ ERR CJetParam::CloneString(     CJetParam* const    pjetparamSrc,
 {
     ERR     err         = JET_errSuccess;
     size_t  cchValue    = 0;
-    WCHAR*  wszNewValue = NULL;
+    WCHAR*  wszNewValue = nullptr;
 
     // don't overwrite the destination if we encounter an error in the allocation
     
@@ -5898,7 +5898,7 @@ ERR CJetParam::CloneString(     CJetParam* const    pjetparamSrc,
         pjetparamDst->m_valueCurrent = (ULONG_PTR)wszNewValue;
 
         Assert( pjetparamDst->m_fFreeValue );
-        wszNewValue = NULL;
+        wszNewValue = nullptr;
     }
     else
     {
@@ -6163,8 +6163,8 @@ CloneCommitDefault( CJetParam* const    pjetparamSrc,
     ULONG_PTR ulParam = 0;
 
     memcpy( pjetparamDst, pjetparamSrc, sizeof( CJetParam ) );
-    Call( GetCommitDefault( pjetparamSrc, pinstSrc, ppibSrc, &ulParam, NULL, 0 ) );
-    Call( SetCommitDefault( pjetparamDst, pinstDst, ppibDst, ulParam, NULL ) );
+    Call( GetCommitDefault( pjetparamSrc, pinstSrc, ppibSrc, &ulParam, nullptr, 0 ) );
+    Call( SetCommitDefault( pjetparamDst, pinstDst, ppibDst, ulParam, nullptr ) );
 
 HandleError:
     return err;
@@ -6314,7 +6314,7 @@ ErrSetEngineFormatVersionParameter( _In_ CJetParam* const   pjetparam,
     {
         //  If not this wild card, then try to lookup desired version to ensure we can maintain
         //  the version desired / specified by the user or client.
-        const FormatVersions * pfmtvers = NULL;
+        const FormatVersions * pfmtvers = nullptr;
         err = ErrGetDesiredVersion( pinst, (JET_ENGINEFORMATVERSION)ulParam, &pfmtvers, fTrue );
         Call( err );
         Assert( pfmtvers != NULL );
@@ -6360,7 +6360,7 @@ ErrGetEngineFormatVersionParameter( _In_ const CJetParam* const pjetparam,
                     _Reserved_ PWSTR const          wszParam,
                     _In_ const size_t           cbParamMax )
 {
-    if ( NULL == pulParam )
+    if ( nullptr == pulParam )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -6369,7 +6369,7 @@ ErrGetEngineFormatVersionParameter( _In_ const CJetParam* const pjetparam,
     // pinst == pinstNil is allowed to retrieve the global and/or default value.
 
     JET_API_PTR efvT;
-    CallS( CJetParam::GetInteger( pjetparam, pinst, ppib, (ULONG_PTR*)&efvT, NULL, sizeof(efvT) ) );
+    CallS( CJetParam::GetInteger( pjetparam, pinst, ppib, (ULONG_PTR*)&efvT, nullptr, sizeof(efvT) ) );
     Enforce( efvT <= (ULONGLONG)ulMax /* check truncation */ );
     JET_ENGINEFORMATVERSION efv = (JET_ENGINEFORMATVERSION)efvT;
 
@@ -6395,7 +6395,7 @@ GetErrorToString(   const CJetParam* const  pjetparam,
                     __out_bcount(cbParamMax) PWSTR const            wszParam,
                     const size_t            cbParamMax )
 {
-    if ( NULL == pulParam )
+    if ( nullptr == pulParam )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -6410,8 +6410,8 @@ GetErrorToString(   const CJetParam* const  pjetparam,
     ERR         err;
     CAutoWSZ    lwszErrorValueString;   // 30 is optimization
     CAutoWSZ    lwszErrorDescString;    // 300 is optimization
-    const CHAR *        szError     = NULL;
-    const CHAR *        szErrorText = NULL;
+    const CHAR *        szError     = nullptr;
+    const CHAR *        szErrorText = nullptr;
 
     JetErrorToString( *((JET_ERR *)pulParam), &szError, &szErrorText );
 
@@ -6444,7 +6444,7 @@ GetUnicodeIndexDefault( const CJetParam* const  pjetparam,
 {
     ERR err = JET_errSuccess;
     
-    if ( NULL == pulParam )
+    if ( nullptr == pulParam )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -6489,7 +6489,7 @@ SetUnicodeIndexDefault( CJetParam* const    pjetparam,
     // ErrFILEICheckUserDefinedUnicode() as JET_errIndexInvalidDef. But isn't it
     // useful to be able to set the parameter to NULL and revert to the hard-coded
     // default?
-    if ( NULL == pindexUnicode )
+    if ( nullptr == pindexUnicode )
     {
         if ( pinstNil != pinst )
         {
@@ -6540,8 +6540,8 @@ CloneUnicodeIndexDefault(   CJetParam* const    pjetparamSrc,
     JET_UNICODEINDEX idxUnicode;
 
     memcpy( pjetparamDst, pjetparamSrc, sizeof( CJetParam ) );
-    Call( GetUnicodeIndexDefault( pjetparamSrc, pinstSrc, ppibSrc, (ULONG_PTR*)&idxUnicode, NULL, sizeof( JET_UNICODEINDEX ) ) );
-    Call( SetUnicodeIndexDefault( pjetparamDst, pinstDst, ppibDst, (ULONG_PTR)&idxUnicode, NULL ) );
+    Call( GetUnicodeIndexDefault( pjetparamSrc, pinstSrc, ppibSrc, (ULONG_PTR*)&idxUnicode, nullptr, sizeof( JET_UNICODEINDEX ) ) );
+    Call( SetUnicodeIndexDefault( pjetparamDst, pinstDst, ppibDst, (ULONG_PTR)&idxUnicode, nullptr ) );
 
 HandleError:
     return err;
@@ -6555,7 +6555,7 @@ GetRecoveryCurrentLogfile(  const CJetParam* const  pjetparam,
                             __out_bcount(cbParamMax) PWSTR const            wszParam,
                             const size_t            cbParamMax )
 {
-    if ( NULL == pulParam )
+    if ( nullptr == pulParam )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -6616,7 +6616,7 @@ SetCachePriority(   _In_ CJetParam* const   pjetparam,
         }
 
         // Go through all sessions and resolve the priority for that database.
-        for ( PIB* ppibCurr = pinst->m_ppibGlobal; ppibCurr != NULL; ppibCurr = ppibCurr->ppibNext )
+        for ( PIB* ppibCurr = pinst->m_ppibGlobal; ppibCurr != nullptr; ppibCurr = ppibCurr->ppibNext )
         {
             ppibCurr->ResolveCachePriorityForDb( dbid );
         }
@@ -6881,7 +6881,7 @@ GetConfiguration(   const CJetParam* const  pjetparam,
                     __out_bcount(cbParamMax) PWSTR const            wszParam,
                     const size_t            cbParamMax )
 {
-    if ( NULL == pulParam )
+    if ( nullptr == pulParam )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -6908,7 +6908,7 @@ VOID SetJetConfigSet( INST * const pinst, _In_reads_(cConfigOverrides) const Con
         size_t iparam = prgConfigOverrides[iiparam].paramid;
 
         //  get the storage (global or instance) of which we want to change 
-        CJetParam* pjetparamT = NULL;
+        CJetParam* pjetparamT = nullptr;
         if ( pinst == pinstNil || g_rgparam[ iparam ].FGlobal() )
         {
             pjetparamT = g_rgparam + iparam;
@@ -7084,7 +7084,7 @@ SetConfiguration(   CJetParam* const    pjetparam,
         //
         for ( size_t iparam = 0; iparam < g_cparam; iparam++ )
         {
-            CJetParam* pjetparamT = NULL;
+            CJetParam* pjetparamT = nullptr;
 
             //  lookup the storage location for this paramid.  if no instance was
             //  specified or if the parameter is intrinsically global then we will
@@ -7146,7 +7146,7 @@ SetConfiguration(   CJetParam* const    pjetparam,
 
         for ( size_t iparam = 0; iparam < g_cparam; iparam++ )
         {
-            CJetParam* pjetparamT = NULL;
+            CJetParam* pjetparamT = nullptr;
             if ( pinst == pinstNil || g_rgparam[ iparam ].FGlobal() )
             {
                 pjetparamT = g_rgparam + iparam;
@@ -7254,7 +7254,7 @@ GetKeyMostMost( const CJetParam* const  pjetparam,
                 __out_bcount(cbParamMax) PWSTR const            wszParam,
                 const size_t            cbParamMax )
 {
-    if ( NULL == pulParam )
+    if ( nullptr == pulParam )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -7272,7 +7272,7 @@ GetRecordSizeMost( const CJetParam* const  pjetparam,
     __out_bcount(cbParamMax) PWSTR const            wszParam,
     const size_t            cbParamMax )
 {
-    if ( NULL == pulParam )
+    if ( nullptr == pulParam )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -7534,7 +7534,7 @@ VOID FixDefaultSystemParameters()
     static BOOL fDefaultSystemParametersFixedUp = fFalse;
 
     ERR err = JET_errSuccess;
-    IFileSystemAPI* pfsapi = NULL;
+    IFileSystemAPI* pfsapi = nullptr;
 
     if ( fDefaultSystemParametersFixedUp )
     {
@@ -7558,7 +7558,7 @@ VOID FixDefaultSystemParameters()
 
         if ( ErrUtilSystemSlConfiguration( g_wszLP_PARAMCONFIGURATION, &cConfiguration ) >= JET_errSuccess )
         {
-            SetConfiguration( &(g_rgparam[JET_paramConfiguration]), pinstNil, ppibNil, cConfiguration, NULL );
+            SetConfiguration( &(g_rgparam[JET_paramConfiguration]), pinstNil, ppibNil, cConfiguration, nullptr );
         }
 
     /*      Testing with this random config settings ...
@@ -7588,7 +7588,7 @@ VOID FixDefaultSystemParameters()
 
             for ( size_t i = 0; i < _countof( rgjpPathFixup ); ++i )
             {
-                Call( CJetParam::SetPath( &g_rgparam[ rgjpPathFixup[ i ] ], NULL, NULL, 0, rgwchDefaultPath ) );
+                Call( CJetParam::SetPath( &g_rgparam[ rgjpPathFixup[ i ] ], nullptr, nullptr, 0, rgwchDefaultPath ) );
             }
 
             // Do not fix the temporary database; it will be resolved in ErrInit().
@@ -7640,7 +7640,7 @@ BOOL FConfigStoreLoadableParam( CJetParam* const pjetparam )
 ERR ErrSysParamLoadOverride( _In_z_ PCWSTR wszConfigStoreSpec, _In_ CJetParam* const pjetparam, _Out_ ULONG_PTR * pulpParam )
 {
     ERR err = JET_errSuccess;
-    CConfigStore * pcs = NULL;
+    CConfigStore * pcs = nullptr;
 
     if ( !FConfigStoreLoadableParam( pjetparam ) )
     {
@@ -7668,7 +7668,7 @@ inline ERR ErrSetSystemParameter(
 {
     ERR                 err         = JET_errSuccess;
     PIB*                ppib        = ( JET_sesidNil != sesid ? (PIB*)sesid : ppibNil );
-    CJetParam*          pjetparam   = NULL;
+    CJetParam*          pjetparam   = nullptr;
     BOOL                fEnableAdvanced = fFalse;
     BOOL                fOriginalSet = fFalse;
     ULONG_PTR           ulpOriginal = ulParam;
@@ -7780,7 +7780,7 @@ inline ERR ErrGetSystemParameter(
 {
     ERR                 err         = JET_errSuccess;
     PIB*                ppib        = ( JET_sesidNil != sesid ? (PIB*)sesid : ppibNil );
-    const CJetParam*    pjetparam   = NULL;
+    const CJetParam*    pjetparam   = nullptr;
 
     //  if this parameter is not defined then it must be invalid
 
@@ -7866,7 +7866,7 @@ ERR ErrSysParamLoadDefaults( const BOOL fHasCritInst, INST * pinst, CConfigStore
 
             if ( err == JET_errSuccess )
             {
-                err = ErrSetSystemParameter( pinst, 0, iparamid, ulpValue, NULL, !fHasCritInst );
+                err = ErrSetSystemParameter( pinst, 0, iparamid, ulpValue, nullptr, !fHasCritInst );
                 if ( err < JET_errSuccess )
                 {
                     WCHAR wszParamName[100];
@@ -7935,15 +7935,15 @@ ErrSetConfigStoreSpec(  CJetParam* const    pjetparam,
                 PCWSTR                  wszParam )
 {
     ERR err = JET_errSuccess;
-    CConfigStore * pcs = NULL;
+    CConfigStore * pcs = nullptr;
 
-    if ( ppib != NULL && ppib != (PIB*)JET_sesidNil )
+    if ( ppib != nullptr && ppib != (PIB*)JET_sesidNil )
     {
         AssertSz( fFalse, "Can't supply a JET_SESID to the JET_paramConfigStoreSpec parameter" );
         return ErrERRCheck( JET_errInvalidParameter );
     }
 
-    if ( wszParam == NULL )
+    if ( wszParam == nullptr )
     {
         //  There is a bit of a split brain on what is a NULL string is for this custom parameter table:
         //   1. if you just load the DLL and set a few variables, but do not set paramConfigStoreSpec 
@@ -7978,7 +7978,7 @@ ErrSetConfigStoreSpec(  CJetParam* const    pjetparam,
         // a little silly, but makes me feel I understand my world  ...
         Assert( FBounded( (QWORD)pjetparam, (QWORD)( pjetparam - pjetparam->m_paramid ), sizeof(JetParam) * _countof(g_rgparamRaw) ) );
 
-        if ( pinst == NULL || pinst == (INST*)JET_instanceNil /* just in case */ )
+        if ( pinst == nullptr || pinst == (INST*)JET_instanceNil /* just in case */ )
         {
             Assert( FBounded( (QWORD)pjetparam, (QWORD)g_rgparamRaw, sizeof(JetParam) * _countof(g_rgparamRaw) ) );
             Call( ErrSysParamLoadDefaults( fTrue, pinstNil, pcs, g_rgparam, _countof(g_rgparamRaw) ) );
@@ -8010,7 +8010,7 @@ private:
 
     ERR ErrCallback( const JET_SNT snt, const JET_SNP snp, void * const pv ) const
     {
-        if ( NULL != m_pfnStatus )
+        if ( nullptr != m_pfnStatus )
         {
             return m_pfnStatus( JET_sesidNil, snt, snp, pv );
         }
@@ -8045,7 +8045,7 @@ class CAutoINDEXCREATE1To2_T {
     JET_SPACEHINTS *        m_rgspacehintsEngine;
     ULONG                   m_cindexcreate;
 public:
-    CAutoINDEXCREATE1To2_T() : m_rgindexcreateFromAPI( NULL ), m_rgindexcreateEngine( NULL ), m_rgspacehintsEngine( NULL ), m_cindexcreate( 0 ) { }
+    CAutoINDEXCREATE1To2_T() : m_rgindexcreateFromAPI( nullptr ), m_rgindexcreateEngine( nullptr ), m_rgspacehintsEngine( nullptr ), m_cindexcreate( 0 ) { }
     ~CAutoINDEXCREATE1To2_T();
     ERR ErrSet( JET_INDEXCREATE_T * pindexcreate, ULONG cindexcreate = 1 );
     JET_INDEXCREATE2_T* GetPtr(void)        { return m_rgindexcreateEngine; }
@@ -8059,10 +8059,10 @@ ERR CAutoINDEXCREATE1To2_T< JET_INDEXCREATE_T, JET_INDEXCREATE2_T >::ErrSet( JET
 
     delete [] m_rgindexcreateEngine;
     delete [] m_rgspacehintsEngine;
-    m_rgindexcreateEngine = NULL;
-    m_rgspacehintsEngine = NULL;
+    m_rgindexcreateEngine = nullptr;
+    m_rgspacehintsEngine = nullptr;
 
-    if ( NULL == pindexcreate || 0 == cindexcreate )
+    if ( nullptr == pindexcreate || 0 == cindexcreate )
     {
         if ( cindexcreate )
         {
@@ -8150,7 +8150,7 @@ class CAutoINDEXCREATE2To3_T {
     JET_UNICODEINDEX2 *     m_rgunicodeindexEngine;
     ULONG                   m_cindexcreate;
 public:
-    CAutoINDEXCREATE2To3_T() : m_rgindexcreateFromAPI( NULL ), m_rgindexcreateEngine( NULL ), m_rgwszLocaleName( NULL ), m_rgunicodeindexEngine( NULL ), m_cindexcreate( 0 ) { }
+    CAutoINDEXCREATE2To3_T() : m_rgindexcreateFromAPI( nullptr ), m_rgindexcreateEngine( nullptr ), m_rgwszLocaleName( nullptr ), m_rgunicodeindexEngine( nullptr ), m_cindexcreate( 0 ) { }
     ~CAutoINDEXCREATE2To3_T();
     ERR ErrSet( JET_INDEXCREATE2_T * pindexcreate, ULONG cindexcreate = 1 );
     JET_INDEXCREATE3_T* GetPtr(void)        { return m_rgindexcreateEngine; }
@@ -8165,11 +8165,11 @@ ERR CAutoINDEXCREATE2To3_T< JET_INDEXCREATE2_T, JET_INDEXCREATE3_T >::ErrSet( JE
     delete [] m_rgindexcreateEngine;
     delete [] m_rgunicodeindexEngine;
     delete [] m_rgwszLocaleName;
-    m_rgindexcreateEngine = NULL;
-    m_rgunicodeindexEngine = NULL;
-    m_rgwszLocaleName = NULL;
+    m_rgindexcreateEngine = nullptr;
+    m_rgunicodeindexEngine = nullptr;
+    m_rgwszLocaleName = nullptr;
 
-    if ( NULL == pindexcreate || 0 == cindexcreate )
+    if ( nullptr == pindexcreate || 0 == cindexcreate )
     {
         if ( cindexcreate )
         {
@@ -8306,7 +8306,7 @@ class CAutoINDEXCREATE3To3_T {
     JET_INDEXCREATE3_T_TO *    m_rgindexcreateEngine;
     ULONG                   m_cindexcreate;
 public:
-    CAutoINDEXCREATE3To3_T() : m_rgindexcreateFromAPI( NULL ), m_rgindexcreateEngine( NULL ), m_cindexcreate( 0 ) { }
+    CAutoINDEXCREATE3To3_T() : m_rgindexcreateFromAPI( nullptr ), m_rgindexcreateEngine( nullptr ), m_cindexcreate( 0 ) { }
     ~CAutoINDEXCREATE3To3_T();
     ERR ErrSet( JET_INDEXCREATE3_T_FROM * pindexcreate, ULONG cindexcreate = 1 );
     JET_INDEXCREATE3_T_TO* GetPtr(void)     { return m_rgindexcreateEngine; }
@@ -8319,9 +8319,9 @@ ERR CAutoINDEXCREATE3To3_T< JET_INDEXCREATE3_T_FROM, JET_INDEXCREATE3_T_TO >::Er
     ERR err = JET_errSuccess;
 
     delete [] m_rgindexcreateEngine;
-    m_rgindexcreateEngine = NULL;
+    m_rgindexcreateEngine = nullptr;
 
-    if ( NULL == pindexcreate || 0 == cindexcreate )
+    if ( nullptr == pindexcreate || 0 == cindexcreate )
     {
         if ( cindexcreate )
         {
@@ -8410,7 +8410,7 @@ class CAutoTABLECREATE2To3_T {
     JET_TABLECREATE3_T      m_tablecreateEngine;
     CAutoIndex_T *          m_pautoindices;
 public:
-    CAutoTABLECREATE2To3_T() : m_ptablecreateFromAPI(NULL), m_pautoindices(NULL) { }
+    CAutoTABLECREATE2To3_T() : m_ptablecreateFromAPI(nullptr), m_pautoindices(nullptr) { }
     ~CAutoTABLECREATE2To3_T();
 
     ERR ErrSet( JET_TABLECREATE2_T * ptablecreate );
@@ -8428,7 +8428,7 @@ ERR CAutoTABLECREATE2To3_T< JET_TABLECREATE2_T, JET_TABLECREATE3_T, CAutoIndex_T
     ERR err = JET_errSuccess;
 
     delete m_pautoindices;
-    m_pautoindices = NULL;
+    m_pautoindices = nullptr;
 
     if ( ptablecreate->cbStruct != sizeof(*ptablecreate) )
     {
@@ -8450,8 +8450,8 @@ ERR CAutoTABLECREATE2To3_T< JET_TABLECREATE2_T, JET_TABLECREATE3_T, CAutoIndex_T
     Assert( m_tablecreateEngine.cIndexes > 0 || NULL == m_tablecreateEngine.rgindexcreate );
     
     //  Null the last 3 parameters (giving the caller the default of course)
-    m_tablecreateEngine.pSeqSpacehints = NULL;
-    m_tablecreateEngine.pLVSpacehints = NULL;
+    m_tablecreateEngine.pSeqSpacehints = nullptr;
+    m_tablecreateEngine.pLVSpacehints = nullptr;
     m_tablecreateEngine.cbSeparateLV = 0;
 
     //  Finally update the internal "version" of the struct...
@@ -8508,7 +8508,7 @@ class CAutoTABLECREATE3To4_T {
     JET_TABLECREATE4_T      m_tablecreateEngine;
     CAutoIndex_T *          m_pautoindices;
 public:
-    CAutoTABLECREATE3To4_T() : m_ptablecreateFromAPI(NULL), m_pautoindices(NULL) { }
+    CAutoTABLECREATE3To4_T() : m_ptablecreateFromAPI(nullptr), m_pautoindices(nullptr) { }
     ~CAutoTABLECREATE3To4_T();
 
     ERR ErrSet( JET_TABLECREATE3_T * ptablecreate );
@@ -8525,7 +8525,7 @@ ERR CAutoTABLECREATE3To4_T< JET_TABLECREATE3_T, JET_TABLECREATE4_T, CAutoIndex_T
     ERR err = JET_errSuccess;
 
     delete m_pautoindices;
-    m_pautoindices = NULL;
+    m_pautoindices = nullptr;
 
     if ( ptablecreate->cbStruct != sizeof(*ptablecreate) )
     {
@@ -8600,7 +8600,7 @@ class CAutoTABLECREATE4To5_T {
     JET_TABLECREATE4_T *    m_ptablecreateFromAPI;
     JET_TABLECREATE5_T      m_tablecreateEngine;
 public:
-    CAutoTABLECREATE4To5_T() : m_ptablecreateFromAPI(NULL) { }
+    CAutoTABLECREATE4To5_T() : m_ptablecreateFromAPI(nullptr) { }
     ~CAutoTABLECREATE4To5_T();
 
     ERR ErrSet( JET_TABLECREATE4_T * ptablecreate );
@@ -8679,7 +8679,7 @@ class CAutoTABLECREATE5To5_T {
     CAutoIndex_T *              m_pautoindices;
     JET_COLUMNCREATE_A *        m_rgcolumncreate;
 public:
-    CAutoTABLECREATE5To5_T() : m_ptablecreateFromAPI(NULL), m_pautoindices(NULL), m_rgcolumncreate(NULL) { }
+    CAutoTABLECREATE5To5_T() : m_ptablecreateFromAPI(nullptr), m_pautoindices(nullptr), m_rgcolumncreate(nullptr) { }
     ~CAutoTABLECREATE5To5_T();
 
     ERR ErrSet( JET_TABLECREATE5_T_FROM * ptablecreate );
@@ -8696,7 +8696,7 @@ ERR CAutoTABLECREATE5To5_T< JET_TABLECREATE5_T_FROM, JET_TABLECREATE5_T_TO, CAut
     ERR err = JET_errSuccess;
 
     delete m_pautoindices;
-    m_pautoindices = NULL;
+    m_pautoindices = nullptr;
 
     if ( ptablecreate->cbStruct != sizeof(*ptablecreate) )
     {
@@ -9394,7 +9394,7 @@ LOCAL JET_ERR JetGetTableInfoExW(
     _In_ ULONG              InfoLevel )
 {
     ERR             err = JET_errSuccess;
-    void *          pv  = NULL;
+    void *          pv  = nullptr;
     ULONG   cb  = 0;
 
     CAutoSZDDL      lszName;
@@ -9618,7 +9618,7 @@ LOCAL JET_ERR JetCommitTransactionEx( _In_ JET_SESID sesid, _In_ JET_GRBIT grbit
 JET_ERR JET_API JetCommitTransaction( _In_ JET_SESID sesid, _In_ JET_GRBIT grbit )
 {
     JET_VALIDATE_SESID( sesid );
-    JET_TRY( opCommitTransaction, JetCommitTransactionEx( sesid, grbit, 0, NULL ) );
+    JET_TRY( opCommitTransaction, JetCommitTransactionEx( sesid, grbit, 0, nullptr ) );
 }
 
 JET_ERR JET_API
@@ -10278,7 +10278,7 @@ LOCAL JET_ERR JetGetTableColumnInfoEx(
             err = ErrDispGetTableColumnInfo(
                             sesid,
                             tableid,
-                            NULL,
+                            nullptr,
                             (JET_COLUMNID *)pColumnNameOrId,
                             pvResult,
                             cbMax,
@@ -10291,7 +10291,7 @@ LOCAL JET_ERR JetGetTableColumnInfoEx(
                             sesid,
                             tableid,
                             pColumnNameOrId,
-                            NULL,
+                            nullptr,
                             pvResult,
                             cbMax,
                             InfoLevel,
@@ -10311,7 +10311,7 @@ HandleError:
 class CAutoCOLUMNBASEA
 {
     public:
-        CAutoCOLUMNBASEA():m_pColumnBase( NULL ) { }
+        CAutoCOLUMNBASEA():m_pColumnBase( nullptr ) { }
         ~CAutoCOLUMNBASEA();
 
     public:
@@ -10328,7 +10328,7 @@ ERR CAutoCOLUMNBASEA::ErrSet( const JET_COLUMNBASE_W * pColumnBase )
     ERR                 err         = JET_errSuccess;
 
     delete m_pColumnBase;
-    m_pColumnBase = NULL;
+    m_pColumnBase = nullptr;
 
     if ( pColumnBase )
     {
@@ -10342,7 +10342,7 @@ HandleError:
     if ( err < JET_errSuccess )
     {
         delete m_pColumnBase;
-        m_pColumnBase = NULL;
+        m_pColumnBase = nullptr;
     }
 
     return err;
@@ -10361,8 +10361,8 @@ ERR CAutoCOLUMNBASEA::ErrGet( JET_COLUMNBASE_W * pColumnBase )
 
     pColumnBase->cbStruct   = sizeof( JET_COLUMNBASE_W );
 
-    CallR( ErrOSSTRAsciiToUnicode( m_pColumnBase->szBaseTableName, pColumnBase->szBaseTableName, _countof(pColumnBase->szBaseTableName), NULL, OSSTR_FIXED_CONVERSION ) );
-    CallR( ErrOSSTRAsciiToUnicode( m_pColumnBase->szBaseColumnName, pColumnBase->szBaseColumnName, _countof(pColumnBase->szBaseColumnName), NULL, OSSTR_FIXED_CONVERSION ) );
+    CallR( ErrOSSTRAsciiToUnicode( m_pColumnBase->szBaseTableName, pColumnBase->szBaseTableName, _countof(pColumnBase->szBaseTableName), nullptr, OSSTR_FIXED_CONVERSION ) );
+    CallR( ErrOSSTRAsciiToUnicode( m_pColumnBase->szBaseColumnName, pColumnBase->szBaseColumnName, _countof(pColumnBase->szBaseColumnName), nullptr, OSSTR_FIXED_CONVERSION ) );
 
     pColumnBase->columnid   = m_pColumnBase->columnid;
     pColumnBase->coltyp     = m_pColumnBase->coltyp;
@@ -10547,7 +10547,7 @@ LOCAL JET_ERR JetGetColumnInfoEx(
                             sesid,
                             dbid,
                             szTableName,
-                            NULL,
+                            nullptr,
                             (JET_COLUMNID *)pColumnNameOrId,
                             pvResult,
                             cbMax,
@@ -10561,7 +10561,7 @@ LOCAL JET_ERR JetGetColumnInfoEx(
                             dbid,
                             szTableName,
                             pColumnNameOrId,
-                            NULL,
+                            nullptr,
                             pvResult,
                             cbMax,
                             InfoLevel,
@@ -10702,7 +10702,7 @@ LOCAL JET_ERR JetRetrieveColumnEx(
             pcbActual,
             grbit,
             pretinfo,
-            ( NULL != pretinfo ? OSFormat( "ib=0x%x,itag=%d", pretinfo->ibLongValue, pretinfo->itagSequence ) : OSTRACENULLPARAM ) ) );
+            ( nullptr != pretinfo ? OSFormat( "ib=0x%x,itag=%d", pretinfo->ibLongValue, pretinfo->itagSequence ) : OSTRACENULLPARAM ) ) );
 
     if ( apicall.FEnter( sesid ) )
     {
@@ -11013,7 +11013,7 @@ LOCAL JET_ERR JetSetColumnEx(
             cbData,
             grbit,
             psetinfo,
-            ( NULL != psetinfo ? OSFormat( "ib=0x%x,itag=%d", psetinfo->ibLongValue, psetinfo->itagSequence ) : OSTRACENULLPARAM ) ) );
+            ( nullptr != psetinfo ? OSFormat( "ib=0x%x,itag=%d", psetinfo->ibLongValue, psetinfo->itagSequence ) : OSTRACENULLPARAM ) ) );
 
     if ( apicall.FEnter( sesid ) )
     {
@@ -11392,7 +11392,7 @@ LOCAL JET_ERR JetSetCurrentIndexEx(
             szIndexName,
             OSFormatString( szIndexName ),
             pindexid,
-            ( NULL != pindexid ?
+            ( nullptr != pindexid ?
                         OSFormat(
                                 "objid=0x%x,pfcb=0x%p",
                                 ( (const INDEXID *)pindexid )->objidFDP,
@@ -11433,7 +11433,7 @@ JET_ERR JET_API JetSetCurrentIndexA(
     __in_opt JET_PCSTR  szIndexName )
 {
     JET_VALIDATE_SESID_TABLEID( sesid, tableid );
-    JET_TRY( opSetCurrentIndex, JetSetCurrentIndexEx( sesid, tableid, szIndexName, NULL, JET_bitMoveFirst, 1 ) );
+    JET_TRY( opSetCurrentIndex, JetSetCurrentIndexEx( sesid, tableid, szIndexName, nullptr, JET_bitMoveFirst, 1 ) );
 }
 
 JET_ERR JET_API JetSetCurrentIndexW(
@@ -11442,7 +11442,7 @@ JET_ERR JET_API JetSetCurrentIndexW(
     __in_opt JET_PCWSTR wszIndexName )
 {
     JET_VALIDATE_SESID_TABLEID( sesid, tableid );
-    JET_TRY( opSetCurrentIndex, JetSetCurrentIndexExW( sesid, tableid, wszIndexName, NULL, JET_bitMoveFirst, 1 ) );
+    JET_TRY( opSetCurrentIndex, JetSetCurrentIndexExW( sesid, tableid, wszIndexName, nullptr, JET_bitMoveFirst, 1 ) );
 }
 JET_ERR JET_API JetSetCurrentIndex2A(
     _In_ JET_SESID      sesid,
@@ -11451,7 +11451,7 @@ JET_ERR JET_API JetSetCurrentIndex2A(
     _In_ JET_GRBIT      grbit )
 {
     JET_VALIDATE_SESID_TABLEID( sesid, tableid );
-    JET_TRY( opSetCurrentIndex, JetSetCurrentIndexEx( sesid, tableid, szIndexName, NULL, grbit, 1 ) );
+    JET_TRY( opSetCurrentIndex, JetSetCurrentIndexEx( sesid, tableid, szIndexName, nullptr, grbit, 1 ) );
 }
 JET_ERR JET_API JetSetCurrentIndex2W(
     _In_ JET_SESID      sesid,
@@ -11460,7 +11460,7 @@ JET_ERR JET_API JetSetCurrentIndex2W(
     _In_ JET_GRBIT      grbit )
 {
     JET_VALIDATE_SESID_TABLEID( sesid, tableid );
-    JET_TRY( opSetCurrentIndex, JetSetCurrentIndexExW( sesid, tableid, wszIndexName, NULL, grbit, 1 ) );
+    JET_TRY( opSetCurrentIndex, JetSetCurrentIndexExW( sesid, tableid, wszIndexName, nullptr, grbit, 1 ) );
 }
 
 JET_ERR JET_API JetSetCurrentIndex3A(
@@ -11471,7 +11471,7 @@ JET_ERR JET_API JetSetCurrentIndex3A(
     _In_ ULONG  itagSequence )
 {
     JET_VALIDATE_SESID_TABLEID( sesid, tableid );
-    JET_TRY( opSetCurrentIndex, JetSetCurrentIndexEx( sesid, tableid, szIndexName, NULL, grbit, itagSequence ) );
+    JET_TRY( opSetCurrentIndex, JetSetCurrentIndexEx( sesid, tableid, szIndexName, nullptr, grbit, itagSequence ) );
 }
 JET_ERR JET_API JetSetCurrentIndex3W(
     _In_ JET_SESID      sesid,
@@ -11481,7 +11481,7 @@ JET_ERR JET_API JetSetCurrentIndex3W(
     _In_ ULONG  itagSequence )
 {
     JET_VALIDATE_SESID_TABLEID( sesid, tableid );
-    JET_TRY( opSetCurrentIndex, JetSetCurrentIndexExW( sesid, tableid, wszIndexName, NULL, grbit, itagSequence ) );
+    JET_TRY( opSetCurrentIndex, JetSetCurrentIndexExW( sesid, tableid, wszIndexName, nullptr, grbit, itagSequence ) );
 }
 JET_ERR JET_API JetSetCurrentIndex4A(
     _In_ JET_SESID          sesid,
@@ -12055,7 +12055,7 @@ LOCAL JET_ERR JetGotoPositionEx(
             sesid,
             tableid,
             precpos,
-            ( NULL != precpos ? OSFormat( "LT=0x%x,Total=0x%x", precpos->centriesLT, precpos->centriesTotal ) : OSTRACENULLPARAM ) ) );
+            ( nullptr != precpos ? OSFormat( "LT=0x%x,Total=0x%x", precpos->centriesLT, precpos->centriesTotal ) : OSTRACENULLPARAM ) ) );
 
     if ( apicall.FEnter( sesid ) )
     {
@@ -12267,7 +12267,7 @@ LOCAL JET_ERR JetGetSystemParameterEx(
     _In_ ULONG                  cbMax )
 {
     APICALL_INST    apicall( opGetSystemParameter );
-    INST*           pinst   = NULL;
+    INST*           pinst   = nullptr;
 
     OSTrace(
         JET_tracetagAPI,
@@ -12320,7 +12320,7 @@ LOCAL JET_ERR JetGetSystemParameterEx(
     //
     if ( !pinst )
     {
-        ERR err = ErrGetSystemParameter( NULL, JET_sesidNil, paramid, plParam, wszParam, cbMax );
+        ERR err = ErrGetSystemParameter( nullptr, JET_sesidNil, paramid, plParam, wszParam, cbMax );
         INST::LeaveCritInst();
         return err;
     }
@@ -12632,7 +12632,7 @@ JET_ERR JET_API JetCreateDatabaseA(
     _In_ JET_GRBIT      grbit )
 {
     JET_VALIDATE_SESID( sesid );
-    JET_TRY( opCreateDatabase, JetCreateDatabaseExA( sesid, szFilename, pdbid, NULL, 0, grbit ) );
+    JET_TRY( opCreateDatabase, JetCreateDatabaseExA( sesid, szFilename, pdbid, nullptr, 0, grbit ) );
 }
 
 JET_ERR JET_API JetCreateDatabaseW(
@@ -12643,7 +12643,7 @@ JET_ERR JET_API JetCreateDatabaseW(
     _In_ JET_GRBIT      grbit )
 {
     JET_VALIDATE_SESID( sesid );
-    JET_TRY( opCreateDatabase, JetCreateDatabaseEx( sesid, wszFilename, pdbid, NULL, 0, grbit ) );
+    JET_TRY( opCreateDatabase, JetCreateDatabaseEx( sesid, wszFilename, pdbid, nullptr, 0, grbit ) );
 }
 
 JET_ERR JET_API JetCreateDatabase2A(
@@ -12921,12 +12921,12 @@ LOCAL JET_ERR JetGetDatabaseFileInfoEx(
     _In_ ULONG              InfoLevel )
 {
     ERR             err                 = JET_errSuccess;
-    IFileSystemAPI* pfsapi              = NULL;
-    IFileFindAPI*   pffapi              = NULL;
+    IFileSystemAPI* pfsapi              = nullptr;
+    IFileFindAPI*   pffapi              = nullptr;
     WCHAR           wszFullDbName[ IFileSystemAPI::cchPathMax ];
     QWORD           cbFileSize          = 0;
     QWORD           cbFileSizeOnDisk    = 0;
-    DBFILEHDR*      pdbfilehdr          = NULL;
+    DBFILEHDR*      pdbfilehdr          = nullptr;
     BOOL            fOSUInitCalled      = fFalse;
 
     OSTrace(
@@ -13002,7 +13002,7 @@ LOCAL JET_ERR JetGetDatabaseFileInfoEx(
             pdbinfoupgd->cbFreeSpaceRequiredHigh    = DWORD( cbFileSize >> 32 );
 
             //  bring in the database and check its header
-            Alloc( pdbfilehdr = (DBFILEHDR_FIX * )PvOSMemoryPageAlloc( g_cbPage, NULL ) );
+            Alloc( pdbfilehdr = (DBFILEHDR_FIX * )PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
 
             //  need to zero out header because we try to read it
             //  later on even on failure
@@ -13101,7 +13101,7 @@ LOCAL JET_ERR JetGetDatabaseFileInfoEx(
             }
             ProbeClientBuffer( pvResult, cbMax );
 
-            Alloc( pdbfilehdr = (DBFILEHDR * )PvOSMemoryPageAlloc( sizeof( DBFILEHDR ), NULL ) );
+            Alloc( pdbfilehdr = (DBFILEHDR * )PvOSMemoryPageAlloc( sizeof( DBFILEHDR ), nullptr ) );
 
             BOOL fHaveHeader = fFalse;
             if ( g_rgfmp )
@@ -13122,7 +13122,7 @@ LOCAL JET_ERR JetGetDatabaseFileInfoEx(
                         continue;
                     }
 
-                    if ( pfmp->Pdbfilehdr() == NULL )
+                    if ( pfmp->Pdbfilehdr() == nullptr )
                     {
                         continue;
                     }
@@ -13191,7 +13191,7 @@ LOCAL JET_ERR JetGetDatabaseFileInfoEx(
             *(BOOL *)pvResult = fFalse;
 
             // no fmp table
-            if ( NULL == g_rgfmp)
+            if ( nullptr == g_rgfmp)
             {
                 break;
             }
@@ -13260,7 +13260,7 @@ LOCAL JET_ERR JetRemoveLogfileExW(
     JET_ERR err = JET_errSuccess;
 
     BOOL    fOSUInitCalled  = fFalse;
-    IFileSystemAPI* pfsapi  = NULL;
+    IFileSystemAPI* pfsapi  = nullptr;
 
     OSTrace(
         JET_tracetagAPI,
@@ -13592,9 +13592,9 @@ LOCAL JET_ERR JetGetLogFileInfoEx(
     _In_ const ULONG        InfoLevel )
 {
     ERR                 err                 = JET_errSuccess;
-    LGFILEHDR *         plgfilehdr          = NULL;
-    IFileSystemAPI *    pfsapi              = NULL;
-    IFileAPI *          pfapi               = NULL;
+    LGFILEHDR *         plgfilehdr          = nullptr;
+    IFileSystemAPI *    pfsapi              = nullptr;
+    IFileAPI *          pfapi               = nullptr;
     BOOL                fOSUInitCalled      = fFalse;
 
     OSTrace(
@@ -13637,7 +13637,7 @@ LOCAL JET_ERR JetGetLogFileInfoEx(
 
             //  allocate buffer
             //
-            Alloc( plgfilehdr = (LGFILEHDR * )PvOSMemoryPageAlloc( sizeof(LGFILEHDR), NULL ) );
+            Alloc( plgfilehdr = (LGFILEHDR * )PvOSMemoryPageAlloc( sizeof(LGFILEHDR), nullptr ) );
 
             //  open the specified file
             //
@@ -13656,7 +13656,7 @@ LOCAL JET_ERR JetGetLogFileInfoEx(
     CallS( err );
 
 HandleError:
-    if ( NULL != plgfilehdr )
+    if ( nullptr != plgfilehdr )
     {
         OSMemoryPageFree( plgfilehdr );
     }
@@ -13733,7 +13733,7 @@ LOCAL JET_ERR JetGetPageInfoEx(
 
     ULONG cPageInfo = cbPageInfo / cbStruct;
     
-    if( 0 == pvPages || 0 == cbData || 0 == rgPageInfo || 0 == cbPageInfo )
+    if( nullptr == pvPages || 0 == cbData || nullptr == rgPageInfo || 0 == cbPageInfo )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
@@ -14059,18 +14059,18 @@ LOCAL JET_ERR JetCreateTableEx(
     JET_TABLECREATE5_A  tablecreate =
                             {   sizeof(JET_TABLECREATE5_A),
                                 (CHAR *)szTableName,
-                                NULL,
+                                nullptr,
                                 lPages,
                                 lDensity,
-                                NULL,
+                                nullptr,
                                 0,
-                                NULL,
+                                nullptr,
                                 0,  // No columns/indexes
-                                NULL,
+                                nullptr,
                                 0,  // No callbacks
                                 0,  // grbit
-                                NULL,
-                                NULL,
+                                nullptr,
+                                nullptr,
                                 0,
                                 0,
                                 JET_tableidNil, // returned tableid
@@ -14151,9 +14151,9 @@ JET_ERR JET_API JetCreateTableW(
 class CAutoIDXCREATE2
 {
     public:
-        CAutoIDXCREATE2():m_pindexcreate( NULL ),m_pcondcol( NULL ), m_rgconditionalcolumn( NULL ),
+        CAutoIDXCREATE2():m_pindexcreate( nullptr ),m_pcondcol( nullptr ), m_rgconditionalcolumn( nullptr ),
             //  Hold pointers for 2 potential versions.
-            m_pindexcreate1W( NULL ), m_pindexcreate2W( NULL ) { }
+            m_pindexcreate1W( nullptr ), m_pindexcreate2W( nullptr ) { }
         ~CAutoIDXCREATE2();
 
     public:
@@ -14269,12 +14269,12 @@ ERR CAutoIDXCREATE2::_ErrSet( JET_INDEXCREATE_W * pindexcreate )
     delete[] m_rgconditionalcolumn;
     delete m_pindexcreate;
 
-    m_pcondcol = NULL;
-    m_rgconditionalcolumn = NULL;
-    m_pindexcreate = NULL;
-    m_pindexcreate1W = NULL;
-    m_pindexcreate2W = NULL;
-    m_pindexcreate3W = NULL;
+    m_pcondcol = nullptr;
+    m_rgconditionalcolumn = nullptr;
+    m_pindexcreate = nullptr;
+    m_pindexcreate1W = nullptr;
+    m_pindexcreate2W = nullptr;
+    m_pindexcreate3W = nullptr;
 
     if ( !pindexcreate )
     {
@@ -14393,7 +14393,7 @@ ERR CAutoIDXCREATE2::ErrSet( JET_INDEXCREATE_W * pindexcreate1 )
     CallR( _ErrSet( pindexcreate1 ) );
 
     //  No space hints from V1.
-    m_pindexcreate->pSpacehints = NULL;
+    m_pindexcreate->pSpacehints = nullptr;
 
     // maintain the original
     m_pindexcreate1W = pindexcreate1;
@@ -14448,12 +14448,12 @@ ERR CAutoIDXCREATE2::ErrSet( JET_INDEXCREATE3_W * pindexcreate3 )
     delete[] m_rgconditionalcolumn;
     delete m_pindexcreate;
 
-    m_pcondcol = NULL;
-    m_rgconditionalcolumn = NULL;
-    m_pindexcreate = NULL;
-    m_pindexcreate1W = NULL;
-    m_pindexcreate2W = NULL;
-    m_pindexcreate3W = NULL;
+    m_pcondcol = nullptr;
+    m_rgconditionalcolumn = nullptr;
+    m_pindexcreate = nullptr;
+    m_pindexcreate1W = nullptr;
+    m_pindexcreate2W = nullptr;
+    m_pindexcreate3W = nullptr;
 
     Alloc( m_pindexcreate = (JET_INDEXCREATE2_A*)new JET_INDEXCREATE2_A );
     memset( m_pindexcreate, 0, sizeof(JET_INDEXCREATE2_A) );
@@ -14593,7 +14593,7 @@ CAutoIDXCREATE2::~CAutoIDXCREATE2()
 class CAutoIDXCREATE3
 {
     public:
-        CAutoIDXCREATE3() : m_pindexcreate( NULL ), m_pcondcol( NULL ), m_rgconditionalcolumn( NULL ), m_pindexcreate2W( NULL ), m_pindexcreate3W( NULL ) { }
+        CAutoIDXCREATE3() : m_pindexcreate( nullptr ), m_pcondcol( nullptr ), m_rgconditionalcolumn( nullptr ), m_pindexcreate2W( nullptr ), m_pindexcreate3W( nullptr ) { }
         ~CAutoIDXCREATE3();
 
     public:
@@ -14686,10 +14686,10 @@ ERR CAutoIDXCREATE3::ErrSet( JET_INDEXCREATE2_W * pindexcreate2 )
     delete[] m_rgconditionalcolumn;
     delete m_pindexcreate;
 
-    m_pcondcol = NULL;
-    m_rgconditionalcolumn = NULL;
-    m_pindexcreate = NULL;
-    m_pindexcreate2W = NULL;
+    m_pcondcol = nullptr;
+    m_rgconditionalcolumn = nullptr;
+    m_pindexcreate = nullptr;
+    m_pindexcreate2W = nullptr;
 
     Alloc( m_pindexcreate = (JET_INDEXCREATE3_A*)new JET_INDEXCREATE3_A );
     memset( m_pindexcreate, 0, sizeof(JET_INDEXCREATE3_A) );
@@ -14834,10 +14834,10 @@ ERR CAutoIDXCREATE3::ErrSet( JET_INDEXCREATE3_W * pindexcreate3 )
     delete[] m_rgconditionalcolumn;
     delete m_pindexcreate;
 
-    m_pcondcol = NULL;
-    m_rgconditionalcolumn = NULL;
-    m_pindexcreate = NULL;
-    m_pindexcreate2W = NULL;
+    m_pcondcol = nullptr;
+    m_rgconditionalcolumn = nullptr;
+    m_pindexcreate = nullptr;
+    m_pindexcreate2W = nullptr;
 
     Alloc( m_pindexcreate = (JET_INDEXCREATE3_A*)new JET_INDEXCREATE3_A );
     memset( m_pindexcreate, 0, sizeof(JET_INDEXCREATE3_A) );
@@ -14915,14 +14915,14 @@ ERR CAutoIDXCREATE3::ErrSet( JET_INDEXCREATE3_W * pindexcreate3 )
     {
         m_idxunicode.dwMapFlags = pindexcreate3->pidxunicode->dwMapFlags;
         m_idxunicode.szLocaleName = m_wszLocaleName;
-        if ( NULL != pindexcreate3->pidxunicode->szLocaleName )
+        if ( nullptr != pindexcreate3->pidxunicode->szLocaleName )
         {
             Call( ErrOSStrCbCopyW( m_idxunicode.szLocaleName, sizeof( m_wszLocaleName ), pindexcreate3->pidxunicode->szLocaleName ) );
         }
         else
         {
             // This is the Invariant Locale ("").
-            m_idxunicode.szLocaleName = NULL;
+            m_idxunicode.szLocaleName = nullptr;
         }
         m_pindexcreate->pidxunicode = &m_idxunicode;
     }
@@ -14997,11 +14997,11 @@ LOCAL JET_ERR JetCreateTableColumnIndexEx(
             sesid,
             dbid,
             ptablecreate,
-            ( NULL != ptablecreate ? OSFormat( "szTable=%s", OSFormatString( ptablecreate->szTableName ) ) : OSTRACENULLPARAM ) ) );
+            ( nullptr != ptablecreate ? OSFormat( "szTable=%s", OSFormatString( ptablecreate->szTableName ) ) : OSTRACENULLPARAM ) ) );
 
     if ( apicall.FEnter( sesid, dbid ) )
     {
-        const BOOL  fInvalidParam   = ( NULL == ptablecreate
+        const BOOL  fInvalidParam   = ( nullptr == ptablecreate
                                         || sizeof(*ptablecreate) != ptablecreate->cbStruct );
 
         if ( fInvalidParam )
@@ -15103,7 +15103,7 @@ LOCAL JET_ERR JetCreateTableColumnIndexExOLD(
     tablecreate.cColumns                = ptablecreate->cColumns;
     tablecreate.rgindexcreate           = ptablecreate->rgindexcreate;
     tablecreate.cIndexes                = ptablecreate->cIndexes;
-    tablecreate.szCallback              = NULL;
+    tablecreate.szCallback              = nullptr;
     tablecreate.cbtyp                   = 0;
     tablecreate.grbit                   = ptablecreate->grbit;
     tablecreate.tableid                 = ptablecreate->tableid;
@@ -15149,7 +15149,7 @@ LOCAL JET_ERR JetCreateTableColumnIndexExW(
     tablecreate.cColumns                = ptablecreate->cColumns;
     tablecreate.rgindexcreate           = ptablecreate->rgindexcreate;
     tablecreate.cIndexes                = ptablecreate->cIndexes;
-    tablecreate.szCallback              = NULL;
+    tablecreate.szCallback              = nullptr;
     tablecreate.cbtyp                   = 0;
     tablecreate.grbit                   = ptablecreate->grbit;
     tablecreate.tableid                 = ptablecreate->tableid;
@@ -15192,7 +15192,7 @@ JET_ERR JET_API JetCreateTableColumnIndexW(
 class CAutoTABLECREATE3
 {
     public:
-        CAutoTABLECREATE3():m_ptablecreate( NULL ),m_rgcolumncreate( NULL ), m_rgszColumnName( NULL ), m_rgindexcreate( NULL ), m_rgindexcreateauto( NULL ), m_ptablecreateW( NULL ) { }
+        CAutoTABLECREATE3():m_ptablecreate( nullptr ),m_rgcolumncreate( nullptr ), m_rgszColumnName( nullptr ), m_rgindexcreate( nullptr ), m_rgindexcreateauto( nullptr ), m_ptablecreateW( nullptr ) { }
         ~CAutoTABLECREATE3();
 
     public:
@@ -15228,13 +15228,13 @@ ERR CAutoTABLECREATE3::ErrSet( JET_TABLECREATE3_W * ptablecreate )
     delete[] m_rgindexcreateauto;
     delete m_ptablecreate;
 
-    m_rgcolumncreate = NULL;
-    m_rgszColumnName = NULL;
-    m_rgindexcreate = NULL;
-    m_rgindexcreate = NULL;
-    m_rgindexcreateauto = NULL;
-    m_ptablecreate = NULL;
-    m_ptablecreateW = NULL;
+    m_rgcolumncreate = nullptr;
+    m_rgszColumnName = nullptr;
+    m_rgindexcreate = nullptr;
+    m_rgindexcreate = nullptr;
+    m_rgindexcreateauto = nullptr;
+    m_ptablecreate = nullptr;
+    m_ptablecreateW = nullptr;
 
     if ( ptablecreate )
     {
@@ -15363,7 +15363,7 @@ CAutoTABLECREATE3::~CAutoTABLECREATE3()
 class CAutoTABLECREATE4
 {
     public:
-        CAutoTABLECREATE4():m_ptablecreate( NULL ),m_rgcolumncreate( NULL ), m_rgszColumnName( NULL ), m_rgindexcreate( NULL ), m_rgindexcreateauto( NULL ), m_ptablecreateW( NULL ) { }
+        CAutoTABLECREATE4():m_ptablecreate( nullptr ),m_rgcolumncreate( nullptr ), m_rgszColumnName( nullptr ), m_rgindexcreate( nullptr ), m_rgindexcreateauto( nullptr ), m_ptablecreateW( nullptr ) { }
         ~CAutoTABLECREATE4();
 
     public:
@@ -15398,13 +15398,13 @@ ERR CAutoTABLECREATE4::ErrSet( JET_TABLECREATE4_W * ptablecreate )
     delete[] m_rgindexcreateauto;
     delete m_ptablecreate;
 
-    m_rgcolumncreate = NULL;
-    m_rgszColumnName = NULL;
-    m_rgindexcreate = NULL;
-    m_rgindexcreate = NULL;
-    m_rgindexcreateauto = NULL;
-    m_ptablecreate = NULL;
-    m_ptablecreateW = NULL;
+    m_rgcolumncreate = nullptr;
+    m_rgszColumnName = nullptr;
+    m_rgindexcreate = nullptr;
+    m_rgindexcreate = nullptr;
+    m_rgindexcreateauto = nullptr;
+    m_ptablecreate = nullptr;
+    m_ptablecreateW = nullptr;
 
     if ( ptablecreate )
     {
@@ -15533,7 +15533,7 @@ CAutoTABLECREATE4::~CAutoTABLECREATE4()
 class CAutoTABLECREATE5
 {
     public:
-        CAutoTABLECREATE5():m_ptablecreate( NULL ),m_rgcolumncreate( NULL ), m_rgszColumnName( NULL ), m_rgindexcreate( NULL ), m_rgindexcreateauto( NULL ), m_ptablecreateW( NULL ) { }
+        CAutoTABLECREATE5():m_ptablecreate( nullptr ),m_rgcolumncreate( nullptr ), m_rgszColumnName( nullptr ), m_rgindexcreate( nullptr ), m_rgindexcreateauto( nullptr ), m_ptablecreateW( nullptr ) { }
         ~CAutoTABLECREATE5();
 
     public:
@@ -15568,13 +15568,13 @@ ERR CAutoTABLECREATE5::ErrSet( JET_TABLECREATE5_W * ptablecreate )
     delete[] m_rgindexcreateauto;
     delete m_ptablecreate;
 
-    m_rgcolumncreate = NULL;
-    m_rgszColumnName = NULL;
-    m_rgindexcreate = NULL;
-    m_rgindexcreate = NULL;
-    m_rgindexcreateauto = NULL;
-    m_ptablecreate = NULL;
-    m_ptablecreateW = NULL;
+    m_rgcolumncreate = nullptr;
+    m_rgszColumnName = nullptr;
+    m_rgindexcreate = nullptr;
+    m_rgindexcreate = nullptr;
+    m_rgindexcreateauto = nullptr;
+    m_ptablecreate = nullptr;
+    m_ptablecreateW = nullptr;
 
     if ( ptablecreate )
     {
@@ -16078,7 +16078,7 @@ LOCAL JET_ERR JetAddColumnEx(
             szColumnName,
             OSFormatString( szColumnName ),
             pcolumndef,
-            ( NULL != pcolumndef ?
+            ( nullptr != pcolumndef ?
                         OSFormat(
                                 "coltyp=0x%x,cp=0x%x,cbMax=0x%x,grbit=0x%x",
                                 pcolumndef->coltyp,
@@ -16331,7 +16331,7 @@ LOCAL JET_ERR JetCreateIndexEx(
             sesid,
             tableid,
             pindexcreate,
-            ( NULL != pindexcreate ?
+            ( nullptr != pindexcreate ?
                         OSFormat( "szIndex=%s", OSFormatString( pindexcreate->szIndexName ) ) :
                         OSTRACENULLPARAM ),
             cIndexCreate ) );
@@ -16387,8 +16387,8 @@ LOCAL JET_ERR JetCreateIndexEx2W(
     _In_ ULONG                              cIndexCreate )
 {
     ERR                   err               = JET_errSuccess;
-    JET_INDEXCREATE2_A  * rgindexcreateEngine       = NULL;
-    CAutoIDXCREATE2         * rgindexcreateauto     = NULL;
+    JET_INDEXCREATE2_A  * rgindexcreateEngine       = nullptr;
+    CAutoIDXCREATE2         * rgindexcreateauto     = nullptr;
     UINT          iIndexCreate      = 0;
 
     if ( cIndexCreate )
@@ -16399,7 +16399,7 @@ LOCAL JET_ERR JetCreateIndexEx2W(
     }
 
     JET_INDEXCREATE2_W * pidxCurr = pindexcreate;
-    JET_INDEXCREATE2_W * pidxNext = NULL;
+    JET_INDEXCREATE2_W * pidxNext = nullptr;
     for( iIndexCreate = 0 ; iIndexCreate < cIndexCreate; iIndexCreate++, pidxCurr = pidxNext )
     {
         pidxNext = (JET_INDEXCREATE2_W *)(((BYTE*)pidxCurr) + pidxCurr->cbStruct );
@@ -16456,8 +16456,8 @@ LOCAL JET_ERR JetCreateIndexEx1W(
     _In_ ULONG                              cIndexCreate )
 {
     ERR                   err               = JET_errSuccess;
-    JET_INDEXCREATE2_A  * rgindexcreateEngine       = NULL;
-    CAutoIDXCREATE2         * rgindexcreateauto     = NULL;
+    JET_INDEXCREATE2_A  * rgindexcreateEngine       = nullptr;
+    CAutoIDXCREATE2         * rgindexcreateauto     = nullptr;
     UINT          iIndexCreate      = 0;
 
     if ( cIndexCreate )
@@ -16468,7 +16468,7 @@ LOCAL JET_ERR JetCreateIndexEx1W(
     }
 
     JET_INDEXCREATE_W * pidxCurr = pindexcreate;
-    JET_INDEXCREATE_W * pidxNext = NULL;
+    JET_INDEXCREATE_W * pidxNext = nullptr;
     for( iIndexCreate = 0 ; iIndexCreate < cIndexCreate; iIndexCreate++, pidxCurr = pidxNext )
     {
         pidxNext = (JET_INDEXCREATE_W *)(((BYTE*)pidxCurr) + pidxCurr->cbStruct );
@@ -16502,8 +16502,8 @@ LOCAL JET_ERR JetCreateIndexEx3W(
     _In_ ULONG                              cIndexCreate )
 {
     ERR                   err               = JET_errSuccess;
-    JET_INDEXCREATE3_A  * rgindexcreateEngine       = NULL;
-    CAutoIDXCREATE3         * rgindexcreateauto     = NULL;
+    JET_INDEXCREATE3_A  * rgindexcreateEngine       = nullptr;
+    CAutoIDXCREATE3         * rgindexcreateauto     = nullptr;
     UINT          iIndexCreate      = 0;
 
     if ( cIndexCreate )
@@ -16514,7 +16514,7 @@ LOCAL JET_ERR JetCreateIndexEx3W(
     }
 
     JET_INDEXCREATE3_W * pidxCurr = pindexcreate;
-    JET_INDEXCREATE3_W * pidxNext = NULL;
+    JET_INDEXCREATE3_W * pidxNext = nullptr;
     for ( iIndexCreate = 0 ; iIndexCreate < cIndexCreate; iIndexCreate++, pidxCurr = pidxNext )
     {
         pidxNext = (JET_INDEXCREATE3_W *)(((BYTE*)pidxCurr) + pidxCurr->cbStruct );
@@ -16564,7 +16564,7 @@ JET_ERR JET_API JetCreateIndexA(
     idxcreate.ulDensity     = 0;    // moved to space hints for better coverage.
     idxcreate.lcid          = 0;
     idxcreate.cbVarSegMac   = 0;
-    idxcreate.rgconditionalcolumn   = 0;
+    idxcreate.rgconditionalcolumn   = nullptr;
     idxcreate.cConditionalColumn    = 0;
     idxcreate.err           = JET_errSuccess;
     idxcreate.cbKeyMost     = 255;
@@ -16597,7 +16597,7 @@ JET_ERR JET_API JetCreateIndexW(
     idxcreate.ulDensity     = lDensity;
     idxcreate.lcid          = 0;
     idxcreate.cbVarSegMac   = 0;
-    idxcreate.rgconditionalcolumn   = 0;
+    idxcreate.rgconditionalcolumn   = nullptr;
     idxcreate.cConditionalColumn    = 0;
     idxcreate.err           = JET_errSuccess;
     idxcreate.cbKeyMost     = 255;
@@ -16805,7 +16805,7 @@ JET_ERR JET_API JetAttachDatabaseA(
     _In_ JET_GRBIT  grbit )
 {
     JET_VALIDATE_SESID( sesid );
-    JET_TRY( opAttachDatabase, JetAttachDatabaseExA( sesid, szFilename, NULL, 0, grbit ) );
+    JET_TRY( opAttachDatabase, JetAttachDatabaseExA( sesid, szFilename, nullptr, 0, grbit ) );
 }
 
 JET_ERR JET_API JetAttachDatabaseW(
@@ -16814,7 +16814,7 @@ JET_ERR JET_API JetAttachDatabaseW(
     _In_ JET_GRBIT  grbit )
 {
     JET_VALIDATE_SESID( sesid );
-    JET_TRY( opAttachDatabase, JetAttachDatabaseEx( sesid, wszFilename, NULL, 0, grbit ) );
+    JET_TRY( opAttachDatabase, JetAttachDatabaseEx( sesid, wszFilename, nullptr, 0, grbit ) );
 }
 
 JET_ERR JET_API JetAttachDatabase2A(
@@ -16917,7 +16917,7 @@ LOCAL JET_ERR JetDetachDatabaseEx(
         }
         else
         {
-            apicall.LeaveAfterCall( ErrIsamDetachDatabase( sesid, NULL, wszFilename, grbit ) );
+            apicall.LeaveAfterCall( ErrIsamDetachDatabase( sesid, nullptr, wszFilename, grbit ) );
         }
     }
 
@@ -17070,7 +17070,7 @@ JET_ERR JET_API JetRestoreA(    _In_ JET_PCSTR szSource, __in_opt JET_PFNSTATUS 
 
     Assert( fInitd == ( g_rgpinst != NULL ) );
 
-    err = JetRestoreInstanceA( g_rgpinst ? (JET_INSTANCE)g_rgpinst[0] : 0, szSource, NULL, pfn );
+    err = JetRestoreInstanceA( g_rgpinst ? (JET_INSTANCE)g_rgpinst[0] : 0, szSource, nullptr, pfn );
 
     //  I am not sure this holds ...
     Assert( fInitd == ( RUNINSTGetMode() != runInstModeNoSet ) );
@@ -17089,7 +17089,7 @@ JET_ERR JET_API JetRestoreW(    _In_ JET_PCWSTR wszSource, __in_opt JET_PFNSTATU
 
     Assert( fInitd == ( g_rgpinst != NULL ) );
 
-    err = JetRestoreInstanceW( g_rgpinst ? (JET_INSTANCE)g_rgpinst[0] : 0, wszSource, NULL, pfn );
+    err = JetRestoreInstanceW( g_rgpinst ? (JET_INSTANCE)g_rgpinst[0] : 0, wszSource, nullptr, pfn );
 
     //  I am not sure this holds ...
     Assert( fInitd == ( RUNINSTGetMode() != runInstModeNoSet ) );
@@ -17208,7 +17208,7 @@ LOCAL JET_ERR JetOpenTempTableEx1(
     return JetOpenTempTableEx( sesid,
             prgcolumndef,
             ccolumn,
-            pidxunicode ? &idxunicode : NULL,
+            pidxunicode ? &idxunicode : nullptr,
             grbit,
             ptableid,
             prgcolumnid,
@@ -17225,7 +17225,7 @@ JET_ERR JET_API JetOpenTempTable(
     __out_ecount( ccolumn ) JET_COLUMNID *          prgcolumnid )
 {
     JET_VALIDATE_SESID( sesid );
-    JET_TRY( opOpenTempTable, JetOpenTempTableEx1( sesid, prgcolumndef, ccolumn, NULL, grbit, ptableid, prgcolumnid ) );
+    JET_TRY( opOpenTempTable, JetOpenTempTableEx1( sesid, prgcolumndef, ccolumn, nullptr, grbit, ptableid, prgcolumnid ) );
 }
 JET_ERR JET_API JetOpenTempTable2(
     _In_ JET_SESID                                  sesid,
@@ -17514,7 +17514,7 @@ LOCAL JET_ERR JetGetAttachInfoInstanceExA(
     CAutoWSZ        lwszz;
     size_t  cchActual;
 
-    Call( JetGetAttachInfoInstanceEx( instance, 0, 0, &cbActual ) );
+    Call( JetGetAttachInfoInstanceEx( instance, nullptr, 0, &cbActual ) );
 
     Call( lwszz.ErrAlloc( cbActual ));
 
@@ -17831,7 +17831,7 @@ JET_ERR JET_API JetCloseFile( _In_ JET_HANDLE hfFile )
 class CAutoLOGINFOW
 {
     public:
-        CAutoLOGINFOW():m_pLogInfo( NULL ) { }
+        CAutoLOGINFOW():m_pLogInfo( nullptr ) { }
         ~CAutoLOGINFOW();
 
     public:
@@ -17848,7 +17848,7 @@ ERR CAutoLOGINFOW::ErrReset( )
     ERR                 err         = JET_errSuccess;
 
     delete m_pLogInfo;
-    m_pLogInfo = NULL;
+    m_pLogInfo = nullptr;
 
     Alloc( m_pLogInfo = new JET_LOGINFO_W );
     memset( m_pLogInfo, 0, sizeof(JET_LOGINFO_W) );
@@ -17858,7 +17858,7 @@ HandleError:
     if ( err < JET_errSuccess )
     {
         delete m_pLogInfo;
-        m_pLogInfo = NULL;
+        m_pLogInfo = nullptr;
     }
 
     return err;
@@ -17877,7 +17877,7 @@ ERR CAutoLOGINFOW::ErrGet( JET_LOGINFO_A * pLogInfo )
 
     Assert( pLogInfo->cbSize == sizeof( JET_LOGINFO_A ) );
 
-    CallR( ErrOSSTRUnicodeToAscii( m_pLogInfo->szBaseName, pLogInfo->szBaseName, _countof(pLogInfo->szBaseName), NULL ) );
+    CallR( ErrOSSTRUnicodeToAscii( m_pLogInfo->szBaseName, pLogInfo->szBaseName, _countof(pLogInfo->szBaseName), nullptr ) );
 
     pLogInfo->ulGenLow = m_pLogInfo->ulGenLow;
     pLogInfo->ulGenHigh = m_pLogInfo->ulGenHigh;
@@ -17947,11 +17947,11 @@ LOCAL JET_ERR JetGetLogInfoInstanceExA(
         Call( lLogInfoW.ErrReset() );
     }
 
-    Call( JetGetLogInfoInstanceEx( instance, 0, 0, &cbActual, (JET_LOGINFO_W*)lLogInfoW ) );
+    Call( JetGetLogInfoInstanceEx( instance, nullptr, 0, &cbActual, (JET_LOGINFO_W*)lLogInfoW ) );
 
     Call( lwsz.ErrAlloc( cbActual ) );
 
-    Call( JetGetLogInfoInstanceEx( instance, lwsz.Pv(), lwsz.Cb(), &cbActual, NULL ) );
+    Call( JetGetLogInfoInstanceEx( instance, lwsz.Pv(), lwsz.Cb(), &cbActual, nullptr ) );
 
     // at this point we have the ascii version, we need to convert to Unicode
     // using the existing provided buffer and maybe just to tell the real size needed
@@ -17978,7 +17978,7 @@ JET_ERR JET_API JetGetLogInfoInstanceA(
     _Out_opt_ ULONG *                           pcbActual )
 {
     JET_VALIDATE_INSTANCE( instance );
-    JET_TRY( opGetLogInfoInstance, JetGetLogInfoInstanceExA( instance, szzLogs, cbMax, pcbActual, NULL ) );
+    JET_TRY( opGetLogInfoInstance, JetGetLogInfoInstanceExA( instance, szzLogs, cbMax, pcbActual, nullptr ) );
 }
 
 JET_ERR JET_API JetGetLogInfoInstanceW(
@@ -17988,7 +17988,7 @@ JET_ERR JET_API JetGetLogInfoInstanceW(
     _Out_opt_ ULONG *                               pcbActual )
 {
     JET_VALIDATE_INSTANCE( instance );
-    JET_TRY( opGetLogInfoInstance, JetGetLogInfoInstanceEx( instance, wszzLogs, cbMax, pcbActual, NULL ) );
+    JET_TRY( opGetLogInfoInstance, JetGetLogInfoInstanceEx( instance, wszzLogs, cbMax, pcbActual, nullptr ) );
 }
 
 
@@ -18079,7 +18079,7 @@ LOCAL JET_ERR JetGetTruncateLogInfoInstanceExA(
     ULONG   cbActual;
     size_t      cchActual;
 
-    Call( JetGetTruncateLogInfoInstanceEx( instance, 0, 0, &cbActual ) );
+    Call( JetGetTruncateLogInfoInstanceEx( instance, nullptr, 0, &cbActual ) );
 
     Call( lwszz.ErrAlloc( cbActual ) );
 
@@ -18302,7 +18302,7 @@ ERR ErrINSTPrepareTargetInstance(
     // if not base name is specified for the restore instance (wszRestoreLogBaseName)
     // then the instance will use the default global one (szBaseName)
     WCHAR wszDefaultBaseName[ 16 ];
-    Call( ErrGetSystemParameter( NULL, JET_sesidNil, JET_paramBaseName, NULL, wszDefaultBaseName, sizeof( wszDefaultBaseName ) ) );
+    Call( ErrGetSystemParameter( nullptr, JET_sesidNil, JET_paramBaseName, nullptr, wszDefaultBaseName, sizeof( wszDefaultBaseName ) ) );
     const WCHAR * wszCurrentLogBaseName = wszRestoreLogBaseName?wszRestoreLogBaseName:wszDefaultBaseName;
     if ( 0 != _wcsnicmp( SzParam( pinstTarget, JET_paramBaseName ), wszCurrentLogBaseName, JET_BASE_NAME_LENGTH) )
     {
@@ -18368,7 +18368,7 @@ CCriticalSection g_critRestoreInst( CLockBasicInfo( CSyncBasicInfo( szRestoreIns
 class CAutoRSTMAPW
 {
     public:
-        CAutoRSTMAPW():m_rgrstmap( NULL ), m_rgwszDatabaseName( NULL ), m_rgwszNewDatabaseName( NULL ), m_crstmap( 0 ) { }
+        CAutoRSTMAPW():m_rgrstmap( nullptr ), m_rgwszDatabaseName( nullptr ), m_rgwszNewDatabaseName( nullptr ), m_crstmap( 0 ) { }
         ~CAutoRSTMAPW();
 
     public:
@@ -18390,15 +18390,15 @@ ERR CAutoRSTMAPW::ErrSet( const JET_RSTMAP_A * prstmap, const LONG crstmap )
     delete[] m_rgrstmap;
     delete[] m_rgwszDatabaseName;
     delete[] m_rgwszNewDatabaseName;
-    m_rgrstmap = NULL;
-    m_rgwszDatabaseName = NULL;
-    m_rgwszNewDatabaseName = NULL;
+    m_rgrstmap = nullptr;
+    m_rgwszDatabaseName = nullptr;
+    m_rgwszNewDatabaseName = nullptr;
     m_crstmap = 0;
 
     C_ASSERT( sizeof(JET_RSTMAP_W) == sizeof(JET_RSTMAP_A) );
 
-    if ( ( prstmap == NULL && crstmap != 0 ) ||
-        ( prstmap != NULL && crstmap == 0 ) )
+    if ( ( prstmap == nullptr && crstmap != 0 ) ||
+        ( prstmap != nullptr && crstmap == 0 ) )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
@@ -18446,30 +18446,30 @@ LOCAL JET_ERR JetExternalRestoreEx(
     _In_ JET_PFNSTATUS                              pfn )
 {
     APICALL_INST    apicall( opInit );
-    INST *          pinst = NULL;
+    INST *          pinst = nullptr;
     INT             ipinst = g_cpinstMax;
     ERR             err = JET_errSuccess;
 
-    const WCHAR *           wszRestoreSystemPath = NULL;
-    const WCHAR *           wszRestoreLogPath = NULL;
+    const WCHAR *           wszRestoreSystemPath = nullptr;
+    const WCHAR *           wszRestoreLogPath = nullptr;
 
-    INST *          pinstTarget = NULL;
+    INST *          pinstTarget = nullptr;
     LONG            lGenHighTarget;
     WCHAR           wszTargetLogPath[IFileSystemAPI::cchPathMax];
 
-    const BOOL      fTargetName = (NULL != wszTargetInstanceName);
-    const BOOL      fTargetDirs = (NULL != wszTargetInstanceLogPath);
+    const BOOL      fTargetName = (nullptr != wszTargetInstanceName);
+    const BOOL      fTargetDirs = (nullptr != wszTargetInstanceLogPath);
 
     // used for unique TemDatabase
     WCHAR           wszTempDatabase[IFileSystemAPI::cchPathMax];
 
-    WCHAR * wszNewInstanceName = NULL;
+    WCHAR * wszNewInstanceName = nullptr;
     BOOL fInCritInst = fFalse;
     BOOL fInCritRestoreInst = fFalse;
 
-    CCriticalSection *pcritInst = NULL;
+    CCriticalSection *pcritInst = nullptr;
 
-    WCHAR * wszTargetDisplayName = NULL;
+    WCHAR * wszTargetDisplayName = nullptr;
     ULONG cchTargetDisplayName = 0;
     const WCHAR * wszRestoreInstanceNameUsed = wszRestoreInstanceName;
 
@@ -18615,14 +18615,14 @@ LOCAL JET_ERR JetExternalRestoreEx(
     OSStrCbFormatW( wszNewInstanceName, cchNewInstanceName*sizeof(WCHAR), L"%-*s%s%04lu", (ULONG)cchTargetDisplayName, wszTargetDisplayName ? wszTargetDisplayName : L"",
             wszRestoreInstanceNameUsed, AtomicIncrement( (LONG*)&g_cRestoreInstance ) % 10000L );
 
-    Call ( ErrNewInst( &pinst, wszNewInstanceName, NULL, &ipinst ) );
+    Call ( ErrNewInst( &pinst, wszNewInstanceName, nullptr, &ipinst ) );
     Assert( !pinst->m_fJetInitialized );
 
     INST::LeaveCritInst();
     fInCritInst = fFalse;
 
     // we have to set the system params first
-    if ( NULL != wszLogBaseName)
+    if ( nullptr != wszLogBaseName)
     {
         Call ( ErrSetSystemParameter( pinst, JET_sesidNil, JET_paramBaseName, 0, wszLogBaseName ) );
     }
@@ -18884,7 +18884,7 @@ JET_ERR JET_API JetExternalRestoreA(
     _In_ LONG                                       genHigh,
     _In_ JET_PFNSTATUS                              pfn )
 {
-    JET_TRY( opInit, JetExternalRestoreExA( szCheckpointFilePath, szLogPath, rgrstmap, crstfilemap, szBackupLogPath, genLow, genHigh, NULL, NULL, NULL, NULL, pfn ) );
+    JET_TRY( opInit, JetExternalRestoreExA( szCheckpointFilePath, szLogPath, rgrstmap, crstfilemap, szBackupLogPath, genLow, genHigh, nullptr, nullptr, nullptr, nullptr, pfn ) );
 }
 
 JET_ERR JET_API JetExternalRestoreW(
@@ -18897,7 +18897,7 @@ JET_ERR JET_API JetExternalRestoreW(
     _In_ LONG                                       genHigh,
     _In_ JET_PFNSTATUS                              pfn )
 {
-    JET_TRY( opInit, JetExternalRestoreEx( wszCheckpointFilePath, wszLogPath, rgrstmap, crstfilemap, wszBackupLogPath, genLow, genHigh, NULL, NULL, NULL, NULL, pfn ) );
+    JET_TRY( opInit, JetExternalRestoreEx( wszCheckpointFilePath, wszLogPath, rgrstmap, crstfilemap, wszBackupLogPath, genLow, genHigh, nullptr, nullptr, nullptr, nullptr, pfn ) );
 }
 
 JET_ERR JET_API JetExternalRestore2A(
@@ -19054,7 +19054,7 @@ JET_ERR JET_API JetGetThreadStats(
 class CAutoCONVERTW
 {
     public:
-        CAutoCONVERTW():m_pconvert( NULL ) { }
+        CAutoCONVERTW():m_pconvert( nullptr ) { }
         ~CAutoCONVERTW();
 
     public:
@@ -19073,7 +19073,7 @@ ERR CAutoCONVERTW::ErrSet( const JET_CONVERT_A * pconvert )
     C_ASSERT( sizeof(JET_CONVERT_W) == sizeof(JET_CONVERT_A) );
 
     delete m_pconvert;
-    m_pconvert = NULL;
+    m_pconvert = nullptr;
 
     if ( pconvert )
     {
@@ -19091,7 +19091,7 @@ HandleError:
     if ( err < JET_errSuccess )
     {
         delete m_pconvert;
-        m_pconvert = NULL;
+        m_pconvert = nullptr;
     }
 
     return err;
@@ -19214,7 +19214,7 @@ LOCAL JET_ERR JetConvertDDLEx(
     Call( ErrPIBCheckUpdatable( ppib ) );
     Call( ErrPIBCheckIfmp( ppib, dbid ) );
 
-    if( NULL == pvData
+    if( nullptr == pvData
         || 0 == cbData )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
@@ -19353,7 +19353,7 @@ LOCAL JET_ERR JetConvertDDLExW(
     _In_ ULONG              cbData )
 {
     ERR             err         = JET_errSuccess;
-    void *          lpvData     = NULL;
+    void *          lpvData     = nullptr;
     ULONG   lcbData     = 0;
 
     CAutoSZDDL      lszTable;
@@ -19371,8 +19371,8 @@ LOCAL JET_ERR JetConvertDDLExW(
     JET_DDLADDCONDITIONALCOLUMNSTOALLINDEXES_A addcondidx;
     JET_DDLCALLBACKDLL_A callbackdll;
 
-    JET_CONDITIONALCOLUMN_A     * pcondcolumn = NULL;
-    CAutoSZDDL                  * pcondcolumnName = NULL;
+    JET_CONDITIONALCOLUMN_A     * pcondcolumn = nullptr;
+    CAutoSZDDL                  * pcondcolumnName = nullptr;
 
     switch( convtyp )
     {
@@ -19637,7 +19637,7 @@ LOCAL JET_ERR JetInitEx(    __inout_opt JET_INSTANCE    *pinstance,
 class CAutoDBUTILW
 {
     public:
-        CAutoDBUTILW():m_pdbutil( NULL ) { }
+        CAutoDBUTILW():m_pdbutil( nullptr ) { }
         ~CAutoDBUTILW();
 
     public:
@@ -19662,7 +19662,7 @@ ERR CAutoDBUTILW::ErrSet( const JET_DBUTIL_A * pdbutil )
     C_ASSERT( sizeof(JET_DBUTIL_W) == sizeof(JET_DBUTIL_A) );
 
     delete m_pdbutil;
-    m_pdbutil = NULL;
+    m_pdbutil = nullptr;
 
     if ( pdbutil )
     {
@@ -19748,7 +19748,7 @@ HandleError:
     if ( err < JET_errSuccess )
     {
         delete m_pdbutil;
-        m_pdbutil = NULL;
+        m_pdbutil = nullptr;
     }
 
     return err;
@@ -19785,7 +19785,7 @@ HandleError:
 
 LOCAL JET_ERR JetDBUtilitiesEx( JET_DBUTIL_W *pdbutilW )
 {
-    AssertSzRTL( (JET_DBUTIL_W*)0 != pdbutilW, "Invalid (NULL) pdbutil. Call JET dev." );
+    AssertSzRTL( (JET_DBUTIL_W*)nullptr != pdbutilW, "Invalid (NULL) pdbutil. Call JET dev." );
     AssertSzRTL( (JET_DBUTIL_W*)(-1) != pdbutilW, "Invalid (-1) pdbutil. Call JET dev." );
 
     // We validate here that JET_DBUTIL_W does not change in size because that
@@ -19882,11 +19882,11 @@ LOCAL JET_ERR JetDBUtilitiesEx( JET_DBUTIL_W *pdbutilW )
                 //  this is stuff that eseutil does; and required of anyone
                 //  who sets up the instance before calling these functions
                 Call( JetSetSystemParameterW( &instance, 0, JET_paramRecovery,           0, L"off" ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableOnlineDefrag, 0, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxTemporaryTables, 0, NULL ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableOnlineDefrag, 0, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxTemporaryTables, 0, nullptr ) );
 
                 //  disable information events for internal Instances
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramNoInformationEvent, 1, NULL ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramNoInformationEvent, 1, nullptr ) );
 
                 //  set the base name
                 if ( pdbutilW->op == opDBUTILChecksumLogFromMemory )
@@ -19923,7 +19923,7 @@ HandleError:
 
 LOCAL JET_ERR JetDBUtilitiesExA( JET_DBUTIL_A *pdbutil )
 {
-    AssertSzRTL( (JET_DBUTIL_A*)0 != pdbutil, "Invalid (NULL) pdbutil. Call JET dev." );
+    AssertSzRTL( (JET_DBUTIL_A*)nullptr != pdbutil, "Invalid (NULL) pdbutil. Call JET dev." );
     AssertSzRTL( (JET_DBUTIL_A*)(-1) != pdbutil, "Invalid (-1) pdbutil. Call JET dev." );
     ERR         err     = JET_errSuccess;
     CAutoDBUTILW ldbutilW;
@@ -19968,9 +19968,9 @@ LOCAL JET_ERR JetDefragmentEx(
             szTableName,
             OSFormatString( szTableName ),
             pcPasses,
-            ( NULL != pcPasses ? OSFormat( "<%d>", *pcPasses ) : OSTRACENULLPARAM ),
+            ( nullptr != pcPasses ? OSFormat( "<%d>", *pcPasses ) : OSTRACENULLPARAM ),
             pcSeconds,
-            ( NULL != pcSeconds ? OSFormat( "<%d>", *pcSeconds ) : OSTRACENULLPARAM ),
+            ( nullptr != pcSeconds ? OSFormat( "<%d>", *pcSeconds ) : OSTRACENULLPARAM ),
             callback,
             grbit ) );
 
@@ -20015,7 +20015,7 @@ JET_ERR JET_API JetDefragmentA(
     _In_ JET_GRBIT              grbit )
 {
     JET_VALIDATE_SESID( sesid );
-    JET_TRY( opDefragment, JetDefragmentEx( sesid, dbid, szTableName, pcPasses, pcSeconds, NULL, grbit ) );
+    JET_TRY( opDefragment, JetDefragmentEx( sesid, dbid, szTableName, pcPasses, pcSeconds, nullptr, grbit ) );
 }
 JET_ERR JET_API JetDefragmentW(
     _In_ JET_SESID              sesid,
@@ -20026,7 +20026,7 @@ JET_ERR JET_API JetDefragmentW(
     _In_ JET_GRBIT              grbit )
 {
     JET_VALIDATE_SESID( sesid );
-    JET_TRY( opDefragment, JetDefragmentExW( sesid, dbid, wszTableName, pcPasses, pcSeconds, NULL, grbit ) );
+    JET_TRY( opDefragment, JetDefragmentExW( sesid, dbid, wszTableName, pcPasses, pcSeconds, nullptr, grbit ) );
 }
 JET_ERR JET_API JetDefragment2A(
     _In_ JET_SESID              sesid,
@@ -20101,7 +20101,7 @@ LOCAL JET_ERR JetDatabaseScanEx(
             sesid,
             dbid,
             pcSeconds,
-            ( NULL != pcSeconds ? OSFormat( "<%d>", *pcSeconds ) : OSTRACENULLPARAM ),
+            ( nullptr != pcSeconds ? OSFormat( "<%d>", *pcSeconds ) : OSTRACENULLPARAM ),
             cmsecSleep,
             pfnCallback,
             grbit ) );
@@ -20446,7 +20446,7 @@ LOCAL JET_ERR JetSetSystemParameterEx(
     __in_opt JET_PCWSTR         wszParam )
 {
     APICALL_INST    apicall( opSetSystemParameter );
-    INST*           pinst   = NULL;
+    INST*           pinst   = nullptr;
 
     OSTrace(
         JET_tracetagAPI,
@@ -20692,15 +20692,15 @@ JET_ERR JetSetResourceParamEx(
         //  some of them should still go through SetSystemParameter
         if ( JET_residPAGE == resid && JET_resoperSize == resoper )
         {
-            return ErrSetSystemParameter( pinstNil, JET_sesidNil, JET_paramDatabasePageSize, ulParam, NULL );
+            return ErrSetSystemParameter( pinstNil, JET_sesidNil, JET_paramDatabasePageSize, ulParam, nullptr );
         }
         else if ( JET_residVERBUCKET == resid && JET_resoperSize == resoper )
         {
-            return ErrSetSystemParameter( pinstNil, JET_sesidNil, JET_paramVerPageSize, ulParam, NULL );
+            return ErrSetSystemParameter( pinstNil, JET_sesidNil, JET_paramVerPageSize, ulParam, nullptr );
         }
         else if ( JET_residVERBUCKET == resid && JET_resoperMinUse == resoper )
         {
-            return ErrSetSystemParameter( pinstNil, JET_sesidNil, JET_paramGlobalMinVerPages, ulParam, NULL );
+            return ErrSetSystemParameter( pinstNil, JET_sesidNil, JET_paramGlobalMinVerPages, ulParam, nullptr );
         }
 
         //  setting for global default
@@ -20716,16 +20716,16 @@ JET_ERR JetSetResourceParamEx(
         {
             //  Supported through SetSystemParameter
             case JET_residSCB:
-                apicall.LeaveAfterCall( ErrSetSystemParameter( pinst, JET_sesidNil, JET_paramMaxTemporaryTables, ulParam, NULL ) );
+                apicall.LeaveAfterCall( ErrSetSystemParameter( pinst, JET_sesidNil, JET_paramMaxTemporaryTables, ulParam, nullptr ) );
                 break;
             case JET_residFUCB:
-                apicall.LeaveAfterCall( ErrSetSystemParameter( pinst, JET_sesidNil, JET_paramMaxCursors, ulParam, NULL ) );
+                apicall.LeaveAfterCall( ErrSetSystemParameter( pinst, JET_sesidNil, JET_paramMaxCursors, ulParam, nullptr ) );
                 break;
             case JET_residPIB:
-                apicall.LeaveAfterCall( ErrSetSystemParameter( pinst, JET_sesidNil, JET_paramMaxSessions, ulParam - cpibSystem, NULL ) );
+                apicall.LeaveAfterCall( ErrSetSystemParameter( pinst, JET_sesidNil, JET_paramMaxSessions, ulParam - cpibSystem, nullptr ) );
                 break;
             case JET_residVERBUCKET:
-                apicall.LeaveAfterCall( ErrSetSystemParameter( pinst, JET_sesidNil, JET_paramMaxVerPages, ulParam - cbucketSystem, NULL ) );
+                apicall.LeaveAfterCall( ErrSetSystemParameter( pinst, JET_sesidNil, JET_paramMaxVerPages, ulParam - cbucketSystem, nullptr ) );
                 break;
 
             //  everything else
@@ -20809,8 +20809,8 @@ ERR ErrInitComplete(    JET_INSTANCE    instance,
     else
     {
         pinst->m_plog->LGSetLgposRecoveryStop( lgposMax );
-        pinst->m_pfnInitCallback = NULL;
-        pinst->m_pvInitCallbackContext = NULL;
+        pinst->m_pfnInitCallback = nullptr;
+        pinst->m_pvInitCallbackContext = nullptr;
         pinst->m_fAllowAPICallDuringRecovery = fFalse;
     }
 
@@ -20961,7 +20961,7 @@ ERR ErrTermComplete( JET_INSTANCE instance, JET_GRBIT grbit )
 
             // Lazy way to wait until the snapshot terminates / aborts and comes back to us, letting
             // the term thread go on normally. 
-            while( pinst->m_pOSSnapshotSession != NULL )
+            while( pinst->m_pOSSnapshotSession != nullptr )
             {
                 CESESnapshotSession::SnapshotCritLeave();
                 UtilSleep( 2 );
@@ -21033,7 +21033,7 @@ ERR ErrTermComplete( JET_INSTANCE instance, JET_GRBIT grbit )
 class CAutoSETSYSPARAMW
 {
     public:
-        CAutoSETSYSPARAMW():m_psetsysparam( NULL ),m_psetsysparamW( NULL ), m_rgwsz( NULL ), m_csetsysparam( 0 ) { }
+        CAutoSETSYSPARAMW():m_psetsysparam( nullptr ),m_psetsysparamW( nullptr ), m_rgwsz( nullptr ), m_csetsysparam( 0 ) { }
         ~CAutoSETSYSPARAMW();
 
     public:
@@ -21059,13 +21059,13 @@ ERR CAutoSETSYSPARAMW::ErrSet( JET_SETSYSPARAM_A * psetsysparam, const ULONG cse
     delete[] m_psetsysparamW;
     delete[] m_rgwsz;
 
-    m_psetsysparamW = NULL;
-    m_rgwsz = NULL;
+    m_psetsysparamW = nullptr;
+    m_rgwsz = nullptr;
     m_csetsysparam = 0;
-    m_psetsysparam = NULL;
+    m_psetsysparam = nullptr;
 
-    if ( ( psetsysparam == NULL && csetsysparam != 0 ) ||
-        ( psetsysparam != NULL && csetsysparam == 0 ) )
+    if ( ( psetsysparam == nullptr && csetsysparam != 0 ) ||
+        ( psetsysparam != nullptr && csetsysparam == 0 ) )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
@@ -21361,8 +21361,8 @@ LOCAL JET_ERR JetInitEx(
     _In_ JET_GRBIT              grbit )
 {
     ERR             err                 = JET_errSuccess;
-    BOOL            fAllocateInstance   = ( NULL == pinstance || FINSTInvalid( *pinstance ) );
-    INST *          pinst               = NULL;
+    BOOL            fAllocateInstance   = ( nullptr == pinstance || FINSTInvalid( *pinstance ) );
+    INST *          pinst               = nullptr;
     BOOL            fInCritSec          = fFalse;
 
     OSTrace(
@@ -21376,14 +21376,14 @@ LOCAL JET_ERR JetInitEx(
 
     COSTraceTrackErrors trackerrors( __FUNCTION__ );
 
-    if ( fAllocateInstance && NULL != pinstance )
+    if ( fAllocateInstance && nullptr != pinstance )
         *pinstance = JET_instanceNil;
 
     CallR( ErrFaultInjection( 60589 ) );    // Used by the fault injection unit-test
     Assert( JET_errSuccess == ErrFaultInjection( 50587 ) ); // Used by the assert handling unit-test
     if ( JET_errSuccess != ErrFaultInjection( 47515 ) ) // Used by the exception handling unit-test
     {
-        *( char* )0 = 0;
+        *( char* )nullptr = 0;
     }
     
     INST::EnterCritInst();
@@ -21423,7 +21423,7 @@ LOCAL JET_ERR JetInitEx(
     // alocate a new instance or find the one provided (previously allocate with JetCreateInstance)
     if ( fAllocateInstance )
     {
-        Call( ErrNewInst( &pinst, NULL, NULL, NULL ) );
+        Call( ErrNewInst( &pinst, nullptr, nullptr, nullptr ) );
         Assert( !pinst->m_fJetInitialized );
     }
     else
@@ -21481,7 +21481,7 @@ LOCAL JET_ERR JetInitEx(
         _countof( rgszT ),
         rgszT,
         0,
-        NULL,
+        nullptr,
         pinst );
 
     Assert( !Ptls()->fInSoftStart );
@@ -21501,13 +21501,13 @@ TermAlloc:
 
     if ( err < JET_errSuccess && err != JET_errRecoveredWithoutUndo )
     {
-        const WCHAR* wszInstDisplayName = ( pinst != NULL && pinst->m_wszDisplayName != NULL ? pinst->m_wszDisplayName : L"_unknown_" );
+        const WCHAR* wszInstDisplayName = ( pinst != nullptr && pinst->m_wszDisplayName != nullptr ? pinst->m_wszDisplayName : L"_unknown_" );
         OSDiagTrackInit( wszInstDisplayName, pinst->m_plog->QwSignLogHash(), err );
     }
 
     // if instance allocated in this function call
     // or created by create instance, clean it
-    if ( fAllocateInstance || ( NULL != pinstance && !FINSTInvalid( *pinstance ) ) )
+    if ( fAllocateInstance || ( nullptr != pinstance && !FINSTInvalid( *pinstance ) ) )
     {
         // still, if the error is because the instance is already initialized
         // we don't want to Term it
@@ -21515,7 +21515,7 @@ TermAlloc:
         if ( JET_errAlreadyInitialized != err )
         {
             ErrTermAlloc( (JET_INSTANCE)pinst );
-            if ( NULL != pinstance )
+            if ( nullptr != pinstance )
             {
                 *pinstance = 0;
             }
@@ -21539,7 +21539,7 @@ HandleError:
 class CAutoRSTMAP2W
 {
     public:
-        CAutoRSTMAP2W() :m_rgrstmap( NULL ), m_rgwszDatabaseName( NULL ), m_rgwszNewDatabaseName( NULL ), m_crstmap( 0 ) {}
+        CAutoRSTMAP2W() :m_rgrstmap( nullptr ), m_rgwszDatabaseName( nullptr ), m_rgwszNewDatabaseName( nullptr ), m_crstmap( 0 ) {}
         ~CAutoRSTMAP2W();
 
     public:
@@ -21563,15 +21563,15 @@ ERR CAutoRSTMAP2W::ErrSet( const JET_RSTMAP_A * prstmap, const LONG crstmap )
     delete[] m_rgrstmap;
     delete[] m_rgwszDatabaseName;
     delete[] m_rgwszNewDatabaseName;
-    m_rgrstmap = NULL;
-    m_rgwszDatabaseName = NULL;
-    m_rgwszNewDatabaseName = NULL;
+    m_rgrstmap = nullptr;
+    m_rgwszDatabaseName = nullptr;
+    m_rgwszNewDatabaseName = nullptr;
     m_crstmap = 0;
 
     C_ASSERT( sizeof(JET_RSTMAP_W) == sizeof(JET_RSTMAP_A) );
 
-    if ( ( prstmap == NULL && crstmap != 0 ) ||
-        ( prstmap != NULL && crstmap == 0 ) )
+    if ( ( prstmap == nullptr && crstmap != 0 ) ||
+        ( prstmap != nullptr && crstmap == 0 ) )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
@@ -21591,7 +21591,7 @@ ERR CAutoRSTMAP2W::ErrSet( const JET_RSTMAP_A * prstmap, const LONG crstmap )
             m_rgrstmap[i].cbStruct = sizeof( JET_RSTMAP2_W );
             m_rgrstmap[i].szDatabaseName = (WCHAR*)m_rgwszDatabaseName[i];
             m_rgrstmap[i].szNewDatabaseName = (WCHAR*)m_rgwszNewDatabaseName[i];
-            m_rgrstmap[i].rgsetdbparam = NULL;
+            m_rgrstmap[i].rgsetdbparam = nullptr;
             m_rgrstmap[i].csetdbparam = 0;
             m_rgrstmap[i].grbit = NO_GRBIT;
         }
@@ -21608,13 +21608,13 @@ ERR CAutoRSTMAP2W::ErrSet( const JET_RSTMAP_W * prstmap, const LONG crstmap )
     delete[] m_rgrstmap;
     delete[] m_rgwszDatabaseName;
     delete[] m_rgwszNewDatabaseName;
-    m_rgrstmap = NULL;
-    m_rgwszDatabaseName = NULL;
-    m_rgwszNewDatabaseName = NULL;
+    m_rgrstmap = nullptr;
+    m_rgwszDatabaseName = nullptr;
+    m_rgwszNewDatabaseName = nullptr;
     m_crstmap = 0;
 
-    if ( ( prstmap == NULL && crstmap != 0 ) ||
-        ( prstmap != NULL && crstmap == 0 ) )
+    if ( ( prstmap == nullptr && crstmap != 0 ) ||
+        ( prstmap != nullptr && crstmap == 0 ) )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
@@ -21630,7 +21630,7 @@ ERR CAutoRSTMAP2W::ErrSet( const JET_RSTMAP_W * prstmap, const LONG crstmap )
             m_rgrstmap[i].cbStruct = sizeof( JET_RSTMAP2_W );
             m_rgrstmap[i].szDatabaseName = prstmap[i].szDatabaseName;
             m_rgrstmap[i].szNewDatabaseName = prstmap[i].szNewDatabaseName;
-            m_rgrstmap[i].rgsetdbparam = NULL;
+            m_rgrstmap[i].rgsetdbparam = nullptr;
             m_rgrstmap[i].csetdbparam = 0;
             m_rgrstmap[i].grbit = NO_GRBIT;
         }
@@ -21647,15 +21647,15 @@ ERR CAutoRSTMAP2W::ErrSet( const JET_RSTMAP2_A * prstmap, const LONG crstmap )
     delete[] m_rgrstmap;
     delete[] m_rgwszDatabaseName;
     delete[] m_rgwszNewDatabaseName;
-    m_rgrstmap = NULL;
-    m_rgwszDatabaseName = NULL;
-    m_rgwszNewDatabaseName = NULL;
+    m_rgrstmap = nullptr;
+    m_rgwszDatabaseName = nullptr;
+    m_rgwszNewDatabaseName = nullptr;
     m_crstmap = 0;
 
     C_ASSERT( sizeof( JET_RSTMAP2_W ) == sizeof( JET_RSTMAP2_A ) );
 
-    if ( ( prstmap == NULL && crstmap != 0 ) ||
-        ( prstmap != NULL && crstmap == 0 ) )
+    if ( ( prstmap == nullptr && crstmap != 0 ) ||
+        ( prstmap != nullptr && crstmap == 0 ) )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
@@ -21695,7 +21695,7 @@ CAutoRSTMAP2W::~CAutoRSTMAP2W()
 class CAutoRSTINFOW
 {
     public:
-        CAutoRSTINFOW() : m_prstInfo( NULL ), m_pInitCallbackWrapper( NULL ) {}
+        CAutoRSTINFOW() : m_prstInfo( nullptr ), m_pInitCallbackWrapper( nullptr ) {}
         ~CAutoRSTINFOW();
 
     public:
@@ -21719,9 +21719,9 @@ ERR CAutoRSTINFOW::ErrSet( const JET_RSTINFO_A * prstInfo )
 
     delete m_prstInfo;
 
-    m_prstInfo = NULL;
+    m_prstInfo = nullptr;
 
-    if ( NULL == prstInfo )
+    if ( nullptr == prstInfo )
     {
         return JET_errSuccess;
     }
@@ -21757,9 +21757,9 @@ ERR CAutoRSTINFOW::ErrSet( const JET_RSTINFO_W * prstInfo )
 
     delete m_prstInfo;
 
-    m_prstInfo = NULL;
+    m_prstInfo = nullptr;
 
-    if ( NULL == prstInfo )
+    if ( nullptr == prstInfo )
     {
         return JET_errSuccess;
     }
@@ -21797,9 +21797,9 @@ ERR CAutoRSTINFOW::ErrSet( const JET_RSTINFO2_A * prstInfo )
 
     delete m_prstInfo;
 
-    m_prstInfo = NULL;
+    m_prstInfo = nullptr;
 
-    if ( NULL == prstInfo )
+    if ( nullptr == prstInfo )
     {
         return JET_errSuccess;
     }
@@ -21840,7 +21840,7 @@ JET_ERR JET_API JetInit( __inout_opt JET_INSTANCE *pinstance )
 
 JET_ERR JET_API JetInit2( __inout_opt JET_INSTANCE *pinstance, _In_ JET_GRBIT grbit )
 {
-    return JetInit3A( pinstance, NULL, grbit | JET_bitReplayMissingMapEntryDB );
+    return JetInit3A( pinstance, nullptr, grbit | JET_bitReplayMissingMapEntryDB );
 }
 
 JET_ERR JET_API JetInit3A(
@@ -21939,7 +21939,7 @@ LOCAL JET_ERR JetCreateInstanceEx(
         RUNINSTSetModeMultiInst();
     }
 
-    err = ErrNewInst( &pinst, wszInstanceName, wszDisplayName, NULL );
+    err = ErrNewInst( &pinst, wszInstanceName, wszDisplayName, nullptr );
 
     INST::LeaveCritInst();
 
@@ -21975,14 +21975,14 @@ JET_ERR JET_API JetCreateInstanceA(
     _Out_ JET_INSTANCE *    pinstance,
     __in_opt JET_PCSTR      szInstanceName )
 {
-    return JetCreateInstance2A( pinstance, szInstanceName, NULL, NO_GRBIT );
+    return JetCreateInstance2A( pinstance, szInstanceName, nullptr, NO_GRBIT );
 }
 
 JET_ERR JET_API JetCreateInstanceW(
     _Out_ JET_INSTANCE *    pinstance,
     __in_opt JET_PCWSTR     wszInstanceName )
 {
-    return JetCreateInstance2W( pinstance, wszInstanceName, NULL, NO_GRBIT );
+    return JetCreateInstance2W( pinstance, wszInstanceName, nullptr, NO_GRBIT );
 }
 
 
@@ -22084,10 +22084,10 @@ LOCAL JET_ERR JET_API JetGetInstanceMiscInfoEx(
 
             case JET_InstanceMiscInfoRBS:
             {
-                if ( pinst->m_prbs != NULL && 
+                if ( pinst->m_prbs != nullptr && 
                     !pinst->m_prbs->FInvalid() &&
                     pinst->m_prbs->FInitialized() &&
-                    pinst->m_prbs->RBSFileHdr() != NULL )
+                    pinst->m_prbs->RBSFileHdr() != nullptr )
                 {
                     UtilLoadRBSinfomiscFromRBSfilehdr( ( JET_RBSINFOMISC* )pvResult, cbMax, pinst->m_prbs->RBSFileHdr() );
                 }
@@ -22160,7 +22160,7 @@ LOCAL JET_ERR JetRestoreInstanceEx(
             RUNINSTSetModeMultiInst();
         }
 
-        err = ErrNewInst( &pinst, wszRestoreInstanceName, NULL, &ipinst );
+        err = ErrNewInst( &pinst, wszRestoreInstanceName, nullptr, &ipinst );
         Assert( ( err < JET_errSuccess && pinst == NULL ) || !pinst->m_fJetInitialized );
         INST::LeaveCritInst();
         CallR( err );
@@ -22312,7 +22312,7 @@ JET_ERR JET_API JetStopServiceInstanceExOld( _In_ JET_INSTANCE instance )
     //  Ignore any errors, since this is just an optimistic perf
     //  optimisation.
     //
-    CallS( Param( pinst, JET_paramCheckpointDepthMax )->Set( pinst, ppibNil, 16384, NULL ) );
+    CallS( Param( pinst, JET_paramCheckpointDepthMax )->Set( pinst, ppibNil, 16384, nullptr ) );
 
     pinst->m_fStopJetService = fTrue;
     return JET_errSuccess;
@@ -22412,7 +22412,7 @@ JET_ERR JET_API JetStopServiceInstanceEx( _In_ JET_INSTANCE instance, _In_ JET_G
         if ( grbit & JET_bitStopServiceBackgroundUserTasks )
         {
             FMP::EnterFMPPoolAsWriter();
-            FMP *   pfmpCurr = NULL;
+            FMP *   pfmpCurr = nullptr;
             if ( pinst && pinst->m_fJetInitialized )
             {
                 for ( DBID dbidT = dbidUserLeast; dbidT < dbidMax; dbidT++ )
@@ -22434,7 +22434,7 @@ JET_ERR JET_API JetStopServiceInstanceEx( _In_ JET_INSTANCE instance, _In_ JET_G
                     pfmpCurr->UnpauseOLD2Tasks();
 
                     pfmpCurr->RwlDetaching().LeaveAsReader();
-                    pfmpCurr = NULL;
+                    pfmpCurr = nullptr;
                 }
             }
             FMP::LeaveFMPPoolAsWriter();
@@ -22497,7 +22497,7 @@ JET_ERR JET_API JetStopServiceInstanceEx( _In_ JET_INSTANCE instance, _In_ JET_G
             //  Halt OLDv2/B+ Tree defrag for this instance
 
             FMP::EnterFMPPoolAsWriter();
-            FMP *   pfmpCurr = NULL;
+            FMP *   pfmpCurr = nullptr;
             if ( pinst && pinst->m_fJetInitialized )
             {
                 for ( DBID dbidT = dbidUserLeast; dbidT < dbidMax; dbidT++ )
@@ -22521,7 +22521,7 @@ JET_ERR JET_API JetStopServiceInstanceEx( _In_ JET_INSTANCE instance, _In_ JET_G
                     pfmpCurr->PauseOLD2Tasks();
 
                     pfmpCurr->RwlDetaching().LeaveAsReader();
-                    pfmpCurr = NULL;
+                    pfmpCurr = nullptr;
                 }
             }
             FMP::LeaveFMPPoolAsWriter();
@@ -22681,14 +22681,14 @@ LOCAL JET_ERR JetGetInstanceInfoEx(
             __FUNCTION__,
             pcInstanceInfo,
             paInstanceInfo ) );
-    return ErrIsamGetInstanceInfo( pcInstanceInfo, paInstanceInfo, NULL );
+    return ErrIsamGetInstanceInfo( pcInstanceInfo, paInstanceInfo, nullptr );
 }
 
 
 class CAutoINSTANCE_INFOW
 {
 public:
-    CAutoINSTANCE_INFOW():m_aInstanceInfo( NULL ), m_cInstanceInfo( 0 ) {}
+    CAutoINSTANCE_INFOW():m_aInstanceInfo( nullptr ), m_cInstanceInfo( 0 ) {}
     ~CAutoINSTANCE_INFOW();
 
     ERR ErrSet( ULONG cInstanceInfo, JET_INSTANCE_INFO_W * paInstanceInfo );
@@ -22702,8 +22702,8 @@ private:
 ERR CAutoINSTANCE_INFOW::ErrSet( ULONG cInstanceInfo, JET_INSTANCE_INFO_W * paInstanceInfo )
 {
 
-    if ( ( NULL == paInstanceInfo && 0 != cInstanceInfo ) ||
-        ( NULL != paInstanceInfo && 0 == cInstanceInfo ) )
+    if ( ( nullptr == paInstanceInfo && 0 != cInstanceInfo ) ||
+        ( nullptr != paInstanceInfo && 0 == cInstanceInfo ) )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -22722,14 +22722,14 @@ ERR CAutoINSTANCE_INFOW::ErrSet( ULONG cInstanceInfo, JET_INSTANCE_INFO_W * paIn
 ERR CAutoINSTANCE_INFOW::ErrGet( ULONG *pcInstanceInfo, JET_INSTANCE_INFO_A ** paInstanceInfo )
 {
     ERR                     err             = JET_errSuccess;
-    void *                  lpvNew          = NULL;
+    void *                  lpvNew          = nullptr;
     UINT            iInst;
     UINT            iDb;
     size_t                  cDataPtrs;
     size_t                  cbTotal         = 0;
     size_t                  cchPartial      = 0;
 
-    if ( NULL == pcInstanceInfo || NULL == paInstanceInfo )
+    if ( nullptr == pcInstanceInfo || nullptr == paInstanceInfo )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -22743,7 +22743,7 @@ ERR CAutoINSTANCE_INFOW::ErrGet( ULONG *pcInstanceInfo, JET_INSTANCE_INFO_A ** p
 
         if ( m_aInstanceInfo[iInst].szInstanceName )
         {
-            err = ErrOSSTRUnicodeToAscii( m_aInstanceInfo[iInst].szInstanceName, NULL, 0, &cchPartial );
+            err = ErrOSSTRUnicodeToAscii( m_aInstanceInfo[iInst].szInstanceName, nullptr, 0, &cchPartial );
             if ( err != JET_errBufferTooSmall )
             {
                 Call( err );
@@ -22755,7 +22755,7 @@ ERR CAutoINSTANCE_INFOW::ErrGet( ULONG *pcInstanceInfo, JET_INSTANCE_INFO_A ** p
         {
 
             Assert( m_aInstanceInfo[iInst].szDatabaseFileName[iDb] );
-            err = ErrOSSTRUnicodeToAscii( m_aInstanceInfo[iInst].szDatabaseFileName[iDb], NULL, 0, &cchPartial );
+            err = ErrOSSTRUnicodeToAscii( m_aInstanceInfo[iInst].szDatabaseFileName[iDb], nullptr, 0, &cchPartial );
             if ( err != JET_errBufferTooSmall )
             {
                 Call( err );
@@ -22764,7 +22764,7 @@ ERR CAutoINSTANCE_INFOW::ErrGet( ULONG *pcInstanceInfo, JET_INSTANCE_INFO_A ** p
 
             if ( m_aInstanceInfo[iInst].szDatabaseDisplayName[iDb] )
             {
-                err = ErrOSSTRUnicodeToAscii( m_aInstanceInfo[iInst].szDatabaseDisplayName[iDb], NULL, 0, &cchPartial );
+                err = ErrOSSTRUnicodeToAscii( m_aInstanceInfo[iInst].szDatabaseDisplayName[iDb], nullptr, 0, &cchPartial );
                 if ( err != JET_errBufferTooSmall )
                 {
                     Call( err );
@@ -22809,7 +22809,7 @@ ERR CAutoINSTANCE_INFOW::ErrGet( ULONG *pcInstanceInfo, JET_INSTANCE_INFO_A ** p
         }
         cbTotal -= m_aInstanceInfo[iInst].cDatabases * sizeof( CHAR * );
 
-        ((JET_INSTANCE_INFO_A*)lpvNew)[iInst].szDatabaseSLVFileName_Obsolete = NULL;
+        ((JET_INSTANCE_INFO_A*)lpvNew)[iInst].szDatabaseSLVFileName_Obsolete = nullptr;
         lpvCurrent += m_aInstanceInfo[iInst].cDatabases * sizeof( CHAR * );
         // Replace Assert with a retail check.  Use an existing error path:
         if ( cbTotal < ( m_aInstanceInfo[iInst].cDatabases * sizeof( CHAR * ) ) )
@@ -22869,7 +22869,7 @@ ERR CAutoINSTANCE_INFOW::ErrGet( ULONG *pcInstanceInfo, JET_INSTANCE_INFO_A ** p
 
     *paInstanceInfo = (JET_INSTANCE_INFO_A*)lpvNew;
     *pcInstanceInfo = m_cInstanceInfo;
-    lpvNew = NULL;
+    lpvNew = nullptr;
 
 HandleError:
     OSMemoryHeapFree( lpvNew );
@@ -22890,7 +22890,7 @@ LOCAL JET_ERR JetGetInstanceInfoExA(
     __deref_out_ecount( *pcInstanceInfo ) JET_INSTANCE_INFO_A **    paInstanceInfo )
 {
     ERR                     err             = JET_errSuccess;
-    JET_INSTANCE_INFO_W*    laInstanceInfoW = NULL;
+    JET_INSTANCE_INFO_W*    laInstanceInfoW = nullptr;
     ULONG           lcInstanceInfo  = 0;
     CAutoINSTANCE_INFOW autoInstanceInfoW;
 
@@ -22900,7 +22900,7 @@ LOCAL JET_ERR JetGetInstanceInfoExA(
     // we moved the "ownership" of the memory to the auto object
     // so we need to count for this
     //
-    laInstanceInfoW = NULL;
+    laInstanceInfoW = nullptr;
     lcInstanceInfo = 0;
 
     Call( autoInstanceInfoW.ErrGet(pcInstanceInfo, paInstanceInfo ) );
@@ -22975,11 +22975,11 @@ LOCAL JET_ERR JetOSSnapshotFreezeExA(
     _In_ const JET_GRBIT                                            grbit )
 {
     ERR                     err             = JET_errSuccess;
-    JET_INSTANCE_INFO_W *   laInstanceInfoW     = NULL;
+    JET_INSTANCE_INFO_W *   laInstanceInfoW     = nullptr;
     ULONG           lcInstanceInfo  = 0;
     CAutoINSTANCE_INFOW     autoInstanceInfoW;
 
-    if ( NULL == pcInstanceInfo || NULL == paInstanceInfo )
+    if ( nullptr == pcInstanceInfo || nullptr == paInstanceInfo )
     {
         Call( ErrERRCheck(JET_errInvalidParameter ) );
     }
@@ -22990,7 +22990,7 @@ LOCAL JET_ERR JetOSSnapshotFreezeExA(
     // we moved the "ownership" of the memory to the auto object
     // so we need to count for this
     //
-    laInstanceInfoW = NULL;
+    laInstanceInfoW = nullptr;
     lcInstanceInfo = 0;
 
     Call( autoInstanceInfoW.ErrGet(pcInstanceInfo, paInstanceInfo ) );
@@ -23095,7 +23095,7 @@ INLINE JET_ERR JetOSSnapshotTruncateLogEx( _In_ const JET_OSSNAPID snapId, _In_ 
             __FUNCTION__,
             snapId,
             grbit ) );
-    return ErrIsamOSSnapshotTruncateLog( snapId, NULL, grbit );
+    return ErrIsamOSSnapshotTruncateLog( snapId, nullptr, grbit );
 }
 
 JET_ERR JET_API JetOSSnapshotTruncateLog( _In_ const JET_OSSNAPID snapId, _In_ const JET_GRBIT grbit )
@@ -23155,7 +23155,7 @@ LOCAL JET_ERR JetOSSnapshotGetFreezeInfoExA(
     _In_ const JET_GRBIT                                            grbit )
 {
     ERR                     err             = JET_errSuccess;
-    JET_INSTANCE_INFO_W *   laInstanceInfoW     = NULL;
+    JET_INSTANCE_INFO_W *   laInstanceInfoW     = nullptr;
     ULONG           lcInstanceInfo  = 0;
     CAutoINSTANCE_INFOW     autoInstanceInfoW;
 
@@ -23165,7 +23165,7 @@ LOCAL JET_ERR JetOSSnapshotGetFreezeInfoExA(
     // we moved the "ownership" of the memory to the auto object
     // so we need to count for this
     //
-    laInstanceInfoW = NULL;
+    laInstanceInfoW = nullptr;
     lcInstanceInfo = 0;
 
     Call( autoInstanceInfoW.ErrGet(pcInstanceInfo, paInstanceInfo ) );
@@ -23282,9 +23282,9 @@ JET_ERR ErrTestHookCorruptOfflineFile( const JET_TESTHOOKCORRUPT * const pcorrup
 {
     JET_ERR         err     = JET_errSuccess;
     ULONG           cbPageSize  = 0;
-    BYTE *          pbPageImage = NULL;
-    IFileSystemAPI *    pfsapi      = NULL;
-    IFileAPI *      pfapi       = NULL;
+    BYTE *          pbPageImage = nullptr;
+    IFileSystemAPI *    pfsapi      = nullptr;
+    IFileAPI *      pfapi       = nullptr;
     JET_TESTHOOKCORRUPT corruptPageImage= { sizeof(corruptPageImage), 0 };
 
     Assert( pcorruptDatabaseFile->grbit & JET_bitTestHookCorruptDatabaseFile );
@@ -23294,7 +23294,7 @@ JET_ERR ErrTestHookCorruptOfflineFile( const JET_TESTHOOKCORRUPT * const pcorrup
     Assert( pcorruptDatabaseFile->cbStruct >= ( OffsetOf( JET_TESTHOOKCORRUPT, CorruptDatabaseFile.iSubTarget ) + sizeof( __int64 ) ) );
     AssertSz( pcorruptDatabaseFile->CorruptDatabaseFile.pgnoTarget != JET_pgnoTestHookCorruptRandom, "NYI" );
 
-    Alloc( pbPageImage = (BYTE * )PvOSMemoryPageAlloc( g_cbPageMax, NULL ) );
+    Alloc( pbPageImage = (BYTE * )PvOSMemoryPageAlloc( g_cbPageMax, nullptr ) );
     Call( ErrOSFSCreate( g_pfsconfigGlobal, &pfsapi ) );
 
     Call( pfsapi->ErrFileOpen(  pcorruptDatabaseFile->CorruptDatabaseFile.wszDatabaseFilePath,
@@ -23326,7 +23326,7 @@ JET_ERR ErrTestHookCorruptOfflineFile( const JET_TESTHOOKCORRUPT * const pcorrup
 HandleError:
 
     //  Cleanup
-    if ( pbPageImage != NULL )
+    if ( pbPageImage != nullptr )
     {
         OSMemoryPageFree( pbPageImage );
     }
@@ -23346,17 +23346,17 @@ HandleError:
 JET_ERR ErrTESTHOOKAlterDatabaseFileHeader( const JET_TESTHOOKALTERDBFILEHDR * const palterdbfilehdr )
 {
     ERR err = JET_errSuccess;
-    DBFILEHDR * pdbfilehdr = NULL;
-    IFileSystemAPI * pfsapi = NULL;
-    IFileAPI * pfapiDatabase = NULL;
+    DBFILEHDR * pdbfilehdr = nullptr;
+    IFileSystemAPI * pfsapi = nullptr;
+    IFileAPI * pfapiDatabase = nullptr;
     ShadowedHeaderStatus shs;
     DWORD cbPageSize = 1;
-    CFlushMapForUnattachedDb* pfm           = NULL;
+    CFlushMapForUnattachedDb* pfm           = nullptr;
 
     Assert( palterdbfilehdr->szDatabase );
 
     CallR( ErrOSUInit() );
-    Alloc( pdbfilehdr = (DBFILEHDR*)PvOSMemoryPageAlloc( g_cbPageMax, NULL ) );
+    Alloc( pdbfilehdr = (DBFILEHDR*)PvOSMemoryPageAlloc( g_cbPageMax, nullptr ) );
     Call( ErrOSFSCreate( g_pfsconfigGlobal, &pfsapi ) );
 
     Call( pfsapi->ErrFileOpen( palterdbfilehdr->szDatabase, IFileAPI::fmfNone, &pfapiDatabase ) );
@@ -23469,7 +23469,7 @@ JET_ERR JET_API JetTestHook(
         case opTestHookTestInjection:
         {
             const JET_TESTHOOKTESTINJECTION* const pParams = (JET_TESTHOOKTESTINJECTION*)pv;
-            if ( pParams == NULL || pParams->cbStruct != sizeof(JET_TESTHOOKTESTINJECTION) )
+            if ( pParams == nullptr || pParams->cbStruct != sizeof(JET_TESTHOOKTESTINJECTION) )
             {
                 Call( ErrERRCheck( JET_errInvalidParameter ) );
             }
@@ -23503,7 +23503,7 @@ JET_ERR JET_API JetTestHook(
         case opTestHookHookNtQueryInformationProcess:
         {
             JET_TESTHOOKAPIHOOKING* const pParams = (JET_TESTHOOKAPIHOOKING*)pv;
-            if ( pParams == NULL || pParams->cbStruct != sizeof(JET_TESTHOOKAPIHOOKING) )
+            if ( pParams == nullptr || pParams->cbStruct != sizeof(JET_TESTHOOKAPIHOOKING) )
             {
                 Call( ErrERRCheck( JET_errInvalidParameter ) );
             }
@@ -23515,7 +23515,7 @@ JET_ERR JET_API JetTestHook(
         case opTestHookHookNtQuerySystemInformation:
         {
             JET_TESTHOOKAPIHOOKING* const pParams = (JET_TESTHOOKAPIHOOKING*)pv;
-            if ( pParams == NULL || pParams->cbStruct != sizeof(JET_TESTHOOKAPIHOOKING) )
+            if ( pParams == nullptr || pParams->cbStruct != sizeof(JET_TESTHOOKAPIHOOKING) )
             {
                 Call( ErrERRCheck( JET_errInvalidParameter ) );
             }
@@ -23527,7 +23527,7 @@ JET_ERR JET_API JetTestHook(
         case opTestHookHookGlobalMemoryStatus:
         {
             JET_TESTHOOKAPIHOOKING* const pParams = (JET_TESTHOOKAPIHOOKING*)pv;
-            if ( pParams == NULL || pParams->cbStruct != sizeof(JET_TESTHOOKAPIHOOKING) )
+            if ( pParams == nullptr || pParams->cbStruct != sizeof(JET_TESTHOOKAPIHOOKING) )
             {
                 Call( ErrERRCheck( JET_errInvalidParameter ) );
             }
@@ -23565,7 +23565,7 @@ JET_ERR JET_API JetTestHook(
         {
             #ifndef RTM
                 JET_TESTHOOKAPIHOOKING* const pParams = (JET_TESTHOOKAPIHOOKING*)pv;
-                if ( pParams == NULL || pParams->cbStruct != sizeof(JET_TESTHOOKAPIHOOKING) )
+                if ( pParams == nullptr || pParams->cbStruct != sizeof(JET_TESTHOOKAPIHOOKING) )
                 {
                     Call( ErrERRCheck( JET_errInvalidParameter ) );
                 }
@@ -23593,7 +23593,7 @@ JET_ERR JET_API JetTestHook(
             }
             else
             {
-                if ( pParams == NULL || pParams->cbStruct != sizeof(JET_TESTHOOKTRACETESTMARKER) )
+                if ( pParams == nullptr || pParams->cbStruct != sizeof(JET_TESTHOOKTRACETESTMARKER) )
                 {
                     Call( ErrERRCheck( JET_errInvalidParameter ) );
                 }
@@ -23601,7 +23601,7 @@ JET_ERR JET_API JetTestHook(
             }
 
             g_qwMarkerID = qwMarker;
-            ETTestMarker( qwMarker, ( pv < (void*)(64*1024) ) ? NULL : pParams->szAnnotation );
+            ETTestMarker( qwMarker, ( pv < (void*)(64*1024) ) ? nullptr : pParams->szAnnotation );
             OSTrace( JET_tracetagInformation, OSFormat( "Mark[%I64d]: %hs", qwMarker, pParams->szAnnotation ) );
 
             OSUTerm();
@@ -23917,7 +23917,7 @@ LOCAL JET_ERR JetConsumeLogDataEx(
 
     //  Validate the arguments to the function
 
-    if ( pEmitLogDataCtx == NULL )
+    if ( pEmitLogDataCtx == nullptr )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -24429,9 +24429,9 @@ LOCAL JET_ERR JetGetRBSFileInfoEx(
     _In_ ULONG                      InfoLevel )
 {
     ERR             err                 = JET_errSuccess;
-    RBSFILEHDR*     prbsfilehdr         = NULL;
-    IFileSystemAPI* pfsapi              = NULL;
-    IFileAPI*       pfapi               = NULL;
+    RBSFILEHDR*     prbsfilehdr         = nullptr;
+    IFileSystemAPI* pfsapi              = nullptr;
+    IFileAPI*       pfapi               = nullptr;
     BOOL            fOSUInitCalled      = fFalse;
 
     OSTrace(
@@ -24461,7 +24461,7 @@ LOCAL JET_ERR JetGetRBSFileInfoEx(
             }
             ProbeClientBuffer( pvResult, cbMax );
 
-            Alloc( prbsfilehdr = (RBSFILEHDR * )PvOSMemoryPageAlloc( sizeof( RBSFILEHDR ), NULL ) );
+            Alloc( prbsfilehdr = (RBSFILEHDR * )PvOSMemoryPageAlloc( sizeof( RBSFILEHDR ), nullptr ) );
 
             Call( ErrUtilReadShadowedHeader( pinstNil, pfsapi, pfapi, (BYTE*) prbsfilehdr, sizeof( RBSFILEHDR ), -1, urhfNoAutoDetectPageSize | urhfReadOnly | urhfNoEventLogging ) );
             UtilLoadRBSinfomiscFromRBSfilehdr( ( JET_RBSINFOMISC* )pvResult, cbMax, ( RBSFILEHDR* )prbsfilehdr );

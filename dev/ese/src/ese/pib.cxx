@@ -305,7 +305,7 @@ RCE * PIB::PrceNearestRegistered( const RCEID rceid ) const
     }
     else
     {
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -427,7 +427,7 @@ ERR PIB::ErrAbortAllMacros( BOOL fLogEndMacro )
 
     ERR     err;
     MACRO   *pMacro, *pMacroNext;
-    for ( pMacro = m_pMacroNext; pMacro != NULL; pMacro = pMacroNext )
+    for ( pMacro = m_pMacroNext; pMacro != nullptr; pMacro = pMacroNext )
     {
         pMacroNext = pMacro->PMacroNext();
         if ( pMacro->Dbtime() != dbtimeNil )
@@ -457,13 +457,13 @@ ERR PIB::ErrAbortAllMacros( BOOL fLogEndMacro )
 
     //  release last macro
     //
-    if ( NULL != m_pMacroNext )
+    if ( nullptr != m_pMacroNext )
     {
         Assert( m_pMacroNext->PMacroNext() == NULL );
         Assert( dbtimeNil == m_pMacroNext->Dbtime() );
         m_pMacroNext->ReleaseBuffer();
         OSMemoryHeapFree( m_pMacroNext );
-        m_pMacroNext = NULL;
+        m_pMacroNext = nullptr;
     }
 
     return JET_errSuccess;
@@ -594,7 +594,7 @@ ERR PIB::ErrMacroPgnoFreed( const DBTIME dbtime, CArray< CFMPPage >** rgfmppgnoF
     Assert( rgfmppgnoFreed );
     ASSERT_VALID( this );
 
-    for ( MACRO* pMacro = m_pMacroNext; pMacro != NULL; pMacro = pMacro->PMacroNext() )
+    for ( MACRO* pMacro = m_pMacroNext; pMacro != nullptr; pMacro = pMacro->PMacroNext() )
     {
         if ( pMacro->Dbtime() == dbtime )
         {
@@ -698,12 +698,12 @@ VOID PIBTerm( INST *pinst )
 ERR ErrPIBBeginSession( INST *pinst, _Outptr_ PIB ** pppib, PROCID procidTarget, BOOL fForCreateTempDatabase )
 {
     ERR     err     = JET_errSuccess;
-    PIB*    ppib    = NULL;
+    PIB*    ppib    = nullptr;
 
     Assert( pinst->FRecovering() || procidTarget == procidNil );
 
     ppib = new( pinst ) PIB;
-    if ( ppib == NULL )
+    if ( ppib == nullptr )
     {
         err = ErrERRCheck( JET_errOutOfSessions );
         goto HandleError;
@@ -850,7 +850,7 @@ HandleError:
 VOID PIBEndSession( PIB *ppib )
 {
     INST*   pinst = PinstFromPpib( ppib );
-    PIB**   pppib = NULL;
+    PIB**   pppib = nullptr;
     BOOL    fLeakPIB = fFalse;
 
     Assert( dwPIBSessionContextNull == ppib->dwSessionContext
@@ -893,7 +893,7 @@ VOID PIBEndSession( PIB *ppib )
         // If this thread entered the JET API through APICALL_SESID, the current user context in the TLS should point to the session's context
         // In that case, we have to clean up the TLS
         AssertRTL( ppib->Putc() == PutcTLSGetUserContext() );
-        TLSSetUserTraceContext( NULL );
+        TLSSetUserTraceContext( nullptr );
     }
 
     delete ppib;
@@ -985,7 +985,7 @@ VOID PIBReportSessionSharingViolation( const PIB * const ppib )
             _countof(rgcwszT),
             rgcwszT,
             0,
-            NULL,
+            nullptr,
             PinstFromPpib( ppib ) );
 }
 

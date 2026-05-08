@@ -9,7 +9,7 @@
 
 WCHAR WchReportInstState( const INST * const pinst )
 {
-    switch( ( pinst == NULL ) ? -1 : pinst->m_perfstatusEvent )
+    switch( ( pinst == nullptr ) ? -1 : pinst->m_perfstatusEvent )
     {
     case -1:                            return 'G';  //  Global
     case 0:                             return 'P';  //  Pre-recovery (sysinit or os init)
@@ -166,7 +166,7 @@ void UtilReportEventOfError(
 //      rgszT[0] = pinst->m_plog->m_szJetLog;
 //      }
 
-    UtilReportEvent( eventError, catid, msgid, 1, rgszT, 0, NULL, pinst );
+    UtilReportEvent( eventError, catid, msgid, 1, rgszT, 0, nullptr, pinst );
 }
 
 

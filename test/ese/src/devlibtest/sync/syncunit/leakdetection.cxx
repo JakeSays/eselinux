@@ -57,7 +57,7 @@ class TestClassWithLock
 ERR LeakDetectionTest::ErrTest()
 //  ================================================================
 {
-    TestClassWithLock * pTestClass = NULL;
+    TestClassWithLock * pTestClass = nullptr;
 
 #ifdef SYNC_DEADLOCK_DETECTION
     wprintf( L"\tTesting detecting leave from a missing unlock ...\n");

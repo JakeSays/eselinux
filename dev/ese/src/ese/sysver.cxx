@@ -177,7 +177,7 @@ const FormatVersions * PfmtversEngineSafetyVersion()
 ERR ErrGetDesiredVersion( _In_ const INST * const pinstStaging, _In_ JET_ENGINEFORMATVERSION efvDesired, _Out_ const FormatVersions ** const ppfmtversDesired, const BOOL fTestStagingOnly )
 {
     Assert( ppfmtversDesired != NULL );
-    *ppfmtversDesired = NULL;
+    *ppfmtversDesired = nullptr;
 
     const BOOL fStripOptionalFlags = ( efvDesired & JET_efvAllowHigherPersistedFormat ) == JET_efvAllowHigherPersistedFormat;
     if ( fStripOptionalFlags )
@@ -227,7 +227,7 @@ BOOL FInEseutilPossibleUsageError();
 ERR ErrDBFindHighestMatchingDbMajors( _In_ const DbVersion& dbvFromFileHeader, _Out_ const FormatVersions ** const ppfmtversMatching, _In_ const INST * const pinstStaging, const BOOL fDbMayBeTooHigh )
 {
     Assert( ppfmtversMatching != NULL );
-    *ppfmtversMatching = NULL;
+    *ppfmtversMatching = nullptr;
 
     Assert( EfvMaxSupported() == PfmtversEngineMax()->efv );
 
@@ -246,7 +246,7 @@ ERR ErrDBFindHighestMatchingDbMajors( _In_ const DbVersion& dbvFromFileHeader, _
         }
     }
 
-    if ( *ppfmtversMatching == NULL )
+    if ( *ppfmtversMatching == nullptr )
     {
         OnDebug( BOOL fDbMayBeTooLow = ( 0 < CmpDbVer( PfmtversEngineMin()->dbv, dbvFromFileHeader ) ) );  // some ancient version encountered that is smaller than the earliest recorded version?
         AssertSz( fDbMayBeTooLow || fDbMayBeTooHigh || FInEseutilPossibleUsageError(),
@@ -260,7 +260,7 @@ ERR ErrDBFindHighestMatchingDbMajors( _In_ const DbVersion& dbvFromFileHeader, _
 ERR ErrLGFindHighestMatchingLogMajors( _In_ const LogVersion& lgvFromLogHeader, _Out_ const FormatVersions ** const ppfmtversMatching )
 {
     Assert( ppfmtversMatching != NULL );
-    *ppfmtversMatching = NULL;
+    *ppfmtversMatching = nullptr;
 
     Assert( EfvMaxSupported() == PfmtversEngineMax()->efv );
 
@@ -278,7 +278,7 @@ ERR ErrLGFindHighestMatchingLogMajors( _In_ const LogVersion& lgvFromLogHeader, 
         }
     }
 
-    if ( *ppfmtversMatching == NULL )
+    if ( *ppfmtversMatching == nullptr )
     {
         //  This hits if we replay from very old log files.
         AssertSz( fFalse, "Asked for %d.%d.%d log version, we don't have an entry in g_rgfmtversEngine for this!", lgvFromLogHeader.ulLGVersionMajor, lgvFromLogHeader.ulLGVersionUpdateMajor, lgvFromLogHeader.ulLGVersionUpdateMinor );
@@ -407,17 +407,17 @@ JET_ENGINEFORMATVERSION EfvBeBestMapping( const JET_ENGINEFORMATVERSION efvParam
 {
     JET_ENGINEFORMATVERSION efvParam            = efvParamRaw;
     const JET_ENGINEFORMATVERSION efvValue      = efvParamRaw & ~( JET_efvAllowHigherPersistedFormat );
-    const FormatVersions * pfmtversMatchLow     = NULL;
-    const FormatVersions * pfmtversMatchHigh    = NULL;
-    const FormatVersions * pfmtversMatchLogLow  = NULL;
-    const FormatVersions * pfmtversMatchLogHigh = NULL;
+    const FormatVersions * pfmtversMatchLow     = nullptr;
+    const FormatVersions * pfmtversMatchHigh    = nullptr;
+    const FormatVersions * pfmtversMatchLogLow  = nullptr;
+    const FormatVersions * pfmtversMatchLogHigh = nullptr;
 
     for ( INT i = g_ifmtversLastFeature; i >= 0; i-- )
     {
         INT icmp = CmpDbVer( g_rgfmtversEngine[ i ].dbv, dbvFromFileHeader );
         if ( icmp == 0 )
         {
-            if( pfmtversMatchHigh == NULL )
+            if( pfmtversMatchHigh == nullptr )
             {
                 pfmtversMatchHigh = &g_rgfmtversEngine[ i ];  // the first one we hit will be the highest.
             }
@@ -427,7 +427,7 @@ JET_ENGINEFORMATVERSION EfvBeBestMapping( const JET_ENGINEFORMATVERSION efvParam
         icmp = CmpLgVer( g_rgfmtversEngine[ i ].lgv, lgvFromFileHeader );
         if ( icmp == 0 )
         {
-            if ( pfmtversMatchLogHigh == NULL )
+            if ( pfmtversMatchLogHigh == nullptr )
             {
                 pfmtversMatchLogHigh = &g_rgfmtversEngine[ i ];
             }
@@ -440,14 +440,14 @@ JET_ENGINEFORMATVERSION EfvBeBestMapping( const JET_ENGINEFORMATVERSION efvParam
     //  First we just factor in the log, to adjust the high match.
 
     if ( fLogged && 
-         pfmtversMatchLow != NULL && pfmtversMatchHigh != NULL && pfmtversMatchLogHigh != NULL &&
+         pfmtversMatchLow != nullptr && pfmtversMatchHigh != nullptr && pfmtversMatchLogHigh != nullptr &&
          pfmtversMatchLogHigh->efv >= pfmtversMatchLow->efv &&
          pfmtversMatchLogHigh->efv < pfmtversMatchHigh->efv )
     {
         pfmtversMatchHigh = pfmtversMatchLogHigh;
     }
 
-    if ( pfmtversMatchHigh == NULL )
+    if ( pfmtversMatchHigh == nullptr )
     {
         //  We could not find any matching value to the DBFILEHDR's version!
 
@@ -465,7 +465,7 @@ JET_ENGINEFORMATVERSION EfvBeBestMapping( const JET_ENGINEFORMATVERSION efvParam
             efvParam = fLogged ? 21 : 31;  //  was = 10
         }
     }
-    else if ( pfmtversMatchLogHigh == NULL )
+    else if ( pfmtversMatchLogHigh == nullptr )
     {
         //  We could not find any matching value to the LGFILEHDR's version!
 

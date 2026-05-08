@@ -38,7 +38,7 @@ ERR ErrFromStrsafeHr ( HRESULT hr)
 LONG LOSStrLengthA( _In_ PCSTR const sz )
 {
     // According to Windows OACR, strlen cannot handle NULL.
-    if ( NULL == sz )
+    if ( nullptr == sz )
     {
         return 0;
     }
@@ -48,7 +48,7 @@ LONG LOSStrLengthA( _In_ PCSTR const sz )
 LONG LOSStrLengthW( _In_ PCWSTR const wsz )
 {
     // According to Windows OACR, wcslen cannot handle NULL.
-    if ( NULL == wsz )
+    if ( nullptr == wsz )
     {
         return 0;
     }
@@ -61,7 +61,7 @@ LONG LOSStrLengthUnalignedW( _In_ const UnalignedLittleEndian< WCHAR > * wsz )
     LONG                                    cchCurrent  = 0;
     const UnalignedLittleEndian< WCHAR > *  wszCurrent  = wsz;
 
-    if ( NULL == wsz )
+    if ( nullptr == wsz )
     {
         return 0;
     }
@@ -86,7 +86,7 @@ LONG LOSStrLengthMW( _In_ PCWSTR const wsz )
     LONG        cchCurrent  = 0;
     PCWSTR      wszCurrent  = wsz;
 
-    if ( NULL == wsz )
+    if ( nullptr == wsz )
     {
         return 0;
     }
@@ -113,7 +113,7 @@ LONG LOSStrCompareA( _In_ PCSTR const szStr1, _In_ PCSTR const szStr2, _In_ cons
         return 0;
     }
 
-    if ( ( NULL == szStr1 ) || ( NULL == szStr2 ) )
+    if ( ( nullptr == szStr1 ) || ( nullptr == szStr2 ) )
     {
         // strcmp, strlen, and strncmp don't play well with NULLs.
         // NULLs are treated as 0 length strings, and we're sure that
@@ -174,7 +174,7 @@ LONG LOSStrCompareW( _In_ PCWSTR const wszStr1, _In_ PCWSTR const wszStr2, _In_ 
         return 0;
     }
 
-    if ( ( NULL == wszStr1 ) || ( NULL == wszStr2 ) )
+    if ( ( nullptr == wszStr1 ) || ( nullptr == wszStr2 ) )
     {
         // wcscmp, wcslen, and wcsncmp don't play well with NULLs.
         // NULLs are treated as 0 length strings, and we're sure that
@@ -291,7 +291,7 @@ VOID OSStrCharFindA( _In_ PCSTR const szStr, const char ch, _Outptr_result_maybe
     }
     else
     {
-        *pszFound = NULL;
+        *pszFound = nullptr;
     }
 }
 VOID OSStrCharFindW( _In_ PCWSTR const wszStr, const wchar_t wch, _Outptr_result_maybenull_ PWSTR * const pwszFound )
@@ -303,11 +303,11 @@ VOID OSStrCharFindW( _In_ PCWSTR const wszStr, const wchar_t wch, _Outptr_result
         {
             wszFound++;
         }
-        *pwszFound = const_cast< wchar_t *const >( wch == *wszFound ? wszFound : NULL );
+        *pwszFound = const_cast< wchar_t *const >( wch == *wszFound ? wszFound : nullptr );
     }
     else
     {
-        *pwszFound = NULL;
+        *pwszFound = nullptr;
     }
 }
 
@@ -326,7 +326,7 @@ VOID OSStrCharFindReverseA( _In_ PCSTR const szStr, const char ch, _Outptr_resul
     }
     else
     {
-        *pszFound = NULL;
+        *pszFound = nullptr;
     }
 }
 VOID OSStrCharFindReverseW( _In_ PCWSTR const wszStr, const wchar_t wch, _Outptr_result_maybenull_ PWSTR * const pwszFound )
@@ -336,7 +336,7 @@ VOID OSStrCharFindReverseW( _In_ PCWSTR const wszStr, const wchar_t wch, _Outptr
 
     Assert( L'\0' != wch );
 
-    *pwszFound = NULL;
+    *pwszFound = nullptr;
 
     cch = LOSStrLengthW( wszStr );
     ich = cch;
@@ -356,7 +356,7 @@ VOID OSStrCharFindReverseW( _In_ PCWSTR const wszStr, const wchar_t wch, _Outptr
 
 BOOL FOSSTRTrailingPathDelimiterA( _In_ PCSTR const pszPath )
 {
-    const DWORD cchPath = ( NULL == pszPath ) ? 0 : strlen( pszPath );
+    const DWORD cchPath = ( nullptr == pszPath ) ? 0 : strlen( pszPath );
 
     if ( cchPath > 0 )
     {
@@ -366,7 +366,7 @@ BOOL FOSSTRTrailingPathDelimiterA( _In_ PCSTR const pszPath )
 }
 BOOL FOSSTRTrailingPathDelimiterW( _In_ PCWSTR const pwszPath )
 {
-    const DWORD cchPath = ( NULL == pwszPath ) ? 0 : wcslen( pwszPath );
+    const DWORD cchPath = ( nullptr == pwszPath ) ? 0 : wcslen( pwszPath );
 
     if ( cchPath > 0 )
     {
@@ -404,7 +404,7 @@ ERR ErrOSSTRAsciiToUnicode( _In_ PCSTR const    pszIn,
     Assert( ( pwszOut != NULL && cwchOut != 0 ) ||
             ( pwszOut == NULL && cwchOut == 0 ) );
 
-    if ( NULL != pcwchRequired )
+    if ( nullptr != pcwchRequired )
         *pcwchRequired = 0;
 
     //  try the conversion
@@ -415,7 +415,7 @@ ERR ErrOSSTRAsciiToUnicode( _In_ PCSTR const    pszIn,
                                                 -1,
                                                 pwszOut,
                                                 cwchOut );
-    if ( NULL != pcwchRequired )
+    if ( nullptr != pcwchRequired )
         *pcwchRequired = cwchActual;
 
     if ( 0 != cwchActual )
@@ -459,7 +459,7 @@ ERR ErrOSSTRAsciiToUnicode( _In_ PCSTR const    pszIn,
             // note we pay 2n (1n more than necessary) just to fail if the 
             // caller passes pcwchRequired and didn't consume pcwchRequired.
             *pcwchRequired = MultiByteToWideChar(   UlCodePageFromOsstrConversion( osstrConversion ), MB_ERR_INVALID_CHARS,
-                                                pszIn, -1, NULL, 0 );
+                                                pszIn, -1, nullptr, 0 );
         }
         return ErrERRCheck( JET_errBufferTooSmall );
     }
@@ -517,7 +517,7 @@ ERR ErrOSSTRUnicodeToAscii( _In_ PCWSTR const       pwszIn,
     Assert( ( pszOut != NULL && cchOut != 0 ) ||
             ( pszOut == NULL && cchOut == 0 ) );
 
-    if ( NULL != pcchRequired )
+    if ( nullptr != pcchRequired )
         *pcchRequired  = 0;
 
     //  try the conversion
@@ -529,9 +529,9 @@ ERR ErrOSSTRUnicodeToAscii( _In_ PCWSTR const       pwszIn,
                                                 -1,
                                                 pszOut,
                                                 cchOut,
-                                                NULL,
+                                                nullptr,
                                                 &fUsedDefaultChar );
-    if ( NULL != pcchRequired )
+    if ( nullptr != pcchRequired )
         *pcchRequired = cchActual;
 
     if ( 0 != cchActual )
@@ -585,8 +585,8 @@ ERR ErrOSSTRUnicodeToAscii( _In_ PCWSTR const       pwszIn,
             //
 #pragma warning(suppress: 38021)
             *pcchRequired = WideCharToMultiByte(    CP_ACP, 0,
-                                                pwszIn, -1, NULL, 0,
-                                                NULL, &fUsedDefaultChar );
+                                                pwszIn, -1, nullptr, 0,
+                                                nullptr, &fUsedDefaultChar );
         }
         return ErrERRCheck( JET_errBufferTooSmall );
     }
@@ -710,7 +710,7 @@ ERR ErrOSSTRAsciiToUnicodeM( _In_ PCSTR const szzMultiIn,
         else
         {
             cchMaxCurrent = 0;
-            wszNewCurrent = NULL;
+            wszNewCurrent = nullptr;
         }
         cchActualCurrent += cchCurrent;
     }
@@ -727,7 +727,7 @@ ERR ErrOSSTRAsciiToUnicodeM( _In_ PCSTR const szzMultiIn,
         else
         {
             cchMaxCurrent = 0;
-            wszNewCurrent = NULL;
+            wszNewCurrent = nullptr;
         }
     }
     cchActualCurrent++;
@@ -798,7 +798,7 @@ ERR ErrOSSTRUnicodeToAsciiM( _In_ PCWSTR const wszzMultiIn,
         else
         {
             cchMaxCurrent = 0;
-            szNewCurrent = NULL;
+            szNewCurrent = nullptr;
         }
         cchActualCurrent += cchCurrent;
     }
@@ -815,7 +815,7 @@ ERR ErrOSSTRUnicodeToAsciiM( _In_ PCWSTR const wszzMultiIn,
         else
         {
             cchMaxCurrent = 0;
-            szNewCurrent = NULL;
+            szNewCurrent = nullptr;
         }
     }
     cchActualCurrent++;

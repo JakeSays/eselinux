@@ -84,7 +84,7 @@ LONG LIODbReadIOTotalCEFLPv( LONG iInstance, VOID * pvBuf )
 
 LONG LIODbReadIOTotalTicksAttachedCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CmsecHRTFromDhrt( cIOTotalDhrts[iotypeRead][iofileDbAttached].Get( iInstance ) );
     }
@@ -92,7 +92,7 @@ LONG LIODbReadIOTotalTicksAttachedCEFLPv( LONG iInstance, VOID * pvBuf )
 }
 LONG LIODbReadIOTotalTicksRecoveryCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CmsecHRTFromDhrt( cIOTotalDhrts[iotypeRead][iofileDbRecovery].Get( iInstance ) );
     }
@@ -100,7 +100,7 @@ LONG LIODbReadIOTotalTicksRecoveryCEFLPv( LONG iInstance, VOID * pvBuf )
 }
 LONG LIODbReadIOTotalTicksTotalCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CmsecHRTFromDhrt( cIOTotalDhrts[iotypeRead][iofileDbTotal].Get( iInstance ) );
     }
@@ -108,7 +108,7 @@ LONG LIODbReadIOTotalTicksTotalCEFLPv( LONG iInstance, VOID * pvBuf )
 }
 LONG LIOLogReadIOTotalTicksCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CmsecHRTFromDhrt( cIOTotalDhrts[iotypeRead][iofileLog].Get( iInstance ) );
     }
@@ -116,7 +116,7 @@ LONG LIOLogReadIOTotalTicksCEFLPv( LONG iInstance, VOID * pvBuf )
 }
 LONG LIOSnapshotReadIOTotalTicksCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CmsecHRTFromDhrt( cIOTotalDhrts[iotypeRead][iofileRBS].Get( iInstance ) );
     }
@@ -124,7 +124,7 @@ LONG LIOSnapshotReadIOTotalTicksCEFLPv( LONG iInstance, VOID * pvBuf )
 }
 LONG LIOOtherReadIOTotalTicksCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CmsecHRTFromDhrt( cIOTotalDhrts[iotypeRead][iofileOther].Get( iInstance ) );
     }
@@ -132,7 +132,7 @@ LONG LIOOtherReadIOTotalTicksCEFLPv( LONG iInstance, VOID * pvBuf )
 }
 LONG LIODbReadIOTicksTotalCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CmsecHRTFromDhrt( cIOPerDBTotalDhrts[iotypeRead].Get( iInstance ) );
     }
@@ -360,7 +360,7 @@ LONG LIODbWriteIOTotalCEFLPv( LONG iInstance, VOID * pvBuf )
 
 LONG LIODbWriteIOTotalTicksAttachedCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CmsecHRTFromDhrt( cIOTotalDhrts[iotypeWrite][iofileDbAttached].Get( iInstance ) );
     }
@@ -368,7 +368,7 @@ LONG LIODbWriteIOTotalTicksAttachedCEFLPv( LONG iInstance, VOID * pvBuf )
 }
 LONG LIODbWriteIOTotalTicksRecoveryCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CmsecHRTFromDhrt( cIOTotalDhrts[iotypeWrite][iofileDbRecovery].Get( iInstance ) );
     }
@@ -376,7 +376,7 @@ LONG LIODbWriteIOTotalTicksRecoveryCEFLPv( LONG iInstance, VOID * pvBuf )
 }
 LONG LIODbWriteIOTotalTicksTotalCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CmsecHRTFromDhrt( cIOTotalDhrts[iotypeWrite][iofileDbTotal].Get( iInstance ) );
     }
@@ -384,7 +384,7 @@ LONG LIODbWriteIOTotalTicksTotalCEFLPv( LONG iInstance, VOID * pvBuf )
 }
 LONG LIOFmWriteIOTotalTicksTotalCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CmsecHRTFromDhrt( cIOTotalDhrts[iotypeWrite][iofileFlushMap].Get( iInstance ) );
     }
@@ -392,7 +392,7 @@ LONG LIOFmWriteIOTotalTicksTotalCEFLPv( LONG iInstance, VOID * pvBuf )
 }
 LONG LIOLogWriteIOTotalTicksCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CmsecHRTFromDhrt( cIOTotalDhrts[iotypeWrite][iofileLog].Get( iInstance ) );
     }
@@ -400,7 +400,7 @@ LONG LIOLogWriteIOTotalTicksCEFLPv( LONG iInstance, VOID * pvBuf )
 }
 LONG LIOSnapshotWriteIOTotalTicksCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CmsecHRTFromDhrt( cIOTotalDhrts[iotypeWrite][iofileRBS].Get( iInstance ) );
     }
@@ -408,7 +408,7 @@ LONG LIOSnapshotWriteIOTotalTicksCEFLPv( LONG iInstance, VOID * pvBuf )
 }
 LONG LIOOtherWriteIOTotalTicksCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CmsecHRTFromDhrt( cIOTotalDhrts[iotypeWrite][iofileOther].Get( iInstance ) );
     }
@@ -416,7 +416,7 @@ LONG LIOOtherWriteIOTotalTicksCEFLPv( LONG iInstance, VOID * pvBuf )
 }
 LONG LIODbWriteIOTicksTotalCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CmsecHRTFromDhrt( cIOPerDBTotalDhrts[iotypeWrite].Get( iInstance ) );
     }
@@ -598,7 +598,7 @@ LONG LIOFFBTotalCEFLPv( LONG iInstance, VOID * pvBuf )
 }
 LONG LIOFFBTotalTicksCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CmsecHRTFromDhrt( cFFBTotalDhrts.Get( iInstance ) );
     }
@@ -878,7 +878,7 @@ void IOTermFreePfapi( FMP * const pfmp )
     Assert( pfmp->Pfapi()->CioNonFlushed() == 0 || ( pfmp->Pfapi()->Fmf() & IFileAPI::fmfTemporary ) || FRFSFailureDetected( OSFileFlush ) );
 
     delete pfmp->Pfapi();
-    pfmp->SetPfapi( NULL );
+    pfmp->SetPfapi( nullptr );
 }
 
 void IOResetFMPFields( FMP * const pfmp, const LOG * const plog )
@@ -894,12 +894,12 @@ void IOResetFMPFields( FMP * const pfmp, const LOG * const plog )
     if ( pfmp->WszDatabaseName() )
     {
         OSMemoryHeapFree( pfmp->WszDatabaseName() );
-        pfmp->SetWszDatabaseName( NULL );
+        pfmp->SetWszDatabaseName( nullptr );
     }
 
     pfmp->Pinst()->m_mpdbidifmp[ pfmp->Dbid() ] = g_ifmpMax;
     pfmp->SetDbid( dbidMax );
-    pfmp->SetPinst( NULL );
+    pfmp->SetPinst( nullptr );
     pfmp->SetCPin( 0 );     // User may term without close the db
 }
 
@@ -1036,7 +1036,7 @@ ERR ErrIOTermFMP( FMP *pfmp, LGPOS lgposShutDownMarkRec, BOOL fNormal )
         IOTermFreePfapi( pfmp );
     }
 
-    if ( pfmp->PFlushMap() != NULL )
+    if ( pfmp->PFlushMap() != nullptr )
     {
         pfmp->PFlushMap()->TermFlushMap();
     }
@@ -1071,7 +1071,7 @@ ERR ErrIOTermFMP( FMP *pfmp, LGPOS lgposShutDownMarkRec, BOOL fNormal )
     if ( pfmp->Ppatchhdr() )
     {
         OSMemoryPageFree( pfmp->Ppatchhdr() );
-        pfmp->SetPpatchhdr( NULL );
+        pfmp->SetPpatchhdr( nullptr );
     }
 
     if ( !pfmp->DataHeaderSignature().FNull() )
@@ -1198,7 +1198,7 @@ LOCAL ERR ErrIODispatchAsyncExtension( const IFMP ifmp )
     INST *                  pinst           = PinstFromIfmp( ifmp );
     DBEXTENDTASK * const    ptaskDbExtend   = new DBEXTENDTASK( ifmp );
 
-    if( NULL == ptaskDbExtend )
+    if( nullptr == ptaskDbExtend )
     {
         //  release semaphore and err out
         //
@@ -1234,7 +1234,7 @@ ERR ErrIOResizeUpdateDbHdrCount( const IFMP ifmp, const BOOL fExtend )
 
     Assert( pfmp->Pdbfilehdr() );
 
-    if ( NULL != pfmp->Pdbfilehdr() )   // for insurance
+    if ( nullptr != pfmp->Pdbfilehdr() )   // for insurance
     {
         if ( fExtend )
         {
@@ -1265,7 +1265,7 @@ ERR ErrIOResizeUpdateDbHdrLgposLast( const IFMP ifmp, const LGPOS& lgposLastResi
     Assert( CmpLgpos( lgposLastResize, lgposMin ) != 0 );
     Assert( CmpLgpos( lgposLastResize, lgposMax ) != 0 );
 
-    if ( NULL != pfmp->Pdbfilehdr() )   // for insurance
+    if ( nullptr != pfmp->Pdbfilehdr() )   // for insurance
     {
         {
         PdbfilehdrReadOnly pdbfilehdr = pfmp->Pdbfilehdr();
@@ -1581,7 +1581,7 @@ ERR ErrIOArchiveShrunkPages(
     const CPG cpgArchive )
 {
     ERR err = JET_errSuccess;
-    IFileAPI* pfapi = NULL;
+    IFileAPI* pfapi = nullptr;
 
     Assert( pgnoFirst != pgnoNull );
     Assert( cpgArchive >= 0 );
@@ -1589,7 +1589,7 @@ ERR ErrIOArchiveShrunkPages(
 
     const ULONG cbIoSize = UlFunctionalMin( (ULONG)UlParam( JET_paramMaxCoalesceReadSize ), (ULONG)UlParam( JET_paramMaxCoalesceWriteSize ) );
     const CPG cpgIoSize = LFunctionalMax( g_rgfmp[ ifmp ].CpgOfCb( cbIoSize ), 1 );
-    BYTE* const pv = (BYTE*)PvOSMemoryPageAlloc( (DWORD)g_rgfmp[ ifmp ].CbOfCpg( cpgIoSize ), NULL );
+    BYTE* const pv = (BYTE*)PvOSMemoryPageAlloc( (DWORD)g_rgfmp[ ifmp ].CbOfCpg( cpgIoSize ), nullptr );
     Alloc( pv );
 
     FMP* const pfmp = g_rgfmp + ifmp;
@@ -1648,17 +1648,17 @@ ERR ErrIOArchiveShrunkPages(
         // Flush buffers and close destination file.
         Call( ErrUtilFlushFileBuffers( pfapi, iofrUtility ) );
         delete pfapi;
-        pfapi = NULL;
+        pfapi = nullptr;
     }
 
 HandleError:
     OSMemoryPageFree( pv );
 
-    if ( pfapi != NULL )
+    if ( pfapi != nullptr )
     {
         pfapi->SetNoFlushNeeded();
         delete pfapi;
-        pfapi = NULL;
+        pfapi = nullptr;
     }
 
     return err;
@@ -1671,7 +1671,7 @@ ERR ErrIODeleteShrinkArchiveFiles( const IFMP ifmp )
     FMP* const pfmp = g_rgfmp + ifmp;
     INST* const pinst = pfmp->Pinst();
     IFileSystemAPI* const pfsapi = pinst->m_pfsapi;
-    IFileFindAPI* pffapi = NULL;
+    IFileFindAPI* pffapi = nullptr;
     WCHAR wszJsaWildcardPath[ IFileSystemAPI::cchPathMax ] = { L'\0' };
 
     Call( ErrIOIGetJsaWildcardPathFromDbPath( wszJsaWildcardPath, pfmp ) );
@@ -1868,7 +1868,7 @@ ERR ErrIOUpdateCheckpoints( INST * pinst )
     
     FMP::EnterFMPPoolAsReader();
     
-    FMP *   pfmpCurr = NULL;
+    FMP *   pfmpCurr = nullptr;
     
     if ( pinst && ( pinst->m_fJetInitialized || ( pinst->m_plog && pinst->m_plog->FRecovering() ) ) )
     {
@@ -1888,7 +1888,7 @@ ERR ErrIOUpdateCheckpoints( INST * pinst )
             pfmpCurr = &g_rgfmp[ifmp];
             pfmpCurr->RwlDetaching().EnterAsReader();
     
-            if ( pfmpCurr->FLogOn() && pfmpCurr->FAttached() && pfmpCurr->Pdbfilehdr() != NULL )
+            if ( pfmpCurr->FLogOn() && pfmpCurr->FAttached() && pfmpCurr->Pdbfilehdr() != nullptr )
             {
                 const ERR errT = ErrBFConsumeSettings( bfcsCheckpoint, ifmp );
                 if ( err >= JET_errSuccess )
@@ -1900,7 +1900,7 @@ ERR ErrIOUpdateCheckpoints( INST * pinst )
             }
     
             pfmpCurr->RwlDetaching().LeaveAsReader();
-            pfmpCurr = NULL;
+            pfmpCurr = nullptr;
         }
     }
     FMP::LeaveFMPPoolAsReader();
@@ -2059,7 +2059,7 @@ ERR ErrIOOpenDatabase(
 
 HandleError:
     Assert( err < JET_errSuccess );
-    pfmp->SetPfapi( NULL );
+    pfmp->SetPfapi( nullptr );
     delete pfapi;
 
     return err;
@@ -2090,7 +2090,7 @@ VOID IOCloseDatabase( IFMP ifmp )
     Assert( pfmp->Pfapi()->CioNonFlushed() == 0 || FRFSFailureDetected( OSFileFlush ) );
 
     delete pfmp->Pfapi();
-    pfmp->SetPfapi( NULL );
+    pfmp->SetPfapi( nullptr );
 
     IOResetFmpIoLatencyStats( pfmp->Ifmp() );
 }
@@ -2141,15 +2141,15 @@ ERR ISAMAPI ErrIsamGetInstanceInfo(
 {
     Assert( pcInstanceInfo && paInstanceInfo);
 
-    if ( NULL == pcInstanceInfo || NULL == paInstanceInfo )
+    if ( nullptr == pcInstanceInfo || nullptr == paInstanceInfo )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
 
     // protected by g_critInst
-    CHAR*       pMemoryBuffer       = NULL;
-    CHAR*       pCurrentPosArrays   = NULL;
-    WCHAR*      pCurrentPosNames    = NULL;
+    CHAR*       pMemoryBuffer       = nullptr;
+    CHAR*       pCurrentPosArrays   = nullptr;
+    WCHAR*      pCurrentPosNames    = nullptr;
     SIZE_T      cbCurrentPosNames   = 0;
     SIZE_T      cbMemoryBuffer      = 0;
 
@@ -2191,7 +2191,7 @@ ERR ISAMAPI ErrIsamGetInstanceInfo(
     if ( 0 == g_cpinstInit )
     {
         *pcInstanceInfo = 0;
-        *paInstanceInfo = NULL;
+        *paInstanceInfo = nullptr;
         goto HandleError;
     }
 
@@ -2209,7 +2209,7 @@ ERR ISAMAPI ErrIsamGetInstanceInfo(
         if ( pSnapshotSession && !pSnapshotSession->FFreezeInstance( pinst ) )
             continue;
 
-        if ( NULL != pinst->m_wszInstanceName )
+        if ( nullptr != pinst->m_wszInstanceName )
         {
             cbNamesSize += sizeof( WCHAR ) * ( LOSStrLengthW( pinst->m_wszInstanceName ) + 1 );
         }
@@ -2306,7 +2306,7 @@ ERR ISAMAPI ErrIsamGetInstanceInfo(
         //  capture the instance name
         pInstInfo->hInstanceId = (JET_INSTANCE) pinst;
         Assert( NULL == pInstInfo->szInstanceName );
-        if ( NULL != pinst->m_wszInstanceName )
+        if ( nullptr != pinst->m_wszInstanceName )
         {
             OSStrCbCopyW( pCurrentPosNames, cbCurrentPosNames, pinst->m_wszInstanceName );
             pInstInfo->szInstanceName = pCurrentPosNames;
@@ -2353,7 +2353,7 @@ ERR ISAMAPI ErrIsamGetInstanceInfo(
             pCurrentPosArrays += pInstInfo->cDatabases * sizeof(WCHAR *);
             Assert( pMemoryBuffer + cbMemoryBuffer >= pCurrentPosArrays );
 
-            pInstInfo->szDatabaseSLVFileName_Obsolete = NULL;
+            pInstInfo->szDatabaseSLVFileName_Obsolete = nullptr;
             pCurrentPosArrays += pInstInfo->cDatabases * sizeof(WCHAR *);
             Assert( pMemoryBuffer + cbMemoryBuffer >= pCurrentPosArrays );
         }
@@ -2386,7 +2386,7 @@ ERR ISAMAPI ErrIsamGetInstanceInfo(
             Assert( pMemoryBuffer + cbMemoryBuffer >= (CHAR*)pCurrentPosNames );
 
             //  currently unused
-            pInstInfo->szDatabaseDisplayName[cDatabasesCurrInst] = NULL;
+            pInstInfo->szDatabaseDisplayName[cDatabasesCurrInst] = nullptr;
 
             cDatabasesCurrInst++;
         }
@@ -2412,9 +2412,9 @@ HandleError:
     if ( err < JET_errSuccess )
     {
         *pcInstanceInfo = 0;
-        *paInstanceInfo = NULL;
+        *paInstanceInfo = nullptr;
 
-        if ( NULL != pMemoryBuffer )
+        if ( nullptr != pMemoryBuffer )
         {
             OSMemoryHeapFree( pMemoryBuffer );
         }
@@ -2547,7 +2547,7 @@ void SNAPTerm()
 ERR CESESnapshotSession::ErrAllocSession( CESESnapshotSession ** ppSession )
 {
     ERR                     err     = JET_errSuccess;
-    CESESnapshotSession *   pNew    = NULL;
+    CESESnapshotSession *   pNew    = nullptr;
 
     Assert( ppSession );
     Assert( CESESnapshotSession::g_critOSSnapshot.FOwner() );
@@ -2584,7 +2584,7 @@ HandleError:
 ERR CESESnapshotSession::ErrGetSessionByID( JET_OSSNAPID snapId, CESESnapshotSession ** ppSession )
 {
     ERR                     err         = JET_errSuccess;
-    CESESnapshotSession *   pCurrent    = NULL;
+    CESESnapshotSession *   pCurrent    = nullptr;
 
     Assert( ppSession );
     Assert( CESESnapshotSession::g_critOSSnapshot.FOwner() );
@@ -2614,7 +2614,7 @@ HandleError:
 
 ERR CESESnapshotSession::RemoveSession( JET_OSSNAPID snapId )
 {
-    CESESnapshotSession *   pSession    = NULL;
+    CESESnapshotSession *   pSession    = nullptr;
     ERR                     err         = JET_errSuccess;
 
     Assert( CESESnapshotSession::g_critOSSnapshot.FOwner() );
@@ -2653,7 +2653,7 @@ void CESESnapshotSession::SetFreezeInstances()
     for ( size_t ipinst = 0; ipinst < g_cpinstMax; ipinst++ )
     {
         if ( pinstNil != g_rgpinst[ ipinst ] &&
-            ( NULL == g_rgpinst[ ipinst ]->m_pOSSnapshotSession ) &&
+            ( nullptr == g_rgpinst[ ipinst ]->m_pOSSnapshotSession ) &&
             m_fFreezeAllInstances &&
             g_rgpinst[ ipinst ]->m_fJetInitialized )
         {
@@ -2666,7 +2666,7 @@ void CESESnapshotSession::SetFreezeInstances()
                         g_rgpinst[ ipinst ]->m_plog,
                         DBFILEHDR::backupOSSnapshot,
                         this->IsIncrementalSnapshot(),
-                        NULL );
+                        nullptr );
         }
     }
     INST::LeaveCritInst();
@@ -2705,7 +2705,7 @@ ERR CESESnapshotSession::ErrAddInstanceToFreeze( const INT ipinst )
                     g_rgpinst[ ipinst ]->m_plog,
                     DBFILEHDR::backupOSSnapshot,
                     this->IsIncrementalSnapshot(),
-                    NULL );
+                    nullptr );
     }
 
     return JET_errSuccess;
@@ -2735,7 +2735,7 @@ INST * CESESnapshotSession::GetNextNotNullInstance()
         }
         m_ipinstCurrent++;
     }
-    return NULL;
+    return nullptr;
 }
 
 BOOL CESESnapshotSession::FFreezeInstance( const INST * pinst ) const
@@ -2755,13 +2755,13 @@ ERR CESESnapshotSession::ErrFreezeInstance()
 
     // all set, now stop log flushing
     // then stop checkpoint (including db headers update)
-    for ( pinstLGFlush = GetFirstInstance(); NULL != pinstLGFlush; pinstLGFlush = GetNextInstance() )
+    for ( pinstLGFlush = GetFirstInstance(); nullptr != pinstLGFlush; pinstLGFlush = GetNextInstance() )
     {
         Call( pinstLGFlush->m_pbackup->ErrBKOSSnapshotStopLogging( IsIncrementalSnapshot() ) );
     }
     Assert( NULL == pinstLGFlush );
 
-    for ( pinstCheckpoint = GetFirstInstance(); NULL != pinstCheckpoint; pinstCheckpoint = GetNextInstance() )
+    for ( pinstCheckpoint = GetFirstInstance(); nullptr != pinstCheckpoint; pinstCheckpoint = GetNextInstance() )
     {
         // UNDONE: consider not entering m_critCheckpoint and
         // keeping it during the snapshot (this will prevent
@@ -2784,7 +2784,7 @@ ERR CESESnapshotSession::ErrFreezeInstance()
     // has also the advantage of allowing cleaner interaction
     // with a potential JetTerm with "stop backup"
     //
-    for ( pinstAPI = GetFirstInstance(); NULL != pinstAPI; pinstAPI = GetNextInstance() )
+    for ( pinstAPI = GetFirstInstance(); nullptr != pinstAPI; pinstAPI = GetNextInstance() )
     {
         pinstAPI->m_pbackup->BKLockBackup();
     }
@@ -2804,7 +2804,7 @@ HandleError:
 
 void CESESnapshotSession::ThawInstance( const INST * pinstLastAPI, const INST * pinstLastCheckpoint, const INST * pinstLastLGFlush )
 {
-    INST *  pinst           = NULL;
+    INST *  pinst           = nullptr;
 
     //  UNDONE:  this next enter is in fact out of ranking order.  We currently
     //  own LOG::m_critBackupInProgress, LOG::m_critCheckpoint and LOG::m_critLGFlush,
@@ -2815,7 +2815,7 @@ void CESESnapshotSession::ThawInstance( const INST * pinstLastAPI, const INST * 
 
     if ( pinstLastAPI != g_pinstInvalid )
     {
-        for ( pinst = GetFirstInstance(); NULL != pinst && pinstLastAPI != pinst; pinst = GetNextInstance() )
+        for ( pinst = GetFirstInstance(); nullptr != pinst && pinstLastAPI != pinst; pinst = GetNextInstance() )
         {
             Assert ( pinst->m_plog );
             pinst->m_pbackup->BKUnlockBackup();
@@ -2824,7 +2824,7 @@ void CESESnapshotSession::ThawInstance( const INST * pinstLastAPI, const INST * 
 
     if ( pinstLastCheckpoint != g_pinstInvalid )
     {
-        for ( pinst = GetFirstInstance(); NULL != pinst && pinstLastCheckpoint != pinst; pinst = GetNextInstance() )
+        for ( pinst = GetFirstInstance(); nullptr != pinst && pinstLastCheckpoint != pinst; pinst = GetNextInstance() )
         {
             Assert ( pinst->m_plog );
             pinst->m_plog->UnlockCheckpoint();
@@ -2833,7 +2833,7 @@ void CESESnapshotSession::ThawInstance( const INST * pinstLastAPI, const INST * 
 
     if ( pinstLastLGFlush != g_pinstInvalid )
     {
-        for ( pinst = GetFirstInstance(); NULL != pinst && pinstLastLGFlush != pinst; pinst = GetNextInstance() )
+        for ( pinst = GetFirstInstance(); nullptr != pinst && pinstLastLGFlush != pinst; pinst = GetNextInstance() )
         {
             Assert ( pinst->m_plog );
             pinst->m_pbackup->BKOSSnapshotResumeLogging();
@@ -2849,7 +2849,7 @@ extern BOOL g_fSystemInit;
 ERR CESESnapshotSession::SetBackupInProgress()
 {
     ERR     err     = JET_errSuccess;
-    INST *  pinst   = NULL;
+    INST *  pinst   = nullptr;
 
 
     const INT cbFillString = 20;
@@ -2871,7 +2871,7 @@ ERR CESESnapshotSession::SetBackupInProgress()
         LOG * pLog = pinst->m_plog;
         BACKUP_CONTEXT * pbackup = pinst->m_pbackup;
 
-        UtilReportEvent( eventInformation, OS_SNAPSHOT_BACKUP, OS_SNAPSHOT_FREEZE_START_ID, 1, rgszT, 0, NULL, pinst );
+        UtilReportEvent( eventInformation, OS_SNAPSHOT_BACKUP, OS_SNAPSHOT_FREEZE_START_ID, 1, rgszT, 0, nullptr, pinst );
 
         pLog->LGLockWrite(); // protect the recovery flag
         pbackup->BKLockBackup();
@@ -2886,7 +2886,7 @@ ERR CESESnapshotSession::SetBackupInProgress()
             //  so we must do it here
             //
             Assert( FFreezeInstance( pinst ) );
-            pinst->m_pOSSnapshotSession = NULL;
+            pinst->m_pOSSnapshotSession = nullptr;
 
             Error( ErrERRCheck( JET_errOSSnapshotNotAllowed ) );
         }
@@ -2918,7 +2918,7 @@ HandleError:
 
 void CESESnapshotSession::ResetBackupInProgress(const INST * pinstLastBackupInProgress )
 {
-    INST *  pinst   = NULL;
+    INST *  pinst   = nullptr;
 
     INST::EnterCritInst();
 
@@ -2961,10 +2961,10 @@ void CESESnapshotSession::ResetBackupInProgress(const INST * pinstLastBackupInPr
                     DBFILEHDR::backupOSSnapshot,
                     this->IsIncrementalSnapshot(),
                     BoolParam( pinst, JET_paramAggressiveLogRollover ) ? fLGCreateNewGen : 0,
-                    NULL );
+                    nullptr );
 
         Assert( FFreezeInstance( pinst ) );
-        pinst->m_pOSSnapshotSession = NULL;
+        pinst->m_pOSSnapshotSession = nullptr;
     }
 
     INST::LeaveCritInst();
@@ -3159,7 +3159,7 @@ HandleFreezeError:
 
     if ( JET_errSuccess > err )
     {
-        ResetBackupInProgress( NULL );
+        ResetBackupInProgress( nullptr );
     }
 
     return err;
@@ -3176,7 +3176,7 @@ void CESESnapshotSession::Thaw( const BOOL fTimeOut )
     // will allow database stamping with the new backup time
     if ( fTimeOut )
     {
-        ResetBackupInProgress( NULL );
+        ResetBackupInProgress( nullptr );
     }
 }
 
@@ -3464,7 +3464,7 @@ void CESESnapshotSession::SwitchTo( const SNAPSHOT_STATE stateNew )
 ERR ISAMAPI ErrIsamOSSnapshotPrepare( JET_OSSNAPID * psnapId, const JET_GRBIT grbit )
 {
     ERR                     err             = JET_errSuccess;
-    CESESnapshotSession *   pSession        = NULL;
+    CESESnapshotSession *   pSession        = nullptr;
     BOOL                    fCritSection    = fFalse;
 
     // If you might want to truncate logs and stamp the database headers with the backup 
@@ -3556,7 +3556,7 @@ HandleError:
 }
 #endif // OS_SNAPSHOT_TRACE
 
-    if ( err < JET_errSuccess && pSession != NULL )
+    if ( err < JET_errSuccess && pSession != nullptr )
     {
         Assert( fCritSection );
         CESESnapshotSession::RemoveSession( pSession );
@@ -3573,7 +3573,7 @@ HandleError:
 
 ERR ISAMAPI ErrIsamOSSnapshotPrepareInstance( JET_OSSNAPID snapId, INST * pinst, const JET_GRBIT    grbit )
 {
-    CESESnapshotSession *   pSession    = NULL;
+    CESESnapshotSession *   pSession    = nullptr;
     ERR                     err         = JET_errSuccess;
     
     if ( NO_GRBIT != grbit )
@@ -3600,7 +3600,7 @@ ERR ISAMAPI ErrIsamOSSnapshotPrepareInstance( JET_OSSNAPID snapId, INST * pinst,
     Assert( (size_t)ipinst < g_cpinstMax );
     Assert( pinstNil != g_rgpinst[ ipinst ] );
     Assert( g_rgpinst[ ipinst ]->m_fJetInitialized );
-    if ( NULL != g_rgpinst[ ipinst ]->m_pOSSnapshotSession
+    if ( nullptr != g_rgpinst[ ipinst ]->m_pOSSnapshotSession
         || g_rgpinst[ ipinst ]->m_pbackup->FBKBackupInProgress()
         || !g_rgpinst[ ipinst ]->m_fBackupAllowed )
     {
@@ -3626,7 +3626,7 @@ ERR ISAMAPI ErrIsamOSSnapshotFreeze( const JET_OSSNAPID             snapId,
                                             JET_INSTANCE_INFO_W **  paInstanceInfo,
                                             const JET_GRBIT         grbit )
 {
-    CESESnapshotSession *   pSession                = NULL;
+    CESESnapshotSession *   pSession                = nullptr;
     ERR                     err                     = JET_errSuccess;
 
     if ( NO_GRBIT != grbit )
@@ -3634,13 +3634,13 @@ ERR ISAMAPI ErrIsamOSSnapshotFreeze( const JET_OSSNAPID             snapId,
         return ErrERRCheck( JET_errInvalidGrbit );
     }
 
-    if ( NULL == pcInstanceInfo || NULL == paInstanceInfo )
+    if ( nullptr == pcInstanceInfo || nullptr == paInstanceInfo )
     {
         CallR ( ErrERRCheck(JET_errInvalidParameter ) );
     }
 
     *pcInstanceInfo = 0;
-    *paInstanceInfo = NULL;
+    *paInstanceInfo = nullptr;
 
     CESESnapshotSession::SnapshotCritEnter();
 
@@ -3690,7 +3690,7 @@ HandleError:
 
 ERR ISAMAPI ErrIsamOSSnapshotThaw(  const JET_OSSNAPID snapId, const    JET_GRBIT grbit )
 {
-    CESESnapshotSession *   pSession    = NULL;
+    CESESnapshotSession *   pSession    = nullptr;
     ERR                     err         = JET_errSuccess;
     BOOL                    fInSnapCrit  = fFalse;
 
@@ -3855,12 +3855,12 @@ void CESESnapshotSession::SaveSnapshotInfo( const JET_GRBIT grbit )
         INST::LeaveCritInst();
     }
 
-    ResetBackupInProgress( NULL );
+    ResetBackupInProgress( nullptr );
 }
 
 ERR ISAMAPI ErrIsamOSSnapshotTruncateLog(   const JET_OSSNAPID snapId, INST * pinst, const  JET_GRBIT grbit )
 {
-    CESESnapshotSession *   pSession    = NULL;
+    CESESnapshotSession *   pSession    = nullptr;
     ERR                     err         = JET_errSuccess;
 
     if( grbit & ~JET_bitAllDatabasesSnapshot )
@@ -3920,7 +3920,7 @@ ERR ISAMAPI ErrIsamOSSnapshotGetFreezeInfo( const JET_OSSNAPID      snapId,
                                             JET_INSTANCE_INFO_W **  paInstanceInfo,
                                             const JET_GRBIT         grbit )
 {
-    CESESnapshotSession *   pSession                = NULL;
+    CESESnapshotSession *   pSession                = nullptr;
     ERR                     err                     = JET_errSuccess;
     BOOL                    fCritInst               = fFalse;
 
@@ -3928,13 +3928,13 @@ ERR ISAMAPI ErrIsamOSSnapshotGetFreezeInfo( const JET_OSSNAPID      snapId,
     {
         return ErrERRCheck( JET_errInvalidGrbit );
     }
-    else if ( NULL == pcInstanceInfo || NULL == paInstanceInfo )
+    else if ( nullptr == pcInstanceInfo || nullptr == paInstanceInfo )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
 
     *pcInstanceInfo = 0;
-    *paInstanceInfo = NULL;
+    *paInstanceInfo = nullptr;
 
     CESESnapshotSession::SnapshotCritEnter();
 
@@ -3999,7 +3999,7 @@ HandleError:
 
 ERR ISAMAPI ErrIsamOSSnapshotEnd(   const JET_OSSNAPID snapId, const    JET_GRBIT grbit )
 {
-    CESESnapshotSession *   pSession    = NULL;
+    CESESnapshotSession *   pSession    = nullptr;
     ERR                     err         = JET_errSuccess;
 
     if( grbit & ~JET_bitAbortSnapshot )
@@ -4038,7 +4038,7 @@ ERR ISAMAPI ErrIsamOSSnapshotEnd(   const JET_OSSNAPID snapId, const    JET_GRBI
     {
         case CESESnapshotSession::statePrepare:
             // we just prepared so we can get out w/o problems
-            pSession->ResetBackupInProgress( NULL );
+            pSession->ResetBackupInProgress( nullptr );
             break;
             
         case CESESnapshotSession::stateEnd:
@@ -4105,7 +4105,7 @@ ERR ISAMAPI ErrIsamOSSnapshotEnd(   const JET_OSSNAPID snapId, const    JET_GRBI
     Assert ( JET_errSuccess == err );
 
     CESESnapshotSession::RemoveSession( pSession );
-    pSession = NULL;
+    pSession = nullptr;
 
 HandleError:
     CESESnapshotSession::SnapshotCritLeave();
@@ -4189,7 +4189,7 @@ ERR FMP::ErrDBReadPages(
         OnDebug( AssertRangeLockConsistency( Ifmp(), pgnoStart, pgnoEnd ) );
 
 #ifdef ENABLE_LOST_FLUSH_INSTRUMENTATION
-        BYTE* pvPageFirstCopy = NULL;
+        BYTE* pvPageFirstCopy = nullptr;
 
         // If we got an unexpected lost flush error, loop for a while to see if the page fixes itself.
         if ( ( err == JET_errReadLostFlushVerifyFailure ) && !FNegTest( fCorruptingWithLostFlush ) )
@@ -4334,7 +4334,7 @@ ErrIsamGetDatabasePages(
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
     
-    if ( cb != 0 && pv == NULL )
+    if ( cb != 0 && pv == nullptr )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
@@ -4343,7 +4343,7 @@ ErrIsamGetDatabasePages(
         Error( ErrERRCheck( JET_errBufferTooSmall ) );
     }
 
-    if ( pcbActual == NULL )
+    if ( pcbActual == nullptr )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
@@ -4553,7 +4553,7 @@ ERR ErrBeginDatabaseIncReseedTracing_( _In_ IFileSystemAPI * pfsapi, _In_ JET_PC
     WCHAR wszIrsRawFile[ IFileSystemAPI::cchPathMax ]   = { 0 };
     WCHAR wszIrsRawBackupFile[ IFileSystemAPI::cchPathMax ] = { 0 };
 
-    IFileFindAPI * pffapi = NULL;
+    IFileFindAPI * pffapi = nullptr;
 
     //  initialize to NULL tracer, in case we fail ...
 
@@ -4684,23 +4684,23 @@ VOID TraceFuncComplete( CPRINTF * const pcprintf, const CHAR * const szFunction,
 
 VOID EndDatabaseIncReseedTracing( _Out_ CPRINTF ** ppcprintf )
 {
-    if ( *ppcprintf == NULL ||
+    if ( *ppcprintf == nullptr ||
             CPRINTFNULL::PcprintfInstance() == *ppcprintf )
     {
-        *ppcprintf = NULL;
+        *ppcprintf = nullptr;
         return;
     }
 
     (**ppcprintf)( "Closing incremental reseed tracing file.\r\n" );
 
     delete *ppcprintf;
-    *ppcprintf = NULL;
+    *ppcprintf = nullptr;
 }
 
 BOOL FIRSFindIrsContext( _In_ const INST * const pinst, const CIrsOpContext * const pirs )
 {
     Assert( pirs );
-    if ( pirs == NULL ) // just in case
+    if ( pirs == nullptr ) // just in case
     {
         return fFalse;
     }
@@ -4760,8 +4760,8 @@ ERR CIrsOpContext::ErrCheckAttachedIrsContext( const INST * const pinst, PCWSTR 
     //  
     //  Double Check DBHFILEHDR matches (not strictly necessary)
     //
-    DBFILEHDR * pdbfilehdrCheck = NULL;
-    Alloc( pdbfilehdrCheck = (DBFILEHDR*)PvOSMemoryPageAlloc( g_cbPage, NULL ) );
+    DBFILEHDR * pdbfilehdrCheck = nullptr;
+    Alloc( pdbfilehdrCheck = (DBFILEHDR*)PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
     err = ErrUtilReadShadowedHeader(    pinst,
                                         pinst->m_pfsapi,
                                         m_pfapiDb,
@@ -4788,9 +4788,9 @@ ERR CIrsOpContext::ErrCheckAttachedIrsContext( const INST * const pinst, PCWSTR 
     //  Check all expected handles are open
     //
     // Note: You can't check Pfm(), because you may have loaded a DB without a .jfm file.
-    if ( PcprintfTrace() == NULL ||
-            PfapiDb() == NULL ||
-            Pdbfilehdr() == NULL )
+    if ( PcprintfTrace() == nullptr ||
+            PfapiDb() == nullptr ||
+            Pdbfilehdr() == nullptr )
     {
         (*PcprintfTrace())( "Missing IRS required handle: %p %p %p %p\r\n",
             PcprintfTrace(), PfapiDb(), Pfm(), Pdbfilehdr() );
@@ -4874,18 +4874,18 @@ VOID CIrsOpContext::CloseIrsContext( _In_ const INST * const pinst, _In_ PCWSTR 
                     _countof(rgsz),
                     rgsz,
                     0,
-                    NULL,
+                    nullptr,
                     pinst,
                     JET_EventLoggingLevelLow );
         }
     }
 
     delete m_pfm;
-    m_pfm = NULL;
+    m_pfm = nullptr;
     OSMemoryPageFree( m_pdbfilehdr );
-    m_pdbfilehdr = NULL;
+    m_pdbfilehdr = nullptr;
     delete m_pfapiDb;
-    m_pfapiDb = NULL;
+    m_pfapiDb = nullptr;
     EndDatabaseIncReseedTracing( &m_pcprintfIncReSeedTrace );
     Assert( m_pcprintfIncReSeedTrace == NULL );
 }
@@ -4893,11 +4893,11 @@ VOID CIrsOpContext::CloseIrsContext( _In_ const INST * const pinst, _In_ PCWSTR 
 
 ERR ErrIRSGetAttachedIrsContext( _In_ const INST * const pinst, _In_ PCWSTR wszOriginalDatabasePath, _Out_ CIrsOpContext ** ppirs )
 {
-    CIrsOpContext * pirsFound = NULL;
+    CIrsOpContext * pirsFound = nullptr;
 
     Assert( ppirs );
     
-    if ( pinst->m_rgpirs == NULL )
+    if ( pinst->m_rgpirs == nullptr )
     {
         AssertSz( FNegTest( fInvalidAPIUsage ), "The client has called one of the later IRS funcs (Patch or End) with a pinst that has not had Begin called yet.  This is invalid, IRS context is not setup." );
         return ErrERRCheck( JET_errDatabaseInvalidIncrementalReseed );
@@ -4924,7 +4924,7 @@ ERR ErrIRSGetAttachedIrsContext( _In_ const INST * const pinst, _In_ PCWSTR wszO
         }
     }
 
-    if ( pirsFound == NULL )
+    if ( pirsFound == nullptr )
     {
         //  No IRS tracing context to complain on either! :)
         AssertSz( FNegTest( fInvalidAPIUsage ), "The client has called one of the later IRS funcs (Patch or End) with a pinst that has not had Begin called yet (or they provided a different DB name).  This is invalid, IRS context is not setup." );
@@ -4945,12 +4945,12 @@ ERR ErrIRSGetAttachedIrsContext( _In_ const INST * const pinst, _In_ PCWSTR wszO
 ERR ErrIRSAttachDatabaseForIrsV2( _Inout_ INST * const pinst, _In_ PCWSTR wszDatabase )
 {
     ERR                         err = JET_errSuccess;
-    CPRINTF *                   pcprintfIncReSeedTrace = NULL;
-    IFileAPI*                   pfapiDb         = NULL;
-    DBFILEHDR*                  pdbfilehdr      = NULL;
-    CFlushMapForUnattachedDb*   pfm             = NULL;
+    CPRINTF *                   pcprintfIncReSeedTrace = nullptr;
+    IFileAPI*                   pfapiDb         = nullptr;
+    DBFILEHDR*                  pdbfilehdr      = nullptr;
+    CFlushMapForUnattachedDb*   pfm             = nullptr;
     ULONG                       ipirsAvailable  = ulMax;
-    CIrsOpContext *             pirsCheck       = NULL;
+    CIrsOpContext *             pirsCheck       = nullptr;
 
     //  start tracing (before anything else)
     //
@@ -4974,7 +4974,7 @@ ERR ErrIRSAttachDatabaseForIrsV2( _Inout_ INST * const pinst, _In_ PCWSTR wszDat
     Call( pinst->m_pfsapi->ErrFileOpen( wszDatabase, IFileAPI::fmfNone, &pfapiDb ) );
 
     //  get some other resources together
-    Alloc( pdbfilehdr = (DBFILEHDR*)PvOSMemoryPageAlloc( g_cbPage, NULL ) );
+    Alloc( pdbfilehdr = (DBFILEHDR*)PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
 
     WCHAR wszDatabasePath[OSFSAPI_MAX_PATH] = L"";
     if ( pfapiDb->ErrPath( wszDatabasePath ) >= JET_errSuccess )
@@ -5006,7 +5006,7 @@ ERR ErrIRSAttachDatabaseForIrsV2( _Inout_ INST * const pinst, _In_ PCWSTR wszDat
     //
     Call( CFlushMapForUnattachedDb::ErrGetPersistedFlushMapOrNullObjectIfRuntime( wszDatabase, pdbfilehdr, pinst, &pfm ) );
 
-    if ( pinst->m_rgpirs == NULL )
+    if ( pinst->m_rgpirs == nullptr )
     {
         const size_t cbRgpirs = sizeof(CIrsOpContext*) * dbidMax;
         Expected( cbRgpirs == 28 || cbRgpirs == 56 );
@@ -5016,7 +5016,7 @@ ERR ErrIRSAttachDatabaseForIrsV2( _Inout_ INST * const pinst, _In_ PCWSTR wszDat
 
     for( ULONG ipirs = 0; ipirs < dbidMax; ipirs++ )
     {
-        if ( pinst->m_rgpirs[ipirs] != NULL )
+        if ( pinst->m_rgpirs[ipirs] != nullptr )
         {
             const ERR errCheck = pinst->m_rgpirs[ipirs]->ErrCheckAttachedIrsContext( pinst, wszDatabase );
             if ( errCheck == JET_errSuccess )
@@ -5045,10 +5045,10 @@ ERR ErrIRSAttachDatabaseForIrsV2( _Inout_ INST * const pinst, _In_ PCWSTR wszDat
     Assert( pirsCheck == pinst->m_rgpirs[ipirsAvailable] );
 
     //  the IRS Context owns ALL these now ...
-    pcprintfIncReSeedTrace = NULL;
-    pfapiDb = NULL;
-    pfm = NULL;
-    pdbfilehdr = NULL;
+    pcprintfIncReSeedTrace = nullptr;
+    pfapiDb = nullptr;
+    pfm = nullptr;
+    pdbfilehdr = nullptr;
 
     Assert( err >= JET_errSuccess );
 
@@ -5104,7 +5104,7 @@ ERR ErrIRSDetachDatabaseIrsHandles( _In_ INST * const pinst, _In_ CIrsOpContext 
     {
         if ( pinst->m_rgpirs[ipirs] == pirs )
         {
-            pinst->m_rgpirs[ipirs] = NULL;
+            pinst->m_rgpirs[ipirs] = nullptr;
         }
     }
 
@@ -5128,13 +5128,13 @@ void IRSCleanUpAllIrsResources( _In_ INST * const pinst )
             {
                 AssertTrack( fFalse, "IrsContextNotCleanedUp" );
                 CIrsOpContext * const pirs = pinst->m_rgpirs[ipirs];
-                CallS( ErrIRSDetachDatabaseIrsHandles( pinst, pirs, NULL, CIrsOpContext::eIrsDetachError ) );
+                CallS( ErrIRSDetachDatabaseIrsHandles( pinst, pirs, nullptr, CIrsOpContext::eIrsDetachError ) );
                 Assert( FIRSFindIrsContext( pinst, pirs ) );
             }
         }
 
         OSMemoryHeapFree( pinst->m_rgpirs );
-        pinst->m_rgpirs = NULL;
+        pinst->m_rgpirs = nullptr;
     }
 }
 
@@ -5203,8 +5203,8 @@ ERR ErrIsamBeginDatabaseIncrementalReseed(
 {
     ERR                     err             = JET_errSuccess;
     INST* const             pinst           = (INST *)jinst;
-    CIrsOpContext *         pirs            = NULL;
-    CPRINTF *               pcprintfIncReSeedTrace = NULL;
+    CIrsOpContext *         pirs            = nullptr;
+    CPRINTF *               pcprintfIncReSeedTrace = nullptr;
     BOOL                    fpatchRBS       = !!( grbit & JET_bitBeginDatabaseIncrementalReseedPatchRBS );
 
     //  Establish connected DB, Flushmap, etc form inst + database name
@@ -5263,7 +5263,7 @@ ERR ErrIsamBeginDatabaseIncrementalReseed(
 
     //  update the cached header to reflect that we are now in the incremental reseed in progress state
     //
-    pdbfilehdr->SetDbstate( JET_dbstateIncrementalReseedInProgress, lGenerationInvalid, lGenerationInvalid, NULL, fTrue );
+    pdbfilehdr->SetDbstate( JET_dbstateIncrementalReseedInProgress, lGenerationInvalid, lGenerationInvalid, nullptr, fTrue );
     pdbfilehdr->le_ulIncrementalReseedCount++;
     LGIGetDateTime( &pdbfilehdr->logtimeIncrementalReseed );
 
@@ -5311,12 +5311,12 @@ LOCAL ERR ErrReadLogFileHeader(
     ERR                     err                                     = JET_errSuccess;
     IFileSystemAPI* const   pfsapi                                  = pinst->m_pfsapi;
     WCHAR                   szLogFile[ IFileSystemAPI::cchPathMax ] = { 0 };
-    IFileAPI*               pfapiT                                  = NULL;
+    IFileAPI*               pfapiT                                  = nullptr;
     IFileAPI*&              pfapi                                   = ppfapi ? *ppfapi : pfapiT;
-                            pfapi                                   = NULL;
-    LGFILEHDR*              plgfilehdrT                             = NULL;
+                            pfapi                                   = nullptr;
+    LGFILEHDR*              plgfilehdrT                             = nullptr;
     LGFILEHDR*&             plgfilehdr                              = pplgfilehdr ? *pplgfilehdr : plgfilehdrT;
-                            plgfilehdr                              = NULL;
+                            plgfilehdr                              = nullptr;
     
     Call( LGFileHelper::ErrLGMakeLogNameBaselessEx( szLogFile,
                                             sizeof( szLogFile ),
@@ -5352,16 +5352,16 @@ LOCAL ERR ErrReadLogFileHeader(
                                     &pfapi ) );
     }
     Call( err );
-    Alloc( plgfilehdr = (LGFILEHDR*)PvOSMemoryPageAlloc( sizeof( LGFILEHDR ), NULL ) );
+    Alloc( plgfilehdr = (LGFILEHDR*)PvOSMemoryPageAlloc( sizeof( LGFILEHDR ), nullptr ) );
     Call( ErrLGIReadFileHeader( pfapi, tc, QosSyncDefault( pinst ), plgfilehdr ) );
 
 HandleError:
     if ( err < JET_errSuccess )
     {
         delete pfapi;
-        pfapi = NULL;
+        pfapi = nullptr;
         OSMemoryPageFree( plgfilehdr );
-        plgfilehdr = NULL;
+        plgfilehdr = nullptr;
     }
     delete pfapiT;
     OSMemoryPageFree( plgfilehdrT );
@@ -5377,8 +5377,8 @@ ERR ErrIncrementalReseedFindValidAttachInfo(
     )
 {
     ERR                     err                 = JET_errSuccess;
-    const ATTACHINFO *      pattachinfoT        = NULL;
-    const ATTACHINFO *      pattachinfo         = NULL;
+    const ATTACHINFO *      pattachinfoT        = nullptr;
+    const ATTACHINFO *      pattachinfo         = nullptr;
 
     //  find the attach info for this database in the min required log header.  if it doesn't exist or
     //  it is for a version of this database in the future then we must fail the incremental reseed
@@ -5434,20 +5434,20 @@ ERR ErrIsamEndDatabaseIncrementalReseed(
     ERR                     err                                             = JET_errSuccess;
     INST* const             pinst                                           = (INST *)jinst;
     IFileSystemAPI* const   pfsapi                                          = pinst->m_pfsapi;
-    CIrsOpContext *         pirs                                            = NULL;
-    LGFILEHDR*              plgfilehdrMin                                   = NULL;
+    CIrsOpContext *         pirs                                            = nullptr;
+    LGFILEHDR*              plgfilehdrMin                                   = nullptr;
     LONG                    genLast                                         = 0;
     SIGNATURE               signLogLast                                     = { 0 };
     LOGTIME                 tmCreateLast                                    = { 0 };
-    IFileAPI*               pfapiLogFileMax                                 = NULL;
-    LGFILEHDR*              plgfilehdrMax                                   = NULL;
-    LGFILEHDR*              plgfilehdrCheck                                 = NULL;
+    IFileAPI*               pfapiLogFileMax                                 = nullptr;
+    LGFILEHDR*              plgfilehdrMax                                   = nullptr;
+    LGFILEHDR*              plgfilehdrCheck                                 = nullptr;
     WCHAR                   szLogFileCheck[ IFileSystemAPI::cchPathMax ]    = { 0 };
-    IFileAPI*               pfapiLogFileCheck                               = NULL;
+    IFileAPI*               pfapiLogFileCheck                               = nullptr;
     ATTACHINFO              attachinfo;
     WCHAR                   szCheckpointFile[ IFileSystemAPI::cchPathMax ]  = { 0 };
-    IFileAPI*               pfapiCheckpoint                                 = NULL;
-    CHECKPOINT*             pcheckpoint                                     = NULL;
+    IFileAPI*               pfapiCheckpoint                                 = nullptr;
+    CHECKPOINT*             pcheckpoint                                     = nullptr;
     ULONG                   lGen;
 
     memset( &attachinfo, 0, sizeof(attachinfo) );
@@ -5530,7 +5530,7 @@ ERR ErrIsamEndDatabaseIncrementalReseed(
 
     //  allocate some memory up front
     //
-    Alloc( plgfilehdrCheck = (LGFILEHDR*)PvOSMemoryPageAlloc( sizeof( LGFILEHDR ), NULL ) );
+    Alloc( plgfilehdrCheck = (LGFILEHDR*)PvOSMemoryPageAlloc( sizeof( LGFILEHDR ), nullptr ) );
 
     //  flush any deferred writes from the patching of the actual pages (and flush map)
     //
@@ -5614,7 +5614,7 @@ RestartFromLowerLogGeneration:
 
         if ( lGen == genMinRequired )
         {
-            Alloc( plgfilehdrMin = (LGFILEHDR*)PvOSMemoryPageAlloc( sizeof( LGFILEHDR ), NULL ) );
+            Alloc( plgfilehdrMin = (LGFILEHDR*)PvOSMemoryPageAlloc( sizeof( LGFILEHDR ), nullptr ) );
             UtilMemCpy( plgfilehdrMin, plgfilehdrCheck, sizeof( LGFILEHDR ) );
         }
         else
@@ -5642,7 +5642,7 @@ RestartFromLowerLogGeneration:
         }
         if ( lGen == genMaxRequired )
         {
-            Alloc( plgfilehdrMax = (LGFILEHDR*)PvOSMemoryPageAlloc( sizeof( LGFILEHDR ), NULL ) );
+            Alloc( plgfilehdrMax = (LGFILEHDR*)PvOSMemoryPageAlloc( sizeof( LGFILEHDR ), nullptr ) );
             UtilMemCpy( plgfilehdrMax, plgfilehdrCheck, sizeof( LGFILEHDR ) );
         }
 
@@ -5656,7 +5656,7 @@ RestartFromLowerLogGeneration:
         }
 
         delete pfapiLogFileCheck;
-        pfapiLogFileCheck = NULL;
+        pfapiLogFileCheck = nullptr;
 
     }
 
@@ -5710,7 +5710,7 @@ RestartFromLowerLogGeneration:
             }
 
             delete pfapiLogFileCheck;
-            pfapiLogFileCheck = NULL;
+            pfapiLogFileCheck = nullptr;
 
             if ( genMinAttachInfo )
             {
@@ -5737,9 +5737,9 @@ RestartFromLowerLogGeneration:
             //
 
             OSMemoryPageFree( plgfilehdrMin );
-            plgfilehdrMin = NULL;
+            plgfilehdrMin = nullptr;
             OSMemoryPageFree( plgfilehdrMax );
-            plgfilehdrMax = NULL;
+            plgfilehdrMax = nullptr;
 
             //  reset ourselves to the lower genMinRequired with the attach info, and retry ...
             //
@@ -5849,7 +5849,7 @@ RestartFromLowerLogGeneration:
 
     //  read in the checkpoint
     //
-    Alloc( pcheckpoint = (CHECKPOINT*)PvOSMemoryPageAlloc( sizeof( CHECKPOINT ), NULL ) );
+    Alloc( pcheckpoint = (CHECKPOINT*)PvOSMemoryPageAlloc( sizeof( CHECKPOINT ), nullptr ) );
     err = ErrUtilReadShadowedHeader(    pinst,
                                         pfsapi,
                                         pfapiCheckpoint,
@@ -5969,7 +5969,7 @@ RestartFromLowerLogGeneration:
         pdbfilehdr->bkinfoTypeDiffPrev = DBFILEHDR::backupNormal;
     }
 
-    if ( pirs->Pfm() != NULL )
+    if ( pirs->Pfm() != nullptr )
     {
         //  fixup DB header state
         //
@@ -6063,9 +6063,9 @@ ErrIsamPatchDatabasePages(
 {
     ERR                 err                     = JET_errSuccess;
     INST * const        pinst                   = (INST *)jinst;
-    CIrsOpContext *     pirs                    = NULL;
-    BYTE *              rgb                     = NULL;
-    BYTE *              pbPrePages              = NULL;
+    CIrsOpContext *     pirs                    = nullptr;
+    BYTE *              rgb                     = nullptr;
+    BYTE *              pbPrePages              = nullptr;
     BOOL                fPreImagePages          = fFalse;
     BOOL                fRBSPreImagesCaptured   = fFalse;
 
@@ -6105,7 +6105,7 @@ ErrIsamPatchDatabasePages(
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
     
-    if ( cb != 0 && pv == NULL )
+    if ( cb != 0 && pv == nullptr )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
@@ -6142,7 +6142,7 @@ ErrIsamPatchDatabasePages(
         {
             //  allocate space for the pre-images of the pages ...
             //
-            Alloc( pbPrePages = (BYTE*)PvOSMemoryPageAlloc( cpg * g_cbPage, NULL ) );
+            Alloc( pbPrePages = (BYTE*)PvOSMemoryPageAlloc( cpg * g_cbPage, nullptr ) );
 
             //  read the pre-images of the pages off disk for tracking or patching RBS purposes ...
             //
@@ -6151,7 +6151,7 @@ ErrIsamPatchDatabasePages(
 
         //  transfer the given pages to an aligned buffer to facilitate writing them to the database
         //
-        Alloc( rgb = (BYTE*)PvOSMemoryPageAlloc( cpg * g_cbPage, NULL ) );
+        Alloc( rgb = (BYTE*)PvOSMemoryPageAlloc( cpg * g_cbPage, nullptr ) );
         if ( grbit & JET_bitTestUninitShrunkPageImage )
         {
             // Fake shrunk pages, just like reading pages from an online database returns.
@@ -6314,7 +6314,7 @@ ErrIsamPatchDatabasePages(
         //
         Call( ErrUtilWriteUnattachedDatabaseHeaders( pinst, pinst->m_pfsapi, szDatabase, pirs->Pdbfilehdr(), pirs->PfapiDb(), pirs->Pfm(), !pirs->FRBSOn() ) );
 
-        if ( pirs->Pfm() != NULL )
+        if ( pirs->Pfm() != nullptr )
         {
             //  set all flush types to pgftUnknown before patching the actual pages
             //
@@ -6345,7 +6345,7 @@ ErrIsamPatchDatabasePages(
 
         AssertTrack( pgnoStart != 0, "IllegalPatchingDbShadowHdrWritten" );
 
-        if ( pirs->Pfm() != NULL )
+        if ( pirs->Pfm() != nullptr )
         {
             //  set proper flush states and dbtimes once we've successfully patched the pages
             //
@@ -6376,7 +6376,7 @@ ErrIsamPatchDatabasePages(
                     _countof(rgsz),
                     rgsz,
                     0,
-                    NULL,
+                    nullptr,
                     pinst,
                     JET_EventLoggingLevelLow );
         }
@@ -6437,13 +6437,13 @@ ERR ErrIsamRemoveLogfile(
 {
     JET_ERR err = JET_errSuccess;
 
-    CPRINTF *     pcprintfTraceFile = NULL;
+    CPRINTF *     pcprintfTraceFile = nullptr;
 
-    IFileAPI *       pfapi  = NULL;
-    DBFILEHDR * pdbfilehdr  = NULL;
-    LGFILEHDR * plgfilehdr  = NULL;
+    IFileAPI *       pfapi  = nullptr;
+    DBFILEHDR * pdbfilehdr  = nullptr;
+    LGFILEHDR * plgfilehdr  = nullptr;
 
-    CFlushMapForUnattachedDb* pfm = NULL;
+    CFlushMapForUnattachedDb* pfm = nullptr;
 
     //  start tracing (before anything else)
     //
@@ -6464,12 +6464,12 @@ ERR ErrIsamRemoveLogfile(
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
 
-    if( 0 == wszDatabase || 0 == wszDatabase[0] )
+    if( nullptr == wszDatabase || 0 == wszDatabase[0] )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
 
-    if( 0 == wszLogfile || 0 == wszLogfile[0] )
+    if( nullptr == wszLogfile || 0 == wszLogfile[0] )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
@@ -6478,8 +6478,8 @@ ERR ErrIsamRemoveLogfile(
 
     // Allocate memory
 
-    Alloc( pdbfilehdr = static_cast<DBFILEHDR * >( PvOSMemoryPageAlloc( g_cbPage, NULL ) ) );
-    Alloc( plgfilehdr = static_cast<LGFILEHDR * >( PvOSMemoryPageAlloc( sizeof(LGFILEHDR), NULL ) ) );
+    Alloc( pdbfilehdr = static_cast<DBFILEHDR * >( PvOSMemoryPageAlloc( g_cbPage, nullptr ) ) );
+    Alloc( plgfilehdr = static_cast<LGFILEHDR * >( PvOSMemoryPageAlloc( sizeof(LGFILEHDR), nullptr ) ) );
 
     // Read the headers
 
@@ -6585,9 +6585,9 @@ ERR ErrIsamRemoveLogfile(
 
     Call( CFlushMapForUnattachedDb::ErrGetPersistedFlushMapOrNullObjectIfRuntime( wszDatabase, pdbfilehdr, pinstNil, &pfm ) );
 
-    Call( ErrUtilWriteUnattachedDatabaseHeaders( pinstNil, pfsapi, wszDatabase, pdbfilehdr, NULL, pfm ) );
+    Call( ErrUtilWriteUnattachedDatabaseHeaders( pinstNil, pfsapi, wszDatabase, pdbfilehdr, nullptr, pfm ) );
 
-    if ( pfm != NULL )
+    if ( pfm != nullptr )
     {
         pfm->TermFlushMap();
     }
@@ -6620,7 +6620,7 @@ ERR ErrIsamRBSPrepareRevert(
 {
     ERR             err = JET_errSuccess;
     INST* const     pinst = (INST*) jinst;
-    CRBSRevertContext* prbsrc = NULL;
+    CRBSRevertContext* prbsrc = nullptr;
 
     Call( CRBSRevertContext::ErrRBSRevertContextInit( pinst, *(LOGTIME*) &jltRevertExpected, cpgCache, grbit, (LOGTIME*) pjltRevertActual, &prbsrc ) );
 
@@ -6628,7 +6628,7 @@ ERR ErrIsamRBSPrepareRevert(
     if ( pinst->m_prbsrc )
     {
         delete pinst->m_prbsrc;
-        pinst->m_prbsrc = NULL;
+        pinst->m_prbsrc = nullptr;
     }
 
     pinst->m_prbsrc = prbsrc;
@@ -6638,7 +6638,7 @@ HandleError:
     if ( err < JET_errSuccess )
     {
         delete pinst->m_prbsrc;
-        pinst->m_prbsrc = NULL;
+        pinst->m_prbsrc = nullptr;
     }
 
     return err;
@@ -6659,7 +6659,7 @@ ERR ErrIsamRBSExecuteRevert(
 
 HandleError:
     delete pinst->m_prbsrc;
-    pinst->m_prbsrc = NULL;
+    pinst->m_prbsrc = nullptr;
 
     return err;
 }
@@ -6677,7 +6677,7 @@ ERR ErrIsamRBSCancelRevert(
         if ( !pinst->m_prbsrc->FExecuteRevertStarted() )
         {
             delete pinst->m_prbsrc;
-            pinst->m_prbsrc = NULL;
+            pinst->m_prbsrc = nullptr;
         }
     }
 
@@ -6716,7 +6716,7 @@ VOID FMP::SnapshotHeaderSignature()
 
         BYTE* const pbHeader = new BYTE[ cbHeader ];
 
-        if ( pbHeader != NULL )
+        if ( pbHeader != nullptr )
         {
             memcpy( pbHeader, pdbfilehdr, cbHeader );
             AssertDatabaseHeaderConsistent( (DBFILEHDR*)pbHeader, cbHeader, g_cbPage );

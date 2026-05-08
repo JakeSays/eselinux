@@ -628,7 +628,7 @@ public:
     {
         if ( m_fEnd )
         {
-            return NULL;
+            return nullptr;
         }
         
         return &m_fidCurrent;
@@ -1256,7 +1256,7 @@ INLINE VOID DATA::CopyInto( DATA& dataDest ) const
 INLINE VOID DATA::Nullify()
 //  ================================================================
 {
-    m_pv = 0;
+    m_pv = nullptr;
     m_cb = 0;
 }
 
@@ -1579,7 +1579,7 @@ class BOOKMARK_COPY : public BOOKMARK
 INLINE BOOKMARK_COPY::BOOKMARK_COPY()
 //  ================================================================
 {
-    m_pb = NULL;
+    m_pb = nullptr;
     OnDebug( Invalidate() );
 }
 
@@ -1668,13 +1668,13 @@ INLINE VOID BOOKMARK_COPY::FreeCopy()
 //  ================================================================
 {
     OnDebug( Invalidate() );
-    if ( m_pb == NULL )
+    if ( m_pb == nullptr )
     {
         return;
     }
 
     RESBOOKMARK.Free( m_pb );
-    m_pb = NULL;
+    m_pb = nullptr;
 }
 
 
@@ -1919,7 +1919,7 @@ INLINE BOOL FKeysEqual( const KEY& key1, const KEY& key2 )
 
 //  ================================================================
 template < class KEYDATA1, class KEYDATA2 >
-INLINE INT CmpKeyData( const KEYDATA1& kd1, const KEYDATA2& kd2, BOOL * pfKeyEqual = 0 )
+INLINE INT CmpKeyData( const KEYDATA1& kd1, const KEYDATA2& kd2, BOOL * pfKeyEqual = nullptr )
 //  ================================================================
 //
 // compare the KEY and DATA of two elements. we use a function template so
@@ -3039,8 +3039,8 @@ struct DBFILEHDR : public CZeroInit
     //  Methods
 
     ULONG   Dbstate( ) const                { return le_dbstate; }
-    VOID    SetDbstate( const ULONG dbstate, const LONG lGenMin, const LONG lGenMax, const LOGTIME * plogtimeCurrent = NULL, const bool fLogged = fFalse );
-    VOID    SetDbstate( const ULONG dbstate, const LONG lGenCurrent = 0, const LOGTIME * plogtimeCurrent = NULL, const bool fLogged = fFalse );
+    VOID    SetDbstate( const ULONG dbstate, const LONG lGenMin, const LONG lGenMax, const LOGTIME * plogtimeCurrent = nullptr, const bool fLogged = fFalse );
+    VOID    SetDbstate( const ULONG dbstate, const LONG lGenCurrent = 0, const LOGTIME * plogtimeCurrent = nullptr, const bool fLogged = fFalse );
 
     VOID    SetBuildState();
     PCSTR   SzBuildFlags() const;
@@ -3134,7 +3134,7 @@ INLINE VOID DBFILEHDR::SetDbstate( const ULONG dbstate, const LONG lGenMin, cons
         case JET_dbstateJustCreated:
             AssertRTL( 0 == lGenMin );
             AssertRTL( 0 == lGenMax );
-            AssertRTL( NULL == plogtimeCurrent );
+            AssertRTL( nullptr == plogtimeCurrent );
             break;
         case JET_dbstateDirtyShutdown:
             // I don't like this 0 != lGenMin clause, but couldn't figure out how
@@ -3149,32 +3149,32 @@ INLINE VOID DBFILEHDR::SetDbstate( const ULONG dbstate, const LONG lGenMin, cons
             {
                 AssertRTL( 0 != lGenMin && lGenerationInvalid != lGenMin );
                 AssertRTL( 0 != lGenMax && lGenerationInvalid != lGenMax );
-                AssertRTL( NULL != plogtimeCurrent  );
+                AssertRTL( nullptr != plogtimeCurrent  );
             }
             else
             {
                 AssertRTL( 0 == lGenMin );
                 AssertRTL( 0 == lGenMax );
                 // sometimes people pass in just an empty log time instead.  Silly.
-                AssertRTL( NULL == plogtimeCurrent || FNullLogTime( plogtimeCurrent ) );
+                AssertRTL( nullptr == plogtimeCurrent || FNullLogTime( plogtimeCurrent ) );
             }
             break;
         case JET_dbstateCleanShutdown:
             AssertRTL( 0 == lGenMin );
             AssertRTL( 0 == lGenMax );
-            AssertRTL( NULL == plogtimeCurrent || !plogtimeCurrent->FIsSet() );
+            AssertRTL( nullptr == plogtimeCurrent || !plogtimeCurrent->FIsSet() );
             break;
         case JET_dbstateBeingConverted:
             AssertRTL( 0 == lGenMin );
             AssertRTL( 0 == lGenMax );
-            AssertRTL( NULL == plogtimeCurrent );
+            AssertRTL( nullptr == plogtimeCurrent );
             break;
         case JET_dbstateIncrementalReseedInProgress:
             if ( fLogged )
             {
                 AssertRTL( lGenerationInvalid == lGenMin );
                 AssertRTL( lGenerationInvalid == lGenMax );
-                AssertRTL( NULL == plogtimeCurrent );
+                AssertRTL( nullptr == plogtimeCurrent );
             }
             else
             {
@@ -3186,11 +3186,11 @@ INLINE VOID DBFILEHDR::SetDbstate( const ULONG dbstate, const LONG lGenMin, cons
             AssertRTL( 0 != lGenMin && lGenerationInvalid != lGenMin );
             AssertRTL( 0 != lGenMax && lGenerationInvalid != lGenMax );
 
-            AssertRTL( NULL != plogtimeCurrent  );
+            AssertRTL( nullptr != plogtimeCurrent  );
             break;
         case JET_dbstateRevertInProgress:
             AssertRTL( fLogged );
-            AssertRTL( NULL == plogtimeCurrent );
+            AssertRTL( nullptr == plogtimeCurrent );
             AssertRTL( lGenerationInvalid == lGenMin );
             AssertRTL( lGenerationInvalid == lGenMax );
             break;
@@ -3225,14 +3225,14 @@ INLINE VOID DBFILEHDR::SetDbstate( const ULONG dbstate, const LONG lGenMin, cons
         //  avoid touching logtimeGenMaxCreate/logtimeGenMaxRequired
         Expected( NULL == plogtimeCurrent );
     }
-    else if ( 0 != lGenMax && NULL != plogtimeCurrent )
+    else if ( 0 != lGenMax && nullptr != plogtimeCurrent )
     {
         memcpy( &logtimeGenMaxCreate, plogtimeCurrent, sizeof( LOGTIME ) );
 
         // Only set logtimeGenMaxRequired if the database is on high enough version
-        const FormatVersions * pfmpver = NULL;
-        CallS( ErrGetDesiredVersion( NULL, JET_efvLogtimeGenMaxRequired, &pfmpver ) );
-        if ( pfmpver != NULL && CmpDbVer( Dbv(), pfmpver->dbv ) >= 0 )
+        const FormatVersions * pfmpver = nullptr;
+        CallS( ErrGetDesiredVersion( nullptr, JET_efvLogtimeGenMaxRequired, &pfmpver ) );
+        if ( pfmpver != nullptr && CmpDbVer( Dbv(), pfmpver->dbv ) >= 0 )
         {
             memcpy( &logtimeGenMaxRequired, plogtimeCurrent, sizeof( LOGTIME ) );
         }
@@ -4042,7 +4042,7 @@ private:
 
     // freeze/thaw operations on instance(s)
     ERR     ErrFreezeInstance();
-    void    ThawInstance( const INST * pinstLastAPI = NULL, const INST * pinstLastCheckpoint = NULL, const INST * pinstLastLGFlush = NULL );
+    void    ThawInstance( const INST * pinstLastAPI = nullptr, const INST * pinstLastCheckpoint = nullptr, const INST * pinstLastLGFlush = nullptr );
 
 
     // freeze/thaw operations on ALL databases from the frozen instance(s)
@@ -4449,7 +4449,7 @@ private:
     VOID BKIMakeDbTrailer(const IFMP ifmp,  BYTE *pvPage);
     ERR ErrBKICheckLogsForIncrementalBackup( LONG lGenMinExisting );
 
-    VOID BKIGetPatchName( __out_bcount(OSFSAPI_MAX_PATH*sizeof(WCHAR)) PWSTR wszPatch, PCWSTR wszDatabaseName, _In_ PCWSTR wszDirectory = NULL );
+    VOID BKIGetPatchName( __out_bcount(OSFSAPI_MAX_PATH*sizeof(WCHAR)) PWSTR wszPatch, PCWSTR wszDatabaseName, _In_ PCWSTR wszDirectory = nullptr );
 
 };
 
@@ -4927,7 +4927,7 @@ public:
     //  If the step has been Trigger( seq )'d or not.  Returns fFalse on failed allocs though.
     BOOL FTriggeredStep( _In_ const INT seq ) const
     {
-        if ( m_fAllocFailure && m_rgDiagInfo == NULL )
+        if ( m_fAllocFailure && m_rgDiagInfo == nullptr )
         {
             return fFalse;
         }
@@ -5448,12 +5448,12 @@ class CSimpleHashTable
 {
     public:
         CSimpleHashTable( const ULONG centries, const ULONG ulOffsetOverflowNext ) :
-            m_rgpentries( NULL ),
+            m_rgpentries( nullptr ),
             m_centries( centries ),
             m_ulOffsetOverflowNext( ulOffsetOverflowNext )  {}
         ~CSimpleHashTable()
         {
-            if ( NULL != m_rgpentries )
+            if ( nullptr != m_rgpentries )
             {
                 OSMemoryHeapFree( m_rgpentries );
             }
@@ -5510,13 +5510,13 @@ class CSimpleHashTable
         VOID RemoveEntry( CEntry * pentry, const ULONG ulHash )
         {
             for ( CEntry ** ppentry = m_rgpentries + ulHash;
-                NULL != *ppentry;
+                nullptr != *ppentry;
                 ppentry = PpentryOverflowNext( *ppentry ) )
             {
                 if ( *ppentry == pentry )
                 {
                     *ppentry = PentryOverflowNext( pentry );
-                    *PpentryOverflowNext( pentry ) = NULL;
+                    *PpentryOverflowNext( pentry ) = nullptr;
                     return;
                 }
             }
@@ -5569,7 +5569,7 @@ inline BOOL FJetConfigRunSilent()
 inline CJetParam* const Param_( const INST* const pinst, const ULONG paramid )
 {
     extern CJetParam* const g_rgparam;
-    CJetParam*              pjetparam   = NULL;
+    CJetParam*              pjetparam   = nullptr;
 
     //  if no instance was specified then either there must not be any instances
     //  initialized or the parameter must be intrinsically global

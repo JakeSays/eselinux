@@ -633,7 +633,7 @@ LOCAL VOID LGIReportChecksumMismatch(
             irgpsz,
             rgpszT,
             0,
-            NULL,
+            nullptr,
             pinst );
 
     OSUHAPublishEvent(
@@ -840,7 +840,7 @@ ERR LOG_READ_BUFFER::ErrLGCheckReadLastLogRecordFF_Legacy(
     ULONG           ulChecksumExpected;
     ULONG           ulChecksumActual;
 #ifdef ENABLE_LOGPATCH_TRACE
-    CPRINTFFILE     *pcprintfLogPatch = NULL;
+    CPRINTFFILE     *pcprintfLogPatch = nullptr;
     WCHAR           wszLogPatchPath[ IFileSystemAPI::cchPathMax ];
 #endif  //  ENABLE_LOGPATCH_TRACE
 //
@@ -1008,7 +1008,7 @@ ERR LOG_READ_BUFFER::ErrLGCheckReadLastLogRecordFF_Legacy(
 
     //  allocate memory for pbLastSector
 
-    pbLastSector = reinterpret_cast< BYTE* >( PvOSMemoryPageAlloc( m_pLogStream->CbSec(), NULL ) );
+    pbLastSector = reinterpret_cast< BYTE* >( PvOSMemoryPageAlloc( m_pLogStream->CbSec(), nullptr ) );
     if ( pbNil == pbLastSector )
     {
         Call( ErrERRCheck( JET_errOutOfMemory ) );
@@ -1483,7 +1483,7 @@ RecoverWithShadow:
                                 csz,
                                 rgpsz,
                                 0,
-                                NULL,
+                                nullptr,
                                 m_pinst );
 
             //  before patching the original LRCHECKSUM record with the shadowed LRCHECKSUM record,
@@ -2425,8 +2425,8 @@ Assert( m_pLogStream->CbSec() == m_pLogStream->CbSecVolume() );
         //        log records in the new sector); the LRCHECKSUM records from each sector should not match
         //
 
-        BYTE        *pbEnsureScan   = NULL;
-        BYTE        *pbScan         = NULL;
+        BYTE        *pbEnsureScan   = nullptr;
+        BYTE        *pbScan         = nullptr;
         ULONG       csecScan        = 0;
         BOOL        fFoundPattern   = fTrue;    //  assume we will find a torn write
         BOOL        fIsTornWrite    = fTrue;    //  assume we will find a torn write
@@ -2534,10 +2534,10 @@ Assert( m_pLogStream->CbSec() == m_pLogStream->CbSecVolume() );
 
         if ( fFoundPattern && fRecordOkRangeBad )
         {
-            BYTE        *pbScanT        = NULL;
-            BYTE        *pbEnsureScanT  = NULL;
+            BYTE        *pbScanT        = nullptr;
+            BYTE        *pbEnsureScanT  = nullptr;
             ULONG       csecScanT       = 0;
-            LRCHECKSUM  *plrckT         = NULL;
+            LRCHECKSUM  *plrckT         = nullptr;
 
 #ifdef ENABLE_LOGPATCH_TRACE
             if ( FLGILogPatchDate( wszLogPatchPath, &pcprintfLogPatch ) )
@@ -2753,7 +2753,7 @@ ApplyPatch:
                                         2,
                                         rgpsz,
                                         0,
-                                        NULL,
+                                        nullptr,
                                         m_pinst );
 
                     Error( ErrERRCheck( JET_errLogTornWriteDuringHardRestore ) );
@@ -2792,7 +2792,7 @@ ApplyPatch:
                                         2,
                                         rgpsz,
                                         0,
-                                        NULL,
+                                        nullptr,
                                         m_pinst );
 
                     Error( ErrERRCheck( JET_errLogTornWriteDuringHardRecovery ) );
@@ -2920,7 +2920,7 @@ ApplyPatch:
                                         3,
                                         rgpsz,
                                         0,
-                                        NULL,
+                                        nullptr,
                                         m_pinst );
 
                     Error( ErrERRCheck( JET_errLogCorruptDuringHardRestore ) );
@@ -2952,7 +2952,7 @@ ApplyPatch:
                                     3,
                                     rgpsz,
                                     0,
-                                    NULL,
+                                    nullptr,
                                     m_pinst );
 
                 Error( ErrERRCheck( JET_errLogCorruptDuringHardRecovery ) );
@@ -2986,7 +2986,7 @@ ApplyPatch:
                                     3,
                                     rgpsz,
                                     0,
-                                    NULL,
+                                    nullptr,
                                     m_pinst );
 
                 Error( ErrERRCheck( JET_errLogFileCorrupt ) );
@@ -3036,8 +3036,8 @@ ApplyPatch:
 
         ULONG       isecScan;
         ULONG       csecScan        = 0;
-        BYTE        *pbEnsureScan   = NULL;
-        BYTE        *pbScan         = NULL;
+        BYTE        *pbEnsureScan   = nullptr;
+        BYTE        *pbScan         = nullptr;
         BOOL        fFoundPattern   = fTrue;    //  assume we will find a torn write
         WCHAR       szSector[30];
         WCHAR       szCorruption[30];
@@ -3133,7 +3133,7 @@ ApplyPatch:
                                             3,
                                             rgpsz,
                                             0,
-                                            NULL,
+                                            nullptr,
                                             m_pinst );
 
                         OSUHAPublishEvent(  HaDbFailureTagRecoveryRedoLogCorruption,
@@ -3162,7 +3162,7 @@ ApplyPatch:
                                         3,
                                         rgpsz,
                                         0,
-                                        NULL,
+                                        nullptr,
                                         m_pinst );
                     
                     OSUHAPublishEvent(  HaDbFailureTagRecoveryRedoLogCorruption,
@@ -3192,7 +3192,7 @@ ApplyPatch:
                                         3,
                                         rgpsz,
                                         0,
-                                        NULL,
+                                        nullptr,
                                         m_pinst );
 
                     OSUHAPublishEvent(  HaDbFailureTagRecoveryRedoLogCorruption,
@@ -3340,7 +3340,7 @@ ApplyPatch:
 
     forever
     {
-        BYTE *  pb              = NULL;
+        BYTE *  pb              = nullptr;
         ULONG   cb              = 0;
         LGPOS   lgposEndOfRec   = { 0 };
 
@@ -3990,7 +3990,7 @@ Assert( m_pLogStream->CbSec() == m_pLogStream->CbSecVolume() );
 
         //  open the file again
 
-        errT = m_pLogStream->ErrLGOpenFile( NULL, fTrue );
+        errT = m_pLogStream->ErrLGOpenFile( nullptr, fTrue );
 
         //  fire off the error trap if necessary
 

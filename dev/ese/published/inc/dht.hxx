@@ -164,7 +164,7 @@ class CDynamicHashTable
 
         void    BeginHashScan( CLock* const plock );
         void    BeginHashScanFromKey( const CKey& key, CLock* const plock );
-        ERR     ErrMoveNext( CLock* const plock, BOOL* const pfNewBucket = NULL );
+        ERR     ErrMoveNext( CLock* const plock, BOOL* const pfNewBucket = nullptr );
         void    EndHashScan( CLock* const plock );
 
 #ifdef DEBUGGER_EXTENSION
@@ -321,7 +321,7 @@ class CDynamicHashTable
 
                     //  initialize vars
 
-                    m_pReserve = NULL;
+                    m_pReserve = nullptr;
                     m_cReserve = 0;
 
                     //  prepare the semaphore to have 1 owner
@@ -548,7 +548,7 @@ class CDynamicHashTable
                 CLock()
                 {
                     m_ls = lsNil;
-                    m_pBucketHead = NULL;
+                    m_pBucketHead = nullptr;
                 }
 
 
@@ -668,20 +668,20 @@ class CDynamicHashTable
 
             static const StateTransitionTable rgstt[] =
             {
-                /*  stateNil                */  { NULL,                                         stateNil,               },
-                /*  stateShrinkFromGrow     */  { NULL,                                         stateShrinkFromGrow2,   },
-                /*  stateShrinkFromGrow2    */  { NULL,                                         stateShrink,            },
-                /*  stateGrowFromShrink     */  { NULL,                                         stateGrowFromShrink2,   },
-                /*  stateGrowFromShrink2    */  { NULL,                                         stateGrow,              },
-                /*  stateSplitFromGrow      */  { NULL,                                         stateSplitFromGrow2,    },
+                /*  stateNil                */  { nullptr,                                         stateNil,               },
+                /*  stateShrinkFromGrow     */  { nullptr,                                         stateShrinkFromGrow2,   },
+                /*  stateShrinkFromGrow2    */  { nullptr,                                         stateShrink,            },
+                /*  stateGrowFromShrink     */  { nullptr,                                         stateGrowFromShrink2,   },
+                /*  stateGrowFromShrink2    */  { nullptr,                                         stateGrow,              },
+                /*  stateSplitFromGrow      */  { nullptr,                                         stateSplitFromGrow2,    },
                 /*  stateSplitFromGrow2     */  { &CDynamicHashTable::STCompletionCopyDir,      stateSplit,             },
-                /*  stateGrowFromSplit      */  { NULL,                                         stateGrowFromSplit2,    },
-                /*  stateGrowFromSplit2     */  { NULL,                                         stateGrow,              },
-                /*  stateMergeFromShrink    */  { NULL,                                         stateMergeFromShrink2,  },
+                /*  stateGrowFromSplit      */  { nullptr,                                         stateGrowFromSplit2,    },
+                /*  stateGrowFromSplit2     */  { nullptr,                                         stateGrow,              },
+                /*  stateMergeFromShrink    */  { nullptr,                                         stateMergeFromShrink2,  },
                 /*  stateMergeFromShrink2   */  { &CDynamicHashTable::STCompletionCopyDir,      stateMerge,             },
-                /*  stateShrinkFromMerge    */  { NULL,                                         stateShrinkFromMerge2,  },
-                /*  stateShrinkFromMerge2   */  { NULL,                                         stateShrink,            },
-                /*  stateUnused             */  { NULL,                                         stateNil,               },
+                /*  stateShrinkFromMerge    */  { nullptr,                                         stateShrinkFromMerge2,  },
+                /*  stateShrinkFromMerge2   */  { nullptr,                                         stateShrink,            },
+                /*  stateUnused             */  { nullptr,                                         stateNil,               },
                 /*  stateGrow               */  { &CDynamicHashTable::STCompletionGrowShrink,   stateNil,               },
                 /*  stateShrink             */  { &CDynamicHashTable::STCompletionGrowShrink,   stateNil,               },
                 /*  stateSplit              */  { &CDynamicHashTable::STCompletionSplit,        stateGrowFromSplit,     },
@@ -859,7 +859,7 @@ class CDynamicHashTable
             if ( m_rgrgBucket[ 0 ] )
             {
                 DIRTermBucketArray( m_rgrgBucket[ 0 ], 2 );
-                m_rgrgBucket[ 0 ] = NULL;
+                m_rgrgBucket[ 0 ] = nullptr;
             }
 
             //  term all other bucket arrays
@@ -869,7 +869,7 @@ class CDynamicHashTable
                 if ( m_rgrgBucket[ iExponent ] )
                 {
                     DIRTermBucketArray( m_rgrgBucket[ iExponent ], NativeCounter( 1 ) << iExponent );
-                    m_rgrgBucket[ iExponent ] = NULL;
+                    m_rgrgBucket[ iExponent ] = nullptr;
                 }
             }
 
@@ -953,7 +953,7 @@ class CDynamicHashTable
             //  release the lock
 
             plock->m_pBucketHead->CRWL().LeaveAsReader();
-            plock->m_pBucketHead = NULL;
+            plock->m_pBucketHead = nullptr;
         }
 
 
@@ -1004,7 +1004,7 @@ class CDynamicHashTable
                 BOOL fLockSucceeded = plock->m_pBucketHead->CRWL().FTryEnterAsWriter();
                 if ( !fLockSucceeded )
                 {
-                    plock->m_pBucketHead = NULL;
+                    plock->m_pBucketHead = nullptr;
                     return fLockSucceeded;
                 }
             }
@@ -1039,7 +1039,7 @@ class CDynamicHashTable
                     BOOL fLockSucceeded = plock->m_pBucketHead->CRWL().FTryEnterAsWriter();
                     if ( !fLockSucceeded )
                     {
-                        plock->m_pBucketHead = NULL;
+                        plock->m_pBucketHead = nullptr;
                         return fLockSucceeded;
                     }
                 }
@@ -1070,7 +1070,7 @@ class CDynamicHashTable
             //  release the lock
 
             plock->m_pBucketHead->CRWL().LeaveAsWriter();
-            plock->m_pBucketHead = NULL;
+            plock->m_pBucketHead = nullptr;
         }
 
 
@@ -1104,7 +1104,7 @@ class CDynamicHashTable
             rgb = (BYTE*)PvMEMAlloc( cb );
             if ( !rgb )
             {
-                *prgbBucket = NULL;
+                *prgbBucket = nullptr;
                 return ERR::errOutOfMemory;
             }
 
@@ -1132,7 +1132,7 @@ class CDynamicHashTable
 
                 //  make the bucket empty
 
-                pbucket->m_pb = NULL;
+                pbucket->m_pb = nullptr;
             }
 
             *prgbBucket = rgb;
@@ -1226,7 +1226,7 @@ class CDynamicHashTable
             if ( m_rgrgBucket[ iExponent ] )
             {
                 DIRTermBucketArray( m_rgrgBucket[ iExponent ], m_dirptrs[ 0 ].m_cBucketMax );
-                m_rgrgBucket[ iExponent ] = NULL;
+                m_rgrgBucket[ iExponent ] = nullptr;
             }
 
 #ifdef DEBUG
@@ -1506,7 +1506,7 @@ class CDynamicHashTable
 
                 return (CKeyEntry*)pb + 1;
             }
-            else if ( NULL == pb )
+            else if ( nullptr == pb )
             {
 
                 //  the bucket is empty
@@ -1538,7 +1538,7 @@ class CDynamicHashTable
 
             //  m_pBucketNext is invalid (m_pEntryLast is valid instead)
 
-            return NULL;
+            return nullptr;
         }
 
 
@@ -1552,8 +1552,8 @@ class CDynamicHashTable
             //  pre-init our currency assuming we will hit a hot path
 
             plock->m_pBucket    = plock->m_pBucketHead;
-            plock->m_pEntryPrev = NULL;
-            plock->m_pEntryNext = NULL;
+            plock->m_pEntryPrev = nullptr;
+            plock->m_pEntryNext = nullptr;
 
             //  HOT PATH:
             //
@@ -1577,7 +1577,7 @@ class CDynamicHashTable
                 }
                 while ( ++pEntry <= pEntryLast );
 
-                plock->m_pEntry = NULL;
+                plock->m_pEntry = nullptr;
             }
 
             //  HOT PATH:
@@ -1587,7 +1587,7 @@ class CDynamicHashTable
 
             else if ( !pEntryLast )
             {
-                plock->m_pEntry = NULL;
+                plock->m_pEntry = nullptr;
             }
 
             //  if the next/end pointer points outside of the head bucket then
@@ -1653,7 +1653,7 @@ class CDynamicHashTable
             //  move back to the last BUCKET and reset the entry ptr
 
             pBucket = pBucketPrev;
-            pEntryThis = NULL;
+            pEntryThis = nullptr;
 
     SetupCurrency:
 
@@ -1661,9 +1661,9 @@ class CDynamicHashTable
             //  we will not allow moving next/prev, so we setup the next/prev ptrs accordingly
 
             plock->m_pBucket    = pBucket;
-            plock->m_pEntryPrev = NULL;
+            plock->m_pEntryPrev = nullptr;
             plock->m_pEntry     = pEntryThis;
-            plock->m_pEntryNext = NULL;
+            plock->m_pEntryNext = nullptr;
         }
 
 
@@ -2071,7 +2071,7 @@ class CDynamicHashTable
 
             PBUCKET     pBucketThis = plock->m_pBucket;
             CKeyEntry   *pEntryThis = plock->m_pEntry;
-            PBUCKET     pBucketFree = NULL;         //  used later if we free a BUCKET strucutre
+            PBUCKET     pBucketFree = nullptr;         //  used later if we free a BUCKET strucutre
 
             if ( pEntryThis != pBucketThis->m_pEntryLast )
             {
@@ -2099,7 +2099,7 @@ class CDynamicHashTable
 
             //  update the currency to show that we are no longer on an entry
 
-            plock->m_pEntry = NULL;
+            plock->m_pEntry = nullptr;
 
             //  we are now pointing to the last entry in the last bucket
             //      (via pBucketThis/pEntryThis), and that entry needs to be
@@ -2131,7 +2131,7 @@ class CDynamicHashTable
                 //  this bucket is empty, but we cannot release it because it is part of the bucket array
                 //  instead, we mark it as being empty
 
-                pBucketThis->m_pb = NULL;
+                pBucketThis->m_pb = nullptr;
 
 #ifdef DEBUG
                 //  jump to the validation code
@@ -2562,7 +2562,7 @@ class CDynamicHashTable
 
             //  extra buckets
 
-            PBUCKET         pBucketAvail = NULL;
+            PBUCKET         pBucketAvail = nullptr;
 
             //  remember if we used the bucket from the heap
 
@@ -2592,14 +2592,14 @@ class CDynamicHashTable
             pBucketThis[ 0 ]    = pBucketSrcSrc;
             pEntryThis[ 0 ]     = &pBucketSrcSrc->m_rgEntry[ 0 ];
             pEntryMost[ 0 ]     = &pBucketSrcSrc->m_rgEntry[ m_centryBucket ];
-            pEntryLast[ 0 ]     = NULL;
+            pEntryLast[ 0 ]     = nullptr;
 
             //  prepare the dst write cursor
 
             pBucketThis[ 1 ]    = pBucketDst;
             pEntryThis[ 1 ]     = &pBucketDst->m_rgEntry[ 0 ];
             pEntryMost[ 1 ]     = &pBucketDst->m_rgEntry[ m_centryBucket ];
-            pEntryLast[ 1 ]     = NULL;
+            pEntryLast[ 1 ]     = nullptr;
 
             //  iterate over all entries in the source bucket
 
@@ -2613,7 +2613,7 @@ class CDynamicHashTable
 
                     //  nop
                 }
-                else if ( NULL == pBucketNextSrc )
+                else if ( nullptr == pBucketNextSrc )
                 {
 
                     //  all entries have been exhausted
@@ -3243,7 +3243,7 @@ class CDynamicHashTable
 
             //  mark the src bucket as empty
 
-            pBucketSrc->m_pb = NULL;
+            pBucketSrc->m_pb = nullptr;
 
             if ( fSetEndPtr )
             {
@@ -3693,7 +3693,7 @@ class CDynamicHashTable
             {
                 return PvMEMIAlign( pv, cbAlign );
             }
-            return NULL;
+            return nullptr;
         }
 
 
@@ -3804,7 +3804,7 @@ CDynamicHashTable( const NativeCounter rankDHTrwlBucket )
         m_centryBucket( 0 ),
         m_cbBucket( 0 ),
         m_rankDHTrwlBucket( rankDHTrwlBucket ),
-        m_rghs( NULL ),
+        m_rghs( nullptr ),
         m_chs( 0 ),
         m_cbucketMin( 0 ),
         m_rgbRsvdNever { },
@@ -3881,7 +3881,7 @@ ErrInit(    const double            dblLoadFactor,
     m_cLoadFactor           = 0;
     m_centryBucket          = 0;
     m_cbBucket              = 0;
-    m_rghs                  = NULL;
+    m_rghs                  = nullptr;
     m_chs                   = OSSYNC::OSSyncGetProcessorCountMax();
     m_cbucketMin            = 0;
 
@@ -3975,7 +3975,7 @@ Term()
 
     DIRTerm();
 
-    if ( NULL != m_rghs )
+    if ( nullptr != m_rghs )
     {
 
         //  delete the HOTSTUFF aray
@@ -3989,7 +3989,7 @@ Term()
             m_rghs[ m_chs ].HOTSTUFF::~HOTSTUFF();
         }
         MEMFree( m_rghs );
-        m_rghs = NULL;
+        m_rghs = nullptr;
     }
 }
 
@@ -4281,7 +4281,7 @@ ErrDeleteEntry( CLock* const plock )
 
         DHTAssert( plock->m_pBucket != NULL );
         DHTAssert( plock->m_pEntryNext == NULL );
-        plock->m_pEntryNext = ( plock->m_pEntry != plock->m_pBucket->m_pEntryLast ) ? plock->m_pEntry : NULL;
+        plock->m_pEntryNext = ( plock->m_pEntry != plock->m_pBucket->m_pEntryLast ) ? plock->m_pEntry : nullptr;
     }
 
     //  delete the entry

@@ -8,7 +8,7 @@
 #define wszTemp L"temp"
 
 
-extern VOID ITDBGSetConstants( INST * pinst = NULL);
+extern VOID ITDBGSetConstants( INST * pinst = nullptr);
 
 BACKUP_CONTEXT::BACKUP_CONTEXT( INST * pinst )
     : CZeroInit( sizeof( BACKUP_CONTEXT ) ),
@@ -34,7 +34,7 @@ BACKUP_CONTEXT::BACKUP_CONTEXT( INST * pinst )
 LOCAL ERR ErrLGDeleteAllFiles( IFileSystemAPI *const pfsapi, __inout_bcount(cbDir) const PWSTR wszDir, ULONG cbDir )
 {
     ERR             err     = JET_errSuccess;
-    IFileFindAPI*   pffapi  = NULL;
+    IFileFindAPI*   pffapi  = nullptr;
 
     Assert( LOSStrLengthW( wszDir ) + 1 + 1 < IFileSystemAPI::cchPathMax );
 
@@ -91,7 +91,7 @@ HandleError:
 ERR ErrLGCheckDir( IFileSystemAPI *const pfsapi, __inout_bcount(cbDir) const PWSTR wszDir, ULONG cbDir, __in_opt PCWSTR wszSearch )
 {
     ERR             err     = JET_errSuccess;
-    IFileFindAPI*   pffapi  = NULL;
+    IFileFindAPI*   pffapi  = nullptr;
 
     Assert( LOSStrLengthW( wszDir ) + 1 + 1 < IFileSystemAPI::cchPathMax );
 
@@ -205,7 +205,7 @@ ERR BACKUP_CONTEXT::ErrBKIReadPages(
                     isz,
                     rgszT,
                     0,
-                    NULL,
+                    nullptr,
                     m_pinst );
         }
     }
@@ -362,7 +362,7 @@ ERR BACKUP_CONTEXT::ErrBKIReadPages(
                                     irgpsz,
                                     rgpsz,
                                     0,
-                                    NULL,
+                                    nullptr,
                                     m_pinst );
             }
         }
@@ -517,7 +517,7 @@ HandleError:
     /*  we just scrubbed the last page in the database
     /**/
     if ( fScrub
-        && ( NULL != m_pscrubdb )
+        && ( nullptr != m_pscrubdb )
         && ( g_rgfmp[ ifmp ].PgnoBackupCopyMost() == g_rgfmp[ ifmp ].PgnoBackupMost() ) )
     {
         /*  term the scrub
@@ -570,11 +570,11 @@ HandleError:
                 isz,
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
 
         delete m_pscrubdb;
-        m_pscrubdb = NULL;
+        m_pscrubdb = nullptr;
 
         g_rgfmp[ifmp].SetDbtimeLastScrub( m_dbtimeLastScrubNew );
         LOGTIME logtimeScrub;
@@ -601,7 +601,7 @@ ERR BACKUP_CONTEXT::ErrBKIPrepareLogFiles(
     _In_ PCWSTR                 wszBackupPath )
 {
     ERR         err;
-    CHECKPOINT  *pcheckpointT = NULL;
+    CHECKPOINT  *pcheckpointT = nullptr;
     LGPOS       lgposRecT;
     LOG *       plog = m_pinst->m_plog;
 
@@ -648,7 +648,7 @@ ERR BACKUP_CONTEXT::ErrBKIPrepareLogFiles(
     /*  to first log file generation number.
     /**/
     Assert( m_lgenDeleteMic == 0 );
-    Call ( plog->ErrLGGetGenerationRange( wszLogFilePath, &m_lgenDeleteMic, NULL ) );
+    Call ( plog->ErrLGGetGenerationRange( wszLogFilePath, &m_lgenDeleteMic, nullptr ) );
     if ( 0 == m_lgenDeleteMic )
     {
         Error( ErrERRCheck( JET_errFileNotFound ) );
@@ -661,7 +661,7 @@ ERR BACKUP_CONTEXT::ErrBKIPrepareLogFiles(
         /*  validate incremental backup against previous
         /*  full and incremenal backup.
         /**/
-        Call ( plog->ErrLGGetGenerationRange( wszBackupPath, NULL, &lgenT ) );
+        Call ( plog->ErrLGGetGenerationRange( wszBackupPath, nullptr, &lgenT ) );
         if ( m_lgenDeleteMic > lgenT + 1 )
         {
             Call( ErrERRCheck( JET_errInvalidLogSequence ) );
@@ -675,7 +675,7 @@ ERR BACKUP_CONTEXT::ErrBKIPrepareLogFiles(
 
     /*  set m_lgenDeleteMac to checkpoint log file
     /**/
-    AllocR( pcheckpointT = (CHECKPOINT *) PvOSMemoryPageAlloc( sizeof(CHECKPOINT), NULL ) );
+    AllocR( pcheckpointT = (CHECKPOINT *) PvOSMemoryPageAlloc( sizeof(CHECKPOINT), nullptr ) );
 
     plog->LGFullNameCheckpoint( wszPathJetChkLog );
     Call( plog->ErrLGReadCheckpoint( wszPathJetChkLog, pcheckpointT, fTrue ) );
@@ -774,7 +774,7 @@ ERR BACKUP_CONTEXT::ErrBKIPrepareLogFiles(
             2,
             rgszT,
             0,
-            NULL,
+            nullptr,
             m_pinst );
 
         OSStrCbFormatA(
@@ -832,7 +832,7 @@ ERR ErrLGCheckIncrementalBackup( INST *pinst, DBFILEHDR::BKINFOTYPE backupType )
                 const WCHAR *rgszT[csz];
                 rgszT[0] = pfmp->WszDatabaseName();
                 UtilReportEvent( eventError, LOGGING_RECOVERY_CATEGORY,
-                    DATABASE_MISS_FULL_BACKUP_ERROR_ID, csz, rgszT, 0, NULL, pinst );
+                    DATABASE_MISS_FULL_BACKUP_ERROR_ID, csz, rgszT, 0, nullptr, pinst );
                 return ErrERRCheck( JET_errMissingFullBackup );
             }
         }
@@ -885,7 +885,7 @@ ERR BACKUP_CONTEXT::ErrBKICheckLogsForIncrementalBackup( LONG lGenMinExisting )
                         lGenMaxBackup + 1 );
 
                 UtilReportEvent( eventError, LOGGING_RECOVERY_CATEGORY,
-                        BACKUP_LOG_FILE_MISSING_ERROR_ID, csz, rgszT, 0, NULL, m_pinst );
+                        BACKUP_LOG_FILE_MISSING_ERROR_ID, csz, rgszT, 0, nullptr, m_pinst );
 
                 return ErrERRCheck( JET_errMissingFileToBackup );
             }
@@ -980,8 +980,8 @@ ERR BACKUP_CONTEXT::ErrBKICopyFile(
     QWORD       ibOffset            = 0;
 
     DWORD       cbBuffer            = cpageBackupBufferMost * g_cbPage;
-    VOID *      pvBuffer            = NULL;
-    IFileAPI *  pfapiBackupDest     = NULL;
+    VOID *      pvBuffer            = nullptr;
+    IFileAPI *  pfapiBackupDest     = nullptr;
 
     if ( ((0xFFFFFFFF / cpageBackupBufferMost) <= g_cbPage) ||
          (cbBuffer < (DWORD)max(cpageBackupBufferMost, g_cbPage)) )
@@ -1004,7 +1004,7 @@ ERR BACKUP_CONTEXT::ErrBKICopyFile(
 
     if ( cbBuffer != 0 )
     {
-        Alloc( pvBuffer = PvOSMemoryPageAlloc( cbBuffer, NULL ) );
+        Alloc( pvBuffer = PvOSMemoryPageAlloc( cbBuffer, nullptr ) );
     }
 
     {
@@ -1093,10 +1093,10 @@ ERR BACKUP_CONTEXT::ErrBKICopyFile(
 
 HandleError:
 
-    if ( NULL != pvBuffer )
+    if ( nullptr != pvBuffer )
     {
         OSMemoryPageFree( pvBuffer );
-        pvBuffer = NULL;
+        pvBuffer = nullptr;
     }
 
     if ( pfapiBackupDest )
@@ -1141,7 +1141,7 @@ ERR BACKUP_CONTEXT::ErrBKIPrepareDirectory(
 
     if ( BoolParam( m_pinst, JET_paramCreatePathIfNotExist ) )
     {
-        Call( ErrUtilCreatePathIfNotExist( m_pinst->m_pfsapi, wszBackupPath, NULL, 0 ) );
+        Call( ErrUtilCreatePathIfNotExist( m_pinst->m_pfsapi, wszBackupPath, nullptr, 0 ) );
     }
 
     /*  reconsist atomic backup directory
@@ -1234,7 +1234,7 @@ ERR BACKUP_CONTEXT::ErrBKIPrepareDirectory(
         {
             /*  check for backup directory empty
             /**/
-            Call( ErrLGCheckDir( m_pinst->m_pfsapi, wszBackupPath, cbBackupPath, NULL ) );
+            Call( ErrLGCheckDir( m_pinst->m_pfsapi, wszBackupPath, cbBackupPath, nullptr ) );
         }
     }
 
@@ -1359,9 +1359,9 @@ ERR BACKUP_CONTEXT::ErrBKBackup(
     WCHAR       wszBackupPath[IFileSystemAPI::cchPathMax];
 
     ULONG           cInstanceInfo   = 0;
-    JET_INSTANCE_INFO_W *   aInstanceInfo   = NULL;
-    JET_INSTANCE_INFO_W *   pInstanceInfo   = NULL;
-    WCHAR *                 wszNames        = NULL;
+    JET_INSTANCE_INFO_W *   aInstanceInfo   = nullptr;
+    JET_INSTANCE_INFO_W *   pInstanceInfo   = nullptr;
+    WCHAR *                 wszNames        = nullptr;
 
     if ( plog->FLogDisabled() )
     {
@@ -1383,7 +1383,7 @@ ERR BACKUP_CONTEXT::ErrBKBackup(
 
     /*  if NULL backup directory then just delete log files
     /**/
-    if ( wszBackup == NULL || wszBackup[0] == L'\0' )
+    if ( wszBackup == nullptr || wszBackup[0] == L'\0' )
     {
         //  set lgenDeleteMac to current checkpoint
         m_lgenDeleteMac = plog->LgposGetCheckpoint().le_lGeneration;
@@ -1398,7 +1398,7 @@ ERR BACKUP_CONTEXT::ErrBKBackup(
         {
             //  ignore any errors (we will just force TruncateLog
             //  not to do anything)
-            (void)plog->ErrLGGetGenerationRange( SzParam( m_pinst, JET_paramLogFilePath ), &m_lgenDeleteMic, NULL );
+            (void)plog->ErrLGGetGenerationRange( SzParam( m_pinst, JET_paramLogFilePath ), &m_lgenDeleteMic, nullptr );
         }
 
         if ( 0 == m_lgenDeleteMic )
@@ -1433,7 +1433,7 @@ ERR BACKUP_CONTEXT::ErrBKBackup(
 
     /*  initialize status
     /**/
-    fShowStatus = ( pfnStatus != NULL );
+    fShowStatus = ( pfnStatus != nullptr );
     if ( fShowStatus )
     {
         Assert( 0 == snprog.cunitDone );
@@ -1444,11 +1444,11 @@ ERR BACKUP_CONTEXT::ErrBKBackup(
         /**/
         (*pfnStatus)( JET_snpBackup, JET_sntBegin, &snprog, pvStatusContext );
     }
-    Call ( ErrIsamGetInstanceInfo( &cInstanceInfo, &aInstanceInfo, NULL ) );
+    Call ( ErrIsamGetInstanceInfo( &cInstanceInfo, &aInstanceInfo, nullptr ) );
 
     // find the instance and backup all database file: edb
     {
-    pInstanceInfo = NULL;
+    pInstanceInfo = nullptr;
     for ( ULONG iInstanceInfo = 0; iInstanceInfo < cInstanceInfo && !pInstanceInfo; iInstanceInfo++)
     {
         if ( aInstanceInfo[iInstanceInfo].hInstanceId == (JET_INSTANCE)m_pinst )
@@ -1472,10 +1472,10 @@ CopyLogFiles:
     {
     ULONG           cbNames;
 
-    Call ( ErrBKGetLogInfo( NULL, 0, &cbNames, NULL, fFullBackup ) );
-    Alloc( wszNames = (WCHAR *)PvOSMemoryPageAlloc( cbNames, NULL ) );
+    Call ( ErrBKGetLogInfo( nullptr, 0, &cbNames, nullptr, fFullBackup ) );
+    Alloc( wszNames = (WCHAR *)PvOSMemoryPageAlloc( cbNames, nullptr ) );
 
-    Call ( ErrBKGetLogInfo( wszNames, cbNames, NULL, NULL, fFullBackup ) );
+    Call ( ErrBKGetLogInfo( wszNames, cbNames, nullptr, nullptr, fFullBackup ) );
     Assert ( wszNames );
     }
 
@@ -1518,13 +1518,13 @@ HandleError:
     if ( aInstanceInfo )
     {
         JetFreeBuffer( (char *)aInstanceInfo );
-        aInstanceInfo = NULL;
+        aInstanceInfo = nullptr;
     }
 
     if ( wszNames )
     {
         OSMemoryPageFree( wszNames );
-        wszNames = NULL;
+        wszNames = nullptr;
     }
 
     CallS ( ErrBKICleanupDirectory( wszBackup, wszBackupPath, sizeof(wszBackupPath) ) );
@@ -1628,7 +1628,7 @@ ERR ISAMAPI ErrIsamBeginExternalBackup( JET_INSTANCE jinst, JET_GRBIT grbit )
 ERR BACKUP_CONTEXT::ErrBKBeginExternalBackup( JET_GRBIT grbit, ULONG lgenFirst, ULONG lgenLast )
 {
     ERR         err = JET_errSuccess;
-    CHECKPOINT  *pcheckpointT = NULL;
+    CHECKPOINT  *pcheckpointT = nullptr;
     WCHAR       wszPathJetChkLog[IFileSystemAPI::cchPathMax];
     DBID dbid;
     
@@ -1833,7 +1833,7 @@ ERR BACKUP_CONTEXT::ErrBKBeginExternalBackup( JET_GRBIT grbit, ULONG lgenFirst, 
             DBGBRTrace( "Incremental Backup.\n" );
 #endif
         UtilReportEvent( eventInformation, LOGGING_RECOVERY_CATEGORY,
-                START_INCREMENTAL_BACKUP_INSTANCE_ID, 0, NULL, 0, NULL, m_pinst );
+                START_INCREMENTAL_BACKUP_INSTANCE_ID, 0, nullptr, 0, nullptr, m_pinst );
         m_fBackupFull = fFalse;
 
         /*  if all database are allowed to do incremental backup? Check bkinfo prev.
@@ -1853,9 +1853,9 @@ ERR BACKUP_CONTEXT::ErrBKBeginExternalBackup( JET_GRBIT grbit, ULONG lgenFirst, 
                 LOGGING_RECOVERY_CATEGORY,
                 START_INTERNAL_COPY_INSTANCE_ID,
                 0,
-                NULL,
+                nullptr,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
         }
         else
@@ -1865,14 +1865,14 @@ ERR BACKUP_CONTEXT::ErrBKBeginExternalBackup( JET_GRBIT grbit, ULONG lgenFirst, 
                 LOGGING_RECOVERY_CATEGORY,
                 START_FULL_BACKUP_INSTANCE_ID,
                 0,
-                NULL,
+                nullptr,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
         }
         m_fBackupFull = fTrue;
 
-        Alloc( pcheckpointT = (CHECKPOINT *) PvOSMemoryPageAlloc( sizeof(CHECKPOINT), NULL ) );
+        Alloc( pcheckpointT = (CHECKPOINT *) PvOSMemoryPageAlloc( sizeof(CHECKPOINT), nullptr ) );
 
         m_pinst->m_plog->LGFullNameCheckpoint( wszPathJetChkLog );
 
@@ -1902,7 +1902,7 @@ ERR BACKUP_CONTEXT::ErrBKBeginExternalBackup( JET_GRBIT grbit, ULONG lgenFirst, 
         m_lgenCopyMac = lgenLast;
     }
 HandleError:
-    if ( pcheckpointT != NULL )
+    if ( pcheckpointT != nullptr )
     {
         OSMemoryPageFree( pcheckpointT );
     }
@@ -1948,7 +1948,7 @@ ERR BACKUP_CONTEXT::ErrBKGetAttachInfo(
     ERR     err = JET_errSuccess;
     DBID    dbid;
     ULONG   cbActual;
-    WCHAR   *pwch = NULL;
+    WCHAR   *pwch = nullptr;
     WCHAR   *pwchT;
 
     if ( !m_fBackupInProgressLocal )
@@ -2033,23 +2033,23 @@ ERR BACKUP_CONTEXT::ErrBKGetAttachInfo(
 
     /*  return cbActual
     /**/
-    if ( pcbActual != NULL )
+    if ( pcbActual != nullptr )
     {
         *pcbActual = cbActual;
     }
 
     /*  return data
     /**/
-    if ( wszzDatabases != NULL )
+    if ( wszzDatabases != nullptr )
         UtilMemCpy( wszzDatabases, pwch, min( cbMax, cbActual ) );
 
 HandleError:
     /*  free buffer
     /**/
-    if ( pwch != NULL )
+    if ( pwch != nullptr )
     {
         OSMemoryHeapFree( pwch );
-        pwch = NULL;
+        pwch = nullptr;
     }
 
 #ifdef DEBUG
@@ -2162,7 +2162,7 @@ ERR BACKUP_CONTEXT::ErrBKOpenFile(
         }
     }
 
-    if ( NULL == wszFileName || 0 == *wszFileName )
+    if ( nullptr == wszFileName || 0 == *wszFileName )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -2218,18 +2218,18 @@ ERR BACKUP_CONTEXT::ErrBKOpenFile(
     m_rgrhf[irhf].fDatabase         = fFalse;
     m_rgrhf[irhf].fIsLog            = fFalse;
     m_rgrhf[irhf].pLogVerifyState   = pNil;
-    m_rgrhf[irhf].pfapi             = NULL;
+    m_rgrhf[irhf].pfapi             = nullptr;
     m_rgrhf[irhf].ifmp              = g_ifmpMax;
     m_rgrhf[irhf].ib                = ibRead;
     m_rgrhf[irhf].cb                = 0;
-    m_rgrhf[irhf].wszFileName       = NULL;
+    m_rgrhf[irhf].wszFileName       = nullptr;
     m_rgrhf[irhf].lGeneration       = 0;
-    m_rgrhf[irhf].pdbfilehdr        = NULL;
+    m_rgrhf[irhf].pdbfilehdr        = nullptr;
 
     Assert ( LOSStrLengthW(wszFNameT) > 0 );
     const ULONG cbFNameT = sizeof(WCHAR ) * ( 1 + LOSStrLengthW(wszFNameT) );
     m_rgrhf[irhf].wszFileName = static_cast<WCHAR *>( PvOSMemoryHeapAlloc( cbFNameT ) );
-    if ( NULL == m_rgrhf[irhf].wszFileName )
+    if ( nullptr == m_rgrhf[irhf].wszFileName )
     {
         m_rgrhf[irhf].fInUse = fFalse;
         return ErrERRCheck( JET_errOutOfMemory );
@@ -2300,7 +2300,7 @@ ERR BACKUP_CONTEXT::ErrBKOpenFile(
         {
             /*  create a local patch file
             /**/
-            IFileAPI *  pfapiPatch      = NULL;
+            IFileAPI *  pfapiPatch      = nullptr;
             WCHAR       wszPatch[IFileSystemAPI::cchPathMax];
 
             /*  patch file should be in database directory during backup. In log directory during
@@ -2326,7 +2326,7 @@ ERR BACKUP_CONTEXT::ErrBKOpenFile(
         // database reflects the size of the database copied and we are not missing updates to pages extended between
         // now and when we start reading the database.
         //
-        Alloc( m_rgrhf[irhf].pdbfilehdr = (DBFILEHDR *)PvOSMemoryPageAlloc( g_cbPage, NULL ) );
+        Alloc( m_rgrhf[irhf].pdbfilehdr = (DBFILEHDR *)PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
         UtilMemCpy( m_rgrhf[irhf].pdbfilehdr, pfmpT->Pdbfilehdr(), g_cbPage );
         BKINFO *pbkinfo = &m_rgrhf[irhf].pdbfilehdr->bkinfoFullCur;
         pbkinfo->le_lgposMark = m_lgposFullBackupMark;
@@ -2388,7 +2388,7 @@ ERR BACKUP_CONTEXT::ErrBKOpenFile(
 
         if ( !pfmpT->Ppatchhdr() )
         {
-            Alloc( ppatchhdr = (PATCH_HEADER_PAGE*)PvOSMemoryPageAlloc( g_cbPage, NULL ) );
+            Alloc( ppatchhdr = (PATCH_HEADER_PAGE*)PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
             pfmpT->SetPpatchhdr( ppatchhdr );
         }
 
@@ -2484,7 +2484,7 @@ ERR BACKUP_CONTEXT::ErrBKOpenFile(
                 const WCHAR * rgszT[] = { wszFileName };
 
                 UtilReportEvent( eventError, LOGGING_RECOVERY_CATEGORY,
-                        BACKUP_LOG_FILE_MISSING_ERROR_ID, 1, rgszT, 0, NULL, m_pinst );
+                        BACKUP_LOG_FILE_MISSING_ERROR_ID, 1, rgszT, 0, nullptr, m_pinst );
 
                 err = ErrERRCheck( JET_errMissingFileToBackup );
             }
@@ -2543,12 +2543,12 @@ ERR BACKUP_CONTEXT::ErrBKOpenFile(
             OSStrCbFormatW( wszSize, sizeof(wszSize), L"%I64u Kb", m_rgrhf[irhf].cb / QWORD(1024) );
         }
 
-        UtilReportEvent( eventInformation, LOGGING_RECOVERY_CATEGORY, BACKUP_FILE_START, 2, rgszT, 0, NULL, m_pinst );
+        UtilReportEvent( eventInformation, LOGGING_RECOVERY_CATEGORY, BACKUP_FILE_START, 2, rgszT, 0, nullptr, m_pinst );
 
         CallS( ErrOSSTRUnicodeToAscii( m_rgrhf[irhf].wszFileName,
                                        szFileNameA,
                                        sizeof( szFileNameA ),
-                                       NULL,
+                                       nullptr,
                                        OSSTR_ALLOW_LOSSY ) );
         const INT cbFillBuffer = 64 + IFileSystemAPI::cchPathMax;
         char szTrace[cbFillBuffer + 1];
@@ -2605,7 +2605,7 @@ HandleError:
                 if ( pfmpT->Ppatchhdr() )
                 {
                     OSMemoryPageFree( pfmpT->Ppatchhdr() );
-                    pfmpT->SetPpatchhdr( NULL );
+                    pfmpT->SetPpatchhdr( nullptr );
                 }
 
                 if ( fIncludePatch )
@@ -2635,7 +2635,7 @@ HandleError:
                     2,
                     rgszT,
                     0,
-                    NULL,
+                    nullptr,
                     m_pinst );
 
             Assert( m_fBackupInProgressLocal );
@@ -2644,12 +2644,12 @@ HandleError:
             /**/
             Assert ( m_rgrhf[irhf].wszFileName );
             OSMemoryHeapFree( m_rgrhf[irhf].wszFileName );
-            m_rgrhf[irhf].wszFileName = NULL;
+            m_rgrhf[irhf].wszFileName = nullptr;
 
-            if ( m_rgrhf[irhf].pdbfilehdr != NULL )
+            if ( m_rgrhf[irhf].pdbfilehdr != nullptr )
             {
                 OSMemoryPageFree( m_rgrhf[irhf].pdbfilehdr );
-                m_rgrhf[irhf].pdbfilehdr = NULL;
+                m_rgrhf[irhf].pdbfilehdr = nullptr;
             }
 
             m_rgrhf[irhf].fInUse = fFalse;
@@ -2661,7 +2661,7 @@ HandleError:
             /**/
             Assert ( m_rgrhf[irhf].wszFileName );
             OSMemoryHeapFree( m_rgrhf[irhf].wszFileName );
-            m_rgrhf[irhf].wszFileName = NULL;
+            m_rgrhf[irhf].wszFileName = nullptr;
 
             m_rgrhf[irhf].fInUse = fFalse;
 
@@ -2689,7 +2689,7 @@ ERR BACKUP_CONTEXT::ErrBKReadFile(
     ERR     err = JET_errSuccess;
     INT     irhf = (INT)hfFile;
     INT     cpage = 0;
-    FMP     *pfmpT = NULL;
+    FMP     *pfmpT = nullptr;
     INT     cbActual = 0;
 
 #ifdef DEBUG
@@ -2927,11 +2927,11 @@ HandleError:
             if ( pfmpT->Ppatchhdr() )
             {
                 OSMemoryPageFree( pfmpT->Ppatchhdr() );
-                pfmpT->SetPpatchhdr( NULL );
+                pfmpT->SetPpatchhdr( nullptr );
             }
 
             UtilReportEvent( eventError, LOGGING_RECOVERY_CATEGORY,
-                BACKUP_ERROR_FOR_ONE_DATABASE, 2, rgszT, 0, NULL, m_pinst );
+                BACKUP_ERROR_FOR_ONE_DATABASE, 2, rgszT, 0, nullptr, m_pinst );
 
             CallS( ErrBKCloseFile( hfFile ) );
             Assert( m_fBackupInProgressLocal );
@@ -2939,7 +2939,7 @@ HandleError:
         else
         {
             UtilReportEvent( eventError, LOGGING_RECOVERY_CATEGORY,
-                BACKUP_ERROR_READ_FILE, 2, rgszT, 0, NULL, m_pinst );
+                BACKUP_ERROR_READ_FILE, 2, rgszT, 0, nullptr, m_pinst );
 
             CallS( ErrBKExternalBackupCleanUp( err ) );
             Assert( !m_fBackupInProgressLocal && !m_fBackupInProgressAny );
@@ -2994,10 +2994,10 @@ ERR BACKUP_CONTEXT::ErrBKCloseFile( JET_HANDLE hfFile )
         g_rgfmp[ifmpT].ResetFCopiedPatchHeader();
         g_rgfmp[ifmpT].CritLatch().Leave();
 
-        if ( m_rgrhf[irhf].pdbfilehdr != NULL )
+        if ( m_rgrhf[irhf].pdbfilehdr != nullptr )
         {
             OSMemoryPageFree( m_rgrhf[irhf].pdbfilehdr );
-            m_rgrhf[irhf].pdbfilehdr = NULL;
+            m_rgrhf[irhf].pdbfilehdr = nullptr;
         }
 
         // Assert no longer valid as we reset this flag defore
@@ -3027,7 +3027,7 @@ ERR BACKUP_CONTEXT::ErrBKCloseFile( JET_HANDLE hfFile )
             // be ignoreable in this cleanup.
             CallSRFS( m_pscrubdb->ErrTerm(), ( JET_errDiskIO, 0 ) ); // may fail with JET_errOutOfMemory. what to do?
             delete m_pscrubdb;
-            m_pscrubdb = NULL;
+            m_pscrubdb = nullptr;
         }
 #endif
 
@@ -3038,7 +3038,7 @@ ERR BACKUP_CONTEXT::ErrBKCloseFile( JET_HANDLE hfFile )
         Assert ( ( backupStateLogsAndPatchs == m_fBackupStatus ) );
 
         delete m_rgrhf[irhf].pfapi;
-        m_rgrhf[irhf].pfapi = NULL;
+        m_rgrhf[irhf].pfapi = nullptr;
         if ( m_rgrhf[irhf].fIsLog )
         {
             delete m_rgrhf[irhf].pLogVerifyState;
@@ -3060,7 +3060,7 @@ ERR BACKUP_CONTEXT::ErrBKCloseFile( JET_HANDLE hfFile )
             // if all file read, report just EDB files
             if ( m_rgrhf[irhf].fDatabase )
             {
-                UtilReportEvent( eventInformation, LOGGING_RECOVERY_CATEGORY, BACKUP_FILE_STOP_OK, 1, rgszT, 0, NULL, m_pinst );
+                UtilReportEvent( eventInformation, LOGGING_RECOVERY_CATEGORY, BACKUP_FILE_STOP_OK, 1, rgszT, 0, nullptr, m_pinst );
 
                 if (m_rgrhf[irhf].fDatabase)
                 {
@@ -3097,11 +3097,11 @@ ERR BACKUP_CONTEXT::ErrBKCloseFile( JET_HANDLE hfFile )
 
             if ( m_fBackupIsInternal )
             {
-                UtilReportEvent( eventInformation, LOGGING_RECOVERY_CATEGORY, INTERNAL_COPY_FILE_STOP_BEFORE_END, 3, rgszT, 0, NULL, m_pinst );
+                UtilReportEvent( eventInformation, LOGGING_RECOVERY_CATEGORY, INTERNAL_COPY_FILE_STOP_BEFORE_END, 3, rgszT, 0, nullptr, m_pinst );
             }
             else
             {
-                UtilReportEvent( eventInformation, LOGGING_RECOVERY_CATEGORY, BACKUP_FILE_STOP_BEFORE_END, 3, rgszT, 0, NULL, m_pinst );
+                UtilReportEvent( eventInformation, LOGGING_RECOVERY_CATEGORY, BACKUP_FILE_STOP_BEFORE_END, 3, rgszT, 0, nullptr, m_pinst );
             }
         }
 
@@ -3111,7 +3111,7 @@ ERR BACKUP_CONTEXT::ErrBKCloseFile( JET_HANDLE hfFile )
             CallS( ErrOSSTRUnicodeToAscii( m_rgrhf[irhf].wszFileName,
                                            szFileNameA,
                                            sizeof( szFileNameA ),
-                                           NULL,
+                                           nullptr,
                                            OSSTR_ALLOW_LOSSY ) );
             const INT cbFillBuffer = 64 + IFileSystemAPI::cchPathMax;
             char szTrace[cbFillBuffer + 1];
@@ -3132,11 +3132,11 @@ ERR BACKUP_CONTEXT::ErrBKCloseFile( JET_HANDLE hfFile )
     m_rgrhf[irhf].fDatabase         = fFalse;
     m_rgrhf[irhf].fIsLog            = fFalse;
     m_rgrhf[irhf].pLogVerifyState   = pNil;
-    m_rgrhf[irhf].pfapi             = NULL;
+    m_rgrhf[irhf].pfapi             = nullptr;
     m_rgrhf[irhf].ifmp              = g_ifmpMax;
     m_rgrhf[irhf].ib                = 0;
     m_rgrhf[irhf].cb                = 0;
-    m_rgrhf[irhf].wszFileName       = NULL;
+    m_rgrhf[irhf].wszFileName       = nullptr;
 
 #ifdef DEBUG
     if ( m_fDBGTraceBR )
@@ -3188,7 +3188,7 @@ ERR BACKUP_CONTEXT::ErrBKIPrepareLogInfo()
             m_fBackupFull ? 0 : JET_bitBackupIncremental ,
             SzParam( m_pinst, JET_paramLogFilePath ),
             wszPathJetChkLog,
-            NULL ) );
+            nullptr ) );
     }
 
 HandleError:
@@ -3206,7 +3206,7 @@ ERR BACKUP_CONTEXT::ErrBKIGetLogInfo(
 {
     ERR         err = JET_errSuccess;
     LONG        lT;
-    WCHAR       *pch = NULL;
+    WCHAR       *pch = nullptr;
     WCHAR       *pchT;
     ULONG       cbActual;
     WCHAR       wszDirT[IFileSystemAPI::cchPathMax];
@@ -3348,13 +3348,13 @@ ERR BACKUP_CONTEXT::ErrBKIGetLogInfo(
 
     /*  return data
     /**/
-    if ( wszzLogs != NULL )
+    if ( wszzLogs != nullptr )
     {
         UtilMemCpy( wszzLogs, pch, min( cbMax, cbActual ) );
 
         /*  return cbActual
         /**/
-        if ( pcbActual != NULL )
+        if ( pcbActual != nullptr )
         {
             *pcbActual = min( cbMax, cbActual );
         }
@@ -3363,7 +3363,7 @@ ERR BACKUP_CONTEXT::ErrBKIGetLogInfo(
     {
         /*  return cbActual
         /**/
-        if ( pcbActual != NULL )
+        if ( pcbActual != nullptr )
         {
             *pcbActual = cbActual;
         }
@@ -3372,10 +3372,10 @@ ERR BACKUP_CONTEXT::ErrBKIGetLogInfo(
 
 HandleError:
 
-    if ( pch != NULL )
+    if ( pch != nullptr )
     {
         OSMemoryHeapFree( pch );
-        pch = NULL;
+        pch = nullptr;
     }
 
 #ifdef DEBUG
@@ -3429,7 +3429,7 @@ HandleError:
     }
     else
     {
-        if ( NULL != pLogInfo )
+        if ( nullptr != pLogInfo )
         {
             Assert ( pLogInfo->cbSize == sizeof( JET_LOGINFO_W ) );
 
@@ -3489,7 +3489,7 @@ ERR BACKUP_CONTEXT::ErrBKGetTruncateLogInfo(
 
     Assert ( m_lgenDeleteMic <= m_lgenDeleteMac );
 
-    return ErrBKIGetLogInfo( m_lgenDeleteMic, m_lgenDeleteMac, fFalse, wszzLogs, cbMax, pcbActual, NULL);
+    return ErrBKIGetLogInfo( m_lgenDeleteMic, m_lgenDeleteMac, fFalse, wszzLogs, cbMax, pcbActual, nullptr);
 }
 
 
@@ -3550,7 +3550,7 @@ ERR BACKUP_CONTEXT::ErrBKTruncateLog()
     //
     if ( m_cGenCopyDone < cGenCopyMust )
     {
-        UtilReportEvent( eventWarning, LOGGING_RECOVERY_CATEGORY, BACKUP_LOG_FILE_NOT_COPIED_ID, 0, NULL, 0 , NULL, m_pinst );
+        UtilReportEvent( eventWarning, LOGGING_RECOVERY_CATEGORY, BACKUP_LOG_FILE_NOT_COPIED_ID, 0, nullptr, 0 , nullptr, m_pinst );
 
         return ErrERRCheck( JET_errLogFileNotCopied );
     }
@@ -3578,7 +3578,7 @@ ERR BACKUP_CONTEXT::ErrBKOSSnapshotTruncateLog( const JET_GRBIT grbit )
 
     if ( JET_bitAllDatabasesSnapshot == grbit && !BoolParam( m_pinst, JET_paramCircularLog ) )
     {
-        Call ( m_pinst->m_plog->ErrLGGetGenerationRange( SzParam( m_pinst, JET_paramLogFilePath ), &m_lgenDeleteMic, NULL ) );
+        Call ( m_pinst->m_plog->ErrLGGetGenerationRange( SzParam( m_pinst, JET_paramLogFilePath ), &m_lgenDeleteMic, nullptr ) );
 
         if ( m_lgenDeleteMic > m_lgenDeleteMac )
         {
@@ -3666,7 +3666,7 @@ void BACKUP_CONTEXT::BKOSSnapshotSaveInfo( const BOOL fIncremental, const BOOL f
         OSStrCbFormatW( sz1T, sizeof(sz1T), L"%d", ( errUpdateLog < JET_errSuccess ) ? errUpdateLog : errUpdateHdr );
         rgszT[0] = sz1T;
 
-        UtilReportEvent( eventWarning, LOGGING_RECOVERY_CATEGORY, BACKUP_ERROR_INFO_UPDATE, 1, rgszT, 0 , NULL, m_pinst );
+        UtilReportEvent( eventWarning, LOGGING_RECOVERY_CATEGORY, BACKUP_ERROR_INFO_UPDATE, 1, rgszT, 0 , nullptr, m_pinst );
     }
 
     return;
@@ -3779,7 +3779,7 @@ ERR BACKUP_CONTEXT::ErrBKOSSnapshotStopLogging( const BOOL fIncremental )
         m_lgenCopyMac = m_lgposIncBackup.lGeneration - 1;
 
         // on incrementals, we need to copy from the first existing log
-        Call ( m_pinst->m_plog->ErrLGGetGenerationRange( SzParam( m_pinst, JET_paramLogFilePath ), &m_lgenCopyMic, NULL ) );
+        Call ( m_pinst->m_plog->ErrLGGetGenerationRange( SzParam( m_pinst, JET_paramLogFilePath ), &m_lgenCopyMic, nullptr ) );
 
         // we were just during the first log
         if ( 0 == m_lgenCopyMic )
@@ -3956,7 +3956,7 @@ VOID BACKUP_CONTEXT::BKIOSSnapshotGetFreezeLogRec( LGPOS* const plgposFreezeLogR
     Assert( NULL != pOSSnapshotSession );
 
     *plgposFreezeLogRec = lgposMax;
-    if ( NULL != pOSSnapshotSession )
+    if ( nullptr != pOSSnapshotSession )
     {
         if ( pOSSnapshotSession->IsIncrementalSnapshot( ) )
         {
@@ -4189,7 +4189,7 @@ ERR BACKUP_CONTEXT::ErrBKExternalBackupCleanUp( ERR error, const JET_GRBIT grbit
         {
             Assert ( !m_rgrhf[irhf].fDatabase );
             delete m_rgrhf[irhf].pfapi;
-            m_rgrhf[irhf].pfapi = NULL;
+            m_rgrhf[irhf].pfapi = nullptr;
         }
     }
 
@@ -4330,7 +4330,7 @@ ERR BACKUP_CONTEXT::ErrBKExternalBackupCleanUp( ERR error, const JET_GRBIT grbit
             if ( pfmp->Ppatchhdr() )
             {
                 OSMemoryPageFree( pfmp->Ppatchhdr() );
-                pfmp->SetPpatchhdr( NULL );
+                pfmp->SetPpatchhdr( nullptr );
             }
 
             pfmp->ResetInBackupSession();
@@ -4369,7 +4369,7 @@ ERR BACKUP_CONTEXT::ErrBKExternalBackupCleanUp( ERR error, const JET_GRBIT grbit
             m_rgrhf[irhf].fInUse = fFalse;
 
             OSMemoryHeapFree ( m_rgrhf[irhf].wszFileName );
-            m_rgrhf[irhf].wszFileName = NULL;
+            m_rgrhf[irhf].wszFileName = nullptr;
 
         }
     }
@@ -4392,9 +4392,9 @@ ERR BACKUP_CONTEXT::ErrBKExternalBackupCleanUp( ERR error, const JET_GRBIT grbit
                     LOGGING_RECOVERY_CATEGORY,
                     STOP_INTERNAL_COPY_INSTANCE_ID,
                     0,
-                    NULL,
+                    nullptr,
                     0,
-                    NULL,
+                    nullptr,
                     m_pinst );
         }
         else
@@ -4404,9 +4404,9 @@ ERR BACKUP_CONTEXT::ErrBKExternalBackupCleanUp( ERR error, const JET_GRBIT grbit
                     LOGGING_RECOVERY_CATEGORY,
                     STOP_BACKUP_INSTANCE_ID,
                     0,
-                    NULL,
+                    nullptr,
                     0,
-                    NULL,
+                    nullptr,
                     m_pinst );
 
         }
@@ -4432,7 +4432,7 @@ ERR BACKUP_CONTEXT::ErrBKExternalBackupCleanUp( ERR error, const JET_GRBIT grbit
 
             OSStrCbFormatW( sz1T, sizeof(sz1T), L"%d", ( errUpdateLog < JET_errSuccess ) ? errUpdateLog : errUpdateHdr );
             rgszT[0] = sz1T;
-            UtilReportEvent( eventWarning, LOGGING_RECOVERY_CATEGORY, BACKUP_ERROR_INFO_UPDATE, 1, rgszT, 0 , NULL, m_pinst );
+            UtilReportEvent( eventWarning, LOGGING_RECOVERY_CATEGORY, BACKUP_ERROR_INFO_UPDATE, 1, rgszT, 0 , nullptr, m_pinst );
         }
         else
         {
@@ -4450,9 +4450,9 @@ ERR BACKUP_CONTEXT::ErrBKExternalBackupCleanUp( ERR error, const JET_GRBIT grbit
                     LOGGING_RECOVERY_CATEGORY,
                     STOP_INTERNAL_COPY_ERROR_ABORT_BY_CALLER_INSTANCE_ID,
                     0,
-                    NULL,
+                    nullptr,
                     0,
-                    NULL,
+                    nullptr,
                     m_pinst );
         }
         else
@@ -4462,9 +4462,9 @@ ERR BACKUP_CONTEXT::ErrBKExternalBackupCleanUp( ERR error, const JET_GRBIT grbit
                     LOGGING_RECOVERY_CATEGORY,
                     STOP_BACKUP_ERROR_ABORT_BY_CALLER_INSTANCE_ID,
                     0,
-                    NULL,
+                    nullptr,
                     0,
-                    NULL,
+                    nullptr,
                     m_pinst );
         }
     }
@@ -4477,9 +4477,9 @@ ERR BACKUP_CONTEXT::ErrBKExternalBackupCleanUp( ERR error, const JET_GRBIT grbit
                     LOGGING_RECOVERY_CATEGORY,
                     STOP_INTERNAL_COPY_ERROR_ABORT_BY_SERVER_INSTANCE_ID,
                     0,
-                    NULL,
+                    nullptr,
                     0,
-                    NULL,
+                    nullptr,
                     m_pinst );
         }
         else
@@ -4489,9 +4489,9 @@ ERR BACKUP_CONTEXT::ErrBKExternalBackupCleanUp( ERR error, const JET_GRBIT grbit
                     LOGGING_RECOVERY_CATEGORY,
                     STOP_BACKUP_ERROR_ABORT_BY_SERVER_INSTANCE_ID,
                     0,
-                    NULL,
+                    nullptr,
                     0,
-                    NULL,
+                    nullptr,
                     m_pinst );
         }
     }
@@ -4513,7 +4513,7 @@ ERR BACKUP_CONTEXT::ErrBKExternalBackupCleanUp( ERR error, const JET_GRBIT grbit
                     csz,
                     rgszT,
                     0,
-                    NULL,
+                    nullptr,
                     m_pinst );
         }
         else
@@ -4525,7 +4525,7 @@ ERR BACKUP_CONTEXT::ErrBKExternalBackupCleanUp( ERR error, const JET_GRBIT grbit
                     csz,
                     rgszT,
                     0,
-                    NULL,
+                    nullptr,
                     m_pinst );
         }
     }
@@ -4536,7 +4536,7 @@ ERR BACKUP_CONTEXT::ErrBKExternalBackupCleanUp( ERR error, const JET_GRBIT grbit
     {
         CallS( m_pscrubdb->ErrTerm() ); // may fail with JET_errOutOfMemory. what to do?
         delete m_pscrubdb;
-        m_pscrubdb = NULL;
+        m_pscrubdb = nullptr;
     }
 #endif
 
@@ -4557,7 +4557,7 @@ ERR BACKUP_CONTEXT::ErrBKExternalBackupCleanUp( ERR error, const JET_GRBIT grbit
                          fSurrogateBackup ? DBFILEHDR::backupSurrogate : DBFILEHDR::backupNormal,
                          !m_fBackupFull,
                          BoolParam( m_pinst, JET_paramAggressiveLogRollover ) ? fLGCreateNewGen : 0,
-                         NULL );
+                         nullptr );
     }
     // we ignore the error.
 

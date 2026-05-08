@@ -400,10 +400,10 @@ BOOL FChecksumFile(
     ERR                 err                 = JET_errSuccess;
 
     CTaskManager        taskmgr;
-    IFileSystemAPI*     pfsapi              = NULL;
-    IFileAPI*           pfapi               = NULL;
-    BYTE*               pbBlock             = NULL;
-    CChecksumContext**  rgpchecksumcontext  = NULL;
+    IFileSystemAPI*     pfsapi              = nullptr;
+    IFileAPI*           pfapi               = nullptr;
+    BYTE*               pbBlock             = nullptr;
+    CChecksumContext**  rgpchecksumcontext  = nullptr;
 
     CHECKSUM_STATS      checksumstats       = { 0 };
     CSemaphore          sem( CSyncBasicInfo( "FChecksumFile" ) );
@@ -446,7 +446,7 @@ BOOL FChecksumFile(
 
     //  create the task manager
 
-    Call( taskmgr.ErrTMInit( cblocks, NULL, fTrue ) );
+    Call( taskmgr.ErrTMInit( cblocks, nullptr, fTrue ) );
 
     //  open the file
 
@@ -470,9 +470,9 @@ BOOL FChecksumFile(
     Alloc( rgpchecksumcontext = new CChecksumContext*[ cblocks ] );
     for ( iblockio = 0; iblockio < cblocks; ++iblockio )
     {
-        Alloc( pbBlock = (BYTE*)PvOSMemoryPageAlloc( g_cbReadBuffer, NULL ) );
+        Alloc( pbBlock = (BYTE*)PvOSMemoryPageAlloc( g_cbReadBuffer, nullptr ) );
         Alloc( rgpchecksumcontext[ iblockio ] = new CChecksumContext( &taskmgr, &checksumstats, &sem, pfapi, pbBlock ) );
-        pbBlock = NULL;
+        pbBlock = nullptr;
 
         err = ErrIssueNextIO( rgpchecksumcontext[ iblockio ] );
         if ( err == JET_errFileIOBeyondEOF )
@@ -516,7 +516,7 @@ BOOL FChecksumFile(
     //  mismatches, then always return fTrue if we got this far,
     //  and report checksum mismatches in the flag
     //
-    if ( NULL != pfBadPagesDetected )
+    if ( nullptr != pfBadPagesDetected )
     {
         *pfBadPagesDetected = !fSuccess;
         fSuccess = fTrue;

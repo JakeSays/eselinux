@@ -41,7 +41,7 @@ VOID LGDumpDiff( const LOG* const plog, const LR * const plr, CPRINTF * const pc
     const BYTE *            pbDiffCur   = pbDiff;
     const BYTE *            pbDiffMax   = pbDiff + plrReplaceD->Cb();
     const BOOL              fDiff2      = plrReplaceD->FDiff2();
-    const UINT              iVerbosityLevel = ( plog != NULL ) ? plog->IDumpVerbosityLevel() : LOG::ldvlMax;
+    const UINT              iVerbosityLevel = ( plog != nullptr ) ? plog->IDumpVerbosityLevel() : LOG::ldvlMax;
 
 #ifndef DEBUGGER_EXTENSION
     Assert( plog != NULL );

@@ -22,19 +22,19 @@ CTaskManager::CTaskManager()
     :       m_critTask( CLockBasicInfo( CSyncBasicInfo( szCritTaskList ), rankCritTaskList, 0 ) ),
             m_critActivateThread( CLockBasicInfo( CSyncBasicInfo( szCritActiveThread ), rankCritTaskList, 0 ) ),
             m_semTaskDispatch( CSyncBasicInfo( szSemTaskDispatch ) ),
-            m_rgpTaskNode( NULL ),
+            m_rgpTaskNode( nullptr ),
             m_cThread( 0 ),
             m_cThreadMax( 0 ),
             m_cPostedTasks( 0 ),
             m_cmsLastActivateThreadTime( 0 ),
             m_cTasksThreshold( 0 ),
-            m_rgThreadContext( NULL ),
-            m_hIOCPTaskDispatch( NULL ),
+            m_rgThreadContext( nullptr ),
+            m_hIOCPTaskDispatch( nullptr ),
             m_fIOCPHasRegisteredFile( fFalse ),
 #ifndef RTM
             m_irrcpiLast( 0 ),
 #endif
-            m_pfnFileIOCompletion( NULL )
+            m_pfnFileIOCompletion( nullptr )
 {
 #ifndef RTM
     memset( m_rgcpiLast, 0, _countof(m_rgcpiLast)*sizeof(m_rgcpiLast[0]) );
@@ -109,7 +109,7 @@ VOID CTaskManager::TMTerm()
 
     cThread = m_cThread;
 
-    if ( NULL != m_rgThreadContext )
+    if ( nullptr != m_rgThreadContext )
     {
         for ( iThread = 0; iThread < cThread; iThread++ )
         {
@@ -127,7 +127,7 @@ VOID CTaskManager::TMTerm()
 
             //  prevent cleanup from freeing the extra task-node
 
-            m_rgpTaskNode[iThread] = NULL;
+            m_rgpTaskNode[iThread] = nullptr;
         }
 
         for ( iThread = 0; iThread < cThread; iThread++ )
@@ -140,7 +140,7 @@ VOID CTaskManager::TMTerm()
 
         delete[] m_rgThreadContext;
     }
-    m_rgThreadContext = NULL;
+    m_rgThreadContext = nullptr;
     m_cThread = 0;
     m_cTasksThreshold = 0;
     m_cmsLastActivateThreadTime = 0;
@@ -171,7 +171,7 @@ VOID CTaskManager::TMTerm()
         }
         delete [] m_rgpTaskNode;
     }
-    m_rgpTaskNode = NULL;
+    m_rgpTaskNode = nullptr;
 }
 
 
@@ -271,7 +271,7 @@ VOID CTaskManager::TMIDispatch( const DWORD_PTR dwThreadContext )
     while ( Postls()->fIsTaskThread )
     {
         cpi.fDequeued               = fFalse;
-        cpi.pfnCompletion           = NULL;
+        cpi.pfnCompletion           = nullptr;
         cpi.dwCompletionKey1        = 0;
         cpi.dwCompletionKey2        = 0;
         cpi.fGQCSSuccess            = fFalse;
@@ -317,7 +317,7 @@ VOID CTaskManager::TMIDispatch( const DWORD_PTR dwThreadContext )
         OnNonRTM( const DWORD irrcpi = AtomicIncrement( (LONG*)&m_irrcpiLast ) );
         OnNonRTM( m_rgcpiLast[irrcpi%_countof(m_rgcpiLast)] = cpi );
 
-        AssertRTL( !cpi.fDequeued || cpi.pfnCompletion != NULL );
+        AssertRTL( !cpi.fDequeued || cpi.pfnCompletion != nullptr );
 
         if ( cpi.fDequeued )
         {
@@ -326,7 +326,7 @@ VOID CTaskManager::TMIDispatch( const DWORD_PTR dwThreadContext )
             if ( cpi.pfnCompletion == Postls()->pfnTaskThreadIdle )
             {
                 Postls()->dtickTaskThreadIdle   = 0;
-                Postls()->pfnTaskThreadIdle     = NULL;
+                Postls()->pfnTaskThreadIdle     = nullptr;
             }
 
             SetLastError( cpi.gle );
@@ -440,7 +440,7 @@ CGPTaskManager::CGPTaskManager()
         m_cPostedTasks( 0 ),
         m_asigAllDone( CSyncBasicInfo( szAsigAllDone ) ),
         m_rwlPostTasks( CLockBasicInfo( CSyncBasicInfo( szRwlPostTasks ), rankRwlPostTasks, 0 ) ),
-        m_ptaskmanager( NULL )
+        m_ptaskmanager( nullptr )
 {
 }
 
@@ -456,7 +456,7 @@ ERR CGPTaskManager::ErrTMInit( const ULONG cThread )
     m_fInit             = fFalse;
     m_cPostedTasks      = 0;
     m_asigAllDone.Reset();
-    m_ptaskmanager      = NULL;
+    m_ptaskmanager      = nullptr;
 
     Alloc( m_ptaskmanager = new CTaskManager );
     Call( m_ptaskmanager->ErrTMInit( cThread ? cThread : CUtilProcessProcessor() ) );
@@ -491,7 +491,7 @@ VOID CGPTaskManager::TMTerm()
         {
             m_ptaskmanager->TMTerm();
             delete m_ptaskmanager;
-            m_ptaskmanager = NULL;
+            m_ptaskmanager = nullptr;
         }
     }
 }
@@ -499,7 +499,7 @@ VOID CGPTaskManager::TMTerm()
 ERR CGPTaskManager::ErrTMPost( PfnCompletion pfnCompletion, VOID *pvParam, TaskInfo *pTaskInfo )
 {
     ERR         err         = JET_errSuccess;
-    PTMCallWrap ptmCallWrap = NULL;
+    PTMCallWrap ptmCallWrap = nullptr;
 
     m_rwlPostTasks.EnterAsReader();
 
@@ -509,7 +509,7 @@ ERR CGPTaskManager::ErrTMPost( PfnCompletion pfnCompletion, VOID *pvParam, TaskI
         Assert( cTasksOutstanding > 1 );
 
         ptmCallWrap = new TMCallWrap;
-        if ( NULL != ptmCallWrap )
+        if ( nullptr != ptmCallWrap )
         {
             ptmCallWrap->pfnCompletion  = pfnCompletion;
             ptmCallWrap->pvParam        = pvParam;
@@ -533,7 +533,7 @@ ERR CGPTaskManager::ErrTMPost( PfnCompletion pfnCompletion, VOID *pvParam, TaskI
         if ( err < JET_errSuccess )
         {
             delete ptmCallWrap;
-            ptmCallWrap = NULL;
+            ptmCallWrap = nullptr;
             const LONG  cTasksRemaining     = AtomicDecrement( (LONG *)&m_cPostedTasks );
             Assert( cTasksRemaining >= 1 );
         }
@@ -588,7 +588,7 @@ DWORD __stdcall CGPTaskManager::TMIDispatchGP( VOID *pvParam )
     }
 
     delete ptmCallWrap;
-    ptmCallWrap = NULL;
+    ptmCallWrap = nullptr;
 
     const LONG              cTasks          = AtomicDecrement( (LONG *)&( pThis->m_cPostedTasks ) );
 
@@ -698,7 +698,7 @@ void TaskInfoGenericStats::ReportTaskInfo(const TaskInfoGeneric & taskInfo)
                         3,
                         rgszT,
                         0,
-                        NULL );
+                        nullptr );
             }
             else
             {
@@ -722,7 +722,7 @@ void TaskInfoGenericStats::ReportTaskInfo(const TaskInfoGeneric & taskInfo)
                         5,
                         rgszT,
                         0,
-                        NULL );
+                        nullptr );
             }
 
             m_dwLastReportDispatch = dwDispatchTick;

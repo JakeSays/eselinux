@@ -69,11 +69,11 @@ ERR LOG::ErrLGDumpCheckpoint( _In_ PCWSTR wszCheckpoint )
     ERR         err;
     LGPOS       lgpos;
     LOGTIME     tm;
-    CHECKPOINT  *pcheckpoint = NULL;
+    CHECKPOINT  *pcheckpoint = nullptr;
     DBMS_PARAM  dbms_param;
     IFMP        ifmp;
 
-    AllocR( pcheckpoint = (CHECKPOINT *) PvOSMemoryPageAlloc( sizeof( CHECKPOINT ), NULL ) );
+    AllocR( pcheckpoint = (CHECKPOINT *) PvOSMemoryPageAlloc( sizeof( CHECKPOINT ), nullptr ) );
 
     err = ErrLGReadCheckpoint( wszCheckpoint, pcheckpoint, fTrue );
     if ( err == JET_errSuccess )
@@ -131,7 +131,7 @@ ERR LOG::ErrLGDumpCheckpoint( _In_ PCWSTR wszCheckpoint )
             {
                 const ATCHCHK * const   patchchk    = pfmp->Patchchk();
 
-                if ( NULL != patchchk )
+                if ( nullptr != patchchk )
                 {
                     DUMPPrintF(
                             "%7d %ws %s %s %s\n",
@@ -186,7 +186,7 @@ LOCAL ERR ErrGetDirLogGenerationInfo(
     Assert( pDirLogGenInfo );
 
     ERR             err;
-    IFileFindAPI        *pffapi = NULL;
+    IFileFindAPI        *pffapi = nullptr;
     IFileSystemAPI  *pfsapi = pinst->m_pfsapi;
     ULONG           cCurrentLogDigits = 0;
 
@@ -283,7 +283,7 @@ LOCAL ERR ErrFindNextGen(
     ERR             err = JET_errSuccess;
     WCHAR           wszFind[ IFileSystemAPI::cchPathMax ];
     WCHAR           wszFileName[ IFileSystemAPI::cchPathMax ];
-    IFileFindAPI*       pffapi = NULL;
+    IFileFindAPI*       pffapi = nullptr;
     ULONG           cLogDigits = 0;
 
     wszLogFile[0] = L'\0';
@@ -364,7 +364,7 @@ LOCAL ERR ErrFindNextGen(
                 if ( pffapi )
                 {
                     delete pffapi;
-                    pffapi = NULL;
+                    pffapi = nullptr;
                 }
 
                 Call( LGFileHelper::ErrLGMakeLogNameBaselessEx( wszFind,
@@ -395,7 +395,7 @@ LOCAL ERR ErrFindNextGen(
             if ( pffapi )
             {
                 delete pffapi;
-                pffapi = NULL;
+                pffapi = nullptr;
             }
         }
         ulgenNext++;
@@ -441,7 +441,7 @@ LOCAL VOID LGIReportLogfileCorrupt(
             _countof( rgwsz ),
             rgwsz,
             0,
-            NULL,
+            nullptr,
             pinst );
 }
 
@@ -474,7 +474,7 @@ LOCAL VOID LGIReportLogfilesMissing(
     OSStrCbAppendW( wszPathedLogfileBegin, sizeof(wszPathedLogfileBegin), wszLogExt );
     rgwsz[irgsz++] = wszPathedLogfileBegin;
 
-    if ( NULL != wszGenEnd )
+    if ( nullptr != wszGenEnd )
     {
         //  compose fully-pathed logfile name
         //
@@ -492,11 +492,11 @@ LOCAL VOID LGIReportLogfilesMissing(
     UtilReportEvent(
             eventError,
             LOGGING_RECOVERY_CATEGORY,
-            ( NULL != wszGenEnd ? LOG_RANGE_MISSING_ID : LOG_FILE_MISSING_ID ),
+            ( nullptr != wszGenEnd ? LOG_RANGE_MISSING_ID : LOG_FILE_MISSING_ID ),
             irgsz,
             rgwsz,
             0,
-            NULL,
+            nullptr,
             pinst );
 }
 
@@ -508,7 +508,7 @@ ERR ErrDUMPLogFromMemory( INST *pinst, _In_ PCWSTR wszLog, __in_bcount( cbBuffer
 
     IFileAPI *pfapi = new CFileFromMemory( (BYTE *)pvBuffer, cbBuffer, wszLog );
 
-    if ( NULL == pfapi )
+    if ( nullptr == pfapi )
     {
         CallR( ErrERRCheck( JET_errOutOfMemory ) );
     }
@@ -531,11 +531,11 @@ ERR ErrDUMPLog( INST *pinst, _In_ PCWSTR wszLog, const LONG lgenStart, const LON
     WCHAR           wszLogFileName[IFileSystemAPI::cchPathMax];
     WCHAR           wszLogFileExt[IFileSystemAPI::cchPathMax];
     WCHAR           wszLogFindTemplate[IFileSystemAPI::cchPathMax];
-    LGFILEHDR *     plgfilehdr      = NULL;
+    LGFILEHDR *     plgfilehdr      = nullptr;
     XECHECKSUM      checksumLastSegment = 0;
     LOG::LOGDUMP_OP logdumpOp = { 0 };
     const ULONG     cchLogPath      = LOSStrLengthW( wszLog );
-    const WCHAR *   wszLogExt       = NULL;
+    const WCHAR *   wszLogExt       = nullptr;
     ULONG           cLogDigits = 0;
     CWPRINTFFILE cpfCsvOut( wszCsvDataFile );
     DIRLOGGENERATIONINFO dirloginfo = { 0 };
@@ -563,7 +563,7 @@ ERR ErrDUMPLog( INST *pinst, _In_ PCWSTR wszLog, const LONG lgenStart, const LON
         LONG    lgen = 0;
         LONG    lgenLast = 0;
 
-        Alloc( plgfilehdr = (LGFILEHDR *) PvOSMemoryPageAlloc( sizeof( LGFILEHDR ), NULL ) );
+        Alloc( plgfilehdr = (LGFILEHDR *) PvOSMemoryPageAlloc( sizeof( LGFILEHDR ), nullptr ) );
         wszLogExt = ( 0 != wszLogFileExt[0] ) ? wszLogFileExt : wszNewLogExt;
 
         logdumpOp.m_loghdr = LOG::LOGDUMP_LOGHDR_INVALID;
@@ -728,7 +728,7 @@ TryAnotherExtension:
                         WCHAR  wszT[12] = L"tla"; // next func requires base name, though we won't use it below ...
                         LGFileHelper::LGSzLogIdAppend( wszT, sizeof(wszT), lgenLast+1, cLogDigits);
                         DUMPPrintF( "      Missing log file: %ws%ws%ws\n", wszLog, &(wszT[3]), wszLogExt );
-                        LGIReportLogfilesMissing( wszLog, wszT + 3, NULL, wszLogExt, JET_errMissingLogFile, pinst );
+                        LGIReportLogfilesMissing( wszLog, wszT + 3, nullptr, wszLogExt, JET_errMissingLogFile, pinst );
                     }
                     else
                     {
@@ -854,8 +854,8 @@ TryAnotherExtension:
     }
 
 HandleError:
-    logdumpOp.m_pcwpfCsvOut = NULL; // stack var will be freed ...
-    if ( NULL != plgfilehdr )
+    logdumpOp.m_pcwpfCsvOut = nullptr; // stack var will be freed ...
+    if ( nullptr != plgfilehdr )
     {
         OSMemoryPageFree( plgfilehdr );
     }
@@ -884,7 +884,7 @@ ERR LOG::ErrLGIDumpOneAttachment( const ATTACHINFO * const pattachinfo, const LO
         Call( wszDbName.ErrSet( (CHAR*)(pattachinfo->szNames) ) );
     }
 
-    if ( NULL == plogdumpOp->m_pcwpfCsvOut )
+    if ( nullptr == plogdumpOp->m_pcwpfCsvOut )
     {
         DUMPPrintF( "      %d %ws%ws\n",
                 pattachinfo->Dbid(), (WCHAR *)wszDbName, pattachinfo->FSparseEnabledFile() ? L" (sparse)" : L"" );
@@ -914,8 +914,8 @@ ERR LOG::ErrLGIDumpAttachments( const LOGDUMP_OP * const plogdumpOp ) const
     Assert( NULL != m_pLogStream->GetCurrentFileHdr()->rgbAttach );
 
     ERR                 err         = JET_errSuccess;
-    const ATTACHINFO *  pattachinfo = NULL;
-    const BYTE *        pbT         = NULL;
+    const ATTACHINFO *  pattachinfo = nullptr;
+    const BYTE *        pbT         = nullptr;
 
     for ( pbT = m_pLogStream->GetCurrentFileHdr()->rgbAttach; 0 != *pbT; pbT += sizeof(ATTACHINFO) + pattachinfo->CbNames() )
     {
@@ -938,9 +938,9 @@ ERR LOG::ErrLGDumpLog( _In_ PCWSTR wszLog, LOGDUMP_OP * const plogdumpOp, LGFILE
 {
     ERR                 err;
     WCHAR               wszPathJetChkLog[ IFileSystemAPI::cchPathMax ];
-    CHECKPOINT         *pcheckpoint     = NULL;
+    CHECKPOINT         *pcheckpoint     = nullptr;
     LGPOS               lgposCheckpoint;
-    LGPOS              *plgposCheckpoint = NULL;
+    LGPOS              *plgposCheckpoint = nullptr;
     DWORD               cbSecVolume;
 
     if ( m_pinst->m_pfsapi->ErrPathComplete( wszLog, wszPathJetChkLog ) == JET_errInvalidPath )
@@ -968,8 +968,8 @@ ERR LOG::ErrLGDumpLog( _In_ PCWSTR wszLog, LOGDUMP_OP * const plogdumpOp, LGFILE
         return err;
     }
 
-    pcheckpoint = (CHECKPOINT *)PvOSMemoryPageAlloc( sizeof( CHECKPOINT ), NULL );
-    if ( NULL != pcheckpoint )
+    pcheckpoint = (CHECKPOINT *)PvOSMemoryPageAlloc( sizeof( CHECKPOINT ), nullptr );
+    if ( nullptr != pcheckpoint )
     {
         WCHAR wszJetCheckpointFile[IFileSystemAPI::cchPathMax];
         WCHAR wszJetCheckpointFileName[IFileSystemAPI::cchPathMax];
@@ -1000,7 +1000,7 @@ ERR LOG::ErrLGDumpLog( _In_ PCWSTR wszLog, LOGDUMP_OP * const plogdumpOp, LGFILE
             err = JET_errSuccess;
         }
         OSMemoryPageFree( pcheckpoint );
-        pcheckpoint = NULL;
+        pcheckpoint = nullptr;
     }
 
     err = ErrLGDumpLog( pfapiLog, plogdumpOp, plgfilehdr, pLastSegChecksum, plgposCheckpoint );
@@ -1051,7 +1051,7 @@ ERR LOG::ErrLGDumpLog( IFileAPI *const pfapi, LOGDUMP_OP * const plogdumpOp, LGF
     ULONG               rgcb[ lrtypMax ];
     ULONG               cPageRef            = 0;
     ULONG               cPageRefAlloc       = 0;
-    PageRef*            rgPageRef           = NULL;
+    PageRef*            rgPageRef           = nullptr;
 
     if ( LOGDUMP_LOGHDR_VALIDADJACENT == loghdr )
     {
@@ -1075,7 +1075,7 @@ ERR LOG::ErrLGDumpLog( IFileAPI *const pfapi, LOGDUMP_OP * const plogdumpOp, LGF
 
     // HACK:  pretend we are not init so we can auto-set logfile size after init
     m_pinst->m_fSTInit = fSTInitInProgress;
-    err = m_pLogStream->ErrLGReadFileHdr( NULL, iorpDirectAccessUtil, NULL, fNoCheckLogID, fTrue );
+    err = m_pLogStream->ErrLGReadFileHdr( nullptr, iorpDirectAccessUtil, nullptr, fNoCheckLogID, fTrue );
     m_pinst->m_fSTInit = fSTInitDone;
     if ( err < 0 )
     {
@@ -1249,7 +1249,7 @@ ERR LOG::ErrLGDumpLog( IFileAPI *const pfapi, LOGDUMP_OP * const plogdumpOp, LGF
                 m_pLogStream->GetCurrentFileHdr()->lgfilehdr.dbms_param.szSystemPathDebugOnly);
         DUMPPrintF( "      Env LogFilePath: %s\n",
                 m_pLogStream->GetCurrentFileHdr()->lgfilehdr.dbms_param.szLogFilePathDebugOnly);
-        char * szDiskSecSizeMismatch = NULL;
+        char * szDiskSecSizeMismatch = nullptr;
         switch( m_pLogStream->GetCurrentFileHdr()->lgfilehdr.bDiskSecSizeMismatch )
         {
             case bTrueDiskSizeUnknown:
@@ -1338,7 +1338,7 @@ ERR LOG::ErrLGDumpLog( IFileAPI *const pfapi, LOGDUMP_OP * const plogdumpOp, LGF
             &fCloseNormally,
             fTrue,                                                          //  compute accumulated segment checksum
             !plogdumpOp->m_fPermitPatching,                                 //  open read-only unless patching permitted
-            ( plogdumpOp->m_fPermitPatching ? NULL : &fIsPatchable ) );     //  if patching permitted, we don't care if it's patchable (we'll just go ahead and patch it)
+            ( plogdumpOp->m_fPermitPatching ? nullptr : &fIsPatchable ) );     //  if patching permitted, we don't care if it's patchable (we'll just go ahead and patch it)
 
     m_fRecoveringMode = fRecoveringNone;
 
@@ -1709,7 +1709,7 @@ ERR LOG::ErrLGDumpLog( IFileAPI *const pfapi, LOGDUMP_OP * const plogdumpOp, LGF
 HandleError:
     m_pLogWriteBuffer->SetFNewRecordAdded( fTrue );
 
-    if ( NULL != m_pLogStream->GetCurrentFileHdr() && LOGDUMP_LOGHDR_VALIDADJACENT == plogdumpOp->m_loghdr )
+    if ( nullptr != m_pLogStream->GetCurrentFileHdr() && LOGDUMP_LOGHDR_VALIDADJACENT == plogdumpOp->m_loghdr )
     {
         Assert( NULL != plgfilehdr );
         memcpy( plgfilehdr, m_pLogStream->GetCurrentFileHdr(), sizeof( LGFILEHDR ) );

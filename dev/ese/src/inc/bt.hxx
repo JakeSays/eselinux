@@ -101,7 +101,7 @@ INLINE VOID BTUp( FUCB *pfucb )
     if( pfucb->pvRCEBuffer )
     {
         OSMemoryHeapFree( pfucb->pvRCEBuffer );
-        pfucb->pvRCEBuffer = NULL;
+        pfucb->pvRCEBuffer = nullptr;
     }
 
     pcsr->ReleasePage( pfucb->u.pfcb->FNoCache() );
@@ -138,7 +138,7 @@ ERR ErrBTGetPosition( FUCB *pfucb, ULONGLONG *pullLT, ULONGLONG *pulTotal );
 INLINE VOID BTReleaseBM( FUCB *pfucb )
 {
     RESBOOKMARK.Free( pfucb->pvBMBuffer );
-    pfucb->pvBMBuffer = NULL;
+    pfucb->pvBMBuffer = nullptr;
 
 #ifdef DEBUG
     pfucb->bmCurr.Nullify();
@@ -216,8 +216,8 @@ INLINE ERR ErrBTUTLAcross(
     void *                  pvVisitNodeCtx
     )
 {
-    CPAGE::PFNVISITNODE     rgpfnzErrVisitNode[2] = { pfnErrVisitNode, NULL };
-    void *                  rgpvzVisitNodeCtx[2] = { pvVisitNodeCtx, NULL };
+    CPAGE::PFNVISITNODE     rgpfnzErrVisitNode[2] = { pfnErrVisitNode, nullptr };
+    void *                  rgpvzVisitNodeCtx[2] = { pvVisitNodeCtx, nullptr };
     return ErrBTUTLAcross(
                 ifmp,
                 pgnoFDP,
@@ -325,7 +325,7 @@ ERR ErrBTIMultipageCleanup(
         RECCHECK * const preccheck,
         MERGETYPE * const pmergetype,
         const BOOL fRightMerges,
-        __inout_opt PrereadInfo * const pPrereadInfo = NULL );
+        __inout_opt PrereadInfo * const pPrereadInfo = nullptr );
 
 ERR ErrBTPageMove(
     _In_ FUCB * const pfucb,

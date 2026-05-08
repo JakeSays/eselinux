@@ -1157,12 +1157,12 @@ INLINE ULONG TAGFIELDS::CbData( const ULONG itagfld ) const
 INLINE TAGFLD_HEADER * TAGFIELDS::Pheader( const ULONG itagfld )
 {
     Assert( itagfld < CTaggedColumns() );
-    return (TAGFLD_HEADER *)( Ptagfld( itagfld )->FExtendedInfo() ? PbData( itagfld ) : NULL );
+    return (TAGFLD_HEADER *)( Ptagfld( itagfld )->FExtendedInfo() ? PbData( itagfld ) : nullptr );
 }
 INLINE const TAGFLD_HEADER * TAGFIELDS::Pheader( const ULONG itagfld ) const
 {
     Assert( itagfld < CTaggedColumns() );
-    return (TAGFLD_HEADER *)( Ptagfld( itagfld )->FExtendedInfo() ? PbData( itagfld ) : NULL );
+    return (TAGFLD_HEADER *)( Ptagfld( itagfld )->FExtendedInfo() ? PbData( itagfld ) : nullptr );
 }
 
 

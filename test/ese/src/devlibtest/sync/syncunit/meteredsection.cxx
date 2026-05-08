@@ -264,7 +264,7 @@ ERR CMeteredSectionConcurrentBashTest::ErrTest()
     for( ULONG ithread = 0; ithread < _countof(g_rgtbMscb); ithread++ )
     {
         g_rgtbMscb[ithread].pmsTest = &msTest;
-        g_rgtbMscb[ithread].hThread = HANDLE( CreateThread( NULL,
+        g_rgtbMscb[ithread].hThread = HANDLE( CreateThread( nullptr,
                                                 0,
                                                 LPTHREAD_START_ROUTINE( ConcurrentBashWorker ),
                                                 (void*) &g_rgtbMscb[ithread],
@@ -546,12 +546,12 @@ ERR CMeteredSectionCaptureNonEmptyDtorAssert::ErrTest()
     const BOOL fOsSyncInit = FOSSyncPreinit();
     TestAssert( fOsSyncInit );
 
-    CMeteredSection * pmsTest = NULL;
+    CMeteredSection * pmsTest = nullptr;
 
     // New metered section, and enter it ...
 
     pmsTest = new CMeteredSection;
-    TestCheck( NULL != pmsTest );
+    TestCheck( nullptr != pmsTest );
     TestCheck( 0 == pmsTest->GroupEnter() );
     OnRetail( TestCheck( pmsTest->CActiveUsers() == 1 ) );
     OnRetail( TestCheck( !pmsTest->FQuiescing() ) );
@@ -565,12 +565,12 @@ ERR CMeteredSectionCaptureNonEmptyDtorAssert::ErrTest()
     //  Can only check this on debug, b/c we don't have asserts in retail ...
     OnDebug( TestCheck( 0 == strcmp( g_szCapturedAssert, "FEmpty() || g_fSyncProcessAbort" ) ) );
     g_fCaptureAssert = fFalse;
-    g_szCapturedAssert = NULL;
+    g_szCapturedAssert = nullptr;
 
     // Next try the same steps, but partition it, so the non-empty count is in the quiescing state ...
 
     pmsTest = new CMeteredSection;
-    TestCheck( NULL != pmsTest );
+    TestCheck( nullptr != pmsTest );
     TestCheck( 0 == pmsTest->GroupEnter() );
     pmsTest->Partition( PartitionAsyncThunk, 0 );
     OnRetail( TestCheck( pmsTest->FQuiescing() ) );
@@ -582,7 +582,7 @@ ERR CMeteredSectionCaptureNonEmptyDtorAssert::ErrTest()
     delete pmsTest;
     OnDebug( TestCheck( 0 == strcmp( g_szCapturedAssert, "FEmpty() || g_fSyncProcessAbort" ) ) );
     g_fCaptureAssert = fFalse;
-    g_szCapturedAssert = NULL;
+    g_szCapturedAssert = nullptr;
 
 HandleError:
 

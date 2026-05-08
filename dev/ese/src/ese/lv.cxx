@@ -190,7 +190,7 @@ ERR ErrRECICreateLvRootAndChunks(
     _In_ CPG *                  pcpgLvSpaceRequired,
     _Out_ LvId                  * const plid,
     __in_opt FUCB               **ppfucb,
-    __in_opt LVROOT2            *plvrootInit = NULL );
+    __in_opt LVROOT2            *plvrootInit = nullptr );
 
 //  ****************************************************************
 //  INTERNAL FUNCTIONS
@@ -311,7 +311,7 @@ VOID LVReportAndTrapCorruptedLV_( const INST * const pinst, PCWSTR wszDatabaseNa
             irgsz,
             rgsz,
             0,
-            NULL,
+            nullptr,
             pinst );
 
     OSUHAEmitFailureTag( pinst, HaDbFailureTagCorruption, wszGuid );
@@ -460,7 +460,7 @@ LOCAL ERR ErrFILECreateLVRoot( PIB *ppib, FUCB *pfucb, PGNO *ppgnoLV )
     Call( ErrDIRBeginTransaction( ppib, 49445, NO_GRBIT ) );
     fInTransaction = fTrue;
 
-    Call( PverFromIfmp( pfucb->ifmp )->ErrVERFlag( pfucbTable, operCreateLV, NULL, 0 ) );
+    Call( PverFromIfmp( pfucb->ifmp )->ErrVERFlag( pfucbTable, operCreateLV, nullptr, 0 ) );
 
     //  CONSIDER:  get at least enough pages to hold the LV we are about to insert
     //  we must open the directory with a different session.
@@ -801,7 +801,7 @@ ERR ErrDIROpenLongRoot( FUCB * pfucb )
     {
         //  use cached LV cursor
         CallR( ErrDIROpenLongRoot( pfucb, &pfucb->pfucbLV, fFalse ) );
-        if ( pfucb->pfucbLV != NULL )
+        if ( pfucb->pfucbLV != nullptr )
         {
             pfucb->pfucbLV->pfucbTable = pfucb;
         }
@@ -955,7 +955,7 @@ ERR ErrDIRDownLVDataPreread(
     FUCBResetLimstat( pfucbLV );
     FUCBResetUpper( pfucbLV );
     FUCBResetInclusive( pfucbLV );
-    pfucbLV->dataSearchKey.SetPv( NULL );
+    pfucbLV->dataSearchKey.SetPv( nullptr );
     pfucbLV->dataSearchKey.SetCb( 0 );
 
     return err;
@@ -1134,7 +1134,7 @@ ERR ErrLVPrereadLongValue(
         cRange,
         cpgPrereadSequential,
         JET_bitPrereadForward,
-        NULL ) );
+        nullptr ) );
 
 HandleError:
     if ( pfucbNil != pfucbLV )
@@ -1244,7 +1244,7 @@ ERR ErrDIRDownLVRootPreread(
     FUCBResetLimstat( pfucbLV );
     FUCBResetUpper( pfucbLV );
     FUCBResetInclusive( pfucbLV );
-    pfucbLV->dataSearchKey.SetPv( NULL );
+    pfucbLV->dataSearchKey.SetPv( nullptr );
     pfucbLV->dataSearchKey.SetCb( 0 );
 
     return err;
@@ -1372,9 +1372,9 @@ LOCAL ERR ErrLVITryCompress(
 //-
 {
     ERR err = JET_errSuccess;
-    *pbAlloc = NULL;
+    *pbAlloc = nullptr;
     
-    BYTE * pbDataCompressed = NULL;
+    BYTE * pbDataCompressed = nullptr;
 
     pdataToSet->SetPv( const_cast<VOID *>( data.Pv() ) );
     pdataToSet->SetCb( data.Cb() );
@@ -1396,7 +1396,7 @@ LOCAL ERR ErrLVITryCompress(
         }
     }
 
-    if ( fTryCompress && NULL != ( pbDataCompressed = PbPKAllocCompressionBuffer() ) )
+    if ( fTryCompress && nullptr != ( pbDataCompressed = PbPKAllocCompressionBuffer() ) )
     {
         CompressFlags compressFlagsEffective = LVIAddCompressionFlagsIfEnabled( compressFlags, pinst, pfucbTable->ifmp );
 
@@ -1433,7 +1433,7 @@ LOCAL ERR ErrLVITryCompress(
 
     if ( fEncrypted )
     {
-        BYTE *pbDataEncrypted = NULL;
+        BYTE *pbDataEncrypted = nullptr;
         const ULONG cbDataEncryptedNeeded = CbOSEncryptAes256SizeNeeded( pdataToSet->Cb() );
         if ( cbDataEncryptedNeeded > (ULONG)CbPKCompressionBuffer() )
         {
@@ -1441,7 +1441,7 @@ LOCAL ERR ErrLVITryCompress(
             return ErrERRCheck( JET_errInternalError );
         }
 
-        if ( *pbAlloc != NULL )
+        if ( *pbAlloc != nullptr )
         {
             Assert( pdataToSet->Pv() == *pbAlloc );
             pbDataEncrypted = *pbAlloc;
@@ -1449,7 +1449,7 @@ LOCAL ERR ErrLVITryCompress(
         else
         {
             pbDataEncrypted = PbPKAllocCompressionBuffer();
-            if ( pbDataEncrypted == NULL )
+            if ( pbDataEncrypted == nullptr )
             {
                 return ErrERRCheck( JET_errOutOfMemory );
             }
@@ -1493,7 +1493,7 @@ LOCAL ERR ErrLVInsert(
 {
     ERR err = JET_errSuccess;
 
-    BYTE * pbToFree = NULL;
+    BYTE * pbToFree = nullptr;
     DATA dataToSet;
     Call( ErrLVITryCompress( pfucbLV, data, PinstFromPfucb( pfucbLV ), compressFlags, fEncrypted, pfucbTable, &dataToSet, &pbToFree ) );
 
@@ -1520,7 +1520,7 @@ LOCAL ERR ErrLVReplace(
 {
     ERR err = JET_errSuccess;
 
-    BYTE * pbToFree = NULL;
+    BYTE * pbToFree = nullptr;
     DATA dataToSet;
     Call( ErrLVITryCompress( pfucbLV, data, PinstFromPfucb( pfucbLV ), compressFlags, fEncrypted, pfucbLV->pfucbTable, &dataToSet, &pbToFree ) );
 
@@ -1569,7 +1569,7 @@ LOCAL void LVICaptureCorruptedLVChunkInfo(
         _countof( rgpsz ),
         rgpsz,
         0,
-        NULL,
+        nullptr,
         PinstFromPfucb( pfucbLV ) );
 }
 
@@ -1590,7 +1590,7 @@ LOCAL ERR ErrLVIDecompressAndCompare(
 {
     ERR err;
 
-    BYTE * pbDecompressed = NULL;
+    BYTE * pbDecompressed = nullptr;
     INT cbDecompressed = 0;
 
     Call( ErrPKAllocAndDecompressData( dataCompressed, pfucbLV, &pbDecompressed, &cbDecompressed ) );
@@ -1649,7 +1649,7 @@ LOCAL ERR ErrLVIDecompress(
         // start decompressing in the middle of the blob, we have
         // to start at the beginning.
         //
-        BYTE * pbDecompressed = NULL;
+        BYTE * pbDecompressed = nullptr;
         INT cbDecompressed = 0;
         
         Call( ErrPKAllocAndDecompressData( dataCompressed, pfucbLV, &pbDecompressed, &cbDecompressed ) );
@@ -1686,7 +1686,7 @@ LOCAL ERR ErrLVRetrieve(
 {
     ERR err = JET_errSuccess;
     DATA dataIn = data;
-    BYTE *pbDataDecrypted = NULL;
+    BYTE *pbDataDecrypted = nullptr;
     INT cbActual, cbRetrieve;
     const LONG cbLVChunkMost = pfucbLV->u.pfcb->PfcbTable()->Ptdb()->CbLVChunkMost();
 
@@ -1728,7 +1728,7 @@ LOCAL ERR ErrLVRetrieve(
     if( FLVCompressedChunk( cbLVChunkMost, key, dataIn, ulLVSize ) )
     {
         // Getting uncompressed size is cheap for current compression algorithms, so ok to call it before doing actual decompression
-        Call( ErrPKDecompressData( dataIn, pfucbLV, NULL, 0, &cbActual ) );
+        Call( ErrPKDecompressData( dataIn, pfucbLV, nullptr, 0, &cbActual ) );
         if( JET_wrnBufferTruncated == err )
         {
             // this is the expected error
@@ -1761,7 +1761,7 @@ HandleError:
     if ( pbDataDecrypted )
     {
         PKFreeCompressionBuffer( pbDataDecrypted );
-        pbDataDecrypted = NULL;
+        pbDataDecrypted = nullptr;
     }
 
     return err;
@@ -1787,7 +1787,7 @@ LOCAL ERR ErrLVCompare(
 {
     ERR err = JET_errSuccess;
     DATA dataIn = data;
-    BYTE *pbDataDecrypted = NULL;
+    BYTE *pbDataDecrypted = nullptr;
     INT cbActual, cbCompare;
     const LONG cbLVChunkMost = pfucbLV->u.pfcb->PfcbTable()->Ptdb()->CbLVChunkMost();
 
@@ -1829,7 +1829,7 @@ LOCAL ERR ErrLVCompare(
     if( FLVCompressedChunk( cbLVChunkMost, key, dataIn, ulLVSize ) )
     {
         // Getting uncompressed size is cheap for current compression algorithms, so ok to call it before doing actual decompression
-        Call( ErrPKDecompressData( dataIn, pfucbLV, NULL, 0, &cbActual ) );
+        Call( ErrPKDecompressData( dataIn, pfucbLV, nullptr, 0, &cbActual ) );
         if( JET_wrnBufferTruncated == err )
         {
             // this is the expected error
@@ -1860,7 +1860,7 @@ HandleError:
     if ( pbDataDecrypted )
     {
         PKFreeCompressionBuffer( pbDataDecrypted );
-        pbDataDecrypted = NULL;
+        pbDataDecrypted = nullptr;
     }
 
     return err;
@@ -1883,7 +1883,7 @@ LOCAL ERR ErrLVIGetDataSize(
 {
     ERR err = JET_errSuccess;
     DATA dataIn = data;
-    BYTE *pbDataDecrypted = NULL;
+    BYTE *pbDataDecrypted = nullptr;
 
     if ( dataIn.Cb() > CbPKCompressionBuffer() )
     {
@@ -1914,7 +1914,7 @@ LOCAL ERR ErrLVIGetDataSize(
         Call( ErrPKDecompressData(
                     dataIn,
                     pfucbLV,
-                    NULL,
+                    nullptr,
                     0,
                     (INT *)pulActual ) );
         if( JET_wrnBufferTruncated == err )
@@ -1933,7 +1933,7 @@ HandleError:
     if ( pbDataDecrypted )
     {
         PKFreeCompressionBuffer( pbDataDecrypted );
-        pbDataDecrypted = NULL;
+        pbDataDecrypted = nullptr;
     }
 
     return err;
@@ -2142,7 +2142,7 @@ LOCAL ERR ErrRECIOverwriteSeparateLV(
 
     // we will combine the old/new data to create the first chunk
     // this requires allocating a temporary buffer (using BFAlloc)
-    VOID *pvbf = NULL;
+    VOID *pvbf = nullptr;
     BFAlloc( bfasTemporary, &pvbf );
 
     DATA data;
@@ -2201,7 +2201,7 @@ LOCAL ERR ErrRECIOverwriteSeparateLV(
     Assert( data.Cb() == g_cbPage || pdataNew->Cb() == 0 ); // we are either inserting a full LV chunk or all the data was used
 
     // insert the data chunk and create the LVROOT
-    Call( ErrRECSeparateLV( pfucb, &data, compressFlags, fEncrypted, plid, NULL ) );
+    Call( ErrRECSeparateLV( pfucb, &data, compressFlags, fEncrypted, plid, nullptr ) );
 
 #ifdef DEBUG
     // check the output parameters
@@ -2378,7 +2378,7 @@ LOCAL ERR ErrRECISeparateLV(
             Assert( data.Cb() == pfucb->u.pfcb->Ptdb()->CbLVChunkMost() || dataNew.Cb() == 0 );
             Assert( lvop == lvopInsert || cpgLvSpaceRequired == 0 );
 
-            Call( ErrRECICreateLvRootAndChunks( pfucb, &data, compressFlags, fEncrypted, &cpgLvSpaceRequired, plid, NULL ) );
+            Call( ErrRECICreateLvRootAndChunks( pfucb, &data, compressFlags, fEncrypted, &cpgLvSpaceRequired, plid, nullptr ) );
             if ( cpgLvSpaceRequired == 0 )
             {
                 //  We have consumed the needed pages for laying this cpg out contiguously, disable ErrRECAOSeparateLV()
@@ -2436,8 +2436,8 @@ ERR ErrRECSetLongField(
 {
     ERR         err;
     DATA        dataRetrieved;
-    BYTE *      pbDecompressed = NULL;
-    BYTE *      pbDataDecrypted = NULL;
+    BYTE *      pbDecompressed = nullptr;
+    BYTE *      pbDataDecrypted = nullptr;
     dataRetrieved.Nullify();
 
     //  Consume user preferences for LV intrinsicness, then strip off the flags ...
@@ -2526,7 +2526,7 @@ ERR ErrRECSetLongField(
             // Be careful not to overwrite err in block below
 
             pbDataDecrypted = new BYTE[ dataRetrieved.Cb() ];
-            if ( pbDataDecrypted == NULL )
+            if ( pbDataDecrypted == nullptr )
             {
                 Error( ErrERRCheck( JET_errOutOfMemory ) );
             }
@@ -2636,7 +2636,7 @@ ERR ErrRECSetLongField(
                         pfucb,
                         columnid,
                         itagSequence,
-                        NULL,
+                        nullptr,
                         ( fRevertToDefault ? JET_bitSetRevertToDefaultValue : NO_GRBIT ) ) );
             goto Commit;
 
@@ -2648,7 +2648,7 @@ ERR ErrRECSetLongField(
             Assert( !fModifyExistingSLong );
 
             DATA    dataT;
-            dataT.SetPv( NULL );
+            dataT.SetPv( nullptr );
             dataT.SetCb( 0 );
             Call( ErrRECSetColumn( pfucb, columnid, itagSequence, &dataT ) );
             goto Commit;
@@ -2822,7 +2822,7 @@ ERR ErrRECSetLongField(
             }
             else
             {
-                Call( ErrRECSeparateLV( pfucb, &dataRetrieved, compressFlags, fEncrypted, &lidT, NULL ) );
+                Call( ErrRECSeparateLV( pfucb, &dataRetrieved, compressFlags, fEncrypted, &lidT, nullptr ) );
                 Assert( JET_wrnCopyLongValue == err );
                 Call( ErrRECAOSeparateLV( pfucb, &lidT, pdataField, compressFlags, fEncrypted, fFalse, ibLongValue, ulColMax, lvop ) );
                 Assert( JET_wrnCopyLongValue != err );
@@ -2836,13 +2836,13 @@ Commit:
     if( pbDecompressed )
     {
         delete[] pbDecompressed;
-        pbDecompressed = NULL;
+        pbDecompressed = nullptr;
     }
 
     if ( pbDataDecrypted )
     {
         delete[] pbDataDecrypted;
-        pbDataDecrypted = NULL;
+        pbDataDecrypted = nullptr;
     }
 
     Call( ErrDIRCommitTransaction( pfucb->ppib, NO_GRBIT ) );
@@ -2853,13 +2853,13 @@ HandleError:
     if( pbDecompressed )
     {
         delete[] pbDecompressed;
-        pbDecompressed = NULL;
+        pbDecompressed = nullptr;
     }
 
     if ( pbDataDecrypted )
     {
         delete[] pbDataDecrypted;
-        pbDataDecrypted = NULL;
+        pbDataDecrypted = nullptr;
     }
 
     CallSx( ErrDIRRollback( pfucb->ppib ), JET_errRollbackError );
@@ -2893,7 +2893,7 @@ LOCAL ERR ErrRECIBurstSeparateLV( FUCB * pfucbTable, FUCB * pfucbSrc, LvId * pli
     ULONG       ulOffset    = 0;
     LVROOT2     lvroot = { 0 };
     DATA        data;
-    BYTE        *pvAlloc    = NULL;
+    BYTE        *pvAlloc    = nullptr;
     BOOL        fLatchedSrc = fFalse;
     LVKEY_BUFFER
                 lvkey;
@@ -3525,7 +3525,7 @@ ERR ErrRECAOSeparateLV(
     ERR         err             = JET_errSuccess;
     ERR         wrn             = JET_errSuccess;
     FUCB        *pfucbLV        = pfucbNil;
-    VOID        *pvbf           = NULL;
+    VOID        *pvbf           = nullptr;
     LVROOT2     lvroot = { 0 };
     DATA        data;
     data.SetPv( &lvroot );
@@ -3976,7 +3976,7 @@ ERR ErrRECAOSeparateLV(
 
 
 HandleError:
-    if ( NULL != pvbf )
+    if ( nullptr != pvbf )
     {
         BFFree( pvbf );
     }
@@ -4014,11 +4014,11 @@ ERR ErrRECAOIntrinsicLV(
     Assert( (ULONG)pdataNew->Cb() <= CbLVIntrinsicTableMost( pfucb ) );
     JET_ERR     err = JET_errSuccess;
     DATA        dataSet, dataOrigSet;
-    VOID        *pvbf = NULL;
-    VOID        *pvbfCompressed = NULL;
-    VOID        *pvbfEncrypted = NULL;
+    VOID        *pvbf = nullptr;
+    VOID        *pvbfCompressed = nullptr;
+    VOID        *pvbfEncrypted = nullptr;
     ULONG       cbT = 0;
-    BYTE        *pbT = NULL;
+    BYTE        *pbT = nullptr;
     BYTE        rgb[ cbLVIntrinsicMost ];
     BYTE        rgbCompressed[ sizeof(rgb) ];
     BYTE        rgbEncrypted[ sizeof(rgb) ];
@@ -4250,7 +4250,7 @@ ERR ErrRECAOIntrinsicLV(
             {
                 // if we have already allocated a buffer, there is probably enough space in it for
                 // the compressed image as well
-                if ( NULL != pvbf )
+                if ( nullptr != pvbf )
                 {
                     Assert( pvbf == dataSet.Pv() );
 
@@ -4299,7 +4299,7 @@ ERR ErrRECAOIntrinsicLV(
     {
         Assert( itagSequence < 2 );
 
-        BYTE * pbDataEncrypted = NULL;
+        BYTE * pbDataEncrypted = nullptr;
         ULONG cbDataEncryptedMax = 0;
         const ULONG cbDataEncryptedNeeded = CbOSEncryptAes256SizeNeeded( dataSet.Cb() );
         if ( cbDataEncryptedNeeded > (ULONG)g_cbPage )
@@ -4357,22 +4357,22 @@ HandleError:
     
     //  free buffer if allocated
     //
-    if ( pvbf != NULL )
+    if ( pvbf != nullptr )
     {
         BFFree( pvbf );
-        pvbf = NULL;
+        pvbf = nullptr;
     }
 
-    if ( pvbfCompressed != NULL )
+    if ( pvbfCompressed != nullptr )
     {
         BFFree( pvbfCompressed );
-        pvbfCompressed = NULL;
+        pvbfCompressed = nullptr;
     }
 
-    if ( pvbfEncrypted != NULL )
+    if ( pvbfEncrypted != nullptr )
     {
         BFFree( pvbfEncrypted );
-        pvbfEncrypted = NULL;
+        pvbfEncrypted = nullptr;
     }
 
     return err;
@@ -4416,7 +4416,7 @@ LOCAL VOID LVIGetProperLVImageFromRCE(
         rceidBegin = rceidNull;
     }
 
-    const BYTE  *pbImage    = NULL;
+    const BYTE  *pbImage    = nullptr;
     ULONG       cbImage     = 0;
 
     LVKEY_BUFFER    lvkeyBuff;
@@ -4458,7 +4458,7 @@ LOCAL VOID LVIGetProperLVImageNoRCE(
 {
     Assert( FNDVersion( pfucbLV->kdfCurr ) );   //  no need to call if its not versioned
 
-    const BYTE  *pbImage    = NULL;
+    const BYTE  *pbImage    = nullptr;
     ULONG       cbImage     = 0;
 
     LVKEY_BUFFER    lvkeyBuff;
@@ -4586,7 +4586,7 @@ ERR ErrRECRetrieveSLongField(
     ULONG       ib;
     BOOL        fInTransaction  = fFalse;
 
-    const BOOL      fComparing      = ( NULL == pcbActual );
+    const BOOL      fComparing      = ( nullptr == pcbActual );
 
     // if we are retrieving an older image, the actual chunks we want to see may have been flag deleted
     // (they won't have been removed by version store cleanup though). In order to see the flag-deleted
@@ -4637,7 +4637,7 @@ ERR ErrRECRetrieveSLongField(
 
     //  move to long field instance
 
-    const ULONG cbToPreread = (0 == ibGraphic && NULL != pb ) ? cbMax : 0;
+    const ULONG cbToPreread = (0 == ibGraphic && nullptr != pb ) ? cbMax : 0;
     Call( ErrDIRDownLVRootPreread( pfucbLV, lid, dirflag, cbToPreread ) );
     if ( ( !fAfterImage && FNDPossiblyVersioned( pfucbLV, Pcsr( pfucbLV ) ) ) || prceBase )
     {
@@ -4671,7 +4671,7 @@ ERR ErrRECRetrieveSLongField(
     
     if ( ibGraphic >= ulLVSize )
     {
-        if ( NULL != pcbActual )
+        if ( nullptr != pcbActual )
             *pcbActual = 0;
 
         if ( fComparing && 0 == cbMax )
@@ -4683,7 +4683,7 @@ ERR ErrRECRetrieveSLongField(
     }
     else
     {
-        if ( NULL != pcbActual )
+        if ( nullptr != pcbActual )
             *pcbActual = ulActual;
     }
 
@@ -4695,7 +4695,7 @@ ERR ErrRECRetrieveSLongField(
             goto HandleError;
         }
     }
-    else if ( NULL == pb )      //  special code to handle NULL buffer. just return the size
+    else if ( nullptr == pb )      //  special code to handle NULL buffer. just return the size
     {
         goto HandleError;
     }
@@ -4709,7 +4709,7 @@ ERR ErrRECRetrieveSLongField(
 
     if ( pfnRealloc )
     {
-        Alloc( *((BYTE**)pb) = (BYTE*)pfnRealloc( pvReallocContext, NULL, min( cbMax, ulActual ) ) );
+        Alloc( *((BYTE**)pb) = (BYTE*)pfnRealloc( pvReallocContext, nullptr, min( cbMax, ulActual ) ) );
         fFreeBuffer = fTrue;                    //  free pb on an error
         pb          = *((BYTE**)pb);            //  redirect pv to the new buffer
         cbMax       = min( cbMax, ulActual );   //  fixup cbMax to be the size of the new buffer
@@ -4991,7 +4991,7 @@ ERR ErrRECRetrieveSLongFieldPrereadOnly(
         0,
         ulMax,
         JET_bitPrereadForward,
-        NULL ) );
+        nullptr ) );
 
 HandleError:
     if ( pfucbLV != pfucbNil )
@@ -5514,12 +5514,12 @@ ERR ErrRECICreateLvRootAndChunks(
     Expected( pcpgLvSpaceRequired == NULL || *pcpgLvSpaceRequired == 0 || pdataField->Cb() < g_cbPage );
 
     ERR         err             = JET_errSuccess;
-    FUCB        *pfucbLV        = NULL;
+    FUCB        *pfucbLV        = nullptr;
     DATA        dataRemaining;
     LVROOT2     lvroot;
     INT         cbInserted      = 0;
 
-    if( NULL == plvrootInit )
+    if( nullptr == plvrootInit )
     {
         lvroot.ulReference  = 1;
         lvroot.ulSize       = pdataField->Cb();
@@ -5673,7 +5673,7 @@ HandleError:
     Assert( CpgDIRActiveSpaceRequestReserve( pfucbLV ) == 0 );
 
     // discard temporary FUCB, or return to caller if ppfucb is not NULL.
-    if ( err < JET_errSuccess || NULL == ppfucb )
+    if ( err < JET_errSuccess || nullptr == ppfucb )
     {
         DIRClose( pfucbLV );
     }
@@ -5711,7 +5711,7 @@ ERR ErrRECSeparateLV(
     __in_opt LVROOT2            *plvrootInit )
 //  ================================================================
 {
-    return ErrRECICreateLvRootAndChunks( pfucb, pdataField, compressFlags, fEncrypted, NULL, plid, ppfucb, plvrootInit );
+    return ErrRECICreateLvRootAndChunks( pfucb, pdataField, compressFlags, fEncrypted, nullptr, plid, ppfucb, plvrootInit );
 }
 
 //  ================================================================
@@ -5803,7 +5803,7 @@ ERR ErrRECAffectSeparateLV( FUCB *pfucb, LvId *plid, ULONG fLV )
                 pfucbLV,
                 OffsetOf( LVROOT, ulReference ),
                 lDelta,
-                NULL,
+                nullptr,
                 fDIRNull | fDIRDeltaDeleteDereferencedLV );
         if ( JET_errWriteConflict == err )
         {
@@ -6041,7 +6041,7 @@ ERR ErrRECAffectLongFieldsInWorkBuf( FUCB *pfucb, LVAFFECT lvaffect, ULONG cbThr
     Assert( ptdbNil != pfucb->u.pfcb->Ptdb() );
 
     ERR             err;
-    VOID *          pvWorkBufSav    = NULL;
+    VOID *          pvWorkBufSav    = nullptr;
     const ULONG     cbWorkBufSav    = pfucb->dataWorkBuf.Cb();
 
     if ( cbThreshold == 0 )
@@ -6094,7 +6094,7 @@ ERR ErrRECAffectLongFieldsInWorkBuf( FUCB *pfucb, LVAFFECT lvaffect, ULONG cbThr
     Call( ErrDIRCommitTransaction( pfucb->ppib, NO_GRBIT ) );
     FUCBSetTagImplicitOp( pfucb );
 
-    if ( NULL != pvWorkBufSav )
+    if ( nullptr != pvWorkBufSav )
         BFFree( pvWorkBufSav );
 
     return err;
@@ -6104,7 +6104,7 @@ HandleError:
     CallSx( ErrDIRRollback( pfucb->ppib ), JET_errRollbackError );
     Assert( !Pcsr( pfucb )->FLatched() );
 
-    if ( NULL != pvWorkBufSav )
+    if ( nullptr != pvWorkBufSav )
     {
         //  restore original copy buffer, because any LV updates
         //  that happened got rolled back
@@ -6641,7 +6641,7 @@ ERR RECCHECKLV::operator()( const KEYDATAFLAGS& kdf, const PGNO pgno )
         else
         {
             Call( ErrLVIGetDataSize(
-                        NULL,
+                        nullptr,
                         kdf.key,
                         kdf.data,
                         fFalse,
@@ -7044,7 +7044,7 @@ ERR ErrREPAIRCreateLVRoot( FUCB * const pfucb, const LvId lid, const ULONG ulRef
     data.SetPv( &lvroot );
     data.SetCb( sizeof( LVROOT ) );
 
-    err = ErrDIRInsert( pfucb, key, data, fDIRNull | fDIRNoVersion | fDIRNoLog, NULL );
+    err = ErrDIRInsert( pfucb, key, data, fDIRNull | fDIRNoVersion | fDIRNoLog, nullptr );
 
     return err;
 }
@@ -7306,7 +7306,7 @@ ERR ErrAccumulateLvNodeData(
     Assert( pbtsLvCtx->fStarted );
     Assert( pbtsLvCtx->pgnoCurrent );
 
-    if ( NULL == pkdf || itag < CPAGE::CTagReserved( ppghdr) )
+    if ( nullptr == pkdf || itag < CPAGE::CTagReserved( ppghdr) )
     {
         // we don't care about the reserved tags...
         err = JET_errSuccess;
@@ -7395,7 +7395,7 @@ ERR ErrAccumulateLvNodeData(
             if ( !pbtsLvCtx->fEncrypted )
             {
                 ULONG cbUncompressed;
-                CallS( ErrLVIGetDataSize( NULL, pkdf->key, pkdf->data, fFalse, pbtsLvCtx->cbCurrent, &cbUncompressed, pbtsLvCtx->pLvData->cbLVChunkMax ) );
+                CallS( ErrLVIGetDataSize( nullptr, pkdf->key, pkdf->data, fFalse, pbtsLvCtx->cbCurrent, &cbUncompressed, pbtsLvCtx->pLvData->cbLVChunkMax ) );
                 if ( cbUncompressed != cbUncompressedExpected && !FPartiallyDeletedLV( pbtsLvCtx->cRefsCurrent ) )
                 {
                     AssertSz( fFalse, "Corrupt LV, invalid chunk size" );
@@ -7440,7 +7440,7 @@ ERR ErrAccumulateLvNodeData(
             const CPG cpgAccumMax = cpgPrereadSequential;  //  from ErrDIRDownLVPreread
             const INT cbRunMax = 1 << 20;  // IO contiguity goal, not in code anywhere?
             Assert( cpgAccumMax > 0 );
-            if ( pbtsLvCtx->rgpgnoAccum == NULL || pbtsLvCtx->cpgAccumMax < cpgAccumMax )
+            if ( pbtsLvCtx->rgpgnoAccum == nullptr || pbtsLvCtx->cpgAccumMax < cpgAccumMax )
             {
                 Assert( pbtsLvCtx->cpgAccum == 0 );
                 delete[] pbtsLvCtx->rgpgnoAccum;

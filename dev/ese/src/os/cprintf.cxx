@@ -47,14 +47,14 @@ CPRINTFFILE::CPRINTFFILE( const WCHAR* wszFile )
     //  open the file for append
 
     m_hFile = INVALID_HANDLE_VALUE;
-    m_hMutex = NULL;
+    m_hMutex = nullptr;
 
-    if ( ( m_hFile = (void*)CreateFileW( wszFile, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL ) ) == INVALID_HANDLE_VALUE )
+    if ( ( m_hFile = (void*)CreateFileW( wszFile, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr ) ) == INVALID_HANDLE_VALUE )
     {
         return;
     }
     SetHandleInformation( HANDLE( m_hFile ), HANDLE_FLAG_PROTECT_FROM_CLOSE, HANDLE_FLAG_PROTECT_FROM_CLOSE );
-    if ( !( m_hMutex = (void*)CreateMutexW( NULL, FALSE, NULL ) ) )
+    if ( !( m_hMutex = (void*)CreateMutexW( nullptr, FALSE, nullptr ) ) )
     {
         SetHandleInformation( HANDLE( m_hFile ), HANDLE_FLAG_PROTECT_FROM_CLOSE, 0 );
         CloseHandle( HANDLE( m_hFile ) );
@@ -72,7 +72,7 @@ CPRINTFFILE::~CPRINTFFILE()
     {
         SetHandleInformation( HANDLE( m_hMutex ), HANDLE_FLAG_PROTECT_FROM_CLOSE, 0 );
         CloseHandle( HANDLE( m_hMutex ) );
-        m_hMutex = NULL;
+        m_hMutex = nullptr;
     }
 
     if ( m_hFile != INVALID_HANDLE_VALUE )
@@ -104,10 +104,10 @@ void __cdecl CPRINTFFILE::operator()( const CHAR* szFormat, ... )
         WaitForSingleObject( HANDLE( m_hMutex ), INFINITE );
 
         const LARGE_INTEGER ibOffset = { 0, 0 };
-        SetFilePointerEx( HANDLE( m_hFile ), ibOffset, NULL, FILE_END );
+        SetFilePointerEx( HANDLE( m_hFile ), ibOffset, nullptr, FILE_END );
 
         DWORD cbWritten;
-        WriteFile( HANDLE( m_hFile ), rgchBuf, (ULONG)(_tcslen( rgchBuf ) * sizeof( _TCHAR )), &cbWritten, NULL );
+        WriteFile( HANDLE( m_hFile ), rgchBuf, (ULONG)(_tcslen( rgchBuf ) * sizeof( _TCHAR )), &cbWritten, nullptr );
 
         ReleaseMutex( HANDLE( m_hMutex ) );
     }
@@ -118,15 +118,15 @@ CWPRINTFFILE::CWPRINTFFILE( const WCHAR* wszFile )
     //  open the file for append
 
     m_hFile = INVALID_HANDLE_VALUE;
-    m_hMutex = NULL;
+    m_hMutex = nullptr;
     m_errLast = JET_errInvalidParameter;
 
-    if ( NULL == wszFile )
+    if ( nullptr == wszFile )
     {
         return;
     }
 
-    if ( ( m_hFile = (void*)CreateFileW( wszFile, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL ) ) == INVALID_HANDLE_VALUE )
+    if ( ( m_hFile = (void*)CreateFileW( wszFile, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr ) ) == INVALID_HANDLE_VALUE )
     {
         m_errLast = ErrOSErrFromWin32Err(GetLastError());
         return;
@@ -137,7 +137,7 @@ CWPRINTFFILE::CWPRINTFFILE( const WCHAR* wszFile )
         Assert( GetLastError() == ERROR_SUCCESS );
         DWORD cbWritten;
         WCHAR rgwchBuf[] = { 0xFEFF }; // little endian byte order mark.
-        if (!WriteFile( HANDLE( m_hFile ), rgwchBuf, (ULONG)sizeof( WCHAR ), &cbWritten, NULL ))
+        if (!WriteFile( HANDLE( m_hFile ), rgwchBuf, (ULONG)sizeof( WCHAR ), &cbWritten, nullptr ))
         {
             m_errLast = ErrOSErrFromWin32Err(GetLastError());
             CloseHandle( HANDLE( m_hFile ) );
@@ -146,7 +146,7 @@ CWPRINTFFILE::CWPRINTFFILE( const WCHAR* wszFile )
         }
     }
     SetHandleInformation( HANDLE( m_hFile ), HANDLE_FLAG_PROTECT_FROM_CLOSE, HANDLE_FLAG_PROTECT_FROM_CLOSE );
-    if ( !( m_hMutex = (void*)CreateMutexW( NULL, FALSE, NULL ) ) )
+    if ( !( m_hMutex = (void*)CreateMutexW( nullptr, FALSE, nullptr ) ) )
     {
         m_errLast = ErrOSErrFromWin32Err(GetLastError());
         SetHandleInformation( HANDLE( m_hFile ), HANDLE_FLAG_PROTECT_FROM_CLOSE, 0 );
@@ -168,7 +168,7 @@ CWPRINTFFILE::~CWPRINTFFILE()
     {
         SetHandleInformation( HANDLE( m_hMutex ), HANDLE_FLAG_PROTECT_FROM_CLOSE, 0 );
         CloseHandle( HANDLE( m_hMutex ) );
-        m_hMutex = NULL;
+        m_hMutex = nullptr;
     }
 
     if ( m_hFile != INVALID_HANDLE_VALUE )
@@ -234,8 +234,8 @@ void __cdecl CWPRINTFFILE::operator()( const WCHAR* wszFormat, ... )
         {
             DWORD cbWritten;
             const LARGE_INTEGER ibOffset = { 0, 0 };
-            if (   (!SetFilePointerEx( HANDLE( m_hFile ), ibOffset, NULL, FILE_END ))
-                || (!WriteFile( HANDLE( m_hFile ), rgwchBuf, (ULONG)(LOSStrLengthW( rgwchBuf ) * sizeof( WCHAR )), &cbWritten, NULL )))
+            if (   (!SetFilePointerEx( HANDLE( m_hFile ), ibOffset, nullptr, FILE_END ))
+                || (!WriteFile( HANDLE( m_hFile ), rgwchBuf, (ULONG)(LOSStrLengthW( rgwchBuf ) * sizeof( WCHAR )), &cbWritten, nullptr )))
             {
                 // Stop writing after first error
                 m_errLast = ErrOSErrFromWin32Err(GetLastError());

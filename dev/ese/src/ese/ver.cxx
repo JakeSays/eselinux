@@ -85,7 +85,7 @@ LONG LVERBucketAllocWaitForRCECleanCEFLPv( LONG iInstance, VOID * pvBuf )
 LONG LVERcbAverageBookmarkCEFLPv( LONG iInstance, VOID * pvBuf )
 //  ================================================================
 {
-    if ( NULL != pvBuf )
+    if ( nullptr != pvBuf )
     {
         LONG cHash = cVERcrceHashEntries.Get( iInstance );
         LONG cBookmark = cVERcbBookmarkTotal.Get( iInstance );
@@ -322,7 +322,7 @@ VOID VER::VERIReportDiscardedDeletes( const RCE * const prce )
                 _countof( rgcwszT ),
                 rgcwszT,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
 
         //  this ensures no further reports will be generated for
@@ -422,7 +422,7 @@ VOID VER::VERIReportVersionStoreOOM( PIB * ppibTrxOldest, BOOL fMaxTrxSize, cons
                         csz,
                         rgcwsz,
                         0,
-                        NULL,
+                        nullptr,
                         m_pinst );
             }
             else if ( cbucket < cbucketMost )
@@ -453,7 +453,7 @@ VOID VER::VERIReportVersionStoreOOM( PIB * ppibTrxOldest, BOOL fMaxTrxSize, cons
                         csz,
                         rgcwsz,
                         0,
-                        NULL,
+                        nullptr,
                         m_pinst );
             }
             else
@@ -477,7 +477,7 @@ VOID VER::VERIReportVersionStoreOOM( PIB * ppibTrxOldest, BOOL fMaxTrxSize, cons
                         csz,
                         rgcwsz,
                         0,
-                        NULL,
+                        nullptr,
                         m_pinst );
             }
 
@@ -490,9 +490,9 @@ VOID VER::VERIReportVersionStoreOOM( PIB * ppibTrxOldest, BOOL fMaxTrxSize, cons
                     ppibTrxOldest,
                     trxBegin0,
                     (ULONG)ppibTrxOldest->TidActive(),
-                    ( NULL != m_pinst->m_wszDisplayName ?
+                    ( nullptr != m_pinst->m_wszDisplayName ?
                                 m_pinst->m_wszDisplayName :
-                                ( NULL != m_pinst->m_wszInstanceName ? m_pinst->m_wszInstanceName : L"<null>" ) ) ) );
+                                ( nullptr != m_pinst->m_wszInstanceName ? m_pinst->m_wszInstanceName : L"<null>" ) ) ) );
 
             m_trxBegin0LastLongRunningTransaction = trxBegin0;
             m_ppibTrxOldestLastLongRunningTransaction = ppibTrxOldest;
@@ -577,7 +577,7 @@ INLINE ERR VER::ErrVERIBUAllocBucket( const INT cbRCE, const UINT uiHash )
                 //  still couldn't allocate bucket, so bail with
                 //  appropriate error
                 //
-                VERIReportVersionStoreOOM( NULL, fFalse /* fMaxTrxSize */, fCleanupWasRun );
+                VERIReportVersionStoreOOM( nullptr, fFalse /* fMaxTrxSize */, fCleanupWasRun );
                 return ErrERRCheck( fCleanupWasRun ?
                                         JET_errVersionStoreOutOfMemory :
                                         JET_errVersionStoreOutOfMemoryAndCleanupTimedOut );
@@ -1105,7 +1105,7 @@ ERR VER::ErrInternalCheck()
     UINT uiHash = 0;
     for ( ; uiHash < m_crceheadHashTable; ++uiHash )
     {
-        if( NULL != GetChain( uiHash ) )
+        if( nullptr != GetChain( uiHash ) )
         {
             ENTERREADERWRITERLOCK rwlHashAsReader( &(RwlRCEChain( uiHash )), fTrue );
             const RCE * const prce = GetChain( uiHash );
@@ -1143,7 +1143,7 @@ INLINE RCE::RCE(
     m_updateid( updateid ),
     m_trxBegin0( trxBegin0 ),
     m_trxCommittedInactive( trxMax ),
-    m_ptrxCommitted( NULL != ptrxCommit0 ? ptrxCommit0 : &m_trxCommittedInactive ),
+    m_ptrxCommitted( nullptr != ptrxCommit0 ? ptrxCommit0 : &m_trxCommittedInactive ),
     m_cbBookmarkKey( cbBookmarkKey ),
     m_cbBookmarkData( cbBookmarkData ),
     m_cbData( cbData ),
@@ -1454,7 +1454,7 @@ LOCAL RCE **PprceRCEChainGet( UINT uiHash, IFMP ifmp, PGNO pgnoFDP, const BOOKMA
     }
 
     Assert( prceNil == *pprceChain );
-    return NULL;
+    return nullptr;
 }
 
 
@@ -1472,7 +1472,7 @@ LOCAL RCE *PrceRCEGet( UINT uiHash, IFMP ifmp, PGNO pgnoFDP, const BOOKMARK& boo
 
     RCE *           prceChain   = prceNil;
     RCE **  const   pprceChain  = PprceRCEChainGet( uiHash, ifmp, pgnoFDP, bookmark );
-    if ( NULL != pprceChain )
+    if ( nullptr != pprceChain )
     {
         prceChain = *pprceChain;
     }
@@ -2110,7 +2110,7 @@ INLINE VOID VERIInsertRCEIntoSessionList( PIB * const ppib, RCE * const prce )
             prcePrev = prcePrev->PrceNextOfSession();
         }
 
-        if (NULL == prcePrev)
+        if (nullptr == prcePrev)
         {
             prcePrev = ppib->prceNewest;
         }
@@ -2314,7 +2314,7 @@ VOID VERInsertRCEIntoLists(
             }
         }
 
-        if ( NULL != pverproxy && proxyCreateIndex == pverproxy->proxy )
+        if ( nullptr != pverproxy && proxyCreateIndex == pverproxy->proxy )
         {
             Assert( !plog->FRecovering() );
             Assert( pfucbNode != pfucbVer );
@@ -2326,7 +2326,7 @@ VOID VERInsertRCEIntoLists(
         else
         {
             Assert( pfucbNode == pfucbVer );
-            if ( NULL != pverproxy )
+            if ( nullptr != pverproxy )
             {
                 Assert( plog->FRecovering() );
                 Assert( proxyRedo == pverproxy->proxy );
@@ -2394,12 +2394,12 @@ LOCAL VOID VERINullifyUncommittedRCE( RCE * const prce )
 LOCAL VOID VERINullifyRolledBackRCE(
     PIB             *ppib,
     RCE             * const prceToNullify,
-    RCE             **pprceNextToNullify = NULL )
+    RCE             **pprceNextToNullify = nullptr )
 {
     const BOOL          fOperInHashTable        = prceToNullify->FOperInHashTable();
     CReaderWriterLock   *prwlHash               = fOperInHashTable ?
                                                     &( PverFromIfmp( prceToNullify->Ifmp() )->RwlRCEChain( prceToNullify->UiHash() ) ) :
-                                                    NULL;
+                                                    nullptr;
     CCriticalSection&   critRCEList             = prceToNullify->Pfcb()->CritRCEList();
     const BOOL          fPossibleSecondaryIndex = prceToNullify->Pfcb()->FTypeTable()
                                                     && !prceToNullify->Pfcb()->FFixedDDL()
@@ -2431,7 +2431,7 @@ LOCAL VOID VERINullifyRolledBackRCE(
     if ( 0 == crefCreateIndexLock )
     {
         //  set return value before the RCE is nullified
-        if ( NULL != pprceNextToNullify )
+        if ( nullptr != pprceNextToNullify )
             *pprceNextToNullify = prceToNullify->PrcePrevOfSession();
 
         Assert( !prceToNullify->FOperNull() );
@@ -2457,7 +2457,7 @@ LOCAL VOID VERINullifyRolledBackRCE(
         }
 
 
-        if ( NULL != pprceNextToNullify )
+        if ( nullptr != pprceNextToNullify )
         {
             PinstFromPpib( ppib )->RwlTrx( ppib ).LeaveAsReader();
             UtilSleep( cmsecWaitGeneric );
@@ -2599,7 +2599,7 @@ VOID VERNullifyAllVersionsOnFCB( FCB * const pfcb )
                 pver->m_critRCEClean.Enter();
             }
             ENTERREADERWRITERLOCK   enterRwlPIBTrx(
-                                        fNeedRwlTrx ? &PinstFromPpib( ppib )->RwlTrx( ppib ) : NULL,
+                                        fNeedRwlTrx ? &PinstFromPpib( ppib )->RwlTrx( ppib ) : nullptr,
                                         fFalse,
                                         fNeedRwlTrx );
             ENTERREADERWRITERLOCK   enterRwlHashAsWriter( &( pver->RwlRCEChain( uiHash ) ), fFalse );
@@ -2719,7 +2719,7 @@ VOID VERNullifyInactiveVersionsOnBM( const FUCB * pfucb, const BOOKMARK& bm )
 VOID VER::VERSignalCleanup()
 {
     //  check whether we already requested clean up of that version store
-    if ( NULL != m_pbucketGlobalTail
+    if ( nullptr != m_pbucketGlobalTail
         && 0 == AtomicCompareExchange( (LONG *)&m_fVERCleanUpWait, 0, 1 ) )
     {
         //  reset signal in case we need to ensure RCE clean gets
@@ -2859,10 +2859,10 @@ VER * VER::VERAlloc( INST* pinst )
     const DWORD_PTR cbMemoryMax = (DWORD_PTR)min( OSMemoryPageReserveTotal(), OSMemoryTotal() );
     const DWORD_PTR cbVER = CbVERISize( fLowMemory, fMediumMemory, min( cbVersionStoreMax, cbMemoryMax / 2 ) );
 
-    VOID *pv = PvOSMemoryPageAlloc( cbVER, NULL );
-    if ( pv == NULL )
+    VOID *pv = PvOSMemoryPageAlloc( cbVER, nullptr );
+    if ( pv == nullptr )
     {
-        return NULL;
+        return nullptr;
     }
 
     VER *pVer = new (pv) VER( pinst );
@@ -2889,7 +2889,7 @@ VOID VER::VERFree( VER * pVer )
 //
 //-
 {
-    if ( pVer == NULL )
+    if ( pVer == nullptr )
     {
         return;
     }
@@ -3388,12 +3388,12 @@ ERR ErrVERAccessNode( FUCB * pfucb, const BOOKMARK& bookmark, NS * pns )
                         || Pcsr( pfucb )->Latch() == latchReadNoTouch );
 
                 const INT cbRecord = pfucb->kdfCurr.key.Cb() + pfucb->kdfCurr.data.Cb();
-                if ( NULL != pfucb->pvRCEBuffer )
+                if ( nullptr != pfucb->pvRCEBuffer )
                 {
                     OSMemoryHeapFree( pfucb->pvRCEBuffer );
                 }
                 pfucb->pvRCEBuffer = PvOSMemoryHeapAlloc( cbRecord );
-                if ( NULL == pfucb->pvRCEBuffer )
+                if ( nullptr == pfucb->pvRCEBuffer )
                 {
                     Call( ErrERRCheck( JET_errOutOfMemory ) );
                 }
@@ -4372,7 +4372,7 @@ INLINE ERR VER::ErrVERModifyCommitted(
                 pfucbNil,
                 updateidNil,
                 trxBegin0,
-                NULL,
+                nullptr,
                 0,
                 bookmark.key.Cb(),
                 bookmark.data.Cb(),
@@ -4486,7 +4486,7 @@ ERR VER::ErrVERModify(
     LEVEL       level;
     RCE         *prcePrimary    = prceNil;
     FUCB        *pfucbProxy     = pfucbNil;
-    const BOOL  fProxy          = ( NULL != pverproxy );
+    const BOOL  fProxy          = ( nullptr != pverproxy );
 
     //  we never create an insert version at runtime. instead we create a writeLock version
     //  and use ChangeOper to change it into an insert
@@ -4715,7 +4715,7 @@ ERR VER::ErrVERFlag( FUCB * pfucb, OPER oper, const VOID * pv, INT cb )
     UtilMemCpy( prce->PbData(), pv, cb );
 
     Assert( prce->TrxCommitted() == trxMax );
-    VERInsertRCEIntoLists( pfucb, pcsrNil, prce, NULL );
+    VERInsertRCEIntoLists( pfucb, pcsrNil, prce, nullptr );
 
     ASSERT_VALID( prce );
 
@@ -5048,7 +5048,7 @@ ERR RCE::ErrGetTaskForDelete( VOID ** ppvtask ) const
 //  ================================================================
 {
     ERR                 err     = JET_errSuccess;
-    DELETERECTASK *     ptask   = NULL;
+    DELETERECTASK *     ptask   = nullptr;
 
     //  since we have the RwlRCEChain, we're guaranteed that the RCE will not go away,
     //  nor will it be nullified
@@ -5068,7 +5068,7 @@ ERR RCE::ErrGetTaskForDelete( VOID ** ppvtask ) const
             GetBookmark( &bm );
 
             ptask = new DELETERECTASK( PgnoFDP(), Pfcb(), Ifmp(), bm );
-            if( NULL == ptask )
+            if( nullptr == ptask )
             {
                 err = ErrERRCheck( JET_errOutOfMemory );
             }
@@ -5109,7 +5109,7 @@ ERR VER::ErrVERIDelete( PIB * ppib, const RCE * const prce )
 
     CallR( prce->ErrGetTaskForDelete( (VOID **)&ptask ) );
 
-    if( NULL == ptask )
+    if( nullptr == ptask )
     {
         //  we determined that a task wasn't needed for whatever reason
         //
@@ -5363,7 +5363,7 @@ ERR VER::ErrVERICleanDeltaRCE( const RCE * const prce )
                                   prce->Pfcb(),
                                   prce->Ifmp(),
                                   bookmark );
-        if ( NULL == ptask )
+        if ( nullptr == ptask )
         {
             return ErrERRCheck( JET_errOutOfMemory );
         }
@@ -5384,7 +5384,7 @@ ERR VER::ErrVERICleanDeltaRCE( const RCE * const prce )
                                   pverdelta->cbOffset,
                                   pverdelta->fCallbackOnZero,
                                   pverdelta->fDeleteOnZero );
-        if ( NULL == ptask )
+        if ( nullptr == ptask )
         {
             return ErrERRCheck( JET_errOutOfMemory );
         }
@@ -5585,7 +5585,7 @@ ERR VER::ErrVERICleanOneRCE( RCE * const prce )
             //  but check anyways to be safe
             Assert( NULL == pbOldDefaultRec
                 || (BYTE *)ptdb->PdataDefaultRecord() != pbOldDefaultRec );
-            if ( NULL != pbOldDefaultRec
+            if ( nullptr != pbOldDefaultRec
                 && (BYTE *)ptdb->PdataDefaultRecord() != pbOldDefaultRec )
             {
                 pfcbTable->RemovePrecdangling( (RECDANGLING *)pbOldDefaultRec );
@@ -5963,7 +5963,7 @@ ERR RCE::ErrPrepareToDeallocate( TRX trxOldest )
 
     const BOOL  fInHash = ::FOperInHashTable( oper );
     ENTERREADERWRITERLOCK maybeEnterRwlHashAsWriter(
-                            fInHash ? &( PverFromIfmp( Ifmp() )->RwlRCEChain( uiHash ) ) : NULL,
+                            fInHash ? &( PverFromIfmp( Ifmp() )->RwlRCEChain( uiHash ) ) : nullptr,
                             fFalse,
                             fInHash );
 
@@ -6541,7 +6541,7 @@ LOCAL VOID VERICommitTransactionToLevel0( PIB * const ppib )
 
             const BOOL fInHash = prce->FOperInHashTable();
 
-            ENTERREADERWRITERLOCK maybeEnterRwlHashAsWriter( fInHash ? &( PverFromPpib( ppib )->RwlRCEChain( prce->UiHash() ) ) : 0, fFalse, fInHash );
+            ENTERREADERWRITERLOCK maybeEnterRwlHashAsWriter( fInHash ? &( PverFromPpib( ppib )->RwlRCEChain( prce->UiHash() ) ) : nullptr, fFalse, fInHash );
             ENTERCRITICALSECTION enterCritFCBRCEList( &prce->Pfcb()->CritRCEList() );
 
             VERIDeleteRCEFromSessionList( ppib, prce );
@@ -6577,7 +6577,7 @@ LOCAL VOID VERICommitTransactionToLevel0( PIB * const ppib )
             BFRemoveUndoInfo( prce );
 
         ENTERREADERWRITERLOCK maybeEnterRwlHashAsWriter(
-            prce->FOperInHashTable() ? &( PverFromPpib( ppib )->RwlRCEChain( prce->UiHash() ) ) : 0,
+            prce->FOperInHashTable() ? &( PverFromPpib( ppib )->RwlRCEChain( prce->UiHash() ) ) : nullptr,
             fFalse,
             prce->FOperInHashTable()
             );
@@ -6916,7 +6916,7 @@ ERR ErrVERIUndoReplacePhysical( RCE * const prce, CSR *pcsr, const BOOKMARK& bm 
 
 
 //  ================================================================
-ERR ErrVERIUndoInsertPhysical( RCE * const prce, CSR *pcsr, PIB * ppib = NULL, BOOL *pfRolledBack = NULL )
+ERR ErrVERIUndoInsertPhysical( RCE * const prce, CSR *pcsr, PIB * ppib = nullptr, BOOL *pfRolledBack = nullptr )
 //  ================================================================
 //
 //  set delete bit in node header and let RCE clean up
@@ -6933,7 +6933,7 @@ ERR ErrVERIUndoInsertPhysical( RCE * const prce, CSR *pcsr, PIB * ppib = NULL, B
     //
     CallR( ErrLGUndo( prce, pcsr, fMustDirtyCSR ) );
 
-    CallS( ErrNDFlagDelete( pfucb, pcsr, fDIRUndo, rceidNull, NULL ) );
+    CallS( ErrNDFlagDelete( pfucb, pcsr, fDIRUndo, rceidNull, nullptr ) );
 
     if ( ( !PinstFromIfmp( prce->Ifmp() )->FRecovering()
     /* || fRecoveringUndo == PinstFromIfmp( ifmp )->m_plog->FRecoveringMode() */ ) &&
@@ -6952,7 +6952,7 @@ ERR ErrVERIUndoInsertPhysical( RCE * const prce, CSR *pcsr, PIB * ppib = NULL, B
 #endif  //  DEBUG
 
         err = prce->ErrGetTaskForDelete( (VOID **)&ptask );
-        if ( err >= JET_errSuccess && ptask != NULL )
+        if ( err >= JET_errSuccess && ptask != nullptr )
         {
             //  must nullify RCE so that ErrBTDelete does not see an active version on this node
             //  and can actually reclaim space.
@@ -7401,7 +7401,7 @@ HandleError:
                         _countof( rgpsz ),
                         rgpsz,
                         0,
-                        NULL,
+                        nullptr,
                         pinst );
 
                 //  REVIEW: (SOMEONE) how can we get a logging failure if FLogOn() is
@@ -7493,7 +7493,7 @@ INLINE VOID VERINullifyForUndoCreateTable( PIB * const ppib, FCB * const pfcb )
         Assert( ppib == prce->Pfucb()->ppib );  // only one session should have access to the table
 
         ENTERREADERWRITERLOCK   maybeEnterRwlHashAsWriter(
-                                    prce->FOperInHashTable() ? &( PverFromIfmp( prce->Ifmp() )->RwlRCEChain( prce->UiHash() ) ) : NULL,
+                                    prce->FOperInHashTable() ? &( PverFromIfmp( prce->Ifmp() )->RwlRCEChain( prce->UiHash() ) ) : nullptr,
                                     fFalse,
                                     prce->FOperInHashTable() );
         ENTERCRITICALSECTION    enterCritFCBRCEList( &( pfcb->CritRCEList() ) );
@@ -7754,7 +7754,7 @@ LOCAL VOID VERIUndoAddColumn( const RCE * const prce )
     //  memory because other threads could have stale pointers.
     //  So build a list hanging off the table FCB and free the
     //  memory when the table FCB is freed.
-    if ( NULL != pbOldDefaultRec
+    if ( nullptr != pbOldDefaultRec
         && (BYTE *)ptdb->PdataDefaultRecord() != pbOldDefaultRec )
     {
         //  user-defined defaults are not stored in the default
@@ -7766,7 +7766,7 @@ LOCAL VOID VERIUndoAddColumn( const RCE * const prce )
             ;
             precdangling = precdangling->precdanglingNext )
         {
-            if ( NULL == precdangling )
+            if ( nullptr == precdangling )
             {
                 //  not in list, so add it;
                 //  assumes that the memory pointed to by pmemdangling is always at

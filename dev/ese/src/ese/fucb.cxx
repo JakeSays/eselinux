@@ -57,8 +57,8 @@ FUCB::~FUCB()
             JET_tableidNil,
             JET_cbtypFreeCursorLS,
             (VOID *)ls,
-            NULL,
-            NULL,
+            nullptr,
+            nullptr,
             0 );
     }
 }
@@ -201,7 +201,7 @@ VOID FUCBClose( FUCB * pfucb, FUCB * pfucbPrev )
     {
         //  locate the pfucb in this thread and take it out of the fucb list
         //
-        pfucbPrev = (FUCB *)( (BYTE *)&ppib->pfucbOfSession - (BYTE *)&( (FUCB *)0 )->pfucbNextOfSession );
+        pfucbPrev = (FUCB *)( (BYTE *)&ppib->pfucbOfSession - (BYTE *)&( (FUCB *)nullptr )->pfucbNextOfSession );
         while ( pfucbPrev->pfucbNextOfSession != pfucb )
         {
             pfucbPrev = pfucbPrev->pfucbNextOfSession;
@@ -379,7 +379,7 @@ VOID FUCBIllegalOperationFDPToBeDeleted(
         WCHAR wszTableName[JET_cbNameMost+1] = L"";
         FCB* pfcbTable = pfucb->u.pfcb->FTypeTable() ? pfucb->u.pfcb : pfucb->u.pfcb->PfcbTable();
 
-        if ( pfcbTable != NULL && pfcbTable->Ptdb() != NULL && pfcbTable->Ptdb()->SzTableName() != NULL )
+        if ( pfcbTable != nullptr && pfcbTable->Ptdb() != nullptr && pfcbTable->Ptdb()->SzTableName() != nullptr )
         {
             OSStrCbFormatW( wszTableName, sizeof(wszTableName), L"%hs", pfucb->u.pfcb->Ptdb()->SzTableName() );
         }
@@ -398,7 +398,7 @@ VOID FUCBIllegalOperationFDPToBeDeleted(
             _countof( rgwsz ),
             rgwsz,
             0,
-            NULL,
+            nullptr,
             PinstFromPfucb( pfucb ) );
 
         OSUHAPublishEvent(

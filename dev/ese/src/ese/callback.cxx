@@ -16,7 +16,7 @@ struct LIBRARYMAP
 };
 
 LOCAL INT           g_clibrary        = 0;
-LOCAL LIBRARYMAP *  g_rglibrarymap    = NULL;
+LOCAL LIBRARYMAP *  g_rglibrarymap    = nullptr;
 
 LOCAL CCriticalSection g_critCallback( CLockBasicInfo( CSyncBasicInfo( szCritCallbacks ), rankCallbacks, 0 ) );
 
@@ -26,7 +26,7 @@ ERR ErrCALLBACKInit()
 //  ================================================================
 {
     g_clibrary = 0;
-    g_rglibrarymap = NULL;
+    g_rglibrarymap = nullptr;
     return JET_errSuccess;
 }
 
@@ -96,7 +96,7 @@ ERR ErrCALLBACKResolve( const CHAR * const szCallback, JET_CALLBACK * pcallback 
     CHAR * const pchSep = strchr( szCallbackT, chCallbackSep );
     CHAR * const szFunction = pchSep + 1;
     ULONG        cbFunction = sizeof(szCallbackT) - (szFunction - szCallbackT);
-    if( NULL == pchSep )
+    if( nullptr == pchSep )
     {
         err = ErrERRCheck( JET_errInvalidParameter );
         goto HandleError;
@@ -124,13 +124,13 @@ ERR ErrCALLBACKResolve( const CHAR * const szCallback, JET_CALLBACK * pcallback 
 
             //  check for memory allocation failure
             //
-            if( NULL == rglibrarymapNew || NULL == wszLibraryT )
+            if( nullptr == rglibrarymapNew || nullptr == wszLibraryT )
             {
-                if( NULL != rglibrarymapNew )
+                if( nullptr != rglibrarymapNew )
                 {
                     OSMemoryHeapFree( rglibrarymapNew );
                 }
-                if( NULL != wszLibraryT )
+                if( nullptr != wszLibraryT )
                 {
                     OSMemoryHeapFree( wszLibraryT );
                 }
@@ -147,7 +147,7 @@ ERR ErrCALLBACKResolve( const CHAR * const szCallback, JET_CALLBACK * pcallback 
             Assert( clibraryT - 1 == g_clibrary );
             g_rglibrarymap = rglibrarymapNew;
             g_clibrary = clibraryT;
-            if( NULL != rglibrarymapOld )
+            if( nullptr != rglibrarymapOld )
             {
                 OSMemoryHeapFree( rglibrarymapOld );
             }
@@ -164,11 +164,11 @@ ERR ErrCALLBACKResolve( const CHAR * const szCallback, JET_CALLBACK * pcallback 
 
     //  we now have the library
     *pcallback = (JET_CALLBACK)PfnUtilGetProcAddress( library, szFunction );
-    if( NULL == *pcallback )
+    if( nullptr == *pcallback )
     {
         OSStrCbAppendA( szFunction, cbFunction, "@32" );
         *pcallback = (JET_CALLBACK)PfnUtilGetProcAddress( library, szFunction );
-        if( NULL == *pcallback )
+        if( nullptr == *pcallback )
         {
             WCHAR wszFunction[JET_cbColumnMost+1+3];
             
@@ -203,7 +203,7 @@ ERR VTAPI ErrIsamSetLS(
     CheckFUCB( ppib, pfucb );
     AssertDIRNoLatch( ppib );
 
-    if ( NULL == PvParam( PinstFromPpib( ppib ), JET_paramRuntimeCallback ) )
+    if ( nullptr == PvParam( PinstFromPpib( ppib ), JET_paramRuntimeCallback ) )
     {
         return ErrERRCheck( JET_errLSCallbackNotSpecified );
     }

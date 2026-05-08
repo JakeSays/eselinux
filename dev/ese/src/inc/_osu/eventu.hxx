@@ -37,8 +37,8 @@ void UtilReportEvent(
     const DWORD         cString,
     const WCHAR *       rgpszString[],
     const DWORD         cbRawData = 0,
-    void *              pvRawData = NULL,
-    const INST *        pinst = NULL,
+    void *              pvRawData = nullptr,
+    const INST *        pinst = nullptr,
     const LONG          lEventLoggingLevel = 1 );   //  1==JET_EventLoggingLevelMin
 void UtilReportEventOfError(
     const CategoryId    catid,

@@ -137,7 +137,7 @@ ERR ErrIsamPrepareToCommitTransaction(
     const VOID      * const pvData,
     const ULONG     cbData );
 
-ERR ErrIsamCommitTransaction( JET_SESID sesid, JET_GRBIT grbit, DWORD cmsecDurableCommit = 0, JET_COMMIT_ID *pCommitId = NULL );
+ERR ErrIsamCommitTransaction( JET_SESID sesid, JET_GRBIT grbit, DWORD cmsecDurableCommit = 0, JET_COMMIT_ID *pCommitId = nullptr );
 
 ERR ErrIsamRollback( JET_SESID sesid, const JET_GRBIT grbit );
 
@@ -375,7 +375,7 @@ ERR ErrIsamSetCurrentIndex(
     JET_SESID           vsesid,
     JET_VTID            vtid,
     const CHAR          *szName,
-    const JET_INDEXID   *pindexid       = NULL,
+    const JET_INDEXID   *pindexid       = nullptr,
     const JET_GRBIT     grbit           = JET_bitMoveFirst,
     const ULONG         itagSequence    = 1 );
 

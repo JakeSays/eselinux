@@ -185,7 +185,7 @@ BOOL FITQUAddressFromSz( int argc, __in_ecount(argc) const CHAR ** const argv, i
     {
         return fFalse;
     }
-    if ( NULL == argv[iarg] )
+    if ( nullptr == argv[iarg] )
     {
         return fFalse;
     }
@@ -225,7 +225,7 @@ BOOL FITQUAddressFromSz( int argc, __in_ecount(argc) const CHAR ** const argv, i
 BOOL BoolReadVal( const char * szBool, void ** ppvValue )
 {
     *ppvValue = PvITQUAlloc(sizeof(BOOL));
-    if ( *ppvValue == NULL )
+    if ( *ppvValue == nullptr )
     {
         ITQUPrintf( "Allocation failure.\n" );
         return fFalse;
@@ -285,7 +285,7 @@ BOOL ShortReadVal( const char * szShort, void ** ppvValue )
         return fFalse;
     }
     *ppvValue = PvITQUAlloc( sizeof(SHORT) );
-    if ( *ppvValue == NULL )
+    if ( *ppvValue == nullptr )
     {
         ITQUPrintf( "Allocation failure.\n" );
         return fFalse;
@@ -314,7 +314,7 @@ BOOL UshortReadVal( const char * szUshort, void ** ppvValue )
         return fFalse;
     }
     *ppvValue = PvITQUAlloc( sizeof(USHORT) );
-    if ( *ppvValue == NULL )
+    if ( *ppvValue == nullptr )
     {
         ITQUPrintf( "Allocation failure.\n" );
         return fFalse;
@@ -342,7 +342,7 @@ BOOL UlongReadVal( const char * szUlong, void ** ppvValue )
         return fFalse;
     }
     *ppvValue = PvITQUAlloc( sizeof(ULONG) );
-    if ( *ppvValue == NULL )
+    if ( *ppvValue == nullptr )
     {
         ITQUPrintf( "Allocation failure.\n" );
         return fFalse;
@@ -373,7 +373,7 @@ BOOL DwordReadVal( const char * szDword, void ** ppvValue )
         return fFalse;
     }
     *ppvValue = PvITQUAlloc( sizeof(DWORD) );
-    if ( *ppvValue == NULL )
+    if ( *ppvValue == nullptr )
     {
         ITQUPrintf( "Allocation failure.\n" );
         return fFalse;
@@ -402,7 +402,7 @@ BOOL QwordReadVal( const char * szQword, void ** ppvValue )
         0 == _stricmp( szQword, "0" ) )
     {
         *ppvValue = PvITQUAlloc( sizeof(QWORD) );
-        *((void**)*ppvValue) = 0x0;
+        *((void**)*ppvValue) = nullptr;
         return fTrue;
     }
 
@@ -416,7 +416,7 @@ BOOL QwordReadVal( const char * szQword, void ** ppvValue )
     qw = (QWORD)qwT;
 
     *ppvValue = PvITQUAlloc( sizeof(QWORD) );
-    if ( *ppvValue == NULL )
+    if ( *ppvValue == nullptr )
     {
         ITQUPrintf( "Allocation failure.\n" );
         return fFalse;
@@ -454,7 +454,7 @@ BOOL PtrReadVal( const char * szPtr, void ** ppvValue )
         0 == _stricmp( szPtr, "0" ) )
     {
         *ppvValue = PvITQUAlloc( sizeof(UNSIGNED_PTR) );
-        *((void**)*ppvValue) = 0x0;
+        *((void**)*ppvValue) = nullptr;
         return fTrue;
     }
     QWORD qwT = 0;
@@ -715,7 +715,7 @@ const CMemberDescriptor * PmdMemberDescriptorLookupHelper(
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 
@@ -891,10 +891,10 @@ ERR MinMaxTargetAction( const IEntryDescriptor * const pied, QwEntryAddr qwEntry
     {
         pC->ullTarget = ullValue1;
         pC->fDup = fFalse;
-        if ( pC->pvTargetEntry == NULL )
+        if ( pC->pvTargetEntry == nullptr )
         {
             pC->pvTargetEntry = PvITQUAlloc( pied->CbEntry( pcvEntry ) );
-            if ( pC->pvTargetEntry == NULL )
+            if ( pC->pvTargetEntry == nullptr )
             {
                 ITQUAddWarning( "Allocation failure in MinMaxTargetAction" );
                 return IQERR::errInternalError;
@@ -1010,7 +1010,7 @@ inline void IQPrintStats( CStats * pCS, PfnPrintVal pfnPrintValue, const SAMPLE 
             break;
     }
 
-    if ( pCS == NULL )
+    if ( pCS == nullptr )
     {
         ITQUPrintf( "   NULL pointer to object of class CStats!\n" );
         return;
@@ -1215,21 +1215,21 @@ public:
         //  Bail early if this is the match all query ...
         if ( 0 == _stricmp( prgArg[0], "*" ) )
         {
-            ppsc->pmd = NULL;
+            ppsc->pmd = nullptr;
             ppsc->ErrSetCompOp( "*" );
-            ppsc->pvValue = NULL;
+            ppsc->pvValue = nullptr;
             return 1;   // only one arg ...
         }
 
         //  Select a query type ...
         ppsc->pmd = m_pied->PmdMatch( prgArg[0] );
-        if ( ppsc->pmd  == NULL )
+        if ( ppsc->pmd  == nullptr )
         {
             ITQUPrintf( "Must specify a entry member or sub-member for the 2nd arg, %s doesn't seem to be.\n", prgArg[0] );
             goto HandleError;
         }
 
-        if ( prgArg[1] == NULL )
+        if ( prgArg[1] == nullptr )
         {
             ITQUPrintf( "Must specify a equality operator { ==, >=, >, <, etc }.\n" );
             goto HandleError;
@@ -1243,7 +1243,7 @@ public:
             goto HandleError;
         }
 
-        if ( prgArg[2] == NULL ||
+        if ( prgArg[2] == nullptr ||
             !ppsc->pmd->m_pfnFReadVal( prgArg[2], &(ppsc->pvValue) ) )
         {
             ITQUPrintf( "Must specify an argument to match the operator.\n" );
@@ -1418,7 +1418,7 @@ void ConsumeArgs( const char ** prgArg, ULONG * pcArg, ULONG cNum )
     memmove( &(prgArg[0]), &(prgArg[cNum]), sizeof(*prgArg)*(*pcArg-cNum) );
 
     *pcArg = *pcArg - cNum;
-    prgArg[*pcArg] = NULL;
+    prgArg[*pcArg] = nullptr;
 }
 
 #define DumpArgs( arg, c )                      \
@@ -1434,19 +1434,19 @@ void ConsumeArgs( const char ** prgArg, ULONG * pcArg, ULONG cNum )
 //
 const char ** LocalArgDup( INT argc, const char * const argv [] )
 {
-    const char **   prgArg = NULL;
+    const char **   prgArg = nullptr;
 
     INT cbArgSize = (INT)sizeof(char*) * ( argc + 1 );
     if ( argc < 0 || cbArgSize/((INT)sizeof(char*)) != ( argc + 1 ) )
     {
         ITQUPrintf("Error: argument count %d is negative or too big.", argc);
-        return NULL;
+        return nullptr;
     }
     
     prgArg = (const char**)PvITQUAlloc( (ULONG)cbArgSize );
-    if ( prgArg == NULL )
+    if ( prgArg == nullptr )
     {
-        return NULL;
+        return nullptr;
     }
 
     for ( INT i = 0; i < argc; i++ )
@@ -1457,7 +1457,7 @@ const char ** LocalArgDup( INT argc, const char * const argv [] )
         }
         prgArg[i] = argv[i];
     }
-    prgArg[argc] = NULL; // as is convention NULL ptr after last arg.
+    prgArg[argc] = nullptr; // as is convention NULL ptr after last arg.
 
     return prgArg;
 }
@@ -1476,13 +1476,13 @@ IQERR ErrIQConsumePredicateArgs(
 //  ================================================================
 {
     IQERR          err = IQERR::errSuccess;
-    CIterQuery *   piq = NULL;
+    CIterQuery *   piq = nullptr;
 
     //
     //  Allocate a new empty CIterQuery.
     //
     piq = new CIterQuery( pied );
-    if ( piq == NULL )
+    if ( piq == nullptr )
     {
         ITQUPrintf( "Couldn't allocate %d bytes\n", sizeof(CIterQuery) );
         return IQERR::errOutOfMemory;
@@ -1498,7 +1498,7 @@ IQERR ErrIQConsumePredicateArgs(
         DumpArgs( prgArg, *pcArg );
     }
 
-    if ( prgArg[0] == NULL )
+    if ( prgArg[0] == nullptr )
     {
         ITQUPrintf( "Must specify a entry member or sub-member for the 2nd arg.\n" );
         ITQUCall( IQERR::errInvalidParameter );
@@ -1522,7 +1522,7 @@ IQERR ErrIQConsumePredicateArgs(
         }
         ConsumeArgs( prgArg, pcArg, cConsume );
 
-        if ( NULL == prgArg[0] )
+        if ( nullptr == prgArg[0] )
         {
             fEvaluateMore = fFalse;
         }
@@ -1549,7 +1549,7 @@ IQERR ErrIQConsumePredicateArgs(
 
     *ppiq = piq;
     
-    piq = NULL;     // so not freed
+    piq = nullptr;     // so not freed
     err = IQERR::errSuccess;
 
 HandleError:
@@ -1571,7 +1571,7 @@ IQERR ErrIQAddAction(
     __inout CIterQuery * const  piq,
     const char **               prgArg,
     ULONG *                     pcArg,
-    void *                      pvResult = NULL );
+    void *                      pvResult = nullptr );
 
 IQERR ErrIQAddAction(
     __inout CIterQuery * const  piq,
@@ -1582,7 +1582,7 @@ IQERR ErrIQAddAction(
     IQERR err               = IQERR::errSuccess;
     ULONG   cConsumeAction  = 0;
 
-    void *  pContext = NULL;
+    void *  pContext = nullptr;
 
     if ( FITQUDebugMode )
     {
@@ -1592,7 +1592,7 @@ IQERR ErrIQAddAction(
 
     const char * szAction = prgArg[0];
 
-    if ( szAction == NULL )
+    if ( szAction == nullptr )
     {
         ITQUPrintf( "no action defined!\n" );
         ITQUCall( IQERR::errInvalidParameter );
@@ -1621,7 +1621,7 @@ IQERR ErrIQAddAction(
                 }
 
                 rgpmdPrintMembers[ cPrintedMembers ] = piq->Pied()->PmdMatch( szCurr, ',' );
-                if ( rgpmdPrintMembers[ cPrintedMembers ] == NULL )
+                if ( rgpmdPrintMembers[ cPrintedMembers ] == nullptr )
                 {
                     ITQUPrintf("Couldn't find member starting with %s\n", szCurr );
                     break;
@@ -1640,7 +1640,7 @@ IQERR ErrIQAddAction(
             // Note: This overallocates the array size by one slot / extra CMemberDescriptor * ptr (b/c context
             // array has size of 1 already).
             pContext = PvITQUAlloc( sizeof( PRINT_ACTION_CONTEXT ) + ( cPrintedMembers * sizeof( CMemberDescriptor * ) ) );
-            if ( pContext == NULL )
+            if ( pContext == nullptr )
             {
                 ITQUPrintf( "Out of memory.\n" );
                 ITQUCall( IQERR::errInvalidParameter );
@@ -1649,13 +1649,13 @@ IQERR ErrIQAddAction(
             ((PRINT_ACTION_CONTEXT*)pContext)->cPrintedMembers = cPrintedMembers;
             memcpy( ((PRINT_ACTION_CONTEXT*)pContext)->rgpmdPrintedMembers, rgpmdPrintMembers, cPrintedMembers * sizeof(rgpmdPrintMembers[0]) );
 
-            piq->SetCallback( PrintAction, NULL, pContext );
+            piq->SetCallback( PrintAction, nullptr, pContext );
 
             cConsumeAction = 1;
         }
         else
         {
-            const char * rgszDefaultPrint [] = { piq->Pied()->SzDefaultPrintList(), NULL };
+            const char * rgszDefaultPrint [] = { piq->Pied()->SzDefaultPrintList(), nullptr };
             ULONG cArgsT = _countof( rgszDefaultPrint );
             ERR errT = ErrIQAddAction( piq, rgszDefaultPrint, &cArgsT );
             Assert( errT == IQERR::errSuccess );
@@ -1669,7 +1669,7 @@ IQERR ErrIQAddAction(
     {
         const ULONG cbContext = sizeof(__int64);
         pContext = PvITQUAlloc( cbContext );
-        if ( pContext == NULL )
+        if ( pContext == nullptr )
         {
             ITQUPrintf( "Out of memory.\n" );
             ITQUCall( IQERR::errInvalidParameter );
@@ -1681,7 +1681,7 @@ IQERR ErrIQAddAction(
         if ( pcAccum )
         {
             //  External accumulator, no final / "printing" action
-            piq->SetCallback( CountAction, NULL, pcAccum );
+            piq->SetCallback( CountAction, nullptr, pcAccum );
         }
         else
         {
@@ -1695,7 +1695,7 @@ IQERR ErrIQAddAction(
         const ULONG cbContext = sizeof(ITQU_ACCUM_CONTEXT);
         ITQU_ACCUM_CONTEXT * pC;
         pContext = pC = (ITQU_ACCUM_CONTEXT *)PvITQUAlloc( cbContext );
-        if ( pContext == NULL )
+        if ( pContext == nullptr )
         {
             ITQUPrintf( "Out of memory.\n" );
             ITQUCall( IQERR::errInvalidParameter );
@@ -1703,7 +1703,7 @@ IQERR ErrIQAddAction(
         memset( pContext, 0, cbContext );
 
         pC->pmd = piq->Pied()->PmdMatch( &(szAction[6]) );
-        if ( pC->pmd == NULL )
+        if ( pC->pmd == nullptr )
         {
             ITQUPrintf( "Must specify a entry member or sub-member for the 2nd arg, %s doesn't seem to be.\n", prgArg[0] );
             ITQUCall( IQERR::errInvalidParameter );
@@ -1721,7 +1721,7 @@ IQERR ErrIQAddAction(
         }
 
         //  if there is an external accumulator, there is no final / "printing" action
-        piq->SetCallback( AccumAction, pcAccum ? NULL : AccumFinalAction, pContext );
+        piq->SetCallback( AccumAction, pcAccum ? nullptr : AccumFinalAction, pContext );
 
         cConsumeAction = 1;
     }
@@ -1729,7 +1729,7 @@ IQERR ErrIQAddAction(
     else if ( ( 0 == _strnicmp( szAction, "histo:", 6 ) ) )
     {
         const CMemberDescriptor * pmd = piq->Pied()->PmdMatch( &(szAction[6]) );
-        if ( pmd == NULL )
+        if ( pmd == nullptr )
         {
             ITQUPrintf( "Must specify a entry member or sub-member for the 2nd arg, %s doesn't seem to be.\n", prgArg[0] );
             ITQUCall( IQERR::errInvalidParameter );
@@ -1771,7 +1771,7 @@ IQERR ErrIQAddAction(
 
         ITQU_HISTO_CONTEXT * pCtx;
         pContext = pCtx = (ITQU_HISTO_CONTEXT *)PvITQUAlloc( cbContext );
-        if ( pContext == NULL )
+        if ( pContext == nullptr )
         {
             ITQUPrintf( "Out of memory.\n" );
             ITQUCall( IQERR::errInvalidParameter );
@@ -1814,7 +1814,7 @@ IQERR ErrIQAddAction(
         }
 
         //  if there is an external histogram, there is no final / "printing" action
-        piq->SetCallback( HistoAction, pvResult ? NULL : HistoFinalAction, pContext );
+        piq->SetCallback( HistoAction, pvResult ? nullptr : HistoFinalAction, pContext );
 
         cConsumeAction = 1;
     }
@@ -1824,7 +1824,7 @@ IQERR ErrIQAddAction(
         const ULONG cbContext = sizeof(ITQU_MINMAX_TARGET_CONTEXT);
         ITQU_MINMAX_TARGET_CONTEXT * pC;
         pContext = pC = (ITQU_MINMAX_TARGET_CONTEXT *) PvITQUAlloc( cbContext );
-        if ( pContext == NULL )
+        if ( pContext == nullptr )
         {
             ITQUPrintf( "Out of memory.\n" );
             ITQUCall( IQERR::errInvalidParameter );
@@ -1837,7 +1837,7 @@ IQERR ErrIQAddAction(
             pC->fMin = 0 == _strnicmp( szAction, "min:", 4 );
 
             pC->pmd = piq->Pied()->PmdMatch( &(szAction[4]) );
-            if ( pC->pmd == NULL )
+            if ( pC->pmd == nullptr )
             {
                 ITQUPrintf( "Must specify a entry member or sub-member for the 2nd arg, %s doesn't seem to be.\n", prgArg[0] );
                 ITQUCall( IQERR::errInvalidParameter );
@@ -1868,7 +1868,7 @@ IQERR ErrIQAddAction(
     else if ( 0 == _stricmp( szAction, "dump" ) )
     {
 
-        piq->SetCallback( DumpAction, NULL, NULL );
+        piq->SetCallback( DumpAction, nullptr, nullptr );
 
         cConsumeAction = 1;
     }
@@ -1883,7 +1883,7 @@ HandleError:
     if ( err < IQERR::errSuccess )
     {
         ITQUFree( pContext );
-        pContext = NULL;
+        pContext = nullptr;
         ITQUAssert( 0 == cConsumeAction );
     }
     else
@@ -1908,13 +1908,13 @@ ERR ErrIQCreateIterQuery(
         _Out_ CIterQuery ** ppiq )
 {
     IQERR            err = IQERR::errSuccess;
-    const char **   prgArg = NULL;
-    CIterQuery *       piq = NULL;
+    const char **   prgArg = nullptr;
+    CIterQuery *       piq = nullptr;
 
     //  Create a copy of the arg ptr array, so that we can "consume" args
     //  for easy arg parsing ...
     prgArg = LocalArgDup( argc, argv );
-    if ( prgArg == NULL )
+    if ( prgArg == nullptr )
     {
         ITQUPrintf( "Couldn't allocate memory for a 2nd copy of the args.\n" );
         ITQUCall( IQERR::errInvalidParameter );
@@ -1948,7 +1948,7 @@ ERR ErrIQCreateIterQuery(
         ITQUPrintf( "\n" );
     }
 
-    piq = NULL;     // so not freed
+    piq = nullptr;     // so not freed
     err = IQERR::errSuccess;
 
 HandleError:
@@ -1956,7 +1956,7 @@ HandleError:
     if ( piq )
     {
         delete piq;
-        *ppiq = NULL;
+        *ppiq = nullptr;
     }
     if ( prgArg )
     {
@@ -1974,13 +1974,13 @@ ERR ErrIQCreateIterQueryCount(
         _Out_ CIterQuery **  ppiq )
 {
     IQERR              err = IQERR::errSuccess;
-    const char **   prgArg = NULL;
-    CIterQuery *       piq = NULL;
+    const char **   prgArg = nullptr;
+    CIterQuery *       piq = nullptr;
 
     //  Create a copy of the arg ptr array, so that we can "consume" args
     //  for easy arg parsing ...
     prgArg = LocalArgDup( argc, argv );
-    if ( prgArg == NULL )
+    if ( prgArg == nullptr )
     {
         ITQUPrintf( "Couldn't allocate memory for a 2nd copy of the args.\n" );
         ITQUCall( IQERR::errInvalidParameter );
@@ -2014,7 +2014,7 @@ ERR ErrIQCreateIterQueryCount(
         ITQUPrintf( "\n" );
     }
 
-    piq = NULL;     // so not freed
+    piq = nullptr;     // so not freed
     err = IQERR::errSuccess;
 
 HandleError:
@@ -2022,7 +2022,7 @@ HandleError:
     if ( piq )
     {
         delete piq;
-        *ppiq = NULL;
+        *ppiq = nullptr;
     }
     if ( prgArg )
     {

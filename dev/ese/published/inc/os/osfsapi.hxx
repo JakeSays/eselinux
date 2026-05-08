@@ -105,8 +105,8 @@ class IFileSystemAPI  //  fsapi
 
         virtual ERR ErrDiskSpace(   const WCHAR* const  wszPath,
                                     QWORD* const        pcbFreeForUser,
-                                    QWORD* const        pcbTotalForUser = NULL,
-                                    QWORD* const        pcbFreeOnDisk = NULL ) = 0;
+                                    QWORD* const        pcbTotalForUser = nullptr,
+                                    QWORD* const        pcbFreeOnDisk = nullptr ) = 0;
 
         //  returns the sector size for the specified path
 
@@ -144,7 +144,7 @@ class IFileSystemAPI  //  fsapi
 
         virtual ERR ErrPathComplete(     _In_z_ const WCHAR* const  wszPath,
                                         // UNDONE_BANAPI:
-                                        _Out_bytecap_c_(cbOSFSAPI_MAX_PATHW) WCHAR* const       wszAbsPath  = NULL ) = 0;
+                                        _Out_bytecap_c_(cbOSFSAPI_MAX_PATHW) WCHAR* const       wszAbsPath  = nullptr ) = 0;
 
         //  breaks the given path into folder, filename, and extension
         //  components

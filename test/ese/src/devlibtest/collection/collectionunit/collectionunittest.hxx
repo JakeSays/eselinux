@@ -24,14 +24,14 @@ inline void COLLUNITEnforceFail( const char* szMessage, const char* szFilename, 
 {
     g_cTestsFailed++;
     wprintf( L"\t\t\tCOLLUNITEnforce( %hs ) ... Failed @ %d!\n", szMessage, lLine );
-    RaiseFailFastException( NULL, NULL, 0 );
+    RaiseFailFastException( nullptr, nullptr, 0 );
 }
 
 inline void COLLUNITAssertFail( const char * szMessage, const char * szFilename, LONG lLine, ... )
 {
     g_cTestsFailed++;
     wprintf( L"\t\t\tCOLLUNITAssert( %hs ) ... Failed in %hs @ %d!\n", szMessage, szFilename, lLine );
-    RaiseFailFastException( NULL, NULL, 0 );
+    RaiseFailFastException( nullptr, nullptr, 0 );
 }
 
 

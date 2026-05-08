@@ -2596,7 +2596,7 @@ INLINE const BYTE * PbData( const LRSPLIT_ * const plrsplit )
             break;
         default:
             Assert( fFalse );
-            return 0;
+            return nullptr;
     }
 }
 
@@ -2630,7 +2630,7 @@ INLINE const BYTE * PbData( const LRMERGE_ * const plrmerge )
             break;
         default:
             Assert( fFalse );
-            return 0;
+            return nullptr;
     }
 }
 
@@ -2768,7 +2768,7 @@ ERR ErrLGScanCheck(
     _In_    const BOOL      fObjidInvalid,
     _In_    const BOOL      fEmptyPage,
     _In_    const BOOL      fPageFDPDelete,
-    _In_    LGPOS* const    plgposLogRec = NULL );
+    _In_    LGPOS* const    plgposLogRec = nullptr );
 
 ERR ErrLGPageMove(
     _In_    const FUCB * const  pfucb,
@@ -2841,12 +2841,12 @@ ERR ErrLGForceWriteLog(
 ERR ErrLGForceLogRollover(
     PIB * const         ppib,
     _In_ PSTR           szTrace,
-    LGPOS* const        plgposLogRec    = NULL );
+    LGPOS* const        plgposLogRec    = nullptr );
 
 inline ERR ErrLGForceLogRollover(
     INST * const        pinst,
     _In_ PSTR           szTrace,
-    LGPOS* const        plgposLogRec    = NULL )
+    LGPOS* const        plgposLogRec    = nullptr )
 {
     PIB pibFake;
     pibFake.m_pinst = pinst;

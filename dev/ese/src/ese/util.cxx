@@ -202,7 +202,7 @@ ERR ErrUTILICheckName(
     C_ASSERT( JET_cbNameMost == 64 ); // ensure we're not getting the Unicode version.
 
     //  a name must exist and may not begin with a space
-    if ( NULL == szName || ' ' == *szName )
+    if ( nullptr == szName || ' ' == *szName )
     {
         OnDebug( g_ulCheckErrorLine = __LINE__ );
         Error( ErrERRCheck( JET_errInvalidName ) );
@@ -281,7 +281,7 @@ ERR ErrUTILICheckPathName(
 
     //  path must exist and may not begin with a space
     //
-    if ( NULL == wszName || ' ' == *wszName )
+    if ( nullptr == wszName || ' ' == *wszName )
     {
         return ErrERRCheck( JET_errInvalidPath );
     }

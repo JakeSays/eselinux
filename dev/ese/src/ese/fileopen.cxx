@@ -23,8 +23,8 @@ ERR VTAPI ErrIsamDupCursor( JET_SESID sesid, JET_VTID vtid, JET_TABLEID  *ptable
 
     //  reset copy buffer
     //
-    pfucb->pvWorkBuf = NULL;
-    pfucb->dataWorkBuf.SetPv( NULL );
+    pfucb->pvWorkBuf = nullptr;
+    pfucb->dataWorkBuf.SetPv( nullptr );
     Assert( !FFUCBUpdatePrepared( pfucb ) );
 
     //  reset key buffer
@@ -242,14 +242,14 @@ ERR ErrTDBCreate(
 
     //  add FIELD placeholder
     MEMPOOL::ITAG   itagNew;
-    Call( ptdb->MemPool().ErrAddEntry( NULL, cbFIELDPlaceholder, &itagNew ) );
+    Call( ptdb->MemPool().ErrAddEntry( nullptr, cbFIELDPlaceholder, &itagNew ) );
     Assert( itagNew == itagTDBFields ); // Should be the first entry in the buffer.
 
     const ULONG     cbFieldInfo     = cfieldTotal * sizeof(FIELD);
     if ( cbFieldInfo > 0 )
     {
         FIELD * const   pfieldInitial   = (FIELD *)PvOSMemoryHeapAlloc( cbFieldInfo );
-        if ( NULL == pfieldInitial )
+        if ( nullptr == pfieldInitial )
         {
             Call( ErrERRCheck( JET_errOutOfMemory ) );
         }
@@ -258,7 +258,7 @@ ERR ErrTDBCreate(
     }
     else
     {
-        ptdb->SetPfieldInitial( NULL );
+        ptdb->SetPfieldInitial( nullptr );
     }
 
     //  set output parameter and return
@@ -896,7 +896,7 @@ ERR ErrFILEIOpenTable(
     _Out_ FUCB      **ppfucb,
     _In_ const CHAR *szName,
     _In_ ULONG      grbit,
-    _In_opt_ FDPINFO        *pfdpinfo = NULL );
+    _In_opt_ FDPINFO        *pfdpinfo = nullptr );
 
 ERR VTAPI ErrIsamOpenTable(
     JET_SESID           vsesid,
@@ -994,7 +994,7 @@ LONG LTableOpenCacheMissesCEFLPv( LONG iInstance, void *pvBuf )
 
 LONG LTableOpensCEFLPv( LONG iInstance, void *pvBuf )
 {
-    if ( NULL != pvBuf )
+    if ( nullptr != pvBuf )
     {
         *(LONG*)pvBuf = cTableOpenCacheHits.Get( iInstance ) + cTableOpenCacheMisses.Get( iInstance );
     }
@@ -1488,7 +1488,7 @@ ERR ErrFILEIOpenTable(
         ttSubject = tt::Temp;
     }
 
-    if ( NULL == pfdpinfo )
+    if ( nullptr == pfdpinfo )
     {
         switch ( ttSubject )
         {
@@ -1896,8 +1896,8 @@ ERR ErrFILEIOpenTable(
 
     //  reset copy buffer
     //
-    pfucb->pvWorkBuf = NULL;
-    pfucb->dataWorkBuf.SetPv( NULL );
+    pfucb->pvWorkBuf = nullptr;
+    pfucb->dataWorkBuf.SetPv( nullptr );
     Assert( !FFUCBUpdatePrepared( pfucb ) );
 
     //  reset key buffer
@@ -1977,7 +1977,7 @@ HandleError:
     {
         CallSx( ErrDIRRollback( ppib ), JET_errRollbackError );
     }
-    AssertDIRMaybeNoLatch( ppib, NULL );
+    AssertDIRMaybeNoLatch( ppib, nullptr );
 
     return err;
 }
@@ -2417,7 +2417,7 @@ VOID FILEPrepareDefaultRecord( FUCB *pfucbFake, FCB *pfcbFake, TDB *ptdb )
     pfcbFake->SetFixedDDL();
     pfcbFake->Unlock();
 
-    pfucbFake->pvWorkBuf = NULL;
+    pfucbFake->pvWorkBuf = nullptr;
     RECIAllocCopyBuffer( pfucbFake );
 
     if ( pfcbNil != ptdb->PfcbTemplateTable() )
@@ -2554,13 +2554,13 @@ ERR ErrFILERebuildDefaultRec(
     }
 
     precdangling = (RECDANGLING *)PvOSMemoryHeapAlloc( sizeof(RECDANGLING) + pfucbFake->dataWorkBuf.Cb() );
-    if ( NULL == precdangling )
+    if ( nullptr == precdangling )
     {
         err = ErrERRCheck( JET_errOutOfMemory );
         goto HandleError;
     }
 
-    precdangling->precdanglingNext = NULL;
+    precdangling->precdanglingNext = nullptr;
     precdangling->data.SetPv( (BYTE *)precdangling + sizeof(RECDANGLING) );
     pfucbFake->dataWorkBuf.CopyInto( precdangling->data );
     ptdb->SetPdataDefaultRecord( &( precdangling->data ) );
@@ -2741,7 +2741,7 @@ VOID SetIdxSegFromOldFormat(
             fid = FID( le_rgidxseg[iidxseg] );
         }
 
-        if ( NULL != ptcibTemplateTable )
+        if ( nullptr != ptcibTemplateTable )
         {
             Assert( !fTemplateTable );
 
@@ -2818,7 +2818,7 @@ ERR ErrIDBSetIdxSegFromOldFormat(
             cidxseg,
             fConditional,
             ptdb->FTemplateTable(),
-            ( ptdb->FDerivedTable() ? &tcibTemplateTable : NULL ) );
+            ( ptdb->FDerivedTable() ? &tcibTemplateTable : nullptr ) );
 
     return ( fConditional ?
                 ErrIDBSetIdxSegConditional( pidb, ptdb, rgidxseg ) :

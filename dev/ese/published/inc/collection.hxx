@@ -1501,7 +1501,7 @@ template< class CObject, PfnOffsetOf OffsetOfILE >
 inline BOOL CInvasiveList< CObject, OffsetOfILE >::
 FEmpty() const
 {
-    return m_pobjPrevMost == NULL;
+    return m_pobjPrevMost == nullptr;
 }
 
 //  returns fTrue if the specified object is a member of this list
@@ -1583,12 +1583,12 @@ InsertAsPrevMost( CObject* const pobj )
 
     //  the list is empty
 
-    if ( m_pobjPrevMost == NULL )
+    if ( m_pobjPrevMost == nullptr )
     {
         //  insert this element as the only element in the list
 
-        pile->m_pobjPrev    = NULL;
-        pile->m_pobjNext    = NULL;
+        pile->m_pobjPrev    = nullptr;
+        pile->m_pobjNext    = nullptr;
 
         m_pobjPrevMost      = _PobjFromPile( pile );
         m_pobjNextMost      = _PobjFromPile( pile );
@@ -1600,7 +1600,7 @@ InsertAsPrevMost( CObject* const pobj )
     {
         //  insert this element at the prev-most position in the list
 
-        pile->m_pobjPrev                            = NULL;
+        pile->m_pobjPrev                            = nullptr;
         pile->m_pobjNext                            = m_pobjPrevMost;
 
         _PileFromPobj( m_pobjPrevMost )->m_pobjPrev = _PobjFromPile( pile );
@@ -1628,12 +1628,12 @@ InsertAsNextMost( CObject* const pobj )
 
     //  the list is empty
 
-    if ( m_pobjNextMost == NULL )
+    if ( m_pobjNextMost == nullptr )
     {
         //  insert this element as the only element in the list
 
-        pile->m_pobjPrev    = NULL;
-        pile->m_pobjNext    = NULL;
+        pile->m_pobjPrev    = nullptr;
+        pile->m_pobjNext    = nullptr;
 
         m_pobjPrevMost      = _PobjFromPile( pile );
         m_pobjNextMost      = _PobjFromPile( pile );
@@ -1646,7 +1646,7 @@ InsertAsNextMost( CObject* const pobj )
         //  insert this element at the next-most position in the list
 
         pile->m_pobjPrev                            = m_pobjNextMost;
-        pile->m_pobjNext                            = NULL;
+        pile->m_pobjNext                            = nullptr;
 
         _PileFromPobj( m_pobjNextMost )->m_pobjNext = _PobjFromPile( pile );
 
@@ -1723,7 +1723,7 @@ Remove( CObject* const pobj )
 
     //  there is an element after us in the list
 
-    if ( pile->m_pobjNext != NULL )
+    if ( pile->m_pobjNext != nullptr )
     {
         //  fix up its prev element to be our prev element (if any)
 
@@ -1738,7 +1738,7 @@ Remove( CObject* const pobj )
 
     //  there is an element before us in the list
 
-    if ( pile->m_pobjPrev != NULL )
+    if ( pile->m_pobjPrev != nullptr )
     {
         //  fix up its next element to be our next element (if any)
 
@@ -1763,8 +1763,8 @@ template< class CObject, PfnOffsetOf OffsetOfILE >
 inline void CInvasiveList< CObject, OffsetOfILE >::
 Empty()
 {
-    m_pobjPrevMost  = NULL;
-    m_pobjNextMost  = NULL;
+    m_pobjPrevMost  = nullptr;
+    m_pobjNextMost  = nullptr;
 }
 
 //  converts a pointer to an ILE to a pointer to the object
@@ -2642,9 +2642,9 @@ FTryLockKeyPtr( const CKey& key, CEntry* const pentry, CLock* const plock, BOOL 
     {
         //  set our currency to be on this entry in the bucket
 
-        plock->m_pentryPrev = NULL;
+        plock->m_pentryPrev = nullptr;
         plock->m_pentry     = pentry;
-        plock->m_pentryNext = NULL;
+        plock->m_pentryNext = nullptr;
     }
 
     //  the entry is not in this bucket
@@ -2653,8 +2653,8 @@ FTryLockKeyPtr( const CKey& key, CEntry* const pentry, CLock* const plock, BOOL 
     {
         //  set our currency to be before the first entry in this bucket
 
-        plock->m_pentryPrev = NULL;
-        plock->m_pentry     = NULL;
+        plock->m_pentryPrev = nullptr;
+        plock->m_pentry     = nullptr;
         plock->m_pentryNext = plock->m_bucket.m_il.PrevMost();
     }
 
@@ -2825,9 +2825,9 @@ ErrInsertEntry( CLock* const plock, CEntry* const pentry, const BOOL fNextMost )
     {
         //  set the current entry to the newly inserted entry
 
-        plock->m_pentryPrev = NULL;
+        plock->m_pentryPrev = nullptr;
         plock->m_pentry     = pentry;
-        plock->m_pentryNext = NULL;
+        plock->m_pentryNext = nullptr;
         return ERR::errSuccess;
     }
 }
@@ -2866,7 +2866,7 @@ ErrDeleteEntry( CLock* const plock )
 
         //  set our currency to no current entry
 
-        plock->m_pentry = NULL;
+        plock->m_pentry = nullptr;
         return ERR::errSuccess;
     }
 
@@ -2975,8 +2975,8 @@ MoveBeforeFirst( CLock* const plock )
 
     //  set our currency to be before the first entry in this bucket
 
-    plock->m_pentryPrev = NULL;
-    plock->m_pentry     = NULL;
+    plock->m_pentryPrev = nullptr;
+    plock->m_pentry     = nullptr;
     plock->m_pentryNext = plock->m_bucket.m_il.PrevMost();
 }
 
@@ -2993,11 +2993,11 @@ ErrMoveNext( CLock* const plock )
 {
     //  move to the next entry in this bucket
 
-    plock->m_pentryPrev = NULL;
+    plock->m_pentryPrev = nullptr;
     plock->m_pentry     =   plock->m_pentry ?
                                 plock->m_bucket.m_il.Next( plock->m_pentry ) :
                                 plock->m_pentryNext;
-    plock->m_pentryNext = NULL;
+    plock->m_pentryNext = nullptr;
 
     //  we still have no current entry
 
@@ -3034,11 +3034,11 @@ ErrMovePrev( CLock* const plock )
 {
     //  move to the prev entry in this bucket
 
-    plock->m_pentryNext = NULL;
+    plock->m_pentryNext = nullptr;
     plock->m_pentry     =   plock->m_pentry ?
                                 plock->m_bucket.m_il.Prev( plock->m_pentry ) :
                                 plock->m_pentryPrev;
-    plock->m_pentryPrev = NULL;
+    plock->m_pentryPrev = nullptr;
 
     //  we still have no current entry
 
@@ -3096,8 +3096,8 @@ MoveAfterLast( CLock* const plock )
     //  set our currency to be after the last entry in this bucket
 
     plock->m_pentryPrev = plock->m_bucket.m_il.NextMost();
-    plock->m_pentry     = NULL;
-    plock->m_pentryNext = NULL;
+    plock->m_pentry     = nullptr;
+    plock->m_pentryNext = nullptr;
 }
 
 //  sets up the specified lock context in preparation for scanning all entries
@@ -3138,8 +3138,8 @@ MoveBeforeKeyPtr( const CKey& key, CEntry* const pentry, CLock* const plock )
 
     //  set our currency to be before the first entry in this bucket
 
-    plock->m_pentryPrev = NULL;
-    plock->m_pentry     = NULL;
+    plock->m_pentryPrev = nullptr;
+    plock->m_pentry     = nullptr;
     plock->m_pentryNext = plock->m_bucket.m_il.PrevMost();
 }
 
@@ -3182,8 +3182,8 @@ MoveAfterKeyPtr( const CKey& key, CEntry* const pentry, CLock* const plock )
     //  set our currency to be after the last entry in this bucket
 
     plock->m_pentryPrev = plock->m_bucket.m_il.NextMost();
-    plock->m_pentry     = NULL;
-    plock->m_pentryNext = NULL;
+    plock->m_pentry     = nullptr;
+    plock->m_pentryNext = nullptr;
 }
 
 //  transforms the given key and entry pointer into a bucket ID
@@ -3212,7 +3212,7 @@ template< class CKey, class CEntry, PfnOffsetOf OffsetOfIC >
 inline typename CApproximateIndex< CKey, CEntry, OffsetOfIC >::CBucket::ID CApproximateIndex< CKey, CEntry, OffsetOfIC >::
 _IdFromKey( const CKey& key ) const
 {
-    return _IdFromKeyPtr( key, NULL );
+    return _IdFromKeyPtr( key, nullptr );
 }
 
 //  transforms the given bucket ID into a key
@@ -3448,9 +3448,9 @@ _ErrInsertEntry( CLock* const plock, CEntry* const pentry )
 
     //  set the current entry to the newly inserted entry
 
-    plock->m_pentryPrev = NULL;
+    plock->m_pentryPrev = nullptr;
     plock->m_pentry     = pentry;
-    plock->m_pentryNext = NULL;
+    plock->m_pentryNext = nullptr;
     return ERR::errSuccess;
 }
 
@@ -3484,8 +3484,8 @@ _ErrMoveNext( CLock* const plock )
     //  set our currency to be after the last entry in this bucket
 
     plock->m_pentryPrev = plock->m_bucket.m_il.NextMost();
-    plock->m_pentry     = NULL;
-    plock->m_pentryNext = NULL;
+    plock->m_pentry     = nullptr;
+    plock->m_pentryNext = nullptr;
 
     //  scan forward until we have a current entry or we are at or beyond the
     //  last bucket ID
@@ -3587,9 +3587,9 @@ _ErrMoveNext( CLock* const plock )
 
         //  set our currency to be the first entry in this bucket
 
-        plock->m_pentryPrev = NULL;
+        plock->m_pentryPrev = nullptr;
         plock->m_pentry     = plock->m_bucket.m_il.PrevMost();
-        plock->m_pentryNext = NULL;
+        plock->m_pentryNext = nullptr;
     }
 
     //  return the status of our currency
@@ -3613,8 +3613,8 @@ _ErrMovePrev( CLock* const plock )
 {
     //  set our currency to be before the first entry in this bucket
 
-    plock->m_pentryPrev = NULL;
-    plock->m_pentry     = NULL;
+    plock->m_pentryPrev = nullptr;
+    plock->m_pentry     = nullptr;
     plock->m_pentryNext = plock->m_bucket.m_il.PrevMost();
 
     //  scan backward until we have a current entry or we are at or before the
@@ -3717,9 +3717,9 @@ _ErrMovePrev( CLock* const plock )
 
         //  set our currency to be the last entry in this bucket
 
-        plock->m_pentryPrev = NULL;
+        plock->m_pentryPrev = nullptr;
         plock->m_pentry     = plock->m_bucket.m_il.NextMost();
-        plock->m_pentryNext = NULL;
+        plock->m_pentryNext = nullptr;
     }
 
     //  return the status of our currency
@@ -5548,9 +5548,9 @@ inline CStupidQueue::ERR CStupidQueue::ErrAdjustSize( void )
     AssertValid();
 
     DWORD cNew = m_cAlloc * mGrowth;
-    void * rgNew = NULL;
+    void * rgNew = nullptr;
     DWORD iT = 0;
-    if ( NULL == ( rgNew = malloc( m_cbElement * cNew ) ) )
+    if ( nullptr == ( rgNew = malloc( m_cbElement * cNew ) ) )
     {
         err = ERR::errOutOfMemory;
         goto HandleError;
@@ -5600,7 +5600,7 @@ inline CStupidQueue::CStupidQueue( DWORD cbElement )
     m_cbElement = cbElement;
 
     m_cAlloc = 0;
-    m_rg = NULL;
+    m_rg = nullptr;
 
     m_iHead = 0;
     m_iTail = 0;
@@ -5613,7 +5613,7 @@ inline CStupidQueue::~CStupidQueue( void )
     if ( m_rg )
     {
         free( m_rg );
-        m_rg = NULL;
+        m_rg = nullptr;
         m_cAlloc = 0;
     }
     AssertValid();
@@ -5630,7 +5630,7 @@ inline CStupidQueue::ERR CStupidQueue::ErrEnqueue( void * pvEntry )
     {
         COLLAssert( m_rg == NULL );
         m_cAlloc = 32;  // initial allocation of 32 entries ... why? why not?
-        if ( NULL == ( m_rg = malloc( m_cbElement * m_cAlloc ) ) )
+        if ( nullptr == ( m_rg = malloc( m_cbElement * m_cAlloc ) ) )
         {
             err = ERR::errOutOfMemory;
             goto HandleError;

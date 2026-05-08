@@ -15,7 +15,7 @@
 
 ULONG_PTR UlUtilGetSeconds()
 {
-    return ULONG_PTR( time( NULL ) );
+    return ULONG_PTR( time( nullptr ) );
 }
 
 
@@ -422,7 +422,7 @@ LOCAL SYSTEMTIME ConvertFileTimeToLocalSystemTime( const __int64 time )
     SYSTEMTIME systemtimeUTC = ConvertFileTimeToUTCSystemTime( time );
     SYSTEMTIME systemtime;
     SystemTimeToTzSpecificLocalTime(
-        0,
+        nullptr,
         &systemtimeUTC,
         &systemtime );
 
@@ -529,7 +529,7 @@ ERR ErrUtilFormatFileTimeAsDate(
         LOCALE_USER_DEFAULT,
         DATE_SHORTDATE,
         &systemtime,
-        0,
+        nullptr,
         pwszOut,
         cwchOut );
     
@@ -554,7 +554,7 @@ ERR ErrUtilFormatFileTime(
         LOCALE_USER_DEFAULT,
         dwFlags,
         &systemtime,
-        0,
+        nullptr,
         pwszOut,
         cwchOut );
 

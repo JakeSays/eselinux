@@ -118,7 +118,7 @@ LOCAL const WCHAR* const rglpwszParam[] =
     L"PageHintCacheSize",
     L"LegacyFileNames",
     L"PeriodicLogRolloverLLR",
-    NULL
+    nullptr
 };
 
 
@@ -150,10 +150,10 @@ LOCAL void OSUConfigLoadParameterOverrides()
                     const BOOL      fEnterCritInst = fTrue );
 
                 (VOID)ErrSetSystemParameter(
-                                0,
+                                nullptr,
                                 0,
                                 rgparam[iparam],
-                                wcstoul( wszParam, NULL, 0 ),
+                                wcstoul( wszParam, nullptr, 0 ),
                                 wszParam,
                                 fFalse );
             }
@@ -187,7 +187,7 @@ ERR ErrOSUConfigInit()
 ERR ErrLoadDiagOption_( _In_ const INST * const pinst, _In_z_ PCWSTR wszOverrideName, _Out_ BOOL * pfResult )
 {
     ERR err = JET_errSuccess;
-    CConfigStore * pcs = NULL;
+    CConfigStore * pcs = nullptr;
 
     const WCHAR * const wszConfigStore = SzParam( pinst, JET_paramConfigStoreSpec );
     if ( wszConfigStore )

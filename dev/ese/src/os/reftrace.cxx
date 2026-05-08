@@ -45,10 +45,10 @@ Return Value:
 {
     ULONG cbEntrySize = 0;
     ULONG cbTotalSize = 0;
-    REF_TRACE_LOG *pLog = NULL;
+    REF_TRACE_LOG *pLog = nullptr;
     ERR err = JET_errSuccess;
 
-    *ppTraceLog = NULL;
+    *ppTraceLog = nullptr;
 
     // cbEntrySize = sizeof(REF_TRACE_LOG_ENTRY) + cbExtraBytes
     if ( FAILED( ULongAdd( sizeof(REF_TRACE_LOG_ENTRY), cbExtraBytes, &cbEntrySize ) ) )
@@ -75,7 +75,7 @@ Return Value:
 
     // Allocate the log structure.
     pLog = (REF_TRACE_LOG *)LocalAlloc( LPTR, cbTotalSize );
-    if( pLog == NULL )
+    if( pLog == nullptr )
     {
         Error( ErrERRCheck( JET_errOutOfMemory ) );
     }
@@ -110,14 +110,14 @@ Arguments:
 --*/
 {
     REF_TRACE_LOG * Log = PrtlOSTraceRefLogIGetFixedLog( pLog );
-    if ( Log != NULL )
+    if ( Log != nullptr )
     {
         Log->Signature = REF_TRACE_LOG_SIGNATURE_X;
         LocalFree( Log );
         if ( pLog < ostrlMaxFixed )
         {
             Expected( pLog == ostrlSystemFixed );   //  didn't test 2
-            g_rgprtlFixed[(ULONG_PTR)pLog] = NULL;
+            g_rgprtlFixed[(ULONG_PTR)pLog] = nullptr;
         }
     }
 }   // OSTraceDestroyRefLog
@@ -159,7 +159,7 @@ Arguments:
 {
     REF_TRACE_LOG *Log = PrtlOSTraceRefLogIGetFixedLog( pLog );
 
-    if ( Log == NULL && pLog < ostrlMaxFixed )
+    if ( Log == nullptr && pLog < ostrlMaxFixed )
     {
         Expected( pLog == ostrlSystemFixed );   //  didn't test 2
 
@@ -168,11 +168,11 @@ Arguments:
 #else
         const ULONG centries = 72;  //  ~8 KB
 #endif
-        POSTRACEREFLOG posrtlAllocated = NULL;
+        POSTRACEREFLOG posrtlAllocated = nullptr;
         OnDebug( ERR errT = )ErrOSTraceCreateRefLog( centries, cbSystemRefLogExtra, &posrtlAllocated );
         //  error / failure to allocate is handled below
 
-        if ( NULL == AtomicCompareExchangePointer( (void**)&(g_rgprtlFixed[(ULONG_PTR)pLog]), NULL, posrtlAllocated ) )
+        if ( nullptr == AtomicCompareExchangePointer( (void**)&(g_rgprtlFixed[(ULONG_PTR)pLog]), nullptr, posrtlAllocated ) )
         {
             //  we won!  Yeah.
         }
@@ -185,7 +185,7 @@ Arguments:
         Log = PrtlOSTraceRefLogIGetFixedLog( pLog );
         Assert( errT < JET_errSuccess || Log != NULL );
     }
-    if ( Log == NULL )
+    if ( Log == nullptr )
     {
         return;
     }
@@ -206,7 +206,7 @@ Arguments:
             pExtraInformation,
             min(cbExtraInformation, Log->cbExtraInfo) );
 
-    RtlCaptureStackBackTrace( 1, REF_TRACE_LOG_STACK_DEPTH, pEntry->Stack, NULL );
+    RtlCaptureStackBackTrace( 1, REF_TRACE_LOG_STACK_DEPTH, pEntry->Stack, nullptr );
 
     pEntry->hrt = HrtHRTCount();
 }   // OSTraceWriteRefLog

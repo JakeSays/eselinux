@@ -434,7 +434,7 @@ class CDefragTask
         CTableDefragment * Ptabledefragment() const { return m_ptabledefragment; }
 
         // true if this task has a CTableDefragment object associated with it
-        bool FInit() const { return ( NULL != m_ptabledefragment ); }
+        bool FInit() const { return ( nullptr != m_ptabledefragment ); }
         // true if this task is currently executing
         bool FIssued() const { return m_fIssued; }
         // true if this task has completely defragmented its table
@@ -666,7 +666,7 @@ LOCAL ERR ErrOLDRetrieveLongLongColumn(
         sizeof( __int64 ),
         &cbActual,
         NO_GRBIT,
-        NULL ) );
+        nullptr ) );
     CallS( err );
     Assert( sizeof( __int64 ) == cbActual );
     
@@ -766,7 +766,7 @@ ERR ErrOLDDumpLongColumn(
         sizeof( dw ),
         &cbActual,
         NO_GRBIT,
-        NULL ) );
+        nullptr ) );
     wprintf( L"%*.*s: %d\n", cchColumnNameOLDDump, cchColumnNameOLDDump, szColumn, dw );
 
 HandleError:
@@ -806,7 +806,7 @@ ERR ErrOLDDumpFileTimeColumn(
     ERR err;
     __int64 qw;
 
-    WCHAR * szAlloc = NULL;
+    WCHAR * szAlloc = nullptr;
     size_t cchRequired;
     
     Call( ErrOLDRetrieveLongLongColumn(
@@ -821,7 +821,7 @@ ERR ErrOLDDumpFileTimeColumn(
     {
         Call( ErrUtilFormatFileTimeAsDate(
             qw,
-            0,
+            nullptr,
             0,
             &cchRequired ) );
         Alloc( szAlloc = new WCHAR[cchRequired] );
@@ -832,11 +832,11 @@ ERR ErrOLDDumpFileTimeColumn(
             &cchRequired ) );
         wprintf( L"%s ", szAlloc );
         delete[] szAlloc;
-        szAlloc = NULL;
+        szAlloc = nullptr;
 
         Call( ErrUtilFormatFileTimeAsTime(
             qw,
-            0,
+            nullptr,
             0,
             &cchRequired ) );
         Alloc( szAlloc = new WCHAR[cchRequired] );
@@ -847,7 +847,7 @@ ERR ErrOLDDumpFileTimeColumn(
             &cchRequired ) );
         wprintf( L"%s (0x%I64x)\n", szAlloc, qw );
         delete[] szAlloc;
-        szAlloc = NULL;
+        szAlloc = nullptr;
     }
     else
     {
@@ -899,7 +899,7 @@ ERR ErrOLDDumpMSysDefrag( _In_ PIB * const ppib, const IFMP ifmp )
         sizeof( dw ),
         &cbActual,
         NO_GRBIT,
-        NULL ) );
+        nullptr ) );
     wprintf( L"%*.*s: %d\n", cchColumnNameOLDDump, cchColumnNameOLDDump, L"ObjidFDP", dw );
 
     // Status
@@ -912,14 +912,14 @@ ERR ErrOLDDumpMSysDefrag( _In_ PIB * const ppib, const IFMP ifmp )
         sizeof( w ),
         &cbActual,
         NO_GRBIT,
-        NULL ) );
+        nullptr ) );
     if( JET_wrnColumnNull == err )
     {
         wprintf( L"%*.*s: NULL\n", cchColumnNameOLDDump, cchColumnNameOLDDump, L"OLDStatus" );
     }
     else
     {
-        const WCHAR * szDefragtype = NULL;
+        const WCHAR * szDefragtype = nullptr;
         switch( w )
         {
             case defragtypeNull:
@@ -1069,7 +1069,7 @@ ERR RECCHECKFINALIZE<TDelta>::operator()( const KEYDATAFLAGS& kdf, const PGNO pg
                                             m_ibRecordOffset,
                                             m_fCallback,
                                             m_fDelete );
-            if( NULL == ptask )
+            if( nullptr == ptask )
             {
                 return ErrERRCheck( JET_errOutOfMemory );
             }
@@ -1132,7 +1132,7 @@ ERR RECCHECKDELETELV::operator()( const KEYDATAFLAGS& kdf, const PGNO pgno )
             {
                 //  This LV has a refcount of zero and has no versions
                 DELETELVTASK * ptask = new DELETELVTASK( m_pgnoFDP, m_pfucb->u.pfcb, m_ifmp, bm );
-                if( NULL == ptask )
+                if( nullptr == ptask )
                 {
                     return ErrERRCheck( JET_errOutOfMemory );
                 }
@@ -1311,7 +1311,7 @@ ERR ErrOLD2Resume( _In_ PIB * const ppib, const IFMP ifmp )
         cszArgs,
         rgszT,
         0,
-        NULL,
+        nullptr,
         PinstFromIfmp( ifmp ));
 
     // If the ErrIsamMove() reached the end of the MSysOld2 table, that's actually a success.
@@ -1514,7 +1514,7 @@ LOCAL ERR ErrOLDStatusUpdate(
                 pfucbDefrag,
                 fidOLDStatus,
                 1,
-                defragstat.FTypeNull() ? NULL : &dataT ) );
+                defragstat.FTypeNull() ? nullptr : &dataT ) );
 
     if ( defragstat.CbCurrentKey() > 0 )
     {
@@ -1537,7 +1537,7 @@ LOCAL ERR ErrOLDStatusUpdate(
                     pfucbDefrag,
                     fidOLDCurrentKey,
                     1,
-                    NULL ) );
+                    nullptr ) );
     }
 
     Call( ErrOLDIncrementLongLongColumn( ppib, pfucbDefrag, fidOLDPassElapsedSeconds, elapsedSeconds ) );
@@ -1549,7 +1549,7 @@ LOCAL ERR ErrOLDStatusUpdate(
     Call( ErrOLDIncrementLongLongColumn( ppib, pfucbDefrag, fidOLDTotalPagesFreed, defragstat.CpgFreed() ) );
     Call( ErrOLDIncrementLongLongColumn( ppib, pfucbDefrag, fidOLDTotalPartialMerges, defragstat.CpgPartialMerges() ) );
     
-    Call( ErrIsamUpdate( ppib, pfucbDefrag, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( ppib, pfucbDefrag, nullptr, 0, nullptr, NO_GRBIT ) );
     Call( ErrDIRCommitTransaction( ppib, JET_bitCommitLazyFlush ) );
 
     defragstat.ResetCpgVisited();
@@ -1581,7 +1581,7 @@ LOCAL ERR ErrOLDLogResumeEvent(
     const WCHAR *               rgszT[cszMax];
     INT                         isz = 0;
 
-    WCHAR * szPassStartDateTime = 0;
+    WCHAR * szPassStartDateTime = nullptr;
     size_t cchPassStartDateTime;
 
     CallR( ErrDIRBeginTransaction( ppib, 36645, JET_bitTransactionReadOnly ) );
@@ -1598,7 +1598,7 @@ LOCAL ERR ErrOLDLogResumeEvent(
     // PassStartDateTime
     Call( ErrUtilFormatFileTimeAsDate(
         passStartDateTime,
-        0,
+        nullptr,
         0,
         &cchPassStartDateTime) );
     Alloc( szPassStartDateTime = new WCHAR[cchPassStartDateTime] );
@@ -1622,7 +1622,7 @@ LOCAL ERR ErrOLDLogResumeEvent(
         isz,
         rgszT,
         0,
-        NULL,
+        nullptr,
         pinst );
 
 HandleError:
@@ -1656,7 +1656,7 @@ LOCAL ERR ErrOLDStatusResumePass(
     Call( ErrOLDIncrementLongLongColumn( ppib, pfucbDefrag, fidOLDPassInvocations, 1 ) );
     Call( ErrOLDIncrementLongLongColumn( ppib, pfucbDefrag, fidOLDTotalInvocations, 1 ) );
     
-    Call( ErrIsamUpdate( ppib, pfucbDefrag, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( ppib, pfucbDefrag, nullptr, 0, nullptr, NO_GRBIT ) );
     Call( ErrDIRCommitTransaction( ppib, JET_bitCommitLazyFlush ) );
 
     Call( ErrOLDLogResumeEvent( ppib, pfucbDefrag ) );
@@ -1709,7 +1709,7 @@ LOCAL ERR ErrOLDStatusNewPass(
     Call( ErrOLDSetLongLongColumn( ppib, pfucbDefrag, fidOLDPassPartialMerges, 0 ) );
     Call( ErrOLDIncrementLongLongColumn( ppib, pfucbDefrag, fidOLDTotalInvocations, 1 ) );
     
-    Call( ErrIsamUpdate( ppib, pfucbDefrag, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( ppib, pfucbDefrag, nullptr, 0, nullptr, NO_GRBIT ) );
     Call( ErrDIRCommitTransaction( ppib, JET_bitCommitLazyFlush ) );
 
     UtilReportEvent(
@@ -1719,7 +1719,7 @@ LOCAL ERR ErrOLDStatusNewPass(
         1,
         rgszT,
         0,
-        NULL,
+        nullptr,
         pinst );
 
     OSStrCbFormatA( szTrace, sizeof(szTrace), "OLD BEGIN (ifmp %d)", (ULONG)ifmp );
@@ -1756,7 +1756,7 @@ LOCAL ERR ErrOLDLogCompletionEvent(
     const WCHAR *               rgszT[cszMax];
     INT                         isz = 0;
 
-    WCHAR * szPassStartDateTime = 0;
+    WCHAR * szPassStartDateTime = nullptr;
     size_t cchPassStartDateTime;
 
     CallR( ErrDIRBeginTransaction( ppib, 63269, JET_bitTransactionReadOnly ) );
@@ -1781,7 +1781,7 @@ LOCAL ERR ErrOLDLogCompletionEvent(
     // PassStartDateTime
     Call( ErrUtilFormatFileTimeAsDate(
         passStartDateTime,
-        0,
+        nullptr,
         0,
         &cchPassStartDateTime) );
     Alloc( szPassStartDateTime = new WCHAR[cchPassStartDateTime] );
@@ -1825,7 +1825,7 @@ LOCAL ERR ErrOLDLogCompletionEvent(
         isz,
         rgszT,
         0,
-        NULL,
+        nullptr,
         pinst );
 
 HandleError:
@@ -1868,7 +1868,7 @@ LOCAL ERR ErrOLDStatusCompletedPass(
     Call( ErrIsamPrepareUpdate( ppib, pfucbDefrag, JET_prepReplace ) );
     Call( ErrOLDIncrementLongLongColumn( ppib, pfucbDefrag, fidOLDTotalPasses, 1 ) );
     Call( ErrOLDIncrementLongLongColumn( ppib, pfucbDefrag, fidOLDTotalDefragDays, passElapsedDays ) );
-    Call( ErrIsamUpdate( ppib, pfucbDefrag, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( ppib, pfucbDefrag, nullptr, 0, nullptr, NO_GRBIT ) );
     Call( ErrDIRCommitTransaction( ppib, JET_bitCommitLazyFlush ) );
 
     Call( ErrOLDLogCompletionEvent( ppib, pfucbDefrag, messageId ) );
@@ -1898,7 +1898,7 @@ LOCAL VOID PauseOLDIfNeeded(
     //  dispatched tasks), then pause a bit to give the
     //  task manager a chance to catch up
     //
-    if ( NULL != preccheck
+    if ( nullptr != preccheck
         && poldstatDB->CTasksDispatched() != cTasksDispatched
         && pinst->Taskmgr().CPostedTasks() > UlParam( pinst, JET_paramVersionStoreTaskQueueMax )
         && FOLDContinueTree( pfucb ) )
@@ -1928,7 +1928,7 @@ LOCAL ERR ErrOLDDefragOneTree(
     BOOKMARK        bmStart;
     BOOKMARK        bmNext;
     MERGETYPE       mergetype;
-    BYTE            *pbKeyBuf               = NULL;
+    BYTE            *pbKeyBuf               = nullptr;
     BOOL            fInTrx                  = fFalse;
 
     PIBTraceContextScope tcScope = ppib->InitTraceContextScope();
@@ -2015,7 +2015,7 @@ LOCAL ERR ErrOLDDefragOneTree(
         UPDATETHREADSTATSCOUNTERS   updatetscounters( pinst, &g_tscountersOLD );
 
         BOOL                fPerformedRCEClean  = fFalse;
-        const ULONG_PTR     cTasksDispatched    = ( NULL != preccheck ? poldstatDB->CTasksDispatched() : 0 );
+        const ULONG_PTR     cTasksDispatched    = ( nullptr != preccheck ? poldstatDB->CTasksDispatched() : 0 );
 
         VOID *              pvSwap              = bmStart.key.suffix.Pv();
         bmStart.key.suffix.SetPv( bmNext.key.suffix.Pv() );
@@ -2200,7 +2200,7 @@ LOCAL ERR ErrOLDDefragSpaceTree(
                 pfucbDefrag,
                 defragstat,
                 fFalse,
-                NULL );
+                nullptr );
 
     Assert( pfucbNil != pfucbT );
     BTClose( pfucbT );
@@ -2246,7 +2246,7 @@ LOCAL ERR ErrOLDCheckForFinalize(
         //  no finalize callback, don't bother trying to
         //  finalize anything
         //
-        for ( const CBDESC * pcbdesc = ptdb->Pcbdesc(); NULL != pcbdesc; pcbdesc = pcbdesc->pcbdescNext )
+        for ( const CBDESC * pcbdesc = ptdb->Pcbdesc(); nullptr != pcbdesc; pcbdesc = pcbdesc->pcbdescNext )
         {
             if ( pcbdesc->cbtyp & JET_cbtypFinalize )
             {
@@ -2256,7 +2256,7 @@ LOCAL ERR ErrOLDCheckForFinalize(
         }
     }
 
-    *ppreccheck = NULL;
+    *ppreccheck = nullptr;
 
     if ( fDoCheck )
     {
@@ -2309,7 +2309,7 @@ LOCAL ERR ErrOLDCheckForFinalize(
                     Call( ErrERRCheck( JET_errInvalidOperation ) );
                 }
 
-                err = ( NULL == *ppreccheck ) ? ErrERRCheck( JET_errOutOfMemory ) : JET_errSuccess;
+                err = ( nullptr == *ppreccheck ) ? ErrERRCheck( JET_errOutOfMemory ) : JET_errSuccess;
                 break;
             }
         }
@@ -2504,7 +2504,7 @@ LOCAL ERR ErrOLDIExplicitDefragOneTable(
             if ( defragstat.FTypeNull() || defragstat.FTypeTable() )
             {
                 //  determine if there are any columns to be finalized
-                RECCHECK * preccheck = NULL;
+                RECCHECK * preccheck = nullptr;
                 Call( ErrOLDCheckForFinalize( ppib, pfucb, PinstFromPpib( ppib ), &preccheck ) );
 
                 defragstat.SetTypeTable();
@@ -2516,10 +2516,10 @@ LOCAL ERR ErrOLDIExplicitDefragOneTable(
                             fResumingTree,
                             preccheck );
 
-                if( NULL != preccheck )
+                if( nullptr != preccheck )
                 {
                     delete preccheck;
-                    preccheck = NULL;
+                    preccheck = nullptr;
                 }
 
                 if ( err >= 0 && FOLDContinueTree( pfucb ) )
@@ -2783,7 +2783,7 @@ LOCAL ERR ErrOLDIExplicitDefragTables(
             1,
             rgszT,
             0,
-            NULL,
+            nullptr,
             pinst );
     }
 
@@ -2830,14 +2830,14 @@ LOCAL ERR ErrOLDInternalTest(
 
     Call( ErrIsamPrepareUpdate( ppib, pfucbDefrag, JET_prepReplace ) );
     Call( ErrOLDSetLongLongColumn( ppib, pfucbDefrag, fidOLDPassInvocations, 7 ) );
-    Call( ErrIsamUpdate( ppib, pfucbDefrag, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( ppib, pfucbDefrag, nullptr, 0, nullptr, NO_GRBIT ) );
     
     Call( ErrOLDRetrieveLongLongColumn( ppib, pfucbDefrag, fidOLDPassInvocations, &value ) );
     AssertRTL( 7 == value );
 
     Call( ErrIsamPrepareUpdate( ppib, pfucbDefrag, JET_prepReplace ) );
     Call( ErrOLDIncrementLongLongColumn( ppib, pfucbDefrag, fidOLDPassInvocations, 2 ) );
-    Call( ErrIsamUpdate( ppib, pfucbDefrag, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( ppib, pfucbDefrag, nullptr, 0, nullptr, NO_GRBIT ) );
     
     Call( ErrOLDRetrieveLongLongColumn( ppib, pfucbDefrag, fidOLDPassInvocations, &value ) );
     AssertRTL( 9 == value );
@@ -2859,8 +2859,8 @@ LOCAL ERR ErrOLDCreate( PIB *ppib, const IFMP ifmp )
 
     JET_COLUMNCREATE_A  rgjccOLD[]                      =
     {
-        sizeof(JET_COLUMNCREATE_A), "ObjidFDP",             JET_coltypLong,         0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  NULL,   0,  0,  0,  0,
-        sizeof(JET_COLUMNCREATE_A), "Status",               JET_coltypShort,        0,  JET_bitColumnFixed, NULL,   0,  0,  0,  0,
+        sizeof(JET_COLUMNCREATE_A), "ObjidFDP",             JET_coltypLong,         0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  nullptr,   0,  0,  0,  0,
+        sizeof(JET_COLUMNCREATE_A), "Status",               JET_coltypShort,        0,  JET_bitColumnFixed, nullptr,   0,  0,  0,  0,
         sizeof(JET_COLUMNCREATE_A), "PassStartDateTime",    JET_coltypLongLong,     0,  JET_bitColumnFixed, &zero,  sizeof(zero),   0,  0,  0,
         sizeof(JET_COLUMNCREATE_A), "PassElapsedSeconds",   JET_coltypLongLong,     0,  JET_bitColumnFixed, &zero,  sizeof(zero),   0,  0,  0,
         sizeof(JET_COLUMNCREATE_A), "PassInvocations",      JET_coltypLongLong,     0,  JET_bitColumnFixed, &zero,  sizeof(zero),   0,  0,  0,
@@ -2875,7 +2875,7 @@ LOCAL ERR ErrOLDCreate( PIB *ppib, const IFMP ifmp )
         sizeof(JET_COLUMNCREATE_A), "TotalPagesFreed",      JET_coltypLongLong,     0,  JET_bitColumnFixed, &zero,  sizeof(zero),   0,  0,  0,
         sizeof(JET_COLUMNCREATE_A), "TotalPartialMerges",   JET_coltypLongLong,     0,  JET_bitColumnFixed, &zero,  sizeof(zero),   0,  0,  0,
 
-        sizeof(JET_COLUMNCREATE_A), "CurrentKey",           JET_coltypLongBinary,   0,  JET_bitColumnTagged,NULL,   0,  0,  0,  0,
+        sizeof(JET_COLUMNCREATE_A), "CurrentKey",           JET_coltypLongBinary,   0,  JET_bitColumnTagged,nullptr,   0,  0,  0,  0,
     };
     const ULONG     ccolOLD                         = _countof( rgjccOLD );
 
@@ -2883,18 +2883,18 @@ LOCAL ERR ErrOLDCreate( PIB *ppib, const IFMP ifmp )
     {
         sizeof(JET_TABLECREATE5_A),
         (CHAR *)szOLD,
-        NULL,                   // Template table
+        nullptr,                   // Template table
         0,
         100,                    // Set to 100% density, because we will always be appending
         rgjccOLD,
         ccolOLD,
-        NULL,
+        nullptr,
         0,
-        NULL,
+        nullptr,
         0,
         JET_bitTableCreateFixedDDL|JET_bitTableCreateSystemTable,
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
         0,
         0,
         JET_TABLEID( pfucbNil ),
@@ -2924,7 +2924,7 @@ LOCAL ERR ErrOLDCreate( PIB *ppib, const IFMP ifmp )
                 fidOLDObjidFDP,
                 1,
                 &dataField ) );
-    Call( ErrIsamUpdate( ppib, pfucb, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( ppib, pfucb, nullptr, 0, nullptr, NO_GRBIT ) );
 
 #ifndef RTM
     Call( ErrOLDInternalTest( ppib, pfucb ) );
@@ -3086,7 +3086,7 @@ DWORD OLDDefragDb( DWORD_PTR dw )
 
     Call( ErrOLDStatusUpdate( ppib, pfucb, defragstat ) );
 
-    if( NULL != poldstatDB->Callback() )
+    if( nullptr != poldstatDB->Callback() )
     {
         Assert( ppibNil != ppib );
         (VOID)( poldstatDB->Callback() )(
@@ -3094,9 +3094,9 @@ DWORD OLDDefragDb( DWORD_PTR dw )
                     static_cast<JET_DBID>( ifmp ),
                     JET_tableidNil,
                     JET_cbtypOnlineDefragCompleted,
-                    NULL,
-                    NULL,
-                    NULL,
+                    nullptr,
+                    nullptr,
+                    nullptr,
                     0 );
     }
 
@@ -3123,7 +3123,7 @@ HandleError:
             2,
             rgszT,
             0,
-            NULL,
+            nullptr,
             pinst );
     }
 
@@ -3330,8 +3330,8 @@ ERR ErrOLDDefragment(
 {
     ERR             err                 = JET_errSuccess;
 
-    const BOOL      fReturnPassCount    = ( NULL != pcPasses && ( grbit & JET_bitDefragmentBatchStop ) );
-    const BOOL      fReturnElapsedTime  = ( NULL != pcsec && ( grbit & JET_bitDefragmentBatchStop ) );
+    const BOOL      fReturnPassCount    = ( nullptr != pcPasses && ( grbit & JET_bitDefragmentBatchStop ) );
+    const BOOL      fReturnElapsedTime  = ( nullptr != pcsec && ( grbit & JET_bitDefragmentBatchStop ) );
 
     if ( fReturnPassCount )
         *pcPasses = 0;
@@ -3414,14 +3414,14 @@ ERR ErrOLDDefragment(
                 if ( fNoPartialMerges )
                     poldstatDB->SetFNoPartialMerges();
 
-                if ( NULL != pcPasses )
+                if ( nullptr != pcPasses )
                     poldstatDB->SetCPassesMax( *pcPasses );
 
                 poldstatDB->SetCsecStart( UlUtilGetSeconds() );
-                if ( NULL != pcsec && *pcsec > 0 )
+                if ( nullptr != pcsec && *pcsec > 0 )
                     poldstatDB->SetCsecMax( poldstatDB->CsecStart() + *pcsec );
 
-                if ( NULL != callback )
+                if ( nullptr != callback )
                     poldstatDB->SetCallback( callback );
 
                 Assert( !g_rgfmp[ifmp].FDontStartOLD() );
@@ -3601,12 +3601,12 @@ ERR ErrIsamDefragment(
 
         // what would pcPasses and pcsec mean?  number of b+ trees we did?  So for now
         // we will defend against either as an in or an out param for ...BTreeBatch.
-        if ( pcPasses != NULL )  // not currently implemented as an in or out param
+        if ( pcPasses != nullptr )  // not currently implemented as an in or out param
         {
             AssertSz( FNegTest( fInvalidAPIUsage ), "The JET_bitDefragmentBTreeBatch option(s) do not honor, nor can set the pcPasses parameter, so no point in provided (must be NULL). Reserved for future." );
             Call( ErrERRCheck( JET_errInvalidParameter ) );
         }
-        if ( pcsec != NULL )  // not currently implemented as an in param
+        if ( pcsec != nullptr )  // not currently implemented as an in param
         {
             AssertSz( FNegTest( fInvalidAPIUsage ), "The JET_bitDefragmentBTreeBatch option(s) do not honor, nor can set the pcsec parameter, so no point in provided (must be NULL). Reserved for future." );
             Call( ErrERRCheck( JET_errInvalidParameter ) );
@@ -3617,13 +3617,13 @@ ERR ErrIsamDefragment(
             AssertSz( FNegTest( fInvalidAPIUsage ), "Unknown additional grbit (%#x) provided with JET_bitDefragmentBTreeBatch.", grbitSubOptions );
             Error( ErrERRCheck( JET_errInvalidGrbit ) );
         }
-        if ( callback != NULL )
+        if ( callback != nullptr )
         {
             //  No callbacks today, so don't pretend we accept this param.
             AssertSz( FNegTest( fInvalidAPIUsage ), "The JET_bitDefragmentBTreeBatch option(s) do not honor the callback parameter, so no point in providing (must be NULL). Reserved for future." );
             Error( ErrERRCheck( JET_errInvalidParameter ) );
         }
-        if ( szTableName != NULL )
+        if ( szTableName != nullptr )
         {
             // when using JET_bitDefragmentBatchStart with JET_bitDefragmentBTreeBatch we'll restart all
             // tables ... so no table param.  In future could enable restart single table?
@@ -3655,7 +3655,7 @@ ERR ErrIsamDefragment(
             AssertSz( FNegTest( fInvalidAPIUsage ), "Unknown additional grbit (%#x) provided with JET_bitDefragmentBTree.", grbit & ~JET_bitDefragmentBTree );
             Error( ErrERRCheck( JET_errInvalidGrbit ) );
         }
-        if ( callback != NULL )
+        if ( callback != nullptr )
         {
             //  No callbacks today, so don't pretend we accept this param.
             //  Note: This is a new error condition ... if it doesn't hold, it could be 
@@ -3667,14 +3667,14 @@ ERR ErrIsamDefragment(
 
         //  Validate args ErrOLDRegisterObjectForOLD2() does understand!
 
-        if ( szTableName == NULL )
+        if ( szTableName == nullptr )
         {
             //  ErrOLDRegisterObjectForOLD2() requires a valid szTableName ...
             AssertSz( FNegTest( fInvalidAPIUsage ), "Specified null table name to defragment with the JET_bitDefragmentBTree bit. By default should pass a table name or other options (e.g. JET_bitDefragmentBatchStart)." );
             Error( ErrERRCheck( JET_errInvalidName ) );
         }
 
-        Call( ErrOLDRegisterObjectForOLD2( ifmp, szTableName, NULL, defragtypeAll ) );
+        Call( ErrOLDRegisterObjectForOLD2( ifmp, szTableName, nullptr, defragtypeAll ) );
     }
     else
     {
@@ -3805,7 +3805,7 @@ ERR OLD2_STATUS::ErrGetLongLong_(
         sizeof( __int64 ),
         &cbActual,
         NO_GRBIT,
-        NULL ) );
+        nullptr ) );
     CallS( err );
     Assert( sizeof( __int64 ) == cbActual );
 
@@ -3864,7 +3864,7 @@ ERR OLD2_STATUS::ErrGetLong_(
         sizeof( LONG ),
         &cbActual,
         NO_GRBIT,
-        NULL ) );
+        nullptr ) );
     CallS( err );
     Assert( sizeof( LONG ) == cbActual );
 
@@ -3947,17 +3947,17 @@ ERR OLD2_STATUS::ErrCreateTable_(
 
     JET_COLUMNCREATE_A rgjccOLD2[] =
     {
-            { sizeof(JET_COLUMNCREATE_A),   "ObjidTable",       JET_coltypLong,     0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  NULL,   0,  0,  0,  0 },
-            { sizeof(JET_COLUMNCREATE_A),   "ObjidFDP",         JET_coltypLong,     0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  NULL,   0,  0,  0,  0 },
-            { sizeof(JET_COLUMNCREATE_A),   "StartDateTime",    JET_coltypLongLong, 0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  NULL,   0,  0,  0,  0 },
-            { sizeof(JET_COLUMNCREATE_A),   "PagesVisited",     JET_coltypLong,     0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  NULL,   0,  0,  0,  0 },
-            { sizeof(JET_COLUMNCREATE_A),   "PagesFreed",       JET_coltypLong,     0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  NULL,   0,  0,  0,  0 },
-            { sizeof(JET_COLUMNCREATE_A),   "PartialMerges",    JET_coltypLong,     0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  NULL,   0,  0,  0,  0 },
-            { sizeof(JET_COLUMNCREATE_A),   "PageMoves",        JET_coltypLong,     0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  NULL,   0,  0,  0,  0 },
-            { sizeof(JET_COLUMNCREATE_A),   "UpdateTime",       JET_coltypLongLong, 0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  NULL,   0,  0,  0,  0 },
+            { sizeof(JET_COLUMNCREATE_A),   "ObjidTable",       JET_coltypLong,     0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  nullptr,   0,  0,  0,  0 },
+            { sizeof(JET_COLUMNCREATE_A),   "ObjidFDP",         JET_coltypLong,     0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  nullptr,   0,  0,  0,  0 },
+            { sizeof(JET_COLUMNCREATE_A),   "StartDateTime",    JET_coltypLongLong, 0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  nullptr,   0,  0,  0,  0 },
+            { sizeof(JET_COLUMNCREATE_A),   "PagesVisited",     JET_coltypLong,     0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  nullptr,   0,  0,  0,  0 },
+            { sizeof(JET_COLUMNCREATE_A),   "PagesFreed",       JET_coltypLong,     0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  nullptr,   0,  0,  0,  0 },
+            { sizeof(JET_COLUMNCREATE_A),   "PartialMerges",    JET_coltypLong,     0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  nullptr,   0,  0,  0,  0 },
+            { sizeof(JET_COLUMNCREATE_A),   "PageMoves",        JET_coltypLong,     0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  nullptr,   0,  0,  0,  0 },
+            { sizeof(JET_COLUMNCREATE_A),   "UpdateTime",       JET_coltypLongLong, 0,  JET_bitColumnFixed | JET_bitColumnNotNULL,  nullptr,   0,  0,  0,  0 },
 
-            { sizeof(JET_COLUMNCREATE_A),   "BookmarkKey",      JET_coltypLongBinary,   0,  JET_bitColumnTagged,NULL,   0,  0,  0,  0 },
-            { sizeof(JET_COLUMNCREATE_A),   "BookmarkData",     JET_coltypLongBinary,   0,  JET_bitColumnTagged,NULL,   0,  0,  0,  0 },
+            { sizeof(JET_COLUMNCREATE_A),   "BookmarkKey",      JET_coltypLongBinary,   0,  JET_bitColumnTagged,nullptr,   0,  0,  0,  0 },
+            { sizeof(JET_COLUMNCREATE_A),   "BookmarkData",     JET_coltypLongBinary,   0,  JET_bitColumnTagged,nullptr,   0,  0,  0,  0 },
     };
 
     const CHAR szMSysOLD2IndexName[] = "ObjidIndex";
@@ -3972,13 +3972,13 @@ ERR OLD2_STATUS::ErrCreateTable_(
             _countof(szMSysOLD2IndexKey) * sizeof(szMSysOLD2IndexKey[0]),
             JET_bitIndexPrimary,
             100,
+            nullptr,
             NULL,
-            NULL,
-            NULL,
+            nullptr,
             0,
             JET_errSuccess,
             0,
-            NULL
+            nullptr
         },
     };
 
@@ -3986,18 +3986,18 @@ ERR OLD2_STATUS::ErrCreateTable_(
     {
         sizeof(JET_TABLECREATE5_A),
         const_cast<CHAR *>( s_szOLD2 ),
-        NULL,
+        nullptr,
         0,
         100,
         rgjccOLD2,
         _countof( rgjccOLD2 ),
         rgjidxcOLD2,
         _countof( rgjidxcOLD2 ),
-        NULL,
+        nullptr,
         0,
         JET_bitTableCreateFixedDDL|JET_bitTableCreateSystemTable,
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
         0,
         0,
         JET_tableidNil,
@@ -4092,7 +4092,7 @@ ERR OLD2_STATUS::ErrLoad(
         cbBufferRemaining,
         &cbActual,
         NO_GRBIT,
-        NULL ) );
+        nullptr ) );
     Assert( cbActual <= cbBufferRemaining );
     Assert( JET_wrnBufferTruncated != err );
 
@@ -4115,7 +4115,7 @@ ERR OLD2_STATUS::ErrLoad(
         cbBufferRemaining,
         &cbActual,
         NO_GRBIT,
-        NULL ) );
+        nullptr ) );
     Assert( cbActual <= cbBufferRemaining );
     Assert( JET_wrnBufferTruncated != err );
 
@@ -4292,7 +4292,7 @@ ERR OLD2_STATUS::ErrSave(
                 CompressFlags( compress7Bit | compressXpress ) ) );
     
     Assert( fInUpdate );
-    Call( ErrIsamUpdate( ppib, pfucbDefrag, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( ppib, pfucbDefrag, nullptr, 0, nullptr, NO_GRBIT ) );
     fInUpdate = false;
     Assert( fInTrx );
     Call( ErrDIRCommitTransaction( ppib, JET_bitCommitLazyFlush ) );
@@ -4666,11 +4666,11 @@ CTableDefragment::CTableDefragment(
     m_pfucbOwningTable( pfucbNil ),
     m_pfucbToDefrag( pfucbNil ),
     m_pfucbDefragStatus( pfucbNil ),
-    m_preccheck( NULL ),
+    m_preccheck( nullptr ),
     m_fCompleted( false ),
     m_cpgVisitedLastUpdate( 0 ),
-    m_pvBookmarkBuf( NULL ),
-    m_pold2Status( NULL ),
+    m_pvBookmarkBuf( nullptr ),
+    m_pold2Status( nullptr ),
     m_fDefragRangeSelected( false ),
     m_defragtype( defragtype )
 {
@@ -4732,7 +4732,7 @@ ERR CTableDefragment::ErrTerm()
     if( m_pvBookmarkBuf )
     {
         RESBOOKMARK.Free( m_pvBookmarkBuf );
-        m_pvBookmarkBuf = NULL;
+        m_pvBookmarkBuf = nullptr;
     }
 
     if( m_pfucbToDefrag )
@@ -4791,8 +4791,8 @@ ERR CTableDefragment::ErrTerm()
     m_pfucbToDefrag = pfucbNil;
     m_pfucbOwningTable  = pfucbNil;
     m_pfucbDefragStatus = pfucbNil;
-    m_preccheck     = NULL;
-    m_pold2Status   = NULL;
+    m_preccheck     = nullptr;
+    m_pold2Status   = nullptr;
 
     m_fInit = false;
     
@@ -5243,7 +5243,7 @@ ERR CTableDefragment::ErrPerformMerges_()
         {
             break;
         }
-        err = ErrPerformOneMerge_( NULL );
+        err = ErrPerformOneMerge_( nullptr );
         if ( err < 0 )
         {
             break;
@@ -5410,12 +5410,12 @@ VOID CTableDefragment::LogCompletionEvent_() const
     }
 
     // PassStartDateTime
-    WCHAR * szPassStartDateTime = 0;
+    WCHAR * szPassStartDateTime = nullptr;
     size_t cchPassStartDateTime;
     
     Call( ErrUtilFormatFileTimeAsDate(
         m_pold2Status->StartTime(),
-        0,
+        nullptr,
         0,
         &cchPassStartDateTime) );
     Alloc( szPassStartDateTime = new WCHAR[cchPassStartDateTime] );
@@ -5460,7 +5460,7 @@ VOID CTableDefragment::LogCompletionEvent_() const
         isz,
         rgszT,
         0,
-        NULL,
+        nullptr,
         pinst );
 #else
     UtilReportEvent(
@@ -5519,8 +5519,8 @@ VOID CTableDefragment::SetCompleted_()
 CDefragTask::CDefragTask() :
 //  ================================================================
     m_tickEnd( 0 ),
-    m_plCompleted( 0 ),
-    m_ptabledefragment( NULL ),
+    m_plCompleted( nullptr ),
+    m_ptabledefragment( nullptr ),
     m_fIssued( false )
 {
 }
@@ -5598,14 +5598,14 @@ CDefragManager::CDefragManager() :
 //  ================================================================
     m_crit( CLockBasicInfo( CSyncBasicInfo( szDefragManagerCriticalSectionName ), rankDefragManager, 0 ) ),
     m_critPauseManager( CLockBasicInfo( CSyncBasicInfo( szDefragPauseManagerCriticalSectionName ), rankDefragPauseManager, 0 ) ),
-    m_posttDispatchOsTimerTask( NULL ),
+    m_posttDispatchOsTimerTask( nullptr ),
     m_fTimerScheduled( false ),
     m_cmsecPeriod( 0 /* real value set in ErrInit() */ ),
     m_ctasksIncrement( 1 ),
     m_ilCompleted( 0 ),
     m_ctasksIssued( 1 ),
     m_ctasksToIssueNext( 1 ),
-    m_rgtasks( NULL ),
+    m_rgtasks( nullptr ),
     m_itaskLastIssued( 0 ),
     m_ctasksMax( s_ctasksMaxDefault )
 {
@@ -5649,7 +5649,7 @@ VOID CDefragManager::Term()
     {
         OSTimerTaskCancelTask( m_posttDispatchOsTimerTask );
         OSTimerTaskDelete( m_posttDispatchOsTimerTask );
-        m_posttDispatchOsTimerTask = NULL;
+        m_posttDispatchOsTimerTask = nullptr;
     }
 
     m_fTimerScheduled = false;
@@ -5658,7 +5658,7 @@ VOID CDefragManager::Term()
     {
         for( INT itask = 0; itask < s_ctasksMaxDefault; ++itask )
         {
-            if( NULL != m_rgtasks[itask].Ptabledefragment() )
+            if( nullptr != m_rgtasks[itask].Ptabledefragment() )
             {
                 RemoveTask_( itask, false );
             }
@@ -5666,7 +5666,7 @@ VOID CDefragManager::Term()
     }
 
     delete [] m_rgtasks;
-    m_rgtasks = NULL;
+    m_rgtasks = nullptr;
 }
 
 //  ================================================================
@@ -5746,7 +5746,7 @@ ERR CDefragManager::ErrRegisterOneTreeOnly(
         // shutdown is synchronized properly
         if( !g_rgfmp[ifmp].FDontRegisterOLD2Tasks() )
         {
-            if( NULL == m_rgtasks )
+            if( nullptr == m_rgtasks )
             {
                 // Need to allocate enough for the maximum number of tasks instead
                 // of the dynamic m_ctasksMax
@@ -5800,20 +5800,20 @@ ERR CDefragManager::ErrExplicitRegisterTableAndChildren(
         // shutdown is synchronized properly
         if( !pfmp->FDontRegisterOLD2Tasks() )
         {
-            if( NULL == m_rgtasks )
+            if( nullptr == m_rgtasks )
             {
                 // Need to allocate enough for the maximum number of tasks instead
                 // of the dynamic m_ctasksMax
                 Alloc( m_rgtasks = new CDefragTask[s_ctasksMaxDefault] );
             }
 
-            if( !FTableIsRegistered( ifmp, szTable, NULL, defragtypeTable ) )
+            if( !FTableIsRegistered( ifmp, szTable, nullptr, defragtypeTable ) )
             {
                 OSTrace( JET_tracetagOLDRegistration, OSFormat( __FUNCTION__ ": Registering %s:%s for defragtypeTable.", szTable, "<primary>" ) );
 
 
                 // find an unused entry and insert a CTableDefragment object for primary table tree
-                Call( ErrTryAddTaskAtFreeSlot( ifmp, szTable, NULL, defragtypeTable ) );
+                Call( ErrTryAddTaskAtFreeSlot( ifmp, szTable, nullptr, defragtypeTable ) );
             }
         }
     }
@@ -5841,7 +5841,7 @@ VOID CDefragManager::DeregisterInst( const INST * const pinst )
     {
         for( INT itask = 0; itask < s_ctasksMaxDefault; ++itask )
         {
-            if( NULL != m_rgtasks[itask].Ptabledefragment()
+            if( nullptr != m_rgtasks[itask].Ptabledefragment()
                 && pinst == PinstFromIfmp( m_rgtasks[itask].Ptabledefragment()->Ifmp() ) )
             {
                 RemoveTask_( itask, true );
@@ -5861,7 +5861,7 @@ VOID CDefragManager::DeregisterIfmp( const IFMP ifmp )
     {
         for( INT itask = 0; itask < s_ctasksMaxDefault; ++itask )
         {
-            if( NULL != m_rgtasks[itask].Ptabledefragment()
+            if( nullptr != m_rgtasks[itask].Ptabledefragment()
                 && ifmp == m_rgtasks[itask].Ptabledefragment()->Ifmp() )
             {
                 RemoveTask_( itask, true );
@@ -5907,7 +5907,7 @@ ERR CDefragManager::ErrTryAddTaskAtFreeSlot(
     
     for( INT itask = 0; itask < m_ctasksMax; ++itask )
     {
-        if( NULL == m_rgtasks[itask].Ptabledefragment() )
+        if( nullptr == m_rgtasks[itask].Ptabledefragment() )
         {
             Assert( !fAdded );
             err = ErrAddTask_( ifmp, szTable, szIndex, defragtype, itask );
@@ -5936,7 +5936,7 @@ ERR CDefragManager::ErrTryAddTaskAtFreeSlot(
         Call( OLD2_STATUS::ErrOpenOrCreateTable( ppib, ifmp, &pfucbDefragStatusState ) );
         Call( ErrFILEOpenTable(ppib, ifmp, &pfucbTable, szTable) );
 
-        if ( szIndex == NULL )
+        if ( szIndex == nullptr )
         {
             pfucbToDefrag = pfucbTable;
         }
@@ -6039,8 +6039,8 @@ VOID CDefragManager::RemoveTask_( const INT itask, const bool fWaitForTask )
     CTableDefragment * const ptabledefragment = m_rgtasks[itask].Ptabledefragment();
 
     m_rgtasks[itask].SetTickEnd( 0 );
-    m_rgtasks[itask].SetPlCompleted( NULL );
-    m_rgtasks[itask].SetPtabledefragment( NULL );
+    m_rgtasks[itask].SetPlCompleted( nullptr );
+    m_rgtasks[itask].SetPtabledefragment( nullptr );
 
     PERFOpt( cOLDTasksRegistered.Dec( PinstFromIfmp( ptabledefragment->Ifmp() ) ) );
     
@@ -6063,7 +6063,7 @@ bool CDefragManager::FTableIsRegistered(
     // to the pause, as they will resume once it is unpaused
     for( INT itask = 0; itask < s_ctasksMaxDefault; ++itask )
     {
-        if( NULL != m_rgtasks[itask].Ptabledefragment() )
+        if( nullptr != m_rgtasks[itask].Ptabledefragment() )
         {
             if( ifmp == m_rgtasks[itask].Ptabledefragment()->Ifmp()
                 && 0 == UtilCmpName( szTable, m_rgtasks[itask].Ptabledefragment()->SzTable() ) )

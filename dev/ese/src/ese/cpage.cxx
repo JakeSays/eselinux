@@ -228,7 +228,7 @@ public:
     virtual BFLatch* PBFLatch( BFLatch * const ) const
     {
         Fail_();
-        return NULL;
+        return nullptr;
     }
 
     // updates
@@ -495,7 +495,7 @@ public:
     virtual BFLatch* PBFLatch( BFLatch * const ) const
     {
         AssertSz( fFalse, "Don't get the latch on a loaded page" );
-        return NULL;
+        return nullptr;
     }
 
     // updates
@@ -634,7 +634,7 @@ public:
     virtual void FreeBuffer( BFLatch * const pbfl ) const
     {
         BFFree( pbfl->pv );
-        pbfl->pv        = NULL;
+        pbfl->pv        = nullptr;
         pbfl->dwContext = 0;
     }
 };
@@ -653,7 +653,7 @@ public:
 
     virtual void AllocateBuffer( BFLatch * const pbfl, const ULONG cbBuffer ) const
     {
-        void * pvBuffer = NULL;
+        void * pvBuffer = nullptr;
 
         Expected( s_cbProtectedArea == OSMemoryPageReserveGranularity() );
         Assert( s_cbProtectedArea % OSMemoryPageCommitGranularity() == 0 );
@@ -667,7 +667,7 @@ public:
         const ULONG cbOverOverSizedBuffer = roundup( cbOverSizedBuffer, OSMemoryPageReserveGranularity() );
 
         do {
-            void * pvT = (BYTE*)PvOSMemoryPageReserve( cbOverOverSizedBuffer, NULL );
+            void * pvT = (BYTE*)PvOSMemoryPageReserve( cbOverOverSizedBuffer, nullptr );
 
             if ( pvT )
             {
@@ -683,7 +683,7 @@ public:
             }
 
         }
-        while( NULL == pvBuffer );
+        while( nullptr == pvBuffer );
 
         SetBuffer( pbfl, pvBuffer, cbBuffer );
 
@@ -694,7 +694,7 @@ public:
     {
         OSMemoryPageDecommit( pbfl->pv, CbBuffer( *pbfl ) );
         OSMemoryPageFree( (BYTE*)(pbfl->pv) - s_cbProtectedArea );
-        pbfl->pv        = NULL;
+        pbfl->pv        = nullptr;
         pbfl->dwContext = 0;
     }
 
@@ -998,7 +998,7 @@ VOID CPageValidationLogEvent::ReportBadChecksum_(
                         irgpsz,
                         rgpsz,
                         0,
-                        NULL,
+                        nullptr,
                         PinstFromIfmp( m_ifmp ) );
 
     OSUHAPublishEvent(
@@ -1024,7 +1024,7 @@ VOID CPageValidationLogEvent::ReportUninitializedPage_( const PGNO pgno, const E
                         irgpsz,
                         rgpsz,
                         0,
-                        NULL,
+                        nullptr,
                         PinstFromIfmp( m_ifmp ) );
 
     OSUHAPublishEvent(
@@ -1055,7 +1055,7 @@ VOID CPageValidationLogEvent::ReportPageCorrectionFailed_( const PGNO pgno, cons
                         irgpsz,
                         rgpsz,
                         0,
-                        NULL,
+                        nullptr,
                         PinstFromIfmp( m_ifmp ) );
 
     OSUHAPublishEvent(
@@ -1085,7 +1085,7 @@ VOID CPageValidationLogEvent::ReportPageNumberFailed_( const PGNO pgno, const ER
                         irgpsz,
                         rgpsz,
                         0,
-                        NULL,
+                        nullptr,
                         PinstFromIfmp( m_ifmp ) );
 
     OSUHAPublishEvent(
@@ -1128,7 +1128,7 @@ VOID CPageValidationLogEvent::ReportPageCorrection_( const PGNO pgno, const INT 
                         irgpsz,
                         rgpsz,
                         0,
-                        NULL,
+                        nullptr,
                         PinstFromIfmp( m_ifmp ) );
 
     OSUHAPublishEvent(
@@ -1172,7 +1172,7 @@ VOID CPageValidationLogEvent::ReportLostFlush_(
                         irgpsz,
                         rgpsz,
                         0,
-                        NULL,
+                        nullptr,
                         PinstFromIfmp( m_ifmp ) );
 
     if ( fRuntime || !fFailOnRuntimeOnly )
@@ -1392,7 +1392,7 @@ INLINE VOID CPAGE::TAG::SetFlags( _In_ CPAGE * const pPage, _In_ USHORT fFlags )
 
 SIZE_T          CPAGE::cbHintCache              = 0;
 SIZE_T          CPAGE::maskHintCache            = 0;
-DWORD_PTR*      CPAGE::rgdwHintCache            = NULL;
+DWORD_PTR*      CPAGE::rgdwHintCache            = nullptr;
 
 
 
@@ -1487,11 +1487,11 @@ INLINE VOID CPAGE::GetPtr_( INT itag, LINE * pline, _Out_opt_ ERR * perrNoEnforc
             //  we can't even compute the line.xx members without potentially AV'ing (or looking at 
             //  another page's data).
 
-            pline->pv = NULL;
+            pline->pv = nullptr;
             pline->cb = 0;
             pline->fFlags = 0;
 
-            if ( perrNoEnforce != NULL )
+            if ( perrNoEnforce != nullptr )
             {
                 PageAssertTrack( *this, FNegTest( fCorruptingPageLogically ), "TagPtrOffPage:%hs", (ULONG_PTR)ptag < pbPageDataStart ? "" : "HighImpossible" );
                 *perrNoEnforce = ErrERRCheck( JET_errPageTagCorrupted );
@@ -1518,7 +1518,7 @@ INLINE VOID CPAGE::GetPtr_( INT itag, LINE * pline, _Out_opt_ ERR * perrNoEnforc
         {
             if ( itag >= CTagReserved_() )
             {
-                if ( perrNoEnforce != NULL )
+                if ( perrNoEnforce != nullptr )
                 {
                     PageAssertTrack( *this, FNegTest( fCorruptingPageLogically ), "NoExtHdrTagHasZeroCb" );
                     *perrNoEnforce = ErrERRCheck( JET_errPageTagCorrupted );
@@ -1592,7 +1592,7 @@ INLINE VOID CPAGE::GetPtr_( INT itag, LINE * pline, _Out_opt_ ERR * perrNoEnforc
                     // This track will tell us if we are wrong.
                     PageAssertTrack( *this, fFalse, "LineStartsOffButNotEndsOffPageImpossible" );
                 }
-                if ( perrNoEnforce != NULL )
+                if ( perrNoEnforce != nullptr )
                 {
                     PageAssertTrack( *this, pbLine < pbPageDataEnd || FNegTest( fCorruptingPageLogically ), "LineStartsOffDataEnd" );
                     PageAssertTrack( *this, pbLineLastByte <= pbPageDataEnd || FNegTest( fCorruptingPageLogically ), "LineStartsOff:%hs", pbLine >= pbPageDataEnd ? "DataEnd" : "TrailsOffDataEnd" );
@@ -1976,7 +1976,7 @@ CPAGE::CPAGE( ) :
 {
     C_ASSERT( sizeof( CPAGE::TAG ) == 4 );
     C_ASSERT( ctagReservedLegacy > 0 );
-    m_bfl.pv        = NULL;
+    m_bfl.pv        = nullptr;
     m_bfl.dwContext = 0;
 }
 
@@ -2332,7 +2332,7 @@ LatchPage:
     //  check to see if we need to perform a record format upgrade
     if( !FNewRecordFormat() )
     {
-        if( NULL == ppib->PvRecordFormatConversionBuffer() )
+        if( nullptr == ppib->PvRecordFormatConversionBuffer() )
         {
             const ERR   errT = ppib->ErrAllocPvRecordFormatConversionBuffer();
             if ( errT < 0 )
@@ -2488,7 +2488,7 @@ ERR CPAGE::ErrGetRDWPage(   PIB * ppib,
 
         //  UNDONE: Any reason why we don't allocate the conversion
         //  buffer BEFORE upgrading the page latch?
-        if( NULL == ppib->PvRecordFormatConversionBuffer() )
+        if( nullptr == ppib->PvRecordFormatConversionBuffer() )
         {
             const ERR   errT    = ppib->ErrAllocPvRecordFormatConversionBuffer();
             if ( errT < 0 )
@@ -3166,7 +3166,7 @@ VOID CPAGE::GetLatchHint( INT iline, BFLatch** ppbfl ) const
 
     if( FLoadedPage() )
     {
-        *ppbfl = NULL;
+        *ppbfl = nullptr;
     }
     else
     {
@@ -3899,9 +3899,9 @@ VOID CPAGE::ReorganizePage(
     Assert( CTagReserved_() > 0);
     Assert( !FPreInitPage() );
 
-    *pvHeader = NULL;
+    *pvHeader = nullptr;
     *pcbHeader = 0;
-    *pvTrailer = NULL;
+    *pvTrailer = nullptr;
     *pcbTrailer = 0;
 
     const PGHDR * const ppghdr = (PGHDR*)m_bfl.pv;
@@ -4081,7 +4081,7 @@ PAGECHECKSUM CPAGE::LoggedDataChecksum() const
         //  other than the external header.  Once that's fixed, we can move to this simplier
         //  line if we don't care about backwards compat.
         //const BYTE * const    pb      = PbFromIb_( ptag->Ib( fSmallFormat ) );
-        const BYTE * const  pb      = cb < cbKeyCount ? NULL : PbFromIb_( ptag->Ib( fSmallFormat ) );
+        const BYTE * const  pb      = cb < cbKeyCount ? nullptr : PbFromIb_( ptag->Ib( fSmallFormat ) );
         if( pb && !FOnData( pb, cb ) )
         {
             if ( !FNegTest( fCorruptingPageLogically ) )
@@ -4190,7 +4190,7 @@ VOID CPAGE::ReportReadLostFlushVerifyFailure_(
         fRuntime,
         fFailOnRuntimeOnly );
 
-    if ( g_rgfmp != NULL )
+    if ( g_rgfmp != nullptr )
     {
         WCHAR wszLostFlushMessage[200];
         if ( fUninitializedPage )
@@ -4243,7 +4243,7 @@ ERR CPAGE::ErrValidatePage(
     // Set the correct flush map if necessary.
     if ( fCheckForLostFlush )
     {
-        if ( ( pflushmap == NULL ) && ( g_rgfmp != NULL ) && ( m_ifmp != ifmpNil ) )
+        if ( ( pflushmap == nullptr ) && ( g_rgfmp != nullptr ) && ( m_ifmp != ifmpNil ) )
         {
             pflushmap = g_rgfmp[ m_ifmp ].PFlushMap();
         }
@@ -4448,7 +4448,7 @@ NOINLINE ERR CPAGE::ErrCaptureCorruptedPageInfo_( const CheckPageMode mode, cons
     //  Log an event about the corruption issue AND spit the details of the in-memory page
     //  out to our .RAW data file for further analysis.
 
-    if ( g_rgfmp != NULL && m_ifmp != ifmpNil )
+    if ( g_rgfmp != nullptr && m_ifmp != ifmpNil )
     {
         if ( fLogEvent )
         {
@@ -4469,7 +4469,7 @@ NOINLINE ERR CPAGE::ErrCaptureCorruptedPageInfo_( const CheckPageMode mode, cons
                          _countof( rgpsz ),
                          rgpsz,
                          0,
-                         NULL,
+                         nullptr,
                          PinstFromIfmp( m_ifmp ) );
 
             if ( mode == OnErrorFireWall )
@@ -4557,7 +4557,7 @@ class MapPageValidationReason
 
     static const MPQWSZ * PmpqwszMatch( const MPQWSZ * const rgqwsz, const ULONG cqwsz, const QWORD eValueMatch, const CHAR * const szNameMatch )
     {
-        if ( szNameMatch != NULL )
+        if ( szNameMatch != nullptr )
         {
             for( ULONG imp = 0; imp < cqwsz; imp++ )
             {
@@ -4577,7 +4577,7 @@ class MapPageValidationReason
                 }
             }
         }
-        return NULL;
+        return nullptr;
     }
 
     static const MPQWSZ * PmpqwszMatch( const QWORD eValueMatch, const CHAR * const szNameMatch )
@@ -4621,8 +4621,8 @@ public:
 
     static const CHAR * const Sz( const PAGEValidationReason pgvr )
     {
-        const MPQWSZ * const pmpqszMatch = PmpqwszMatch( (QWORD)pgvr, NULL );
-        if ( pmpqszMatch != NULL )
+        const MPQWSZ * const pmpqszMatch = PmpqwszMatch( (QWORD)pgvr, nullptr );
+        if ( pmpqszMatch != nullptr )
         {
             return pmpqszMatch->szSymbol;
         }
@@ -4652,7 +4652,7 @@ ERR CPAGE::ErrCheckPage(
 {
     ERR                 err     = JET_errSuccess;
     const PGHDR * const ppghdr  = (PGHDR*)m_bfl.pv;
-    ULONG              *rgdw    = NULL;
+    ULONG              *rgdw    = nullptr;
     KEY                 keyLast;
     WCHAR               wszCorruptionDetails[200];
 
@@ -4878,7 +4878,7 @@ ERR CPAGE::ErrCheckPage(
             Expected( line.pv != NULL ); // We're asserting just so we know, but we'll handle line.pv == NULL below.
             Expected( line.cb != 0 || FNegTest( fCorruptingPageLogically ) );
 
-            if ( line.pv == NULL )
+            if ( line.pv == nullptr )
             {
                 AssertTrack( errGetLine < JET_errSuccess, "GotNullLineWithoutErrValue" ); // ErrGetPtr should not return this case.
                 MakeCorruptionDetailsSz( L"TAG %d offset / line could not be retrieve from tag array (ib=%d, cb=%d).", itag, ib, cb );
@@ -4953,8 +4953,8 @@ ERR CPAGE::ErrCheckPage(
 
                 const ERR errGetKdf = ErrNDIGetKeydataflags( *this, iline, &kdf );
 
-                const CHAR * szGetKdfSourceFile = ( errGetKdf < JET_errSuccess && PefLastThrow() != NULL ) ? PefLastThrow()->SzFile() : NULL;
-                const ULONG ulGetKdfSourceLine = ( errGetKdf < JET_errSuccess && PefLastThrow() != NULL ) ? PefLastThrow()->UlLine() : 0;
+                const CHAR * szGetKdfSourceFile = ( errGetKdf < JET_errSuccess && PefLastThrow() != nullptr ) ? PefLastThrow()->SzFile() : nullptr;
+                const ULONG ulGetKdfSourceLine = ( errGetKdf < JET_errSuccess && PefLastThrow() != nullptr ) ? PefLastThrow()->UlLine() : 0;
                 Expected( errGetKdf >= JET_errSuccess || ( szGetKdfSourceFile != NULL && ulGetKdfSourceLine > 0 ) );
                 Expected( szGetKdfSourceFile == NULL || 0 == _stricmp( SzSourceFileName( szGetKdfSourceFile ), "node.cxx" ) );
 
@@ -6237,7 +6237,7 @@ ERR CPAGE::ErrTest( _In_ const ULONG cbPageSize )
     AssertRTL( 0 == CbPage() % cchDumpAllocRow );
 
     VOID * const pvBuffer = PvOSMemoryHeapAlloc( cbPageSize );
-    if( NULL == pvBuffer )
+    if( nullptr == pvBuffer )
     {
         return ErrERRCheck( JET_errOutOfMemory );
     }
@@ -6368,7 +6368,7 @@ VOID CPAGE::Term()
     if ( rgdwHintCache )
     {
         OSMemoryHeapFree( (void*) rgdwHintCache );
-        rgdwHintCache = NULL;
+        rgdwHintCache = nullptr;
     }
 
 #endif  //  MINIMAL_FUNCTIONALITY
@@ -6390,7 +6390,7 @@ ERR CPAGE::ErrEnumTags( CPAGE::PFNVISITNODE pfnEval, void * pvCtx ) const
     Assert( Clines() + CTagReserved_() == ITagMicFree_() );
 
     // Call once to accumulate page-wide stats.
-    CallR( pfnEval( ppghdr, 0, 0, NULL, pvCtx ) );
+    CallR( pfnEval( ppghdr, 0, 0, nullptr, pvCtx ) );
 
     // Now accumulate per-tag stats (excluding external header).
     for ( INT itag = 1; itag < ITagMicFree_(); ++itag )
@@ -6453,7 +6453,7 @@ ERR ErrAccumulatePageStats(
     Assert( pbtsPageSpace );
     Assert( pbtsPageSpace->phistoDataSizes );   // maybe check the others?
 
-    if ( NULL == pkdf )
+    if ( nullptr == pkdf )
     {
         Assert( itag == 0 );
         //  Certain stats we only rack up once per page.
@@ -6679,7 +6679,7 @@ ERR CPAGE::DumpTags( CPRINTF * pcprintf, DWORD_PTR dwOffset ) const
                 {
                     PGNO pgnoLast = 0xFFFFFFFF;
                     CPG cpgExtent = 0xFFFFFFFF;
-                    PCWSTR cwszPoolName = NULL;
+                    PCWSTR cwszPoolName = nullptr;
 
                     if( ErrSPREPAIRValidateSpaceNode( &kdf, &pgnoLast, &cpgExtent, &cwszPoolName ) >= JET_errSuccess )
                     {
@@ -6736,7 +6736,7 @@ ERR CPAGE::DumpTags( CPRINTF * pcprintf, DWORD_PTR dwOffset ) const
                 {
                     PGNO pgnoLast       = 0xFFFFFFFF;
                     CPG cpgExtent       = 0xFFFFFFFF;
-                    PCWSTR wsczPoolName = NULL;
+                    PCWSTR wsczPoolName = nullptr;
 
                     if( ErrSPREPAIRValidateSpaceNode( &kdf, &pgnoLast, &cpgExtent, &wsczPoolName ) >= JET_errSuccess )
                     {
@@ -6970,7 +6970,7 @@ ERR CPAGE::DumpHeader( CPRINTF * pcprintf, DWORD_PTR dwOffset ) const
         {
             BOOL fNeedPrintAutoInc = fFalse;
             QWORD qwAutoInc = 0;
-            const SPACE_HEADER* psph = NULL;
+            const SPACE_HEADER* psph = nullptr;
 
             if ( fNewExtHdrFormat )
             {
@@ -7031,7 +7031,7 @@ ERR CPAGE::DumpHeader( CPRINTF * pcprintf, DWORD_PTR dwOffset ) const
             {
                 psph = (SPACE_HEADER *)PbFromIb_( ptag->Ib( FSmallPageFormat() ) );
             }
-            if ( psph != NULL )
+            if ( psph != nullptr )
             {
                 if ( psph->FMultipleExtent() )
                 {
@@ -7190,7 +7190,7 @@ ERR CPAGE::ErrDumpToIrsRaw( _In_ PCWSTR wszReason, _In_ PCWSTR wszDetails ) cons
     WCHAR    wszDate[32];
     WCHAR    wszTime[32];
     size_t   cchRequired;
-    CPRINTF * pcprintfPageTrace = NULL;
+    CPRINTF * pcprintfPageTrace = nullptr;
     
     CBasicProcessInfo procinfo( PinstFromIfmp( m_ifmp ) );
 

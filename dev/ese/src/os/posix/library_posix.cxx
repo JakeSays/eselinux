@@ -24,7 +24,7 @@ BOOL FUtilLoadLibrary( const WCHAR* wszLibrary, LIBRARY* plibrary, const BOOL /*
 {
     *plibrary = 0;
 
-    if ( wszLibrary == NULL )
+    if ( wszLibrary == nullptr )
     {
         return fFalse;
     }
@@ -38,7 +38,7 @@ BOOL FUtilLoadLibrary( const WCHAR* wszLibrary, LIBRARY* plibrary, const BOOL /*
     szLibrary[i] = '\0';
 
     void* p = dlopen( szLibrary, RTLD_NOW | RTLD_LOCAL );
-    if ( p == NULL )
+    if ( p == nullptr )
     {
         return fFalse;
     }
@@ -51,7 +51,7 @@ PFN PfnUtilGetProcAddress( LIBRARY library, const char* szFunction )
 {
     if ( !library || !szFunction )
     {
-        return NULL;
+        return nullptr;
     }
     return (PFN)dlsym( (void*)library, szFunction );
 }
@@ -111,7 +111,7 @@ ERR ErrMultiLoadPfn(
     }
     if ( ppfn )
     {
-        *ppfn = NULL;
+        *ppfn = nullptr;
     }
     if ( !szFunction || !*szFunction )
     {

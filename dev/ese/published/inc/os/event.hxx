@@ -39,7 +39,7 @@ void OSEventReportEvent(
         const DWORD         cString,
         const WCHAR *       rgpszString[],
         const DWORD         cDataSize = 0,
-        void *              pvRawData = NULL );
+        void *              pvRawData = nullptr );
 
 #ifdef OS_LAYER_VIOLATIONS
 #include "eventu.hxx"

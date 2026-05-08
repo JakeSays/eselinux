@@ -20,7 +20,7 @@ LOCAL const char * const rgszDBState[] = {
 
 const CHAR * SzFromState( ULONG dbstate )
 {
-    const CHAR * szState = NULL;
+    const CHAR * szState = nullptr;
     switch ( dbstate )
     {
         case JET_dbstateJustCreated:
@@ -515,18 +515,18 @@ HandleError:
 ERR ErrDUMPHeader( INST *pinst, _In_ PCWSTR wszDatabase, const BOOL fVerbose )
 {
     ERR             err             = JET_errSuccess;
-    DBFILEHDR_FIX   *pdbfilehdrPrimary    = NULL;
-    DBFILEHDR_FIX   *pdbfilehdrSecondary  = NULL;
+    DBFILEHDR_FIX   *pdbfilehdrPrimary    = nullptr;
+    DBFILEHDR_FIX   *pdbfilehdrSecondary  = nullptr;
     const DWORD     cbHeader        = g_cbPage;
     DB_HEADER_READER dbHeaderReaderPrimary =
     {
         headerRequestPrimaryOnly,
         wszDatabase,
-        NULL,
+        nullptr,
         cbHeader,
         OffsetOf( DBFILEHDR_FIX, le_cbPageSize ),
         pinst->m_pfsapi,
-        NULL,
+        nullptr,
         fTrue,
         0,
         0,
@@ -537,11 +537,11 @@ ERR ErrDUMPHeader( INST *pinst, _In_ PCWSTR wszDatabase, const BOOL fVerbose )
     {
         headerRequestSecondaryOnly,
         wszDatabase,
-        NULL,
+        nullptr,
         cbHeader,
         OffsetOf( DBFILEHDR_FIX, le_cbPageSize ),
         pinst->m_pfsapi,
-        NULL,
+        nullptr,
         fTrue,
         0,
         0,
@@ -559,7 +559,7 @@ ERR ErrDUMPHeader( INST *pinst, _In_ PCWSTR wszDatabase, const BOOL fVerbose )
     BOOL fCheckPageSize         = fTrue;
 
     // Primary header.
-    Alloc( pdbfilehdrPrimary = ( DBFILEHDR_FIX* )PvOSMemoryPageAlloc( cbHeader, NULL ) );
+    Alloc( pdbfilehdrPrimary = ( DBFILEHDR_FIX* )PvOSMemoryPageAlloc( cbHeader, nullptr ) );
     dbHeaderReaderPrimary.pbHeader = ( BYTE* )pdbfilehdrPrimary;
     Call( ErrUtilReadSpecificShadowedHeader( pinst, &dbHeaderReaderPrimary ) );
     if (dbHeaderReaderPrimary.shadowedHeaderStatus == shadowedHeaderCorrupt && FDefaultParam(JET_paramDatabasePageSize))
@@ -592,7 +592,7 @@ ERR ErrDUMPHeader( INST *pinst, _In_ PCWSTR wszDatabase, const BOOL fVerbose )
     }
 
     // Shadow header.
-    Alloc( pdbfilehdrSecondary = ( DBFILEHDR_FIX* )PvOSMemoryPageAlloc( cbHeader, NULL ) );
+    Alloc( pdbfilehdrSecondary = ( DBFILEHDR_FIX* )PvOSMemoryPageAlloc( cbHeader, nullptr ) );
     dbHeaderReaderSecondary.pbHeader = ( BYTE* )pdbfilehdrSecondary;
     Call( ErrUtilReadSpecificShadowedHeader( pinst, &dbHeaderReaderSecondary ) );
     if (dbHeaderReaderSecondary.shadowedHeaderStatus == shadowedHeaderCorrupt && !fCheckPageSize)
@@ -668,17 +668,17 @@ HandleError:
 ERR ErrDUMPFixupHeader( INST *pinst, _In_ PCWSTR wszDatabase, const BOOL fVerbose )
 {
     ERR             err             = JET_errSuccess;
-    DBFILEHDR_FIX   *pdbfilehdrPrimary    = NULL;
+    DBFILEHDR_FIX   *pdbfilehdrPrimary    = nullptr;
     const DWORD     cbHeader        = g_cbPage;
     DB_HEADER_READER dbHeaderReader =
     {
         headerRequestGoodOnly,
         wszDatabase,
-        NULL,
+        nullptr,
         cbHeader,
         OffsetOf( DBFILEHDR_FIX, le_cbPageSize ),
         pinst->m_pfsapi,
-        NULL,
+        nullptr,
         fFalse,
         0,
         0,
@@ -686,7 +686,7 @@ ERR ErrDUMPFixupHeader( INST *pinst, _In_ PCWSTR wszDatabase, const BOOL fVerbos
         shadowedHeaderCorrupt
     };
 
-    Alloc( pdbfilehdrPrimary = ( DBFILEHDR_FIX* )PvOSMemoryPageAlloc( cbHeader, NULL ) );
+    Alloc( pdbfilehdrPrimary = ( DBFILEHDR_FIX* )PvOSMemoryPageAlloc( cbHeader, nullptr ) );
     dbHeaderReader.pbHeader = ( BYTE* )pdbfilehdrPrimary;
     err = ErrUtilReadSpecificShadowedHeader( pinst, &dbHeaderReader );
 

@@ -280,7 +280,7 @@ LOCAL ERR ErrLGRIReportDbtimeMismatch(
     Assert( dbtimeOnPage != dbtimeBeforeInLogRec );
 
     const ERR       err         = ErrERRCheck( dbtimeOnPage < dbtimeBeforeInLogRec ? JET_errDbTimeTooOld : ( dbtimeOnPage < dbtimeAfterInLogRec ? JET_errDbTimeTooNew : JET_errDbTimeBeyondMaxRequired ) );
-    const FMP* const pfmp       = FMP::FAllocatedFmp( ifmp ) ? &g_rgfmp[ ifmp ] : NULL;
+    const FMP* const pfmp       = FMP::FAllocatedFmp( ifmp ) ? &g_rgfmp[ ifmp ] : nullptr;
     const LGPOS     lgposStop   = pinst->m_plog->LgposLGLogTipNoLock();
     Assert( err != JET_errDbTimeBeyondMaxRequired || !pfmp->FContainsDataFromFutureLogs() );
 
@@ -311,7 +311,7 @@ LOCAL ERR ErrLGRIReportDbtimeMismatch(
         _countof( rgwsz ),
         rgwsz,
         0,
-        NULL,
+        nullptr,
         pinst );
     OSUHAPublishEvent(  ( err == JET_errDbTimeTooOld ? HaDbFailureTagLostFlushDbTimeTooOld :
                           ( err == JET_errDbTimeTooNew ? HaDbFailureTagLostFlushDbTimeTooNew : HaDbFailureTagLostFlushDbTimeBeyondMaxRequired ) ),
@@ -487,7 +487,7 @@ VOID LGIReportEventOfReadError( const INST* pinst, const IFMP ifmp, const PGNO p
             _countof( rgwsz ),
             rgwsz,
             0,
-            NULL,
+            nullptr,
             pinst );
     OSTraceResumeGC();
 }
@@ -497,7 +497,7 @@ VOID LGIReportPageDataMissing( const INST* pinst, const IFMP ifmp, const PGNO pg
 {
     Assert( FMP::FAllocatedFmp( ifmp ) );
 
-    const FMP* const pfmp = FMP::FAllocatedFmp( ifmp ) ? &g_rgfmp[ ifmp ] : NULL;
+    const FMP* const pfmp = FMP::FAllocatedFmp( ifmp ) ? &g_rgfmp[ ifmp ] : nullptr;
     const LGPOS lgposStop = pinst->m_plog->LgposLGLogTipNoLock();
 
     OSTraceSuspendGC();
@@ -524,7 +524,7 @@ VOID LGIReportPageDataMissing( const INST* pinst, const IFMP ifmp, const PGNO pg
         _countof( rgwsz ),
         rgwsz,
         0,
-        NULL,
+        nullptr,
         pinst );
     OSUHAPublishEvent(
         HaDbFailureTagCorruption,
@@ -545,7 +545,7 @@ VOID LGIReportBadRevertedPage( const INST* pinst, const IFMP ifmp, const PGNO pg
 {
     Assert( FMP::FAllocatedFmp( ifmp ) );
 
-    const FMP* const pfmp = FMP::FAllocatedFmp( ifmp ) ? &g_rgfmp[ ifmp ] : NULL;
+    const FMP* const pfmp = FMP::FAllocatedFmp( ifmp ) ? &g_rgfmp[ ifmp ] : nullptr;
     const LGPOS lgposStop = pinst->m_plog->LgposLGLogTipNoLock();
 
     OSTraceSuspendGC();
@@ -572,7 +572,7 @@ VOID LGIReportBadRevertedPage( const INST* pinst, const IFMP ifmp, const PGNO pg
         _countof( rgwsz ),
         rgwsz,
         0,
-        NULL,
+        nullptr,
         pinst );
     OSUHAPublishEvent(
         HaDbFailureTagCorruption,
@@ -870,7 +870,7 @@ LOCAL ERR ErrLGRIReportFlushDependencyCorrupted(
         _countof( rgszT ),
         rgszT,
         0,
-        NULL,
+        nullptr,
         g_rgfmp[ifmp].Pinst() );
 
     return ErrERRCheck( JET_errDatabaseBufferDependenciesCorrupted );
@@ -945,9 +945,9 @@ ERR LOG::ErrLGRIPpibFromProcid( PROCID procid, PIB **pppib )
 
     Assert( procidNil != procid );
     Assert( procidReadDuringRecovery != procid );
-    AssertSzRTL( NULL != m_pcsessionhash, "We should not see any LRs referring to a transaction after Term and before Init" );
+    AssertSzRTL( nullptr != m_pcsessionhash, "We should not see any LRs referring to a transaction after Term and before Init" );
 
-    if ( m_pcsessionhash == NULL )
+    if ( m_pcsessionhash == nullptr )
     {
         Error( ErrERRCheck( JET_errLogCorrupted ) );
     }
@@ -1167,7 +1167,7 @@ VOID LGRIPurgeFucbs( PIB * ppib, const IFMP ifmp, CTableHash * pctablehash )
 //
 LOCAL ERR ErrLGRIPurgeFcbs( const IFMP ifmp, const PGNO pgnoFDP, FDPTYPE fFDPType, CTableHash * pctablehash )
 {
-    FCB *pfcbTable = NULL;
+    FCB *pfcbTable = nullptr;
     BOOL fDeleteTable = fFalse;
     ERR err = JET_errSuccess;
 
@@ -1203,7 +1203,7 @@ LOCAL ERR ErrLGRIPurgeFcbs( const IFMP ifmp, const PGNO pgnoFDP, FDPTYPE fFDPTyp
             PGNO pgnoLookup;
             CallR( ErrPIBBeginSession( PinstFromIfmp( pfcbTable->Ifmp() ), &ppib,procidNil, fFalse ) );
             DBSetOpenDatabaseFlag( ppib, ifmp );
-            if ( ErrCATSeekTableByObjid( ppib, ifmp, pfcbTable->ObjidFDP(), NULL, 0, &pgnoLookup ) >= JET_errSuccess &&
+            if ( ErrCATSeekTableByObjid( ppib, ifmp, pfcbTable->ObjidFDP(), nullptr, 0, &pgnoLookup ) >= JET_errSuccess &&
                  pgnoLookup == pfcbTable->PgnoFDP() )
             {
                 fDeleteTable = fFalse;
@@ -1270,7 +1270,7 @@ LOCAL ERR ErrLGRIPurgeFcbs( const IFMP ifmp, const PGNO pgnoFDP, FDPTYPE fFDPTyp
                 pfcbT->Lock();
                 pfcbT->SetDeletePending();
                 pfcbT->SetDeleteCommitted();
-                fHasFUCB = ( NULL != pfcbT->Pfucb() );
+                fHasFUCB = ( nullptr != pfcbT->Pfucb() );
                 pfcbT->Unlock();
                 
                 // If any user cursors are still open, we have to wait for them to close (cannot force close)
@@ -1281,7 +1281,7 @@ LOCAL ERR ErrLGRIPurgeFcbs( const IFMP ifmp, const PGNO pgnoFDP, FDPTYPE fFDPTyp
                     pfcbTable->EnterDDL();
 
                     pfcbT->Lock();
-                    fHasFUCB = ( NULL != pfcbT->Pfucb() );
+                    fHasFUCB = ( nullptr != pfcbT->Pfucb() );
                     pfcbT->Unlock();
                 }
             }
@@ -1295,7 +1295,7 @@ LOCAL ERR ErrLGRIPurgeFcbs( const IFMP ifmp, const PGNO pgnoFDP, FDPTYPE fFDPTyp
                     pfcbLV->Lock();
                     pfcbLV->SetDeletePending();
                     pfcbLV->SetDeleteCommitted();
-                    fHasFUCB = (NULL != pfcbLV->Pfucb() );
+                    fHasFUCB = (nullptr != pfcbLV->Pfucb() );
                     pfcbLV->Unlock();
 
                     // If any user cursors are still open, we have to wait for them to close (cannot force close)
@@ -1306,7 +1306,7 @@ LOCAL ERR ErrLGRIPurgeFcbs( const IFMP ifmp, const PGNO pgnoFDP, FDPTYPE fFDPTyp
                         pfcbTable->EnterDDL();
 
                         pfcbLV->Lock();
-                        fHasFUCB = (NULL != pfcbLV->Pfucb() );
+                        fHasFUCB = (nullptr != pfcbLV->Pfucb() );
                         pfcbLV->Unlock();
                     }
                 }
@@ -1470,7 +1470,7 @@ LOCAL ERR ErrLGRIGetFucb(
 
     //  allocate an all-purpose fucb for this table, if not already allocated
     //
-    if ( NULL == pfucb )
+    if ( nullptr == pfucb )
     {
         //  fucb not created
         //
@@ -1545,7 +1545,7 @@ LOCAL ERR ErrLGRIGetFucb(
 VOID LOG::LGRRemoveFucb( FUCB * pfucb )
 {
     Assert( pfucb->fInRecoveryTableHash );
-    if ( NULL != m_pctablehash )
+    if ( nullptr != m_pctablehash )
     {
         m_pctablehash->RemoveFucb( pfucb );
         pfucb->fInRecoveryTableHash = fFalse;
@@ -1572,13 +1572,13 @@ ERR LOG::ErrLGRIInitSession(
 
     //  allocate and initialize global hash for table and session handles
     //
-    if ( NULL == m_pctablehash )
+    if ( nullptr == m_pctablehash )
     {
         Alloc( m_pctablehash = new CTableHash( pdbms_param->le_lCursorsMax ) );
         Call( m_pctablehash->ErrInit() );
     }
 
-    if ( NULL == m_pcsessionhash )
+    if ( nullptr == m_pcsessionhash )
     {
         Alloc( m_pcsessionhash = new CSessionHash( pdbms_param->le_lSessionsMax ) );
         Call( m_pcsessionhash->ErrInit() );
@@ -1722,10 +1722,10 @@ HandleError:
     m_fLogDisabledDueToRecoveryFailure = fFalse;
 
     delete m_pctablehash;
-    m_pctablehash = NULL;
+    m_pctablehash = nullptr;
 
     delete m_pcsessionhash;
-    m_pcsessionhash = NULL;
+    m_pcsessionhash = nullptr;
 
     return err;
 }
@@ -1767,7 +1767,7 @@ ERR ErrLGICheckDatabaseFileSize( PIB *ppib, IFMP ifmp )
                 1,
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 PinstFromPpib( ppib ) );
     }
     else if( err >= JET_errSuccess )
@@ -1892,16 +1892,16 @@ LOCAL VOID LGICleanupTransactionToLevel0( PIB * const ppib, CTableHash * pctable
     //  empty the list of RCEs
     ppib->RemoveAllDeferredRceid();
     ppib->RemoveAllRceid();
-    ppib->ErrSetClientCommitContextGeneric( NULL, 0 );
+    ppib->ErrSetClientCommitContextGeneric( nullptr, 0 );
     ppib->SetFCommitContextNeedPreCommitCallback( fFalse );
 }
 
 ERR LOG::ErrLGEndAllSessionsMacro( BOOL fLogEndMacro )
 {
     ERR     err         = JET_errSuccess;
-    PIB     *ppib       = NULL;
+    PIB     *ppib       = nullptr;
 
-    for ( ppib = m_pinst->m_ppibGlobal; NULL != ppib; ppib = ppib->ppibNext )
+    for ( ppib = m_pinst->m_ppibGlobal; nullptr != ppib; ppib = ppib->ppibNext )
     {
         CallR( ppib->ErrAbortAllMacros( fLogEndMacro ) );
     }
@@ -1925,7 +1925,7 @@ ERR LOG::ErrLGRIEndAllSessionsWithError()
 
         FMP *pfmp = &g_rgfmp[ ifmp ];
 
-        if ( NULL != pfmp->Pdbfilehdr() &&
+        if ( nullptr != pfmp->Pdbfilehdr() &&
              !pfmp->FContainsDataFromFutureLogs() )
         {
             //  fire callback for the dbs to be detached
@@ -1938,10 +1938,10 @@ ERR LOG::ErrLGRIEndAllSessionsWithError()
     (VOID) m_pinst->m_pver->ErrVERRCEClean();
 
     delete m_pctablehash;
-    m_pctablehash = NULL;
+    m_pctablehash = nullptr;
 
     delete m_pcsessionhash;
-    m_pcsessionhash = NULL;
+    m_pcsessionhash = nullptr;
 
     //  checkpoint updating will use m_lgposToFlush as
     //  the starting point for the checkpoint, so
@@ -1949,7 +1949,7 @@ ERR LOG::ErrLGRIEndAllSessionsWithError()
     //
     lgposWriteTip = m_lgposRedo;
     m_pinst->m_critPIB.Enter();
-    for ( PIB * ppibT = m_pinst->m_ppibGlobal; ppibT != NULL; ppibT = ppibT->ppibNext )
+    for ( PIB * ppibT = m_pinst->m_ppibGlobal; ppibT != nullptr; ppibT = ppibT->ppibNext )
     {
         if ( ppibT->FAfterFirstBT()             //  session active
             && ppibT->Level() > 0                   //  open transaction
@@ -1962,7 +1962,7 @@ ERR LOG::ErrLGRIEndAllSessionsWithError()
     m_pLogWriteBuffer->SetLgposWriteTip( lgposWriteTip );
 
         //  remove all deferred RCEs and inserted RCEs for any session
-    for ( ppib = m_pinst->m_ppibGlobal; NULL != ppib; ppib = ppib->ppibNext )
+    for ( ppib = m_pinst->m_ppibGlobal; nullptr != ppib; ppib = ppib->ppibNext )
     {
         ppib->RemoveAllDeferredRceid();
         ppib->RemoveAllRceid();
@@ -2002,7 +2002,7 @@ LOCAL VOID LGReportAttachedDbMismatch(
         _countof( rgszT ),
         rgszT,
         0,
-        NULL,
+        nullptr,
         pinst );
     
     OSUHAPublishEvent(  HaDbFailureTagConfiguration,
@@ -2035,7 +2035,7 @@ LOCAL VOID LGReportConsistentTimeMismatch(
         sizeof( rgszT ) / sizeof( rgszT[0] ),
         rgszT,
         0,
-        NULL,
+        nullptr,
         pinst );
 
     OSUHAPublishEvent(  HaDbFailureTagCorruption,
@@ -2301,7 +2301,7 @@ LOCAL ERR ErrLGRIMacroClearRedoMapDbtimeRevert( PIB* const ppib, const DBTIME db
         return JET_errSuccess;
     }
 
-    CArray< CFMPPage >* prgfmppgnoFreed     = NULL;
+    CArray< CFMPPage >* prgfmppgnoFreed     = nullptr;
     ERR err                                 = JET_errSuccess;
 
     CallR( ppib->ErrMacroPgnoFreed( dbtime, &prgfmppgnoFreed ) );
@@ -2413,7 +2413,7 @@ ERR LOG::ErrLGRIEndAllSessions(
         //  pfmp->dbtimeCurrent may == 0, i.e. no operation, then do
         //  not change pdbfilehdr->dbtime
 
-        if ( pfmp->Pdbfilehdr() != NULL &&
+        if ( pfmp->Pdbfilehdr() != nullptr &&
              pfmp->DbtimeCurrentDuringRecovery() > pfmp->DbtimeLast() )
         {
             pfmp->SetDbtimeLast( pfmp->DbtimeCurrentDuringRecovery() );
@@ -2426,7 +2426,7 @@ ERR LOG::ErrLGRIEndAllSessions(
         {
             Assert( pfmp->Pdbfilehdr() );
 
-            if ( NULL != pfmp->Pdbfilehdr() )   // for insurance
+            if ( nullptr != pfmp->Pdbfilehdr() )   // for insurance
             {
                 pfmp->PdbfilehdrUpdateable()->le_lGenRecovering = 0;
                 
@@ -2438,7 +2438,7 @@ ERR LOG::ErrLGRIEndAllSessions(
             }
         }
 
-        if ( NULL != pfmp->Pdbfilehdr() &&
+        if ( nullptr != pfmp->Pdbfilehdr() &&
              !pfmp->FContainsDataFromFutureLogs() )
         {
             //  fire callback for the dbs to be detached
@@ -2449,7 +2449,7 @@ ERR LOG::ErrLGRIEndAllSessions(
 
 
         //  make sure there are no deferred RCEs and and remove all inserted RCEs for any session
-    for ( ppib = m_pinst->m_ppibGlobal; NULL != ppib; ppib = ppib->ppibNext )
+    for ( ppib = m_pinst->m_ppibGlobal; nullptr != ppib; ppib = ppib->ppibNext )
     {
 #ifndef RTM
         ppib->AssertNoDeferredRceid();
@@ -2551,10 +2551,10 @@ ERR LOG::ErrLGRIEndAllSessions(
                 pfmp->Pinst()->m_mpdbidifmp[ pfmp->Dbid() ] = g_ifmpMax;
 
                 OSMemoryHeapFree( pfmp->WszDatabaseName() );
-                pfmp->SetWszDatabaseName( NULL );
+                pfmp->SetWszDatabaseName( nullptr );
 
                 OSMemoryHeapFree( pfmp->Patchchk() );
-                pfmp->SetPatchchk( NULL );
+                pfmp->SetPatchchk( nullptr );
 
                 FMP::LeaveFMPPoolAsWriter();
             }
@@ -2570,10 +2570,10 @@ ERR LOG::ErrLGRIEndAllSessions(
     ppib = ppibNil;
 
     delete m_pctablehash;
-    m_pctablehash = NULL;
+    m_pctablehash = nullptr;
 
     delete m_pcsessionhash;
-    m_pcsessionhash = NULL;
+    m_pcsessionhash = nullptr;
 
     if ( fEndOfLog )
     {
@@ -2668,10 +2668,10 @@ HandleError:
     }
 
     delete m_pctablehash;
-    m_pctablehash = NULL;
+    m_pctablehash = nullptr;
 
     delete m_pcsessionhash;
-    m_pcsessionhash = NULL;
+    m_pcsessionhash = nullptr;
 
     if ( fNeedCallINSTTerm )
     {
@@ -2751,7 +2751,7 @@ BOOL LOG::FLGRICheckRedoConditionForAttachedDb(
 {
     //  Check if the database is open.
 
-    if ( NULL == pdbfilehdr )
+    if ( nullptr == pdbfilehdr )
     {
         return fFalse;
     }
@@ -3335,7 +3335,7 @@ ERR LOG::ErrLGRIRedoNodeOperation( const LRNODE_ *plrnode, ERR *perr )
             {
                 Assert( plrinsert->ILine() == csr.ILine() );
                 //  no logging of versioning so this can't fail
-                Call( ErrNDInsert( pfucb, &csr, &kdf, dirflag | fDIRRedo, rceidNull, NULL ) );
+                Call( ErrNDInsert( pfucb, &csr, &kdf, dirflag | fDIRRedo, rceidNull, nullptr ) );
             }
             else
             {
@@ -3376,7 +3376,7 @@ ERR LOG::ErrLGRIRedoNodeOperation( const LRNODE_ *plrnode, ERR *perr )
                 Assert( FNDDeleted( pfucb->kdfCurr ) );
 
 
-                err = ErrNDFlagInsert( pfucb, &csr, dirflag | fDIRRedo, rceidNull, NULL );
+                err = ErrNDFlagInsert( pfucb, &csr, dirflag | fDIRRedo, rceidNull, nullptr );
                 CallS( err );
             }
             else
@@ -3469,7 +3469,7 @@ ERR LOG::ErrLGRIRedoNodeOperation( const LRNODE_ *plrnode, ERR *perr )
                                                      rceidNull,
                                                      rceidNull,
                                                      prceNil,
-                                                     NULL );
+                                                     nullptr );
 
                 BFFree( rgb );
 
@@ -3511,7 +3511,7 @@ ERR LOG::ErrLGRIRedoNodeOperation( const LRNODE_ *plrnode, ERR *perr )
             RCE             *prce = prceNil;
             const UINT      cbNewData = plrreplace->CbNewData();
             DATA            data;
-            BYTE            *rgbRecNew = NULL;
+            BYTE            *rgbRecNew = nullptr;
 //          BYTE            rgbRecNew[g_cbPageMax];
 
             //  cache node
@@ -3588,7 +3588,7 @@ ERR LOG::ErrLGRIRedoNodeOperation( const LRNODE_ *plrnode, ERR *perr )
                 if ( err < 0 )
                 {
                     BFFree( rgb );
-                    if ( NULL != rgbRecNew )
+                    if ( nullptr != rgbRecNew )
                     {
                         BFFree( rgbRecNew );
                     }
@@ -3601,7 +3601,7 @@ ERR LOG::ErrLGRIRedoNodeOperation( const LRNODE_ *plrnode, ERR *perr )
             err = ErrNDReplace( pfucb, &csr, &data, dirflag | fDIRRedo, rceidNull, prceNil );
 
             BFFree( rgb );
-            if ( NULL != rgbRecNew )
+            if ( nullptr != rgbRecNew )
             {
                 BFFree( rgbRecNew );
             }
@@ -3648,7 +3648,7 @@ ERR LOG::ErrLGRIRedoNodeOperation( const LRNODE_ *plrnode, ERR *perr )
 
             //  redo operation
             //
-            err = ErrNDFlagDelete( pfucb, &csr, dirflag | fDIRRedo, rceidNull, NULL );
+            err = ErrNDFlagDelete( pfucb, &csr, dirflag | fDIRRedo, rceidNull, nullptr );
             CallS( err );
             Call( err );
         }
@@ -3704,7 +3704,7 @@ ERR LOG::ErrLGRIRedoNodeOperation( const LRNODE_ *plrnode, ERR *perr )
                             1,
                             rgsz,
                             0,
-                            NULL,
+                            nullptr,
                             m_pinst );
                     fEventloggedLongWait = fTrue;
                 }
@@ -3731,7 +3731,7 @@ ERR LOG::ErrLGRIRedoNodeOperation( const LRNODE_ *plrnode, ERR *perr )
                         1,
                         rgsz,
                         0,
-                        NULL,
+                        nullptr,
                         m_pinst,
                         JET_EventLoggingLevelMedium );
             }
@@ -3974,7 +3974,7 @@ ERR LOG::ErrLGEvaluateDestructiveCorrectiveLogOptions(
                                 _countof( rgszT ),
                                 rgszT,
                                 0,
-                                NULL,
+                                nullptr,
                                 m_pinst );
 
             OSUHAPublishEvent(  HaDbFailureTagCorruption,
@@ -4014,7 +4014,7 @@ ERR LOG::ErrLGEvaluateDestructiveCorrectiveLogOptions(
                                 _countof( rgszT ),
                                 rgszT,
                                 0,
-                                NULL,
+                                nullptr,
                                 m_pinst );
             
             OSUHAPublishEvent(  HaDbFailureTagRecoveryRedoLogCorruption,
@@ -4049,7 +4049,7 @@ ERR LOG::ErrLGEvaluateDestructiveCorrectiveLogOptions(
                         sizeof( rgwszT ) / sizeof( rgwszT[ 0 ] ),
                         rgwszT,
                         0,
-                        NULL,
+                        nullptr,
                         m_pinst );
             
             OSUHAPublishEvent(  HaDbFailureTagCorruption,
@@ -4115,7 +4115,7 @@ ERR LOG::ErrLGEvaluateDestructiveCorrectiveLogOptions(
                             _countof( rgszT ),
                             rgszT,
                             0,
-                            NULL,
+                            nullptr,
                             m_pinst );
     }
 
@@ -4264,7 +4264,7 @@ NoMoreLogs:
             // 
             LONG    lgenHigh = 0;
             
-            CallR ( m_pLogStream->ErrLGGetGenerationRange( m_wszLogCurrent, NULL, &lgenHigh ) );
+            CallR ( m_pLogStream->ErrLGGetGenerationRange( m_wszLogCurrent, nullptr, &lgenHigh ) );
 
             // We can't do this in hard restore/recovery because of the different
             // path (m_wszTargetInstanceLogPath / m_wszLogCurrent) garbage ...
@@ -4283,7 +4283,7 @@ NoMoreLogs:
                                  _countof( rgszT ),
                                  rgszT,
                                  0,
-                                 NULL,
+                                 nullptr,
                                  m_pinst );
 
                 OSUHAPublishEvent( HaDbFailureTagCorruption,
@@ -4359,7 +4359,7 @@ AbruptEnd:
                             _countof( rgszT ),
                             rgszT,
                             0,
-                            NULL,
+                            nullptr,
                             m_pinst );
 
         OSUHAPublishEvent(  HaDbFailureTagCorruption,
@@ -4388,7 +4388,7 @@ AbruptEnd:
     m_pLogStream->SaveCurrentFileHdr();
 
     /* reset the log buffers */
-    CallR( m_pLogStream->ErrLGReadFileHdr( NULL, iorpLogRecRedo, NULL, fCheckLogID ) );
+    CallR( m_pLogStream->ErrLGReadFileHdr( nullptr, iorpLogRecRedo, nullptr, fCheckLogID ) );
 
     const ULONG ulMajorCurrLog = m_pLogStream->GetCurrentFileHdr()->lgfilehdr.le_ulMajor;
     const ULONG ulMinorCurrLog = m_pLogStream->GetCurrentFileHdr()->lgfilehdr.le_ulMinor;
@@ -4459,7 +4459,7 @@ AbruptEnd:
                             _countof( rgszT ),
                             rgszT,
                             0,
-                            NULL,
+                            nullptr,
                             m_pinst );
 
         OSUHAPublishEvent(  HaDbFailureTagCorruption,
@@ -4631,7 +4631,7 @@ CheckGenMaxReq:
                         sizeof( rgszT ) / sizeof( rgszT[ 0 ] ),
                         rgszT,
                         0,
-                        NULL,
+                        nullptr,
                         m_pinst );
                 
                     OSUHAPublishEvent(  HaDbFailureTagCorruption,
@@ -4708,7 +4708,7 @@ ERR LOG::ErrLGRISetupFMPFromAttach(
     BOOL        fSkippedAttach                  = fFalse;
     INT         irstmap                         = -1;
     IFMP        ifmp                            = ifmpNil;
-    RSTMAP*     psrtmap                         = NULL;
+    RSTMAP*     psrtmap                         = nullptr;
     ULONG       pctCachePriority                = g_pctCachePriorityUnassigned;
     JET_GRBIT   grbitShrinkDatabaseOptions      = NO_GRBIT;
 
@@ -4754,7 +4754,7 @@ ERR LOG::ErrLGRISetupFMPFromAttach(
         // szDbName = m_rgrstmap[irstmap].wszNewDatabaseName;
     }
 
-    psrtmap = ( *pirstmap >= 0 ) ? &m_rgrstmap[ *pirstmap ] : NULL;
+    psrtmap = ( *pirstmap >= 0 ) ? &m_rgrstmap[ *pirstmap ] : nullptr;
 
     //  Process database parameters.
     //  Only DB parameters that impact recovery behavior are relevant to be obtained here
@@ -4763,17 +4763,17 @@ ERR LOG::ErrLGRISetupFMPFromAttach(
     //
 
     Call( ErrDBParseDbParams(
-                psrtmap ? psrtmap->rgsetdbparam : NULL,
+                psrtmap ? psrtmap->rgsetdbparam : nullptr,
                 psrtmap ? psrtmap->csetdbparam : 0,
-                NULL,                           // JET_dbparamDbSizeMaxPages (not used here).
+                nullptr,                           // JET_dbparamDbSizeMaxPages (not used here).
                 &pctCachePriority,              // JET_dbparamCachePriority.
                 &grbitShrinkDatabaseOptions,    // JET_dbparamShrinkDatabaseOptions.
-                NULL,                           // JET_dbparamShrinkDatabaseTimeQuota (not used here).
-                NULL,                           // JET_dbparamShrinkDatabaseSizeLimit (not used here).
-                NULL,                           // JET_dbparamLeakReclaimerEnabled (not used here).
-                NULL,                           // JET_dbparamLeakReclaimerTimeQuota (not used here).
-                NULL,                           // JET_dbparamMaintainExtentPageCountCache (not used here).
-                NULL                            // JET_dbparamFlight_SelfAllocSpBufReservationEnabled (not used here).
+                nullptr,                           // JET_dbparamShrinkDatabaseTimeQuota (not used here).
+                nullptr,                           // JET_dbparamShrinkDatabaseSizeLimit (not used here).
+                nullptr,                           // JET_dbparamLeakReclaimerEnabled (not used here).
+                nullptr,                           // JET_dbparamLeakReclaimerTimeQuota (not used here).
+                nullptr,                           // JET_dbparamMaintainExtentPageCountCache (not used here).
+                nullptr                            // JET_dbparamFlight_SelfAllocSpBufReservationEnabled (not used here).
                 ) );
 
     //  Get one free fmp entry
@@ -4787,7 +4787,7 @@ ERR LOG::ErrLGRISetupFMPFromAttach(
                     pAttachInfo->Dbid(),
                     fTrue,
                     fTrue,
-                    NULL ) );
+                    nullptr ) );
 
     // we should not see double attach
     // during recovery
@@ -4891,10 +4891,10 @@ ERR ErrLGRISetupAtchchk(
 
     Assert( NULL != pfmp );
 
-    if ( pfmp->Patchchk() == NULL )
+    if ( pfmp->Patchchk() == nullptr )
     {
         patchchk = static_cast<ATCHCHK *>( PvOSMemoryHeapAlloc( sizeof( ATCHCHK ) ) );
-        if ( NULL == patchchk )
+        if ( nullptr == patchchk )
             return ErrERRCheck( JET_errOutOfMemory );
         pfmp->SetPatchchk( patchchk );
     }
@@ -4940,7 +4940,7 @@ LOCAL VOID LGRIReportUnableToReadDbHeader(
                 2,
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 pinst );
     }
 }
@@ -4954,7 +4954,7 @@ ERR ErrDBIValidateUserVersions(
     _In_    const IFMP                      ifmp,
     _In_    const DBFILEHDR_FIX * const     pdbfilehdr,
     _Out_   const FormatVersions ** const   ppfmtversDesired,
-    _Out_   BOOL * const                    pfDbNeedsUpdate = NULL );
+    _Out_   BOOL * const                    pfDbNeedsUpdate = nullptr );
 
 
 ERR LOG::ErrLGRICheckRedoCreateDb(
@@ -5400,14 +5400,14 @@ ERR LOG::ErrLGRICheckRedoAttachDb(
         LGIGetDateTime( &pdbfilehdr->logtimeConsistent );
         UtilMemCpy( &pdbfilehdr->le_lgposConsistent, &patchchk->lgposConsistent, sizeof( pdbfilehdr->le_lgposConsistent ) );        
 
-        CFlushMapForUnattachedDb* pfm = NULL;
+        CFlushMapForUnattachedDb* pfm = nullptr;
         Call( CFlushMapForUnattachedDb::ErrGetPersistedFlushMapOrNullObjectIfRuntime( wszDbName, pdbfilehdr, m_pinst, &pfm ) );
-        ERR errT = ErrUtilWriteUnattachedDatabaseHeaders( m_pinst, m_pinst->m_pfsapi, wszDbName, pdbfilehdr, NULL, pfm );
-        if ( pfm != NULL )
+        ERR errT = ErrUtilWriteUnattachedDatabaseHeaders( m_pinst, m_pinst->m_pfsapi, wszDbName, pdbfilehdr, nullptr, pfm );
+        if ( pfm != nullptr )
         {
             pfm->TermFlushMap();
             delete pfm;
-            pfm = NULL;
+            pfm = nullptr;
         }
 
         Call( errT );
@@ -5448,15 +5448,15 @@ PostDirtyAndPatchedFixup:
                 //  sure, so to be safe, we definitely set the lgposAttach here
                 Assert( 0 == CmpLgpos( patchchk->lgposAttach, pfmp->LgposAttach() ) );
                 pfmp->SetLgposAttach( patchchk->lgposAttach );
-                DBISetHeaderAfterAttach( pdbfilehdr, patchchk->lgposAttach, NULL, ifmp, fFalse /* no keep bkinfo */);
+                DBISetHeaderAfterAttach( pdbfilehdr, patchchk->lgposAttach, nullptr, ifmp, fFalse /* no keep bkinfo */);
                 Assert( pdbfilehdr->le_objidLast > 0 );
 
-                CFlushMapForUnattachedDb* pfm = NULL;
+                CFlushMapForUnattachedDb* pfm = nullptr;
                 Call( CFlushMapForUnattachedDb::ErrGetPersistedFlushMapOrNullObjectIfRuntime( wszDbName, pdbfilehdr, m_pinst, &pfm ) );
 
-                ERR errT = ErrUtilWriteUnattachedDatabaseHeaders( m_pinst, m_pinst->m_pfsapi, wszDbName, pdbfilehdr, NULL, pfm );
+                ERR errT = ErrUtilWriteUnattachedDatabaseHeaders( m_pinst, m_pinst->m_pfsapi, wszDbName, pdbfilehdr, nullptr, pfm );
 
-                if ( pfm != NULL )
+                if ( pfm != nullptr )
                 {
                     if ( pdbfilehdr->Dbstate() == JET_dbstateCleanShutdown )
                     {
@@ -5465,7 +5465,7 @@ PostDirtyAndPatchedFixup:
 
                     pfm->TermFlushMap();
                     delete pfm;
-                    pfm = NULL;
+                    pfm = nullptr;
                 }
 
                 Call( errT );
@@ -5707,7 +5707,7 @@ ERR LOG::ErrLGRICheckAttachedDb(
     Assert( NULL != pfmp->Patchchk() );
     Assert( NULL != predoattach );
 
-    AllocR( pdbfilehdr = (DBFILEHDR *)PvOSMemoryPageAlloc( g_cbPage, NULL ) );
+    AllocR( pdbfilehdr = (DBFILEHDR *)PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
 
     //  WARNING: must zero out memory, because we may end
     //  up defer-attaching the database, but still compare
@@ -5815,7 +5815,7 @@ VOID LOG::LGRIReportRequiredLogFilesMissing(
         sizeof( rgszT ) / sizeof( rgszT[0] ),
         rgszT,
         0,
-        NULL,
+        nullptr,
         m_pinst );
 
     OSUHAPublishEvent( HaDbFailureTagCorruption,
@@ -5929,7 +5929,7 @@ VOID LOG::LGRIReportDeferredAttach(
         sizeof( rgwszT ) / sizeof( rgwszT[0] ),
         rgwszT,
         0,
-        NULL,
+        nullptr,
         m_pinst );
 
     OSDiagTrackDeferredAttach( reason );
@@ -5991,7 +5991,7 @@ ERR LOG::ErrLGRICheckAttachNow(
                         1,
                         rgszT,
                         0,
-                        NULL,
+                        nullptr,
                         m_pinst );
 
                 Error( err );
@@ -6052,7 +6052,7 @@ ERR LOG::ErrLGRIRedoCreateDb(
     // instead of one (acceptable casualties, for not having to rev the minor log version).
     CallR( ErrDBCreateDatabase(
                 ppib,
-                NULL,
+                nullptr,
                 wszDbName,
                 &ifmpT,
                 dbid,
@@ -6103,7 +6103,7 @@ ERR LOG::ErrLGRIRedoAttachDb(
 {
     ERR             err             = JET_errSuccess;
     FMP             *pfmp           = &g_rgfmp[ifmp];
-    CFlushMapForUnattachedDb* pfm   = NULL;
+    CFlushMapForUnattachedDb* pfm   = nullptr;
     const WCHAR                 *wszDbName = pfmp->WszDatabaseName();
 
     Assert( NULL != pfmp );
@@ -6189,7 +6189,7 @@ ERR LOG::ErrLGRIRedoAttachDb(
 
         {
         PdbfilehdrReadWrite pdbfilehdr = pfmp->PdbfilehdrUpdateable();
-        DBISetHeaderAfterAttach( pdbfilehdr.get(), m_lgposRedo, NULL, ifmp, fKeepBackupInfo );
+        DBISetHeaderAfterAttach( pdbfilehdr.get(), m_lgposRedo, nullptr, ifmp, fKeepBackupInfo );
         }
         Assert( pfmp->LgposWaypoint().lGeneration <= pfmp->LgposAttach().lGeneration );
     }
@@ -6220,7 +6220,7 @@ ERR LOG::ErrLGRIRedoAttachDb(
 
     //  check DB versions' compatibility
     //
-    Call( ErrDBIValidateUserVersions( m_pinst, wszDbName, ifmp, pfmp->Pdbfilehdr().get(), NULL ) );
+    Call( ErrDBIValidateUserVersions( m_pinst, wszDbName, ifmp, pfmp->Pdbfilehdr().get(), nullptr ) );
 
     //  set up other miscellaneous header fields
     //
@@ -6375,7 +6375,7 @@ ERR LOG::ErrLGRIRedoAttachDb(
 
 HandleError:
     delete pfm;
-    pfm = NULL;
+    pfm = nullptr;
 
     if( err < JET_errSuccess )
     {
@@ -7306,7 +7306,7 @@ ERR LOG::ErrLGRIRedoOperation( LR *plr )
 
         //  remove FCBs/FUCBs created on pgnoFDP earlier. This call is only needed if active is running older
         //  version without lrtypFreeFDP
-        if ( NULL != m_pctablehash )
+        if ( nullptr != m_pctablehash )
         {
             CallR( ErrLGRIPurgeFcbs( ifmp, plrcreatemefdp->le_pgno, fFDPTypeUnknown, m_pctablehash ) );
         }
@@ -7317,7 +7317,7 @@ ERR LOG::ErrLGRIRedoOperation( LR *plr )
                 dbid,
                 plrcreatemefdp->le_dbtime,
                 plrcreatemefdp->le_objidFDP,
-                NULL,   //  can not be in macro.
+                nullptr,   //  can not be in macro.
                 &ppib,
                 &fSkip ) );
         if ( fSkip )
@@ -7358,7 +7358,7 @@ ERR LOG::ErrLGRIRedoOperation( LR *plr )
 
         //  remove FCBs/FUCBs created on pgnoFDP earlier. This call is only needed if active is running older
         //  version without lrtypFreeFDP
-        if ( NULL != m_pctablehash )
+        if ( nullptr != m_pctablehash )
         {
             CallR( ErrLGRIPurgeFcbs( ifmp, pgnoFDP, fFDPTypeUnknown, m_pctablehash ) );
         }
@@ -7369,7 +7369,7 @@ ERR LOG::ErrLGRIRedoOperation( LR *plr )
                     dbid,
                     plrcreatesefdp->le_dbtime,
                     plrcreatesefdp->le_objidFDP,
-                    NULL,
+                    nullptr,
                     &ppib,
                     &fSkip ) );
         if ( fSkip )
@@ -7451,7 +7451,7 @@ ERR LOG::ErrLGRIRedoOperation( LR *plr )
 
         // Free up all FCBs/FUCBs created against this pgnoFDP as the space can get reused and even though
         // recovery will not access it, we also do not want read from passive transactions to access it.
-        if ( NULL != m_pctablehash )
+        if ( nullptr != m_pctablehash )
         {
             CallR( ErrLGRIPurgeFcbs( ifmp, pgnoFDP, fFDPType, m_pctablehash ) );
         }
@@ -7471,7 +7471,7 @@ ERR LOG::ErrLGRIRedoOperation( LR *plr )
                     1,
                     rgsz,
                     0,
-                    NULL,
+                    nullptr,
                     m_pinst );
         }
         else if ( tickEnd - tickStart >= cmsecMaxReplayDelayDueToReadTrx / 10 )
@@ -7488,7 +7488,7 @@ ERR LOG::ErrLGRIRedoOperation( LR *plr )
                     1,
                     rgsz,
                     0,
-                    NULL,
+                    nullptr,
                     m_pinst,
                     JET_EventLoggingLevelMedium );
         }
@@ -7918,9 +7918,9 @@ ERR ErrLGIDecompressPreimage(
 ERR LOG::ErrLGRIRedoInitializeSplit( PIB * const ppib, const LRSPLIT_ * const plrsplit, SPLITPATH * const psplitPath )
 {
     ERR             err;
-    SPLIT *         psplit          = NULL;
+    SPLIT *         psplit          = nullptr;
     BOOL            fRedoNewPage    = fFalse;
-    BYTE *          pbDataDecompressed = NULL;
+    BYTE *          pbDataDecompressed = nullptr;
 
     const DBID      dbid            = plrsplit->dbid;
     const PGNO      pgnoSplit       = plrsplit->le_pgno;
@@ -8140,7 +8140,7 @@ HandleError:
     AssertSz( errSkipLogRedoOperation != err, "%s() unexpectedly got errSkipLogRedoOperation from ErrLGIAccessPage(%d=%#x or %d=%#x or %d=%#x).\n",
               __FUNCTION__, pgnoSplit, pgnoSplit, pgnoNew, pgnoNew, pgnoRight, pgnoRight );
 
-    if ( ( err < 0 ) && ( NULL != psplit ) )
+    if ( ( err < 0 ) && ( nullptr != psplit ) )
     {
         delete psplit;
     }
@@ -8193,7 +8193,7 @@ ERR LOG::ErrLGRIRedoSplitPath( PIB *ppib, const LRSPLIT_ *plrsplit, SPLITPATH **
     }
 
     psplitPath->dbtimeBefore = plrsplit->le_dbtimeBefore;
-    if ( psplitPath->psplitPathParent != NULL )
+    if ( psplitPath->psplitPathParent != nullptr )
     {
         Assert( psplitPath == psplitPath->psplitPathParent->psplitPathChild );
         psplitPath->psplitPathParent->dbtimeBefore = plrsplit->le_dbtimeParentBefore;
@@ -8247,7 +8247,7 @@ ERR LOG::ErrLGIRedoMergePath( PIB               *ppib,
     pmergePath->fEmptyPage  = ( plrmerge->FEmptyPage() ? fTrue : fFalse );
 
     pmergePath->dbtimeBefore = plrmerge->le_dbtimeBefore;
-    if ( pmergePath->pmergePathParent != NULL )
+    if ( pmergePath->pmergePathParent != nullptr )
     {
         Assert( pmergePath == pmergePath->pmergePathParent->pmergePathChild );
         pmergePath->pmergePathParent->dbtimeBefore = plrmerge->le_dbtimeParentBefore;
@@ -8269,7 +8269,7 @@ ERR LOG::ErrLGRIRedoInitializeMerge( PIB            *ppib,
                                      MERGEPATH      *pmergePath )
 {
     ERR             err;
-    BYTE *          pbDataDecompressed = NULL;
+    BYTE *          pbDataDecompressed = nullptr;
 
     Assert( NULL == pmergePath->pmergePathChild );
     CallR( ErrBTINewMerge( pmergePath ) );
@@ -8450,7 +8450,7 @@ ERR LOG::ErrLGRIRedoInitializeMerge( PIB            *ppib,
 
     Assert( mergetype == pmerge->mergetype );
 
-    if ( ( pcsrDest == NULL )
+    if ( ( pcsrDest == nullptr )
          || ( pagetrimNormal == pmergePath->csr.PagetrimState() && pagetrimNormal == pcsrDest->PagetrimState() ) )
     {
         // Only check this condition if neither of the pages was Trimmed out.
@@ -8554,7 +8554,7 @@ ERR LOG::ErrLGRIRedoInitializeMerge( PIB            *ppib,
                             1,
                             rgsz,
                             0,
-                            NULL,
+                            nullptr,
                             m_pinst );
                     fEventloggedLongWait = fTrue;
                 }
@@ -8576,7 +8576,7 @@ ERR LOG::ErrLGRIRedoInitializeMerge( PIB            *ppib,
                         1,
                         rgsz,
                         0,
-                        NULL,
+                        nullptr,
                         m_pinst,
                         JET_EventLoggingLevelMedium );
             }
@@ -8803,14 +8803,14 @@ ERR LOG::ErrLGIRedoSplitStructures(
     //  initialize rglineinfo for every level of split
     //
     for ( psplitPath = *ppsplitPathLeaf;
-          psplitPath != NULL;
+          psplitPath != nullptr;
           psplitPath = psplitPath->psplitPathParent )
     {
         Assert( latchRIW == psplitPath->csr.Latch() || pagetrimTrimmed == psplitPath->csr.PagetrimState() );
 
         err = JET_errSuccess;
 
-        if ( psplitPath->psplit != NULL
+        if ( psplitPath->psplit != nullptr
             && ( FLGNeedRedoCheckDbtimeBefore( ifmp, psplitPath->csr, dbtime, psplitPath->dbtimeBefore, &err )
                 || FLGNeedRedoPage( psplitPath->psplit->csrNew, dbtime ) ) )
         {
@@ -8865,12 +8865,12 @@ LOCAL VOID LGIRedoMergeUpdateDbtime( MERGEPATH *pmergePathTip, DBTIME dbtime )
 {
     MERGEPATH   *pmergePath = pmergePathTip;
 
-    for ( ; pmergePath != NULL; pmergePath = pmergePath->pmergePathParent )
+    for ( ; pmergePath != nullptr; pmergePath = pmergePath->pmergePathParent )
     {
         LGRIRedoDirtyAndSetDbtime( &pmergePath->csr, dbtime );
 
         MERGE   *pmerge = pmergePath->pmerge;
-        if ( pmerge != NULL )
+        if ( pmerge != nullptr )
         {
             LGRIRedoDirtyAndSetDbtime( &pmerge->csrLeft, dbtime );
             LGRIRedoDirtyAndSetDbtime( &pmerge->csrRight, dbtime );
@@ -8888,12 +8888,12 @@ LOCAL VOID LGIRedoSplitUpdateDbtime( SPLITPATH *psplitPathLeaf, DBTIME dbtime )
 {
     SPLITPATH   *psplitPath = psplitPathLeaf;
 
-    for ( ; psplitPath != NULL; psplitPath = psplitPath->psplitPathParent )
+    for ( ; psplitPath != nullptr; psplitPath = psplitPath->psplitPathParent )
     {
         LGRIRedoDirtyAndSetDbtime( &psplitPath->csr, dbtime );
 
         SPLIT   *psplit = psplitPath->psplit;
-        if ( psplit != NULL )
+        if ( psplit != nullptr )
         {
             LGRIRedoDirtyAndSetDbtime( &psplit->csrNew, dbtime );
             LGRIRedoDirtyAndSetDbtime( &psplit->csrRight, dbtime );
@@ -9014,16 +9014,16 @@ LOCAL ERR ErrLGIRedoMergeUpgradeLatches( const IFMP ifmp, MERGEPATH *pmergePathL
     //  since we need to latch top-down
     //
     for ( pmergePath = pmergePathLeaf;
-          pmergePath->pmergePathParent != NULL;
+          pmergePath->pmergePathParent != nullptr;
           pmergePath = pmergePath->pmergePathParent )
     {
     }
 
     Assert( NULL == pmergePath->pmergePathParent );
-    for ( ; pmergePath != NULL; pmergePath = pmergePath->pmergePathChild )
+    for ( ; pmergePath != nullptr; pmergePath = pmergePath->pmergePathChild )
     {
         MERGE * const pmerge = pmergePath->pmerge;
-        if ( pmerge != NULL )
+        if ( pmerge != nullptr )
         {
             Assert( pmergePath == pmergePathLeaf );
 
@@ -9058,7 +9058,7 @@ LOCAL ERR ErrLGIRedoMergeUpgradeLatches( const IFMP ifmp, MERGEPATH *pmergePathL
         }
         CallS( err );
 
-        if ( pmerge != NULL )
+        if ( pmerge != nullptr )
         {
             if ( pagetrimNormal == pmerge->csrRight.PagetrimState() )
             {
@@ -9150,7 +9150,7 @@ ERR LOG::ErrLGRIIRedoPageMove( _In_ PIB * const ppib, const LRPAGEMOVE * const p
 
     // recreate the merge structure
     
-    MERGEPATH * pmergePath = NULL;
+    MERGEPATH * pmergePath = nullptr;
     
     Call( ErrBTINewMergePath( &pmergePath ) );
     Call( ErrBTINewMergePath( &(pmergePath->pmergePathParent) ) );
@@ -9540,7 +9540,7 @@ ERR LOG::ErrLGRIRedoScanCheck( const LRSCANCHECK2 * const plrscancheck, BOOL* co
 
     Expected( m_fRecoveringMode == fRecoveringRedo );
 
-    if ( fDbScan && ( pfmp->PdbmFollower() == NULL ) )
+    if ( fDbScan && ( pfmp->PdbmFollower() == nullptr ) )
     {
         CallR( pfmp->ErrCreateDBMScanFollower() );
         Assert( pfmp->PdbmFollower() );
@@ -9558,8 +9558,8 @@ ERR LOG::ErrLGRIRedoScanCheck( const LRSCANCHECK2 * const plrscancheck, BOOL* co
 
     if ( fDbScan && fPreviouslyCached )
     {
-        void * pvPages = NULL;
-        if ( pvPages = (BYTE *)PvOSMemoryPageAlloc( g_cbPage * 1, NULL ) )
+        void * pvPages = nullptr;
+        if ( pvPages = (BYTE *)PvOSMemoryPageAlloc( g_cbPage * 1, nullptr ) )
         {
             (void)pfmp->PdbmFollower()->ErrDBMScanReadThroughCache( ifmp, plrscancheck->Pgno(), pvPages, 1 );
             OSMemoryPageFree( pvPages );
@@ -9570,7 +9570,7 @@ ERR LOG::ErrLGRIRedoScanCheck( const LRSCANCHECK2 * const plrscancheck, BOOL* co
         //  on disk image isn't corrupt from a -1018, -1021, etc perspective.
     }
 
-    BFLatch bfl = { 0 };
+    BFLatch bfl = { nullptr };
     BOOL fLockedNLoaded = fFalse;   // have latch, AND loaded page ...
 
     C_ASSERT( pgnoSysMax < pgnoScanLastSentinel );
@@ -9835,7 +9835,7 @@ ERR LOG::ErrLGRIRedoScanCheck( const LRSCANCHECK2 * const plrscancheck, BOOL* co
                         cwsz,
                         rgwsz,
                         0,
-                        NULL,
+                        nullptr,
                         g_rgfmp[ifmp].Pinst() );
                 }
                 else
@@ -9924,7 +9924,7 @@ ERR LOG::ErrLGRIRedoScanCheck( const LRSCANCHECK2 * const plrscancheck, BOOL* co
                         _countof( rgwsz ),
                         rgwsz,
                         0,
-                        NULL,
+                        nullptr,
                         g_rgfmp[ifmp].Pinst() );
 
                     OSUHAPublishEvent( HaDbFailureTagReplicaDivergenceDataMismatch,
@@ -9971,7 +9971,7 @@ ERR LOG::ErrLGRIRedoScanCheck( const LRSCANCHECK2 * const plrscancheck, BOOL* co
                     _countof( rgwsz ),
                     rgwsz,
                     0,
-                    NULL,
+                    nullptr,
                     g_rgfmp[ ifmp ].Pinst() );
 
                 OSUHAPublishEvent(
@@ -10045,7 +10045,7 @@ ERR LOG::ErrLGRIRedoScanCheck( const LRSCANCHECK2 * const plrscancheck, BOOL* co
                             _countof( rgwsz ),
                             rgwsz,
                             0,
-                            NULL,
+                            nullptr,
                             pfmp->Pinst() );
 
                         OSTraceResumeGC();
@@ -10148,7 +10148,7 @@ ERR LOG::ErrLGRIRedoMerge( PIB *ppib, DBTIME dbtime )
     Assert( dbtime  == plrmerge->le_dbtime );
 
     const OBJID     objidFDP    = plrmerge->le_objidFDP;
-    MERGEPATH       *pmergePathLeaf = NULL;
+    MERGEPATH       *pmergePathLeaf = nullptr;
 
     Assert( ppib->FMacroGoing( dbtime ) );
     BOOL fSkip;
@@ -10196,7 +10196,7 @@ HandleError:
 
     //  release latches
     //
-    if ( pmergePathLeaf != NULL )
+    if ( pmergePathLeaf != nullptr )
     {
         BTIReleaseMergePaths( pmergePathLeaf );
     }
@@ -10215,13 +10215,13 @@ LOCAL ERR ErrLGIRedoSplitUpgradeLatches( const IFMP ifmp, SPLITPATH *psplitPathL
     //  since we need to latch top-down
     //
     for ( psplitPath = psplitPathLeaf;
-          psplitPath->psplitPathParent != NULL;
+          psplitPath->psplitPathParent != nullptr;
           psplitPath = psplitPath->psplitPathParent )
     {
     }
 
     Assert( NULL == psplitPath->psplitPathParent );
-    for ( ; psplitPath != NULL; psplitPath = psplitPath->psplitPathChild )
+    for ( ; psplitPath != nullptr; psplitPath = psplitPath->psplitPathChild )
     {
         Assert( latchRIW == psplitPath->csr.Latch() || pagetrimTrimmed == psplitPath->csr.PagetrimState() );
 
@@ -10233,7 +10233,7 @@ LOCAL ERR ErrLGIRedoSplitUpgradeLatches( const IFMP ifmp, SPLITPATH *psplitPathL
         CallS( err );
 
         SPLIT   *psplit = psplitPath->psplit;
-        if ( psplit != NULL )
+        if ( psplit != nullptr )
         {
             //  new page should already be write-latched if redo is needed
             //
@@ -10295,7 +10295,7 @@ ERR LOG::ErrLGRIRedoSplit( PIB *ppib, DBTIME dbtime )
             || ( level < ppib->Level() && plrsplit->FConcCI() ) );
 
     const OBJID     objidFDP    = plrsplit->le_objidFDP;
-    SPLITPATH       *psplitPathLeaf = NULL;
+    SPLITPATH       *psplitPathLeaf = nullptr;
 
     BOOL fSkip;
     CallR( ErrLGRICheckRedoCondition(
@@ -10320,7 +10320,7 @@ ERR LOG::ErrLGRIRedoSplit( PIB *ppib, DBTIME dbtime )
     RCEID           rceidOper2          = rceidNull;
     BOOL            fOperNeedsRedo      = fFalse;
     SPLIT           *psplit;
-    BYTE            *rgb                = NULL;
+    BYTE            *rgb                = nullptr;
 
     Call( ErrLGIRedoSplitStructures( ppib,
                                      dbtime,
@@ -10404,12 +10404,12 @@ ERR LOG::ErrLGRIRedoSplit( PIB *ppib, DBTIME dbtime )
 HandleError:
     //  release latches
     //
-    if ( psplitPathLeaf != NULL )
+    if ( psplitPathLeaf != nullptr )
     {
         BTIReleaseSplitPaths( PinstFromPpib( ppib ), psplitPathLeaf );
     }
 
-    if ( NULL != rgb )
+    if ( nullptr != rgb )
     {
         BFFree( rgb );
     }
@@ -10421,7 +10421,7 @@ HandleError:
 ERR LOG::ErrLGIRedoRootMoveStructures( PIB* const ppib, const DBTIME dbtime, ROOTMOVE* const prm )
 {
     ERR err = JET_errSuccess;
-    const LR* plr = NULL;
+    const LR* plr = nullptr;
     IFMP ifmp = ifmpNil;
 
     Assert( dbtime != dbtimeInvalid );
@@ -10461,10 +10461,10 @@ ERR LOG::ErrLGIRedoRootMoveStructures( PIB* const ppib, const DBTIME dbtime, ROO
                 Assert( plrpm->DbtimeSourceBefore() != dbtimeNil );
                 Assert( prm->dbtimeAfter == dbtime );
 
-                PGNO* ppgno = NULL;
-                PGNO* ppgnoNew = NULL;
-                DBTIME* pdbtimeBefore = NULL;
-                DATA* pdataBefore = NULL;
+                PGNO* ppgno = nullptr;
+                PGNO* ppgnoNew = nullptr;
+                DBTIME* pdbtimeBefore = nullptr;
+                DATA* pdataBefore = nullptr;
                 CSR* pcsr = pcsrNil;
                 CSR* pcsrNew = pcsrNil;
 
@@ -10538,7 +10538,7 @@ ERR LOG::ErrLGIRedoRootMoveStructures( PIB* const ppib, const DBTIME dbtime, ROO
                                         dbtime ) );
 
                     // Get source page image.
-                    VOID* pv = NULL;
+                    VOID* pv = nullptr;
                     BFAlloc( bfasTemporary, &pv, g_cbPage );
                     pdataBefore->SetPv( pv );
                     pdataBefore->SetCb( g_cbPage );
@@ -10611,11 +10611,11 @@ ERR LOG::ErrLGIRedoRootMoveStructures( PIB* const ppib, const DBTIME dbtime, ROO
                 Assert( ( objid == objidFDPMSO ) || ( objid == objidFDPMSOShadow ) );
                 const int iCat = ( objid == objidFDPMSO ) ? 0 : 1;
 
-                PGNO* ppgno = NULL;
-                DBTIME* pdbtimeBefore = NULL;
-                DATA* pdataNew = NULL;
+                PGNO* ppgno = nullptr;
+                DBTIME* pdbtimeBefore = nullptr;
+                DATA* pdataNew = nullptr;
                 CSR* pcsr = pcsrNil;
-                INT* piline = NULL;
+                INT* piline = nullptr;
                 BOOL fCatClustIdx = fFalse;
 
                 // Select whether this is the primary object or an index.
@@ -10669,7 +10669,7 @@ ERR LOG::ErrLGIRedoRootMoveStructures( PIB* const ppib, const DBTIME dbtime, ROO
                        ( ( ( *ppgno != prm->pgnoCatObj[iCat] ) && pcsr->FLatched() ) ||
                          ( ( *ppgno == prm->pgnoCatObj[iCat] ) && prm->csrCatObj[iCat].FLatched() ) ) ) ) ) )
                 {
-                    VOID* pv = NULL;
+                    VOID* pv = nullptr;
                     const USHORT cbNewData = plrr->CbNewData();
                     BFAlloc( bfasTemporary, &pv, cbNewData );
                     pdataNew->SetPv( pv );
@@ -10758,7 +10758,7 @@ ERR ErrLGIRedoRootMoveUpgradeLatches( const IFMP ifmp, ROOTMOVE* const prm )
 
     // Change children objects to point to new root.
     for ( ROOTMOVECHILD* prmc = prm->prootMoveChildren;
-            prmc != NULL;
+            prmc != nullptr;
             prmc = prmc->prootMoveChildNext )
     {
         if ( FLGNeedRedoCheckDbtimeBefore( ifmp, prmc->csrChildFDP, dbtimeAfter, prmc->dbtimeBeforeChildFDP, &err ) )
@@ -10862,7 +10862,7 @@ VOID LOG::LGIRedoRootMoveUpdateDbtime( ROOTMOVE* const prm )
 
     // Change children objects to point to new root.
     for ( ROOTMOVECHILD* prmc = prm->prootMoveChildren;
-            prmc != NULL;
+            prmc != nullptr;
             prmc = prmc->prootMoveChildNext )
     {
         if ( FBTIUpdatablePage( prmc->csrChildFDP ) )
@@ -10981,7 +10981,7 @@ ERR LOG::ErrLGRIRedoMacroOperation( PIB *ppib, DBTIME dbtime )
 {
     ERR     err;
     LR      *plr    = (LR *) ppib->PvLogrec( dbtime );
-    if ( plr == NULL )
+    if ( plr == nullptr )
     {
         FireWall( "NullLrOnRedoMacro" );
         return ErrERRCheck( JET_errLogFileCorrupt );
@@ -11835,7 +11835,7 @@ ERR LOG::ErrLGIUpdatePatchedDbstate(
 
                 //  Update the checkpoint (and the gen min on the attached database(s)).
 
-                err = ErrLGIUpdateCheckpointFile( fTrue, NULL );
+                err = ErrLGIUpdateCheckpointFile( fTrue, nullptr );
 
                 if ( ( err >= JET_errSuccess ) &&
                      ( pfmpT->Patchchk()->lgposAttach.lGeneration <= pfmpT->Pdbfilehdr()->le_lGenMinRequired ) )
@@ -11843,7 +11843,7 @@ ERR LOG::ErrLGIUpdatePatchedDbstate(
                     //  Yeah, we've consumed the entire required range, now we can move this
                     //  DB to a regular dirty state.
 
-                    pfmpT->PdbfilehdrUpdateable()->SetDbstate( JET_dbstateDirtyShutdown, lGenerationInvalid, lGenerationInvalid, NULL, fTrue );
+                    pfmpT->PdbfilehdrUpdateable()->SetDbstate( JET_dbstateDirtyShutdown, lGenerationInvalid, lGenerationInvalid, nullptr, fTrue );
                 }
             }
         }
@@ -11940,7 +11940,7 @@ ERR LOG::ErrLGRIRedoOperations(
 
     // determine the log generation when all databases are expected to be attached when redo starts
     LONG lgenHighAtStartOfRedo;
-    Call( m_pLogStream->ErrLGGetGenerationRange( m_wszLogCurrent, NULL, &lgenHighAtStartOfRedo ) );
+    Call( m_pLogStream->ErrLGGetGenerationRange( m_wszLogCurrent, nullptr, &lgenHighAtStartOfRedo ) );
     if ( m_pLogStream->FCurrentLogExists() )
     {
         lgenHighAtStartOfRedo++;
@@ -12121,7 +12121,7 @@ ERR LOG::ErrLGRIRedoOperations(
                         _countof( rgwsz ),
                         rgwsz,
                         0,
-                        NULL,
+                        nullptr,
                         m_pinst );
             }
             isdlCurrLog.TermSequence();
@@ -12353,9 +12353,9 @@ ProcessNextRec:
         if ( m_fPreread && !m_fDumpingLogs )
         {
             //  Consume watermarks.
-            LGPOSQueueNode* plgposQueueNode = NULL;
+            LGPOSQueueNode* plgposQueueNode = nullptr;
             OnDebug( LGPOS lgposPrev = lgposMax );
-            while ( ( ( plgposQueueNode = m_pPrereadWatermarks->Head() ) != NULL ) &&
+            while ( ( ( plgposQueueNode = m_pPrereadWatermarks->Head() ) != nullptr ) &&
                 ( CmpLgpos( plgposQueueNode->m_lgpos, m_lgposRedo ) < 0 ) )
             {
                 ExpectedSz( !CmpLgpos( lgposPrev, lgposMax ) || !CmpLgpos( lgposPrev, plgposQueueNode->m_lgpos ), "Multiple preread LGPOS's must be the same (LR types that touch multiple pages)." );
@@ -12445,7 +12445,7 @@ ProcessNextRec:
                         0, // pass 0 to preserve the existing value
                         m_lgposRedo.lGeneration,
                         tmCreate,
-                        NULL );
+                        nullptr );
 
             m_critCheckpoint.Leave();
             Call( err );
@@ -12781,7 +12781,7 @@ ProcessNextRec:
                 INT irstmap = -1;
                 {
                 // build an ATTACHINFO based on this log record
-                ATTACHINFO *    pAttachInfo     = NULL;
+                ATTACHINFO *    pAttachInfo     = nullptr;
                 const ULONG     cbAttachInfo    = sizeof(ATTACHINFO) + plrcreatedb->CbPath();
 
                 Alloc( pAttachInfo = static_cast<ATTACHINFO *>( PvOSMemoryHeapAlloc( cbAttachInfo ) ) );
@@ -12827,10 +12827,10 @@ ProcessNextRec:
                         FMP* pfmpDuplicate = &g_rgfmp[ ifmpDuplicate ];
                         if ( pfmpDuplicate->Dbid() == dbid && irstmap >= 0 && ( m_rgrstmap[irstmap].grbit & JET_bitRestoreMapOverwriteOnCreate ) )
                         {
-                            err = ErrIsamDetachDatabase( (JET_SESID)ppib, NULL, pfmpDuplicate->WszDatabaseName() );
+                            err = ErrIsamDetachDatabase( (JET_SESID)ppib, nullptr, pfmpDuplicate->WszDatabaseName() );
                             if ( err >= JET_errSuccess )
                             {
-                                err = ErrLGRISetupFMPFromAttach( ppib, pAttachInfo, plgstat, NULL, &irstmap );
+                                err = ErrLGRISetupFMPFromAttach( ppib, pAttachInfo, plgstat, nullptr, &irstmap );
                             }
                         }
                     }
@@ -12863,7 +12863,7 @@ ProcessNextRec:
                     Assert( !pfmp->FReadOnlyAttach() );
                     Call( ErrLGRICheckAttachedDb(
                                 ifmp,
-                                NULL,
+                                nullptr,
                                 &redoattach,
                                 redoattachmodeCreateDbLR ) );
                     
@@ -12876,7 +12876,7 @@ ProcessNextRec:
                 {
                     case redoattachCreate:
                     {
-                        const JET_SETDBPARAM* const rgsetdbparam = ( irstmap >= 0 ) ? m_rgrstmap[irstmap].rgsetdbparam : NULL;
+                        const JET_SETDBPARAM* const rgsetdbparam = ( irstmap >= 0 ) ? m_rgrstmap[irstmap].rgsetdbparam : nullptr;
                         const ULONG csetdbparam = ( irstmap >= 0 ) ? m_rgrstmap[irstmap].csetdbparam : 0;
 
                         //  we've already pre-determined (in ErrLGRICheckRedoCreateDb())
@@ -13000,7 +13000,7 @@ ProcessNextRec:
                 // set-up the FMP
                 {
                 // build an ATTACHINFO based on this log record
-                ATTACHINFO *    pAttachInfo     = NULL;
+                ATTACHINFO *    pAttachInfo     = nullptr;
                 const ULONG     cbAttachInfo    = sizeof(ATTACHINFO) + plrattachdb->CbPath();
 
                 Alloc( pAttachInfo = static_cast<ATTACHINFO *>( PvOSMemoryHeapAlloc( cbAttachInfo ) ) );
@@ -13124,11 +13124,11 @@ ProcessNextRec:
                      */
                     PIB     *ppib = ppibNil;
 
-                    for ( ppib = m_pinst->m_ppibGlobal; NULL != ppib; ppib = ppib->ppibNext )
+                    for ( ppib = m_pinst->m_ppibGlobal; nullptr != ppib; ppib = ppib->ppibNext )
                     {
                         while( FPIBUserOpenedDatabase( ppib, dbid ) )
                         {
-                            if ( NULL != m_pctablehash )
+                            if ( nullptr != m_pctablehash )
                             {
                                 //  close all fucb on this database
                                 //
@@ -13176,10 +13176,10 @@ ProcessNextRec:
                         pfmp->FreeLogRedoMaps();
                     }
 
-                    Call( ErrIsamDetachDatabase( (JET_SESID) ppib, NULL, pfmp->WszDatabaseName(), plrdetachdb->Flags() & ~fLRDetachDBUnicodeNames ) );
+                    Call( ErrIsamDetachDatabase( (JET_SESID) ppib, nullptr, pfmp->WszDatabaseName(), plrdetachdb->Flags() & ~fLRDetachDBUnicodeNames ) );
 
                     // DO NOT TOUCH THE pfmp. IT IS NOT YOURS ANYMORE
-                    pfmp = NULL;
+                    pfmp = nullptr;
                 }
                 else
                 {
@@ -13189,18 +13189,18 @@ ProcessNextRec:
                     FMP::EnterFMPPoolAsWriter();
                     
                     OSMemoryHeapFree( pfmp->WszDatabaseName() );
-                    pfmp->SetWszDatabaseName( NULL );
+                    pfmp->SetWszDatabaseName( nullptr );
                     
                     pfmp->ResetFlags();
                     pfmp->Pinst()->m_mpdbidifmp[ pfmp->Dbid() ] = g_ifmpMax;
 
                     OSMemoryHeapFree( pfmp->Patchchk() );
-                    pfmp->SetPatchchk( NULL );
+                    pfmp->SetPatchchk( nullptr );
                     
                     FMP::LeaveFMPPoolAsWriter();
 
                     // DO NOT TOUCH THE pfmp. IT IS NOT YOURS ANYMORE
-                    pfmp = NULL;
+                    pfmp = nullptr;
                 }
 
                 LGRITraceRedo(plr);
@@ -13419,7 +13419,7 @@ HandleError:
                      ( m_lgposRedo.lGeneration >= pdbfilehdr->le_lGenMaxRequired ) )
                 {
                     Assert( pfmp->FAllowHeaderUpdate() );
-                    pdbfilehdr->SetDbstate( JET_dbstateDirtyShutdown, lGenerationInvalid, lGenerationInvalid, NULL, fTrue );
+                    pdbfilehdr->SetDbstate( JET_dbstateDirtyShutdown, lGenerationInvalid, lGenerationInvalid, nullptr, fTrue );
                 }
             }
         }
@@ -13491,7 +13491,7 @@ ERR LOG::ErrLGIVerifyRedoMapForIfmp( const IFMP ifmp )
     const CLogRedoMap* const pLogRedoMapDbtimeRevert = g_rgfmp[ ifmp ].PLogRedoMapDbtimeRevert();
     CLogRedoMap* const pLogRedoMapDbtimeRevertIgnore = g_rgfmp[ ifmp ].PLogRedoMapDbtimeRevertIgnore();
 
-    if ( NULL != pLogRedoMapZeroed )
+    if ( nullptr != pLogRedoMapZeroed )
     {
         //  oh, oh. An operation was not reconciled. We must fail
         //  recovery accordingly.
@@ -13531,7 +13531,7 @@ ERR LOG::ErrLGIVerifyRedoMapForIfmp( const IFMP ifmp )
         }
     }
 
-    if ( NULL != pLogRedoMapBadDbTime )
+    if ( nullptr != pLogRedoMapBadDbTime )
     {
         //  oh, oh. An operation was not reconciled. We must fail
         //  recovery accordingly.
@@ -13559,7 +13559,7 @@ ERR LOG::ErrLGIVerifyRedoMapForIfmp( const IFMP ifmp )
         }
     }
 
-    if ( NULL != pLogRedoMapDbtimeRevert )
+    if ( nullptr != pLogRedoMapDbtimeRevert )
     {
         //  oh, oh. An operation was not reconciled. We must fail
         //  recovery accordingly.
@@ -13586,7 +13586,7 @@ ERR LOG::ErrLGIVerifyRedoMapForIfmp( const IFMP ifmp )
     }
 
     // This redo map is to just ignore redo operations. Clear the redomap at the end of verify.
-    if ( NULL != pLogRedoMapDbtimeRevertIgnore )
+    if ( nullptr != pLogRedoMapDbtimeRevertIgnore )
     {
         pLogRedoMapDbtimeRevertIgnore->TermLogRedoMap();
     }
@@ -13737,7 +13737,7 @@ VOID LOG::LGIReportMissingHighLog( const LONG lGenCurrent, const IFMP ifmp ) con
                 _countof( rgszT ),
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
 
     OSUHAPublishEvent( HaDbFailureTagCorruption,
@@ -13781,7 +13781,7 @@ VOID LOG::LGIReportMissingCommitedLogsButHasLossyRecoveryOption( const LONG lGen
                 _countof( rgwszT ),
                 rgwszT,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
 }
 
@@ -13824,7 +13824,7 @@ VOID LOG::LGIReportCommittedLogsLostButConsistent( const LONG lGenCurrent, const
                 _countof( rgszT ),
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
 }
 
@@ -13968,7 +13968,7 @@ ERR LOG::ErrLGCheckGenMaxRequired()
 
             FMP *pfmp = &g_rgfmp[ ifmp ];
 
-            if ( NULL == pfmp->Pdbfilehdr() )
+            if ( nullptr == pfmp->Pdbfilehdr() )
                 continue;
 
             const LONG lGenRecovering = pfmp->Pdbfilehdr()->le_lGenRecovering;
@@ -14346,7 +14346,7 @@ ERR LOG::ErrLGRRedo( BOOL fKeepDbAttached, CHECKPOINT *pcheckpoint, LGSTATUSINFO
 
         FMP *pfmp = &g_rgfmp[ ifmp ];
 
-        if ( NULL != pfmp->Pdbfilehdr() &&
+        if ( nullptr != pfmp->Pdbfilehdr() &&
              !pfmp->FContainsDataFromFutureLogs() )
         {
             //  fire callback for the dbs to be detached
@@ -14365,7 +14365,7 @@ ERR LOG::ErrLGRRedo( BOOL fKeepDbAttached, CHECKPOINT *pcheckpoint, LGSTATUSINFO
 
     //  we should be able to establish desired log format at this point (or fail)
 
-    const LogVersion * plgvDesired = NULL;
+    const LogVersion * plgvDesired = nullptr;
     BOOL fLogVersionNeedsUpdate =
                     ( m_pLogStream->ErrLGGetDesiredLogVersion( (JET_ENGINEFORMATVERSION)UlParam( m_pinst, JET_paramEngineFormatVersion ), &plgvDesired ) >= JET_errSuccess ) &&
                     FLGFileVersionUpdateNeeded( *plgvDesired );
@@ -14669,7 +14669,7 @@ ERR LOG::ErrLGMoveToRunningState(
 
         //  the user never set the log file size, so we will set it on their behalf
 
-        Call( Param( m_pinst, JET_paramLogFileSize )->Set( m_pinst, ppibNil,  m_lLogFileSizeDuringRecovery, NULL ) );
+        Call( Param( m_pinst, JET_paramLogFileSize )->Set( m_pinst, ppibNil,  m_lLogFileSizeDuringRecovery, nullptr ) );
 
     }
     else if ( fMismatchedLogFileSize )
@@ -14772,7 +14772,7 @@ ERR LOG::ErrLGICheckClosedNormallyInPreviousLog(
         goto HandleError;
     }
 
-    Call( m_pLogStream->ErrLGReadFileHdr( NULL, iorpLogRecRedo, NULL, fCheckLogID ) );
+    Call( m_pLogStream->ErrLGReadFileHdr( nullptr, iorpLogRecRedo, nullptr, fCheckLogID ) );
 
     Assert( m_pLogStream->GetCurrentFileGen() == lGenPrevious );
 
@@ -14817,8 +14817,8 @@ ERR LOG::ErrLGSoftStart( BOOL fKeepDbAttached, BOOL fInferCheckpointFromRstmapDb
     BOOL                fUseCheckpointToStartRedo = !(*pfNewCheckpointFile);
     BOOL                fSoftRecovery = fFalse;
     WCHAR               wszPathJetChkLog[IFileSystemAPI::cchPathMax];
-    LGFILEHDR           *plgfilehdrT = NULL;
-    CHECKPOINT          *pcheckpointT = NULL;
+    LGFILEHDR           *plgfilehdrT = nullptr;
+    CHECKPOINT          *pcheckpointT = nullptr;
     BOOL                fCreatedReserveLogs = fFalse;
     BOOL                fDelLog = fFalse;
 
@@ -14887,7 +14887,7 @@ ERR LOG::ErrLGSoftStart( BOOL fKeepDbAttached, BOOL fInferCheckpointFromRstmapDb
 
     //  try to open current log file to decide the status of log files.
     //
-    err = m_pLogStream->ErrLGTryOpenJetLog( JET_OpenLogForRecoveryCheckingAndPatching, lGenSignalCurrentID, (m_pLogStream->LogExt() == NULL) );
+    err = m_pLogStream->ErrLGTryOpenJetLog( JET_OpenLogForRecoveryCheckingAndPatching, lGenSignalCurrentID, (m_pLogStream->LogExt() == nullptr) );
     if ( err < 0 )
     {
         if ( JET_errFileNotFound != err )
@@ -14907,11 +14907,11 @@ ERR LOG::ErrLGSoftStart( BOOL fKeepDbAttached, BOOL fInferCheckpointFromRstmapDb
         LONG lgenHigh = 0;
         //  Hard recovery can hit here, with the m_wszLogExt set, though regular init with an empty 
         //  log directory, doesn't have the m_wszLogExt set, so set it to the default.
-        if ( m_pLogStream->LogExt() == NULL )
+        if ( m_pLogStream->LogExt() == nullptr )
         {
             LONG    lgenTLegacy = 0;
             BOOL    fDefaultExt = fTrue;
-            Call ( m_pLogStream->ErrLGGetGenerationRange( m_wszLogCurrent, NULL, &lgenTLegacy, fTrue, &fDefaultExt ) );
+            Call ( m_pLogStream->ErrLGGetGenerationRange( m_wszLogCurrent, nullptr, &lgenTLegacy, fTrue, &fDefaultExt ) );
 
             // if we found something, then we can try and set the extension to that
             // 
@@ -14933,7 +14933,7 @@ ERR LOG::ErrLGSoftStart( BOOL fKeepDbAttached, BOOL fInferCheckpointFromRstmapDb
 
         if ( lgenHigh == 0 )
         {
-            Call ( m_pLogStream->ErrLGGetGenerationRange( m_wszLogCurrent, NULL, &lgenHigh ) );
+            Call ( m_pLogStream->ErrLGGetGenerationRange( m_wszLogCurrent, nullptr, &lgenHigh ) );
         }
         
         if ( lgenHigh != 0 ) // there exists archive log files ...
@@ -14984,7 +14984,7 @@ ERR LOG::ErrLGSoftStart( BOOL fKeepDbAttached, BOOL fInferCheckpointFromRstmapDb
 
         //  read current log file header
         //
-        Call( m_pLogStream->ErrLGReadFileHdr( NULL, iorpLogRecRedo, NULL, fCheckLogID ) );
+        Call( m_pLogStream->ErrLGReadFileHdr( nullptr, iorpLogRecRedo, nullptr, fCheckLogID ) );
 
         //  if we have only one log file and no checkpoint file then the m_lgenInitial can be too
         //  high here ... see ErrLGInit().
@@ -15004,7 +15004,7 @@ ERR LOG::ErrLGSoftStart( BOOL fKeepDbAttached, BOOL fInferCheckpointFromRstmapDb
         m_fRecovering = fTrue;
         m_fRecoveringMode = fRecoveringRedo;
 
-        err = m_pLogReadBuffer->ErrLGCheckReadLastLogRecordFF( &fCloseNormally, fTrue, fFalse, NULL, &lgposLastTerm );
+        err = m_pLogReadBuffer->ErrLGCheckReadLastLogRecordFF( &fCloseNormally, fTrue, fFalse, nullptr, &lgposLastTerm );
 
         m_fRecovering = fFalse;
         m_fRecoveringMode = fRecoveringNone;
@@ -15050,9 +15050,9 @@ ERR LOG::ErrLGSoftStart( BOOL fKeepDbAttached, BOOL fInferCheckpointFromRstmapDb
         {
             ERR errReadCheckpoint;
 
-            if ( pcheckpointT == NULL )
+            if ( pcheckpointT == nullptr )
             {
-                Alloc( pcheckpointT = (CHECKPOINT *)PvOSMemoryPageAlloc( sizeof(CHECKPOINT), NULL ) );
+                Alloc( pcheckpointT = (CHECKPOINT *)PvOSMemoryPageAlloc( sizeof(CHECKPOINT), nullptr ) );
             }
 
             // build the checkpoint name and open the file.
@@ -15096,9 +15096,9 @@ CheckCheckpoint:
             //  the with the with the redo point. Note that the attach info
             //  is not necessarily consistent with the checkpoint.
             //
-            if ( plgfilehdrT == NULL )
+            if ( plgfilehdrT == nullptr )
             {
-                Alloc( plgfilehdrT = (LGFILEHDR *)PvOSMemoryPageAlloc( sizeof(LGFILEHDR), NULL ) );
+                Alloc( plgfilehdrT = (LGFILEHDR *)PvOSMemoryPageAlloc( sizeof(LGFILEHDR), nullptr ) );
                 
                 // we really on the log header below if we had it already opened 
                 // (like we found an EDB.LOG above) so initialize it here to 0 
@@ -15106,9 +15106,9 @@ CheckCheckpoint:
                 memset( plgfilehdrT, 0, sizeof(LGFILEHDR) );
             }
 
-            if ( pcheckpointT == NULL )
+            if ( pcheckpointT == nullptr )
             {
-                Alloc( pcheckpointT = (CHECKPOINT *)PvOSMemoryPageAlloc( sizeof(CHECKPOINT), NULL ) );
+                Alloc( pcheckpointT = (CHECKPOINT *)PvOSMemoryPageAlloc( sizeof(CHECKPOINT), nullptr ) );
             }
 
             //  did not terminate normally and need to redo from checkpoint
@@ -15155,7 +15155,7 @@ CheckCheckpoint:
 
                 //  read log file header
                 //
-                Call( m_pLogStream->ErrLGReadFileHdr( NULL, iorpLogRecRedo, plgfilehdrT, fCheckLogID ) );
+                Call( m_pLogStream->ErrLGReadFileHdr( nullptr, iorpLogRecRedo, plgfilehdrT, fCheckLogID ) );
 
                 if ( pcheckpointT->checkpoint.le_lgposCheckpoint.le_lGeneration != plgfilehdrT->lgfilehdr.le_lGeneration ||
                      !( pcheckpointT->checkpoint.fVersion & fCheckpointAttachInfoPresent ) ||
@@ -15187,7 +15187,7 @@ CheckCheckpoint:
 
                 if ( lgenLow == 0 )
                 {
-                    (void) m_pLogStream->ErrLGGetGenerationRange( SzParam( m_pinst, JET_paramLogFilePath ), &lgenLow, NULL );
+                    (void) m_pLogStream->ErrLGGetGenerationRange( SzParam( m_pinst, JET_paramLogFilePath ), &lgenLow, nullptr );
                 }
 
                 // if there are no archived logs, we should start with the current
@@ -15216,7 +15216,7 @@ CheckCheckpoint:
                     
                     //  read log file header
                     //
-                    Call( m_pLogStream->ErrLGReadFileHdr( NULL, iorpLogRecRedo, plgfilehdrT, fCheckLogID ) );
+                    Call( m_pLogStream->ErrLGReadFileHdr( nullptr, iorpLogRecRedo, plgfilehdrT, fCheckLogID ) );
 
                     //  Start checkpoint here so that we replay all attachment related log records.
                     LGFakeCheckpointToLogFile( pcheckpointT, plgfilehdrT, m_pLogStream->CSecHeader() );
@@ -15276,9 +15276,9 @@ CheckCheckpoint:
                     LOGGING_RECOVERY_CATEGORY,
                     START_REDO_ID,
                     0,
-                    NULL,
+                    nullptr,
                     0,
-                    NULL,
+                    nullptr,
                     m_pinst );
             fSoftRecovery = fTrue;
 
@@ -15288,9 +15288,9 @@ CheckCheckpoint:
             m_errGlobalRedoError = JET_errSuccess;
 
             LGSTATUSINFO        lgstat = { 0 };
-            LGSTATUSINFO        *plgstat = NULL;
+            LGSTATUSINFO        *plgstat = nullptr;
             
-            if ( m_pinst->m_pfnInitCallback != NULL )
+            if ( m_pinst->m_pfnInitCallback != nullptr )
             {
                 plgstat = &lgstat;
                 
@@ -15358,9 +15358,9 @@ CheckCheckpoint:
                         LOGGING_RECOVERY_CATEGORY,
                         STOP_REDO_ID,
                         0,
-                        NULL,
+                        nullptr,
                         0,
-                        NULL,
+                        nullptr,
                         m_pinst );
             }
         }
@@ -15445,7 +15445,7 @@ RetryOpenLogForDo:
         LGReportError( LOG_OPEN_FILE_ERROR_ID, err );
         goto HandleError;
     }
-    err = m_pLogStream->ErrLGReadFileHdr( NULL, iorpLogRecRedo, NULL, fCheckLogID );
+    err = m_pLogStream->ErrLGReadFileHdr( nullptr, iorpLogRecRedo, nullptr, fCheckLogID );
     if ( err == JET_errLogFileSizeMismatch )
     {
         err = ErrERRCheck( JET_errLogFileSizeMismatchDatabasesConsistent );
@@ -15563,7 +15563,7 @@ RetryOpenLogForDo:
                 _countof(rgpszString),
                 rgpszString,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
     }
 
@@ -15627,7 +15627,7 @@ HandleError:
                                     LOGGING_RECOVERY_CATEGORY,
                                     STOP_REDO_WITHOUT_UNDO_ID,
                                     0,
-                                    NULL,
+                                    nullptr,
                                     sizeof( WCHAR ) * ( LOSStrLengthW(wszLgPos) + 1 ),
                                     wszLgPos,
                                     m_pinst );

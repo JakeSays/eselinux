@@ -4,7 +4,7 @@
 class MEMPOOL
 {
     public:
-        MEMPOOL()                       { m_pbuf = NULL; }
+        MEMPOOL()                       { m_pbuf = nullptr; }
         ~MEMPOOL()                      { return; }
         typedef USHORT ITAG;
 
@@ -123,11 +123,11 @@ INLINE VOID MEMPOOL::AssertValidTag( ITAG iTagEntry ) const
 
 INLINE VOID MEMPOOL::MEMPOOLRelease()
 {
-    if ( Pbuf() != NULL )
+    if ( Pbuf() != nullptr )
     {
         AssertValid();          // Validate integrity of buffer.
         OSMemoryHeapFree( Pbuf() );
-        SetPbuf( NULL );
+        SetPbuf( nullptr );
     }
 }
 
@@ -684,14 +684,14 @@ INLINE TDB::TDB(
         m_rwlDDL( CLockBasicInfo( CSyncBasicInfo( szDDLDML ), rankDDLDML, subrank ) ),
         m_dwAutoIncBatchSize( 1 )
 {
-    m_pcbdesc = NULL;
+    m_pcbdesc = nullptr;
     m_fidTaggedLast = fidTaggedLast;
     m_fidFixedLast = fidFixedLast;
     m_fidVarLast = fidVarLast;
     Assert( 0 == m_ulFlags );
     m_ibEndFixedColumns = ibEndFixedColumns;
     
-    if ( pfcbTemplateTable != NULL )
+    if ( pfcbTemplateTable != nullptr )
     {
         pfcbTemplateTable->IncrementRefCount();
         m_pfcbTemplateTable = pfcbTemplateTable;
@@ -727,10 +727,10 @@ INLINE TDB::~TDB()
 {
     Assert( PfcbLV() == pfcbNil );
 
-    if ( m_pfcbTemplateTable != NULL )
+    if ( m_pfcbTemplateTable != nullptr )
     {
         m_pfcbTemplateTable->Release();
-        m_pfcbTemplateTable = NULL;
+        m_pfcbTemplateTable = nullptr;
     }
 
     MemPool().MEMPOOLRelease();
@@ -738,7 +738,7 @@ INLINE TDB::~TDB()
     OSMemoryHeapFree( PdataDefaultRecord() );
 
     CBDESC * pcbdesc = m_pcbdesc;
-    while( NULL != pcbdesc )
+    while( nullptr != pcbdesc )
     {
         CBDESC * const pcbdescDelete = pcbdesc;
         pcbdesc = pcbdesc->pcbdescNext;
@@ -781,7 +781,7 @@ INLINE MEMPOOL::ITAG TDB::ItagTableName() const             { return m_itagTable
 INLINE MEMPOOL::ITAG TDB::ItagDeferredLVSpacehints() const  { return m_itagDeferredLVSpacehints; }
 INLINE const JET_SPACEHINTS * TDB::PjsphDeferredLV() const
 {
-    const JET_SPACEHINTS * pjsph = NULL;
+    const JET_SPACEHINTS * pjsph = nullptr;
     if ( m_itagDeferredLVSpacehints != 0 )
     {
         pjsph = reinterpret_cast<const JET_SPACEHINTS *>( MemPool().PbGetEntry( ItagDeferredLVSpacehints() ) );
@@ -961,7 +961,7 @@ INLINE VOID TDB::InitAutoincrement( QWORD qw )
 {
     if ( FOS64Bit() || !m_f8BytesAutoInc )
     {
-        (VOID)AtomicCompareExchangePointer( (VOID **)&m_qwAutoincrement, 0, (VOID *)qw );
+        (VOID)AtomicCompareExchangePointer( (VOID **)&m_qwAutoincrement, nullptr, (VOID *)qw );
     }
     else
     {
@@ -1079,7 +1079,7 @@ INLINE VOID TDB::UnregisterPcbdesc( CBDESC * const pcbdescRemove )
     Assert( *(pcbdescRemove->ppcbdescPrev) == pcbdescRemove );
     Assert( NULL == pcbdescRemove->pcbdescNext
             || pcbdescRemove->pcbdescNext->ppcbdescPrev == &pcbdescRemove->pcbdescNext );
-    if( NULL != pcbdescRemove->pcbdescNext )
+    if( nullptr != pcbdescRemove->pcbdescNext )
     {
         Assert( pcbdescRemove->pcbdescNext->ppcbdescPrev == &pcbdescRemove->pcbdescNext );
         pcbdescRemove->pcbdescNext->ppcbdescPrev = pcbdescRemove->ppcbdescPrev;

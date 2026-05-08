@@ -57,11 +57,11 @@ LOG_READ_BUFFER::~LOG_READ_BUFFER()
 #endif
 
     OSMemoryHeapFree( m_pvAssembledLR[0] );
-    m_pvAssembledLR[0] = NULL;
+    m_pvAssembledLR[0] = nullptr;
     m_cbAssembledLR[0] = 0;
 
     OSMemoryHeapFree( m_pvAssembledLR[1] );
-    m_pvAssembledLR[1] = NULL;
+    m_pvAssembledLR[1] = nullptr;
     m_cbAssembledLR[1] = 0;
 }
 
@@ -110,7 +110,7 @@ VOID LOG_READ_BUFFER::GetLgposOfPbNext(LGPOS *plgpos) const
 VOID LOG_READ_BUFFER::GetLgposOfPbNextNext(LGPOS *plgpos) const
 {
     // only used by new format
-    if ( m_pbNextNext == NULL )
+    if ( m_pbNextNext == nullptr )
     {
         Assert ( FIsOldLrckLogFormat( m_pLogStream->GetCurrentFileHdr()->lgfilehdr.le_ulMajor ) );
         *plgpos = lgposMin;
@@ -546,7 +546,7 @@ LOG_READ_BUFFER::ErrReaderRestoreState(
 LogPrereaderBase::LogPrereaderBase() :
     m_dbidMaxUsed( 0 ),
     m_cpgGrowth( 0 ),
-    m_rgArrayPagerefs( NULL )
+    m_rgArrayPagerefs( nullptr )
 {
 }
 
@@ -573,7 +573,7 @@ VOID LogPrereaderBase::LGPInit( const DBID dbidMaxUsed, const CPG cpgGrowth )
     Assert( m_rgArrayPagerefs == NULL || FLGPEnabled() );
 
     //  Set the default growth size.
-    if ( m_rgArrayPagerefs != NULL )
+    if ( m_rgArrayPagerefs != nullptr )
     {
         for ( DBID dbid = dbidMin; dbid < m_dbidMaxUsed; dbid++ )
         {
@@ -603,7 +603,7 @@ VOID LogPrereaderBase::LGPTerm()
 
     //  Free the array of arrays.
     delete[] m_rgArrayPagerefs;
-    m_rgArrayPagerefs = NULL;
+    m_rgArrayPagerefs = nullptr;
     Assert( !FLGPEnabled() );
 }
 
@@ -667,7 +667,7 @@ VOID LogPrereaderBase::LGPDBDisable( const DBID dbid )
 
 INLINE BOOL LogPrereaderBase::FLGPEnabled() const
 {
-    return m_rgArrayPagerefs != NULL;
+    return m_rgArrayPagerefs != nullptr;
 }
 
 INLINE BOOL LogPrereaderBase::FLGPDBEnabled( const DBID dbid ) const
@@ -1005,7 +1005,7 @@ LOCAL VOID LGIReportChecksumMismatch(
             irgpsz,
             rgpszT,
             0,
-            NULL,
+            nullptr,
             pinst );
 
     OSUHAPublishEvent(
@@ -1252,7 +1252,7 @@ LOG_READ_BUFFER::ReportSegmentCorrection_( USHORT isec, ULONG cbOffset, INT ibit
                      irgpsz,
                      rgpsz,
                      0,
-                     NULL,
+                     nullptr,
                      m_pinst );
 }
 
@@ -1285,12 +1285,12 @@ LOG_READ_BUFFER::ErrLGCheckReadLastLogRecordFF(
     LGPOS lgposCurrent = lgposMin;
     BOOL fJetLog = fFalse;
     BOOL fCreatedLogReader = fFalse;
-    BYTE *pbSegment = NULL;
+    BYTE *pbSegment = nullptr;
     BOOL fEmptyPageSeen = fFalse;
     LONG lGenLastEmptyPage = m_pLogStream->GetCurrentFileGen();
-    BYTE *pbLastValidSegment = NULL;
+    BYTE *pbLastValidSegment = nullptr;
     LGPOS lgposLastValidSegment = lgposMin;
-    LGSEGHDR *pSegHdr = NULL;
+    LGSEGHDR *pSegHdr = nullptr;
     BOOL fCorrectableError;
     INT ibitCorrupted;
     BOOL fFileOpenedForWrite = fFalse;
@@ -1347,7 +1347,7 @@ LOG_READ_BUFFER::ErrLGCheckReadLastLogRecordFF(
     //     (e.g. we expect not to find an lrtypTerm or lrtypQuit record)
 
     *pfCloseNormally = fFalse;
-    if ( plgposLastTerm != NULL )
+    if ( plgposLastTerm != nullptr )
     {
         *plgposLastTerm = lgposMin;
     }
@@ -1646,7 +1646,7 @@ LOG_READ_BUFFER::ErrLGCheckReadLastLogRecordFF(
                     _countof( rgpsz ),
                     rgpsz,
                     0,
-                    NULL,
+                    nullptr,
                     m_pinst );
 
             if ( !fReadOnly )
@@ -1684,7 +1684,7 @@ LOG_READ_BUFFER::ErrLGCheckReadLastLogRecordFF(
     // Is the last record in the log file a term etc - note that term record
     // is never fragmented because of the minimum fragment size
     C_ASSERT( sizeof( LRTERMREC2 ) <= LOG_MIN_FRAGMENT_SIZE );
-    if ( pbLastValidSegment != NULL )
+    if ( pbLastValidSegment != nullptr )
     {
         pbSegment = pbLastValidSegment + m_pLogStream->CbSec();
         for ( pbLR = pbLastValidSegment + sizeof( LGSEGHDR );
@@ -1771,7 +1771,7 @@ ReportCorruption:
                                 3,
                                 rgpsz,
                                 0,
-                                NULL,
+                                nullptr,
                                 m_pinst );
 
             OSUHAPublishEvent(  HaDbFailureTagRecoveryRedoLogCorruption,
@@ -1793,7 +1793,7 @@ ReportCorruption:
                             3,
                             rgpsz,
                             0,
-                            NULL,
+                            nullptr,
                             m_pinst );
         
         OSUHAPublishEvent(  HaDbFailureTagRecoveryRedoLogCorruption,
@@ -1816,7 +1816,7 @@ ReportCorruption:
                             3,
                             rgpsz,
                             0,
-                            NULL,
+                            nullptr,
                             m_pinst );
 
         OSUHAPublishEvent(  HaDbFailureTagRecoveryRedoLogCorruption,
@@ -1905,7 +1905,7 @@ HandleError:
         Assert( L'\0' != m_pLogStream->LogName()[ 0 ] );
 
         //  open the file again
-        errT = m_pLogStream->ErrLGOpenFile( NULL, fTrue );
+        errT = m_pLogStream->ErrLGOpenFile( nullptr, fTrue );
 
         //  return the error code if no other error code yet exists
         if ( err == JET_errSuccess )
@@ -1979,7 +1979,7 @@ ERR LOG_READ_BUFFER::ErrLGLocateFirstRedoLogRecFF(
 
     m_pbNextNext = pNil;
 #ifdef ENABLE_LOG_V7_RECOVERY_COMPAT
-    m_pbLastChecksum = NULL;
+    m_pbLastChecksum = nullptr;
     m_lgposLastChecksum = lgposMin;
 #endif
 
@@ -2445,7 +2445,7 @@ VOID LOG::LGIPrereadPage(
                 m_pLogReadBuffer->GetLgposOfPbNext( &lgpos );
                 LGPOSQueueNode* const plgposQueueNode = new LGPOSQueueNode( lgpos );
 
-                if ( plgposQueueNode != NULL )
+                if ( plgposQueueNode != nullptr )
                 {
                     OnDebug( const LGPOSQueueNode* const plgposQueueNodeTail = m_pPrereadWatermarks->Tail() );
                     Assert( ( plgposQueueNodeTail == NULL ) || ( CmpLgpos( plgposQueueNode->m_lgpos, plgposQueueNodeTail->m_lgpos ) >= 0 ) );

@@ -87,7 +87,7 @@ ERR StatBasicTest::ErrTest()
         wprintf(L" Testing CPerfectHistogramStats...\n");
 
     CPerfectHistogramStats * pPHS = new CPerfectHistogramStats();
-    if ( pPHS == NULL )
+    if ( pPHS == nullptr )
     {
         if ( fPrintStatus )
             wprintf(L"Test %d failed to alloc %d bytes\n", iTest, sizeof(CPerfectHistogramStats));

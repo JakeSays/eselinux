@@ -21,8 +21,8 @@ ERR ErrUtilFlushFileBuffers( _Inout_ IFileAPI * const pfapi, _In_ const IOFLUSHR
 // IMPORTANT: THESE ARE NOT SAFE. We are not
 // locking or guarding them in any way. This is a
 // best effort debugging effort.
-static BYTE*    g_rgbDebugHeader = NULL;
-static BYTE*    g_rgbDebugShadowHeader = NULL;
+static BYTE*    g_rgbDebugHeader = nullptr;
+static BYTE*    g_rgbDebugShadowHeader = nullptr;
 static ERR  g_errDebugHeaderIO = JET_errSuccess;
 static ERR  g_errDebugShadowHeaderIO = JET_errSuccess;
 static TICK g_tickDebugHeader = 0;
@@ -119,14 +119,14 @@ ERR ErrUtilReadSpecificShadowedHeader( const INST* const pinst, DB_HEADER_READER
     const DWORD             cbHeader                    = pdbHdrReader->cbHeader;
     DWORD&                  cbHeaderActual              = pdbHdrReader->cbHeaderActual;
     DWORD                   cbHeaderElected             = 0;
-    IFileAPI*               pfapiRead                   = NULL;
+    IFileAPI*               pfapiRead                   = nullptr;
     QWORD                   cbFileSize                  = 0;
     DWORD                   cbIOSize                    = 0;
     QWORD                   cbReadT                     = 0;
     DWORD                   cbAlloc                     = 0;
     DWORD                   ibRead                      = 0;
     DWORD                   cbRead                      = 0;
-    BYTE*                   pbRead                      = NULL;
+    BYTE*                   pbRead                      = nullptr;
     ULONG                   cOffsetOfPbRead             = 0;
     ULONG                   cbPageCandidate             = 0;
     const ULONG             fNoAutoDetectPageSize       = pdbHdrReader->fNoAutoDetectPageSize;
@@ -183,7 +183,7 @@ ERR ErrUtilReadSpecificShadowedHeader( const INST* const pinst, DB_HEADER_READER
 
     if ( cbAlloc > 0 )
     {
-        Alloc( pbRead = (BYTE*)PvOSMemoryPageAlloc( cbAlloc, NULL ) );
+        Alloc( pbRead = (BYTE*)PvOSMemoryPageAlloc( cbAlloc, nullptr ) );
         errRead = pfapiRead->ErrIORead( *tcHeader, QWORD( 0 ), cbAlloc, pbRead, qos );
 
         if ( errRead >= JET_errSuccess )
@@ -287,30 +287,30 @@ ERR ErrUtilReadSpecificShadowedHeader( const INST* const pinst, DB_HEADER_READER
 
         g_tickDebugHeader = TickOSTimeCurrent();
         
-        if ( NULL == g_rgbDebugHeader )
+        if ( nullptr == g_rgbDebugHeader )
         {
-            BYTE * pbAlloc = (BYTE*)PvOSMemoryPageAlloc( cbPageCandidate, NULL );
-            if ( NULL != AtomicExchangePointer( (void **)&g_rgbDebugHeader, (void*)pbAlloc ) )
+            BYTE * pbAlloc = (BYTE*)PvOSMemoryPageAlloc( cbPageCandidate, nullptr );
+            if ( nullptr != AtomicExchangePointer( (void **)&g_rgbDebugHeader, (void*)pbAlloc ) )
             {
                 OSMemoryPageFree( pbAlloc );
             }
         }
 
-        if ( NULL == g_rgbDebugShadowHeader )
+        if ( nullptr == g_rgbDebugShadowHeader )
         {
-            BYTE * pbAlloc = (BYTE*)PvOSMemoryPageAlloc( cbPageCandidate, NULL );
-            if ( NULL != AtomicExchangePointer( (void **)&g_rgbDebugShadowHeader, (void*)pbAlloc ) )
+            BYTE * pbAlloc = (BYTE*)PvOSMemoryPageAlloc( cbPageCandidate, nullptr );
+            if ( nullptr != AtomicExchangePointer( (void **)&g_rgbDebugShadowHeader, (void*)pbAlloc ) )
             {
                 OSMemoryPageFree( pbAlloc );
             }
         }
 
-        if ( NULL != g_rgbDebugHeader )
+        if ( nullptr != g_rgbDebugHeader )
         {
             g_errDebugHeaderIO = pfapiRead->ErrIORead( *tcHeader, QWORD( 0 * cbPageCandidate ), cbPageCandidate, g_rgbDebugHeader, qos );
         }
 
-        if ( NULL != g_rgbDebugShadowHeader )
+        if ( nullptr != g_rgbDebugShadowHeader )
         {
             g_errDebugShadowHeaderIO = pfapiRead->ErrIORead( *tcHeader, QWORD( 1 * cbPageCandidate ), cbPageCandidate, g_rgbDebugShadowHeader, qos );
         }
@@ -557,7 +557,7 @@ LOCAL ERR ErrUtilIReadShadowedHeader(
             _countof(rgwsz),
             rgwsz,
             0,
-            NULL,
+            nullptr,
             pinst );
     }
 
@@ -592,7 +592,7 @@ ERR ErrUtilReadShadowedHeader(
     ShadowedHeaderStatus* const     pShadowedHeaderStatus )
 {
     ERR         err         = JET_errSuccess;
-    IFileAPI*   pfapi       = NULL;
+    IFileAPI*   pfapi       = nullptr;
     const BOOL  fReadOnly   = ( urhf & urhfReadOnly ) != 0;
 
     Call( pfsapi->ErrFileOpen(  wszFilePath,
@@ -683,7 +683,7 @@ ERR ErrUtilReadShadowedHeader(
                         2,
                         rgszT,
                         0,
-                        NULL,
+                        nullptr,
                         pinst );
             }
         }
@@ -796,7 +796,7 @@ LOCAL ERR ErrUtilWriteShadowedHeaderInternal(
     IFileAPI* const         pfapi )
 {
     ERR             err         = JET_errSuccess;
-    IFileAPI*       pfapiT      = NULL;
+    IFileAPI*       pfapiT      = nullptr;
     const OSFILEQOS qos         = ( pfsapi && pinst ) ? QosSyncDefault( pinst ) : qosIONormal;
     BOOL            fHeaderRO   = fFalse;
     TraceContextScope tcHeader( iorp );
@@ -808,7 +808,7 @@ LOCAL ERR ErrUtilWriteShadowedHeaderInternal(
 
     if ( !pfapi )
     {
-        pfapiT = NULL;
+        pfapiT = nullptr;
 
         //  open the specified file
 
@@ -879,7 +879,7 @@ HandleError:
     {
         WCHAR wszFilePath[OSFSAPI_MAX_PATH] = { L'\0' };
         const WCHAR* pwszFilePath = wszFileName;
-        if ( pwszFilePath == NULL )
+        if ( pwszFilePath == nullptr )
         {
             const ERR errT = pfapiT->ErrPath( wszFilePath );
             if ( errT < JET_errSuccess )
@@ -903,11 +903,11 @@ HandleError:
                 2,
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 pinst );
     }
 
-    if ( pfapi == NULL && pfapiT != NULL )
+    if ( pfapi == nullptr && pfapiT != nullptr )
     {
         //  then pfapiT is opened / allocated here
         const ERR errT = ErrUtilFlushFileBuffers( pfapiT, iofrDefensiveFileHdrWrite );
@@ -1005,7 +1005,7 @@ ERR ErrUtilWriteAttachedDatabaseHeaders(    const INST* const           pinst,
                                             IFileAPI *const             pfapi )
 {
     ERR err                         = JET_errSuccess;
-    DBFILEHDR* pdbfilehdr           = NULL;
+    DBFILEHDR* pdbfilehdr           = nullptr;
     CFlushMap* const pfm            = pfmp->PFlushMap();
     CRevertSnapshot* const prbs     = pfmp->PRBS();
     BOOL fRBSFormatFeatureEnabled   = pfmp->ErrDBFormatFeatureEnabled( JET_efvRevertSnapshot ) >= JET_errSuccess;
@@ -1019,7 +1019,7 @@ ERR ErrUtilWriteAttachedDatabaseHeaders(    const INST* const           pinst,
     CRevertSnapshot::EnterDbHeaderFlush( prbs, &signRBSHdrFlushNew );
 
     // Copy off header to avoid locking it through the entire I/O operation.
-    Alloc( pdbfilehdr = (DBFILEHDR*)PvOSMemoryPageAlloc( g_cbPage, NULL ) );
+    Alloc( pdbfilehdr = (DBFILEHDR*)PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
     UtilMemCpy( pdbfilehdr, pfmp->Pdbfilehdr().get(), sizeof( DBFILEHDR ) );
 
     // Save off signatures.
@@ -1134,7 +1134,7 @@ ERR ErrUtilWriteCheckpointHeaders(  const INST * const      pinst,
                                                 sizeof( *pChkptHeader ),
                                                 pfapi ) );
 
-    if ( pfapi != NULL && iofr != 0 )
+    if ( pfapi != nullptr && iofr != 0 )
     {
         CallR( ErrUtilFlushFileBuffers( pfapi, iofr ) );
     }
@@ -1396,7 +1396,7 @@ LOCAL ERR ErrUtilPathExistsByFindFirst(
     __out_bcount_opt(OSFSAPI_MAX_PATH*sizeof(WCHAR)) WCHAR* const           wszAbsPath )
 {
     ERR                     err     = JET_errSuccess;
-    IFileFindAPI*           pffapi  = NULL;
+    IFileFindAPI*           pffapi  = nullptr;
 
     Call( pfsapi->ErrFileFind( wszPath, &pffapi ) );
     Call( pffapi->ErrNext() );
@@ -1463,7 +1463,7 @@ ERR ErrUtilGetLogicalFileSize(  IFileSystemAPI* const   pfsapi,
                                 QWORD* const            pcbFileSize )
 {
     JET_ERR err = JET_errSuccess;
-    IFileAPI* pfapi = NULL;
+    IFileAPI* pfapi = nullptr;
 
     Call( pfsapi->ErrFileOpen( wszPath, IFileAPI::fmfReadOnly, &pfapi ) );
     Call( pfapi->ErrSize( pcbFileSize, IFileAPI::filesizeLogical ) );
@@ -1519,7 +1519,7 @@ ERR ErrUtilPathReadOnly(
     BOOL* const             pfReadOnly )
 {
     ERR                     err     = JET_errSuccess;
-    IFileFindAPI*           pffapi  = NULL;
+    IFileFindAPI*           pffapi  = nullptr;
 
     Call( pfsapi->ErrFileFind( wszPath, &pffapi ) );
     Call( pffapi->ErrNext() );
@@ -1722,7 +1722,7 @@ ERR ErrUtilWriteRBSHeaders(
                                                 sizeof( RBSFILEHDR ),
                                                 pfapi ) );
 
-    if ( pfapi != NULL )
+    if ( pfapi != nullptr )
     {
         Call( ErrUtilFlushFileBuffers( pfapi, iofrRBS ) );
     }
@@ -1751,7 +1751,7 @@ ERR ErrUtilWriteRBSRevertCheckpointHeaders(
                 sizeof( *prbsrchkHeader ),
                 pfapi ) );
 
-    if ( pfapi != NULL )
+    if ( pfapi != nullptr )
     {
         Call( ErrUtilFlushFileBuffers( pfapi, iofrRBSRevertUtil ) );
     }
@@ -1768,7 +1768,7 @@ LOCAL ERR ErrOSULogPatternInit()
 
     //  reset all pointers
     //
-    rgbLogExtendPattern = NULL;
+    rgbLogExtendPattern = nullptr;
 
     //  init log file extension buffer
     //
@@ -1791,7 +1791,7 @@ LOCAL ERR ErrOSULogPatternInit()
     {
         //  allocate the log file extension buffer
 
-        rgbLogExtendPattern = (BYTE*)PvOSMemoryPageAlloc( size_t( cbLogExtendPattern ), NULL );
+        rgbLogExtendPattern = (BYTE*)PvOSMemoryPageAlloc( size_t( cbLogExtendPattern ), nullptr );
 
         if ( !rgbLogExtendPattern  )
         {
@@ -1881,7 +1881,7 @@ LOCAL VOID OSULogPatternTerm()
         //  free log file extension buffer
 
         OSMemoryHeapFree( rgbLogExtendPattern );
-        rgbLogExtendPattern = NULL;
+        rgbLogExtendPattern = nullptr;
     }
     else if (   !COSMemoryMap::FCanMultiMap() ||
                 cbLogExtendPattern < OSMemoryPageReserveGranularity() )
@@ -1889,14 +1889,14 @@ LOCAL VOID OSULogPatternTerm()
         //  free log file extension buffer
 
         OSMemoryPageFree( rgbLogExtendPattern );
-        rgbLogExtendPattern = NULL;
+        rgbLogExtendPattern = nullptr;
     }
     else
     {
         //  free log file extension buffer
 
         osmmOSUFile.OSMMPatternFree();
-        rgbLogExtendPattern = NULL;
+        rgbLogExtendPattern = nullptr;
 
         //  term the memory map
 
@@ -1930,16 +1930,16 @@ void OSUFileTerm()
     OSULogPatternTerm();
 #endif
 
-    if ( NULL != g_rgbDebugHeader )
+    if ( nullptr != g_rgbDebugHeader )
     {
         OSMemoryPageFree( g_rgbDebugHeader );
-        g_rgbDebugHeader = NULL;
+        g_rgbDebugHeader = nullptr;
     }
 
-    if ( NULL != g_rgbDebugShadowHeader )
+    if ( nullptr != g_rgbDebugShadowHeader )
     {
         OSMemoryPageFree( g_rgbDebugShadowHeader );
-        g_rgbDebugShadowHeader = NULL;
+        g_rgbDebugShadowHeader = nullptr;
     }
 
     g_errDebugHeaderIO = JET_errSuccess;

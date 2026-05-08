@@ -295,7 +295,7 @@ ERR ErrUtilWriteCheckpointHeaders(  const INST * const      pinst,
                                     const WCHAR             *wszFileName,
                                     const IOFLUSHREASON     iofr,
                                     CHECKPOINT              *pChkptHeader,
-                                    IFileAPI *const         pfapi = NULL );
+                                    IFileAPI *const         pfapi = nullptr );
 
 typedef struct tagLGSTATUSINFO
 {
@@ -431,7 +431,7 @@ ERR ErrLGIReadFileHeader(
     const TraceContext& tc,
     OSFILEQOS           grbitQOS,
     LGFILEHDR *         plgfilehdr,
-    const INST * const  pinst = NULL );
+    const INST * const  pinst = nullptr );
 
 BOOL FLGVersionZeroFilled( const LGFILEHDR_FIXED* const plgfilehdr );
 BOOL FLGVersionAttachInfoInCheckpoint( const LGFILEHDR_FIXED* const plgfilehdr );
@@ -540,7 +540,7 @@ public:
     BOOL FLGPEnabled() const;
     BOOL FLGPDBEnabled( const DBID dbid ) const;
     BOOL FLGPContainsPgnoRef( const DBID dbid, const PGNO pgno ) const;
-    ERR ErrLGPAddPgnoRef( const DBID dbid, const PGNO pgno, const OBJID objid = objidNil, const LR* const plr = NULL, const IOREASONFLAGS iorf = iorfNone );
+    ERR ErrLGPAddPgnoRef( const DBID dbid, const PGNO pgno, const OBJID objid = objidNil, const LR* const plr = nullptr, const IOREASONFLAGS iorf = iorfNone );
     VOID LGPSortPages();
     ERR ErrLGPPrereadExtendedPageRange( const DBID dbid, const PGNO pgno, CPG* const pcpgPreread, const BFPreReadFlags bfprf = bfprfDefault );
     size_t IpgLGPGetSorted( const DBID dbid, const PGNO pgno ) const;
@@ -667,7 +667,7 @@ public:
     LGPOSQueueNode( const LGPOS& lgpos )
     {
         m_lgpos = lgpos;
-        m_plgposNext = NULL;
+        m_plgposNext = nullptr;
     }
 
 private:
@@ -832,7 +832,7 @@ class LGEN_LOGTIME_MAP : public CZeroInit
     VOID Reset()
     {
         OSMemoryHeapFree( m_pLogtimeMapping );
-        m_pLogtimeMapping = NULL;
+        m_pLogtimeMapping = nullptr;
         m_cLogtimeMappingAlloc = 0;
         m_lGenLogtimeMappingStart = 0;
         m_cLogtimeMappingValid = 0;
@@ -1014,9 +1014,9 @@ public:
     //      Generic Log Properties and Manipulators
     //
 
-    BOOL FNoMoreLogWrite( ERR *perr = NULL ) const
+    BOOL FNoMoreLogWrite( ERR *perr = nullptr ) const
     {
-        if ( perr != NULL )
+        if ( perr != nullptr )
         {
             *perr = m_errNoMoreLogWrite;
         }
@@ -1179,14 +1179,14 @@ public:
             LONG* plgenLow,
             LONG* plgenHigh,
             _In_ BOOL fLooseExt = fFalse,
-            __out_opt BOOL * pfDefaultExt = NULL );
+            __out_opt BOOL * pfDefaultExt = nullptr );
 
     //  used by backup & restore
     ERR ErrLGWaitForLogGen( const LONG lGeneration );
 
     //  used in a few places, breaks encapsulation ... most users (except one) only want current lgen
-    LONG LGGetCurrentFileGenWithLock( LOGTIME *ptmCreate = NULL );
-    LONG LGGetCurrentFileGenNoLock( LOGTIME *ptmCreate = NULL ) const;
+    LONG LGGetCurrentFileGenWithLock( LOGTIME *ptmCreate = nullptr );
+    LONG LGGetCurrentFileGenNoLock( LOGTIME *ptmCreate = nullptr ) const;
     BOOL FLGProbablyWriting();
 
     //  used by backup - maybe should be named StopLogging/ResumeLogging?
@@ -1214,7 +1214,7 @@ public:
         _In_ PCWSTR wszLogFolder,
         const enum eLGFileNameSpec eLogType,
         LONG lGen,
-        __in_opt PCWSTR wszLogExt = NULL ) const;
+        __in_opt PCWSTR wszLogExt = nullptr ) const;
 
     VOID LGVerifyFileHeaderOnInit();
 
@@ -1239,7 +1239,7 @@ public:
         const BOOL                  fLGFlags,
         const LONG                  lgenBegin0,
         LGPOS * const               plgposLogRec,
-        CCriticalSection * const    pcrit = NULL );
+        CCriticalSection * const    pcrit = nullptr );
 
     ERR ErrLGTryLogRec(
         const DATA  * const rgdata,
@@ -1308,7 +1308,7 @@ public:
         );
     VOID LGPrereadTerm()
     {
-        if ( m_pPrereadWatermarks != NULL )
+        if ( m_pPrereadWatermarks != nullptr )
         {
             while ( !m_pPrereadWatermarks->FEmpty() )
             {
@@ -1316,12 +1316,12 @@ public:
             }
         }
 
-        if ( m_plpreread != NULL )
+        if ( m_plpreread != nullptr )
         {
             m_plpreread->LGPTerm();
         }
 
-        if ( m_plprereadSuppress != NULL )
+        if ( m_plprereadSuppress != nullptr )
         {
             m_plprereadSuppress->LGPTerm();
         }
@@ -1381,7 +1381,7 @@ public:
         return m_fExternalRestore;
     }
 
-    INT IrstmapSearchNewName( _In_z_ const WCHAR *wszName, _Deref_out_opt_z_ WCHAR ** pwszRstmapDbName = NULL );
+    INT IrstmapSearchNewName( _In_z_ const WCHAR *wszName, _Deref_out_opt_z_ WCHAR ** pwszRstmapDbName = nullptr );
     ERR ErrBuildRstmapForSoftRecovery( const JET_RSTMAP2_W * const rgjrstmap, const INT cjrstmap );
     VOID LoadCheckpointGenerationFromRstmap( LONG * const plgenLow );
     VOID LoadHighestLgenAttachFromRstmap( LONG * const plgenAttach );
@@ -1454,7 +1454,7 @@ public:
     {
         return m_pcheckpoint->checkpoint.le_lgposCheckpoint;
     }
-    VOID ResetCheckpoint( SIGNATURE *psignlog = NULL );
+    VOID ResetCheckpoint( SIGNATURE *psignlog = nullptr );
 
     ULONG_PTR CbLGDesiredCheckpointDepth()
     {
@@ -1531,8 +1531,8 @@ public:
     ERR ErrLGIDumpOneAttachment( const ATTACHINFO * const pattachinfo, const LOGDUMP_OP * const plogdumpOp ) const;
     ERR ErrLGIDumpAttachments( const LOGDUMP_OP * const plogdumpOp ) const;
 
-    ERR ErrLGDumpLog( _In_ PCWSTR wszLog, LOGDUMP_OP * const plogdumpOp, LGFILEHDR * const plgfilehdr = NULL, XECHECKSUM *pLastSegChecksum = NULL );
-    ERR ErrLGDumpLog( IFileAPI *const pfapi, LOGDUMP_OP * const plogdumpOp, LGFILEHDR * const plgfilehdr = NULL, XECHECKSUM *pLastSegChecksum = NULL, const LGPOS * const plgposCheckpoint = NULL );
+    ERR ErrLGDumpLog( _In_ PCWSTR wszLog, LOGDUMP_OP * const plogdumpOp, LGFILEHDR * const plgfilehdr = nullptr, XECHECKSUM *pLastSegChecksum = nullptr );
+    ERR ErrLGDumpLog( IFileAPI *const pfapi, LOGDUMP_OP * const plogdumpOp, LGFILEHDR * const plgfilehdr = nullptr, XECHECKSUM *pLastSegChecksum = nullptr, const LGPOS * const plgposCheckpoint = nullptr );
 
     VOID    IncNOP() { m_cNOP++; }
     INT     GetNOP() const { return m_cNOP; }
@@ -1877,9 +1877,9 @@ private:
     ERR ErrLGRISetupFMPFromAttach(
             PIB                     *ppib,
             const ATTACHINFO *      pAttachInfo,
-            LGSTATUSINFO *          plgstat = NULL,
-            IFMP*                   pifmp = NULL,
-            INT*                    pirstmap = NULL );
+            LGSTATUSINFO *          plgstat = nullptr,
+            IFMP*                   pifmp = nullptr,
+            INT*                    pirstmap = nullptr );
 
     BOOL FLGRecoveryLgposStop( ) const ;
     BOOL FLGRecoveryLgposStopLogGeneration( ) const ;
@@ -2315,10 +2315,10 @@ INLINE INST * INST::GetInstanceByName( PCWSTR wszInstanceName )
     Assert ( wszInstanceName );
 
     Assert ( INST::FOwnerCritInst() );  //  checking that we've locked g_rgpinst in memory
-    if ( g_rgpinst == NULL )
+    if ( g_rgpinst == nullptr )
     {
         //  calling before even system init, by definition there is no matching instance.
-        return NULL;
+        return nullptr;
     }
 
     for ( ULONG ipinst = 0; ipinst < g_cpinstMax; ipinst++ )
@@ -2342,22 +2342,22 @@ INLINE INST * INST::GetInstanceByName( PCWSTR wszInstanceName )
         return pinst;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 INLINE INST * INST::GetInstanceByFullLogPath( PCWSTR wszLogPath )
 {
     ERR             err                 = JET_errSuccess;
-    IFileSystemAPI* pfsapi              = NULL;
-    INST*           pinstFound          = NULL;
+    IFileSystemAPI* pfsapi              = nullptr;
+    INST*           pinstFound          = nullptr;
     WCHAR           rgwchFullNameExist[IFileSystemAPI::cchPathMax+1];
     WCHAR           rgwchFullNameSearch[IFileSystemAPI::cchPathMax+1];
 
     Assert ( INST::FOwnerCritInst() );  //  checking that we've locked g_rgpinst in memory
-    if ( g_rgpinst == NULL )
+    if ( g_rgpinst == nullptr )
     {
         //  calling before even system init, by definition there is no matching instance.
-        return NULL;
+        return nullptr;
     }
 
     //  we need an FS to perform path validation

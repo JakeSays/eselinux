@@ -143,10 +143,10 @@ COSTimerTaskEntry::COSTimerTaskEntry(
         m_cInCallback( 0 ),
         m_dtickDelay( 0 ),
         m_dtickSlop( 0 ),
-        m_pOSThreadpoolTimer( NULL ),
+        m_pOSThreadpoolTimer( nullptr ),
         m_pfnTask( pfnTask ),
         m_pvTaskGroupContext( (VOID *)pvTaskGroupContext ),
-        m_pvTaskRuntimeContext( NULL ),
+        m_pvTaskRuntimeContext( nullptr ),
         m_semExec( CSyncBasicInfo( "COSTimerTaskEntry::m_semExec" ) ),
         m_critSchedule( CLockBasicInfo( CSyncBasicInfo( _T( "m_critSchedule" ) ), rankTimerTaskEntry, 0 ) ),
         m_idSchedule( 0 ),
@@ -238,7 +238,7 @@ void WINAPI COSTimerTaskEntry::OSTimerTaskIThreadpoolTimerCompletion(
     //  dequeue our runtime context
 
     void * const pvTaskRuntimeContext = ptte->m_pvTaskRuntimeContext;
-    ptte->m_pvTaskRuntimeContext = NULL;
+    ptte->m_pvTaskRuntimeContext = nullptr;
     ptte->m_idRun = ptte->m_idSchedule;
 
     //  set state to running
@@ -312,7 +312,7 @@ QuitThread:
 
     //  no longer a timer-task thread
 
-    Postls()->posttExecuting = NULL;
+    Postls()->posttExecuting = nullptr;
 }
 
 typedef CInvasiveList< COSTimerTaskEntry, COSTimerTaskEntry::OffsetOfILE > COSTimerTaskEntryList;
@@ -331,7 +331,7 @@ ERR COSTimerTaskEntry::ErrOSTimerTaskICreate(
     POSTIMERTASK *                  pposttTimerHandle )
 {
     ERR                             err = JET_errSuccess;
-    COSTimerTaskEntry *             ptte = NULL;
+    COSTimerTaskEntry *             ptte = nullptr;
 
     //  protect the state of the timer queue
 
@@ -339,7 +339,7 @@ ERR COSTimerTaskEntry::ErrOSTimerTaskICreate(
 
     //  validate parameters
 
-    if ( pfnTask == NULL )
+    if ( pfnTask == nullptr )
     {
         AssertSz( fFalse, "pfnTask should've been specified" );
         Error( ErrERRCheck( JET_errInvalidParameter ) );
@@ -361,7 +361,7 @@ ERR COSTimerTaskEntry::ErrOSTimerTaskICreate(
     if ( ptte )
     {
         AssertSz( fFalse, "This is a usage error to try to schedule the same task." );
-        ptte = NULL;
+        ptte = nullptr;
         Error( ErrERRCheck( JET_errTaskDropped ) );
     }
 
@@ -371,7 +371,7 @@ ERR COSTimerTaskEntry::ErrOSTimerTaskICreate(
 
     //  create threadpool timer
 
-    Alloc( ptte->m_pOSThreadpoolTimer = g_pfnCreateThreadpoolTimer( COSTimerTaskEntry::OSTimerTaskIThreadpoolTimerCompletion, ptte, NULL ) );
+    Alloc( ptte->m_pOSThreadpoolTimer = g_pfnCreateThreadpoolTimer( COSTimerTaskEntry::OSTimerTaskIThreadpoolTimerCompletion, ptte, nullptr ) );
 
     ptte->m_state = COSTimerTaskEntry::stateInactive;
 
@@ -388,7 +388,7 @@ ERR COSTimerTaskEntry::ErrOSTimerTaskICreate(
     //  transfer to out parameter
 
     *pposttTimerHandle = (POSTIMERTASK*)ptte;
-    ptte = NULL;
+    ptte = nullptr;
     Assert( JET_errSuccess == err );
 
 HandleError:
@@ -427,10 +427,10 @@ VOID COSTimerTaskEntry::OSTimerTaskScheduleITask(
 
     if ( ppvRuntimeContextCancelled )
     {
-        *ppvRuntimeContextCancelled = NULL;
+        *ppvRuntimeContextCancelled = nullptr;
     }
 
-    const BOOL fCallbackReScheduling = ( Postls()->posttExecuting != NULL );    // rescheduling from inside _A_ timer-task callback of some sort
+    const BOOL fCallbackReScheduling = ( Postls()->posttExecuting != nullptr );    // rescheduling from inside _A_ timer-task callback of some sort
     const BOOL fSelfReScheduling = ( ptte->m_tidExec == DwUtilThreadId() ); // rescheduling same timer-task from inside this same timer-task
 
     if ( fCallbackReScheduling )
@@ -569,7 +569,7 @@ VOID COSTimerTaskEntry::OSTimerTaskCancelITask( _Out_opt_ const void ** ppvRunti
     {
         *ppvRuntimeContextCancelled = ptte->m_pvTaskRuntimeContext;
     }
-    ptte->m_pvTaskRuntimeContext = NULL;
+    ptte->m_pvTaskRuntimeContext = nullptr;
 
     //  note: you can not keep the critical section over the WaitForThreadpoolTimerCallbacks() or 
     //  you can deadlock with the callback which also takes the same lock
@@ -582,7 +582,7 @@ VOID COSTimerTaskEntry::OSTimerTaskCancelITask( _Out_opt_ const void ** ppvRunti
 
     //  initiate immediate scheduling for any future tasks
 
-    g_pfnSetThreadpoolTimer( ptte->m_pOSThreadpoolTimer, NULL, 0, 0 );
+    g_pfnSetThreadpoolTimer( ptte->m_pOSThreadpoolTimer, nullptr, 0, 0 );
 
     //  wait for the callbacks to execute (again)
 
@@ -631,7 +631,7 @@ VOID COSTimerTaskEntry::OSTimerTaskIDelete( POSTIMERTASK postt )
     //  close / release the threadpool timer
 
     g_pfnCloseThreadpoolTimer( ptte->m_pOSThreadpoolTimer );
-    ptte->m_pOSThreadpoolTimer = NULL;
+    ptte->m_pOSThreadpoolTimer = nullptr;
     ptte->m_state = COSTimerTaskEntry::stateDeleted;
     OnDebug( ptte->m_tickDeleted = TickOSTimeCurrent() );
 

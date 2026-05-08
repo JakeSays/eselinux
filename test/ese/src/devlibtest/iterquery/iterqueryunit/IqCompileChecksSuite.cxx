@@ -28,9 +28,9 @@ class TestPageDataEntryDescriptor : public IEntryDescriptor
     {
         static CMemberDescriptor s_rgqt[] =
         {
-            QEF(   TestPageData, iSeq,       eNoHistoSupport,   DwordExprEval, NULL, DwordReadVal, DwordPrintVal )
-            QEF(   TestPageData, fCached,    eNoHistoSupport,   BoolExprEval,  NULL, BoolReadVal, BoolPrintVal )
-            QEF(   TestPageData, qwChksum,   eNoHistoSupport,   QwordExprEval, NULL, QwordReadVal, QwordPrintVal )
+            QEF(   TestPageData, iSeq,       eNoHistoSupport,   DwordExprEval, nullptr, DwordReadVal, DwordPrintVal )
+            QEF(   TestPageData, fCached,    eNoHistoSupport,   BoolExprEval,  nullptr, BoolReadVal, BoolPrintVal )
+            QEF(   TestPageData, qwChksum,   eNoHistoSupport,   QwordExprEval, nullptr, QwordReadVal, QwordPrintVal )
         };
 
         return PmdMemberDescriptorLookupHelper( s_rgqt, _countof( s_rgqt ), szTarget, chDelim );

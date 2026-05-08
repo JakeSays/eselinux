@@ -249,8 +249,8 @@ void OSSysinfoPostterm()
 {
     if ( g_fSignalHandlerInstalled )
     {
-        sigaction( SIGINT,  &g_oldSigInt,  NULL );
-        sigaction( SIGTERM, &g_oldSigTerm, NULL );
+        sigaction( SIGINT,  &g_oldSigInt,  nullptr );
+        sigaction( SIGTERM, &g_oldSigTerm, nullptr );
         g_fSignalHandlerInstalled = fFalse;
     }
 }
@@ -308,7 +308,7 @@ LOCAL VOID DetermineProcessPath()
 
 LOCAL VOID DetermineImagePath()
 {
-    Dl_info info = { 0 };
+    Dl_info info = { nullptr };
     if ( dladdr( (void*)&DetermineImagePath, &info ) && info.dli_fname )
     {
         NarrowToWide( info.dli_fname, g_wszImagePath, _countof( g_wszImagePath ) );
@@ -317,10 +317,10 @@ LOCAL VOID DetermineImagePath()
     else
     {
         OSStrCbCopyW( g_wszImagePath, sizeof( g_wszImagePath ), g_wszProcessPath );
-        g_pvImageBaseAddress = NULL;
+        g_pvImageBaseAddress = nullptr;
     }
 
-    SplitTrailingComponent( g_wszImagePath, g_wszImageName, _countof( g_wszImageName ), NULL, 0 );
+    SplitTrailingComponent( g_wszImagePath, g_wszImageName, _countof( g_wszImageName ), nullptr, 0 );
 }
 
 BOOL FOSSysinfoPreinit()
@@ -375,7 +375,7 @@ BOOL FOSSysinfoPreinit()
 VOID COSLayerPreInit::SetProcessFriendlyName( const WCHAR* const wszProcessFriendlyNameNew )
 {
     const WCHAR* wsz = wszProcessFriendlyNameNew;
-    if ( wsz == NULL || LOSStrLengthW( wsz ) == 0 )
+    if ( wsz == nullptr || LOSStrLengthW( wsz ) == 0 )
     {
         wsz = WszUtilProcessName();
     }

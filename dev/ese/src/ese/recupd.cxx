@@ -256,7 +256,7 @@ public:
 
         Assert( ACTION::Delete == m_Action || ACTION::Insert == m_Action || ACTION::Skip == m_Action );
 
-        if ( NULL != pbTemp )
+        if ( nullptr != pbTemp )
         {
             RESKEY.Free( pbTemp );
         }
@@ -405,7 +405,7 @@ struct TRACK_INDEX_ENTRY_CONTEXT : INDEX_ENTRY_CALLBACK_CONTEXT
     {
         Assert( NULL != m_pData );
 
-        if ( ( m_DataLocal != m_pData ) && ( NULL != m_pData ) )
+        if ( ( m_DataLocal != m_pData ) && ( nullptr != m_pData ) )
         {
             delete [] m_pData;
         }
@@ -527,7 +527,7 @@ ERR ErrRECIEnumerateKeys(
     BOOL            fFirstColumnMultiValued = FRECIFirstIndexColumnMultiValued( pfucb, pidb );
 
     KEY             keyRead;
-    BYTE            *pbReadKey              = NULL;
+    BYTE            *pbReadKey              = nullptr;
 
     Assert( ( pfnIndexEntryCallback == ErrRECIInsertIndexEntry ) ||
             ( pfnIndexEntryCallback == ErrRECIDeleteIndexEntry ) ||
@@ -725,7 +725,7 @@ LOCAL ERR ErrRECICallback(
     //
     const CBDESC *  pcbdesc;
     for ( pcbdesc = ptdb->Pcbdesc();
-        NULL != pcbdesc;
+        nullptr != pcbdesc;
         pcbdesc = pcbdesc->pcbdescNext )
     {
         if( ( pcbdesc->cbtyp & cbtyp )
@@ -735,7 +735,7 @@ LOCAL ERR ErrRECICallback(
         }
     }
 
-    if( NULL == pcbdesc )
+    if( nullptr == pcbdesc )
     {
         //  no matching callbacks were found
         //  if the pointer is non-null then it is pointing to
@@ -766,7 +766,7 @@ LOCAL ERR ErrRECICallback(
     //  the first loop above, stopped us at the first possibly matching CBDESC
     //  we don't need to re-initialize the variable as we've done the work already
     //
-    while( NULL != pcbdesc && err >= JET_errSuccess )
+    while( nullptr != pcbdesc && err >= JET_errSuccess )
     {
         BOOL fVisible = fTrue;
 #ifdef VERSIONED_CALLBACKS
@@ -913,14 +913,14 @@ ERR ErrRECCallback(
 
     BOOL fCallbackCalledDummy;
 
-    if ( NULL == pfCallbackCalled )
+    if ( nullptr == pfCallbackCalled )
     {
         pfCallbackCalled = &fCallbackCalledDummy;
     }
 
     *pfCallbackCalled = fFalse;
 
-    if( NULL != ptdb->Pcbdesc() )
+    if( nullptr != ptdb->Pcbdesc() )
     {
 ///     pfcb->EnterDDL();
         err = ErrRECICallback( ppib, pfucb, ptdb, cbtyp, ulId, pvArg1, pvArg2, ulUnused );
@@ -978,7 +978,7 @@ ERR VTAPI ErrIsamUpdate(
             Assert( pbm->key.Cb() > 0 );
             Assert( pbm->key.prefix.FNull() );
 
-            if ( pcbActual != NULL )
+            if ( pcbActual != nullptr )
             {
                 *pcbActual = pbm->key.Cb();
             }
@@ -1018,7 +1018,7 @@ LOCAL ERR ErrRECIUpdateIndex(
     FUCB            *pfucb,
     FCB             *pfcbIdx,
     const RECOPER   recoper,
-    const DIB       *pdib = NULL )
+    const DIB       *pdib = nullptr )
 {
     ERR             err = JET_errSuccess;                   // error code of various utility
     FUCB            *pfucbIdx;                              //  cursor on secondary index
@@ -1345,7 +1345,7 @@ LOCAL VOID RECIReportIndexCorruption( const FCB * const pfcbIdx )
             iszT,
             rgcwszT,
             0,
-            NULL,
+            nullptr,
             PinstFromIfmp( pfcbIdx->Ifmp() ) );
 
     OSUHAPublishEvent(  HaDbFailureTagCorruption,
@@ -1488,7 +1488,7 @@ LOCAL ERR ErrRECIInitDbkMost( FUCB * const pfucb )
     //  down to the last data record
     //
     dib.dirflag = fDIRAllNode;
-    dib.pbm = NULL;
+    dib.pbm = nullptr;
     dib.pos = posLast;
     err = ErrDIRDown( pfucb, &dib );
     Assert( JET_errNoCurrentRecord != err );
@@ -1571,7 +1571,7 @@ LOCAL ERR ErrRECIInsert(
     ERR             err;                            // error code of various utility
     PIB *           ppib                    = pfucb->ppib;
     KEY             keyToAdd;                       // key of new data record
-    BYTE            *pbKey                  = NULL;
+    BYTE            *pbKey                  = nullptr;
     FCB *           pfcbTable;                      // file's FCB
     TDB *           ptdb;
     FCB *           pfcbIdx;                        // loop variable for each index on file
@@ -1665,7 +1665,7 @@ LOCAL ERR ErrRECIInsert(
     }
 
     // Do the BeforeInsert callback
-    Call( ErrRECCallback( ppib, pfucb, JET_cbtypBeforeInsert, 0, NULL, NULL, 0 ) );
+    Call( ErrRECCallback( ppib, pfucb, JET_cbtypBeforeInsert, 0, nullptr, nullptr, 0 ) );
 
     //  open temp FUCB on data file
     //
@@ -1837,7 +1837,7 @@ LOCAL ERR ErrRECIInsert(
 
     //  check if return buffer for bookmark is sufficient size
     //
-    if ( pv != NULL && (ULONG)keyToAdd.Cb() > cbMax )
+    if ( pv != nullptr && (ULONG)keyToAdd.Cb() > cbMax )
     {
         Error( ErrERRCheck( JET_errBufferTooSmall ) );
     }
@@ -1884,7 +1884,7 @@ LOCAL ERR ErrRECIInsert(
     Assert( !pfucbT->bmCurr.key.FNull() && pfucbT->bmCurr.key.Cb() == keyToAdd.Cb() );
     Assert( pfucbT->bmCurr.data.Cb() == 0 );
 
-    if ( pcbActual != NULL || pv != NULL )
+    if ( pcbActual != nullptr || pv != nullptr )
     {
         BOOKMARK    *pbmPrimary;    //  bookmark of primary index node inserted
 
@@ -1892,13 +1892,13 @@ LOCAL ERR ErrRECIInsert(
 
         //  set return values
         //
-        if ( pcbActual != NULL )
+        if ( pcbActual != nullptr )
         {
             Assert( pbmPrimary->key.Cb() == keyToAdd.Cb() );
             *pcbActual = pbmPrimary->key.Cb();
         }
 
-        if ( pv != NULL )
+        if ( pv != nullptr )
         {
             Assert( cbMax >= (ULONG)pbmPrimary->key.Cb() );
             pbmPrimary->key.CopyIntoBuffer( pv, min( cbMax, (ULONG)pbmPrimary->key.Cb() ) );
@@ -1962,7 +1962,7 @@ LOCAL ERR ErrRECIInsert(
     FUCBResetUpdateFlags( pfucb );
 
     // Do the AfterInsert callback
-    CallS( ErrRECCallback( ppib, pfucb, JET_cbtypAfterInsert, 0, NULL, NULL, 0 ) );
+    CallS( ErrRECCallback( ppib, pfucb, JET_cbtypAfterInsert, 0, nullptr, nullptr, 0 ) );
 
     AssertDIRMaybeNoLatch( ppib, pfucb );
 
@@ -2023,7 +2023,7 @@ ERR ErrRECInsert( FUCB *pfucb, BOOKMARK * const pbmPrimary )
     Assert( pfucb->pfucbCurIndex == pfucbNil );
     Assert( !FFUCBSecondary( pfucb ) );
 
-    if ( NULL != pbmPrimary )
+    if ( nullptr != pbmPrimary )
     {
         ULONG cb = pbmPrimary->key.suffix.Cb();
         err = ErrRECIInsert(
@@ -2037,7 +2037,7 @@ ERR ErrRECInsert( FUCB *pfucb, BOOKMARK * const pbmPrimary )
     }
     else
     {
-        err = ErrRECIInsert( pfucb, NULL, 0, NULL, NO_GRBIT );
+        err = ErrRECIInsert( pfucb, nullptr, 0, nullptr, NO_GRBIT );
     }
 
     Assert( JET_errNoCurrentRecord != err );
@@ -2389,7 +2389,7 @@ ERR VTAPI ErrIsamDelete(
     Assert( pfcbTable != pfcbNil );
 
     // Do the BeforeDelete callback
-    Call( ErrRECCallback( ppib, pfucb, JET_cbtypBeforeDelete, 0, NULL, NULL, 0 ) );
+    Call( ErrRECCallback( ppib, pfucb, JET_cbtypBeforeDelete, 0, nullptr, nullptr, 0 ) );
 
     // After ensuring that we're in a transaction, refresh
     // our cursor to ensure we still have access to the record.
@@ -2480,7 +2480,7 @@ ERR VTAPI ErrIsamDelete(
     AssertDIRMaybeNoLatch( ppib, pfucb );
 
     // Do the AfterDelete callback
-    CallS( ErrRECCallback( ppib, pfucb, JET_cbtypAfterDelete, 0, NULL, NULL, 0 ) );
+    CallS( ErrRECCallback( ppib, pfucb, JET_cbtypAfterDelete, 0, nullptr, nullptr, 0 ) );
 
     Assert( fLogIsDone == ( !PinstFromPpib( ppib )->m_plog->FLogDisabled() && !PinstFromPpib( ppib )->m_plog->FRecovering() && g_rgfmp[pfucb->ifmp].FLogOn() ) );
 
@@ -2773,8 +2773,8 @@ LOCAL ERR ErrRECFIndexChanged( FUCB *pfucb, FCB *pfcbIdx, BOOL *pfChanged )
 {
     KEY     keyOld;
     KEY     keyNew;
-    BYTE    *pbOldKey                       = NULL;     //  this function is called on primary index to ensure it hasn't changed
-    BYTE    *pbNewKey                       = NULL;     //  and on secondary index to cascade record updates
+    BYTE    *pbOldKey                       = nullptr;     //  this function is called on primary index to ensure it hasn't changed
+    BYTE    *pbNewKey                       = nullptr;     //  and on secondary index to cascade record updates
     DATA    *plineNewData = &pfucb->dataWorkBuf;
     ERR     err;
     ULONG   iidxsegT;
@@ -3026,7 +3026,7 @@ LOCAL ERR ErrRECIReplace( FUCB *pfucb, const JET_GRBIT grbit )
     }
 
     // Do the BeforeReplace callback
-    Call( ErrRECCallback( ppib, pfucb, JET_cbtypBeforeReplace, 0, NULL, NULL, 0 ) );
+    Call( ErrRECCallback( ppib, pfucb, JET_cbtypBeforeReplace, 0, nullptr, nullptr, 0 ) );
 
     //  check for clients that commit an update even though they didn't actually change anything
     //
@@ -3289,7 +3289,7 @@ Done:
     FUCBResetUpdateFlags( pfucb );
 
     // Do the AfterReplace callback
-    CallS( ErrRECCallback( ppib, pfucb, JET_cbtypAfterReplace, 0, NULL, NULL, 0 ) );
+    CallS( ErrRECCallback( ppib, pfucb, JET_cbtypAfterReplace, 0, nullptr, nullptr, 0 ) );
 
     AssertDIRMaybeNoLatch( ppib, pfucb );
 

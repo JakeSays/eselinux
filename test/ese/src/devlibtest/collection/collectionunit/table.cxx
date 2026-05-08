@@ -109,7 +109,7 @@ ERR TableTest::ErrTest()
     TestCheck( 50 == table.SeekLE( 50 )->m_id );
 
     TestCheck( 70 == table.SeekEQ( 70 )->m_id );
-    TestCheck( NULL == table.SeekEQ( 65 ) );
+    TestCheck( nullptr == table.SeekEQ( 65 ) );
 
     TestCheck( 70 == table.SeekHI( 70 )->m_id );
 

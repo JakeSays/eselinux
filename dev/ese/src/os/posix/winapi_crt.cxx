@@ -485,7 +485,7 @@ namespace
         char nbuf[ 8192 ];
         const int cbN = WideCharToMultiByte( CP_UTF8, 0, wbuf, -1,
                                              nbuf, sizeof( nbuf ),
-                                             NULL, NULL );
+                                             nullptr, nullptr );
         const size_t cb = ( cbN > 0 ) ? static_cast<size_t>( cbN - 1 ) : 0;
         if ( cb && fp )
         {

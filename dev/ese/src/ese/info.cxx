@@ -248,7 +248,7 @@ LOCAL ERR ErrINFOGetTableColumnInfo(
     Assert( pcolumndef != NULL );
 
     Assert( szColumnName != NULL || pcolumndef->columnid != 0 );
-    if ( szColumnName != NULL )
+    if ( szColumnName != nullptr )
     {
         //  quick failure for empty column name
         if ( *szColumnName == '\0' )
@@ -406,7 +406,7 @@ LOCAL ERR ErrINFOGetTableColumnInfo(
     OSStrCbCopyA( pcolumndef->szName, sizeof(pcolumndef->szName), ptdb->SzFieldName( pfield->itagFieldName, fFalse ) );
 
     //  only retrieve the default value if we are passed in a buffer to place it into
-    if( NULL != pcolumndef->pbDefault )
+    if( nullptr != pcolumndef->pbDefault )
     {
         if ( FFIELDUserDefinedDefault( pfield->ffield ) )
         {
@@ -430,7 +430,7 @@ LOCAL ERR ErrINFOGetTableColumnInfo(
                     pfucb->ppib,
                     pfucb->ifmp,
                     pfcb->ObjidFDP(),
-                    ( NULL == pfcbTemplate ? objidNil : pfcbTemplate->ObjidFDP() ),
+                    ( nullptr == pfcbTemplate ? objidNil : pfcbTemplate->ObjidFDP() ),
                     columnidCallback,
                     szCallback,
                     sizeof( szCallback ),
@@ -475,7 +475,7 @@ LOCAL ERR ErrINFOGetTableColumnInfo(
             }
             else
             {
-                puserdefineddefault->szDependantColumns = NULL;
+                puserdefineddefault->szDependantColumns = nullptr;
             }
 
             //  REMEMBER: to pass this into JetAddColumn the cbDefault must be set to sizeof( JET_USERDEFINEDDEFAULT )
@@ -618,7 +618,7 @@ ERR VDBAPI ErrIsamGetObjectInfo(
     CallR( ErrPIBCheck( ppib ) );
     CallR( ErrPIBCheckIfmp( ppib, ifmp ) );
 
-    if ( NULL != szContainer && '\0' != *szContainer )
+    if ( nullptr != szContainer && '\0' != *szContainer )
     {
         CHAR    szContainerName[JET_cbNameMost+1];
         CallR( ErrUTILCheckName( szContainerName, szContainer, JET_cbNameMost+1 ) );
@@ -630,7 +630,7 @@ ERR VDBAPI ErrIsamGetObjectInfo(
         }
     }
 
-    if ( szObject == NULL || *szObject == '\0' )
+    if ( szObject == nullptr || *szObject == '\0' )
         *szObjectName = '\0';
     else
         CallR( ErrUTILCheckName( szObjectName, szObject, JET_cbNameMost+1 ) );
@@ -741,7 +741,7 @@ LOCAL ERR ErrInfoGetObjectInfo(
                 sizeof( objectinfo.flags ),
                 &cbActual,
                 NO_GRBIT,
-                NULL ) );
+                nullptr ) );
     CallS( err );
     Assert( sizeof(ULONG) == cbActual );
 
@@ -755,7 +755,7 @@ LOCAL ERR ErrInfoGetObjectInfo(
                     ifmp,
                     (CHAR *)szObjectName,
                     &cRecord,
-                    NULL,
+                    nullptr,
                     &cPage ) );
 
         objectinfo.cRecord  = cRecord;
@@ -807,7 +807,7 @@ LOCAL ERR ErrInfoGetObjectInfoList(
                 sesid,
                 (JET_COLUMNDEF *)( fUnicodeNames ? rgcolumndefGetObjectInfo_W : rgcolumndefGetObjectInfo_A ),
                 ccolumndefGetObjectInfoMax,
-                NULL,
+                nullptr,
                 JET_bitTTScrollable|JET_bitTTIndexed,
                 &tableid,
                 rgcolumnid,
@@ -868,7 +868,7 @@ LOCAL ERR ErrInfoGetObjectInfoList(
                     JET_cbNameMost,
                     &cbActual,
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         CallS( err );
         Assert( cbActual > 0 );
         Assert( cbActual <= JET_cbNameMost );
@@ -888,7 +888,7 @@ LOCAL ERR ErrInfoGetObjectInfoList(
                     sizeof(ulFlags),
                     &cbActual,
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         CallS( err );
         Assert( sizeof(ULONG) == cbActual );
 
@@ -901,7 +901,7 @@ LOCAL ERR ErrInfoGetObjectInfoList(
                         ifmp,
                         szObjectName,
                         &cRecord,
-                        NULL,
+                        nullptr,
                         &cPage ) );
         }
         else
@@ -924,7 +924,7 @@ LOCAL ERR ErrInfoGetObjectInfoList(
                     fUnicodeNames ? (VOID *)wszTcObject : (VOID *)szTcObject,
                     (ULONG)( fUnicodeNames ? ( LOSStrLengthW(wszTcObject) * sizeof( WCHAR ) ) : strlen(szTcObject) ),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
                     
         Call( ErrDispSetColumn(
                     sesid,
@@ -933,7 +933,7 @@ LOCAL ERR ErrInfoGetObjectInfoList(
                     &objtypTable,
                     sizeof(objtypTable),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
 
         if ( fUnicodeNames )
         {
@@ -949,7 +949,7 @@ LOCAL ERR ErrInfoGetObjectInfoList(
                         wszObjectName,
                         (ULONG) ( sizeof(WCHAR) * LOSStrLengthW(wszObjectName) ),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
         }
         else
         {
@@ -960,7 +960,7 @@ LOCAL ERR ErrInfoGetObjectInfoList(
                         szObjectName,
                         (ULONG)strlen(szObjectName),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
         }
         
         Call( ErrDispSetColumn(
@@ -970,7 +970,7 @@ LOCAL ERR ErrInfoGetObjectInfoList(
                     &ulFlags,
                     sizeof(ulFlags),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         Call( ErrDispSetColumn(
                     sesid,
                     tableid,
@@ -978,7 +978,7 @@ LOCAL ERR ErrInfoGetObjectInfoList(
                     &cRecord,
                     sizeof(cRecord),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         Call( ErrDispSetColumn(
                     sesid,
                     tableid,
@@ -986,7 +986,7 @@ LOCAL ERR ErrInfoGetObjectInfoList(
                     &cPage,
                     sizeof(cPage),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         Call( ErrDispSetColumn(
                     sesid,
                     tableid,
@@ -994,14 +994,14 @@ LOCAL ERR ErrInfoGetObjectInfoList(
                     &grbitTable,
                     sizeof(grbitTable),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
 
         Call( ErrDispUpdate(
                     sesid,
                     tableid,
-                    NULL,
+                    nullptr,
                     0,
-                    NULL,
+                    nullptr,
                     NO_GRBIT ) );
 
         //  set the number of objects found
@@ -1451,7 +1451,7 @@ ERR VTAPI ErrIsamGetTableInfo(
                       pfucb->ifmp,
                       szTableName,
                       &cRecord,
-                      NULL,
+                      nullptr,
                       &cPage ) );
 
             objectinfo.cRecord  = cRecord;
@@ -1688,7 +1688,7 @@ ERR VDBAPI ErrIsamGetColumnInfo(
     CallR( ErrPIBCheck( ppib ) );
     CallR( ErrPIBCheckIfmp( ppib, (IFMP)vdbid ) );
     ifmp = (IFMP) vdbid;
-    if ( szTable == NULL )
+    if ( szTable == nullptr )
         return ErrERRCheck( JET_errInvalidParameter );
     CallR( ErrUTILCheckName( szTableName, szTable, JET_cbNameMost+1 ) );
 
@@ -1756,7 +1756,7 @@ ErrIsamGetTableColumnInfo(
 
     CallR( ErrPIBCheck( ppib ) );
     CheckTable( ppib, pfucb );
-    if ( szColumn == NULL || *szColumn == '\0' )
+    if ( szColumn == nullptr || *szColumn == '\0' )
     {
         szColumnName[0] = '\0';
     }
@@ -1839,9 +1839,9 @@ LOCAL ERR ErrInfoGetTableColumnInfo(
 {
     ERR         err;
     INFOCOLUMNDEF   columndef;
-    columndef.pbDefault = NULL;
+    columndef.pbDefault = nullptr;
 
-    if ( cbMax < sizeof(JET_COLUMNDEF) || szColumnName == NULL )
+    if ( cbMax < sizeof(JET_COLUMNDEF) || szColumnName == nullptr )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -1852,7 +1852,7 @@ LOCAL ERR ErrInfoGetTableColumnInfo(
         if ( pcolid )
         {
             columndef.columnid = *pcolid;
-            szColumnName = NULL;
+            szColumnName = nullptr;
         }
         else
         {
@@ -1903,7 +1903,7 @@ LOCAL ERR ErrINFOSetTableColumnInfoList(
                     (BYTE *)&pcolumndef->columnid,
                     sizeof(pcolumndef->columnid),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
     }
 
     if ( fUnicodeNames )
@@ -1917,7 +1917,7 @@ LOCAL ERR ErrINFOSetTableColumnInfoList(
                     wszName,
                     (ULONG)( sizeof( WCHAR ) * LOSStrLengthW( wszName ) ),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
 
     }
     else
@@ -1929,7 +1929,7 @@ LOCAL ERR ErrINFOSetTableColumnInfoList(
                     pcolumndef->szName,
                     (ULONG)strlen( pcolumndef->szName ),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
     }
     
     Call( ErrDispSetColumn(
@@ -1939,7 +1939,7 @@ LOCAL ERR ErrINFOSetTableColumnInfoList(
                 (BYTE *)&pcolumndef->columnid,
                 sizeof(pcolumndef->columnid),
                 NO_GRBIT,
-                NULL ) );
+                nullptr ) );
 
     if ( !fMinimalInfo )
     {
@@ -1950,7 +1950,7 @@ LOCAL ERR ErrINFOSetTableColumnInfoList(
                     (BYTE *)&pcolumndef->coltyp,
                     sizeof(pcolumndef->coltyp),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         Call( ErrDispSetColumn(
                     (JET_SESID)ppib,
                     tableid,
@@ -1958,7 +1958,7 @@ LOCAL ERR ErrINFOSetTableColumnInfoList(
                     &pcolumndef->wCountry,
                     sizeof( pcolumndef->wCountry ),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         Call( ErrDispSetColumn(
                     (JET_SESID)ppib,
                     tableid,
@@ -1966,7 +1966,7 @@ LOCAL ERR ErrINFOSetTableColumnInfoList(
                     &pcolumndef->langid,
                     sizeof( pcolumndef->langid ),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         Call( ErrDispSetColumn(
                     (JET_SESID)ppib,
                     tableid,
@@ -1974,7 +1974,7 @@ LOCAL ERR ErrINFOSetTableColumnInfoList(
                     &pcolumndef->cp,
                     sizeof(pcolumndef->cp),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         Call( ErrDispSetColumn(
                     (JET_SESID)ppib,
                     tableid,
@@ -1982,7 +1982,7 @@ LOCAL ERR ErrINFOSetTableColumnInfoList(
                     (BYTE *)&pcolumndef->cbMax,
                     sizeof(pcolumndef->cbMax),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         Call( ErrDispSetColumn(
                     (JET_SESID)ppib,
                     tableid,
@@ -1990,7 +1990,7 @@ LOCAL ERR ErrINFOSetTableColumnInfoList(
                     &pcolumndef->grbit,
                     sizeof(pcolumndef->grbit),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
 
         Call( ErrDispSetColumn(
                     (JET_SESID)ppib,
@@ -1999,7 +1999,7 @@ LOCAL ERR ErrINFOSetTableColumnInfoList(
                     &pcolumndef->wCollate,
                     sizeof(pcolumndef->wCollate),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
 
         if ( pcolumndef->cbDefault > 0 )
         {
@@ -2010,7 +2010,7 @@ LOCAL ERR ErrINFOSetTableColumnInfoList(
                     pcolumndef->pbDefault,
                     pcolumndef->cbDefault,
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         }
 
         if ( fUnicodeNames )
@@ -2024,7 +2024,7 @@ LOCAL ERR ErrINFOSetTableColumnInfoList(
                         wszName,
                         (ULONG)( sizeof( WCHAR ) * ( LOSStrLengthW( wszName ) ) ),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
 
             Call( ErrOSSTRAsciiToUnicode( pcolumndef->szName, wszName, _countof(wszName), &cwchActual ) );
             
@@ -2035,7 +2035,7 @@ LOCAL ERR ErrINFOSetTableColumnInfoList(
                         wszName,
                         (ULONG)( sizeof( WCHAR ) * ( LOSStrLengthW( wszName ) ) ),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
 
         }
         else
@@ -2047,7 +2047,7 @@ LOCAL ERR ErrINFOSetTableColumnInfoList(
                         szTableName,
                         (ULONG)strlen( szTableName ),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
 
             Call( ErrDispSetColumn(
                         (JET_SESID)ppib,
@@ -2056,12 +2056,12 @@ LOCAL ERR ErrINFOSetTableColumnInfoList(
                         pcolumndef->szName,
                         (ULONG)strlen( pcolumndef->szName ),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
 
         }
     }
 
-    Call( ErrDispUpdate( (JET_SESID)ppib, tableid, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrDispUpdate( (JET_SESID)ppib, tableid, nullptr, 0, nullptr, NO_GRBIT ) );
 
 HandleError:
     return err;
@@ -2097,7 +2097,7 @@ LOCAL ERR ErrInfoGetTableColumnInfoList(
     const BOOL      fCompacting             = ( grbit & JET_ColInfoGrbitCompacting );
     const BOOL      fTemplateTable          = pfcb->FTemplateTable();
 
-    columndef.pbDefault = NULL;
+    columndef.pbDefault = nullptr;
 
     /*  initialize variables
     /**/
@@ -2116,7 +2116,7 @@ LOCAL ERR ErrInfoGetTableColumnInfoList(
                 (JET_COLUMNDEF *)( fCompacting ? ( fUnicodeNames ? rgcolumndefGetColumnInfoCompact_W : rgcolumndefGetColumnInfoCompact_A ) :
                     (  fUnicodeNames ? rgcolumndefGetColumnInfo_W : rgcolumndefGetColumnInfo_A ) ),
                 ccolumndefGetColumnInfoMax,
-                NULL,
+                nullptr,
                 JET_bitTTScrollable|JET_bitTTIndexed,
                 &tableid,
                 rgcolumnid,
@@ -2134,7 +2134,7 @@ LOCAL ERR ErrInfoGetTableColumnInfoList(
     //  default allocation must handle user defined default case where it holds callback data
     //
     columndef.pbDefault = (BYTE *)PvOSMemoryHeapAlloc( JET_cbCallbackDataAllMost );
-    if( NULL == columndef.pbDefault )
+    if( nullptr == columndef.pbDefault )
     {
         Call( ErrERRCheck( JET_errOutOfMemory ) );
     }
@@ -2199,7 +2199,7 @@ LOCAL ERR ErrInfoGetTableColumnInfoList(
             for ( FID_ITERATOR itfid( rgrgfidTemplateTableIterationBounds[iBounds][0], rgrgfidTemplateTableIterationBounds[iBounds][1] ); !itfid.FEnd(); itfid++ )
             {
                 columndef.columnid = ColumnidOfFid( *itfid, fTrue );
-                CallS( ErrINFOGetTableColumnInfo( pfucb, NULL, &columndef ) );
+                CallS( ErrINFOGetTableColumnInfo( pfucb, nullptr, &columndef ) );
                 
                 Call( ErrINFOSetTableColumnInfoList(
                           ppib,
@@ -2239,7 +2239,7 @@ LOCAL ERR ErrInfoGetTableColumnInfoList(
                 }
             }
             
-            CallS( ErrINFOGetTableColumnInfo( pfucb, NULL, &columndef ) );
+            CallS( ErrINFOGetTableColumnInfo( pfucb, nullptr, &columndef ) );
             
             //  if compacting, ignore placeholder
             if ( !fCompacting || !( columndef.grbit & JET_bitColumnRenameConvertToPrimaryIndexPlaceholder ) )
@@ -2321,9 +2321,9 @@ LOCAL ERR ErrInfoGetTableColumnInfoBase(
 {
     ERR             err;
     INFOCOLUMNDEF   columndef;
-    columndef.pbDefault = NULL;
+    columndef.pbDefault = nullptr;
 
-    if ( cbMax < sizeof(JET_COLUMNBASE_A) || szColumnName == NULL )
+    if ( cbMax < sizeof(JET_COLUMNBASE_A) || szColumnName == nullptr )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -2334,7 +2334,7 @@ LOCAL ERR ErrInfoGetTableColumnInfoBase(
         if ( pcolid )
         {
             columndef.columnid = *pcolid;
-            szColumnName = NULL;
+            szColumnName = nullptr;
         }
         else
         {
@@ -2618,7 +2618,7 @@ ERR ErrINFOGetTableIndexInfo(
         ifmp = pfucb->ifmp;
         objidTable = pfucb->u.pfcb->ObjidFDP();
     }
-    if ( szIndex == NULL || *szIndex == '\0' )
+    if ( szIndex == nullptr || *szIndex == '\0' )
     {
         *szIndexName = '\0';
     }
@@ -2871,7 +2871,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                 (JET_SESID)ppib,
                 (JET_COLUMNDEF *)( fUnicodeNames ? rgcolumndefGetIndexInfo_W : rgcolumndefGetIndexInfo_A ),
                 ccolumndefGetIndexInfoMax,
-                NULL,
+                nullptr,
                 JET_bitTTScrollable|JET_bitTTIndexed,
                 &tableid,
                 rgcolumnid,
@@ -2988,7 +2988,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                             wszName,
                             (ULONG)( sizeof(WCHAR) * LOSStrLengthW( wszName ) ),
                             NO_GRBIT,
-                            NULL ) );
+                            nullptr ) );
             }
             else
             {
@@ -3001,7 +3001,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                             szCurrIndex,
                             (ULONG)strlen( szCurrIndex ),
                             NO_GRBIT,
-                            NULL ) );
+                            nullptr ) );
             }
 
             /*  index flags
@@ -3013,7 +3013,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                         &grbit,
                         sizeof( grbit ),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
 
             /*  get statistics
             /**/
@@ -3031,7 +3031,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                         &cKey,
                         sizeof( cKey ),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
             Call( ErrDispSetColumn(
                         (JET_SESID)ppib,
                         tableid,
@@ -3039,7 +3039,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                         &cRecord,
                         sizeof( cRecord ),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
             Call( ErrDispSetColumn(
                         (JET_SESID)ppib,
                         tableid,
@@ -3047,7 +3047,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                         &cPage,
                         sizeof( cPage ),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
 
             /*  number of key columns
             /**/
@@ -3058,7 +3058,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                         &cColumn,
                         sizeof( cColumn ),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
 
             /*  column number within key
             /*  required by CLI and JET spec
@@ -3070,7 +3070,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                         &iidxseg,
                         sizeof( iidxseg ),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
 
             /*  get the ascending/descending flag
             /**/
@@ -3088,7 +3088,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                         &columnid,
                         sizeof( columnid ),
                         0,
-                        NULL ) );
+                        nullptr ) );
 
             /*  make copy of column definition
             /**/
@@ -3120,7 +3120,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                             &coltyp,
                             sizeof( coltyp ),
                             NO_GRBIT,
-                            NULL ) );
+                            nullptr ) );
             }
 
             /*  Country
@@ -3133,7 +3133,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                         &wT,
                         sizeof( wT ),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
 
             /*  Langid
             /**/
@@ -3144,7 +3144,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                         &langid,
                         sizeof( langid ),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
 
             /*  LCMapStringFlags
             /**/
@@ -3155,7 +3155,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                         &dwMapFlags,
                         sizeof( dwMapFlags ),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
 
             /*  Cp
             /**/
@@ -3166,7 +3166,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                         &field.cp,
                         sizeof(field.cp),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
 
             /* Collate
             /**/
@@ -3177,7 +3177,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                         &wCollate,
                         sizeof(wCollate),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
 
             /* column flags
             /**/
@@ -3188,7 +3188,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                         &grbitColumn,
                         sizeof( grbitColumn ),
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
 
             /*  column name
             /**/
@@ -3203,7 +3203,7 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                             wszName,
                             (ULONG)( sizeof(WCHAR) * LOSStrLengthW( wszName ) ),
                             NO_GRBIT,
-                            NULL ) );
+                            nullptr ) );
             }
             else
             {
@@ -3214,10 +3214,10 @@ LOCAL ERR ErrINFOGetTableIndexInfo(
                             szFieldName,
                             (ULONG)strlen( szFieldName ),
                             NO_GRBIT,
-                            NULL ) );
+                            nullptr ) );
             }
 
-            Call( ErrDispUpdate( (JET_SESID)ppib, tableid, NULL, 0, NULL, NO_GRBIT ) );
+            Call( ErrDispUpdate( (JET_SESID)ppib, tableid, nullptr, 0, nullptr, NO_GRBIT ) );
 
             /* count the number of VT rows
             /**/
@@ -3390,7 +3390,7 @@ LOCAL ERR ErrINFOICopyAsciiName(
     size_t              cwchActual  = 0;
     const ERR           err         = ErrOSSTRAsciiToUnicode( szNameSrc, wszNameDest, cwchNameDest, &cwchActual );
 
-    if ( NULL != pcbActual )
+    if ( nullptr != pcbActual )
         *pcbActual = cwchActual * sizeof( WCHAR );
 
     return err;
@@ -3408,7 +3408,7 @@ LOCAL ERR ErrINFOICopyAsciiName(
     //  size as the source name, but to be safe, take the
     //  string length of the destination name
     //
-    if ( NULL != pcbActual )
+    if ( nullptr != pcbActual )
         *pcbActual = ( strlen( JET_errSuccess == err ? szNameDest : szNameSrc ) + 1 ) * sizeof( CHAR );
     return err;
 }
@@ -3444,9 +3444,9 @@ ERR ErrINFOIBuildIndexCreateVX(
     ERR                     err                 = JET_errSuccess;
     TDB *                   ptdb                = ptdbNil;
     IDB *                   pidb                = pidbNil;
-    JET_INDEXCREATE_T *     pindexcreate        = NULL;
-    CHAR *                  szIndexName         = NULL;
-    const IDXSEG *          rgidxseg            = NULL;
+    JET_INDEXCREATE_T *     pindexcreate        = nullptr;
+    CHAR *                  szIndexName         = nullptr;
+    const IDXSEG *          rgidxseg            = nullptr;
     size_t                  cbKey               = 0;
     size_t                  cbActual            = 0;
     BYTE *                  pbBuffer            = (BYTE *)pvResult;
@@ -3840,7 +3840,7 @@ LOCAL ERR ErrINFOGetTableIndexInfoForCreateIndex(
     Call( pfcbTable->ErrSetUpdatingAndEnterDML( ppib, fTrue ) );
     fUpdatingLatchSet = fTrue;
     
-    if ( NULL == szIndex || '\0' == *szIndex )
+    if ( nullptr == szIndex || '\0' == *szIndex )
     {
         if ( pidbNil != pfcbTable->Pidb() )
         {
@@ -3906,8 +3906,8 @@ LOCAL ERR ErrINFOGetTableIndexInfoForCreateIndex(
                             pfcbIndex,
                             pvResult,
                             cbMax,
-                            NULL,
-                            NULL,
+                            nullptr,
+                            nullptr,
                             lIdxVersion );
         }
         else
@@ -3917,13 +3917,13 @@ LOCAL ERR ErrINFOGetTableIndexInfoForCreateIndex(
                             pfcbIndex,
                             pvResult,
                             cbMax,
-                            NULL,
-                            NULL,
+                            nullptr,
+                            nullptr,
                             lIdxVersion );
         }
     else if ( lIdxVersion == JET_IdxInfoCreateIndex2 )
     {
-        JET_SPACEHINTS * pSPHints = NULL;
+        JET_SPACEHINTS * pSPHints = nullptr;
         if ( fUnicodeNames )
         {
             err = ErrINFOIBuildIndexCreateVX< JET_INDEXCREATE2_W, JET_CONDITIONALCOLUMN_W, JET_UNICODEINDEX, WCHAR, sizeof(JET_SPACEHINTS) >(
@@ -3932,7 +3932,7 @@ LOCAL ERR ErrINFOGetTableIndexInfoForCreateIndex(
                             pvResult,
                             cbMax,
                             (void**)&pSPHints,
-                            NULL,
+                            nullptr,
                             lIdxVersion );
             
         }
@@ -3944,7 +3944,7 @@ LOCAL ERR ErrINFOGetTableIndexInfoForCreateIndex(
                             pvResult,
                             cbMax,
                             (void**)&pSPHints,
-                            NULL,
+                            nullptr,
                             lIdxVersion );
         }
         if ( err >= JET_errSuccess )
@@ -3979,8 +3979,8 @@ LOCAL ERR ErrINFOGetTableIndexInfoForCreateIndex(
     else if ( lIdxVersion == JET_IdxInfoCreateIndex3 )
     {
         
-        WCHAR *szLocaleName = NULL;
-        JET_SPACEHINTS * pSPHints = NULL;
+        WCHAR *szLocaleName = nullptr;
+        JET_SPACEHINTS * pSPHints = nullptr;
 
         if ( fUnicodeNames )
         {

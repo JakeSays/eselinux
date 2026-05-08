@@ -303,7 +303,7 @@ ErrGetColumnValue(  const size_t    iColumnValue,
     *pcbColumnValue = IbVarOffset( pibVarOffs[ ifid ] ) - ibStartOfColumn;
     if ( *pcbColumnValue == 0 )
     {
-        *ppvColumnValue = NULL;
+        *ppvColumnValue = nullptr;
     }
     else
     {
@@ -328,7 +328,7 @@ ERR CSingleValuedTaggedColumnValueIter::
 ErrGetColumnSize( FUCB* const pfucb, JET_RECSIZE3* const precsize, const JET_GRBIT grbit ) const
 {
     ERR err = JET_errSuccess;
-    BYTE *pbDataDecrypted = NULL;
+    BYTE *pbDataDecrypted = nullptr;
     const BOOL fLocal = ( grbit & JET_bitRecordSizeLocal );
 
     if ( !m_rgbData )
@@ -380,7 +380,7 @@ ErrGetColumnSize( FUCB* const pfucb, JET_RECSIZE3* const precsize, const JET_GRB
         if ( m_fEncrypted &&
              data.Cb() > 0 )
         {
-            if ( pfucb->pbEncryptionKey == NULL )
+            if ( pfucb->pbEncryptionKey == nullptr )
             {
                 Error( ErrERRCheck( JET_errColumnNoEncryptionKey ) );
             }
@@ -397,7 +397,7 @@ ErrGetColumnSize( FUCB* const pfucb, JET_RECSIZE3* const precsize, const JET_GRB
         if ( m_fCompressed )
         {
             // get the logical size of the data
-            Call( ErrPKDecompressData( data, pfucb, NULL, 0, &cbDataActual ) );
+            Call( ErrPKDecompressData( data, pfucb, nullptr, 0, &cbDataActual ) );
             Assert( JET_wrnBufferTruncated == err );
             err = JET_errSuccess;
             Assert( m_fEncrypted || (ULONG)cbDataActual >= m_cbData );
@@ -422,7 +422,7 @@ HandleError:
     if ( pbDataDecrypted )
     {
         delete[] pbDataDecrypted;
-        pbDataDecrypted = NULL;
+        pbDataDecrypted = nullptr;
     }
 
     return err;
@@ -586,7 +586,7 @@ ErrGetColumnSize( FUCB* const pfucb, JET_RECSIZE3* const precsize, const JET_GRB
                 data.SetPv( m_pmultivalues->PbData( imv ) );
                 data.SetCb( m_pmultivalues->CbData( imv ) );
                 INT cbDataActual;
-                Call( ErrPKDecompressData( data, pfucb, NULL, 0, &cbDataActual ) );
+                Call( ErrPKDecompressData( data, pfucb, nullptr, 0, &cbDataActual ) );
                 Assert( JET_wrnBufferTruncated == err );
                 err = JET_errSuccess;
                 Assert( (ULONG)cbDataActual >= m_pmultivalues->CbData( imv ) );
@@ -1067,15 +1067,15 @@ LOCAL ERR ErrRECIParseColumnReference(
     //  init out params for failure
 
     *plid               = lidMin;
-    *prgbBookmark       = NULL;
+    *prgbBookmark       = nullptr;
     *pcbBookmark        = 0;
-    *prgchColumnName    = NULL;
+    *prgchColumnName    = nullptr;
     *pcchColumnName     = 0;
     *pitagSequence      = 0;
 
     //  validate the column reference
 
-    if ( rgbReference == NULL )
+    if ( rgbReference == nullptr )
     {
         Error( ErrERRCheck( JET_errInvalidColumnReference ) );
     }
@@ -1328,7 +1328,7 @@ LOCAL ERR ErrIsamIResolveColumnFromColumnReference(
     //  lookup the column id
 
     JET_COLUMNDEF columndef;
-    err = ErrIsamGetTableColumnInfo( sesid, tableid, szColumn, NULL, &columndef, sizeof( columndef ), JET_ColInfo, false );
+    err = ErrIsamGetTableColumnInfo( sesid, tableid, szColumn, nullptr, &columndef, sizeof( columndef ), JET_ColInfo, false );
     if ( err == JET_errColumnNotFound )
     {
         Error( ErrERRCheck( JET_errStaleColumnReference ) );
@@ -1413,9 +1413,9 @@ ERR VTAPI ErrIsamRetrieveColumnByReference(
     BOOL        fTransactionStarted     = fFalse;
     BOOL        fRetrievedValue         = fFalse;
     LvId        lid                     = lidMin;
-    const BYTE* rgbBookmark             = NULL;
+    const BYTE* rgbBookmark             = nullptr;
     ULONG       cbBookmark              = 0;
-    const CHAR* rgchColumnName          = NULL;
+    const CHAR* rgchColumnName          = nullptr;
     ULONG       cchColumnName           = 0;
     ULONG       itagSequence            = 0;
 #ifdef DEBUG
@@ -1513,7 +1513,7 @@ ERR VTAPI ErrIsamRetrieveColumnByReference(
             Error( ErrERRCheck( JET_errStaleColumnReference ) );
         }
         Call( err );
-        if ( !( grbit & ( JET_bitRetrievePhysicalSize) ) && fEncrypted && pfucb->pbEncryptionKey == NULL )
+        if ( !( grbit & ( JET_bitRetrievePhysicalSize) ) && fEncrypted && pfucb->pbEncryptionKey == nullptr )
         {
             Error( ErrERRCheck( JET_errColumnNoEncryptionKey ) );
         }
@@ -1615,7 +1615,7 @@ ERR VTAPI ErrIsamRetrieveColumnByReference(
 HandleError:
     if ( fTransactionStarted )
     {
-        CallS( ErrIsamCommitTransaction( sesid, NO_GRBIT, 0, NULL ) );
+        CallS( ErrIsamCommitTransaction( sesid, NO_GRBIT, 0, nullptr ) );
     }
     AssertDIRNoLatch( ppib );
 
@@ -1640,7 +1640,7 @@ ERR VTAPI ErrIsamPrereadColumnsByReference(
     PIB* const      ppib                    = (PIB * const)sesid;
     FUCB* const     pfucb                   = (FUCB * const)tableid;
     ULONG           clid                    = 0;
-    LvId*           rglid                   = NULL;
+    LvId*           rglid                   = nullptr;
     ULONG           cPageCacheMinRemaining  = cPageCacheMin;
     ULONG           cPageCacheMaxRemaining  = cPageCacheMax;
     ULONG           cReferencesPrereadT;
@@ -1688,9 +1688,9 @@ ERR VTAPI ErrIsamPrereadColumnsByReference(
     for ( ULONG iReference = 0; iReference < cReferences; iReference++ )
     {
         LvId        lid             = lidMin;
-        const BYTE* rgbBookmark     = NULL;
+        const BYTE* rgbBookmark     = nullptr;
         ULONG       cbBookmark      = 0;
-        const CHAR* rgchColumnName  = NULL;
+        const CHAR* rgchColumnName  = nullptr;
         ULONG       cchColumnName   = 0;
         ULONG       itagSequence    = 0;
         Call( ErrRECIParseColumnReference(  pfucb,
@@ -1766,7 +1766,7 @@ LOCAL ERR ErrRECIFetchMissingLVs(
     ERR                     err                 = JET_errSuccess;
     ULONG                   cEnumColumnT        = 0;
     ULONG&                  cEnumColumn         = ( pcEnumColumn ? *pcEnumColumn : cEnumColumnT );
-    JET_ENUMCOLUMN*         rgEnumColumnT       = NULL;
+    JET_ENUMCOLUMN*         rgEnumColumnT       = nullptr;
     JET_ENUMCOLUMN*&        rgEnumColumn        = ( prgEnumColumn ? *prgEnumColumn : rgEnumColumnT );
     size_t                  iEnumColumn;
     size_t                  iEnumColumnValue;
@@ -1874,9 +1874,9 @@ LOCAL ERR ErrRECEnumerateAllColumns(
     ULONG                   cEnumColumnT                = 0;
     ULONG&                  cEnumColumn                 = ( pcEnumColumn ? *pcEnumColumn : cEnumColumnT );
                             cEnumColumn                 = 0;
-    JET_ENUMCOLUMN*         rgEnumColumnT               = NULL;
+    JET_ENUMCOLUMN*         rgEnumColumnT               = nullptr;
     JET_ENUMCOLUMN*&        rgEnumColumn                = ( prgEnumColumn ? *prgEnumColumn : rgEnumColumnT );
-                            rgEnumColumn                = NULL;
+                            rgEnumColumn                = nullptr;
     CArray<LvId>            rgEnumLidStore;
     const INT               iMinGrowthLidStore          = 8;    // magic number, grow by 64-bytes (atleast)
 
@@ -1900,24 +1900,24 @@ LOCAL ERR ErrRECEnumerateAllColumns(
 
     CFixedColumnIter        rgciterFC[ 2 ];
     size_t                  iciterFC                    = 0;
-    CFixedColumnIter*       pciterFC                    = NULL;
+    CFixedColumnIter*       pciterFC                    = nullptr;
     CVariableColumnIter     rgciterVC[ 2 ];
     size_t                  iciterVC                    = 0;
-    CVariableColumnIter*    pciterVC                    = NULL;
+    CVariableColumnIter*    pciterVC                    = nullptr;
     CTaggedColumnIter       rgciterTC[ 2 ];
     size_t                  iciterTC                    = 0;
-    CTaggedColumnIter*      pciterTC                    = NULL;
+    CTaggedColumnIter*      pciterTC                    = nullptr;
     CUnionIter              rgciterU[ 5 ];
     size_t                  iciterU                     = 0;
-    CUnionIter*             pciterU                     = NULL;
+    CUnionIter*             pciterU                     = nullptr;
 
-    IColumnIter*            pciterRec                   = NULL;
-    IColumnIter*            pciterDefaultRec            = NULL;
-    IColumnIter*            pciterRoot                  = NULL;
+    IColumnIter*            pciterRec                   = nullptr;
+    IColumnIter*            pciterDefaultRec            = nullptr;
+    IColumnIter*            pciterRoot                  = nullptr;
 
     BOOL                    fUseCopyBuffer              = fFalse;
-    DATA*                   pdataRec                    = NULL;
-    DATA*                   pdataDefaultRec             = NULL;
+    DATA*                   pdataRec                    = nullptr;
+    DATA*                   pdataDefaultRec             = nullptr;
 
     size_t                  cAlloc;
     size_t                  cbAlloc;
@@ -1928,8 +1928,8 @@ LOCAL ERR ErrRECEnumerateAllColumns(
     BOOL                    fSeparated                  = fFalse;
     BOOL                    fCompressed                 = fFalse;
     size_t                  cbData                      = 0;
-    void*                   pvData                      = NULL;
-    BYTE *                  pbDataDecrypted             = NULL;
+    void*                   pvData                      = nullptr;
+    BYTE *                  pbDataDecrypted             = nullptr;
 
     //  validate parameters
 
@@ -2150,7 +2150,7 @@ LOCAL ERR ErrRECEnumerateAllColumns(
 
     Alloc( rgEnumColumn = (JET_ENUMCOLUMN*)pfnRealloc(
             pvReallocContext,
-            NULL,
+            nullptr,
             cbAlloc ) );
 
     cEnumColumn = (ULONG)cAlloc;
@@ -2218,7 +2218,7 @@ LOCAL ERR ErrRECEnumerateAllColumns(
             continue;
         }
 
-        if ( fEncrypted && pfucb->pbEncryptionKey == NULL )
+        if ( fEncrypted && pfucb->pbEncryptionKey == nullptr )
         {
             pEnumColumn->err = ErrERRCheck( JET_errColumnNoEncryptionKey );
             continue;
@@ -2251,9 +2251,9 @@ LOCAL ERR ErrRECEnumerateAllColumns(
                     data.SetPv( pvData );
                     data.SetCb( cbData );
                     INT cbDataActual;
-                    Call( ErrPKDecompressData( data, pfucb, NULL, 0, &cbDataActual ) );
+                    Call( ErrPKDecompressData( data, pfucb, nullptr, 0, &cbDataActual ) );
                     pEnumColumn->err = ErrERRCheck( JET_wrnColumnSingleValue );
-                    Alloc( pEnumColumn->pvData = pfnRealloc( pvReallocContext, NULL, cbDataActual ) );
+                    Alloc( pEnumColumn->pvData = pfnRealloc( pvReallocContext, nullptr, cbDataActual ) );
                     pEnumColumn->cbData = (ULONG)cbDataActual;
                     Call( ErrPKDecompressData( data, pfucb, (BYTE *) pEnumColumn->pvData, pEnumColumn->cbData, &cbDataActual ) );
                     Assert( JET_wrnBufferTruncated != err );
@@ -2261,7 +2261,7 @@ LOCAL ERR ErrRECEnumerateAllColumns(
                 else
                 {
                     pEnumColumn->err = ErrERRCheck( JET_wrnColumnSingleValue );
-                    Alloc( pEnumColumn->pvData = pfnRealloc( pvReallocContext, NULL, cbData ) );
+                    Alloc( pEnumColumn->pvData = pfnRealloc( pvReallocContext, nullptr, cbData ) );
                     pEnumColumn->cbData = (ULONG)cbData;
 
                     if ( !FHostIsLittleEndian() && FCOLUMNIDFixed( pEnumColumn->columnid ) )
@@ -2324,7 +2324,7 @@ LOCAL ERR ErrRECEnumerateAllColumns(
 
         Alloc( pEnumColumn->rgEnumColumnValue = (JET_ENUMCOLUMNVALUE*)pfnRealloc(
                 pvReallocContext,
-                NULL,
+                nullptr,
                 cbAlloc ) );
 
         pEnumColumn->cEnumColumnValue = (ULONG)cAlloc;
@@ -2399,15 +2399,15 @@ LOCAL ERR ErrRECEnumerateAllColumns(
                 data.SetPv( pvData );
                 data.SetCb( cbData );
                 INT cbDataActual;
-                Call( ErrPKDecompressData( data, pfucb, NULL, 0, &cbDataActual ) );
-                Alloc( pEnumColumnValue->pvData = pfnRealloc( pvReallocContext, NULL, cbDataActual ) );
+                Call( ErrPKDecompressData( data, pfucb, nullptr, 0, &cbDataActual ) );
+                Alloc( pEnumColumnValue->pvData = pfnRealloc( pvReallocContext, nullptr, cbDataActual ) );
                 pEnumColumnValue->cbData = (ULONG)cbDataActual;
                 Call( ErrPKDecompressData( data, pfucb, (BYTE *) pEnumColumnValue->pvData, pEnumColumnValue->cbData, &cbDataActual ) );
                 Assert( JET_wrnBufferTruncated != err );
             }
             else
             {
-                Alloc( pEnumColumnValue->pvData = pfnRealloc( pvReallocContext, NULL, cbData ) );
+                Alloc( pEnumColumnValue->pvData = pfnRealloc( pvReallocContext, nullptr, cbData ) );
                 pEnumColumnValue->cbData = (ULONG)cbData;
 
                 if ( !FHostIsLittleEndian() && FCOLUMNIDFixed( pEnumColumn->columnid ) )
@@ -2447,7 +2447,7 @@ LOCAL ERR ErrRECEnumerateAllColumns(
             if ( pbDataDecrypted )
             {
                 delete[] pbDataDecrypted;
-                pbDataDecrypted = NULL;
+                pbDataDecrypted = nullptr;
             }
 
             //  if this is an escrow update column then adjust it
@@ -2508,7 +2508,7 @@ HandleError:
     if ( pbDataDecrypted )
     {
         delete[] pbDataDecrypted;
-        pbDataDecrypted = NULL;
+        pbDataDecrypted = nullptr;
     }
 
     if ( err < JET_errSuccess )
@@ -2550,7 +2550,7 @@ HandleError:
             if ( rgEnumColumn )
             {
                 pfnRealloc( pvReallocContext, rgEnumColumn, 0 );
-                rgEnumColumn = NULL;
+                rgEnumColumn = nullptr;
             }
         }
         if ( pcEnumColumn )
@@ -2576,9 +2576,9 @@ LOCAL ERR ErrRECEnumerateReqColumns(
     ULONG                   cEnumColumnT                = 0;
     ULONG&                  cEnumColumn                 = ( pcEnumColumn ? *pcEnumColumn : cEnumColumnT );
                             cEnumColumn                 = 0;
-    JET_ENUMCOLUMN*         rgEnumColumnT               = NULL;
+    JET_ENUMCOLUMN*         rgEnumColumnT               = nullptr;
     JET_ENUMCOLUMN*&        rgEnumColumn                = ( prgEnumColumn ? *prgEnumColumn : rgEnumColumnT );
-                            rgEnumColumn                = NULL;
+                            rgEnumColumn                = nullptr;
     CArray<LvId>            rgEnumLidStore;
     const INT               iMinGrowthLidStore          = 8;    // magic number, grow by 64-bytes (atleast)
     BOOL                    fColumnIdError = fFalse;
@@ -2590,29 +2590,29 @@ LOCAL ERR ErrRECEnumerateReqColumns(
     size_t                  iEnumColumn                 = 0;
     size_t                  iEnumColumnValue            = 0;
     BOOL                    fUseCopyBuffer              = fFalse;
-    DATA*                   pdataRec                    = NULL;
-    DATA*                   pdataDefaultRec             = NULL;
+    DATA*                   pdataRec                    = nullptr;
+    DATA*                   pdataDefaultRec             = nullptr;
     BOOL                    fNonEscrowDefault           = fFalse;
     size_t                  cAlloc;
     size_t                  cbAlloc;
     FIELD                   fieldFC;
     CTaggedColumnIter       rgciterTC[ 2 ];
-    CTaggedColumnIter*      pciterTC                    = NULL;
-    CTaggedColumnIter*      pciterTCDefault             = NULL;
+    CTaggedColumnIter*      pciterTC                    = nullptr;
+    CTaggedColumnIter*      pciterTCDefault             = nullptr;
     CFixedColumnIter        rgciterFC[ 2 ];
-    CFixedColumnIter*       pciterFC                    = NULL;
-    CFixedColumnIter*       pciterFCDefault             = NULL;
+    CFixedColumnIter*       pciterFC                    = nullptr;
+    CFixedColumnIter*       pciterFCDefault             = nullptr;
     CVariableColumnIter     rgciterVC[ 2 ];
-    CVariableColumnIter*    pciterVC                    = NULL;
-    CVariableColumnIter*    pciterVCDefault             = NULL;
-    IColumnIter*            pciter                      = NULL;
+    CVariableColumnIter*    pciterVC                    = nullptr;
+    CVariableColumnIter*    pciterVCDefault             = nullptr;
+    IColumnIter*            pciter                      = nullptr;
     BOOL                    fColumnFound                = fFalse;
     size_t                  cColumnValue                = 0;
     BOOL                    fSeparated                  = fFalse;
     BOOL                    fCompressed                 = fFalse;
     size_t                  cbData                      = 0;
-    void*                   pvData                      = NULL;
-    BYTE *                  pbDataDecrypted             = NULL;
+    void*                   pvData                      = nullptr;
+    BYTE *                  pbDataDecrypted             = nullptr;
 
     //  validate parameters
 
@@ -2695,7 +2695,7 @@ LOCAL ERR ErrRECEnumerateReqColumns(
 
     Alloc( rgEnumColumn = (JET_ENUMCOLUMN*)pfnRealloc(
             pvReallocContext,
-            NULL,
+            nullptr,
             cbAlloc ) );
 
     cEnumColumn = (ULONG)cAlloc;
@@ -2862,7 +2862,7 @@ LOCAL ERR ErrRECEnumerateReqColumns(
             continue;
         }
 
-        if ( fEncrypted && pfucb->pbEncryptionKey == NULL )
+        if ( fEncrypted && pfucb->pbEncryptionKey == nullptr )
         {
             pEnumColumn->err = ErrERRCheck( JET_errColumnNoEncryptionKey );
             continue;
@@ -2896,9 +2896,9 @@ LOCAL ERR ErrRECEnumerateReqColumns(
                     data.SetPv( pvData );
                     data.SetCb( cbData );
                     INT cbDataActual;
-                    Call( ErrPKDecompressData( data, pfucb, NULL, 0, &cbDataActual ) );
+                    Call( ErrPKDecompressData( data, pfucb, nullptr, 0, &cbDataActual ) );
                     pEnumColumn->err = ErrERRCheck( JET_wrnColumnSingleValue );
-                    Alloc( pEnumColumn->pvData = pfnRealloc( pvReallocContext, NULL, cbDataActual ) );
+                    Alloc( pEnumColumn->pvData = pfnRealloc( pvReallocContext, nullptr, cbDataActual ) );
                     pEnumColumn->cbData = (ULONG)cbDataActual;
                     Call( ErrPKDecompressData( data, pfucb, (BYTE *) pEnumColumn->pvData, pEnumColumn->cbData, &cbDataActual ) );
                     Assert( JET_wrnBufferTruncated != err );
@@ -2906,7 +2906,7 @@ LOCAL ERR ErrRECEnumerateReqColumns(
                 else
                 {
                     pEnumColumn->err = ErrERRCheck( JET_wrnColumnSingleValue );
-                    Alloc( pEnumColumn->pvData = pfnRealloc( pvReallocContext, NULL, cbData ) );
+                    Alloc( pEnumColumn->pvData = pfnRealloc( pvReallocContext, nullptr, cbData ) );
                     pEnumColumn->cbData = (ULONG)cbData;
 
                     if ( !FHostIsLittleEndian() && FCOLUMNIDFixed( pEnumColumn->columnid ) )
@@ -2973,7 +2973,7 @@ LOCAL ERR ErrRECEnumerateReqColumns(
 
         Alloc( pEnumColumn->rgEnumColumnValue = (JET_ENUMCOLUMNVALUE*)pfnRealloc(
                 pvReallocContext,
-                NULL,
+                nullptr,
                 cbAlloc ) );
 
         pEnumColumn->cEnumColumnValue = (ULONG)cAlloc;
@@ -3096,15 +3096,15 @@ LOCAL ERR ErrRECEnumerateReqColumns(
                 data.SetPv( pvData );
                 data.SetCb( cbData );
                 INT cbDataActual;
-                Call( ErrPKDecompressData( data, pfucb, NULL, 0, &cbDataActual ) );
-                Alloc( pEnumColumnValue->pvData = pfnRealloc( pvReallocContext, NULL, cbDataActual ) );
+                Call( ErrPKDecompressData( data, pfucb, nullptr, 0, &cbDataActual ) );
+                Alloc( pEnumColumnValue->pvData = pfnRealloc( pvReallocContext, nullptr, cbDataActual ) );
                 pEnumColumnValue->cbData = (ULONG)cbDataActual;
                 Call( ErrPKDecompressData( data, pfucb, (BYTE *) pEnumColumnValue->pvData, pEnumColumnValue->cbData, &cbDataActual ) );
                 Assert( JET_wrnBufferTruncated != err );
             }
             else
             {
-                Alloc( pEnumColumnValue->pvData = pfnRealloc( pvReallocContext, NULL, cbData ) );
+                Alloc( pEnumColumnValue->pvData = pfnRealloc( pvReallocContext, nullptr, cbData ) );
                 pEnumColumnValue->cbData = (ULONG)cbData;
 
                 if ( !FHostIsLittleEndian() && FCOLUMNIDFixed( pEnumColumn->columnid ) )
@@ -3144,7 +3144,7 @@ LOCAL ERR ErrRECEnumerateReqColumns(
             if ( pbDataDecrypted )
             {
                 delete[] pbDataDecrypted;
-                pbDataDecrypted = NULL;
+                pbDataDecrypted = nullptr;
             }
 
             //  if this is an escrow update column then adjust it
@@ -3212,7 +3212,7 @@ HandleError:
     if ( pbDataDecrypted )
     {
         delete[] pbDataDecrypted;
-        pbDataDecrypted = NULL;
+        pbDataDecrypted = nullptr;
     }
 
     if ( err < JET_errSuccess )
@@ -3256,7 +3256,7 @@ HandleError:
                 if ( rgEnumColumn )
                 {
                     pfnRealloc( pvReallocContext, rgEnumColumn, 0 );
-                    rgEnumColumn = NULL;
+                    rgEnumColumn = nullptr;
                 }
             }
             if ( pcEnumColumn )
@@ -3426,7 +3426,7 @@ ERR VTAPI ErrIsamGetRecordSize(
     FUCB *          pfucb               = (FUCB *)vtid;
     BOOL            fTransactionStarted = fFalse;
     BOOL            fUseCopyBuffer      = fFalse;
-    DATA *          pdataRec            = NULL;
+    DATA *          pdataRec            = nullptr;
     BOOL            fAllocated          = fFalse;
     DATA            dataAllocated;
 
@@ -3435,7 +3435,7 @@ ERR VTAPI ErrIsamGetRecordSize(
     AssertDIRNoLatch( ppib );
     Assert( FFUCBSort( pfucb ) || FFUCBIndex( pfucb ) );
 
-    if ( NULL == precsize )
+    if ( nullptr == precsize )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -3789,10 +3789,10 @@ LOCAL ERR ErrRECIStreamRecordsOnPrimaryIndexIAppendColumnValues(
     ERR     err                 = JET_errSuccess;
     size_t  cColumnValue        = 0;
     BOOL    fAllocatedMemory    = fFalse;
-    BYTE*   pbDataReference     = NULL;
-    BYTE*   pbDataDecrypted     = NULL;
-    BYTE*   pbDataDecompressed  = NULL;
-    BYTE*   pbDataAdjusted      = NULL;
+    BYTE*   pbDataReference     = nullptr;
+    BYTE*   pbDataDecrypted     = nullptr;
+    BYTE*   pbDataDecompressed  = nullptr;
+    BYTE*   pbDataAdjusted      = nullptr;
 
     //  iterate over each column value
 
@@ -3836,7 +3836,7 @@ LOCAL ERR ErrRECIStreamRecordsOnPrimaryIndexIAppendColumnValues(
             else
             {
                 errData = JET_wrnColumnNotInRecord;
-                pvData = NULL;
+                pvData = nullptr;
                 cbData = 0;
             }
         }
@@ -3901,7 +3901,7 @@ LOCAL ERR ErrRECIStreamRecordsOnPrimaryIndexIAppendColumnValues(
 
     if ( cColumnValue == 0 )
     {
-        Call( ErrRECIStreamRecordsIAppendColumnValue( pcontext, columnid, JET_wrnColumnNull, 0, NULL ) );
+        Call( ErrRECIStreamRecordsIAppendColumnValue( pcontext, columnid, JET_wrnColumnNull, 0, nullptr ) );
     }
 
 HandleError:
@@ -4005,7 +4005,7 @@ LOCAL ERR ErrRECIStreamRecordsOnPrimaryIndexIFilter(
 
             else if ( err == errRECColumnNotFound )
             {
-                Call( ErrRECIStreamRecordsIAppendColumnValue( pcontext, columnid, JET_wrnColumnNull, 0, NULL ) );
+                Call( ErrRECIStreamRecordsIAppendColumnValue( pcontext, columnid, JET_wrnColumnNull, 0, nullptr ) );
             }
             Call( err );
         }
@@ -4055,30 +4055,30 @@ LOCAL ERR ErrIsamStreamRecordsOnPrimaryIndex(
 
     CFixedColumnIter                        rgciterFC[ 2 ];
     size_t                                  iciterFC                    = 0;
-    CFixedColumnIter*                       pciterFC                    = NULL;
+    CFixedColumnIter*                       pciterFC                    = nullptr;
     CVariableColumnIter                     rgciterVC[ 2 ];
     size_t                                  iciterVC                    = 0;
-    CVariableColumnIter*                    pciterVC                    = NULL;
+    CVariableColumnIter*                    pciterVC                    = nullptr;
     CTaggedColumnIter                       rgciterTC[ 2 ];
     size_t                                  iciterTC                    = 0;
-    CTaggedColumnIter*                      pciterTC                    = NULL;
+    CTaggedColumnIter*                      pciterTC                    = nullptr;
     CUnionIter                              rgciterU[ 5 ];
     size_t                                  iciterU                     = 0;
-    CUnionIter*                             pciterU                     = NULL;
+    CUnionIter*                             pciterU                     = nullptr;
 
-    IColumnIter*                            pciterRec                   = NULL;
-    IColumnIter*                            pciterDefaultRec            = NULL;
-    IColumnIter*                            pciterRoot                  = NULL;
+    IColumnIter*                            pciterRec                   = nullptr;
+    IColumnIter*                            pciterDefaultRec            = nullptr;
+    IColumnIter*                            pciterRoot                  = nullptr;
 
     RECORD_BUFFER_HEADER_V1                 headerV1;
     STREAM_RECORDS_PRIMARY_FILTER_CONTEXT   context;
     ULONG                                   ccolumnidContext            = 0;
-    JET_COLUMNID*                           rgcolumnidContext           = NULL;
+    JET_COLUMNID*                           rgcolumnidContext           = nullptr;
     const ULONG                             ccolumnidPreprocessMax      = 100;
-    BOOL*                                   rgfEncrypted                = NULL;
-    BOOL*                                   rgfEscrow                   = NULL;
+    BOOL*                                   rgfEncrypted                = nullptr;
+    BOOL*                                   rgfEscrow                   = nullptr;
     ULONG                                   ccolumnmetadata             = 0;
-    COLUMN_METADATA *                       rgcolumnmetadata            = NULL;
+    COLUMN_METADATA *                       rgcolumnmetadata            = nullptr;
 
     //  this should be called on a primary or sequential index
 
@@ -4551,7 +4551,7 @@ LOCAL ERR ErrRECIStreamRecordsOnSecondaryIndexIFilter(
                     columnid,
                     JET_wrnColumnNotInRecord,
                     0,
-                    NULL ) );
+                    nullptr ) );
             }
         }
     }
@@ -4603,13 +4603,13 @@ LOCAL ERR ErrRECIStreamRecordsOnSecondaryIndexIGetKeyColumns(
                         cidxseg                 = 0;
     IDXSEG*             rgidxsegT;
     IDXSEG*&            rgidxseg                = prgidxseg ? *prgidxseg : rgidxsegT;
-                        rgidxseg                = NULL;
+                        rgidxseg                = nullptr;
     FIELD*              rgfieldT;
     FIELD*&             rgfield                 = prgfield ? *prgfield : rgfieldT;
-                        rgfield                 = NULL;
+                        rgfield                 = nullptr;
     BOOL*               rgfCanDenormalizeT;
     BOOL*&              rgfCanDenormalize       = prgfCanDenormalize ? *prgfCanDenormalize : rgfCanDenormalizeT;
-                        rgfCanDenormalize       = NULL;
+                        rgfCanDenormalize       = nullptr;
     ULONG               cbKeyMostT;
     ULONG&              cbKeyMost               = pcbKeyMost ? *pcbKeyMost : cbKeyMostT;
                         cbKeyMost               = 0;
@@ -4711,9 +4711,9 @@ HandleError:
         ptdb = ptdbNil;
         pidb = pidbNil;
         cidxseg = 0;
-        rgidxseg = NULL;
-        rgfield = NULL;
-        rgfCanDenormalize = NULL;
+        rgidxseg = nullptr;
+        rgfield = nullptr;
+        rgfCanDenormalize = nullptr;
         cbKeyMost = 0;
         cbKeyTruncated = 0;
     }
@@ -4733,33 +4733,33 @@ LOCAL ERR ErrIsamStreamRecordsOnSecondaryIndex(
     ERR                                     err                         = JET_errSuccess;
     RECORD_BUFFER_HEADER_V1                 headerV1;
     STREAM_RECORDS_SECONDARY_FILTER_CONTEXT context;
-    ULONG*                                  mpicolumnidiidxsegSecondary = NULL;
+    ULONG*                                  mpicolumnidiidxsegSecondary = nullptr;
     ULONG                                   iidxsegSecondaryMax         = ulMax;
     FCB*                                    pfcbTableSecondary          = pfcbNil;
     TDB*                                    ptdbSecondary               = ptdbNil;
     IDB*                                    pidbSecondary               = pidbNil;
     ULONG                                   cidxsegSecondary            = 0;
-    IDXSEG*                                 rgidxsegSecondary           = NULL;
-    FIELD*                                  rgfieldSecondary            = NULL;
-    BOOL*                                   rgfCanDenormalizeSecondary  = NULL;
+    IDXSEG*                                 rgidxsegSecondary           = nullptr;
+    FIELD*                                  rgfieldSecondary            = nullptr;
+    BOOL*                                   rgfCanDenormalizeSecondary  = nullptr;
     ULONG                                   cbKeyMostSecondary          = 0;
     ULONG                                   cbKeyTruncatedSecondary     = 0;
-    BYTE*                                   rgbDenormSecondary          = NULL;
-    BYTE*                                   rgbKeySecondary             = NULL;
-    ULONG*                                  mpicolumnidiidxsegPrimary   = NULL;
+    BYTE*                                   rgbDenormSecondary          = nullptr;
+    BYTE*                                   rgbKeySecondary             = nullptr;
+    ULONG*                                  mpicolumnidiidxsegPrimary   = nullptr;
     ULONG                                   iidxsegPrimaryMax           = ulMax;
     FCB*                                    pfcbTablePrimary            = pfcbNil;
     TDB*                                    ptdbPrimary                 = ptdbNil;
     IDB*                                    pidbPrimary                 = pidbNil;
     ULONG                                   cidxsegPrimary              = 0;
-    IDXSEG*                                 rgidxsegPrimary             = NULL;
-    FIELD*                                  rgfieldPrimary              = NULL;
-    BOOL*                                   rgfCanDenormalizePrimary    = NULL;
+    IDXSEG*                                 rgidxsegPrimary             = nullptr;
+    FIELD*                                  rgfieldPrimary              = nullptr;
+    BOOL*                                   rgfCanDenormalizePrimary    = nullptr;
     ULONG                                   cbKeyMostPrimary            = 0;
     ULONG                                   cbKeyTruncatedPrimary       = 0;
-    BYTE*                                   rgbDenormPrimary            = NULL;
+    BYTE*                                   rgbDenormPrimary            = nullptr;
     ULONG                                   ccolumnidContext            = 0;
-    JET_COLUMNID*                           rgcolumnidContext           = NULL;
+    JET_COLUMNID*                           rgcolumnidContext           = nullptr;
 
     //  this should be called on a secondary index
 
@@ -5064,7 +5064,7 @@ ERR VTAPI ErrIsamStreamRecords(
 HandleError:
     if ( fTransactionStarted )
     {
-        CallS( ErrIsamCommitTransaction( sesid, NO_GRBIT, 0, NULL ) );
+        CallS( ErrIsamCommitTransaction( sesid, NO_GRBIT, 0, nullptr ) );
     }
     AssertDIRNoLatch( ppib );
     return err;

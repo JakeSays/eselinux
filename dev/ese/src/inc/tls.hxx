@@ -76,7 +76,7 @@ public:
     void ResetPFMP( void* pv )  {
         Assert( pvfmp == pv );
         pvfmp = pvfmpOld;
-        pvfmpOld = NULL;
+        pvfmpOld = nullptr;
     }
     void* PFMP() const
     {

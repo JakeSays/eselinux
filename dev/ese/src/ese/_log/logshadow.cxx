@@ -29,7 +29,7 @@ const ULONG g_dwNativeSemiSyncVersion = 1;
 ERR LOG_STREAM::ErrEmitSignalLogBegin()
 {
     JET_PFNEMITLOGDATA  pfnErrEmit  = (JET_PFNEMITLOGDATA)PvParam( m_pinst, JET_paramEmitLogDataCallback );
-    if ( NULL == pfnErrEmit )
+    if ( nullptr == pfnErrEmit )
     {
         return ErrERRCheck( JET_wrnCallbackNotRegistered );
     }
@@ -53,7 +53,7 @@ ERR LOG_STREAM::ErrEmitSignalLogBegin()
 
     Ptls()->fInCallback = fTrue;
 
-    const ERR err = (*pfnErrEmit)( (JET_INSTANCE)m_pinst, &emitCtx, NULL, 0, pvCallBackCtx );
+    const ERR err = (*pfnErrEmit)( (JET_INSTANCE)m_pinst, &emitCtx, nullptr, 0, pvCallBackCtx );
 
     //  Increment to the next sequence number
 
@@ -67,7 +67,7 @@ ERR LOG_STREAM::ErrEmitSignalLogBegin()
 ERR LOG_STREAM::ErrEmitSignalLogEnd()
 {
     JET_PFNEMITLOGDATA  pfnErrEmit  = (JET_PFNEMITLOGDATA)PvParam( m_pinst, JET_paramEmitLogDataCallback );
-    if ( NULL == pfnErrEmit )
+    if ( nullptr == pfnErrEmit )
     {
         return ErrERRCheck( JET_wrnCallbackNotRegistered );
     }
@@ -94,7 +94,7 @@ ERR LOG_STREAM::ErrEmitSignalLogEnd()
 
     Ptls()->fInCallback = fTrue;
 
-    const ERR err = (*pfnErrEmit)( (JET_INSTANCE)m_pinst, &emitCtx, NULL, 0, pvCallBackCtx );
+    const ERR err = (*pfnErrEmit)( (JET_INSTANCE)m_pinst, &emitCtx, nullptr, 0, pvCallBackCtx );
 
     Ptls()->fInCallback = fFalse;
 
@@ -132,7 +132,7 @@ ERR LOG_STREAM::ErrEmitLogData(
     Assert( lGenEmit > 0 );
 
 
-    if ( NULL == pfnErrEmit )
+    if ( nullptr == pfnErrEmit )
     {
         //  No emit callback registered, return success-ish.
         return ErrERRCheck( JET_wrnCallbackNotRegistered );
@@ -169,11 +169,11 @@ ERR LOG_STREAM::ErrEmitLogData(
 
     emitCtx.cbLogData                   = cbLogData;
 
-    if ( m_pEmitTraceLog != NULL )
+    if ( m_pEmitTraceLog != nullptr )
     {
         OSTraceWriteRefLog( m_pEmitTraceLog,
                                  lGenEmit,
-                                 NULL );
+                                 nullptr );
     }
 
     Ptls()->fInCallback = fTrue;
@@ -192,7 +192,7 @@ ERR LOG_STREAM::ErrEmitLogData(
 ERR LOG_STREAM::ErrEmitCompleteLog( LONG lgenToClose )
 {
     JET_PFNEMITLOGDATA  pfnErrEmit  = (JET_PFNEMITLOGDATA)PvParam( m_pinst, JET_paramEmitLogDataCallback );
-    if ( NULL == pfnErrEmit )
+    if ( nullptr == pfnErrEmit )
     {
         return ErrERRCheck( JET_wrnCallbackNotRegistered );
     }
@@ -217,16 +217,16 @@ ERR LOG_STREAM::ErrEmitCompleteLog( LONG lgenToClose )
     emitCtx.lgposLogData.lGeneration    = lgenToClose;
     Assert( 0 != emitCtx.lgposLogData.lGeneration );
 
-    if ( m_pEmitTraceLog != NULL )
+    if ( m_pEmitTraceLog != nullptr )
     {
         OSTraceWriteRefLog( m_pEmitTraceLog,
                                  lgenToClose,
-                                 NULL );
+                                 nullptr );
     }
 
     Ptls()->fInCallback = fTrue;
 
-    const ERR err = (*pfnErrEmit)( (JET_INSTANCE)m_pinst, &emitCtx, NULL, 0, pvCallBackCtx );
+    const ERR err = (*pfnErrEmit)( (JET_INSTANCE)m_pinst, &emitCtx, nullptr, 0, pvCallBackCtx );
 
     //  Increment the next ...
     m_qwSequence++;
@@ -253,13 +253,13 @@ ULONG IbFromLgpos( INST * const pinst, LGPOS lgpos )
 }
 
 CShadowLogStream::CShadowLogStream( ) :
-    m_pinst( NULL ),
+    m_pinst( nullptr ),
     m_qwSequenceNumCurrent( 0 ),
-    m_pfapiCurrent( NULL ),
-    m_postWriteLogBuffTask( NULL ),
+    m_pfapiCurrent( nullptr ),
+    m_postWriteLogBuffTask( nullptr ),
     m_fWriteLogBuffScheduled( false ),
     m_critLogBuff( CLockBasicInfo( CSyncBasicInfo( szShadowLogBuff ), rankShadowLogBuff, 0 ) ),
-    m_rgbLogBuff( NULL ),
+    m_rgbLogBuff( nullptr ),
     m_cbLogBuffMax( 0 ),
     m_ibLogBuffPending( 0 ),
     m_cbLogBuffPending( 0 ),
@@ -273,12 +273,12 @@ CShadowLogStream::CShadowLogStream( ) :
 ERR CShadowLogStream::ErrCreate( INST * pinst, CShadowLogStream ** ppshadowLog )
 {
     ERR err = JET_errSuccess;
-    CShadowLogStream* pshadowLog = NULL;
+    CShadowLogStream* pshadowLog = nullptr;
 
     Alloc( pshadowLog = new CShadowLogStream() );
     pshadowLog->m_pinst = pinst;
     pshadowLog->m_cbLogBuffMax = (ULONG) UlParam( pinst, JET_paramLogFileSize ) * 1024;
-    Alloc( pshadowLog->m_rgbLogBuff = (BYTE*) PvOSMemoryPageAlloc( pshadowLog->m_cbLogBuffMax, NULL ) );
+    Alloc( pshadowLog->m_rgbLogBuff = (BYTE*) PvOSMemoryPageAlloc( pshadowLog->m_cbLogBuffMax, nullptr ) );
 
     Call( ErrOSTimerTaskCreate( WriteLogBuffTask, pshadowLog, &pshadowLog->m_postWriteLogBuffTask ) );
 
@@ -299,7 +299,7 @@ CShadowLogStream::~CShadowLogStream()
     {
         OSTimerTaskCancelTask( m_postWriteLogBuffTask );
         OSTimerTaskDelete( m_postWriteLogBuffTask );
-        m_postWriteLogBuffTask = NULL;
+        m_postWriteLogBuffTask = nullptr;
     }
 
     m_critLogBuff.Enter();
@@ -525,7 +525,7 @@ ERR CShadowLogStream::ErrAddData(
 
     const bool bMidSequenceFirstData = m_fConsumedBegin &&                      // we got a begin/init signal and this is the first data after
                 !FAtBeginningOfLogFile( &lgposLogData ) &&                      // not at beginning, otherwise can treat as bInNewSequeunce
-                NULL == m_pfapiCurrent;                                         // should not have the file open already (just checking)
+                nullptr == m_pfapiCurrent;                                         // should not have the file open already (just checking)
 
     //
     //  Switch log files if necessary ...
@@ -552,7 +552,7 @@ ERR CShadowLogStream::ErrAddData(
             //  the DB header max required.
             m_pfapiCurrent->SetNoFlushNeeded();
             delete m_pfapiCurrent;
-            m_pfapiCurrent = NULL;
+            m_pfapiCurrent = nullptr;
 
             //  delete log file ...
 
@@ -584,7 +584,7 @@ ERR CShadowLogStream::ErrAddData(
             // Also are there any other parts of the LGFILEHDR we should be checking?  Not that I think actually
             // affect this write code path.
             if ( cbLogData < 512 ||
-                    NULL == pvLogData )
+                    nullptr == pvLogData )
             {
                 Error( ErrERRCheck( JET_errInvalidParameter ) );
             }
@@ -712,7 +712,7 @@ ERR CShadowLogStream::ErrAddData(
 
         if ( !m_fWriteLogBuffScheduled )
         {
-            OSTimerTaskScheduleTask( m_postWriteLogBuffTask, NULL, c_dtickWriteLogBuff, 0 );
+            OSTimerTaskScheduleTask( m_postWriteLogBuffTask, nullptr, c_dtickWriteLogBuff, 0 );
             m_fWriteLogBuffScheduled = true;
         }
 
@@ -762,7 +762,7 @@ ERR CShadowLogStream::ErrCompleteLog(
         //  the DB header max required.
         m_pfapiCurrent->SetNoFlushNeeded();
         delete m_pfapiCurrent;
-        m_pfapiCurrent = NULL;
+        m_pfapiCurrent = nullptr;
     }
     else
     {
@@ -818,7 +818,7 @@ ERR LOG::ErrLGShadowLogAddData(
     }
     else if ( JET_bitShadowLogEmitFirstCall & pEmitLogDataCtx->grbitOperationalFlags )
     {
-        if ( NULL == m_pshadlog )
+        if ( nullptr == m_pshadlog )
         {
             Call( ErrLGIShadowLogInit() );
         }
@@ -836,7 +836,7 @@ ERR LOG::ErrLGShadowLogAddData(
 
         //  If we have not created an alternate log stream, then enduce the deferred init now to get one.
 
-        if ( NULL == m_pshadlog )
+        if ( nullptr == m_pshadlog )
         {
             Call( ErrLGIShadowLogInit() );
         }
@@ -851,7 +851,7 @@ ERR LOG::ErrLGShadowLogAddData(
     }
     else if ( JET_bitShadowLogEmitLogComplete & pEmitLogDataCtx->grbitOperationalFlags )
     {
-        if ( NULL == m_pshadlog )
+        if ( nullptr == m_pshadlog )
         {
             Error( ErrERRCheck( JET_errInvalidLogDataSequence ) );
         }
@@ -894,7 +894,7 @@ ERR LOG::ErrLGIShadowLogTerm_()
 
     ERR err = m_pshadlog->ErrWriteAndResetLogBuff( CShadowLogStream::ffForceResetIgnoreFailures );
     delete m_pshadlog;
-    m_pshadlog = NULL;
+    m_pshadlog = nullptr;
     return err;
 }
 

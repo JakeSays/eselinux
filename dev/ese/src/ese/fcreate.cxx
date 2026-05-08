@@ -21,8 +21,8 @@ struct UNVER_DDL
     UNVER_DDL   *punverNext;
 };
 
-UNVER_DDL   *g_punvercolGlobal = NULL;
-UNVER_DDL   *g_punveridxGlobal = NULL;
+UNVER_DDL   *g_punvercolGlobal = nullptr;
+UNVER_DDL   *g_punveridxGlobal = nullptr;
 
 
 //  ================================================================
@@ -226,7 +226,7 @@ INLINE ERR ErrFILEInsertIntoUnverColumnList( FCB *pfcbTable, const CHAR *szColum
     g_critUnverCol.Enter();
 
 FindColumn:
-    for ( punvercol = g_punvercolGlobal; NULL != punvercol; punvercol = punvercol->punverNext )
+    for ( punvercol = g_punvercolGlobal; nullptr != punvercol; punvercol = punvercol->punverNext )
     {
         if ( objidTable == punvercol->objidTable
             && 0 == UtilCmpName( punvercol->szName, szColumnName ) )
@@ -244,7 +244,7 @@ FindColumn:
     }
 
     punvercol = (UNVER_DDL *)PvOSMemoryHeapAlloc( sizeof( UNVER_DDL ) );
-    if ( NULL == punvercol )
+    if ( nullptr == punvercol )
         err = ErrERRCheck( JET_errOutOfMemory );
     else
     {
@@ -299,7 +299,7 @@ INLINE ERR ErrFILEInsertIntoUnverIndexList( FCB *pfcbTable, const CHAR *szIndexN
     g_critUnverIndex.Enter();
 
 FindIndex:
-    for ( punveridx = g_punveridxGlobal; NULL != punveridx; punveridx = punveridx->punverNext )
+    for ( punveridx = g_punveridxGlobal; nullptr != punveridx; punveridx = punveridx->punverNext )
     {
         if ( objidTable == punveridx->objidTable
             && 0 == UtilCmpName( punveridx->szName, szIndexName ) )
@@ -317,7 +317,7 @@ FindIndex:
     }
 
     punveridx = (UNVER_DDL *)PvOSMemoryHeapAlloc( sizeof( UNVER_DDL ) );
-    if ( NULL == punveridx )
+    if ( nullptr == punveridx )
     {
         err = ErrERRCheck( JET_errOutOfMemory );
     }
@@ -349,7 +349,7 @@ LOCAL VOID FILERemoveFromUnverList(
     critUnver.Enter();
 
     Assert( NULL != *ppunverGlobal );
-    for ( ppunver = ppunverGlobal; *ppunver != NULL; ppunver = &( (*ppunver)->punverNext ) )
+    for ( ppunver = ppunverGlobal; *ppunver != nullptr; ppunver = &( (*ppunver)->punverNext ) )
     {
         if ( objidTable == (*ppunver)->objidTable
             && 0 == UtilCmpName( (*ppunver)->szName, szName ) )
@@ -408,7 +408,7 @@ ERR ErrIDXCheckUnicodeFlagAndDefn(
     _In_ ULONG                               cIndexCreate )
 {
     JET_INDEXCREATE3_A * pidxCurr = pindexcreate;
-    JET_INDEXCREATE3_A * pidxNext = NULL;
+    JET_INDEXCREATE3_A * pidxNext = nullptr;
 
     // We must check if the usage of the JET_bitIndexUnicode flag is consistent for the JetCreateIndex4* API.
     for ( ULONG iIndexCreate = 0 ;
@@ -468,7 +468,7 @@ ERR VTAPI ErrIsamCreateTable( JET_SESID vsesid, JET_DBID vdbid, JET_TABLECREATE5
     // UNDONE: Supported nesting of hierarchical DDL.
     if ( ptablecreate->grbit & JET_bitTableCreateTemplateTable )
     {
-        if ( ptablecreate->szTemplateTableName != NULL )
+        if ( ptablecreate->szTemplateTableName != nullptr )
         {
             err = ErrERRCheck( JET_errCannotNestDDL );
             return err;
@@ -1170,7 +1170,7 @@ LOCAL ERR ErrFILEIAddColumns(
     //
     Assert( 1 == ptablecreate->cCreated );
 
-    if ( ptablecreate->rgcolumncreate == NULL )
+    if ( ptablecreate->rgcolumncreate == nullptr )
     {
         err = ErrERRCheck( JET_errInvalidParameter );
         return err;
@@ -1247,10 +1247,10 @@ LOCAL ERR ErrFILEIAddColumns(
         Assert( pcolcreate < ptablecreate->rgcolumncreate + ptablecreate->cColumns );
 
         //  this is the data that will actually be inserted into the catalog
-        const VOID      *pvDefaultAdd   = NULL;
+        const VOID      *pvDefaultAdd   = nullptr;
         ULONG           cbDefaultAdd    = 0;
-        CHAR            *szCallbackAdd  = NULL;
-        const VOID      *pvUserDataAdd  = NULL;
+        CHAR            *szCallbackAdd  = nullptr;
+        const VOID      *pvUserDataAdd  = nullptr;
         ULONG           cbUserDataAdd   = 0;
 
         if ( pcolcreate->cbStruct != sizeof(JET_COLUMNCREATE_A) )
@@ -1367,14 +1367,14 @@ LOCAL ERR ErrFILEIAddColumns(
 
             //  the table will be opened from the catalog later so we don't need to deal with registering
             //  a CBDESC right now. Make sure that it can be resolved though
-            JET_CALLBACK callback = NULL;
+            JET_CALLBACK callback = nullptr;
             if ( BoolParam( PinstFromPpib( ppib ), JET_paramEnablePersistedCallbacks ) )
             {
                 Call( ErrCALLBACKResolve( pudd->szCallback, &callback ) );
             }
 
             //  for user-defined-defaults we don't store a default value at all
-            pvDefaultAdd    = NULL;
+            pvDefaultAdd    = nullptr;
             cbDefaultAdd    = 0;
             szCallbackAdd   = pudd->szCallback;
             pvUserDataAdd   = pudd->pbUserData;
@@ -1541,13 +1541,13 @@ LOCAL ERR ErrFILEIValidateCreateIndex(
 
     if ( fUserDefinedUnicode )
     {
-        if ( NULL == pidxunicode )
+        if ( nullptr == pidxunicode )
         {
             err = ErrERRCheck( JET_errIndexInvalidDef );
             return err;
         }
 
-        if ( NULL != pidxunicode->szLocaleName )
+        if ( nullptr != pidxunicode->szLocaleName )
         {
             pidb->SetWszLocaleName( pidxunicode->szLocaleName );
         }
@@ -1863,7 +1863,7 @@ LOCAL ERR ErrFILEICreateIndexes(
     BYTE            rgfbDescending[JET_ccolKeyMost];
     IDXSEG          rgidxseg[JET_ccolKeyMost];
     IDXSEG          rgidxsegConditional[JET_ccolKeyMost];
-    JET_INDEXCREATE3_A  *pidxcreate             = NULL;
+    JET_INDEXCREATE3_A  *pidxcreate             = nullptr;
     PGNO            pgnoIndexFDP;
     OBJID           objidIndex;
     IDB             idb( PinstFromIfmp( ifmp ) );
@@ -1871,7 +1871,7 @@ LOCAL ERR ErrFILEICreateIndexes(
     BOOL            fSetIndexError          = fFalse;
     const BOOL      fTemplateTable          = ( ptablecreate->grbit & JET_bitTableCreateTemplateTable );
 
-    JET_INDEXCREATE3_A  * pidxcreateNext = NULL;
+    JET_INDEXCREATE3_A  * pidxcreateNext = nullptr;
 
     if ( FFMPIsTempDB( ifmp ) )
     {
@@ -1884,8 +1884,8 @@ LOCAL ERR ErrFILEICreateIndexes(
     Assert( ptablecreate->cIndexes > 0 );
     Assert( ptablecreate->cCreated == 1 + ptablecreate->cColumns );
 
-    if ( ptablecreate->rgindexcreate == NULL
-        || ptablecreate->rgcolumncreate == NULL )   // must have columns in order to create indexes
+    if ( ptablecreate->rgindexcreate == nullptr
+        || ptablecreate->rgcolumncreate == nullptr )   // must have columns in order to create indexes
     {
         //  if an invalid structure is encountered, get out right away
         //
@@ -2451,7 +2451,7 @@ LOCAL ERR ErrFILEIValidateCallback(
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
-    if( NULL == szCallback )
+    if( nullptr == szCallback )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -2479,7 +2479,7 @@ LOCAL ERR ErrFILEICreateCallbacks(
     if (    !BoolParam( PinstFromPpib( ppib ), JET_paramDisableCallbacks ) &&
             BoolParam( PinstFromPpib( ppib ), JET_paramEnablePersistedCallbacks ) )
     {
-        JET_CALLBACK callback = NULL;
+        JET_CALLBACK callback = nullptr;
         Call( ErrCALLBACKResolve( ptablecreate->szCallback, &callback ) );
         Assert( NULL != callback );
     }
@@ -2502,7 +2502,7 @@ LOCAL ERR ErrFILECreateTableProcessSpaceHints(
     JET_INDEXCREATE3_A * pidxcreate;
     JET_INDEXCREATE3_A * pidxcreateNext;
 
-    JET_INDEXCREATE3_A * pidxprimary = NULL;
+    JET_INDEXCREATE3_A * pidxprimary = nullptr;
 
     Assert( ptablecreate && pjsphPrimaryAlloc );
 
@@ -2685,7 +2685,7 @@ ERR ErrFILECreateTable( PIB *ppib, IFMP ifmp, JET_TABLECREATE5_A *ptablecreate, 
         || FCATLocalesTable( szTable ) );
 
     const BOOL  fTemplateTable      = !!( ptablecreate->grbit & JET_bitTableCreateTemplateTable );
-    const BOOL  fDerived            = ( ptablecreate->szTemplateTableName != NULL );
+    const BOOL  fDerived            = ( ptablecreate->szTemplateTableName != nullptr );
     FCB         *pfcbTemplateTable  = pfcbNil;
 
     OSTraceFMP(
@@ -2867,7 +2867,7 @@ ERR ErrFILECreateTable( PIB *ppib, IFMP ifmp, JET_TABLECREATE5_A *ptablecreate, 
                     grbit,
                     &jsphPrimaryAlloc,  // contains ulTableDensity,
                     ptablecreate->cbSeparateLV,
-                    ptablecreate->pLVSpacehints ? &jsphLV : NULL,
+                    ptablecreate->pLVSpacehints ? &jsphLV : nullptr,
                     ptablecreate->cbLVChunkMax ) );
 
         //  create columns and indexes as necessary.
@@ -2904,7 +2904,7 @@ ERR ErrFILECreateTable( PIB *ppib, IFMP ifmp, JET_TABLECREATE5_A *ptablecreate, 
                     pfcbTemplateTable ) );
         }
 
-        if ( NULL != ptablecreate->szCallback )
+        if ( nullptr != ptablecreate->szCallback )
         {
             Call( ErrFILEICreateCallbacks(
                     ppib,
@@ -2997,7 +2997,7 @@ ERR ErrFILECreateTable( PIB *ppib, IFMP ifmp, JET_TABLECREATE5_A *ptablecreate, 
 
     pver = PverFromIfmp( pfucb->ifmp );
     Call( ErrFaultInjection( 52640 ) );
-    Call( pver->ErrVERFlag( pfucb, operCreateTable, NULL, 0 ) );
+    Call( pver->ErrVERFlag( pfucb, operCreateTable, nullptr, 0 ) );
     fCreatedRCE = fTrue;
 
     Call( ErrFaultInjection( 46496 ) );
@@ -3135,7 +3135,7 @@ INLINE ERR ErrFILEIUpdateAutoInc( PIB *ppib, FUCB *pfucb )
                     (BYTE *)&ulT,
                     sizeof(ulT),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         }
         else
         {
@@ -3145,9 +3145,9 @@ INLINE ERR ErrFILEIUpdateAutoInc( PIB *ppib, FUCB *pfucb )
                     (BYTE *)&qwT,
                     sizeof(qwT),
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         }
-        Call( ErrIsamUpdate( ppib, pfucb, NULL, 0, NULL, NO_GRBIT ) );
+        Call( ErrIsamUpdate( ppib, pfucb, nullptr, 0, nullptr, NO_GRBIT ) );
 
         qwT++;
         err = ErrIsamMove( ppib, pfucb, JET_MoveNext, NO_GRBIT );
@@ -3302,8 +3302,8 @@ ERR VTAPI ErrIsamAddColumn(
     //  this is the data that will actually be inserted into the catalog
     const VOID          *pvDefaultAdd               = pvDefault;
     ULONG               cbDefaultAdd                = cbDefault;
-    CHAR                *szCallbackAdd              = NULL;
-    const VOID          *pvUserDataAdd              = NULL;
+    CHAR                *szCallbackAdd              = nullptr;
+    const VOID          *pvUserDataAdd              = nullptr;
     ULONG               cbUserDataAdd               = 0;
     LONG                cbRecordMost                = REC::CbRecordMost( pfucb );
 
@@ -3464,7 +3464,7 @@ ERR VTAPI ErrIsamAddColumn(
     }
     else
     {
-        fucbFake.pvWorkBuf = NULL;
+        fucbFake.pvWorkBuf = nullptr;
     }
 
     //  move to FDP root and update FDP timestamp
@@ -3514,7 +3514,7 @@ ERR VTAPI ErrIsamAddColumn(
             &tcib,
             &columnid ) );
 
-    if ( pcolumnid != NULL )
+    if ( pcolumnid != nullptr )
     {
         *pcolumnid = columnid;
     }
@@ -3568,7 +3568,7 @@ ERR VTAPI ErrIsamAddColumn(
         //
         Call( ptdb->MemPool().ErrReplaceEntry(
             itagTDBFields,
-            NULL,
+            nullptr,
             cbFieldsTotal + ( sizeof(FIELD) * 10 )
             ) );
     }
@@ -3594,7 +3594,7 @@ ERR VTAPI ErrIsamAddColumn(
     }
     else
     {
-        veraddcolumn.pbOldDefaultRec = NULL;
+        veraddcolumn.pbOldDefaultRec = nullptr;
     }
 
     pver = PverFromIfmp( pfucb->ifmp );
@@ -3713,7 +3713,7 @@ ERR VTAPI ErrIsamAddColumn(
 
         JET_USERDEFINEDDEFAULT_A * const pudd = (JET_USERDEFINEDDEFAULT_A *)pvDefault;
 
-        JET_CALLBACK callback = NULL;
+        JET_CALLBACK callback = nullptr;
         if ( BoolParam( PinstFromPpib( ppib ), JET_paramEnablePersistedCallbacks ) )
         {
             Call( ErrCALLBACKResolve( pudd->szCallback, &callback ) );
@@ -3721,10 +3721,10 @@ ERR VTAPI ErrIsamAddColumn(
 
         CBDESC * const pcbdesc = new CBDESC;
         BYTE * const pbUserData = ( ( pudd->cbUserData > 0 ) ?
-                        (BYTE *)PvOSMemoryHeapAlloc( pudd->cbUserData ) : NULL );
+                        (BYTE *)PvOSMemoryHeapAlloc( pudd->cbUserData ) : nullptr );
 
-        if( NULL == pcbdesc
-            || ( NULL == pbUserData && pudd->cbUserData > 0 ) )
+        if( nullptr == pcbdesc
+            || ( nullptr == pbUserData && pudd->cbUserData > 0 ) )
         {
             delete pcbdesc;
             OSMemoryHeapFree( pbUserData );
@@ -3745,7 +3745,7 @@ ERR VTAPI ErrIsamAddColumn(
         pcbdesc->fVersioned = fFalse;
 
         //  for user-defined-defaults we don't store a default value at all
-        pvDefaultAdd    = NULL;
+        pvDefaultAdd    = nullptr;
         cbDefaultAdd    = 0;
         szCallbackAdd   = pudd->szCallback;
         pvUserDataAdd   = pudd->pbUserData;
@@ -4183,7 +4183,7 @@ ERR ErrFILEIndexBatchInit(
     *pcIndexesToBuild = (INT)iindex;
     Assert( *pcIndexesToBuild > 0 );
 
-    if ( NULL != ppfcbNextBuildIndex )
+    if ( nullptr != ppfcbNextBuildIndex )
     {
         *ppfcbNextBuildIndex = ( cIndexBatchMax == iindex ? pfcbIndex->PfcbNextIndex() : pfcbNil );
     }
@@ -4681,7 +4681,7 @@ LOCAL ERR ErrFILESingleIndexTerm(
     FUCB        *pfucbIndex         = pfucbNil;
     ULONG       cRecordsFoundInSort = 0;
     BOOL        fCorruptedIndex     = fFalse;
-    BOOL        fCheckOnly          = ( pfCorruptionEncountered != NULL ); // We use the existence of this as a flag
+    BOOL        fCheckOnly          = ( pfCorruptionEncountered != nullptr ); // We use the existence of this as a flag
                                                                            // indicating to only check, not rebuild.
 
     // pfCorruptionEncountered, if non-NULL, is an accumulator used outside this routine and must
@@ -4982,7 +4982,7 @@ LOCAL VOID ErrFILEIndexDispatchAddEntries(
     pcsr->ReleasePage();
     CLockDeadlockDetectionInfo::EnableOwnershipTracking();
     delete pcsr;
-    TLSSetUserTraceContext( NULL );
+    TLSSetUserTraceContext( nullptr );
 }
 
 LOCAL VOID ErrFILEIndexDispatchSortTerm(
@@ -5012,7 +5012,7 @@ LOCAL VOID ErrFILEIndexDispatchSortTerm(
                                         pfcbcontext->pfcbIndex,
                                         pidxcontext->rgcRecInput,
                                         pfcbcontext->iindex,
-                                        pidxcontext->fCheckOnly ? &fCorrupt : NULL,
+                                        pidxcontext->fCheckOnly ? &fCorrupt : nullptr,
                                         pidxcontext->pcprintf,
                                         pidxcontext->fLogged );
         if ( errT >= JET_errSuccess )
@@ -5037,7 +5037,7 @@ LOCAL VOID ErrFILEIndexDispatchSortTerm(
         }
     }
 
-    TLSSetUserTraceContext( NULL );
+    TLSSetUserTraceContext( nullptr );
 }
 
 LOCAL ERR ErrFILEITerminateSorts(
@@ -5048,7 +5048,7 @@ LOCAL ERR ErrFILEITerminateSorts(
 {
     ERR                     err;
     CTaskManager            taskmgrTerminateSorts;
-    FCBINDEXCONTEXT *       rgfcbcontext        = NULL;
+    FCBINDEXCONTEXT *       rgfcbcontext        = nullptr;
 
 #ifdef SHOW_INDEX_PERF
     OSTrace( tracetagIndexPerf, OSFormat( "About to terminate sorts using %d threads.\n", cProcs ) );
@@ -5072,7 +5072,7 @@ LOCAL ERR ErrFILEITerminateSorts(
 HandleError:
     taskmgrTerminateSorts.TMTerm();
 
-    if ( NULL != rgfcbcontext )
+    if ( nullptr != rgfcbcontext )
     {
         OSMemoryHeapFree( rgfcbcontext );
     }
@@ -5144,10 +5144,10 @@ ERR ErrFILEBuildAllIndexes(
     DWORD_PTR               cSCBMax                     = 0;
     DWORD_PTR               cSCBInUse                   = 0;
     CSR *                   pcsrTable                   = Pcsr( pfucbTable );
-    CREATEINDEXCONTEXT *    rgidxcontext                = NULL;
-    FUCB **                 rgpfucbSort                 = NULL;
-    FCB *                   pfcbIndexesToBuild          = NULL;
-    FCB *                   pfcbNextBuildIndex          = NULL;
+    CREATEINDEXCONTEXT *    rgidxcontext                = nullptr;
+    FUCB **                 rgpfucbSort                 = nullptr;
+    FCB *                   pfcbIndexesToBuild          = nullptr;
+    FCB *                   pfcbNextBuildIndex          = nullptr;
     ULONG                   cIndexesToBuild             = 0;
     BOOL                    fTransactionStarted         = fFalse;
     BOOL                    fCorruptionEncountered      = fFalse;
@@ -5201,13 +5201,13 @@ ERR ErrFILEBuildAllIndexes(
     //
     if ( ulStopFlushThresholdForIndexCreate > ulStopFlushThresholdSave )
     {
-        CallS( Param( pinstNil, JET_paramStopFlushThreshold )->Set( pinstNil, ppibNil, ulStopFlushThresholdForIndexCreate, NULL ) );
-        CallS( Param( pinstNil, JET_paramStartFlushThreshold )->Set( pinstNil, ppibNil, ulStartFlushThresholdForIndexCreate, NULL ) );
+        CallS( Param( pinstNil, JET_paramStopFlushThreshold )->Set( pinstNil, ppibNil, ulStopFlushThresholdForIndexCreate, nullptr ) );
+        CallS( Param( pinstNil, JET_paramStartFlushThreshold )->Set( pinstNil, ppibNil, ulStartFlushThresholdForIndexCreate, nullptr ) );
     }
     else
     {
-        CallS( Param( pinstNil, JET_paramStartFlushThreshold )->Set( pinstNil, ppibNil, ulStartFlushThresholdForIndexCreate, NULL ) );
-        CallS( Param( pinstNil, JET_paramStopFlushThreshold )->Set( pinstNil, ppibNil, ulStopFlushThresholdForIndexCreate, NULL ) );
+        CallS( Param( pinstNil, JET_paramStartFlushThreshold )->Set( pinstNil, ppibNil, ulStartFlushThresholdForIndexCreate, nullptr ) );
+        CallS( Param( pinstNil, JET_paramStopFlushThreshold )->Set( pinstNil, ppibNil, ulStopFlushThresholdForIndexCreate, nullptr ) );
     }
     
     //  set DB extension size to 1% of the current size of the table, up to
@@ -5223,7 +5223,7 @@ ERR ErrFILEBuildAllIndexes(
               fSPOwnedExtent,
               gci::Allow ) );
 
-    Call( Param( pinst, JET_paramDbExtensionSize )->Set( pinst, ppibNil, max( cpgDbExtensionSizeSave, (CPG)min( g_cbPage, cpgTable / 100 ) ), NULL ) );
+    Call( Param( pinst, JET_paramDbExtensionSize )->Set( pinst, ppibNil, max( cpgDbExtensionSizeSave, (CPG)min( g_cbPage, cpgTable / 100 ) ), nullptr ) );
 
     //  if we have a lot of indices to rebuild, make sure we
     //  have enough temp disk space to accommodate the request
@@ -5370,7 +5370,7 @@ ERR ErrFILEBuildAllIndexes(
 
 
     dib.pos     = posFirst;
-    dib.pbm     = NULL;
+    dib.pbm     = nullptr;
     dib.dirflag = fDIRNull;
 
     FUCBSetPrereadForward( pfucbTable, cpgPrereadSequential );
@@ -5522,7 +5522,7 @@ NextBuild:
     // The PIB here is going to be used on multiple threads at the same time
     // when we post index creation tasks.
     // Set its cached TLS pointer to NULL to force an actual TLS lookup
-    ppib->ptlsApi = NULL;
+    ppib->ptlsApi = nullptr;
 
     CallS( err );
     while ( JET_errNoCurrentRecord != err )
@@ -5728,7 +5728,7 @@ HandleError:
 
     Assert ( err != errDIRNoShortCircuit );
 
-    if ( NULL != rgidxcontext )
+    if ( nullptr != rgidxcontext )
     {
         for ( iProc = 0; iProc < cProcs; iProc++ )
         {
@@ -5761,7 +5761,7 @@ HandleError:
             delete pcsrT;
         }
 
-        if ( NULL != rgpfucbSort )
+        if ( nullptr != rgpfucbSort )
         {
             for ( ULONG iindex = 0; iindex < cIndexBatchMax; iindex++ )
             {
@@ -5787,7 +5787,7 @@ HandleError:
 #endif
     }
 
-    if ( NULL != rgpfucbSort )
+    if ( nullptr != rgpfucbSort )
     {
         OSMemoryHeapFree( rgpfucbSort );
     }
@@ -5803,13 +5803,13 @@ HandleError:
     //
     if ( ulStopFlushThresholdSave > ulStopFlushThresholdForIndexCreate )
     {
-        CallS( Param( pinstNil, JET_paramStopFlushThreshold )->Set( pinstNil, ppibNil, ulStopFlushThresholdSave, NULL ) );
-        CallS( Param( pinstNil, JET_paramStartFlushThreshold )->Set( pinstNil, ppibNil, ulStartFlushThresholdSave, NULL ) );
+        CallS( Param( pinstNil, JET_paramStopFlushThreshold )->Set( pinstNil, ppibNil, ulStopFlushThresholdSave, nullptr ) );
+        CallS( Param( pinstNil, JET_paramStartFlushThreshold )->Set( pinstNil, ppibNil, ulStartFlushThresholdSave, nullptr ) );
     }
     else
     {
-        CallS( Param( pinstNil, JET_paramStartFlushThreshold )->Set( pinstNil, ppibNil, ulStartFlushThresholdSave, NULL ) );
-        CallS( Param( pinstNil, JET_paramStopFlushThreshold )->Set( pinstNil, ppibNil, ulStopFlushThresholdSave, NULL ) );
+        CallS( Param( pinstNil, JET_paramStartFlushThreshold )->Set( pinstNil, ppibNil, ulStartFlushThresholdSave, nullptr ) );
+        CallS( Param( pinstNil, JET_paramStopFlushThreshold )->Set( pinstNil, ppibNil, ulStopFlushThresholdSave, nullptr ) );
     }
 
     if ( !fLogged )
@@ -5824,7 +5824,7 @@ HandleError:
 
     //  restore original DB extension size
     //
-    CallS( Param( pinst, JET_paramDbExtensionSize )->Set( pinst, ppibNil, cpgDbExtensionSizeSave, NULL ) );
+    CallS( Param( pinst, JET_paramDbExtensionSize )->Set( pinst, ppibNil, cpgDbExtensionSizeSave, nullptr ) );
 
     ppib->ResetFBatchIndexCreation();
 
@@ -5899,7 +5899,7 @@ LOCAL ERR ErrFILEIBuildIndex(
     IDB *           pidb;
     DIB             dib;
     KEY             keyBuffer;
-    BYTE            *pbKey          = NULL;
+    BYTE            *pbKey          = nullptr;
     INT             fUnique;
     LONG            cRecInput       = 0;
     LONG            cRecOutput;
@@ -5924,7 +5924,7 @@ LOCAL ERR ErrFILEIBuildIndex(
     fUnique = pidb->FUnique();
 
     dib.pos     = posFirst;
-    dib.pbm     = NULL;
+    dib.pbm     = nullptr;
     dib.dirflag = fDIRNull;
 
     FUCBSetPrereadForward( pfucbTable, cpgPrereadSequential );
@@ -6922,7 +6922,7 @@ LOCAL ERR ErrFILEIPrepareOneIndex(
             fFalse,
             pgnoIndexFDP,
             pspacehints,
-            NULL );
+            nullptr );
         pfcb->LeaveDDL();
         Call( err );
 
@@ -7155,10 +7155,10 @@ LOCAL ERR VTAPI ErrFILEICreateIndex(
             pidxcreate->grbit,
             pidxcreate->ulDensity,
             pidxcreate->pidxunicode,
-            ( NULL != pidxcreate->pidxunicode && ( pidxcreate->grbit & JET_bitIndexUnicode ) && NULL != pidxcreate->pidxunicode->szLocaleName ?
+            ( nullptr != pidxcreate->pidxunicode && ( pidxcreate->grbit & JET_bitIndexUnicode ) && nullptr != pidxcreate->pidxunicode->szLocaleName ?
                             pidxcreate->pidxunicode->szLocaleName :
                             wszLocaleNameNone ),
-            ( NULL != pidxcreate->pidxunicode && ( pidxcreate->grbit & JET_bitIndexUnicode ) ?
+            ( nullptr != pidxcreate->pidxunicode && ( pidxcreate->grbit & JET_bitIndexUnicode ) ?
                             OSFormat( "0x%x", pidxcreate->pidxunicode->dwMapFlags ) :
                             "<default>" ),
             pidxcreate->cbVarSegMac,
@@ -7576,9 +7576,9 @@ LOCAL ERR VTAPI ErrFILEIBatchCreateIndex(
     BOOL                fInTransaction              = fFalse;
     BOOL                fLazyCommit                 = fTrue;
     ULONG               iindex;
-    FUCB                ** rgpfucbIdx               = NULL;
-    JET_INDEXCREATE3_A      *pidxcreateT                = NULL;
-    JET_INDEXCREATE3_A      *pidxcreateNext             = NULL;
+    FUCB                ** rgpfucbIdx               = nullptr;
+    JET_INDEXCREATE3_A      *pidxcreateT                = nullptr;
+    JET_INDEXCREATE3_A      *pidxcreateNext             = nullptr;
 
     //  check parms
     //
@@ -7729,7 +7729,7 @@ LOCAL ERR VTAPI ErrFILEIBatchCreateIndex(
                 ppib,
                 pfucb,
                 pfcbIndexes,
-                NULL,
+                nullptr,
                 cIndexes ) );
 
     pfcb->EnterDDL();
@@ -7773,7 +7773,7 @@ HandleError:
     {
         Assert( err < 0 );      // Must have hit an error.
 
-        if ( NULL != rgpfucbIdx )
+        if ( nullptr != rgpfucbIdx )
         {
             for ( iindex = 0; iindex < cIndexes; iindex++ )
             {
@@ -7792,7 +7792,7 @@ HandleError:
     AssertDIRNoLatch( ppib );
 
 Cleanup:
-    if ( NULL != rgpfucbIdx )
+    if ( nullptr != rgpfucbIdx )
     {
         OSMemoryHeapFree( rgpfucbIdx );
     }
@@ -7951,7 +7951,7 @@ LOCAL ERR ErrFILEIProcessDeferredPopulateIndexWorker(
         Call( ErrCATSetDeferredPopulateKey(
                   pfucbTable->ifmp,
                   ObjidFDP( pfucbIndex ),
-                  NULL,
+                  nullptr,
                   0) );
 
         IDB idbTemp = *(pfcbIdx->Pidb());
@@ -8056,7 +8056,7 @@ LOCAL ERR VTAPI ErrFILEIProcessDeferredPopulateIndex(
     FCB                 *pfcbTable                  = pfcbNil;
     FUCB                *pfucbIdx                   = pfucbNil;
     FCB                 *pfcbIdx                    = pfcbNil;
-    BYTE                *rgbKeyBuffer               = NULL;
+    BYTE                *rgbKeyBuffer               = nullptr;
     ULONG               cbKeyBuffer;
     CHAR                szIndexName[ JET_cbNameMost+1 ];
     const ULONG         cbTraceBuffer               = 127;
@@ -8080,7 +8080,7 @@ LOCAL ERR VTAPI ErrFILEIProcessDeferredPopulateIndex(
     // cbKeyMost can be 255, a default value.
     if ( pidxcreate->cbStruct != sizeof( JET_INDEXCREATE3_A ) )          { Error( ErrERRCheck( JET_errInvalidParameter ) ); }
     if ( pidxcreate->grbit != JET_bitIndexDeferredPopulateProcess )      { Error( ErrERRCheck( JET_errInvalidParameter ) ); }
-    if ( pidxcreate->szIndexName == NULL )                               { Error( ErrERRCheck( JET_errInvalidParameter ) ); }
+    if ( pidxcreate->szIndexName == nullptr )                               { Error( ErrERRCheck( JET_errInvalidParameter ) ); }
     if ( pidxcreate->cbKey )                                             { Error( ErrERRCheck( JET_errInvalidParameter ) ); }
     if ( pidxcreate->cConditionalColumn )                                { Error( ErrERRCheck( JET_errInvalidParameter ) ); }
     if ( pidxcreate->cbVarSegMac )                                       { Error( ErrERRCheck( JET_errInvalidParameter ) ); }
@@ -8208,7 +8208,7 @@ LOCAL ERR VTAPI ErrFILEIProcessDeferredPopulateIndex(
                 JET_cbtypIndexDeferredPopulateThrottle,
                 0,
                 szIndexName,
-                NULL,
+                nullptr,
                 0,
                 &fCallbackCalled );
 
@@ -8240,7 +8240,7 @@ HandleError:
         pfcbIdx->Unlock();
     }
 
-    if ( NULL != rgbKeyBuffer )
+    if ( nullptr != rgbKeyBuffer )
     {
         delete[] rgbKeyBuffer;
     }
@@ -8305,7 +8305,7 @@ ERR VTAPI ErrIsamCreateIndex(
     FMP                 *pfmp               = PfmpFromIfmp( pfucbTable->ifmp );
     BOOL                fInTransaction      = fFalse;
     ULONG               iIndexCreate        = 0;
-    JET_INDEXCREATE3_A* pindexcreateT       = NULL;
+    JET_INDEXCREATE3_A* pindexcreateT       = nullptr;
     BOOL                fLazyCommit;
 
 #ifdef SHOW_INDEX_PERF
@@ -8358,7 +8358,7 @@ ERR VTAPI ErrIsamCreateIndex(
                     Error( ErrERRCheck( JET_errIllegalOperation ) );
                 }
 
-                if ( NULL == pfmp->PkvpsMSysDeferredPopulateKeys() )
+                if ( nullptr == pfmp->PkvpsMSysDeferredPopulateKeys() )
                 {
                     // The store for the keys for deferred population doesn't yet
                     // exist.  That means that there was no such store at DB
@@ -8381,7 +8381,7 @@ ERR VTAPI ErrIsamCreateIndex(
                         Error( ErrERRCheck( JET_errIllegalOperation ) );
                     }
 
-                    if ( NULL == pfmp->PkvpsMSysDeferredPopulateKeys() )
+                    if ( nullptr == pfmp->PkvpsMSysDeferredPopulateKeys() )
                     {
                         // The store for the keys for deferred population doesn't yet
                         // exist.  Try to create it.  Failing to create it will fail
@@ -8503,7 +8503,7 @@ LOCAL ERR ErrRBSNonRevertableDeleteTooSoon( PIB* ppib, IFMP ifmp, FUCB* pfucb, P
     if ( pfcb->FTypeTable() )
     {
         // Finally check for the LV table. If not already initialized in FCB get it from catalog.
-        if ( pfcb->Ptdb() == NULL || pfcb->Ptdb()->PfcbLV() == NULL || pfcb->Ptdb()->PfcbLV()->ObjidFDP() == objidNil || pfcb->Ptdb()->PfcbLV()->FileTimePgnoFDPLastSet() == 0 )
+        if ( pfcb->Ptdb() == nullptr || pfcb->Ptdb()->PfcbLV() == nullptr || pfcb->Ptdb()->PfcbLV()->ObjidFDP() == objidNil || pfcb->Ptdb()->PfcbLV()->FileTimePgnoFDPLastSet() == 0 )
         {
             Call( ErrCATAccessTableLV( ppib, ifmp, pfcb->ObjidFDP(), &pgnoFDPLV, &objidFDPLV, &ftPgnoFDPLastSetLV, fSkipPgnoFDPLastSetTime ) );
         }
@@ -8514,7 +8514,7 @@ LOCAL ERR ErrRBSNonRevertableDeleteTooSoon( PIB* ppib, IFMP ifmp, FUCB* pfucb, P
             objidFDPLV = pfcb->Ptdb()->PfcbLV()->ObjidFDP();
         }
 
-        if ( ppgnoFDPLV != NULL )
+        if ( ppgnoFDPLV != nullptr )
         {
             *ppgnoFDPLV = pgnoFDPLV;
         }
@@ -8656,14 +8656,14 @@ ERR ErrFILEDeleteTable( PIB *ppib, IFMP ifmp, const CHAR *szName, const BOOL fAl
                 fRevertableTableDelete = fTrue;
                 err = JET_errSuccess;
             }
-            else if ( pfcb != NULL && pfcb->FTypeTable() )
+            else if ( pfcb != nullptr && pfcb->FTypeTable() )
             {
                 OSTraceSuspendGC();
 
                 // Log an event indicating that we are failing delete operation for this table due to JET_errRBSDeleteTableTooSoon error.
                 WCHAR wszTableName[JET_cbNameMost+1] = L"";
 
-                if ( pfcb->Ptdb() != NULL && pfcb->Ptdb()->SzTableName() != NULL )
+                if ( pfcb->Ptdb() != nullptr && pfcb->Ptdb()->SzTableName() != nullptr )
                 {
                     OSStrCbFormatW( wszTableName, sizeof(wszTableName), L"%hs", pfcb->Ptdb()->SzTableName() );
                 }
@@ -8683,7 +8683,7 @@ ERR ErrFILEDeleteTable( PIB *ppib, IFMP ifmp, const CHAR *szName, const BOOL fAl
                     _countof( rgcwsz ),
                     rgcwsz,
                     0,
-                    NULL,
+                    nullptr,
                     PinstFromPfucb( pfucb ) );
 
                 OSTraceResumeGC();
@@ -8700,9 +8700,9 @@ ERR ErrFILEDeleteTable( PIB *ppib, IFMP ifmp, const CHAR *szName, const BOOL fAl
     else if ( !fRevertableTableDelete )
     {
         // For non-revertable deletes, we need to capture the root page of LV tree and we need pgnoFDP of LV tree for that.
-        if ( pfcb->Ptdb() == NULL || pfcb->Ptdb()->PfcbLV() == NULL || pfcb->Ptdb()->PfcbLV()->ObjidFDP() == objidNil )
+        if ( pfcb->Ptdb() == nullptr || pfcb->Ptdb()->PfcbLV() == nullptr || pfcb->Ptdb()->PfcbLV()->ObjidFDP() == objidNil )
         {
-            Call( ErrCATAccessTableLV( ppib, ifmp, pfcb->ObjidFDP(), &verdeletetabledata.pgnoFDPLV, NULL, NULL, fTrue ) );
+            Call( ErrCATAccessTableLV( ppib, ifmp, pfcb->ObjidFDP(), &verdeletetabledata.pgnoFDPLV, nullptr, nullptr, fTrue ) );
         }
         else
         {
@@ -9466,12 +9466,12 @@ ERR VTAPI ErrIsamRenameTable( JET_SESID sesid, JET_DBID dbid, const CHAR *szName
     CallR( ErrDBCheckUserDbid( ifmp ) );
     CallR( ErrPIBCheckIfmp( ppib, ifmp ) );
 
-    if( NULL == szName )
+    if( nullptr == szName )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
 
-    if( NULL == szNameNew )
+    if( nullptr == szNameNew )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -9524,12 +9524,12 @@ ERR VTAPI ErrIsamRenameColumn(
     CallR( ErrPIBCheckUpdatable( ppib ) );
     CheckTable( ppib, pfucb );
 
-    if( NULL == szName )
+    if( nullptr == szName )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
 
-    if( NULL == szNameNew )
+    if( nullptr == szNameNew )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }

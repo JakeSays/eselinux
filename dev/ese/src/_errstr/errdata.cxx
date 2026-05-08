@@ -40,7 +40,7 @@ const ErrData * PerrdataEntryI( _In_ const INT iEntry )
 {
     if ( iEntry >= _countof(rgerrdata) )
     {
-        return NULL;
+        return nullptr;
     }
 
     return &( rgerrdata[iEntry] );
@@ -58,6 +58,6 @@ const ErrData * PerrdataLookupErrValue( _In_ const JET_ERR errLookup )
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 

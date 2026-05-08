@@ -175,7 +175,7 @@ DBREGISTEROLD2TASK::DBREGISTEROLD2TASK(
     OSStrCbCopyA( m_szTableName, sizeof(m_szTableName), szTableName );
     m_szIndexName[ 0 ] = '\0';
 
-    if ( szIndexName != NULL )
+    if ( szIndexName != nullptr )
     {
         OSStrCbCopyA( m_szIndexName, sizeof( m_szIndexName ), szIndexName );
     }
@@ -912,7 +912,7 @@ ERR MERGEAVAILEXTTASK::ErrExecuteDbTask( PIB * const ppib )
     Call( ErrDIRBeginTransaction( ppib, 62757, NO_GRBIT ) );
     fInTrx = fTrue;
 
-    Call( ErrBTIMultipageCleanup( pfucbAE, bookmark, NULL, NULL, NULL, fTrue ) );
+    Call( ErrBTIMultipageCleanup( pfucbAE, bookmark, nullptr, nullptr, nullptr, fTrue ) );
 
     Call( ErrDIRCommitTransaction( ppib, JET_bitCommitLazyFlush ) );
     fInTrx = fFalse;
@@ -943,7 +943,7 @@ VOID MERGEAVAILEXTTASK::HandleError( const ERR err )
 
 BATCHRECTASK::BATCHRECTASK( const PGNO pgnoFDP, const IFMP ifmp ) :
     DBTASK( ifmp ),
-    m_rgprectask( NULL ),
+    m_rgprectask( nullptr ),
     m_cptaskMax( 0 ),
     m_iptaskCurr( 0 ),
     m_pgnoFDP( pgnoFDP )
@@ -961,12 +961,12 @@ BATCHRECTASK::~BATCHRECTASK()
         for( INT iptask = 0; iptask < m_iptaskCurr; ++iptask )
         {
             RECTASK * const prectaskT = m_rgprectask[iptask];
-            m_rgprectask[iptask] = NULL;
+            m_rgprectask[iptask] = nullptr;
             delete prectaskT;
         }
     }
     delete [] m_rgprectask;
-    m_rgprectask = NULL;
+    m_rgprectask = nullptr;
 }
 
 ERR BATCHRECTASK::ErrAddTask( RECTASK * const prectask )
@@ -1041,7 +1041,7 @@ ERR BATCHRECTASK::ErrExecuteDbTask( PIB * const ppib )
         // dispatching the task also deletes the object,
         // so don't keep a pointer to it
         RECTASK * const prectaskT = m_rgprectask[iptask];
-        m_rgprectask[iptask] = NULL;
+        m_rgprectask[iptask] = nullptr;
         TASK::Dispatch( ppib, (ULONG_PTR)prectaskT );
 
         // see if we have used up all the bookmarks previously preread
@@ -1097,7 +1097,7 @@ VOID BATCHRECTASK::PrereadTaskBookmarks( PIB * const ppib, const INT itaskStart,
     // ignore errors. if preread fails we don't want to stop the execution of the task
 
     BOOKMARK * rgbm;
-    if( NULL != ( rgbm = new BOOKMARK[cbookmarksPreread] ) )
+    if( nullptr != ( rgbm = new BOOKMARK[cbookmarksPreread] ) )
     {
         FUCB * pfucb = pfucbNil;
         if( JET_errSuccess == ErrDIROpen( ppib, m_pgnoFDP, m_ifmp, &pfucb ) )
@@ -1140,7 +1140,7 @@ RECTASKBATCHER::RECTASKBATCHER(
         m_cbatchesMax( cbatchesMax ),
         m_ctasksPerBatchMax( ctasksPerBatchMax ),
         m_ctasksBatchedMax( ctasksBatchedMax ),
-        m_rgpbatchtask( NULL ),
+        m_rgpbatchtask( nullptr ),
         m_ctasksBatched( 0 )
 {
     // there should be some batching
@@ -1164,14 +1164,14 @@ RECTASKBATCHER::~RECTASKBATCHER()
             {
                 BATCHRECTASK * const pbatchrectaskT = m_rgpbatchtask[ipbatchtask];
                 m_ctasksBatched -= pbatchrectaskT->CTasks();
-                m_rgpbatchtask[ipbatchtask] = NULL;
+                m_rgpbatchtask[ipbatchtask] = nullptr;
                 
                 delete pbatchrectaskT;
             }
         }
         Assert( 0 == m_ctasksBatched );
         delete[] m_rgpbatchtask;
-        m_rgpbatchtask = NULL;
+        m_rgpbatchtask = nullptr;
     }
 }
 
@@ -1278,7 +1278,7 @@ HandleError:
         Assert( err < JET_errSuccess );
         PinstFromIfmp( prectask->Ifmp() )->m_pver->IncrementCCleanupFailed();
         delete prectask;
-        prectask = NULL;
+        prectask = nullptr;
     }
     return err;
 }
@@ -1326,7 +1326,7 @@ ERR RECTASKBATCHER::ErrPostOneBatch( const INT ipbatchtask )
     Assert( pbatchrectaskT );
     
     m_ctasksBatched -= pbatchrectaskT->CTasks();
-    m_rgpbatchtask[ipbatchtask] = NULL;
+    m_rgpbatchtask[ipbatchtask] = nullptr;
 
     // if the task is posted successfully, then execution will delete the task,
     const ERR err = m_pinst->Taskmgr().ErrTMPost( TASK::DispatchGP, pbatchrectaskT );

@@ -73,8 +73,8 @@ CKVPStore::CKVPStore( IFMP ifmp, const WCHAR * const wszTableName )
 CKVPStore::~CKVPStore( )
 {
     //  leaking?
-    AssertRTL( NULL == m_pfucbGlobalLock );
-    AssertRTL( NULL == m_ppibGlobalLock );
+    AssertRTL( nullptr == m_pfucbGlobalLock );
+    AssertRTL( nullptr == m_ppibGlobalLock );
 }
 
 ERR CKVPStore::ErrKVPIInitIBootstrapCriticalCOLIDs()
@@ -90,7 +90,7 @@ ERR CKVPStore::ErrKVPIInitIBootstrapCriticalCOLIDs()
               (JET_SESID)m_ppibGlobalLock,
               (JET_VTID)m_pfucbGlobalLock,
               p_szKeyColumn,
-              NULL,
+              nullptr,
               &jcd,
               sizeof( jcd ),
               JET_ColInfo,
@@ -102,7 +102,7 @@ ERR CKVPStore::ErrKVPIInitIBootstrapCriticalCOLIDs()
               (JET_SESID)m_ppibGlobalLock,
               (JET_VTID)m_pfucbGlobalLock,
               p_szTypeColumn,
-              NULL,
+              nullptr,
               &jcd,
               sizeof( jcd ),
               JET_ColInfo,
@@ -114,7 +114,7 @@ ERR CKVPStore::ErrKVPIInitIBootstrapCriticalCOLIDs()
               (JET_SESID)m_ppibGlobalLock,
               (JET_VTID)m_pfucbGlobalLock,
               m_rgDataTypeInfo[kvpvtSchemaValueType].m_szName,
-              NULL,
+              nullptr,
               &jcd,
               sizeof( jcd ),
               JET_ColInfo,
@@ -153,7 +153,7 @@ ERR CKVPStore::ErrKVPIInitICreateTable( PIB * ppib, const IFMP ifmp, const CHAR 
             JET_coltypBinary,
             0,
             JET_bitColumnVariable,
-            NULL,
+            nullptr,
             0,
             0,
             0,
@@ -165,7 +165,7 @@ ERR CKVPStore::ErrKVPIInitICreateTable( PIB * ppib, const IFMP ifmp, const CHAR 
             JET_coltypUnsignedByte,
             0,
             JET_bitColumnFixed|JET_bitColumnNotNULL,
-            NULL,
+            nullptr,
             0,
             0,
             0,
@@ -196,31 +196,31 @@ ERR CKVPStore::ErrKVPIInitICreateTable( PIB * ppib, const IFMP ifmp, const CHAR 
             sizeof( szMSysKVPTableIndexKey ),               // length of key
             JET_bitIndexPrimary|JET_bitIndexDisallowTruncation,         // index options
             92,                                             // index density
-            0,                                              // lcid for the index
+            nullptr,                                              // lcid for the index
             0,                                              // maximum length of variable length columns in index key
-            NULL,                                           // pointer to conditional column structure
+            nullptr,                                           // pointer to conditional column structure
             0,                                              // number of conditional columns
             JET_errSuccess,                                 // returned error code,
             255,                                            // maximum key size
-            NULL                                            // space hints
+            nullptr                                            // space hints
         },
     };
 
     JET_TABLECREATE5_A  tablecreateKVPTable = {
         sizeof( JET_TABLECREATE5_A ),       // size of this structure
         const_cast<char *>( szTableName ),  // name of table
-        NULL,                               // name of base table
+        nullptr,                               // name of base table
         1,                                  // initial pages
         92,                                 // density
         rgcolumncreateKVPTable,             // columns to create
         _countof(rgcolumncreateKVPTable),   // number of columns to create
         rgindexcreateKVPTable,              // array of index creation info
         _countof(rgindexcreateKVPTable),    // number of indexes to create
-        NULL,                               // callback to use for this table
+        nullptr,                               // callback to use for this table
         JET_cbtypNull,                      // when the callback should be called
         JET_bitTableCreateSystemTable,      // grbit
-        NULL,                               // Sequential index space hints.
-        NULL,                               // LV index space hints
+        nullptr,                               // Sequential index space hints.
+        nullptr,                               // LV index space hints
         0,                                  // cbSeparateLV threshold
         0,                                  // cbLVChunkMax
         JET_TABLEID( pfucbNil ),            // returned tableid
@@ -265,7 +265,7 @@ ERR CKVPStore::ErrKVPIInitICreateTable( PIB * ppib, const IFMP ifmp, const CHAR 
     Call( ErrKVPISetValue( eHasTrx, p_wszSchemaExternalMinorVersion, kvpvtSchemaValueType, (BYTE*)&ulInitialUserSubVersions, sizeof( ulInitialUserSubVersions ) ) );
     Call( ErrKVPISetValue( eHasTrx, p_wszSchemaExternalUpdateVersion, kvpvtSchemaValueType, (BYTE*)&ulInitialUserSubVersions, sizeof( ulInitialUserSubVersions ) ) );
 
-    m_pfucbGlobalLock = NULL;
+    m_pfucbGlobalLock = nullptr;
     Call( ErrFILECloseTable( ppib, (FUCB *)tablecreateKVPTable.tableid ) );
 
     Assert( fInTransaction );
@@ -279,7 +279,7 @@ HandleError:
         const ERR errRollback = ErrDIRRollback( ppib );
         CallSx( errRollback, JET_errRollbackError );
         Assert( errRollback >= JET_errSuccess || PinstFromPpib( ppib )->FInstanceUnavailable( ) );
-        m_pfucbGlobalLock = NULL;
+        m_pfucbGlobalLock = nullptr;
         fInTransaction = fFalse;
     }
 
@@ -318,7 +318,7 @@ ERR CKVPStore::ErrKVPIAddValueTypeToSchema( const KVPIValueType kvpvt )
               m_pfucbGlobalLock,
               m_rgDataTypeInfo[kvpvt].m_szName,
               &jcd,
-              NULL,
+              nullptr,
               0,
               &jcid ) );
 
@@ -585,7 +585,7 @@ ERR CKVPStore::ErrKVPIInitILoadValueTypeCOLIDs()
                   (JET_SESID)m_ppibGlobalLock,
                   (JET_VTID)m_pfucbGlobalLock,
                   m_rgDataTypeInfo[iValueType].m_szName,
-                  NULL,
+                  nullptr,
                   &jcd,
                   sizeof( jcd ),
                   JET_ColInfo,
@@ -643,7 +643,7 @@ HandleError:
         if ( m_ppibGlobalLock )
         {
             PIBEndSession( m_ppibGlobalLock );
-            m_ppibGlobalLock = NULL;
+            m_ppibGlobalLock = nullptr;
         }
         Assert( NULL == m_pfucbGlobalLock );
     }
@@ -656,24 +656,24 @@ VOID CKVPStore::KVPICloseGlobalPibAndFucb()
     Assert( m_critGlobalTableLock.FOwner() );
     Assert( ( m_pfucbGlobalLock == NULL ) || ( m_ppibGlobalLock != NULL ) );        // inconsistent state.
 
-    if ( NULL == m_ppibGlobalLock && NULL == m_pfucbGlobalLock )
+    if ( nullptr == m_ppibGlobalLock && nullptr == m_pfucbGlobalLock )
     {
         //  yeah, already done ...
         return;
     }
 
-    if ( m_ppibGlobalLock != NULL )
+    if ( m_ppibGlobalLock != nullptr )
     {
-        if ( m_pfucbGlobalLock != NULL )
+        if ( m_pfucbGlobalLock != nullptr )
         {
             CallS( ErrFILECloseTable( m_ppibGlobalLock, m_pfucbGlobalLock ) );
-            m_pfucbGlobalLock = NULL;
+            m_pfucbGlobalLock = nullptr;
         }
 
         CallS( ErrDBCloseDatabase( m_ppibGlobalLock, m_ifmp, NO_GRBIT ) );
 
         PIBEndSession( m_ppibGlobalLock );
-        m_ppibGlobalLock = NULL;
+        m_ppibGlobalLock = nullptr;
     }
 }
 
@@ -777,7 +777,7 @@ HandleError:
     if ( m_pfucbGlobalLock )
     {
         CallS( ErrFILECloseTable( m_ppibGlobalLock, m_pfucbGlobalLock ) );
-        m_pfucbGlobalLock = NULL;
+        m_pfucbGlobalLock = nullptr;
     }
 
     //  if the caller provided a PIB and JET_DBID/IFMP, then we may not close them
@@ -786,7 +786,7 @@ HandleError:
     {
         ifmp = g_ifmpMax;             // not ours to deallocate ...
         Assert( ifmp == g_ifmpMax );
-        m_ppibGlobalLock = NULL;    // not ours to deallocate ...
+        m_ppibGlobalLock = nullptr;    // not ours to deallocate ...
     }
 
     if ( ifmp != g_ifmpMax && !fFailedOpenDatabase )
@@ -797,7 +797,7 @@ HandleError:
     if ( m_ppibGlobalLock )
     {
         PIBEndSession( m_ppibGlobalLock );
-        m_ppibGlobalLock = NULL;
+        m_ppibGlobalLock = nullptr;
     }
 
     Assert( NULL == m_ppibGlobalLock );
@@ -1008,10 +1008,10 @@ HandleError:
         if ( m_pfucbGlobalLock )
         {
             CallS( ErrFILECloseTable( m_ppibGlobalLock, m_pfucbGlobalLock ) );
-            m_pfucbGlobalLock = NULL;
+            m_pfucbGlobalLock = nullptr;
         }
 
-        m_ppibGlobalLock = NULL;
+        m_ppibGlobalLock = nullptr;
 
         Assert( NULL == m_ppibGlobalLock );
         Assert( NULL == m_pfucbGlobalLock );
@@ -1050,11 +1050,11 @@ ERR CKVPStore::ErrKVPIReleaseTrx( const ERR errRet )
     //  cleanup resources that we cannot hold open
 
     CallS( ErrFILECloseTable( m_ppibGlobalLock, m_pfucbGlobalLock ) );
-    m_pfucbGlobalLock = NULL;
+    m_pfucbGlobalLock = nullptr;
 
     //  "release" resources that don't belong to us.
 
-    m_ppibGlobalLock = NULL;
+    m_ppibGlobalLock = nullptr;
 
     //  leave the critical section
 
@@ -1132,7 +1132,7 @@ ERR CKVPStore::ErrKVPIPrepUpdate(  const WCHAR * const wszKey, KVPIValueType kvp
 
         //  setup the key for the insert
 
-        Call( ErrIsamSetColumn( m_ppibGlobalLock, m_pfucbGlobalLock, m_cidKey, (void*)wszKey, cbKey, NO_GRBIT, NULL ) );
+        Call( ErrIsamSetColumn( m_ppibGlobalLock, m_pfucbGlobalLock, m_cidKey, (void*)wszKey, cbKey, NO_GRBIT, nullptr ) );
 
         //  setup the type
 
@@ -1140,7 +1140,7 @@ ERR CKVPStore::ErrKVPIPrepUpdate(  const WCHAR * const wszKey, KVPIValueType kvp
         C_ASSERT( kvpvtMaxValueType < 255 );
         BYTE eType = (BYTE)kvpvt;
 
-        Call( ErrIsamSetColumn( m_ppibGlobalLock, m_pfucbGlobalLock, m_cidType, (void*)&eType, sizeof( eType ), NO_GRBIT, NULL ) );
+        Call( ErrIsamSetColumn( m_ppibGlobalLock, m_pfucbGlobalLock, m_cidType, (void*)&eType, sizeof( eType ), NO_GRBIT, nullptr ) );
     }
     else
     {
@@ -1157,7 +1157,7 @@ ERR CKVPStore::ErrKVPIPrepUpdate(  const WCHAR * const wszKey, KVPIValueType kvp
 
         ULONG cbActual;
         BYTE bValueType = (BYTE)kvpvtInvalidType;
-        Call( ErrIsamRetrieveColumn( m_ppibGlobalLock, m_pfucbGlobalLock, m_cidType, (void*)&bValueType, sizeof( bValueType ), &cbActual, NO_GRBIT, NULL ) );
+        Call( ErrIsamRetrieveColumn( m_ppibGlobalLock, m_pfucbGlobalLock, m_cidType, (void*)&bValueType, sizeof( bValueType ), &cbActual, NO_GRBIT, nullptr ) );
         Assert( cbActual == 1 );
         if ( ((KVPIValueType)bValueType) != kvpvt )
         {
@@ -1213,10 +1213,10 @@ ERR CKVPStore::ErrKVPIDeleteKey(
 
     // We don't allow deleting a schema value type, which is indicated by the key beginning with
     // the secret character.
-    if ( ( NULL == wszKey ) ||
+    if ( ( nullptr == wszKey ) ||
          ( wszKey[0] == 0 ) ||
          ( wszKey[0] == s_wchSecret ) ||
-         ( NULL != wcschr( wszKey, L'*' ) ) )   // Can't delete with a wildcard key
+         ( nullptr != wcschr( wszKey, L'*' ) ) )   // Can't delete with a wildcard key
     {
         AssertSz( FNegTest( fInvalidUsage ), "Invalid deletion of KVPI key here.\n" );
         return ErrERRCheck( JET_errInvalidParameter );
@@ -1350,9 +1350,9 @@ ERR CKVPStore::ErrKVPISetValue(
     //  This sets the value of the KVP.
     //
     
-    Call( ErrIsamSetColumn( m_ppibGlobalLock, m_pfucbGlobalLock, m_rgDataTypeInfo[kvpvt].m_cid, pbValue, cbValue, NO_GRBIT, NULL ) );
+    Call( ErrIsamSetColumn( m_ppibGlobalLock, m_pfucbGlobalLock, m_rgDataTypeInfo[kvpvt].m_cid, pbValue, cbValue, NO_GRBIT, nullptr ) );
     
-    Call( ErrIsamUpdate( m_ppibGlobalLock, m_pfucbGlobalLock, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( m_ppibGlobalLock, m_pfucbGlobalLock, nullptr, 0, nullptr, NO_GRBIT ) );
     fInUpdate = fFalse;
     
     CallS( err );
@@ -1464,7 +1464,7 @@ ERR CKVPStore::ErrKVPIGetValue(
 
     ULONG cbActual;
     BYTE bValueType = (BYTE)kvpvtInvalidType;
-    Call( ErrIsamRetrieveColumn( m_ppibGlobalLock, m_pfucbGlobalLock, m_cidType, (void*)&bValueType, sizeof( bValueType ), &cbActual, NO_GRBIT, NULL ) );
+    Call( ErrIsamRetrieveColumn( m_ppibGlobalLock, m_pfucbGlobalLock, m_cidType, (void*)&bValueType, sizeof( bValueType ), &cbActual, NO_GRBIT, nullptr ) );
     Assert( cbActual == 1 );
     if ( ((KVPIValueType)bValueType) != kvpvt )
     {
@@ -1474,7 +1474,7 @@ ERR CKVPStore::ErrKVPIGetValue(
 
     //  Retrieve the actual value
 
-    Call( ErrIsamRetrieveColumn( m_ppibGlobalLock, m_pfucbGlobalLock, m_rgDataTypeInfo[kvpvt].m_cid, pbValue, cbValue, &cbActual, NO_GRBIT, NULL ) );
+    Call( ErrIsamRetrieveColumn( m_ppibGlobalLock, m_pfucbGlobalLock, m_rgDataTypeInfo[kvpvt].m_cid, pbValue, cbValue, &cbActual, NO_GRBIT, nullptr ) );
     
     if ( m_rgDataTypeInfo[kvpvt].m_cbDataCol != (INT)cbActual &&
             m_rgDataTypeInfo[kvpvt].m_cbDataCol != cbKVPIVariableDataSize )
@@ -1667,7 +1667,7 @@ CKVPStore::CKVPSCursor::~CKVPSCursor()
         (void)m_pkvps->ErrKVPIEndTrx( JET_errSuccess );
     }
     m_eState = kvpscUninit;
-    m_pkvps = NULL;
+    m_pkvps = nullptr;
     m_wszWildKey[0] = L'\0';
     m_wszCurrentKey[0] = L'\0';
 }
@@ -1677,7 +1677,7 @@ BOOL CKVPStore::CKVPSCursor::FKVPSCursorIMatches() const
     const WCHAR * pwszKey = WszKVPSCursorCurrKey();
 
     Assert( pwszKey );  // but just in case ...
-    if( NULL == pwszKey )
+    if( nullptr == pwszKey )
     {
         return fFalse;
     }
@@ -1728,7 +1728,7 @@ ERR CKVPStore::CKVPSCursor::ErrCKVPSCursorIEstablishCurrency()
     Assert( m_eState == kvpscEnumerating );
 
     ULONG cbActual;
-    const ERR err = ErrIsamRetrieveColumn( m_pkvps->m_ppibGlobalLock, m_pkvps->m_pfucbGlobalLock, m_pkvps->m_cidKey, (void*)m_wszCurrentKey, sizeof( m_wszCurrentKey ), &cbActual, NO_GRBIT, NULL );
+    const ERR err = ErrIsamRetrieveColumn( m_pkvps->m_ppibGlobalLock, m_pkvps->m_pfucbGlobalLock, m_pkvps->m_cidKey, (void*)m_wszCurrentKey, sizeof( m_wszCurrentKey ), &cbActual, NO_GRBIT, nullptr );
     Assert( cbActual > 2 );
     Assert( cbActual < sizeof( m_wszCurrentKey ) );
     Assert( m_wszCurrentKey[cbActual/sizeof(WCHAR)-1] == L'\0' );
@@ -1884,7 +1884,7 @@ ERR CKVPStore::CKVPSCursor::ErrKVPSCursorIGetType( CKVPStore::KVPIValueType * co
 {
     ULONG cbActual;
     *pkvpvt = CKVPStore::kvpvtInvalidType;
-    const ERR err = ErrIsamRetrieveColumn( m_pkvps->m_ppibGlobalLock, m_pkvps->m_pfucbGlobalLock, m_pkvps->m_cidType, (void*)pkvpvt, 1, &cbActual, NO_GRBIT, NULL );
+    const ERR err = ErrIsamRetrieveColumn( m_pkvps->m_ppibGlobalLock, m_pkvps->m_pfucbGlobalLock, m_pkvps->m_cidType, (void*)pkvpvt, 1, &cbActual, NO_GRBIT, nullptr );
     Assert( cbActual == 1 );
     return err;
 }
@@ -1901,10 +1901,10 @@ ERR ErrKVPStoreTestGetTable( const IFMP ifmpTest, const WCHAR * const wszTable, 
     *pdbid = JET_dbidNil;
     *pcursor = JET_tableidNil;
 
-    Call( JetBeginSessionW( (JET_INSTANCE)PinstFromIfmp( ifmpTest ), psesid, NULL, NULL ) );
-    Call( JetOpenDatabaseW( *psesid, g_rgfmp[ifmpTest].WszDatabaseName(), NULL, pdbid, NO_GRBIT ) );
+    Call( JetBeginSessionW( (JET_INSTANCE)PinstFromIfmp( ifmpTest ), psesid, nullptr, nullptr ) );
+    Call( JetOpenDatabaseW( *psesid, g_rgfmp[ifmpTest].WszDatabaseName(), nullptr, pdbid, NO_GRBIT ) );
     Assert( ifmpTest == *pdbid );
-    Call( JetOpenTableW( *psesid, *pdbid, wszTable, NULL, 0, NO_GRBIT, pcursor ) );
+    Call( JetOpenTableW( *psesid, *pdbid, wszTable, nullptr, 0, NO_GRBIT, pcursor ) );
 
 HandleError:
 

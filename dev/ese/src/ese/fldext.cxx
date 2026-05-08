@@ -255,7 +255,7 @@ ERR ErrRECIAccessColumn( FUCB *pfucb, COLUMNID columnid, FIELD * const pfieldFix
                     ppib,
                     pfcb->Ifmp(),
                     pfcb->ObjidFDP(),
-                    NULL,
+                    nullptr,
                     &columnid );
         Assert( err <= 0 );     // No warning should be generated.
 
@@ -526,7 +526,7 @@ ERR ErrRECIRetrieveVarColumn(
     {
         // length is zero: return success [zero-length non-null
         // values are allowed]
-        pdataField->SetPv( NULL );
+        pdataField->SetPv( nullptr );
     }
     else
     {
@@ -878,7 +878,7 @@ LOCAL ERR ErrRECIScanTaggedColumns(
 
     if ( ( err >= JET_errSuccess ) &&
         ( !( grbit & ( JET_bitRetrievePhysicalSize | JET_bitRetrieveLongId | JET_bitRetrieveLongValueRefCount ) ) &&
-             *pfEncrypted && pfucb->pbEncryptionKey == NULL ) )
+             *pfEncrypted && pfucb->pbEncryptionKey == nullptr ) )
     {
         return ErrERRCheck( JET_errColumnNoEncryptionKey );
     }
@@ -952,8 +952,8 @@ LOCAL ERR ErrRECIRetrieveFromIndex(
     ULONG           cbKeyMost;
     const size_t    cbKeyStack              = 256;
     BYTE            rgbKeyStack[ cbKeyStack ];
-    BYTE            *pbKeyRes               = NULL;
-    BYTE            *pbKeyAlloc             = NULL;
+    BYTE            *pbKeyRes               = nullptr;
+    BYTE            *pbKeyAlloc             = nullptr;
     KEY             keyT;
     KEY             *pkey;
     FIELD           *pfield;
@@ -1513,7 +1513,7 @@ LOCAL ERR ErrRECIDecompressDataForRetrieve(
         Call( ErrPKDecompressData(
                 dataCompressed,
                 pfucb,
-                NULL,
+                nullptr,
                 0,
                 &cbDataActualT ) );
         *pcbDataActual = max( 0, cbDataActualT - ibOffset );
@@ -1521,7 +1521,7 @@ LOCAL ERR ErrRECIDecompressDataForRetrieve(
         {
             const INT cbToCopy      = min(cbDataMax, *pcbDataActual);
             const INT cbToRetrieve  = cbToCopy + ibOffset;
-            BYTE * pbT = NULL;
+            BYTE * pbT = nullptr;
             Alloc( pbT = new BYTE[cbToRetrieve] );
             // don't use Call() here, pbT won't be freed
             err = ErrPKDecompressData(
@@ -1568,7 +1568,7 @@ INLINE ERR ErrRECIGetIntrinsicAvail(
 
     ERR                 err = JET_errSuccess;
     TDB                 *ptdbT = pfcbTable->Ptdb();
-    FIELD               *pfieldT = NULL;
+    FIELD               *pfieldT = nullptr;
     const DATA&         dataRec = pfucb->dataWorkBuf;
     const REC           *precT = (REC *)dataRec.Pv();
     Assert( 0 != columnid );
@@ -1636,12 +1636,12 @@ INLINE ERR ErrRECIGetIntrinsicAvail(
             //
             DATA        dataT;
             dataT.SetCb(0);
-            dataT.SetPv(NULL);
+            dataT.SetPv(nullptr);
             TAGFIELDS   tagfields( dataRec );
             Call( tagfields.ErrRetrieveColumn(
                         pfcbTable,
                         columnid,
-                        ( pretinfo == NULL ) ? 1 : pretinfo->itagSequence,
+                        ( pretinfo == nullptr ) ? 1 : pretinfo->itagSequence,
                         dataRec,
                         &dataT,
                         JET_bitRetrieveIgnoreDefault ) );
@@ -1712,8 +1712,8 @@ ERR VTAPI ErrIsamRetrieveColumn(
     BOOL            fSetReturnValue     = fTrue;
     BOOL            fUseCopyBuffer      = fFalse;
     BOOL            fEncrypted          = fFalse;
-    BYTE *          pbDataDecrypted     = NULL;
-    BYTE *          pbRef               = NULL;
+    BYTE *          pbDataDecrypted     = nullptr;
+    BYTE *          pbRef               = nullptr;
 
     CallR( ErrPIBCheck( ppib ) );
     CheckFUCB( ppib, pfucb );
@@ -1724,7 +1724,7 @@ ERR VTAPI ErrIsamRetrieveColumn(
     Assert( pfucb->u.pfcb->Ptdb() == pfucb->u.pscb->fcb.Ptdb() );
     Assert( pfucb->u.pfcb->Ptdb() != ptdbNil );
 
-    if ( pretinfo != NULL )
+    if ( pretinfo != nullptr )
     {
         if ( pretinfo->cbStruct < sizeof(JET_RETINFO) )
             return ErrERRCheck( JET_errInvalidParameter );
@@ -1866,7 +1866,7 @@ ERR VTAPI ErrIsamRetrieveColumn(
 
         //  return itagSequence if requested
         //
-        if ( pretinfo != NULL
+        if ( pretinfo != nullptr
             && ( grbit & JET_bitRetrieveTag )
             && ( errDIRNoShortCircuit == err || err >= 0 ) )
         {
@@ -1888,7 +1888,7 @@ ERR VTAPI ErrIsamRetrieveColumn(
         Assert( !fScanTagged );
         Call( ErrRECIAccessColumn( pfucb, columnid, &fieldFixed, &fEncrypted ) );
         if ( !( grbit & (JET_bitRetrievePhysicalSize|JET_bitRetrieveLongId|JET_bitRetrieveLongValueRefCount) ) &&
-             fEncrypted && pfucb->pbEncryptionKey == NULL )
+             fEncrypted && pfucb->pbEncryptionKey == nullptr )
         {
             Error( ErrERRCheck( JET_errColumnNoEncryptionKey ) );
         }
@@ -1980,7 +1980,7 @@ ERR VTAPI ErrIsamRetrieveColumn(
         // Be careful not to overwrite err in block below
 
         pbDataDecrypted = new BYTE[ dataRetrieved.Cb() ];
-        if ( pbDataDecrypted == NULL )
+        if ( pbDataDecrypted == nullptr )
         {
             Error( ErrERRCheck( JET_errOutOfMemory ) );
         }
@@ -2244,7 +2244,7 @@ ERR VTAPI ErrIsamRetrieveColumn(
         }
     }
 
-    if ( pretinfo != NULL )
+    if ( pretinfo != nullptr )
     {
         pretinfo->columnidNextTagged = columnid;
     }
@@ -2253,7 +2253,7 @@ HandleError:
     if ( pbDataDecrypted )
     {
         delete[] pbDataDecrypted;
-        pbDataDecrypted = NULL;
+        pbDataDecrypted = nullptr;
     }
     if ( pbRef )
     {
@@ -2388,9 +2388,9 @@ LOCAL ERR ErrRECRetrieveColumns(
     BOOL                *pfBufferTruncated )
 {
     ERR                 err;
-    const DATA *        pdataRec        = NULL;
-    BYTE *              pbDataDecrypted = NULL;
-    BYTE *              pbRef           = NULL;
+    const DATA *        pdataRec        = nullptr;
+    BYTE *              pbDataDecrypted = nullptr;
+    BYTE *              pbRef           = nullptr;
 
     Assert( !( FFUCBAlwaysRetrieveCopy( pfucb ) && FFUCBNeverRetrieveCopy( pfucb ) ) );
 
@@ -2612,7 +2612,7 @@ LOCAL ERR ErrRECRetrieveColumns(
             Assert( pfucb->ppib->Level() > 0 );
             Call( ErrRECIAccessColumn( pfucb, columnid, &fieldFixed, &fEncrypted ) );
             if ( !( grbit & (JET_bitRetrievePhysicalSize|JET_bitRetrieveLongId|JET_bitRetrieveLongValueRefCount) ) &&
-                 fEncrypted && pfucb->pbEncryptionKey == NULL )
+                 fEncrypted && pfucb->pbEncryptionKey == nullptr )
             {
                 Error( ErrERRCheck( JET_errColumnNoEncryptionKey ) );
             }
@@ -2667,7 +2667,7 @@ LOCAL ERR ErrRECRetrieveColumns(
             // Be careful not to overwrite err in block below
 
             pbDataDecrypted = new BYTE[ dataRetrieved.Cb() ];
-            if ( pbDataDecrypted == NULL )
+            if ( pbDataDecrypted == nullptr )
             {
                 Error( ErrERRCheck( JET_errOutOfMemory ) );
             }
@@ -2933,12 +2933,12 @@ LOCAL ERR ErrRECRetrieveColumns(
         if ( pbDataDecrypted )
         {
             delete[] pbDataDecrypted;
-            pbDataDecrypted = NULL;
+            pbDataDecrypted = nullptr;
         }
         if ( pbRef )
         {
             delete[] pbRef;
-            pbRef = NULL;
+            pbRef = nullptr;
         }
 
         pretcolT->columnidNextTagged = columnid;
@@ -2955,7 +2955,7 @@ HandleError:
     if ( pbDataDecrypted )
     {
         delete[] pbDataDecrypted;
-        pbDataDecrypted = NULL;
+        pbDataDecrypted = nullptr;
     }
     if ( pbRef )
     {
@@ -3053,14 +3053,14 @@ LOCAL ERR ErrRECIBuildTaggedColumnList(
     FCB                 * const pfcb        = pfucb->u.pfcb;
     TDB                 * const ptdb        = pfcb->Ptdb();
 
-    const BOOL          fCountOnly          = ( NULL == rgtagcolinfo );
+    const BOOL          fCountOnly          = ( nullptr == rgtagcolinfo );
     const BOOL          fRetrieveDefaults   = ( !( grbit & JET_bitRetrieveIgnoreDefault )
                                                 && ptdb->FTableHasNonEscrowDefault() );
 
     ULONG               centriesCurr        = 0;
 
-    TAGFIELDS_ITERATOR * precordIterator        = NULL;
-    TAGFIELDS_ITERATOR * pdefaultValuesIterator = NULL;
+    TAGFIELDS_ITERATOR * precordIterator        = nullptr;
+    TAGFIELDS_ITERATOR * pdefaultValuesIterator = nullptr;
 
 
     FID                 fidRecordFID        = 0;
@@ -3073,7 +3073,7 @@ LOCAL ERR ErrRECIBuildTaggedColumnList(
     //  create the iterators
 
     precordIterator = new TAGFIELDS_ITERATOR( dataRec );
-    if( NULL == precordIterator )
+    if( nullptr == precordIterator )
     {
         err = ErrERRCheck( JET_errOutOfMemory );
         goto HandleError;
@@ -3083,7 +3083,7 @@ LOCAL ERR ErrRECIBuildTaggedColumnList(
     {
         //  no tagged columns;
         delete precordIterator;
-        precordIterator = NULL;
+        precordIterator = nullptr;
         err = JET_errSuccess;
     }
     Call( err );
@@ -3091,7 +3091,7 @@ LOCAL ERR ErrRECIBuildTaggedColumnList(
     if( fRetrieveDefaults )
     {
         pdefaultValuesIterator = new TAGFIELDS_ITERATOR( *ptdb->PdataDefaultRecord() );
-        if( NULL == pdefaultValuesIterator )
+        if( nullptr == pdefaultValuesIterator )
         {
             Call( ErrERRCheck( JET_errOutOfMemory ) );
         }
@@ -3100,7 +3100,7 @@ LOCAL ERR ErrRECIBuildTaggedColumnList(
         {
             //  no tagged columns;
             delete pdefaultValuesIterator;
-            pdefaultValuesIterator = NULL;
+            pdefaultValuesIterator = nullptr;
             err = JET_errSuccess;
         }
         Call( err );
@@ -3121,7 +3121,7 @@ LOCAL ERR ErrRECIBuildTaggedColumnList(
                 if( JET_errNoCurrentRecord == ( err = precordIterator->ErrMoveNext() ) )
                 {
                     delete precordIterator;
-                    precordIterator = NULL;
+                    precordIterator = nullptr;
                     err = JET_errSuccess;
                     break;
                 }
@@ -3140,7 +3140,7 @@ LOCAL ERR ErrRECIBuildTaggedColumnList(
                 if( JET_errNoCurrentRecord == ( err = pdefaultValuesIterator->ErrMoveNext() ) )
                 {
                     delete pdefaultValuesIterator;
-                    pdefaultValuesIterator = NULL;
+                    pdefaultValuesIterator = nullptr;
                     err = JET_errSuccess;
                     break;
                 }
@@ -3151,20 +3151,20 @@ LOCAL ERR ErrRECIBuildTaggedColumnList(
 
     //  iterate
 
-    TAGFIELDS_ITERATOR *    pIteratorCur        = NULL;
+    TAGFIELDS_ITERATOR *    pIteratorCur        = nullptr;
     INT                     ExistingIterators   = 0;
     BOOL                    fRecordDerived      = fFalse;
     BOOL                    fDefaultDerived     = fFalse;
     INT                     cmp                 = 0;
 
 
-    if ( NULL != pdefaultValuesIterator )
+    if ( nullptr != pdefaultValuesIterator )
     {
         ExistingIterators++;
         pIteratorCur = pdefaultValuesIterator;
         cmp = 1;
     }
-    if ( NULL != precordIterator )
+    if ( nullptr != precordIterator )
     {
         ExistingIterators++;
         pIteratorCur = precordIterator;
@@ -3271,11 +3271,11 @@ NextIteration:
     *pcentries = centriesCurr;
 
 HandleError:
-    if ( NULL != precordIterator )
+    if ( nullptr != precordIterator )
     {
         delete precordIterator;
     }
-    if ( NULL != pdefaultValuesIterator )
+    if ( nullptr != pdefaultValuesIterator )
     {
         delete pdefaultValuesIterator;
     }
@@ -3303,7 +3303,7 @@ ERR VTAPI ErrIsamRetrieveTaggedColumnList(
     AssertDIRNoLatch( ppib );
 
     //  must always provide facility to return number of entries in the list
-    if ( NULL == pcentries )
+    if ( nullptr == pcentries )
     {
         err = ErrERRCheck( JET_errInvalidParameter );
         return err;

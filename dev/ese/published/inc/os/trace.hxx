@@ -213,7 +213,7 @@ inline const char* OSFormatBoolean( const BOOL f )
 
 inline const char* OSFormatPointer( const void* const pv )
 {
-    return ( NULL != pv ? OSFormat( "%0*I64X", (INT)(2 * sizeof( pv )), __int64( pv ) ) : OSTRACENULLPARAM );
+    return ( nullptr != pv ? OSFormat( "%0*I64X", (INT)(2 * sizeof( pv )), __int64( pv ) ) : OSTRACENULLPARAM );
 }
 
 inline const char* OSFormatSigned( const LONG_PTR l )
@@ -268,7 +268,7 @@ VOID __cdecl OSTraceWriteRefLog(
     _In_ POSTRACEREFLOG pLog,
     _In_ LONG NewRefCount,
     _In_ void * pContext,
-    __in_bcount(cbExtraInformation) void * pExtraInformation = NULL,
+    __in_bcount(cbExtraInformation) void * pExtraInformation = nullptr,
     _In_ LONG cbExtraInformation = 0 );
 
 class COSTraceTrackErrors
@@ -484,7 +484,7 @@ public:
 
     BOOL FFTLBInitialized() const
     {
-        return ( m_pfnErrFlushBuffer != NULL );
+        return ( m_pfnErrFlushBuffer != nullptr );
     }
 
 private:
@@ -929,7 +929,7 @@ public:
     //
 
     CFastTraceLog(  const FTLDescriptor * const         pftldesc,
-                    IFileSystemConfiguration * const    pfsconfig = NULL );
+                    IFileSystemConfiguration * const    pfsconfig = nullptr );
 
     enum FTLInitFlags   // ftlif
     {
@@ -1660,7 +1660,7 @@ class GetCurrUserTraceContext
 
     public:
         GetCurrUserTraceContext();
-        inline const UserTraceContext& Utc() const      { return ( m_putcTls != NULL ? *m_putcTls : m_utcSysDefault ); }
+        inline const UserTraceContext& Utc() const      { return ( m_putcTls != nullptr ? *m_putcTls : m_utcSysDefault ); }
         inline const UserTraceContext* operator->( ) const  { return &Utc(); }
 };
 

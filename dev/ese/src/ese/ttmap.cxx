@@ -43,7 +43,7 @@ ERR TTMAP::ErrInit( INST * const )
         m_sesid,
         rgcolumndef,
         sizeof(rgcolumndef)/sizeof(JET_COLUMNDEF),
-        0,
+        nullptr,
         JET_bitTTIndexed | JET_bitTTUnique | JET_bitTTScrollable | JET_bitTTUpdatable,
         &m_tableid,
         rgcolumnid,
@@ -78,7 +78,7 @@ ERR TTMAP::ErrInsertKeyValue_( const unsigned __int64 ui64Key, const ULONG ulVal
                 (BYTE *)&ui64Key,
                 sizeof( ui64Key ),
                 0,
-                NULL ) );
+                nullptr ) );
 
     Call( ErrDispSetColumn(
                 m_sesid,
@@ -87,9 +87,9 @@ ERR TTMAP::ErrInsertKeyValue_( const unsigned __int64 ui64Key, const ULONG ulVal
                 (BYTE *)&ulValue,
                 sizeof( ulValue ),
                 0,
-                NULL ) );
+                nullptr ) );
 
-    Call( ErrDispUpdate( m_sesid, m_tableid, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrDispUpdate( m_sesid, m_tableid, nullptr, 0, nullptr, NO_GRBIT ) );
     Call( ErrDIRCommitTransaction( (PIB*) m_sesid, NO_GRBIT ) );
 
     ++m_crecords;
@@ -130,7 +130,7 @@ ERR TTMAP::ErrRetrieveValue_( const unsigned __int64 ui64Key, ULONG * const pulV
                 sizeof( ULONG ),
                 &cbActual,
                 NO_GRBIT,
-                NULL );
+                nullptr );
     }
 
     CallS( ErrDIRCommitTransaction( (PIB*) m_sesid, NO_GRBIT ) );
@@ -170,7 +170,7 @@ ERR TTMAP::ErrIncrementValue( const unsigned __int64 ui64Key )
                 sizeof( ulValue ),
                 &cbActual,
                 JET_bitRetrieveCopy,
-                NULL ) );
+                nullptr ) );
         Assert( sizeof( ulValue ) == cbActual );
 
         ++ulValue;
@@ -181,8 +181,8 @@ ERR TTMAP::ErrIncrementValue( const unsigned __int64 ui64Key )
                     (BYTE *)&ulValue,
                     sizeof( ulValue ),
                     NO_GRBIT,
-                    NULL ) );
-        Call( ErrDispUpdate( m_sesid, m_tableid, NULL, 0, NULL, NO_GRBIT ) );
+                    nullptr ) );
+        Call( ErrDispUpdate( m_sesid, m_tableid, nullptr, 0, nullptr, NO_GRBIT ) );
     }
 
     Call( ErrDIRCommitTransaction( (PIB*) m_sesid, NO_GRBIT ) );
@@ -231,8 +231,8 @@ ERR TTMAP::ErrSetValue( const unsigned __int64 ui64Key, const ULONG ulValue )
                     (BYTE *)&ulValue,
                     sizeof( ulValue ),
                     NO_GRBIT,
-                    NULL ) );
-        Call( ErrDispUpdate( m_sesid, m_tableid, NULL, 0, NULL, NO_GRBIT ) );
+                    nullptr ) );
+        Call( ErrDispUpdate( m_sesid, m_tableid, nullptr, 0, nullptr, NO_GRBIT ) );
     }
 
     Call( ErrDIRCommitTransaction( (PIB*) m_sesid, NO_GRBIT ) );
@@ -279,7 +279,7 @@ ERR TTMAP::ErrGetCurrentKeyValue( unsigned __int64 * const pui64Key, ULONG * con
             sizeof( unsigned __int64 ),
             &cbActual,
             NO_GRBIT,
-            NULL ) );
+            nullptr ) );
 
     Call( ErrDispRetrieveColumn(
             m_sesid,
@@ -289,7 +289,7 @@ ERR TTMAP::ErrGetCurrentKeyValue( unsigned __int64 * const pui64Key, ULONG * con
             sizeof( ULONG ),
             &cbActual,
             NO_GRBIT,
-            NULL ) );
+            nullptr ) );
 
 HandleError:
     CallS( ErrDIRCommitTransaction( (PIB*) m_sesid, NO_GRBIT ) );
@@ -404,7 +404,7 @@ TTARRAY::TTARRAY( const ULONG culEntries, const ULONG ulDefault ) :
     m_ppib( ppibNil ),
     m_pfucb( pfucbNil ),
     m_pgnoFirst( pgnoNull ),
-    m_rgbitInit( NULL )
+    m_rgbitInit( nullptr )
 {
 }
 
@@ -418,7 +418,7 @@ TTARRAY::~TTARRAY()
     if ( m_rgbitInit )
     {
         OSMemoryPageFree( m_rgbitInit );
-        m_rgbitInit = NULL;
+        m_rgbitInit = nullptr;
     }
 
     //  delete the dummy table if it exists
@@ -463,18 +463,18 @@ ERR TTARRAY::ErrInit( INST * const pinst )
 
     tablecreate.cbStruct            = sizeof( tablecreate );
     tablecreate.szTableName         = szName;
-    tablecreate.szTemplateTableName = NULL;
+    tablecreate.szTemplateTableName = nullptr;
     tablecreate.ulPages             = cpg + 16;
     tablecreate.ulDensity           = 100;
-    tablecreate.rgcolumncreate      = NULL;
+    tablecreate.rgcolumncreate      = nullptr;
     tablecreate.cColumns            = 0;
-    tablecreate.rgindexcreate       = NULL;
+    tablecreate.rgindexcreate       = nullptr;
     tablecreate.cIndexes            = 0;
-    tablecreate.szCallback          = NULL;
+    tablecreate.szCallback          = nullptr;
     tablecreate.cbtyp               = JET_cbtypNull;
     tablecreate.grbit               = NO_GRBIT;
-    tablecreate.pSeqSpacehints      = NULL;
-    tablecreate.pLVSpacehints       = NULL;
+    tablecreate.pSeqSpacehints      = nullptr;
+    tablecreate.pLVSpacehints       = nullptr;
     tablecreate.cbSeparateLV        = 0;
     tablecreate.cbLVChunkMax        = 0;
     tablecreate.tableid             = JET_TABLEID( pfucbNil );
@@ -502,7 +502,7 @@ ERR TTARRAY::ErrInit( INST * const pinst )
     //
     //  NOTE:  the largest possible amount of memory allocated will be 512KB
 
-    if ( !( m_rgbitInit = (ULONG*)PvOSMemoryPageAlloc( cpg / 8 + 1, NULL ) ) )
+    if ( !( m_rgbitInit = (ULONG*)PvOSMemoryPageAlloc( cpg / 8 + 1, nullptr ) ) )
     {
         Call( ErrERRCheck( JET_errOutOfMemory ) );
     }
@@ -558,7 +558,7 @@ ERR TTARRAY::ErrSetValue( PIB * const ppib, const ULONG ulEntry, const ULONG ulV
 
     RUN runT;
     runT.pgno           = pgnoNull;
-    runT.bfl.pv         = NULL;
+    runT.bfl.pv         = nullptr;
     runT.bfl.dwContext  = 0;
     runT.fWriteLatch    = fFalse;
     RUN * const  prunT = prun ? prun : &runT;
@@ -655,7 +655,7 @@ ERR TTARRAY::ErrGetValue( PIB * const ppib, const ULONG ulEntry, ULONG * const p
 
     RUN runT;
     runT.pgno           = pgnoNull;
-    runT.bfl.pv         = NULL;
+    runT.bfl.pv         = nullptr;
     runT.bfl.dwContext  = 0;
     runT.fWriteLatch    = fFalse;
     RUN * const  prunT = prun ? prun : &runT;

@@ -131,7 +131,7 @@ inline COSThreadContext::~COSThreadContext()
 inline char* COSThreadContext::AllocInfoString( const size_t cch )
 {
     const size_t            cbAlloc     = sizeof( COSInfoString ) + cch * sizeof( char );
-    COSInfoString*          pinfostr    = NULL;
+    COSInfoString*          pinfostr    = nullptr;
     if ( cbAlloc >= sizeof( COSInfoString ) && cbAlloc >= ( cch * sizeof( char ) ) )
     {
         pinfostr = reinterpret_cast< COSInfoString* >( LocalAlloc( 0, cbAlloc ) );
@@ -145,13 +145,13 @@ inline char* COSThreadContext::AllocInfoString( const size_t cch )
         m_listInfoString.InsertAsNextMost( pinfostr );
     }
 
-    return ( NULL != pinfostr ? pinfostr->String() : NULL );
+    return ( nullptr != pinfostr ? pinfostr->String() : nullptr );
 }
 
 inline WCHAR* COSThreadContext::AllocInfoStringW( const size_t cch )
 {
     const size_t            cbAlloc     = sizeof( COSInfoStringW ) + cch * sizeof( WCHAR );
-    COSInfoStringW*         pinfostr    = NULL;
+    COSInfoStringW*         pinfostr    = nullptr;
     if ( cbAlloc >= sizeof( COSInfoStringW ) && cbAlloc >= ( cch * sizeof( WCHAR ) ) )
     {
         pinfostr = reinterpret_cast< COSInfoStringW* >( LocalAlloc( 0, cbAlloc ) );
@@ -165,7 +165,7 @@ inline WCHAR* COSThreadContext::AllocInfoStringW( const size_t cch )
         m_listInfoStringW.InsertAsNextMost( pinfostr );
     }
 
-    return ( NULL != pinfostr ? pinfostr->String() : NULL );
+    return ( nullptr != pinfostr ? pinfostr->String() : nullptr );
 }
 
 inline void COSThreadContext::FreeInfoStrings()
@@ -221,7 +221,7 @@ class COSThreadInfo
         COSThreadInfo()
         {
             m_tid   = DWORD( ~0 );
-            m_ptc   = NULL;
+            m_ptc   = nullptr;
         }
 
         COSThreadInfo(  const DWORD&            tid,
@@ -245,7 +245,7 @@ class COSThreadInfo
             }
 
             m_tid   = DWORD( ~0 );
-            m_ptc   = NULL;
+            m_ptc   = nullptr;
         }
 
         COSThreadInfo& operator=( const COSThreadInfo& threadinfo )
@@ -304,18 +304,18 @@ ERR ErrOSTraceDeferInit();
 
 COSThreadContext* OSThreadContext()
 {
-    COSThreadContext*       ptc         = NULL;
+    COSThreadContext*       ptc         = nullptr;
 
     const BOOL fTraceSavedCS = FOSSetCleanupState( fFalse );        \
 
     if ( ErrOSTraceDeferInit() >= JET_errSuccess )
     {
         ERR                     err         = JET_errSuccess;
-        const COSThreadInfo*    pthreadinfo = NULL;
+        const COSThreadInfo*    pthreadinfo = nullptr;
 
         EnterCriticalSection( &g_csThreadTable );
         pthreadinfo = g_threadtable.SeekEQ( GetCurrentThreadId() );
-        ptc = pthreadinfo ? pthreadinfo->m_ptc : NULL;
+        ptc = pthreadinfo ? pthreadinfo->m_ptc : nullptr;
         LeaveCriticalSection( &g_csThreadTable );
 
         if ( !pthreadinfo )
@@ -331,7 +331,7 @@ COSThreadContext* OSThreadContext()
             (void)g_threadtable.ErrLoad( 1, &threadinfo );
 
             pthreadinfo = g_threadtable.SeekEQ( GetCurrentThreadId() );
-            ptc = pthreadinfo ? pthreadinfo->m_ptc : NULL;
+            ptc = pthreadinfo ? pthreadinfo->m_ptc : nullptr;
             LeaveCriticalSection( &g_csThreadTable );
         }
     }
@@ -348,14 +348,14 @@ char* OSAllocInfoString( const size_t cch )
 {
     COSThreadContext* const ptc = OSThreadContext();
 
-    return ptc ? ptc->AllocInfoString( cch ) : NULL;
+    return ptc ? ptc->AllocInfoString( cch ) : nullptr;
 }
 
 WCHAR* OSAllocInfoStringW( const size_t cch )
 {
     COSThreadContext* const ptc = OSThreadContext();
 
-    return ptc ? ptc->AllocInfoStringW( cch ) : NULL;
+    return ptc ? ptc->AllocInfoStringW( cch ) : nullptr;
 }
 
 void OSFreeInfoStrings()
@@ -372,17 +372,17 @@ void OSFreeInfoStrings()
 //  Tracing
 
 const WCHAR         g_wszMutexTrace[]   = L"Global\\{5E5C36C0-5E7C-471f-84D7-110FDC1AFD0D}";
-HANDLE              g_hMutexTrace       = NULL;
+HANDLE              g_hMutexTrace       = nullptr;
 const WCHAR         g_wszFileTrace[]    = L"\\Debug\\ESE.TXT";
-HANDLE              g_hFileTrace        = NULL;
-LOCAL PFNTRACEEMIT  g_pfnTraceEmit      = NULL;
+HANDLE              g_hFileTrace        = nullptr;
+LOCAL PFNTRACEEMIT  g_pfnTraceEmit      = nullptr;
 BOOL                g_fJetDebugTracing  = fFalse;
 enum { eDateTime, eDateTimeTick, eHRT };
 ULONG               g_eTraceTimeFormat  = eDateTime;
 
 void OSTraceRegisterEmitCallback( PFNTRACEEMIT pfnTraceEmit )
 {
-    g_pfnTraceEmit = ( NULL != pfnTraceEmit ? pfnTraceEmit : OSTraceEmit );
+    g_pfnTraceEmit = ( nullptr != pfnTraceEmit ? pfnTraceEmit : OSTraceEmit );
 }
 
 void __stdcall OSTraceEmit( const TRACETAG tag, const char* const szPrefixNYI, const char* const szRawTrace, const ULONG_PTR ul )
@@ -485,7 +485,7 @@ void __stdcall OSTraceEmit( const TRACETAG tag, const char* const szPrefixNYI, c
             cchTrace                = 0;
             szTrace[ cchTrace ]     = 0;
 
-            const char* szLast          = NULL;
+            const char* szLast          = nullptr;
             const char* szCurr          = szRawTrace ? szRawTrace : OSTRACENULLPARAM;
             BOOL        fBOL            = TRUE;
             INT         cIndentTrace    = 0;
@@ -606,9 +606,9 @@ void __stdcall OSTraceEmit( const TRACETAG tag, const char* const szPrefixNYI, c
                 DWORD cbT;
                 WaitForSingleObjectEx( g_hMutexTrace, INFINITE, FALSE );
                 const LARGE_INTEGER ibOffset = { 0, 0 };
-                if ( SetFilePointerEx( g_hFileTrace, ibOffset, NULL, FILE_END ) )
+                if ( SetFilePointerEx( g_hFileTrace, ibOffset, nullptr, FILE_END ) )
                 {
-                    WriteFile( g_hFileTrace, szTrace, min( DWORD( -1 ), cchTrace ), &cbT, NULL );
+                    WriteFile( g_hFileTrace, szTrace, min( DWORD( -1 ), cchTrace ), &cbT, nullptr );
                 }
                 ReleaseMutex( g_hMutexTrace );
             }
@@ -644,9 +644,9 @@ void OSTrace_( const TRACETAG tag, const char* const szTrace )
 
     if ( g_fJetDebugTracing )
     {
-        OSTraceEmit( tag, NULL, szTrace, g_rgtraceinfo[tag].Ul() );
+        OSTraceEmit( tag, nullptr, szTrace, g_rgtraceinfo[tag].Ul() );
     }
-    (*g_pfnTraceEmit)( tag, NULL, szTrace, g_rgtraceinfo[tag].Ul() );
+    (*g_pfnTraceEmit)( tag, nullptr, szTrace, g_rgtraceinfo[tag].Ul() );
 }
 
 void OSTraceIndent_( const INT dLevel )
@@ -696,7 +696,7 @@ const char* OSFormat_( __format_string const char* const szFormat, _In_ va_list 
     size_t          cchBufferMax                = cchLocalMax;
     char*           szBuffer                    = szLocal;
 
-    char*           szInfoString                = NULL;
+    char*           szInfoString                = nullptr;
 
     __try
     {
@@ -781,7 +781,7 @@ const WCHAR* OSFormatW_( __format_string const WCHAR* const wszFormat, _In_ va_l
     size_t          cchBufferMax                = cchLocalMax;
     WCHAR*          wszBuffer                   = wszLocal;
 
-    WCHAR*          wszInfoString               = NULL;
+    WCHAR*          wszInfoString               = nullptr;
 
     __try
     {
@@ -916,10 +916,10 @@ const char* OSFormatImageVersion()
 
 const char* OSFormatError( const ERR err )
 {
-    const char*     szError         = NULL;
+    const char*     szError         = nullptr;
 
 #ifndef MINIMAL_FUNCTIONALITY
-    const char*     szErrorText     = NULL;
+    const char*     szErrorText     = nullptr;
     JetErrorToString( err, &szError, &szErrorText );
 #endif
 
@@ -932,19 +932,19 @@ const char* OSFormatString( const char* sz )
 
     __try
     {
-        szFormatted = ( NULL != sz ? OSFormat( "'%s'", sz ) : OSTRACENULLPARAM );
+        szFormatted = ( nullptr != sz ? OSFormat( "'%s'", sz ) : OSTRACENULLPARAM );
     }
     __except( EXCEPTION_EXECUTE_HANDLER )
     {
-        szFormatted = NULL;
+        szFormatted = nullptr;
     }
 
-    return ( NULL != szFormatted ? szFormatted : "<???>" );
+    return ( nullptr != szFormatted ? szFormatted : "<???>" );
 }
 
 const char* SzOSFormatStringLossyW( const WCHAR* wsz )
 {
-    char *  szFormatted = NULL;
+    char *  szFormatted = nullptr;
 
     __try
     {
@@ -988,10 +988,10 @@ const char* SzOSFormatStringLossyW( const WCHAR* wsz )
     }
     __except( EXCEPTION_EXECUTE_HANDLER )
     {
-        szFormatted = NULL;
+        szFormatted = nullptr;
     }
 
-    return ( NULL != szFormatted ? szFormatted : "<???>" );
+    return ( nullptr != szFormatted ? szFormatted : "<???>" );
 }
 
 const char* SzOSFormatStringEscapedW( const WCHAR* wsz )
@@ -1003,14 +1003,14 @@ const char* SzOSFormatStringEscapedW( const WCHAR* wsz )
     __try
     {
         // why not %ws?
-        szFormatted = ( NULL != wsz ? OSFormat( "'%ws'", wsz ) : OSTRACENULLPARAM );
+        szFormatted = ( nullptr != wsz ? OSFormat( "'%ws'", wsz ) : OSTRACENULLPARAM );
     }
     __except( EXCEPTION_EXECUTE_HANDLER )
     {
-        szFormatted = NULL;
+        szFormatted = nullptr;
     }
 
-    return ( NULL != szFormatted ? szFormatted : "<???>" );
+    return ( nullptr != szFormatted ? szFormatted : "<???>" );
 }
 
 const char* SzOSFormatStringW( const WCHAR* wsz )
@@ -1023,10 +1023,10 @@ const char* SzOSFormatStringW( const WCHAR* wsz )
     }
     __except( EXCEPTION_EXECUTE_HANDLER )
     {
-        szFormatted = NULL;
+        szFormatted = nullptr;
     }
 
-    return ( NULL != szFormatted ? szFormatted : "<???>" );
+    return ( nullptr != szFormatted ? szFormatted : "<???>" );
 }
 
 const char* OSFormatRawData(    const BYTE* const   rgbData,
@@ -1126,7 +1126,7 @@ const char* OSFormatRawDataParam(
 {
     //  pathological case
     //
-    if ( NULL == rgbData || 0 == cbData )
+    if ( nullptr == rgbData || 0 == cbData )
     {
         return OSTRACENULLPARAM;
     }
@@ -1208,7 +1208,7 @@ BOOL FOSTracePreinit()
         OSTraceSetTag( itag, fFalse );
     }
     OSTraceSetThreadidFilter( 0 );
-    OSTraceRegisterEmitCallback( NULL );
+    OSTraceRegisterEmitCallback( nullptr );
 
     //  load tracing option overrides from the registry
 
@@ -1222,7 +1222,7 @@ BOOL FOSTracePreinit()
         if (    FOSConfigGet( L"DEBUG/Tracing", g_rgwszTraceDesc[ itag ], wszBuf, sizeof(wszBuf) ) &&
                 wszBuf[ 0 ] )
         {
-            WCHAR*      wszT = NULL;
+            WCHAR*      wszT = nullptr;
             const BOOL      fT  = !!wcstoul( wszBuf, &wszT, 0 );
             if ( !( *wszT ) )
             {
@@ -1294,12 +1294,12 @@ void OSTraceITerm()
     if ( g_hFileTrace )
     {
         CloseHandle( g_hFileTrace );
-        g_hFileTrace = NULL;
+        g_hFileTrace = nullptr;
     }
     if ( g_hMutexTrace )
     {
         CloseHandle( g_hMutexTrace );
-        g_hMutexTrace = NULL;
+        g_hMutexTrace = nullptr;
     }
     if ( g_fcsThreadTableInit )
     {
@@ -1329,13 +1329,13 @@ ERR ErrOSTraceIInit()
     if ( ( g_hFileTrace = CreateFileW(  wszPathTrace,
                                         GENERIC_WRITE,
                                         FILE_SHARE_READ | FILE_SHARE_WRITE,
-                                        NULL,
+                                        nullptr,
                                         OPEN_ALWAYS,
                                         FILE_ATTRIBUTE_NORMAL,
-                                        NULL ) ) == INVALID_HANDLE_VALUE )
+                                        nullptr ) ) == INVALID_HANDLE_VALUE )
     {
         // This should be non-fatal. It just means we won't get to log to a file.
-        g_hFileTrace = NULL;
+        g_hFileTrace = nullptr;
 
     }
     else
@@ -1344,8 +1344,8 @@ ERR ErrOSTraceIInit()
         // don't bother to open the mutex.
         Assert( NULL != g_hFileTrace && INVALID_HANDLE_VALUE != g_hFileTrace );
 
-        if (    !( g_hMutexTrace = CreateMutexW( NULL, FALSE, g_wszMutexTrace ) ) &&
-                !( g_hMutexTrace = CreateMutexW( NULL, FALSE, wcsrchr( g_wszMutexTrace, L'\\' ) + 1 ) ) )
+        if (    !( g_hMutexTrace = CreateMutexW( nullptr, FALSE, g_wszMutexTrace ) ) &&
+                !( g_hMutexTrace = CreateMutexW( nullptr, FALSE, wcsrchr( g_wszMutexTrace, L'\\' ) + 1 ) ) )
         {
             Call( ErrOSErrFromWin32Err( GetLastError() ) );
         }
@@ -1371,19 +1371,19 @@ HandleError:
                             WszUtilImagePath(),
                             WszUtilProcessPath(),
                             ( g_pfnTraceEmit == OSTraceEmit ? wszPathTrace : L"<not used>" ),
-                            ( g_pfnTraceEmit == OSTraceEmit && NULL == g_hFileTrace ? " (open failed)" : "" ) ) );
+                            ( g_pfnTraceEmit == OSTraceEmit && nullptr == g_hFileTrace ? " (open failed)" : "" ) ) );
 
     if ( err < JET_errSuccess )
     {
         if ( g_hFileTrace )
         {
             CloseHandle( g_hFileTrace );
-            g_hFileTrace = NULL;
+            g_hFileTrace = nullptr;
         }
         if ( g_hMutexTrace )
         {
             CloseHandle( g_hMutexTrace );
-            g_hMutexTrace = NULL;
+            g_hMutexTrace = nullptr;
         }
         if ( g_fcsThreadTableInit )
         {
@@ -1413,7 +1413,7 @@ class COSTraceDeferInit
 };
 
 COSTraceDeferInit::COSTraceDeferInit()
-    :   m_hEventInit( CreateEventW( NULL, TRUE, FALSE, NULL ) ),
+    :   m_hEventInit( CreateEventW( nullptr, TRUE, FALSE, nullptr ) ),
         m_tidInit( 0 ),
         m_errInit( m_hEventInit ? JET_errSuccess : JET_errOutOfMemory ),
         m_fInit( m_hEventInit ? fFalse : fTrue )
@@ -1474,8 +1474,8 @@ CFastTraceLogBuffer::CFastTraceLogBuffer() :
     m_dwTIDLast( 0 ),
     m_cbHeader( sizeof(TICK) ),
     m_fTracingDisabled( fFalse ),
-    m_pfnErrFlushBuffer( NULL ),    // just to be sure
-    m_pvFlushBufferContext( NULL ),
+    m_pfnErrFlushBuffer( nullptr ),    // just to be sure
+    m_pvFlushBufferContext( nullptr ),
     m_crit( CLockBasicInfo( CSyncBasicInfo( "FTLBuffer" ), rankFTLBuffer, 0 ) )
 {
     //  requires explicitly later initialization by ErrFTLBInitWrite|Reader()
@@ -1536,8 +1536,8 @@ void CFastTraceLogBuffer::FTLBTerm( const BOOL fAbrubt )
 
     //  deinitialize the FTLB
 
-    m_pvFlushBufferContext = NULL;
-    m_pfnErrFlushBuffer = NULL;
+    m_pvFlushBufferContext = nullptr;
+    m_pfnErrFlushBuffer = nullptr;
 
     Assert( !FFTLBInitialized() );
 
@@ -1589,7 +1589,7 @@ const BYTE * CFastTraceLogBuffer::PbFTLBParseTraceTick( _In_ const BYTE fTickInf
         case bHeaderTickReserved:
             //  trace data / tick seems corrupted!
             AssertSz( fFalse, "Is this trace file corrupt?" );
-            pbTrace = NULL;
+            pbTrace = nullptr;
             break;
     }
 
@@ -1654,7 +1654,7 @@ ERR CFastTraceLogBuffer::ErrFTLBParseTraceHeader( const BYTE * pbTrace, _Out_ FT
     //  parse Tick info
 
     pbTrace = PbFTLBParseTraceTick( fTickInfo, pbTrace, tickBase, ptick );
-    if ( NULL == pbTrace )
+    if ( nullptr == pbTrace )
     {
         return ErrERRCheck( JET_errLogCorrupted );
     }
@@ -1684,8 +1684,8 @@ ERR CFastTraceLogBuffer::ErrFTLBParseTraceData( const BYTE * pbTrace, _In_ const
 
     //  parse Tick info
     
-    pbTrace = PbFTLBParseTraceTick( bTraceHeader & mskHeaderTick, pbTrace, 0x0, NULL );
-    if ( NULL == pbTrace )
+    pbTrace = PbFTLBParseTraceTick( bTraceHeader & mskHeaderTick, pbTrace, 0x0, nullptr );
+    if ( nullptr == pbTrace )
     {
         return ErrERRCheck( JET_errLogCorrupted );
     }
@@ -1750,13 +1750,13 @@ CFastTraceLog::CFastTraceLog(   const FTLDescriptor * const         pftldesc,
 
     //      settings
     m_cbWriteBufferMax( 0 ),
-    m_piorTraceLog( NULL ),
+    m_piorTraceLog( nullptr ),
 
     //      active file management
     m_pfsconfig( pfsconfig ? pfsconfig : &g_fsconfigFTL ),
-    m_pfsapi( NULL ),
-    m_pfapiTraceLog( NULL ),
-    m_pbTraceLogHeader( NULL ),
+    m_pfsapi( nullptr ),
+    m_pfapiTraceLog( nullptr ),
+    m_pbTraceLogHeader( nullptr ),
 
     //  Specific Schema's FTL Descriptor info
     // m_ftldesc Initialized below.
@@ -1777,7 +1777,7 @@ CFastTraceLog::CFastTraceLog(   const FTLDescriptor * const         pftldesc,
     m_cOutstandingIOHighWater( 0 ),
 
     //      FTL Reading 
-    m_pftlr( NULL )
+    m_pftlr( nullptr )
 {
 
     //  Zero out the structures.
@@ -1821,7 +1821,7 @@ CFastTraceLog::CFastTraceLog(   const FTLDescriptor * const         pftldesc,
         m_ftldesc.m_cShortTraceDescriptors = 0;
         m_ftldesc.m_cLongTraceDescriptors = 0;
         memset( m_ftldesc.m_rgftltdescShortTraceDescriptors, 0, sizeof(m_ftldesc.m_rgftltdescShortTraceDescriptors) );  // not technically necssary as m_cShortTraceDescriptors = 0
-        m_ftldesc.m_rgftltdescLongTraceDescriptors = NULL;
+        m_ftldesc.m_rgftltdescLongTraceDescriptors = nullptr;
     }
 }
 
@@ -1906,7 +1906,7 @@ ERR CFastTraceLog::ErrFTLInitWriter( __in_z const WCHAR * wszTraceLogFile, IOREA
 
     m_piorTraceLog = pior;
 
-    if ( m_pfsapi == NULL )
+    if ( m_pfsapi == nullptr )
     {
         Call( ErrOSFSCreate( m_pfsconfig, &m_pfsapi ) );
     }
@@ -1945,7 +1945,7 @@ ERR CFastTraceLog::ErrFTLInitWriter( __in_z const WCHAR * wszTraceLogFile, IOREA
     //
 
     C_ASSERT( sizeof(FTLFILEHDR) < ibPrivateHeaderOffset );
-    Alloc( m_pbTraceLogHeader = (BYTE*)PvOSMemoryPageAlloc( CbFullHeader(), NULL ) );
+    Alloc( m_pbTraceLogHeader = (BYTE*)PvOSMemoryPageAlloc( CbFullHeader(), nullptr ) );
     Assert( PftlhdrFTLTraceLogHeader() );
 
     //  Deal with the status of the file
@@ -2062,13 +2062,13 @@ HandleError:
         if ( m_pbTraceLogHeader )
         {
             OSMemoryPageFree( m_pbTraceLogHeader );
-            m_pbTraceLogHeader = NULL;
+            m_pbTraceLogHeader = nullptr;
         }
         if ( m_pfapiTraceLog )
         {
             m_pfapiTraceLog->SetNoFlushNeeded(); // probably not needed as didn't write anything
             delete m_pfapiTraceLog;
-            m_pfapiTraceLog = NULL;
+            m_pfapiTraceLog = nullptr;
         }
 
         if ( m_ftlb.FFTLBInitialized() )
@@ -2097,7 +2097,7 @@ ERR CFastTraceLog::ErrFTLInitReader( __in_z const WCHAR * wszTraceLogFile, IOREA
 
     m_piorTraceLog = pior;
 
-    if ( m_pfsapi == NULL )
+    if ( m_pfsapi == nullptr )
     {
         Call( ErrOSFSCreate( m_pfsconfig, &m_pfsapi ) );
     }
@@ -2109,7 +2109,7 @@ ERR CFastTraceLog::ErrFTLInitReader( __in_z const WCHAR * wszTraceLogFile, IOREA
     //  We technically open this in read-write mode, because we may want to update the post process header later.
     Call( m_pfsapi->ErrFileOpen( wszTraceLogFile, IFileAPI::fmfLossyWriteBack, &m_pfapiTraceLog ) );
 
-    Alloc( m_pbTraceLogHeader = (BYTE*)PvOSMemoryPageAlloc( CbFullHeader(), NULL ) );
+    Alloc( m_pbTraceLogHeader = (BYTE*)PvOSMemoryPageAlloc( CbFullHeader(), nullptr ) );
     Assert( PftlhdrFTLTraceLogHeader() );
 
     Call( m_pfapiTraceLog->ErrIORead( *tcFtl, 0, CbFullHeader( ), m_pbTraceLogHeader, qosIONormal ) );
@@ -2199,7 +2199,7 @@ void CFastTraceLog::FTLTerm()
                 if ( m_rgpbWriteBuffers[iBuffer] )
                 {
                     OSMemoryPageFree( m_rgpbWriteBuffers[iBuffer] );
-                    m_rgpbWriteBuffers[iBuffer] = NULL;
+                    m_rgpbWriteBuffers[iBuffer] = nullptr;
                 }
                 m_rgfBufferState[iBuffer] = fBufferAvailable;
             }
@@ -2233,18 +2233,18 @@ void CFastTraceLog::FTLTerm()
 
         m_pfapiTraceLog->SetNoFlushNeeded();
         delete m_pfapiTraceLog;
-        m_pfapiTraceLog = NULL;
+        m_pfapiTraceLog = nullptr;
     }
 
     delete m_pfsapi;
-    m_pfsapi = NULL;
+    m_pfsapi = nullptr;
 
     //  deallocate the header space
 
     if ( m_pbTraceLogHeader )
     {
         OSMemoryPageFree( m_pbTraceLogHeader );
-        m_pbTraceLogHeader = NULL;
+        m_pbTraceLogHeader = nullptr;
     }
     Assert( NULL == PftlhdrFTLTraceLogHeader() );
 
@@ -2253,7 +2253,7 @@ void CFastTraceLog::FTLTerm()
     if ( m_pftlr )
     {
         delete m_pftlr;
-        m_pftlr = NULL;
+        m_pftlr = nullptr;
     }
 
     FTLIResetWriteBuffering();
@@ -2281,13 +2281,13 @@ INT CFastTraceLog::IFTLIGetFlushBuffer()
         if ( fPre == fCurrBuff )
         {
             //  Succeeded at getting our most preferred target
-            if ( m_rgpbWriteBuffers[iFastTry] == NULL )
+            if ( m_rgpbWriteBuffers[iFastTry] == nullptr )
             {
                 Assert( m_cbWriteBufferMax );
                 const BOOL fCleanUpStateSaved = FOSSetCleanupState( fFalse );
-                m_rgpbWriteBuffers[iFastTry] = (BYTE*)PvOSMemoryPageAlloc( m_cbWriteBufferMax, NULL );
+                m_rgpbWriteBuffers[iFastTry] = (BYTE*)PvOSMemoryPageAlloc( m_cbWriteBufferMax, nullptr );
                 (void)FOSSetCleanupState( fCleanUpStateSaved );
-                if ( m_rgpbWriteBuffers[iFastTry] == NULL )
+                if ( m_rgpbWriteBuffers[iFastTry] == nullptr )
                 {
                     return ibufUninitialized;
                 }
@@ -2310,12 +2310,12 @@ INT CFastTraceLog::IFTLIGetFlushBuffer()
             if ( fPre == fCurrBuff )
             {
                 //  Succeeded at getting a target
-                if ( m_rgpbWriteBuffers[iBuffer] == NULL )
+                if ( m_rgpbWriteBuffers[iBuffer] == nullptr )
                 {
                     const BOOL fCleanUpStateSaved = FOSSetCleanupState( fFalse );
-                    m_rgpbWriteBuffers[iBuffer] = (BYTE*)PvOSMemoryPageAlloc( m_cbWriteBufferMax, NULL );
+                    m_rgpbWriteBuffers[iBuffer] = (BYTE*)PvOSMemoryPageAlloc( m_cbWriteBufferMax, nullptr );
                     (void)FOSSetCleanupState( fCleanUpStateSaved );
-                    if ( m_rgpbWriteBuffers[iBuffer] == NULL )
+                    if ( m_rgpbWriteBuffers[iBuffer] == nullptr )
                     {
                         return ibufUninitialized;
                     }
@@ -2676,7 +2676,7 @@ CFastTraceLog::CFTLReader::~CFTLReader(  )
     for ( ULONG ibuf = 0; ibuf < _countof(m_rgbufReadBuffers); ibuf++ )
     {
         OSMemoryPageFree( m_rgbufReadBuffers[ibuf].pbReadBuffer );
-        m_rgbufReadBuffers[ibuf].pbReadBuffer = NULL;
+        m_rgbufReadBuffers[ibuf].pbReadBuffer = nullptr;
     }
 }
 
@@ -2696,7 +2696,7 @@ ERR CFastTraceLog::CFTLReader::ErrFTLIFillBuffer( _In_ const QWORD ibBookmarkRea
     {
         //  we haven't allocated a buffer yet ...
 
-        Alloc( m_rgbufReadBuffers[m_ibufReadLast].pbReadBuffer = (BYTE*)PvOSMemoryPageAlloc( m_cbReadBufferSize, NULL ) );
+        Alloc( m_rgbufReadBuffers[m_ibufReadLast].pbReadBuffer = (BYTE*)PvOSMemoryPageAlloc( m_cbReadBufferSize, nullptr ) );
     }
 
     //  for good measure, but unnecessary
@@ -2896,12 +2896,12 @@ ERR ErrFTLFormatFileTimeAsDateTime( __int64 time, __out_bcount_z(cbDate) PWSTR c
     Expected( pwszTime );
     Expected( cbTime >= sizeof( WCHAR ) );
 
-    if ( ( NULL == pwszDate ) || ( cbDate < sizeof( WCHAR ) ) )
+    if ( ( nullptr == pwszDate ) || ( cbDate < sizeof( WCHAR ) ) )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
 
-    if ( ( NULL == pwszTime ) || ( cbTime < sizeof( WCHAR ) ) )
+    if ( ( nullptr == pwszTime ) || ( cbTime < sizeof( WCHAR ) ) )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }

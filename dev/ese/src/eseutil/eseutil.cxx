@@ -1150,10 +1150,10 @@ LOCAL JET_ERR ErrEDBUTLSetCacheSizeMax( UTILOPTS* pOpts )
 
         JET_INSTANCE instance = JET_instanceNil;
         DWORD_PTR cbPage = 0;
-        JetGetSystemParameterW( instance, JET_sesidNil, JET_paramDatabasePageSize, &cbPage, NULL, sizeof( cbPage ) );
+        JetGetSystemParameterW( instance, JET_sesidNil, JET_paramDatabasePageSize, &cbPage, nullptr, sizeof( cbPage ) );
 
         DWORD_PTR cpgCacheSizeMax = ( cbTotalAvailable - cbReserve ) / cbPage;
-        Call( JetSetSystemParameterW( &instance, JET_sesidNil, JET_paramCacheSizeMax, cpgCacheSizeMax, NULL ) );
+        Call( JetSetSystemParameterW( &instance, JET_sesidNil, JET_paramCacheSizeMax, cpgCacheSizeMax, nullptr ) );
     }
 
 HandleError:
@@ -1176,27 +1176,27 @@ LOCAL JET_ERR ErrEDBUTLCheckDBName(
     WCHAR   wszFullpathTempDB[ _MAX_PATH + 1 ] = L"";
 
     //  if TempDB is not defined
-    if ( NULL == popts->wszTempDB )
+    if ( nullptr == popts->wszTempDB )
     {
         //  set TempDB to DefaultTempDB
         popts->wszTempDB = (WCHAR *)wszTempDB;
     }
 
     //  if temp db is not valid path then ERROR
-    if ( NULL == _wfullpath( wszFullpathTempDB, popts->wszTempDB, _MAX_PATH ) )
+    if ( nullptr == _wfullpath( wszFullpathTempDB, popts->wszTempDB, _MAX_PATH ) )
     {
         PrintErrorMessage( EDBUTL_errInvalidPath, popts, EDBUTL_paramTempDB );
         return ErrERRCheck( JET_errInvalidPath );
     }
 
     //  if SrcDB is not defined or is invalid path then ERROR
-    if ( NULL == popts->wszSourceDB )
+    if ( nullptr == popts->wszSourceDB )
     {
         wprintf( wszUsageErr1, L"source database" );
         wprintf( L"%c%c", wchNewLine, wchNewLine );
         return ErrERRCheck( JET_errInvalidParameter );
     }
-    if ( NULL == _wfullpath( wszFullpathSrcDB, popts->wszSourceDB, _MAX_PATH ) )
+    if ( nullptr == _wfullpath( wszFullpathSrcDB, popts->wszSourceDB, _MAX_PATH ) )
     {
         PrintErrorMessage( EDBUTL_errInvalidPath, popts, EDBUTL_paramSrcDB );
         return ErrERRCheck( JET_errInvalidPath );
@@ -1208,7 +1208,7 @@ LOCAL JET_ERR ErrEDBUTLCheckDBName(
     if (    !FUTILOPTSExplicitPageSet( popts->fUTILOPTSFlags ) &&
             JET_errSuccess == JetGetDatabaseFileInfoW( popts->wszSourceDB, &cbPageSize, sizeof( cbPageSize ), JET_DbInfoPageSize ) )
     {
-        const JET_ERR err = JetSetSystemParameterW( NULL, 0, JET_paramDatabasePageSize, cbPageSize, NULL );
+        const JET_ERR err = JetSetSystemParameterW( nullptr, 0, JET_paramDatabasePageSize, cbPageSize, nullptr );
         if ( err < JET_errSuccess &&
             ( popts->mode != modeDump || cbPageSize != 2048 || err != JET_errInvalidParameter) ) //special case for 2k pagesize headers
         {
@@ -1259,7 +1259,7 @@ LOCAL JET_ERR ErrEDBUTLCheckDBName(
         }
             filetype = JET_filetypeUnknown;
     }
-    if ( NULL != pfiletype )
+    if ( nullptr != pfiletype )
     {
         *pfiletype = filetype;
     }
@@ -1312,7 +1312,7 @@ LOCAL BOOL FEDBUTLParsePath(    _In_ PCWSTR             arg,
         const WCHAR *argT = arg;
         arg = GetNextArg();
         // if it was last argument or option follows it means we passed empty argument
-        if ( NULL == arg || NULL != wcschr( wszSwitches, *arg ) )
+        if ( nullptr == arg || nullptr != wcschr( wszSwitches, *arg ) )
         {
             arg = argT;
             SetCurArgID( GetCurArgID() - 1 );
@@ -1332,7 +1332,7 @@ LOCAL BOOL FEDBUTLParsePath(    _In_ PCWSTR             arg,
         wprintf( L"%c%c", wchNewLine, wchNewLine );
         fResult = fFalse;
     }
-    else if ( NULL == *pwszParam )
+    else if ( nullptr == *pwszParam )
     {
         *pwszParam = (WCHAR *) arg;
     }
@@ -1365,7 +1365,7 @@ LOCAL BOOL FEDBUTLParseDoublePath(  _In_ PCWSTR                 arg,
         // let's check if there are 2 parts in the path found
         assert( *pwszParam1 );
 
-        *pwszParam2 = NULL;
+        *pwszParam2 = nullptr;
         if ( LOSStrLengthW( *pwszParam1 ) >= 2 )
         {
             // we start to look for the ":" with the 3rd position (it might be \0 but that's ok)
@@ -1462,7 +1462,7 @@ LOCAL VOID EseutilDumpSpaceCat(
         if ( pgno == pdbutil->spcatOptions.pgnoFirst )
         {
             // Print progress bar initilizer.
-            (void)PrintStatus( JET_sesidNil, JET_snpSpaceCategorization, JET_sntBegin, NULL );
+            (void)PrintStatus( JET_sesidNil, JET_snpSpaceCategorization, JET_sntBegin, nullptr );
         }
 
         // Report progress bar step.
@@ -1478,7 +1478,7 @@ LOCAL VOID EseutilDumpSpaceCat(
         if ( pgno == pdbutil->spcatOptions.pgnoLast )
         {
             // Print progress bar finalizer.
-            (void)PrintStatus( JET_sesidNil, JET_snpSpaceCategorization, JET_sntComplete, NULL );
+            (void)PrintStatus( JET_sesidNil, JET_snpSpaceCategorization, JET_sntComplete, nullptr );
         }
     }
     else
@@ -1779,8 +1779,8 @@ LOCAL BOOL FEDBUTLParseRecovery( _In_ PCWSTR arg, UTILOPTS *popts )
 
         case L'd':
         case L'D':
-            if (    NULL != popts->wszBackup ||
-                    NULL != popts->wszRestore ||
+            if (    nullptr != popts->wszBackup ||
+                    nullptr != popts->wszRestore ||
                     0 != popts->crstmap )
             {
                 wprintf( L"%s%c%c", wszUsageErr3, wchNewLine, wchNewLine );
@@ -1826,9 +1826,9 @@ LOCAL BOOL FEDBUTLParseRecovery( _In_ PCWSTR arg, UTILOPTS *popts )
 #endif
         case L'n':
         case L'N':
-            if (    NULL != popts->wszBackup ||
-                    NULL != popts->wszRestore ||
-                    NULL != popts->wszDbAltRecoveryDir )
+            if (    nullptr != popts->wszBackup ||
+                    nullptr != popts->wszRestore ||
+                    nullptr != popts->wszDbAltRecoveryDir )
             {
                 wprintf( L"%s%c%c", wszUsageErr3, wchNewLine, wchNewLine );
                 fResult = fFalse;
@@ -1841,7 +1841,7 @@ LOCAL BOOL FEDBUTLParseRecovery( _In_ PCWSTR arg, UTILOPTS *popts )
                 if ( 0 == popts->crstmap )
                 {
                     ULONG_PTR cMaxDbs = 0;
-                    if ( JET_errSuccess >= JetGetSystemParameterW( JET_instanceNil, JET_sesidNil, JET_paramMaxDatabasesPerInstance, &cMaxDbs, NULL, sizeof( cMaxDbs ) ) )
+                    if ( JET_errSuccess >= JetGetSystemParameterW( JET_instanceNil, JET_sesidNil, JET_paramMaxDatabasesPerInstance, &cMaxDbs, nullptr, sizeof( cMaxDbs ) ) )
                     {
                         // default to 6 (the current ESE default max user db)
                         cMaxDbs = 6;
@@ -1852,7 +1852,7 @@ LOCAL BOOL FEDBUTLParseRecovery( _In_ PCWSTR arg, UTILOPTS *popts )
                     popts->prstmap = (JET_RSTMAP2_W *) LocalAlloc( LMEM_FIXED | LMEM_ZEROINIT, popts->crstmap * sizeof(JET_RSTMAP2_W) );
 
                     // we will error out
-                    if ( NULL == popts->prstmap )
+                    if ( nullptr == popts->prstmap )
                     {
                         wprintf( L"Out of memory error trying to allocate JET_RSTMAP of %zd bytes.", popts->crstmap * sizeof(JET_RSTMAP2_W) );
                         wprintf( L"%c%c", wchNewLine, wchNewLine );
@@ -1888,9 +1888,9 @@ LOCAL BOOL FEDBUTLParseRecovery( _In_ PCWSTR arg, UTILOPTS *popts )
 
                     //  if no directory specified, use current directory
                     popts->prstmap[popts->irstmap].cbStruct = sizeof(JET_RSTMAP2_W);
-                    popts->prstmap[popts->irstmap].szDatabaseName = NULL;
-                    popts->prstmap[popts->irstmap].szNewDatabaseName = NULL;
-                    popts->prstmap[popts->irstmap].rgsetdbparam = NULL;
+                    popts->prstmap[popts->irstmap].szDatabaseName = nullptr;
+                    popts->prstmap[popts->irstmap].szNewDatabaseName = nullptr;
+                    popts->prstmap[popts->irstmap].rgsetdbparam = nullptr;
                     popts->prstmap[popts->irstmap].csetdbparam = 0;
                     popts->prstmap[popts->irstmap].grbit = 0;
 
@@ -1900,7 +1900,7 @@ LOCAL BOOL FEDBUTLParseRecovery( _In_ PCWSTR arg, UTILOPTS *popts )
                                                         L"database location",
                                                         fTrue );
 
-                    if ( fResult && L'\0' == popts->prstmap[popts->irstmap].szNewDatabaseName )
+                    if ( fResult && nullptr == popts->prstmap[popts->irstmap].szNewDatabaseName )
                         popts->prstmap[popts->irstmap].szNewDatabaseName = (WCHAR *)wszCurrDir;
 
                     if ( fResult )
@@ -2117,7 +2117,7 @@ LOCAL VOID EDBUTLGetBaseName( _In_ PCWSTR const wszLogfile, __out_ecount(4) WCHA
 
     assert( wszBaseName != NULL );
 
-    _wsplitpath_s( wszLogfile, NULL, 0, NULL, 0, wszNameT, _countof(wszNameT), NULL, 0);
+    _wsplitpath_s( wszLogfile, nullptr, 0, nullptr, 0, wszNameT, _countof(wszNameT), nullptr, 0);
     StringCbCopyW( wszBaseName, 4 * sizeof(WCHAR), wszNameT );
 }
 
@@ -2126,10 +2126,10 @@ LOCAL BOOL FEDBUTLBaseNameOnly( const WCHAR * const wszName )
     WCHAR   wszFileT[_MAX_FNAME+1];
     WCHAR   wszExtT[_MAX_EXT+1];
 
-    if ( NULL == wszName )
+    if ( nullptr == wszName )
         return fFalse;
 
-    _wsplitpath_s( wszName, NULL, 0, NULL, 0, wszFileT, sizeof( wszFileT ) / sizeof( wszFileT[0] ), wszExtT, sizeof( wszExtT ) / sizeof( wszExtT[0] ) );
+    _wsplitpath_s( wszName, nullptr, 0, nullptr, 0, wszFileT, sizeof( wszFileT ) / sizeof( wszFileT[0] ), wszExtT, sizeof( wszExtT ) / sizeof( wszExtT[0] ) );
     return ( 3 == LOSStrLengthW( wszFileT ) && 0 == LOSStrLengthW( wszExtT ) );
 }
 
@@ -2161,7 +2161,7 @@ LOCAL BOOL FEDBUTLParseDump( _In_ PCWSTR arg, UTILOPTS *popts )
                 fResult = fTrue;
                 if( JET_errSuccess != ErrSpaceDumpCtxSetOptions(
                             pdbutil->pvCallback,
-                            NULL, NULL, NULL, fSPDumpPrintSmallTrees ) )
+                            nullptr, nullptr, nullptr, fSPDumpPrintSmallTrees ) )
                 {
                     fResult = fFalse;   // whoops problem.
                 }
@@ -2206,7 +2206,7 @@ LOCAL BOOL FEDBUTLParseDump( _In_ PCWSTR arg, UTILOPTS *popts )
                 case opDBUTILDumpSpace:
                     pdbutil->szTable = arg+2;
                     JET_ERR errS;
-                    errS = ErrSpaceDumpCtxSetOptions( pdbutil->pvCallback, NULL, NULL, NULL,
+                    errS = ErrSpaceDumpCtxSetOptions( pdbutil->pvCallback, nullptr, nullptr, nullptr,
                                         SPDUMPOPTS( fSPDumpPrintSmallTrees | fSPDumpSelectOneTable ) );
                     assert( JET_errSuccess == errS );
                     fResult = fTrue;
@@ -2254,7 +2254,7 @@ LOCAL BOOL FEDBUTLParseDump( _In_ PCWSTR arg, UTILOPTS *popts )
                 //     1..7fffffe = valid page numbers
                 //
                 // wcstol returns LONG _MIN..LONG _MAX (even if overflow)
-                pdbutil->pgno = wcstol( arg + 2, NULL, 0 );
+                pdbutil->pgno = wcstol( arg + 2, nullptr, 0 );
             }
             else if ( pdbutil->op == opDBUTILDumpRBSHeader ) 
             {
@@ -2272,7 +2272,7 @@ LOCAL BOOL FEDBUTLParseDump( _In_ PCWSTR arg, UTILOPTS *popts )
                 {
                     fResult = fTrue;
                 }
-                else if ( wcsstr( arg + 2, L"-max" ) != NULL )
+                else if ( wcsstr( arg + 2, L"-max" ) != nullptr )
                 {
                     if ( ( _snwscanf_s( arg + 2, cchArg, L"%d", &pgnoFirst ) == 1 ) && ( pgnoFirst >= 1 ) )
                     {
@@ -2304,7 +2304,7 @@ LOCAL BOOL FEDBUTLParseDump( _In_ PCWSTR arg, UTILOPTS *popts )
                 // opDBUTILDumpSpaceCategory can take a range.
                 const SIZE_T cchArg = LOSStrLengthW( arg + 2 );
                 LONG pgnoFirst, pgnoLast;
-                if ( wcsstr( arg + 2, L":max" ) != NULL )
+                if ( wcsstr( arg + 2, L":max" ) != nullptr )
                 {
                     if ( ( _snwscanf_s( arg + 2, cchArg, L"%d", &pgnoFirst ) == 1 ) && ( pgnoFirst >= 1 ) )
                     {
@@ -2336,8 +2336,8 @@ LOCAL BOOL FEDBUTLParseDump( _In_ PCWSTR arg, UTILOPTS *popts )
             //  MUST specify /p before /k and /k before /d
             //
             if ( opDBUTILDumpPage == pdbutil->op
-                && NULL == pdbutil->szIndex
-                && NULL == pdbutil->szTable )
+                && nullptr == pdbutil->szIndex
+                && nullptr == pdbutil->szTable )
             {
                 //  overload szIndex
                 //
@@ -2357,8 +2357,8 @@ LOCAL BOOL FEDBUTLParseDump( _In_ PCWSTR arg, UTILOPTS *popts )
             //  MUST specify /p and /k before /d
             //
             if ( opDBUTILDumpPage == pdbutil->op
-                && NULL != pdbutil->szIndex
-                && NULL == pdbutil->szTable )
+                && nullptr != pdbutil->szIndex
+                && nullptr == pdbutil->szTable )
             {
                 //  overload szTable
                 //
@@ -2386,7 +2386,7 @@ LOCAL BOOL FEDBUTLParseDump( _In_ PCWSTR arg, UTILOPTS *popts )
                 fResult = fTrue;
                 if( JET_errSuccess != ErrSpaceDumpCtxSetOptions(
                             pdbutil->pvCallback,
-                            NULL, NULL, NULL, fSPDumpOpts ) )
+                            nullptr, nullptr, nullptr, fSPDumpOpts ) )
                 {
                     fResult = fFalse;   // whoops problem.
                 }
@@ -2440,7 +2440,7 @@ LOCAL BOOL FEDBUTLParseDump( _In_ PCWSTR arg, UTILOPTS *popts )
                 fResult = fTrue;
                 if( JET_errSuccess != ErrSpaceDumpCtxSetOptions(
                             pdbutil->pvCallback,
-                            NULL, NULL, NULL, fSPDumpPrintSpaceLeaks ) )
+                            nullptr, nullptr, nullptr, fSPDumpPrintSpaceLeaks ) )
                 {
                     fResult = fFalse;   // whoops problem.
                 }
@@ -2455,7 +2455,7 @@ LOCAL BOOL FEDBUTLParseDump( _In_ PCWSTR arg, UTILOPTS *popts )
                 fResult = fTrue;
                 if( JET_errSuccess != ErrSpaceDumpCtxSetOptions(
                             pdbutil->pvCallback,
-                            NULL, NULL, L",", fSPDumpNoOpts ) )
+                            nullptr, nullptr, L",", fSPDumpNoOpts ) )
                 {
                     fResult = fFalse;   // whoops problem.
                 }
@@ -2639,8 +2639,8 @@ LOCAL VOID EDBUTLGetUnpathedFilename( _In_ PCWSTR const wszFilename, __in_bcount
     WCHAR   wszFile[_MAX_FNAME+1];
     WCHAR   wszExt[_MAX_EXT+1];
 
-    _wsplitpath_s( wszFilename, NULL, 0, NULL, 0, wszFile, sizeof( wszFile ) / sizeof( wszFile[0] ), wszExt, sizeof( wszExt ) / sizeof( wszExt[0] ) );
-    _wmakepath_s( wszUnpathedFilename, cbUnpathedFilename / sizeof(WCHAR), NULL, NULL, wszFile, wszExt );
+    _wsplitpath_s( wszFilename, nullptr, 0, nullptr, 0, wszFile, sizeof( wszFile ) / sizeof( wszFile[0] ), wszExt, sizeof( wszExt ) / sizeof( wszExt[0] ) );
+    _wmakepath_s( wszUnpathedFilename, cbUnpathedFilename / sizeof(WCHAR), nullptr, nullptr, wszFile, wszExt );
 }
 
 LOCAL BOOL FEDBUTLParseCopyFile( _In_ PCWSTR arg, UTILOPTS *popts )
@@ -2671,7 +2671,7 @@ LOCAL BOOL FEDBUTLParseCopyFile( _In_ PCWSTR arg, UTILOPTS *popts )
 
 
 
-LOCAL WCHAR **g_argv = NULL;
+LOCAL WCHAR **g_argv = nullptr;
 LOCAL INT   g_argMaxID = 0;
 LOCAL INT   g_argCurID = -1;
 
@@ -2725,7 +2725,7 @@ LOCAL WCHAR *GetCurArg()
     AssertPREFIX( g_argMaxID >= g_argCurID );
     if ( -1 == g_argCurID || g_argMaxID == g_argCurID )
     {
-        return NULL;
+        return nullptr;
     }
     return g_argv[g_argCurID];
 }
@@ -2918,9 +2918,9 @@ LOCAL BOOL FEDBUTLParseOptions(
             INT curid = GetCurArgID();
             WCHAR *argT;
             fResult = fFalse;
-            while ( !fResult && NULL != ( argT = GetNextArg() ) )
+            while ( !fResult && nullptr != ( argT = GetNextArg() ) )
             {
-                if ( NULL != wcschr( wszSwitches, *argT ) && L'\0' != argT[1] && L'\0' == argT[2] )
+                if ( nullptr != wcschr( wszSwitches, *argT ) && L'\0' != argT[1] && L'\0' == argT[2] )
                 {
                     fResult = FSetDumpModeModifier( argT[1], (JET_DBUTIL_W *)popts->pv );
                 }
@@ -2948,9 +2948,9 @@ LOCAL BOOL FEDBUTLParseOptions(
             INT curid = GetCurArgID();
             WCHAR *argT;
             fResult = fFalse;
-            while ( !fResult && NULL != ( argT = GetNextArg() ) )
+            while ( !fResult && nullptr != ( argT = GetNextArg() ) )
             {
-                if ( NULL != wcschr( wszSwitches, *argT ) && L'\0' != argT[1] && L'\0' == argT[2] )
+                if ( nullptr != wcschr( wszSwitches, *argT ) && L'\0' != argT[1] && L'\0' == argT[2] )
                 {
                     fResult = FSetHardRecoveryModeModifier( argT[1], popts );
                 }
@@ -2973,7 +2973,7 @@ LOCAL BOOL FEDBUTLParseOptions(
     }
 
     // First option specifies the mode, so start with the second option.
-    for ( ; fResult && NULL != arg; arg = GetNextArg() )
+    for ( ; fResult && nullptr != arg; arg = GetNextArg() )
     {
         //  dump and hard recovery hack
         if ( GetCurArgID() == iSkipID )
@@ -2981,25 +2981,25 @@ LOCAL BOOL FEDBUTLParseOptions(
             continue;
         }
 
-        if ( wcschr( wszSwitches, arg[0] ) == NULL )
+        if ( wcschr( wszSwitches, arg[0] ) == nullptr )
         {
             // SPECIAL CASE: Backup mode does not DB specification.
             switch ( popts->mode )
             {
                 case modeRecovery:
-                    if ( fResult = ( NULL == popts->wszBase ) )
+                    if ( fResult = ( nullptr == popts->wszBase ) )
                     {
                         popts->wszBase = arg;
                     }
                     break;
                 case modeBackup:
-                    if ( fResult = ( NULL == popts->wszBackup ) )
+                    if ( fResult = ( nullptr == popts->wszBackup ) )
                     {
                         popts->wszBackup = arg;
                     }
                     break;
                 default:
-                    if ( fResult = ( NULL == popts->wszSourceDB ) )
+                    if ( fResult = ( nullptr == popts->wszSourceDB ) )
                     {
                         popts->wszSourceDB = arg;
                     }
@@ -3097,7 +3097,7 @@ LOCAL BOOL FEDBUTLParseOptions(
             {
                 //  or spec is next arg
                 wszConfigSpec = GetNextArg();
-                fResult = ( wszConfigSpec != NULL && wszConfigSpec[0] != L'\0' );
+                fResult = ( wszConfigSpec != nullptr && wszConfigSpec[0] != L'\0' );
             }
             if ( fResult )
             {
@@ -3298,10 +3298,10 @@ LOCAL DWORD CALLBACK DwEDBUTILCopyProgressRoutine(
 LOCAL JET_ERR ErrEDBUTLGetFmPathFromDbPath(
     _Out_writes_z_(OSFSAPI_MAX_PATH) WCHAR* const wszFmPath,
     _In_ const WCHAR* const wszDbPath,
-    _Out_opt_ BOOL* const pfFmExists = NULL )
+    _Out_opt_ BOOL* const pfFmExists = nullptr )
 {
     JET_ERR err = JET_errSuccess;
-    IFileSystemAPI* pfsapi = NULL;
+    IFileSystemAPI* pfsapi = nullptr;
     WCHAR wszDbFolder[ IFileSystemAPI::cchPathMax ] = { L"\0" };
     WCHAR wszDbFileName[ IFileSystemAPI::cchPathMax ] = { L"\0" };
     WCHAR wszDbExtension[ IFileSystemAPI::cchPathMax ] = { L"\0" };
@@ -3311,7 +3311,7 @@ LOCAL JET_ERR ErrEDBUTLGetFmPathFromDbPath(
     Call( pfsapi->ErrPathParse( wszDbPath, wszDbFolder, wszDbFileName, wszDbExtension ) );
     Call( pfsapi->ErrPathBuild( wszDbFolder, wszDbFileName, L".jfm", wszFmPath ) );
 
-    if ( pfFmExists != NULL )
+    if ( pfFmExists != nullptr )
     {
         *pfFmExists = ( pfsapi->ErrPathExists( wszFmPath, &fIsDirectory ) == JET_errSuccess ) && !fIsDirectory;
     }
@@ -3408,8 +3408,8 @@ LOCAL JET_ERR ErrEDBUTLBackupAndInstateDB(
         WCHAR   wszDrive[_MAX_PATH+1];
         WCHAR   wszDir[_MAX_PATH+1];
 
-        _wsplitpath_s( popts->wszSourceDB, wszDrive, _countof(wszDrive), wszDir, _countof(wszDir), NULL, 0, NULL, 0 );
-        _wmakepath_s( wszSourceDB, _countof(wszSourceDB), wszDrive, wszDir, NULL, NULL );
+        _wsplitpath_s( popts->wszSourceDB, wszDrive, _countof(wszDrive), wszDir, _countof(wszDir), nullptr, 0, nullptr, 0 );
+        _wmakepath_s( wszSourceDB, _countof(wszSourceDB), wszDrive, wszDir, nullptr, nullptr );
         StringCbCatW( wszSourceDB, sizeof(wszSourceDB), wfd.cFileName );
         FindClose( hFind );
     }
@@ -3420,7 +3420,7 @@ LOCAL JET_ERR ErrEDBUTLBackupAndInstateDB(
 
     // Make backup before instating, if requested.
 
-    if ( popts->wszBackup != NULL )
+    if ( popts->wszBackup != nullptr )
     {
         err = ErrEDBUTLMoveFile( wszSourceDB, popts->wszBackup, 0 );
         if ( err < 0 )
@@ -3468,31 +3468,31 @@ LOCAL JET_ERR ErrEDBUTLUserSystemParameters( JET_INSTANCE *pinstance, UTILOPTS *
     JET_ERR err = JET_errSuccess;
 
     // Command-line parameters override all default and registry values.
-    if ( popts->wszLogfilePath != NULL )
+    if ( popts->wszLogfilePath != nullptr )
     {
         Call( JetSetSystemParameterW( pinstance, 0, JET_paramLogFilePath, 0, popts->wszLogfilePath ) );
     }
-    if ( popts->wszSystemPath != NULL )
+    if ( popts->wszSystemPath != nullptr )
     {
         Call( JetSetSystemParameterW( pinstance, 0, JET_paramSystemPath, 0, popts->wszSystemPath ) );
     }
     if ( popts->cpageBatchIO != 0 )
     {
-        Call( JetSetSystemParameterW( pinstance, 0, JET_paramBatchIOBufferMax, popts->cpageBatchIO * 4, NULL ) );
+        Call( JetSetSystemParameterW( pinstance, 0, JET_paramBatchIOBufferMax, popts->cpageBatchIO * 4, nullptr ) );
     }
     if ( popts->cpageDbExtension != 0 )
     {
-        Call( JetSetSystemParameterW( pinstance, 0, JET_paramDbExtensionSize, popts->cpageDbExtension, NULL ) );
+        Call( JetSetSystemParameterW( pinstance, 0, JET_paramDbExtensionSize, popts->cpageDbExtension, nullptr ) );
     }
 
-    if ( NULL != popts->wszBase )
+    if ( nullptr != popts->wszBase )
     {
         Call( JetSetSystemParameterW( pinstance, 0, JET_paramBaseName, 0, popts->wszBase ) );
     }
 
     if ( popts->lMaxCacheSize != 0 )
     {
-        Call( JetSetSystemParameter( pinstance, 0, JET_paramCacheSizeMax, popts->lMaxCacheSize, NULL ) );
+        Call( JetSetSystemParameter( pinstance, 0, JET_paramCacheSizeMax, popts->lMaxCacheSize, nullptr ) );
     }
 
 HandleError:
@@ -3745,8 +3745,8 @@ WCHAR * WszCopy( const WCHAR *  wsz )
     assert ( wsz );
     cb = sizeof(WCHAR) * ((ULONG)LOSStrLengthW( wsz ) + 1);
 
-    if ( ( wszCopy = (WCHAR *) LocalAlloc( LMEM_FIXED | LMEM_ZEROINIT, cb ) ) == NULL )
-        return(NULL);
+    if ( ( wszCopy = (WCHAR *) LocalAlloc( LMEM_FIXED | LMEM_ZEROINIT, cb ) ) == nullptr )
+        return(nullptr);
 
     StringCbCopyW( wszCopy, cb, wsz );
     return( wszCopy );
@@ -3808,7 +3808,7 @@ void PrintESEUTILError(
         wprintf( L"%c%c", wchNewLine, wchNewLine );
     }
 
-    if ( 0 != err && NULL != wszMessage )
+    if ( 0 != err && nullptr != wszMessage )
     {
         wprintf( wszOperFailWithError, err, wszMessage, iSec, iMSec );
     }
@@ -4674,8 +4674,8 @@ LOCAL JET_ERR ErrEDBUTLDumpTableRecords(
 //  ================================================================
 {
     JET_ERR                 err         = JET_errSuccess;
-    JET_RETRIEVECOLUMN  *   rgretcol    = NULL;
-    BYTE                *   pb          = NULL;
+    JET_RETRIEVECOLUMN  *   rgretcol    = nullptr;
+    BYTE                *   pb          = nullptr;
     INT                     iretcol;
     const INT               cbPerColumn = 256;
     INT                     crecordsDumped;
@@ -4689,7 +4689,7 @@ LOCAL JET_ERR ErrEDBUTLDumpTableRecords(
 
     pb          = new BYTE[ccolumns*cbPerColumn];
     rgretcol    = new JET_RETRIEVECOLUMN[ccolumns];
-    if( NULL == rgretcol || NULL == pb )
+    if( nullptr == rgretcol || nullptr == pb )
     {
         Call( ErrERRCheck( JET_errOutOfMemory ) );
     }
@@ -4717,7 +4717,7 @@ LOCAL JET_ERR ErrEDBUTLDumpTableRecords(
     }
 
 HandleError:
-    if( NULL != pb )
+    if( nullptr != pb )
     {
         delete [] pb;
     }
@@ -4744,17 +4744,17 @@ LOCAL_BROKEN JET_ERR ErrEDBUTLDumpTable(
     JET_COLUMNLIST  columnlist;
 
     INT                     ccolumns        = 0;
-    DUMPCOLUMN          *   rgdumpcolumn    = NULL;
+    DUMPCOLUMN          *   rgdumpcolumn    = nullptr;
 
     columnlist.cbStruct = sizeof( columnlist );
     columnlist.tableid  = JET_tableidNil;
 
-    Call( JetOpenTableW( sesid, dbid, wszTable, NULL, 0, JET_bitTableReadOnly, &tableid ) );
+    Call( JetOpenTableW( sesid, dbid, wszTable, nullptr, 0, JET_bitTableReadOnly, &tableid ) );
 
     Call( JetGetTableColumnInfo(
             sesid,
             tableid,
-            NULL,
+            nullptr,
             &columnlist,
             sizeof( columnlist ),
             JET_ColInfoList ) );
@@ -4762,7 +4762,7 @@ LOCAL_BROKEN JET_ERR ErrEDBUTLDumpTable(
     ccolumns = columnlist.cRecord;
     rgdumpcolumn = new DUMPCOLUMN[ccolumns];
 
-    if( NULL == rgdumpcolumn )
+    if( nullptr == rgdumpcolumn )
     {
         Call( ErrERRCheck( JET_errOutOfMemory ) );
     }
@@ -4809,10 +4809,10 @@ LOCAL JET_ERR ErrEDBUTLDumpFTLHeader( _In_z_ const WCHAR * const wszFTLFile )
     JET_ERR         err         = JET_errSuccess;
 #ifdef MINIMAL_FUNCTIONALITY
 #else  //  !MINIMAL_FUNCTIONALITY
-    CFastTraceLog *                 pftl = NULL;
-    CFastTraceLog::CFTLReader *     pftlr = NULL;
+    CFastTraceLog *                 pftl = nullptr;
+    CFastTraceLog::CFTLReader *     pftlr = nullptr;
 
-    Alloc( pftl = new CFastTraceLog( NULL ) );
+    Alloc( pftl = new CFastTraceLog( nullptr ) );
 
     Call( pftl->ErrFTLInitReader( wszFTLFile,
                                     &g_iorThunk,
@@ -4835,8 +4835,8 @@ HandleError:
     {
         pftl->FTLTerm();    // cleanup open files
         delete pftl;        // cleanup memory
-        pftl = NULL;
-        pftlr = NULL;
+        pftl = nullptr;
+        pftlr = nullptr;
     }
 #endif  //  MINIMAL_FUNCTIONALITY
     return err;
@@ -4854,7 +4854,7 @@ LOCAL DWORD GetAttributeListSize( const WCHAR* const wszFilename, INT *pAttrList
 
     wcscpy_s( wszAttrList, _countof( wszAttrList ), wszFilename );
     wcscat_s( wszAttrList, _countof( wszAttrList ), L"::$ATTRIBUTE_LIST" );
-    hFile = CreateFileW( wszAttrList, FILE_READ_ATTRIBUTES, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL );
+    hFile = CreateFileW( wszAttrList, FILE_READ_ATTRIBUTES, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr );
     if ( hFile == INVALID_HANDLE_VALUE )
     {
         dwGLE = GetLastError();
@@ -4882,8 +4882,8 @@ LOCAL DWORD DumpExtentCount( const WCHAR* const wszFilename, const DWORD cbClust
 {
     DWORD                       dwGLE = 0;
     HANDLE                      hFile = INVALID_HANDLE_VALUE;
-    HANDLE                      hProcHeap = NULL;
-    void*                       pData = NULL;
+    HANDLE                      hProcHeap = nullptr;
+    void*                       pData = nullptr;
     ULONG                       extentCount = 0;
     LONGLONG                    ibExtentEndLast = 0;
     STARTING_VCN_INPUT_BUFFER   startingVCN = { 0 };
@@ -4893,7 +4893,7 @@ LOCAL DWORD DumpExtentCount( const WCHAR* const wszFilename, const DWORD cbClust
     CPerfectHistogramStats      histo;
     BOOL                        fStatError = fFalse;
 
-    hFile = CreateFileW( wszFilename, FILE_READ_ATTRIBUTES, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL );
+    hFile = CreateFileW( wszFilename, FILE_READ_ATTRIBUTES, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr );
     if ( hFile == INVALID_HANDLE_VALUE )
     {
         dwGLE = GetLastError();
@@ -4902,7 +4902,7 @@ LOCAL DWORD DumpExtentCount( const WCHAR* const wszFilename, const DWORD cbClust
 
     hProcHeap = GetProcessHeap();
     pData = HeapAlloc( hProcHeap, 0, dataSize );
-    if ( pData == NULL )
+    if ( pData == nullptr )
     {
         //  Can't use GetLastError for HeapAlloc, oddly enough.
         dwGLE = ERROR_NOT_ENOUGH_MEMORY;
@@ -4922,7 +4922,7 @@ LOCAL DWORD DumpExtentCount( const WCHAR* const wszFilename, const DWORD cbClust
             FSCTL_GET_RETRIEVAL_POINTERS,
             &startingVCN, sizeof( startingVCN ),
             (RETRIEVAL_POINTERS_BUFFER *) pData, dataSize,
-            &retSize, NULL ) )
+            &retSize, nullptr ) )
         {
             dwGLE = GetLastError();
         }
@@ -5100,8 +5100,8 @@ ERR LOCAL ErrDUMPFileSize(
 LOCAL JET_ERR ErrFileSystemDump( const WCHAR* const wszFilename, const BOOL fVerbose, const BOOL fDebugMode )
 {
     JET_ERR         err = JET_errSuccess;
-    IFileSystemAPI* pFSApi = NULL;
-    IFileAPI *      pfapi = NULL;
+    IFileSystemAPI* pFSApi = nullptr;
+    IFileAPI *      pfapi = nullptr;
     WCHAR           wszVolumeRoot[MAX_PATH];
     WCHAR           wszVolumeName[MAX_PATH];
     DWORD           dwVolumeSerial = 0;
@@ -5120,7 +5120,7 @@ LOCAL JET_ERR ErrFileSystemDump( const WCHAR* const wszFilename, const BOOL fVer
                                     wszVolumeName,
                                     _countof( wszVolumeName ),
                                     &dwVolumeSerial,
-                                    NULL,
+                                    nullptr,
                                     &dwFSFlags,
                                     wszFSName,
                                     _countof( wszFSName ) ) )
@@ -5221,11 +5221,11 @@ LOCAL JET_ERR ErrEDBUTLDump(
     wprintf( L"%c", wchNewLine );
 
     Call( JetSetSystemParameterW( &instance, 0, JET_paramRecovery, 0, L"off" ) );
-    Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableOnlineDefrag, 0, NULL ) );
+    Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableOnlineDefrag, 0, nullptr ) );
 
     //  set temp table size to be 0 so that no temp db will be created
 
-    Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxTemporaryTables, 0, NULL ) );
+    Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxTemporaryTables, 0, nullptr ) );
 
     //  set user overrides.
 
@@ -5276,7 +5276,7 @@ LOCAL JET_ERR ErrEDBUTLDump(
                 cbPageSize = 32 * 1024;
             }
 
-            Call( ErrSpaceDumpCtxSetOptions( pdbutil->pvCallback, &cbPageSize, NULL, NULL, fSPDumpNoOpts ) );
+            Call( ErrSpaceDumpCtxSetOptions( pdbutil->pvCallback, &cbPageSize, nullptr, nullptr, fSPDumpNoOpts ) );
             Call( ErrSpaceDumpCtxGetGRBIT( pdbutil->pvCallback, &(pdbutil->grbitOptions) ) );
         }
         else
@@ -5284,7 +5284,7 @@ LOCAL JET_ERR ErrEDBUTLDump(
              if ( opDBUTILDumpSpaceCategory != pdbutil->op )
              {
                 // why were we setting it to NULL here for all dump operations?
-                pdbutil->pfnCallback = NULL;
+                pdbutil->pfnCallback = nullptr;
              }
         }
 
@@ -5316,22 +5316,22 @@ LOCAL JET_ERR ErrEDBUTLCheckLogStream( JET_INSTANCE* pInst, UTILOPTS* pOpts )
     //================================
     // file name (with wild card)
     WCHAR wszFName[ _MAX_PATH + 1 ];
-    Call( JetGetSystemParameterW( *pInst, JET_sesidNil, JET_paramBaseName, NULL, wszFName, sizeof( wszFName ) ) );
+    Call( JetGetSystemParameterW( *pInst, JET_sesidNil, JET_paramBaseName, nullptr, wszFName, sizeof( wszFName ) ) );
     StringCchCatW( wszFName, _countof( wszFName ), L"*" );
 
     //================================
     // drive and dir
     WCHAR wszLogFilePath[ _MAX_PATH + 1 ];
-    Call( JetGetSystemParameterW( *pInst, JET_sesidNil, JET_paramLogFilePath, NULL, wszLogFilePath, sizeof( wszLogFilePath ) ) );
+    Call( JetGetSystemParameterW( *pInst, JET_sesidNil, JET_paramLogFilePath, nullptr, wszLogFilePath, sizeof( wszLogFilePath ) ) );
 
     WCHAR wszDrive[ _MAX_DRIVE ];
     WCHAR wszDir[ _MAX_DIR ];
-    _wsplitpath_s( wszLogFilePath, wszDrive, _countof( wszDrive ), wszDir, _countof( wszDir ), NULL, 0, NULL, 0 );
+    _wsplitpath_s( wszLogFilePath, wszDrive, _countof( wszDrive ), wszDir, _countof( wszDir ), nullptr, 0, nullptr, 0 );
 
     //================================
     // ext
     DWORD_PTR ulLegacy = 0;
-    Call( JetGetSystemParameterW( *pInst, JET_sesidNil, JET_paramLegacyFileNames, &ulLegacy, NULL, sizeof( ulLegacy ) ) );
+    Call( JetGetSystemParameterW( *pInst, JET_sesidNil, JET_paramLegacyFileNames, &ulLegacy, nullptr, sizeof( ulLegacy ) ) );
 
     //================================
     // try both log extensions
@@ -5354,7 +5354,7 @@ LOCAL JET_ERR ErrEDBUTLCheckLogStream( JET_INSTANCE* pInst, UTILOPTS* pOpts )
             fFound = FindNextFileW( hFind, &wfd ) )
         {
             WCHAR wszExt[ _MAX_EXT ];
-            _wsplitpath_s( wfd.cFileName, NULL, 0, NULL, 0, wszFName, _countof( wszFName ), wszExt, _countof( wszExt ) );
+            _wsplitpath_s( wfd.cFileName, nullptr, 0, nullptr, 0, wszFName, _countof( wszFName ), wszExt, _countof( wszExt ) );
             _wmakepath_s( wszLogFilePath, _countof( wszLogFilePath ), wszDrive, wszDir, wszFName, wszExt );
             
             // database page size
@@ -5362,7 +5362,7 @@ LOCAL JET_ERR ErrEDBUTLCheckLogStream( JET_INSTANCE* pInst, UTILOPTS* pOpts )
             if ( JET_errSuccess <= JetGetLogFileInfoW( wszLogFilePath, &logInfo, sizeof( logInfo ), JET_LogInfoMisc ) )
             {
                 FindClose( hFind );
-                Call( JetSetSystemParameterW( pInst, 0, JET_paramDatabasePageSize, logInfo.cbDatabasePageSize, NULL ) );
+                Call( JetSetSystemParameterW( pInst, 0, JET_paramDatabasePageSize, logInfo.cbDatabasePageSize, nullptr ) );
                 return JET_errSuccess;
             }
         }
@@ -5423,7 +5423,7 @@ void DetachFileStatus( _In_ const INT i, _In_ const INT c, _In_ const DWORD_PTR 
 JET_ERR ErrDetachFile( _In_z_ const WCHAR* const wszPath )
 {
     ERR                 err     = JET_errSuccess;
-    IBlockCacheFactory* pbcf    = NULL;
+    IBlockCacheFactory* pbcf    = nullptr;
 
     wprintf( L"Initiating DETACH FILE mode...%c", wchNewLine );
     wprintf( L"\r\n\r\n" );
@@ -5447,7 +5447,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
     JET_ERR                 err                     = JET_errSuccess;
     JET_ERR                 errRepaired             = JET_errSuccess;
     BOOL                    fResult                 = fTrue;
-    UTILOPTS                opts                    = {0};
+    UTILOPTS                opts                    = {nullptr};
     JET_DBUTIL_W            dbutil;
     INT                     iSec, iMSec;
     BOOL                    fWhitespaceOnErr        = fFalse;
@@ -5488,7 +5488,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
 
     //  Force the process to terminate if heap corruption is detected
     //
-    HeapSetInformation( NULL, HeapEnableTerminationOnCorruption, NULL, 0 );
+    HeapSetInformation( nullptr, HeapEnableTerminationOnCorruption, nullptr, 0 );
 
     PushEseutilArgTrace( argc, argv );
 
@@ -5516,7 +5516,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
 
     SetCurArgID(1);
     assert( GetCurArgID() == 1 );
-    if ( wcschr( wszSwitches, GetCurArg()[0] ) == NULL )
+    if ( wcschr( wszSwitches, GetCurArg()[0] ) == nullptr )
     {
         wprintf( L"%s%c%c", wszUsageErr10, wchNewLine, wchNewLine );
         goto Usage;
@@ -5618,7 +5618,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
         goto Usage;
 
     // turn on legacy config if implemented (or use fast config if ever created)
-    (void)JetSetSystemParameterW( &instance, 0, JET_paramConfiguration, 1, NULL );
+    (void)JetSetSystemParameterW( &instance, 0, JET_paramConfiguration, 1, nullptr );
 
     if ( opts.wszConfigStoreSpec )
     {
@@ -5637,7 +5637,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
     //  enable persisted callbacks because we have to be able to maintain
     //  databases where they are used
 
-    Call( JetSetSystemParameterW( &instance, 0, JET_paramEnablePersistedCallbacks, 1, NULL ) );
+    Call( JetSetSystemParameterW( &instance, 0, JET_paramEnablePersistedCallbacks, 1, nullptr ) );
 
     //  generate a new temporary database name
     //  this may be overwritten later
@@ -5645,7 +5645,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
     Call( JetSetSystemParameterW( &instance, 0, JET_paramTempPath, 0, wszDefaultTempDB ) );
 
     //  enable persisted lost flush detection
-    Call( JetSetSystemParameter( &instance, 0, JET_paramPersistedLostFlushDetection, JET_bitPersistedLostFlushDetectionEnabled, NULL ) );
+    Call( JetSetSystemParameter( &instance, 0, JET_paramPersistedLostFlushDetection, JET_bitPersistedLostFlushDetectionEnabled, nullptr ) );
 
     if ( !FUTILOPTSSuppressLogo( opts.fUTILOPTSFlags ) )
     {
@@ -5684,28 +5684,28 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
     
     if ( FUTILOPTS2KPage( opts.fUTILOPTSFlags ) )
     {
-        Call( JetSetSystemParameterW( &instance, 0, JET_paramDatabasePageSize, 2 * 1024, NULL ) );
+        Call( JetSetSystemParameterW( &instance, 0, JET_paramDatabasePageSize, 2 * 1024, nullptr ) );
     }
     else if ( FUTILOPTS4KPage( opts.fUTILOPTSFlags ) )
     {
-        Call( JetSetSystemParameterW( &instance, 0, JET_paramDatabasePageSize, 4 * 1024, NULL ) );
+        Call( JetSetSystemParameterW( &instance, 0, JET_paramDatabasePageSize, 4 * 1024, nullptr ) );
     }
     if ( FUTILOPTS8KPage( opts.fUTILOPTSFlags ) )
     {
-        Call( JetSetSystemParameterW( &instance, 0, JET_paramDatabasePageSize, 8 * 1024, NULL ) );
+        Call( JetSetSystemParameterW( &instance, 0, JET_paramDatabasePageSize, 8 * 1024, nullptr ) );
     }
     else if ( FUTILOPTS16KPage( opts.fUTILOPTSFlags ) )
     {
-        Call( JetSetSystemParameterW( &instance, 0, JET_paramDatabasePageSize, 16 * 1024, NULL ) );
+        Call( JetSetSystemParameterW( &instance, 0, JET_paramDatabasePageSize, 16 * 1024, nullptr ) );
     }
     else if ( FUTILOPTS32KPage( opts.fUTILOPTSFlags ) )
     {
-        Call( JetSetSystemParameterW( &instance, 0, JET_paramDatabasePageSize, 32 * 1024, NULL ) );
+        Call( JetSetSystemParameterW( &instance, 0, JET_paramDatabasePageSize, 32 * 1024, nullptr ) );
     }
 
     Call( ErrEDBUTLSetCacheSizeMax( &opts ) );
 
-    Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableBlockCache, 1, NULL ) );
+    Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableBlockCache, 1, nullptr ) );
 
     // Lights, cameras, action...
     timer = TickOSTimeCurrent();
@@ -5789,7 +5789,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
     switch ( opts.mode )
     {
         case modeRecovery:
-            if ( NULL == opts.wszBase )
+            if ( nullptr == opts.wszBase )
             {
                 wprintf( wszUsageErr1, L"logfile base name" );
                 wprintf( L"%c%c", wchNewLine, wchNewLine );
@@ -5802,13 +5802,13 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
             if( 0 != opts.pageTempDBMin )
             {
                 wprintf( L"   Temp database size: %d%c", opts.pageTempDBMin, wchNewLine );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramPageTempDBMin , opts.pageTempDBMin, NULL ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramPageTempDBMin , opts.pageTempDBMin, nullptr ) );
             }
 
             wprintf( L"            Log files: %s%c", opts.wszLogfilePath ? opts.wszLogfilePath : L"<current directory>", wchNewLine );
             wprintf( L"         System files: %s%c", opts.wszSystemPath ? opts.wszSystemPath : L"<current directory>", wchNewLine );
 
-            if ( NULL != opts.wszDbAltRecoveryDir )
+            if ( nullptr != opts.wszDbAltRecoveryDir )
             {
                 wprintf( L"   Database Directory: %s%c", opts.wszDbAltRecoveryDir != wszCurrDir ? opts.wszDbAltRecoveryDir : L"<current directory>", wchNewLine );
                 Call( JetSetSystemParameterW( &instance, 0, JET_paramAlternateDatabaseRecoveryPath, 0, opts.wszDbAltRecoveryDir ) );
@@ -5816,7 +5816,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
 
             if ( FUTILOPTSDelOutOfRangeLogs( opts.fUTILOPTSFlags ) )
             {
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramDeleteOutOfRangeLogs, fTrue, NULL ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramDeleteOutOfRangeLogs, fTrue, nullptr ) );
             }
 
             if ( 0 != opts.irstmap )
@@ -5848,10 +5848,10 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
             // Currently the engine defaults to having trim enabled, and a periodic task running
             // in DEBUG builds. Turn all of that off to ensure that recovery will work
             // consistently (that it replays TRIM log records even when the system parameter is off).
-            Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableShrinkDatabase, JET_bitShrinkDatabaseOff, NULL ) );
+            Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableShrinkDatabase, JET_bitShrinkDatabaseOff, nullptr ) );
 
             Assert( opts.efvUserSpecified == 0 ); // do not take this as an argument yet
-            Call( JetSetSystemParameterW( &instance, 0, JET_paramEngineFormatVersion, opts.efvUserSpecified == 0 ? ( JET_efvExchange2016Rtm | JET_efvAllowHigherPersistedFormat ) : opts.efvUserSpecified, NULL ) );
+            Call( JetSetSystemParameterW( &instance, 0, JET_paramEngineFormatVersion, opts.efvUserSpecified == 0 ? ( JET_efvExchange2016Rtm | JET_efvAllowHigherPersistedFormat ) : opts.efvUserSpecified, nullptr ) );
 
 ///         Call( JetSetSystemParameterW( &instance, 0, JET_paramCacheSizeMax, 500, NULL ) );
 ///         Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxOpenTables, 10000, NULL ) );
@@ -5871,16 +5871,16 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
             // allow recovery of 5-digit log files
             if ( opts.cLogDigits == 5 )
             {
-                Call( JetSetSystemParameter( &instance, 0, JET_paramLegacyFileNames, JET_bitESE98FileNames | JET_bitEightDotThreeSoftCompat, NULL ) );
+                Call( JetSetSystemParameter( &instance, 0, JET_paramLegacyFileNames, JET_bitESE98FileNames | JET_bitEightDotThreeSoftCompat, nullptr ) );
             }
             else if ( opts.cLogDigits == 8 )
             {
-                Call( JetSetSystemParameter( &instance, 0, JET_paramLegacyFileNames, JET_bitESE98FileNames, NULL ) );
+                Call( JetSetSystemParameter( &instance, 0, JET_paramLegacyFileNames, JET_bitESE98FileNames, nullptr ) );
             }
 
-            Call( JetSetSystemParameter( &instance, 0, JET_paramWaypointLatency, opts.cWaypointLatency, NULL ) );
+            Call( JetSetSystemParameter( &instance, 0, JET_paramWaypointLatency, opts.cWaypointLatency, nullptr ) );
 
-            if ( opts.wszBackup == NULL )
+            if ( opts.wszBackup == nullptr )
             {
                 rstInfo.crstmap = opts.irstmap;
                 rstInfo.rgrstmap = opts.prstmap;
@@ -5912,7 +5912,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
                 // Attach to shrink or reclaim leaked space, if requested.
                 if ( ( err >= JET_errSuccess ) &&
                     ( ( opts.grbitShrink & JET_bitShrinkDatabaseEofOnAttach ) || ( opts.fRunLeakReclaimer ) ) &&
-                    ( ( err = JetBeginSessionW( instance, &sesid, NULL, NULL ) ) >= JET_errSuccess ) )
+                    ( ( err = JetBeginSessionW( instance, &sesid, nullptr, nullptr ) ) >= JET_errSuccess ) )
                 {
                     wprintf( L"%c", wchNewLine );
                     wprintf( L"Attaching for additional database operations...%c", wchNewLine );
@@ -6012,7 +6012,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
             {
                 BOOL fTryDefrag = fFalse;
 
-                Call( ErrEDBUTLCheckDBName( &opts, wszDefaultRepairDB, NULL ) );
+                Call( ErrEDBUTLCheckDBName( &opts, wszDefaultRepairDB, nullptr ) );
 
                 wprintf( L"Initiating REPAIR mode...%c", wchNewLine );
                 wprintf( L"        Database: %s%c", opts.wszSourceDB, wchNewLine );
@@ -6024,23 +6024,23 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
 
                 // save the default temp dbg name to restore it if needed for defrag
                 WCHAR   wszTempDatabaseDefault[_MAX_PATH + 1];
-                Call( JetGetSystemParameterW( instance, 0, JET_paramTempPath, 0, wszTempDatabaseDefault, sizeof(wszTempDatabaseDefault) ) );
+                Call( JetGetSystemParameterW( instance, 0, JET_paramTempPath, nullptr, wszTempDatabaseDefault, sizeof(wszTempDatabaseDefault) ) );
                 Call( JetSetSystemParameterW( &instance, 0, JET_paramTempPath, 0, opts.wszTempDB ) );
 
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableTempTableVersioning, fFalse, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableOnlineDefrag, 0, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramDbExtensionSize, 256, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexChecking, JET_IndexCheckingOff, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexCleanup, 0, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxOpenTables, 10000, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramPreferredMaxOpenTables, 10000, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramDisableCallbacks, fTrue, NULL ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableTempTableVersioning, fFalse, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableOnlineDefrag, 0, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramDbExtensionSize, 256, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexChecking, JET_IndexCheckingOff, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexCleanup, 0, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxOpenTables, 10000, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramPreferredMaxOpenTables, 10000, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramDisableCallbacks, fTrue, nullptr ) );
                 //  create plenty of sessions for multi-threaded integrity/repair
                 //  need to have plenty of pages to have that many sessions
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxSessions, 128, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxCursors, 10240, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxTemporaryTables, 10000, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEngineFormatVersion, JET_efvUsePersistedFormat, NULL ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxSessions, 128, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxCursors, 10240, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxTemporaryTables, 10000, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEngineFormatVersion, JET_efvUsePersistedFormat, nullptr ) );
 
                 // Set user overrides.
                 Call( ErrEDBUTLUserSystemParameters( &instance, &opts ) );
@@ -6129,7 +6129,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
                 if ( FUTILOPTSPreserveTempDB( opts.fUTILOPTSFlags ) )
                     grbitDefrag |= JET_bitCompactPreserveOriginal;
 
-                CallJ( ErrEDBUTLCheckDBName( &opts, wszDefaultDefragDB, NULL ), Cleanup );
+                CallJ( ErrEDBUTLCheckDBName( &opts, wszDefaultDefragDB, nullptr ), Cleanup );
 
                 wprintf( L"Initiating DEFRAGMENTATION mode...%c", wchNewLine );
                 wprintf( L"            Database: %s%c", opts.wszSourceDB, wchNewLine );
@@ -6138,16 +6138,16 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
 
                 // Restart with logging/recovery disabled.
                 Call( JetSetSystemParameterW( &instance, 0, JET_paramRecovery, 0, L"off" ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableOnlineDefrag, 0, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramDbExtensionSize, 256, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableTempTableVersioning, fFalse, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexChecking, JET_IndexCheckingOff, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexCleanup, 0, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxOpenTables, 10000, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramPreferredMaxOpenTables, 10000, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxTemporaryTables, 10000, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramDisableCallbacks, fTrue, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEngineFormatVersion, opts.efvUserSpecified == 0 ? JET_efvUsePersistedFormat : opts.efvUserSpecified, NULL ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableOnlineDefrag, 0, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramDbExtensionSize, 256, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableTempTableVersioning, fFalse, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexChecking, JET_IndexCheckingOff, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexCleanup, 0, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxOpenTables, 10000, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramPreferredMaxOpenTables, 10000, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxTemporaryTables, 10000, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramDisableCallbacks, fTrue, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEngineFormatVersion, opts.efvUserSpecified == 0 ? JET_efvUsePersistedFormat : opts.efvUserSpecified, nullptr ) );
 
                 // Set user overrides.
                 Call( ErrEDBUTLUserSystemParameters( &instance, &opts ) );
@@ -6161,7 +6161,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
                 dbutil.op           = opDBUTILDBDefragment;
                 dbutil.szDatabase   = opts.wszSourceDB;
                 dbutil.szTable      = opts.wszTempDB;
-                dbutil.szIndex      = NULL;
+                dbutil.szIndex      = nullptr;
                 dbutil.grbitOptions = grbitDefrag;
                 dbutil.pfnCallback  = PrintStatus;
 
@@ -6236,8 +6236,8 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
                         dbutil.grbitOptions = JET_bitDBUtilOptionVerify;
                         EDBUTLGetBaseName( opts.wszSourceDB, opts.wszBase );
 
-                        Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexChecking, JET_IndexCheckingOff, NULL ) );
-                        Call( JetSetSystemParameterW( &instance, 0, JET_paramDisableCallbacks, fTrue, NULL ) );
+                        Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexChecking, JET_IndexCheckingOff, nullptr ) );
+                        Call( JetSetSystemParameterW( &instance, 0, JET_paramDisableCallbacks, fTrue, nullptr ) );
 
                         //  UNDONE: all the other /k cases except log will have
                         //  a status bar printing. Can we get one
@@ -6295,7 +6295,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
                     wprintf( L"%c%c", wchNewLine, wchNewLine );
 
                     ULONG_PTR cbPage = 0;
-                    Call( JetGetSystemParameterW( JET_instanceNil, JET_sesidNil, JET_paramDatabasePageSize, &cbPage, NULL, sizeof( cbPage ) ) );
+                    Call( JetGetSystemParameterW( JET_instanceNil, JET_sesidNil, JET_paramDatabasePageSize, &cbPage, nullptr, sizeof( cbPage ) ) );
 
                     BOOL fSuccessfulChecksum = FALSE;
                     fSuccessfulChecksum = FChecksumFile(
@@ -6334,18 +6334,18 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
 
                 fWhitespaceOnErr = fTrue;
 
-                if ( NULL == opts.wszSourceDB )
+                if ( nullptr == opts.wszSourceDB )
                 {
                     wprintf( wszUsageErr1, L"source file" );
                     Call( ErrERRCheck( JET_errInvalidParameter ) );
                 }
-                if ( NULL == _wfullpath( wszAbsSourceDB, opts.wszSourceDB, _MAX_PATH ) )
+                if ( nullptr == _wfullpath( wszAbsSourceDB, opts.wszSourceDB, _MAX_PATH ) )
                 {
                     wprintf( L"Error: Source file specification.'%s' is invalid.", opts.wszSourceDB );
                     Call( ErrERRCheck( JET_errInvalidPath ) );
                 }
 
-                if ( NULL == opts.wszTempDB )
+                if ( nullptr == opts.wszTempDB )
                 {
                     EDBUTLGetUnpathedFilename( opts.wszSourceDB, wszAbsTempDB, sizeof( wszAbsTempDB ) );
                     opts.wszTempDB = wszAbsTempDB;
@@ -6358,7 +6358,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
                         Call( ErrERRCheck( JET_errInvalidParameter ) );
                     }
 
-                    if ( NULL == _wfullpath( wszAbsTempDB, opts.wszTempDB, _MAX_PATH ) )
+                    if ( nullptr == _wfullpath( wszAbsTempDB, opts.wszTempDB, _MAX_PATH ) )
                     {
                         wprintf( L"Error: Destination file specification.'%s' is invalid.", opts.wszTempDB );
                         Call( ErrERRCheck( JET_errInvalidPath ) );
@@ -6388,7 +6388,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
 
         case modeScrub:
             {
-                Call( ErrEDBUTLCheckDBName( &opts, wszDefaultScrubDB, NULL ) );
+                Call( ErrEDBUTLCheckDBName( &opts, wszDefaultScrubDB, nullptr ) );
 
                 wprintf( L"Initiating SECURE mode...%c", wchNewLine );
                 wprintf( L"        Database: %s%c", opts.wszSourceDB, wchNewLine );
@@ -6396,24 +6396,24 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
                 fWhitespaceOnErr = fTrue;
 
                 Call( JetSetSystemParameterW( &instance, 0, JET_paramRecovery, 0, L"scrub_off" ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableOnlineDefrag, 0, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexChecking, JET_IndexCheckingOff, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexCleanup, 0, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramDisableCallbacks, fTrue, NULL ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableOnlineDefrag, 0, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexChecking, JET_IndexCheckingOff, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexCleanup, 0, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramDisableCallbacks, fTrue, nullptr ) );
 
                 if ( FUTILOPTSTrimDatabase( &opts ) )
                 {
-                    Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableShrinkDatabase, JET_bitShrinkDatabaseOn, NULL ) );
+                    Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableShrinkDatabase, JET_bitShrinkDatabaseOn, nullptr ) );
                 }
                 else
                 {
-                    Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableShrinkDatabase, JET_bitShrinkDatabaseOff, NULL ) );
+                    Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableShrinkDatabase, JET_bitShrinkDatabaseOff, nullptr ) );
                 }
 
                 //  create enough sessions for multi-threadeding
                 //  need to have plenty of pages to have that many sessions
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxSessions, 16, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxCursors, 10240, NULL ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxSessions, 16, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxCursors, 10240, nullptr ) );
 
                 // Set user overrides.
                 Call( ErrEDBUTLUserSystemParameters( &instance, &opts ) );
@@ -6426,8 +6426,8 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
                     dbutil.sesid        = sesid;
                     dbutil.op           = opDBUTILDBTrim;
                     dbutil.szDatabase   = opts.wszSourceDB;
-                    dbutil.szTable      = NULL;
-                    dbutil.szIndex      = NULL;
+                    dbutil.szTable      = nullptr;
+                    dbutil.szIndex      = nullptr;
                     dbutil.grbitOptions = JET_bitNil;
                     dbutil.pfnCallback  = PrintStatus;
 
@@ -6457,7 +6457,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
 
         case modeIntegrity:
             {
-                Call( ErrEDBUTLCheckDBName( &opts, wszDefaultIntegDB, NULL ) );
+                Call( ErrEDBUTLCheckDBName( &opts, wszDefaultIntegDB, nullptr ) );
 
                 wprintf( L"Initiating INTEGRITY mode...%c", wchNewLine );
                 wprintf( L"        Database: %s%c", opts.wszSourceDB, wchNewLine );
@@ -6470,7 +6470,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
                 }
 #endif
 
-                if( NULL != opts.pv )
+                if( nullptr != opts.pv )
                 {
                     wprintf( L"           Table: %s%c", (WCHAR *)opts.pv, wchNewLine );
                 }
@@ -6479,19 +6479,19 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
 
                 Call( JetSetSystemParameterW( &instance, 0, JET_paramRecovery, 0, L"off" ) );
                 Call( JetSetSystemParameterW( &instance, 0, JET_paramTempPath, 0, opts.wszTempDB ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableOnlineDefrag, 0, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableTempTableVersioning, fFalse, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexChecking, JET_IndexCheckingOff, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexCleanup, 0, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxOpenTables, 10000, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramPreferredMaxOpenTables, 10000, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramDisableCallbacks, fTrue, NULL ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableOnlineDefrag, 0, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableTempTableVersioning, fFalse, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexChecking, JET_IndexCheckingOff, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexCleanup, 0, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxOpenTables, 10000, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramPreferredMaxOpenTables, 10000, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramDisableCallbacks, fTrue, nullptr ) );
                 //  create plenty of sessions for multi-threaded integrity/repair
                 //  need to have plenty of pages to have that many sessions
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxSessions, 128, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxCursors, 10240, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxTemporaryTables, 10000, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEngineFormatVersion, JET_efvUsePersistedFormat, NULL ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxSessions, 128, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxCursors, 10240, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramMaxTemporaryTables, 10000, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEngineFormatVersion, JET_efvUsePersistedFormat, nullptr ) );
 
                 // Set user overrides.
                 Call( ErrEDBUTLUserSystemParameters( &instance, &opts ) );
@@ -6588,12 +6588,12 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
 
             if ( opts.mode == modeDump )
             {
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexChecking, JET_IndexCheckingOff, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexCleanup, 0, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramDisableCallbacks, fTrue, NULL ) );
-                Call( JetSetSystemParameterW( &instance, 0, JET_paramAccessDeniedRetryPeriod, 0, NULL ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexChecking, JET_IndexCheckingOff, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramEnableIndexCleanup, 0, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramDisableCallbacks, fTrue, nullptr ) );
+                Call( JetSetSystemParameterW( &instance, 0, JET_paramAccessDeniedRetryPeriod, 0, nullptr ) );
 
-                if ( opts.wszSourceDB == NULL )
+                if ( opts.wszSourceDB == nullptr )
                 {
                     wprintf( wszUsageErr1, L"database/filename" );          // Missing spec.
                     wprintf( L"%c%c", wchNewLine, wchNewLine );
@@ -6624,16 +6624,16 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
                         break;
 
                     case opDBUTILSetHeaderState:
-                        Call( ErrEDBUTLCheckDBName( &opts, wszDefaultTempDB, NULL ) );
+                        Call( ErrEDBUTLCheckDBName( &opts, wszDefaultTempDB, nullptr ) );
                         wprintf( L"      Database %s will be forced to a clean-shutdown state.%c",
                             opts.wszSourceDB, wchNewLine );
                         break;
 
                     case opDBUTILDumpPage:
                         UTILOPTSSetMaybeTolerateCorruption( opts.fUTILOPTSFlags );
-                        Call( ErrEDBUTLCheckDBName( &opts, wszDefaultTempDB, NULL ) );
+                        Call( ErrEDBUTLCheckDBName( &opts, wszDefaultTempDB, nullptr ) );
                         wprintf( L"      Database: %s%c", opts.wszSourceDB, wchNewLine );
-                        if ( NULL == dbutil.szIndex )
+                        if ( nullptr == dbutil.szIndex )
                         {
                             wprintf( L"          Page: %d%c", dbutil.pgno, wchNewLine );
                         }
@@ -6646,7 +6646,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
 
                     case opDBUTILDumpNode:
                     case opDBUTILDumpTag:
-                        Call( ErrEDBUTLCheckDBName( &opts, wszDefaultTempDB, NULL ) );
+                        Call( ErrEDBUTLCheckDBName( &opts, wszDefaultTempDB, nullptr ) );
                         wprintf( L"      Database: %s%c", opts.wszSourceDB, wchNewLine );
                         break;
 
@@ -6658,7 +6658,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
                     case opDBUTILDumpData:
                     case opDBUTILDumpRBSHeader:
                     case opDBUTILDumpRBSPages:
-                        err = ErrEDBUTLCheckDBName( &opts, wszDefaultTempDB, NULL );
+                        err = ErrEDBUTLCheckDBName( &opts, wszDefaultTempDB, nullptr );
 
                         //  we may still want to dump file system information if the file is locked
                         if ( dbutil.op == opDBUTILDumpSpace &&
@@ -6714,7 +6714,7 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
             if ( ( err < JET_errSuccess ) && ( err != JET_errInvalidParameter ) &&
                     ( dbutil.op == opDBUTILDumpSpaceCategory ) && !( dbutil.grbitOptions & JET_bitDBUtilOptionDumpVerbose ) )
             {
-                (void)PrintStatus( JET_sesidNil, JET_snpSpaceCategorization, JET_sntFail, NULL );
+                (void)PrintStatus( JET_sesidNil, JET_snpSpaceCategorization, JET_sntFail, nullptr );
             }
 
             wprintf( L"%c", wchNewLine );

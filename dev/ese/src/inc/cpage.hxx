@@ -282,12 +282,12 @@ class CPAGE
                                         IFMP ifmp,
                                         PGNO pgno,
                                         BFLatchFlags bflf,
-                                        BFLatch* pbflHint = NULL );
+                                        BFLatch* pbflHint = nullptr );
         ERR ErrGetRDWPage           (   PIB * ppib,
                                         IFMP ifmp,
                                         PGNO pgno,
                                         BFLatchFlags bflf,
-                                        BFLatch* pbflHint = NULL );
+                                        BFLatch* pbflHint = nullptr );
         ERR ErrGetNewPreInitPage    (   PIB * ppib,
                                         IFMP ifmp,
                                         PGNO pgno,
@@ -379,17 +379,17 @@ class CPAGE
         //  the iline returned by get and used in other routines may be
         //  invalidated by Replace/Insert or Delete
         template< PageNodeBoundsChecking pgnbc = pgnbcNoChecks >
-        VOID GetPtrExternalHeader   ( LINE * pline, _Out_opt_ ERR * perrNoEnforce = NULL ) const;
+        VOID GetPtrExternalHeader   ( LINE * pline, _Out_opt_ ERR * perrNoEnforce = nullptr ) const;
         VOID SetExternalHeader( const DATA * rgdata, INT cdata, INT fFlags );
 
         // CPAGE supports upto 7 reserved fixed sized tags that can be stored on the page in addition to data lines.
         INT  IAddReservedTag( INT cb, BYTE fill );
         template< PageNodeBoundsChecking pgnbc = pgnbcNoChecks >
-        VOID GetPtrReservedTag  ( INT itag, LINE* pline, _Out_opt_ ERR* perrNoEnforce = NULL ) const;
+        VOID GetPtrReservedTag  ( INT itag, LINE* pline, _Out_opt_ ERR* perrNoEnforce = nullptr ) const;
         VOID ReplaceReservedTag ( INT itag, const DATA* rgdata, INT cdata );
 
         template< PageNodeBoundsChecking pgnbc = pgnbcNoChecks >
-        VOID GetPtr             ( INT iline, LINE * pline, _Out_opt_ ERR * perrNoEnforce = NULL ) const;
+        VOID GetPtr             ( INT iline, LINE * pline, _Out_opt_ ERR * perrNoEnforce = nullptr ) const;
 
         //  Note: Err enabled versions of these APIs assume you handle the error, even if LINE is filled out.
         ERR  ErrGetPtr               ( INT iline, LINE * pline ) const;
@@ -560,7 +560,7 @@ class CPAGE
         ERR     ErrValidatePage(
             _In_ const PAGEValidationFlags pgvf,
             _In_ IPageValidationAction * const pvalidationaction,
-            _In_ CFlushMap* pflushmap = NULL );
+            _In_ CFlushMap* pflushmap = nullptr );
 
         //  integrity check
         enum CheckPageMode
@@ -786,7 +786,7 @@ class CPAGE
 
         //  get/insert/replace implementations
         template< PageNodeBoundsChecking pgnbc >
-        VOID GetPtr_            ( INT itag, LINE * pline, _Out_opt_ ERR * perrNoEnforce = NULL ) const;
+        VOID GetPtr_            ( INT itag, LINE * pline, _Out_opt_ ERR * perrNoEnforce = nullptr ) const;
         VOID ReplaceFlags_      ( INT iline, INT fFlags );
         VOID Delete_            ( INT itag );
         VOID Replace_           ( INT itag, const DATA * rgdata, INT cdata, INT fFlags );

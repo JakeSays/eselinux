@@ -124,7 +124,7 @@ INLINE ERR ErrCMPInitProgress(
 
     pstatus->snt = JET_sntProgress;
 
-    pstatus->fDumpStats = ( NULL != wszStatsFile );
+    pstatus->fDumpStats = ( nullptr != wszStatsFile );
     if ( pstatus->fDumpStats )
     {
         WCHAR   wszPathedStatsFile[IFileSystemAPI::cchPathMax];
@@ -248,7 +248,7 @@ INLINE ERR LIDMAP::ErrLIDMAPInit( PIB *ppib )
         (JET_SESID)ppib,
         columndefLIDMap,
         ccolumndefLIDMap,
-        0,
+        nullptr,
         JET_bitTTUpdatable|JET_bitTTIndexed,
         &m_tableidLIDMap,
         rgcolumnid,
@@ -301,7 +301,7 @@ INLINE ERR LIDMAP::ErrInsert(
             &lidSrc,
             sizeof(LvId),
             NO_GRBIT,
-            NULL ) );
+            nullptr ) );
 
     CallR( ErrDispSetColumn(
             (JET_SESID)ppib,
@@ -310,7 +310,7 @@ INLINE ERR LIDMAP::ErrInsert(
             (VOID *)&lidDest,
             sizeof(LvId),
             NO_GRBIT,
-            NULL ) );
+            nullptr ) );
 
     ul = ulRefcount;
     CallR( ErrDispSetColumn(
@@ -320,7 +320,7 @@ INLINE ERR LIDMAP::ErrInsert(
             (VOID *)&ul,
             sizeof(ULONG),
             NO_GRBIT,
-            NULL ) );
+            nullptr ) );
 
     ul = 0;
     CallR( ErrDispSetColumn(
@@ -330,14 +330,14 @@ INLINE ERR LIDMAP::ErrInsert(
             (VOID *)&ul,
             sizeof(ULONG),
             NO_GRBIT,
-            NULL ) );
+            nullptr ) );
 
     err = ErrDispUpdate(
             (JET_SESID)ppib,
             m_tableidLIDMap,
-            NULL,
+            nullptr,
             0,
-            NULL,
+            nullptr,
             NO_GRBIT );
 
     return err;
@@ -377,7 +377,7 @@ INLINE ERR LIDMAP::ErrGetLIDDest(
             sizeof(LvId),
             &cbActual,
             0,
-            NULL ) );
+            nullptr ) );
     Assert( sizeof(LvId) == cbActual );
 
     return err;
@@ -403,7 +403,7 @@ INLINE ERR LIDMAP::ErrIncrementLVRefcountDest(
             sizeof(ULONG),
             &cbActual,
             0,
-            NULL ) );
+            nullptr ) );
     Assert( sizeof(ULONG) == cbActual );
 
     ulRefcount++;
@@ -420,14 +420,14 @@ INLINE ERR LIDMAP::ErrIncrementLVRefcountDest(
             (VOID *)&ulRefcount,
             sizeof(ULONG),
             NO_GRBIT,
-            NULL ) );
+            nullptr ) );
 
     err = ErrDispUpdate(
             (JET_SESID)ppib,
             m_tableidLIDMap,
-            NULL,
+            nullptr,
             0,
-            NULL,
+            nullptr,
             NO_GRBIT );
 
     return err;
@@ -452,7 +452,7 @@ INLINE ERR LIDMAP::ErrUpdateLVRefcounts( PIB *ppib, FUCB *pfucb )
                 sizeof(ULONG),
                 &cbActual,
                 0,
-                NULL ) );
+                nullptr ) );
         Assert( sizeof(ULONG) == cbActual );
         Assert( ulRefcountSrc > 0 );            // We don't copy LV's with refcount 0
 
@@ -464,7 +464,7 @@ INLINE ERR LIDMAP::ErrUpdateLVRefcounts( PIB *ppib, FUCB *pfucb )
                 sizeof(ULONG),
                 &cbActual,
                 0,
-                NULL ) );
+                nullptr ) );
         Assert( sizeof(ULONG) == cbActual );
         Assert( ulRefcountSrc != ulRefcountDest || ulRefcountDest > 0 );
 
@@ -486,7 +486,7 @@ INLINE ERR LIDMAP::ErrUpdateLVRefcounts( PIB *ppib, FUCB *pfucb )
                     sizeof(LvId),
                     &cbActual,
                     0,
-                    NULL ) );
+                    nullptr ) );
             Assert( sizeof(LvId) == cbActual );
 
             Call( ErrCMPUpdateLVRefcount(

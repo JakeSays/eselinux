@@ -349,7 +349,7 @@ class RECTASKBATCHER
 
         // dispatch all batched tasks
         ERR ErrPostAllPending();
-        BOOL FTasksPending() { return ( m_rgpbatchtask != NULL && m_ctasksBatched > 0 ); }
+        BOOL FTasksPending() { return ( m_rgpbatchtask != nullptr && m_ctasksBatched > 0 ); }
 
     private:
         ERR ErrPostOneBatch( const INT ipbatchtask );

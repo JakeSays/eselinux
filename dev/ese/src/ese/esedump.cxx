@@ -33,7 +33,7 @@ const BYTE mpbb[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8',
 typedef char * (*PfnFormatNodeInfo)( KEYDATAFLAGS * pNode );
 
 LOCAL ERR ErrESEDUMPOneTable(FUCB *, _In_ PCSTR, JET_GRBIT);
-LOCAL ERR ErrESEDUMPNodesForOneTree(FUCB *pfucbTable, JET_GRBIT grbitESEDUMPMode, PfnFormatNodeInfo pfnFormat = NULL);
+LOCAL ERR ErrESEDUMPNodesForOneTree(FUCB *pfucbTable, JET_GRBIT grbitESEDUMPMode, PfnFormatNodeInfo pfnFormat = nullptr);
 LOCAL ERR ErrESEDUMPTables( JET_SESID , JET_DBID , _In_ PCWSTR, JET_GRBIT);
 LOCAL ERR ErrESEDUMPIndexForOneTable(FUCB *, JET_GRBIT);
 LOCAL ERR ErrESEDUMPCheckAndDumpSpaceInfo(FUCB *, JET_GRBIT);
@@ -64,14 +64,14 @@ ERR ErrESEDUMPData( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
                 sesid,
                 pdbutil->szDatabase,
                 fFalse,
-                NULL,
+                nullptr,
                 0,
                 JET_bitDbReadOnly
                 ) );
     Call( ErrIsamOpenDatabase(
                 sesid,
                 pdbutil->szDatabase,
-                NULL,
+                nullptr,
                 &ifmp,
                 JET_bitDbExclusive | JET_bitDbReadOnly
                 ) );
@@ -97,7 +97,7 @@ HandleError:
         (VOID)ErrIsamCloseDatabase( sesid, ifmp, NO_GRBIT );
     }
     
-    (VOID)ErrIsamDetachDatabase( sesid, NULL, pdbutil->szDatabase );
+    (VOID)ErrIsamDetachDatabase( sesid, nullptr, pdbutil->szDatabase );
 
     return err;
 }
@@ -371,7 +371,7 @@ LOCAL ERR ErrESEDUMPIndexForOneTable(FUCB *pfucbTable, JET_GRBIT grbitESEDUMPMod
 
         // print the name of the index, with ifmp and pageNo.
         USHORT indexNameTag = 0;
-        char * szIndexName = (char *)0;
+        char * szIndexName = (char *)nullptr;
         FCB *pfcbT = pfucbTable->u.pfcb;
         
         Assert(pfcbT);
@@ -510,7 +510,7 @@ LOCAL ERR ErrESEDUMPNodesForOneTree(FUCB *pfucbTable, JET_GRBIT grbitESEDUMPMode
     while ( JET_errSuccess == err )
     {
 
-        char *pCustomFormat = NULL;
+        char *pCustomFormat = nullptr;
         char keyDataPrintBuffer[ max ( MAX_KEY_SIZE_DISPLAY * 3 /* = space for " %02X" */ + 1,
                                     3 * 12 + 6 /* = "%lu - %lu (%lu)"*/ + 1 ) ];
         

@@ -350,7 +350,7 @@ LOCAL VOID FLDNormalizeBinarySegment(
                 UtilMemCpy( pbSeg, pbNextChunk, cbFieldRemaining );
                 pbSeg += cbFieldRemaining;
 
-                if ( NULL != pibBinaryColumnDelimiter )
+                if ( nullptr != pibBinaryColumnDelimiter )
                 {
                     Assert( 0 == *pibBinaryColumnDelimiter );
                     *pibBinaryColumnDelimiter = ULONG( pbSeg - rgbSeg );
@@ -425,7 +425,7 @@ LOCAL VOID FLDNormalizeBinarySegment(
             }
             else
             {
-                if ( NULL != pibBinaryColumnDelimiter )
+                if ( nullptr != pibBinaryColumnDelimiter )
                 {
                     Assert( 0 == *pibBinaryColumnDelimiter );
                     *pibBinaryColumnDelimiter = ULONG( pbSeg + cbFieldRemaining - rgbSeg );
@@ -806,7 +806,7 @@ ERR ErrFLDNormalizeTaggedData(
                         JET_cbKeyMost_OLD+1,
                         fFalse,                 //  only called for tagged columns
                         pfDataTruncated,
-                        NULL );
+                        nullptr );
                 dataNorm.SetCb( cb );
                 break;
 
@@ -968,12 +968,12 @@ LOCAL ERR ErrRECIIRetrieveKey(
     const BOOL          fRetrieveBasedOnRCE         = ( prceNil != prce );
     const size_t        cbLVStack                   = 256;
     BYTE                rgbLVStack[ cbLVStack ];
-    BYTE                *pbAllocated                    = NULL;
-    BYTE                *pbLV                       = NULL;
+    BYTE                *pbAllocated                    = nullptr;
+    BYTE                *pbLV                       = nullptr;
     const size_t        cbSegStack                  = 256;
     BYTE                rgbSegStack[ cbSegStack ];
-    BYTE                *pbSegRes                   = NULL;
-    BYTE                *pbSeg                      = NULL;
+    BYTE                *pbSegRes                   = nullptr;
+    BYTE                *pbSeg                      = nullptr;
     const BOOL          fDisallowTruncation         = pidb->FDisallowTruncation();
 
     Assert( pkey != NULL );
@@ -1179,7 +1179,7 @@ LOCAL ERR ErrRECIIRetrieveKey(
                     pfucb,
                     JET_cbtypUserDefinedDefaultValue,
                     columnidConditional,
-                    NULL,   //  not actually interested in the data at this point, only interested in whether column is NULL
+                    nullptr,   //  not actually interested in the data at this point, only interested in whether column is NULL
                     &cbActual,
                     columnidConditional );
 
@@ -1233,7 +1233,7 @@ LOCAL ERR ErrRECIIRetrieveKey(
     for ( iidxsegT = 0; pidxseg < pidxsegMac; pidxseg++, iidxsegT++ )
     {
         FIELD           field;
-        BYTE            *pbField = 0;                   // pointer to column data.
+        BYTE            *pbField = nullptr;                   // pointer to column data.
         ULONG           cbField = 0xffffffff;           // length of column data.
         DATA            dataField;
         INT             cbSeg       = 0;                // length of segment.
@@ -1457,7 +1457,7 @@ LOCAL ERR ErrRECIIRetrieveKey(
             if( ibTupleOffset > 0)
             {
                 INT cbActual = 0;
-                BYTE * pbT = NULL;
+                BYTE * pbT = nullptr;
                 Call( ErrPKAllocAndDecompressData(
                         dataField,
                         pfucb,
@@ -1528,8 +1528,8 @@ LOCAL ERR ErrRECIIRetrieveKey(
                             pbLV,
                             cbDataMost,
                             &cbActual,
-                            NULL,
-                            NULL,
+                            nullptr,
+                            nullptr,
                             prce ) );
 
                 // Verify all latches released after LV call.
@@ -1560,8 +1560,8 @@ LOCAL ERR ErrRECIIRetrieveKey(
                             pbLV,
                             cbDataMost,
                             &cbActual,
-                            NULL,
-                            NULL ) );
+                            nullptr,
+                            nullptr ) );
 
                 // Verify all latches released after LV call.
                 Assert( !Pcsr( pfucb )->FLatched() );
@@ -1642,7 +1642,7 @@ LOCAL ERR ErrRECIIRetrieveKey(
             {
                 //  we didn't get any data
 
-                dataField.SetPv( NULL );
+                dataField.SetPv( nullptr );
                 dataField.SetCb( 0 );
             }
             else if( fTupleAdjusted )
@@ -1661,7 +1661,7 @@ LOCAL ERR ErrRECIIRetrieveKey(
             {
                 //  the data we got is all beyond the end of the (non-adjusted) buffer
 
-                dataField.SetPv( NULL );
+                dataField.SetPv( nullptr );
                 dataField.SetCb( 0 );
             }
 
@@ -1682,7 +1682,7 @@ LOCAL ERR ErrRECIIRetrieveKey(
         //  zero-length column otherwise,
         //
         Assert( cbKeyAvail > 0 );
-        if ( JET_wrnColumnNull == err || pbField == NULL || cbField == 0 )
+        if ( JET_wrnColumnNull == err || pbField == nullptr || cbField == 0 )
         {
             if ( JET_wrnColumnNull == err )
             {
@@ -1759,7 +1759,7 @@ LOCAL ERR ErrRECIIRetrieveKey(
                             cbVarSegMac,
                             fFixedField,
                             &fColumnTruncated,
-                            NULL );
+                            nullptr );
                     break;
 
                 default:
@@ -2183,7 +2183,7 @@ LOCAL ERR ErrFLDNormalizeSegment(
     //
     Assert( !FKSTooBig( pfucb ) );
     Assert( cbAvail > 0 );
-    if ( NULL == plineColumn || NULL == plineColumn->Pv() || 0 == plineColumn->Cb() )
+    if ( nullptr == plineColumn || nullptr == plineColumn->Pv() || 0 == plineColumn->Cb() )
     {
         if ( fTupleField )
         {
@@ -2459,7 +2459,7 @@ ERR VTAPI ErrIsamMakeKey(
     INT             iidxsegCur;
     const size_t    cbSegStack      = 256;
     BYTE            rgbSegStack[ cbSegStack ];
-    BYTE            *pbSegRes       = NULL;
+    BYTE            *pbSegRes       = nullptr;
     DATA            lineNormSeg;
     BYTE            rgbFixedColumnKeyPadded[ JET_cbColumnMost ];
     BOOL            fFixedField;
@@ -2518,7 +2518,7 @@ ERR VTAPI ErrIsamMakeKey(
             pidb = pfcbTable->Pidb();
 
             Assert( pfcbTable->FPrimaryIndex() );
-            if ( pfcbTable->FDerivedTable() && ( pidb == NULL || !pidb->FIDBOwnedByFCB() ) )
+            if ( pfcbTable->FDerivedTable() && ( pidb == nullptr || !pidb->FIDBOwnedByFCB() ) )
             {
                 Assert( pfcbTable->Ptdb() != ptdbNil );
                 Assert( pfcbTable->Ptdb()->PfcbTemplateTable() != pfcbNil );
@@ -2633,13 +2633,13 @@ ERR VTAPI ErrIsamMakeKey(
 
     //  allocate key buffer if needed
     //
-    if ( NULL == pfucbTable->dataSearchKey.Pv() )
+    if ( nullptr == pfucbTable->dataSearchKey.Pv() )
     {
         Assert( !FKSPrepared( pfucbTable ) );
         Assert( !FKSPrepared( pfucb ) );
 
         pfucbTable->dataSearchKey.SetPv( RESKEY.PvRESAlloc() );
-        if ( NULL == pfucbTable->dataSearchKey.Pv() )
+        if ( nullptr == pfucbTable->dataSearchKey.Pv() )
         {
             Call( ErrERRCheck( JET_errOutOfMemory ) );
         }
@@ -2651,7 +2651,7 @@ ERR VTAPI ErrIsamMakeKey(
 
     //  hijack table's search key buffer
 
-    if ( NULL == pfucb->dataSearchKey.Pv() )
+    if ( nullptr == pfucb->dataSearchKey.Pv() )
     {
         pfucbTable->cColumnsInSearchKey = 0;
         KSReset( pfucbTable );
@@ -2839,7 +2839,7 @@ ERR VTAPI ErrIsamMakeKey(
         const ERR   errNorm     = ErrFLDNormalizeSegment(
                                         pfucb,
                                         pidb,
-                                        ( cbKeySeg != 0 || ( grbit & JET_bitKeyDataZeroLength ) ) ? &lineKeySeg : NULL,
+                                        ( cbKeySeg != 0 || ( grbit & JET_bitKeyDataZeroLength ) ) ? &lineKeySeg : nullptr,
                                         &lineNormSeg,
                                         coltyp,
                                         cp,
@@ -3485,10 +3485,10 @@ ERR ErrRECIRetrieveColumnFromKey(
     const ULONG         cbKeyMost       = pidb->CbKeyMost();
     const size_t        cbKeyStack      = 256;
     BYTE                rgbKeyStack[ cbKeyStack ];
-    BYTE                *pbKeyRes       = NULL;
-    BYTE                *pbKeyAlloc     = NULL;     // key allocation
-    BYTE                *pbKey          = NULL;     // runs through key bytes
-    const BYTE          *pbKeyMax       = NULL;     // end of key
+    BYTE                *pbKeyRes       = nullptr;
+    BYTE                *pbKeyAlloc     = nullptr;     // key allocation
+    BYTE                *pbKey          = nullptr;     // runs through key bytes
+    const BYTE          *pbKeyMax       = nullptr;     // end of key
     
     if ( cbKeyMost > cbKeyStack )
     {
@@ -3579,11 +3579,11 @@ ERR VTAPI ErrIsamRetrieveKey(
         //  UNDONE: support JET_bitRetrieveCopy for inserted record
         //          by creating key on the fly.
         if ( pfucb->dataSearchKey.FNull()
-            || NULL == pfucb->dataSearchKey.Pv() )
+            || nullptr == pfucb->dataSearchKey.Pv() )
         {
             return ErrERRCheck( JET_errKeyNotMade );
         }
-        if ( pv != NULL )
+        if ( pv != nullptr )
         {
             UtilMemCpy( pv,
                     pfucb->dataSearchKey.Pv(),
@@ -3629,7 +3629,7 @@ ERR VTAPI ErrIsamRetrieveKey(
         cbKeyReturned = cbMax;
     }
 
-    if ( pv != NULL )
+    if ( pv != nullptr )
     {
         UtilMemCpy( pv, pfucbIdx->kdfCurr.key.prefix.Pv(),
                 min( (ULONG)pfucbIdx->kdfCurr.key.prefix.Cb(), cbKeyReturned ) );
@@ -3749,7 +3749,7 @@ ERR VTAPI ErrIsamGetIndexBookmark(
     //  set secondary index key return value
     //
     cb = pfucbIdx->kdfCurr.key.Cb();
-    if ( NULL != pcbSecondaryKeyActual )
+    if ( nullptr != pcbSecondaryKeyActual )
         *pcbSecondaryKeyActual = cb;
 
     if ( cb <= cbSecondaryKeyMax )
@@ -3767,7 +3767,7 @@ ERR VTAPI ErrIsamGetIndexBookmark(
     //  set primary bookmark return value
     //
     cb = pfucbIdx->kdfCurr.data.Cb();
-    if ( NULL != pcbPrimaryBookmarkActual )
+    if ( nullptr != pcbPrimaryBookmarkActual )
         *pcbPrimaryBookmarkActual = cb;
 
     if ( cb <= cbPrimaryBookmarkMax )

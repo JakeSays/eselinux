@@ -39,7 +39,7 @@ LONG LLGBufferBytesUsedCEFLPv( LONG iInstance, void *pvBuf )
 
 LONG LLGBufferBytesFreeCEFLPv( LONG iInstance, void *pvBuf )
 {
-    if ( NULL != pvBuf )
+    if ( nullptr != pvBuf )
     {
         *(LONG *)pvBuf = cbLGBufferSize.Get( iInstance ) - cbLGBufferUsed.Get( iInstance );
     }
@@ -169,13 +169,13 @@ LOG_WRITE_BUFFER::LOG_WRITE_BUFFER( INST * pinst, LOG * pLog, ILogStream * pLogS
       m_tickNextLazyCommit( 0 ),
       m_lgposNextLazyCommit( lgposMin ),
       m_critNextLazyCommit( CLockBasicInfo( CSyncBasicInfo( "m_critNextLazyCommit" ), rankLGLazyCommit, 0 ) ),
-      m_postDecommitTask( NULL ),
-      m_postLazyCommitTask( NULL ),
+      m_postDecommitTask( nullptr ),
+      m_postLazyCommitTask( nullptr ),
       m_tickDecommitTaskSchedule( TickOSTimeCurrent() ),
       m_fDecommitTaskScheduled( fFalse ),
       m_tickLastWrite( 0 )
 {
-    m_pvPartialSegment = NULL;
+    m_pvPartialSegment = nullptr;
 #ifdef DEBUG
     WCHAR * wsz;
     if ( ( wsz = GetDebugEnvValue ( L"TRACELOG" ) ) != NULL )
@@ -233,10 +233,10 @@ LOG_WRITE_BUFFER::~LOG_WRITE_BUFFER()
     PERFOpt( cLGPartialSegmentWrite.Clear( m_pinst ) );
     PERFOpt( cLGBufferCommitted.Clear( m_pinst ) );
 
-    if ( m_pvPartialSegment != NULL )
+    if ( m_pvPartialSegment != nullptr )
     {
         OSMemoryPageFree( m_pvPartialSegment );
-        m_pvPartialSegment = NULL;
+        m_pvPartialSegment = nullptr;
     }
 }
 
@@ -244,7 +244,7 @@ ERR
 LOG_WRITE_BUFFER::ErrLGInit()
 {
     ERR err;
-    Alloc( m_pvPartialSegment = (BYTE *)PvOSMemoryPageAlloc( LOG_SEGMENT_SIZE, NULL ) );
+    Alloc( m_pvPartialSegment = (BYTE *)PvOSMemoryPageAlloc( LOG_SEGMENT_SIZE, nullptr ) );
 
 HandleError:
     return err;
@@ -509,7 +509,7 @@ BOOL LOG_WRITE_BUFFER::EnsureCommitted( _In_reads_( cb ) const BYTE *pb, ULONG c
 VOID LOG_BUFFER::Decommit( _In_reads_( cb ) const BYTE *pb, ULONG cb )
 {
     // Do not decommit for LOG_READ_BUFFER or empty buffer
-    if ( _fReadOnly || _pbLGBufMin == NULL || _pbLGBufMax == NULL )
+    if ( _fReadOnly || _pbLGBufMin == nullptr || _pbLGBufMax == nullptr )
     {
         return;
     }
@@ -665,7 +665,7 @@ ERR LOG_BUFFER::ErrLGInitLogBuffers( INST *pinst, ILogStream *pLogStream, LONG c
 
     //  allocate our log buffers of size _cbLGBuf and reserve an extra guard page for debugging purpose
 
-    if ( ! ( _pbLGBufMin = (BYTE*)PvOSMemoryPageReserve( roundup( _cbLGBuf + OSMemoryPageCommitGranularity(), OSMemoryPageReserveGranularity() ), NULL ) ) )
+    if ( ! ( _pbLGBufMin = (BYTE*)PvOSMemoryPageReserve( roundup( _cbLGBuf + OSMemoryPageCommitGranularity(), OSMemoryPageReserveGranularity() ), nullptr ) ) )
     {
         Error( ErrERRCheck( JET_errOutOfMemory ) );
     }
@@ -1980,7 +1980,7 @@ ERR LOG_WRITE_BUFFER::ErrLGWaitForWrite( PIB* const ppib, const LGPOS* const plg
     // sector, not really worth protecting it
     if ( fFillPartialSector )
     {
-        (VOID)ErrLGLogRec( NULL, 0, fLGFillPartialSector, 0, NULL );
+        (VOID)ErrLGLogRec( nullptr, 0, fLGFillPartialSector, 0, nullptr );
     }
 
     //  wait forever for our record to be written to the log
@@ -2087,7 +2087,7 @@ ERR LOG_WRITE_BUFFER::ErrLGWaitAllFlushed( BOOL fFillPartialSector )
             // fill partial sector if needed
             if ( fFillPartialSector )
             {
-                (VOID)ErrLGLogRec( NULL, 0, fLGFillPartialSector, 0, NULL );
+                (VOID)ErrLGLogRec( nullptr, 0, fLGFillPartialSector, 0, nullptr );
             }
 
             // synchronously ask for write
@@ -2383,7 +2383,7 @@ BOOL LOG_WRITE_BUFFER::FWakeWaitingQueue( const LGPOS * const plgposToWrite )
     /**/
     // If anyone is interested in log commits, notify them now
     JET_PFNDURABLECOMMITCALLBACK pfnWrite = (JET_PFNDURABLECOMMITCALLBACK)PvParam( m_pinst, JET_paramDurableCommitCallback );
-    if ( pfnWrite != NULL )
+    if ( pfnWrite != nullptr )
     {
         JET_COMMIT_ID commitId;
         JET_GRBIT grbit;
@@ -2454,7 +2454,7 @@ BOOL LOG_WRITE_BUFFER::FWakeWaitingQueue( const LGPOS * const plgposToWrite )
     
     m_tickLastWrite = TickOSTimeCurrent();
     
-    if ( !m_fDecommitTaskScheduled && m_postDecommitTask != NULL )
+    if ( !m_fDecommitTaskScheduled && m_postDecommitTask != nullptr )
     {
         OSTimerTaskScheduleTask( m_postDecommitTask, this, g_dtickDecommitTaskDelay, g_dtickDecommitTaskDelay );
         m_fDecommitTaskScheduled = fTrue;
@@ -3009,7 +3009,7 @@ ERR LOG_WRITE_BUFFER::ErrLGIDeferredWrite( const IOREASONPRIMARY iorp, const BOO
         // we don't care if anyone is waiting, since they'll ask for
         // a write themselves, since this means they got into the buffer
         // during our I/O.
-        Call( ErrLGIWriteFullSectors( iorp, csecFull, isecWrite, pbWrite, NULL, lgposWriteEnd ) );
+        Call( ErrLGIWriteFullSectors( iorp, csecFull, isecWrite, pbWrite, nullptr, lgposWriteEnd ) );
     }
 
 HandleError:
@@ -3061,7 +3061,7 @@ ERR LOG_WRITE_BUFFER::ErrLGWriteLog( const IOREASONPRIMARY iorp, const BOOL fWri
                 irgpsz,
                 rgpsz,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
     }
 
@@ -3350,7 +3350,7 @@ VOID LOG_WRITE_BUFFER::LGTasksTerm( void )
     {
         OSTimerTaskCancelTask( m_postLazyCommitTask );
         OSTimerTaskDelete( m_postLazyCommitTask );
-        m_postLazyCommitTask = NULL;
+        m_postLazyCommitTask = nullptr;
     }
     
     // Stop and delete m_postDecommitTask.
@@ -3358,7 +3358,7 @@ VOID LOG_WRITE_BUFFER::LGTasksTerm( void )
     {
         OSTimerTaskCancelTask( m_postDecommitTask );
         OSTimerTaskDelete( m_postDecommitTask );
-        m_postDecommitTask = NULL;
+        m_postDecommitTask = nullptr;
     }
 }
 

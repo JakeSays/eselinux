@@ -8,7 +8,7 @@ CFileFromMemory::CFileFromMemory( __in_bcount( cbData ) BYTE *pbData, QWORD cbDa
 //  ================================================================
     m_pbBuffer( pbData ),
     m_cbBuffer( cbData ),
-    m_pbBufferToFree( NULL )
+    m_pbBufferToFree( nullptr )
 {
     OSStrCbCopyW( m_wszPath, sizeof(m_wszPath), wszPath );
 }
@@ -18,9 +18,9 @@ CFileFromMemory::~CFileFromMemory()
 //  ================================================================
 {
     delete m_pbBufferToFree;
-    m_pbBuffer       = NULL;
+    m_pbBuffer       = nullptr;
     m_cbBuffer       = 0;
-    m_pbBufferToFree = NULL;
+    m_pbBufferToFree = nullptr;
 }
 
 //  ================================================================

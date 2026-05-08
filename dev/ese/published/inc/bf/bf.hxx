@@ -152,12 +152,12 @@ ERR ErrBFPrereadPage( const IFMP ifmp, const PGNO pgno, const BFPreReadFlags bfp
 
 inline void BFPrereadPageList( IFMP ifmp, PGNO* prgpgno, const BFPreReadFlags bfprf, const BFPriority bfpri, const TraceContext& tc )
 {
-    BFPrereadPageList( ifmp, prgpgno, NULL, bfprf, bfpri, tc );
+    BFPrereadPageList( ifmp, prgpgno, nullptr, bfprf, bfpri, tc );
 }
 
 inline void BFPrereadPageRange( IFMP ifmp, PGNO pgnoFirst, CPG cpg, const BFPreReadFlags bfprf, const BFPriority bfpri, const TraceContext& tc )
 {
-    BFPrereadPageRange( ifmp, pgnoFirst, cpg, NULL, NULL, bfprf, bfpri, tc );
+    BFPrereadPageRange( ifmp, pgnoFirst, cpg, nullptr, nullptr, bfprf, bfpri, tc );
 }
 
 //  This class can be used to cooperatively reserve a number of pages
@@ -242,7 +242,7 @@ DEFINE_ENUM_FLAG_OPERATORS_BASIC( BFLatchFlags );
 ERR ErrBFReadLatchPage( BFLatch* pbfl, IFMP ifmp, PGNO pgno, BFLatchFlags bflf, const BFPriority bfpri, const TraceContext& tc );
 ERR ErrBFRDWLatchPage( BFLatch* pbfl, IFMP ifmp, PGNO pgno, BFLatchFlags bflf, const BFPriority bfpri, const TraceContext& tc );
 ERR ErrBFWARLatchPage( BFLatch* pbfl, IFMP ifmp, PGNO pgno, BFLatchFlags bflf, const BFPriority bfpri, const TraceContext& tc );
-ERR ErrBFWriteLatchPage( BFLatch* pbfl, IFMP ifmp, PGNO pgno, BFLatchFlags bflf, const BFPriority bfpri, const TraceContext& tc, BOOL* const pfCachedNewPage = NULL );
+ERR ErrBFWriteLatchPage( BFLatch* pbfl, IFMP ifmp, PGNO pgno, BFLatchFlags bflf, const BFPriority bfpri, const TraceContext& tc, BOOL* const pfCachedNewPage = nullptr );
 
 ERR ErrBFUpgradeReadLatchToRDWLatch( BFLatch* pbfl );
 ERR ErrBFUpgradeReadLatchToWARLatch( BFLatch* pbfl );
@@ -267,7 +267,7 @@ void BFMarkAsSuperCold( IFMP ifmp, PGNO pgno, const BFLatchFlags bflf = bflfDefa
 void BFMarkAsSuperCold( BFLatch* pbfl );
 
 enum BFDirtyFlags;
-void BFCacheStatus( const IFMP ifmp, const PGNO pgno, BOOL* const pfInCache, ERR* const perrBF = NULL, BFDirtyFlags* const pbfdf = NULL, BOOL* const pfInRangeLock = NULL );
+void BFCacheStatus( const IFMP ifmp, const PGNO pgno, BOOL* const pfInCache, ERR* const perrBF = nullptr, BFDirtyFlags* const pbfdf = nullptr, BOOL* const pfInRangeLock = nullptr );
 BOOL FBFInCache( const IFMP ifmp, const PGNO pgno );
 BOOL FBFPreviouslyCached( const IFMP ifmp, const PGNO pgno );
 

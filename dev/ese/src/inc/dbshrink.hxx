@@ -13,7 +13,7 @@ struct ROOTMOVECHILD
         objidChild = objidNil;
         dataSphNew.SetPv( &sphNew );
         dataSphNew.SetCb( sizeof( sphNew ) );
-        prootMoveChildNext = NULL;
+        prootMoveChildNext = nullptr;
     }
     ~ROOTMOVECHILD()
     {
@@ -90,7 +90,7 @@ struct ROOTMOVE
         dataBeforeOE.Nullify();
         dataBeforeAE.Nullify();
 
-        prootMoveChildren = NULL;
+        prootMoveChildren = nullptr;
     }
     ~ROOTMOVE()
     {
@@ -362,7 +362,7 @@ struct ROOTMOVE
 
         // Children objects.
         for ( ROOTMOVECHILD* prmc = prootMoveChildren;
-                prmc != NULL;
+                prmc != nullptr;
                 prmc = prmc->prootMoveChildNext )
         {
             ASSERT_VALID( prmc );
@@ -509,13 +509,13 @@ struct ROOTMOVE
 
         // Free children objects.
         ROOTMOVECHILD* prmc = prootMoveChildren;
-        while ( prmc != NULL )
+        while ( prmc != nullptr )
         {
             ROOTMOVECHILD* const prootMoveChildNext = prmc->prootMoveChildNext;
             delete prmc;
             prmc = prootMoveChildNext;
         }
-        prootMoveChildren = NULL;
+        prootMoveChildren = nullptr;
     }
 };
 

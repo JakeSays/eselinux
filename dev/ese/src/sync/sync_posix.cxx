@@ -157,7 +157,7 @@ void* PvPageAlloc( const size_t cbSize, void* const pv )
                               MAP_PRIVATE | MAP_ANONYMOUS, -1, 0 );
     if ( pvRet == MAP_FAILED )
     {
-        return NULL;
+        return nullptr;
     }
     OSSYNCAssert( !pv || pvRet == pv );
     RememberPageSize( pvRet, cbSize );
@@ -170,7 +170,7 @@ void* PvPageReserve( const size_t cbSize, void* const pv )
                               MAP_PRIVATE | MAP_ANONYMOUS, -1, 0 );
     if ( pvRet == MAP_FAILED )
     {
-        return NULL;
+        return nullptr;
     }
     OSSYNCAssert( !pv || pvRet == pv );
     RememberPageSize( pvRet, cbSize );
@@ -272,7 +272,7 @@ CLS* const OSSYNCAPI Pcls()
 {
     if ( !g_clsKeyInit && !EnsureClsKey() )
     {
-        return NULL;
+        return nullptr;
     }
     CLS* pcls = static_cast< CLS* >( pthread_getspecific( g_clsKey ) );
     if ( !pcls )
@@ -280,7 +280,7 @@ CLS* const OSSYNCAPI Pcls()
         pcls = static_cast< CLS* >( calloc( 1, sizeof( CLS ) ) );
         if ( !pcls )
         {
-            return NULL;
+            return nullptr;
         }
         pthread_setspecific( g_clsKey, pcls );
     }
@@ -322,7 +322,7 @@ INT OSSYNCAPI OSSyncGetCurrentProcessor()
 //  Processor Local Storage (PLS)
 
 namespace {
-void** g_rgPLS = NULL;
+void** g_rgPLS = nullptr;
 } // anonymous
 
 BOOL OSSYNCAPI FOSSyncConfigureProcessorLocalStorage( const size_t cbPLS )
@@ -338,7 +338,7 @@ BOOL OSSYNCAPI FOSSyncConfigureProcessorLocalStorage( const size_t cbPLS )
             PageFree( g_rgPLS[ 0 ] );
         }
         free( g_rgPLS );
-        g_rgPLS = NULL;
+        g_rgPLS = nullptr;
     }
 
     if ( cbPLS == 0 )
@@ -352,11 +352,11 @@ BOOL OSSYNCAPI FOSSyncConfigureProcessorLocalStorage( const size_t cbPLS )
     {
         return fFalse;
     }
-    g_rgPLS[ 0 ] = PvPageAlloc( cProc * cbPLSAlign, NULL );
+    g_rgPLS[ 0 ] = PvPageAlloc( cProc * cbPLSAlign, nullptr );
     if ( !g_rgPLS[ 0 ] )
     {
         free( g_rgPLS );
-        g_rgPLS = NULL;
+        g_rgPLS = nullptr;
         return fFalse;
     }
     for ( size_t iPLS = 1; iPLS < cProc; iPLS++ )
@@ -373,9 +373,9 @@ void* OSSYNCAPI OSSyncGetProcessorLocalStorage()
 
 void* OSSYNCAPI OSSyncGetProcessorLocalStorage( const size_t iProc )
 {
-    return ( iProc < (size_t)OSSyncGetProcessorCountMax() && g_rgPLS != NULL )
+    return ( iProc < (size_t)OSSyncGetProcessorCountMax() && g_rgPLS != nullptr )
                 ? g_rgPLS[ iProc ]
-                : NULL;
+                : nullptr;
 }
 
 
@@ -420,7 +420,7 @@ void CKernelSemaphore::Term()
     sem_t* psem = static_cast< sem_t* >( State().Handle() );
     sem_destroy( psem );
     free( psem );
-    State().SetHandle( 0 );
+    State().SetHandle( nullptr );
 }
 
 const BOOL CKernelSemaphore::FAcquire( const INT cmsecTimeout )

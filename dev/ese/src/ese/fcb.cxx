@@ -563,7 +563,7 @@ ERR FCB::ErrFCBInit( INST *pinst )
 
     Assert( !pinst->m_pfcbhash );
     rgbFCBHash = (BYTE*)PvOSMemoryHeapAllocAlign( sizeof( FCBHash ), cbCacheLine );
-    if ( NULL == rgbFCBHash  )
+    if ( nullptr == rgbFCBHash  )
     {
         err = ErrERRCheck( JET_errOutOfMemory );
     }
@@ -607,10 +607,10 @@ VOID FCB::Term( INST *pinst )
 {
     ResetPerfCounters( pinst, fTrue /* fTerminating */ );
 
-    if ( pinst->m_pFCBRefTrace != NULL )
+    if ( pinst->m_pFCBRefTrace != nullptr )
     {
         OSTraceDestroyRefLog( pinst->m_pFCBRefTrace );
-        pinst->m_pFCBRefTrace = NULL;
+        pinst->m_pFCBRefTrace = nullptr;
     }
 
     pinst->m_pfcbList = pfcbNil;
@@ -622,7 +622,7 @@ VOID FCB::Term( INST *pinst )
         pinst->m_pfcbhash->Term();
         pinst->m_pfcbhash->FCBHash::~FCBHash();
         OSMemoryHeapFreeAlign( pinst->m_pfcbhash );
-        pinst->m_pfcbhash = NULL;
+        pinst->m_pfcbhash = nullptr;
     }
 
     pinst->m_cresFCB.Term();
@@ -1094,7 +1094,7 @@ VOID FCB::CreateComplete_( ERR err, PCSTR szFile, const LONG lLine )
 
     OSTrace( JET_tracetagFCBs, OSFormat( "FCB::CreateComplete: Err %d, file %s, line %d\n", err, szFile, lLine ) );
 
-    if ( pinst->m_pFCBRefTrace != NULL )
+    if ( pinst->m_pFCBRefTrace != nullptr )
     {
         OSTraceWriteRefLog( pinst->m_pFCBRefTrace, err, this );
     }
@@ -1143,8 +1143,8 @@ BOOL FCB::FScanAndPurge_(
     }
 
     ULONG       cFCBPurged              = 0;
-    FCB *       pfcbToPurge             = NULL;
-    FCB *       pfcbToPurgeNext         = NULL;
+    FCB *       pfcbToPurge             = nullptr;
+    FCB *       pfcbToPurgeNext         = nullptr;
 
     Assert( pinst->m_critFCBList.FOwner() );
 
@@ -1170,7 +1170,7 @@ BOOL FCB::FScanAndPurge_(
         {
             // pfcbPurge is now gone.
 
-            pfcbToPurge = NULL;
+            pfcbToPurge = nullptr;
 
             //  update performance counter
 
@@ -1467,7 +1467,7 @@ BOOL FCB::FCheckFreeAndPurge_(
             fFCBPossiblyFree = fTrue;
         }
 
-        FCB *pfcbLastLockedIndex = NULL;
+        FCB *pfcbLastLockedIndex = nullptr;
 
         if ( fFCBPossiblyFree )
         {
@@ -1570,7 +1570,7 @@ BOOL FCB::FCheckFreeAndPurge_(
         if ( !fAvail )
         {
             // unlock already locked indices since we decided to not purge
-            if ( pfcbLastLockedIndex != NULL )
+            if ( pfcbLastLockedIndex != nullptr )
             {
                 for ( pfcbT = PfcbNextIndex(); pfcbT != pfcbLastLockedIndex; pfcbT = pfcbT->PfcbNextIndex() )
                 {
@@ -2234,10 +2234,10 @@ VOID FCB::Purge( const BOOL fLockList, const BOOL fTerminating )
             pfcbT->Delete_( pinst );
         }
 
-        if ( Ptdb()->PfcbTemplateTable() != NULL )
+        if ( Ptdb()->PfcbTemplateTable() != nullptr )
         {
             Ptdb()->PfcbTemplateTable()->DecrementRefCountAndUnlink_( pfucbNil, fLockList );
-            Ptdb()->SetPfcbTemplateTable( NULL );
+            Ptdb()->SetPfcbTemplateTable( nullptr );
         }
         delete Ptdb();
         SetPtdb( ptdbNil );
@@ -2305,7 +2305,7 @@ INLINE BOOL FCB::FHasCallbacks_( INST *pinst )
     }
 
     const CBDESC *pcbdesc = m_ptdb->Pcbdesc();
-    while ( pcbdesc != NULL )
+    while ( pcbdesc != nullptr )
     {
         if ( !pcbdesc->fPermanent )
         {
@@ -2973,8 +2973,8 @@ ERR VTAPI ErrIsamRegisterCallback(
     ERR err = JET_errSuccess;
 
     if( JET_cbtypNull == cbtyp
-        || NULL == pCallback
-        || NULL == phCallbackId )
+        || nullptr == pCallback
+        || nullptr == phCallbackId )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -2989,7 +2989,7 @@ ERR VTAPI ErrIsamRegisterCallback(
     CallR( ErrDIRBeginTransaction( ppib, 38181, NO_GRBIT ) );
 
     CBDESC * const pcbdescInsert = new CBDESC;
-    if( NULL != pcbdescInsert )
+    if( nullptr != pcbdescInsert )
     {
         FCB * const pfcb = pfucb->u.pfcb;
         Assert( NULL != pfcb );
@@ -3219,7 +3219,7 @@ VOID FCB::DecrementRefCountAndUnlink_( FUCB *pfucb, const BOOL fLockList, const 
     LONG lResultRefCount = AtomicDecrement( &m_wRefCount );
     Enforce( lResultRefCount >= 0 );
 
-    if ( pinst->m_pFCBRefTrace != NULL )
+    if ( pinst->m_pFCBRefTrace != nullptr )
     {
         OSTraceWriteRefLog( pinst->m_pFCBRefTrace, lResultRefCount, this );
     }
@@ -3375,7 +3375,7 @@ INLINE ERR FCB::ErrIncrementRefCountAndLink_( FUCB *pfucb, const BOOL fOwnWriteL
     LONG lResultRefCount = AtomicIncrement( &m_wRefCount );
     EnforceSz( lResultRefCount > 0, OSFormat( "InvalidRefCount:%d", lResultRefCount ) );
 
-    if ( pinst->m_pFCBRefTrace != NULL )
+    if ( pinst->m_pFCBRefTrace != nullptr )
     {
         OSTraceWriteRefLog( pinst->m_pFCBRefTrace, lResultRefCount, this );
     }

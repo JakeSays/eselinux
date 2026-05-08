@@ -28,7 +28,7 @@ const BOOL FOSConfigGet_( __in_z const WCHAR * const /* wszPath */,
 ERR ErrOSConfigStoreInit( _In_z_ const WCHAR * const /* wszPath */,
                           _Outptr_ CConfigStore ** ppcs )
 {
-    *ppcs = NULL;
+    *ppcs = nullptr;
     return ErrERRCheck( JET_errFeatureNotAvailable );
 }
 

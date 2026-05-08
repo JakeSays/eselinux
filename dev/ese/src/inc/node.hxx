@@ -70,7 +70,7 @@ C_ASSERT( noderfMax <= 5 );
 ERR     ErrNDGet                    ( FUCB *pfucb, const CSR *pcsr );
 VOID    NDGet                       ( FUCB *pfucb, const CSR *pcsr );
 template< PageNodeBoundsChecking pgnbc = pgnbcNoChecks >
-VOID    NDIGetKeydataflags          ( const CPAGE& cpage, INT iline, KEYDATAFLAGS * pkdf, _Out_opt_ ERR * perrNoEnforce = NULL );
+VOID    NDIGetKeydataflags          ( const CPAGE& cpage, INT iline, KEYDATAFLAGS * pkdf, _Out_opt_ ERR * perrNoEnforce = nullptr );
 ERR     ErrNDIGetKeydataflags       ( const CPAGE& cpage, INT iline, KEYDATAFLAGS * pkdf );
 
 

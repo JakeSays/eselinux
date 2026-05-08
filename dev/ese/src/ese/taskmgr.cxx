@@ -9,7 +9,7 @@
 TASKMGR::TASKMGR()
 {
     m_cContext      = 0;
-    m_rgdwContext   = NULL;
+    m_rgdwContext   = nullptr;
 
     m_fInit         = fFalse;
 }
@@ -123,7 +123,7 @@ ERR TASKMGR::ErrTerm()
 
     //  cleanup the per-thread contexts
     //
-    if ( NULL != m_rgdwContext )
+    if ( nullptr != m_rgdwContext )
     {
         for ( iThread = 0; iThread < m_cContext; iThread++ )
         {
@@ -133,7 +133,7 @@ ERR TASKMGR::ErrTerm()
         }
 
         delete[] m_rgdwContext;
-        m_rgdwContext = NULL;
+        m_rgdwContext = nullptr;
     }
     m_cContext = 0;
 
@@ -165,7 +165,7 @@ ERR TASKMGR::ErrPostTask( const TASK pfnTask, const ULONG_PTR ul, TaskInfo *pTas
 
     if ( m_fInit )
     {
-        if ( NULL != pTaskInfo )
+        if ( nullptr != pTaskInfo )
         {
             pTaskInfo->NotifyPost();
         }

@@ -91,7 +91,7 @@ public:
             case 5: return PhistoCharm();
         }
         STATAssert( fFalse );
-        return NULL;
+        return nullptr;
     }
     INT C() const { return 6; }
 };

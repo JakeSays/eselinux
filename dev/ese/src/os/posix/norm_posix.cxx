@@ -308,7 +308,7 @@ ERR ErrNORMCheckLocaleVersion( _In_ const NORM_LOCALE_VER* pnlv )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
-    return ErrNORMCheckLocaleName( NULL, pnlv->m_wszLocaleName );
+    return ErrNORMCheckLocaleName( nullptr, pnlv->m_wszLocaleName );
 }
 
 ERR ErrNORMCheckLCMapFlags( _In_ INST * const /* pinst */,

@@ -119,7 +119,7 @@ LONG LFResMgrIDBQuotaCEFLPv( LONG iInstance, void* pvBuf )
 //  IMPLEMENTATION
 //=============================================================================
 
-CRMContainer *g_pRMContainer = NULL;
+CRMContainer *g_pRMContainer = nullptr;
 CCriticalSection CRMContainer::s_critAddDelete( CLockBasicInfo( CSyncBasicInfo( "CRMContainer::s_critAddDelete" ), 0, 100 ) );
 //======================================
 //  Class CQuota
@@ -250,7 +250,7 @@ ERR CLookaside::ErrInit()
 {
     Assert( 0 <= m_cItems );
     m_ppvData = (VOID **)PvOSMemoryHeapAllocAlign( sizeof( VOID* ) * m_cItems, cbCacheLine );
-    if ( NULL == m_ppvData )
+    if ( nullptr == m_ppvData )
     {
         return ErrERRCheck( JET_errOutOfMemory );
     }
@@ -276,7 +276,7 @@ VOID CLookaside::Term()
         }
 #endif // TERMINATION_CHECK
         OSMemoryHeapFreeAlign( m_ppvData );
-        m_ppvData = NULL;
+        m_ppvData = nullptr;
     }
     Assert( NULL == m_ppvData );
 }
@@ -296,23 +296,23 @@ VOID *CLookaside::PvGet(
     const INT cItems                    = m_cItems;
     if ( 0 == cItems )
     {
-        return NULL;
+        return nullptr;
     }
 
     VOID    ** const ppvBase            = m_ppvData;
     INT     iThreadId   = (INT)( ( dwHint ) % cItems );
     VOID    * volatile *ppvData = &ppvBase[iThreadId];
-    VOID    *pvResult   = NULL;
+    VOID    *pvResult   = nullptr;
 
     //  try to grab exact object
-    if ( NULL != *ppvData )
+    if ( nullptr != *ppvData )
     {
 #ifdef RM_STATISTICS
         m_cGetACX++;
 #endif // RM_STATISTICS
         // try to grab it
-        pvResult = AtomicExchangePointer( (void **)ppvData, NULL );
-        if ( NULL != pvResult )
+        pvResult = AtomicExchangePointer( (void **)ppvData, nullptr );
+        if ( nullptr != pvResult )
         {
 #ifdef RM_STATISTICS
             m_cGetHitFirst++;
@@ -332,14 +332,14 @@ VOID *CLookaside::PvGet(
     while ( ppvDataLast != ppvData )
     {
         //  if current item is a true object pointer
-        if ( NULL != *ppvData )
+        if ( nullptr != *ppvData )
         {
 #ifdef RM_STATISTICS
             m_cGetACX++;
 #endif // RM_STATISTICS
             // try to grab it
-            pvResult = AtomicExchangePointer( (void **)ppvData, NULL );
-            if ( NULL != pvResult )
+            pvResult = AtomicExchangePointer( (void **)ppvData, nullptr );
+            if ( nullptr != pvResult )
             {
 #ifdef RM_STATISTICS
                 m_cGetHit++;
@@ -349,7 +349,7 @@ VOID *CLookaside::PvGet(
         }
         ppvData+=1;
     }
-    return NULL;
+    return nullptr;
 }
 
 
@@ -372,13 +372,13 @@ BOOL CLookaside::FReturn( DWORD_PTR dwHint, VOID * const pv )
     VOID    * volatile *ppvData = &ppvBase[iThreadId];
 
     //  try to return at exact place
-    if ( NULL == *ppvData )
+    if ( nullptr == *ppvData )
     {
 #ifdef RM_STATISTICS
         m_cReturnACX++;
 #endif // RM_STATISTICS
         // try to put our object pointer here
-        if ( NULL == AtomicCompareExchangePointer( (void **)ppvData, NULL, pv ) )
+        if ( nullptr == AtomicCompareExchangePointer( (void **)ppvData, nullptr, pv ) )
         {
 #ifdef RM_STATISTICS
             m_cReturnHitFirst++;
@@ -398,13 +398,13 @@ BOOL CLookaside::FReturn( DWORD_PTR dwHint, VOID * const pv )
     while ( ppvDataLast != ppvData )
     {
         //  if current item is a NULL pointer
-        if ( NULL == *ppvData )
+        if ( nullptr == *ppvData )
         {
 #ifdef RM_STATISTICS
             m_cReturnACX++;
 #endif // RM_STATISTICS
             // try to put our object pointer here
-            if ( NULL == AtomicCompareExchangePointer( (void **)ppvData, NULL, pv ) )
+            if ( nullptr == AtomicCompareExchangePointer( (void **)ppvData, nullptr, pv ) )
             {
 #ifdef RM_STATISTICS
                 m_cReturnHit++;
@@ -427,28 +427,28 @@ VOID *CLookaside::PvFlush()
     Assert( NULL != m_ppvData );
     if ( 0 == m_cItems )
     {
-        return NULL;
+        return nullptr;
     }
 
     //  % can be avoided if m_cItems is power of two
-    VOID    *pvResult   = NULL;
+    VOID    *pvResult   = nullptr;
     VOID    * volatile *ppvData             = m_ppvData;
     VOID    * volatile * const ppvDataLast  = &m_ppvData[m_cItems];
     while ( ppvDataLast != ppvData )
     {
         //  if current item is a true object pointer
-        if ( NULL != *ppvData )
+        if ( nullptr != *ppvData )
         {
             // try to grab it
-            pvResult = AtomicExchangePointer( (void **)ppvData, NULL );
-            if ( NULL != pvResult )
+            pvResult = AtomicExchangePointer( (void **)ppvData, nullptr );
+            if ( nullptr != pvResult )
             {
                 return pvResult;
             }
         }
         ppvData++;
     }
-    return NULL;
+    return nullptr;
 }
 
 //======================================
@@ -464,12 +464,12 @@ CResourceManager::CResourceManager( JET_RESID resid ) :
         m_cbObjectSize( 0 ),
         m_cbChunkSize( cbChunkDefault ),
         m_cbRFOLOffset( cbRFOLOffsetDefault ),
-        m_pRCIList( NULL ),
-        m_pRCINotFullList( NULL ),
-        m_pRCIFreeList( NULL ),
+        m_pRCIList( nullptr ),
+        m_pRCINotFullList( nullptr ),
+        m_pRCIFreeList( nullptr ),
         m_cFreeRCI( 0 ),
         m_cAllocatedRCI( 0 ),
-        m_pRCIToAlloc( NULL ),
+        m_pRCIToAlloc( nullptr ),
         m_cCResourceLinks( 0 ),
         m_cObjectsMin( 0 ),
         m_cObjectsMax( 0 ),
@@ -661,7 +661,7 @@ ERR CResourceManager::ErrGetParam(
     DWORD_PTR * const pdwParam ) const  //  [OUT]
 {
     ERR err = JET_errSuccess;
-    if ( NULL != pdwParam )
+    if ( nullptr != pdwParam )
     {
         if ( JET_resoperTag != resop )
         {
@@ -802,18 +802,18 @@ ERR CResourceManager::ErrInit()
         LONG iChunks;
         for ( iChunks = m_cAllocatedChunksMin; !m_fAllocFromHeap && iChunks-- > 0; )
         {
-            CResourceChunkInfo *pRCI = NULL;
+            CResourceChunkInfo *pRCI = nullptr;
             //  OK, obviously we have to few chunks
             pRCI = new CResourceChunkInfo( this );
-            if ( NULL != pRCI )
+            if ( nullptr != pRCI )
             {
                 pRCI->m_pRCINext = m_pRCIList;
                 m_pRCIList = pRCI;
                 m_cAllocatedRCI++;
                 m_cFreeRCI++;
                 //  allocate the chunk
-                pRCI->m_pvData = PvOSMemoryPageAllocEx( m_cbChunkSize, NULL, m_fAllocTopDown );
-                if ( NULL != pRCI->m_pvData )
+                pRCI->m_pvData = PvOSMemoryPageAllocEx( m_cbChunkSize, nullptr, m_fAllocTopDown );
+                if ( nullptr != pRCI->m_pvData )
                 {
                     m_cFreeRCI--;
                     pRCI->m_pRCINextNotFull = m_pRCINotFullList;
@@ -876,13 +876,13 @@ VOID CResourceManager::Term( BOOL fDuringInit )
     AssertRTL( fMayLeakResource || 0 == m_cCResourceLinks );
     if ( m_lookaside.FInit() )
     {
-        VOID *pv = NULL;
-        CResourceChunkInfo *pRCI = NULL;
+        VOID *pv = nullptr;
+        CResourceChunkInfo *pRCI = nullptr;
 
         //  empty the lookaside array
-        while ( NULL != ( pv = m_lookaside.PvFlush() ) )
+        while ( nullptr != ( pv = m_lookaside.PvFlush() ) )
         {
-            CResourceSection    *pRS            = NULL;
+            CResourceSection    *pRS            = nullptr;
 
             MarkAsFreed_( pv, RCI_Free );
 
@@ -907,13 +907,13 @@ VOID CResourceManager::Term( BOOL fDuringInit )
             CResourceFreeObjectList::RFOLAddObject( &pRCI->m_pRFOL, (CHAR *)pv + m_cbRFOLOffset );
 #endif // !RM_DEFERRED_FREE
         }
-        if ( NULL != m_pRCIToAlloc )
+        if ( nullptr != m_pRCIToAlloc )
         {
             if ( cChunkProtect <= m_pRCIToAlloc->m_cUsed )
             {
                 m_pRCIToAlloc->m_cUsed -= cChunkProtect;
             }
-            m_pRCIToAlloc = NULL;
+            m_pRCIToAlloc = nullptr;
         }
         //  free all the RCIs in the list
 
@@ -921,7 +921,7 @@ VOID CResourceManager::Term( BOOL fDuringInit )
         //  to the head of the list.
 
         pRCI = (CResourceChunkInfo *)( (CHAR *)&m_pRCIList - OffsetOf( CResourceChunkInfo, m_pRCINext ) );
-        while ( NULL != pRCI->m_pRCINext )
+        while ( nullptr != pRCI->m_pRCINext )
         {
             CResourceChunkInfo *pRCITemp = pRCI->m_pRCINext;
 
@@ -945,7 +945,7 @@ VOID CResourceManager::Term( BOOL fDuringInit )
                 {
                     pRFOL = pRFOL->m_pRFOLNext;
                 }
-                AssertRTL( pRFOL == NULL );
+                AssertRTL( pRFOL == nullptr );
             }
 
             // if pvData is allocated, free it
@@ -953,7 +953,7 @@ VOID CResourceManager::Term( BOOL fDuringInit )
             {
                 pRCITemp->m_cUsed = cRCIIsFree;
                 OSMemoryPageFree( pRCITemp->m_pvData );
-                pRCITemp->m_pvData = NULL;
+                pRCITemp->m_pvData = nullptr;
                 m_cFreeRCI++;
             }
 
@@ -974,7 +974,7 @@ VOID CResourceManager::Term( BOOL fDuringInit )
         }
         Assert( 0 == m_cFreeRCI || ( fMayLeakResource && m_cFreeRCI == -1 ) );
 
-        if ( NULL != m_pRCIList )
+        if ( nullptr != m_pRCIList )
         {
             if ( !fMayLeakResource )
             {
@@ -1022,11 +1022,11 @@ VOID CResourceManager::Term( BOOL fDuringInit )
                 }
 #endif // SILENT_FCB_LEAK
             }
-            m_pRCIList = NULL;
+            m_pRCIList = nullptr;
             m_cAllocatedRCI = 0;
         }
-        m_pRCIFreeList = NULL;
-        m_pRCINotFullList = NULL;
+        m_pRCIFreeList = nullptr;
+        m_pRCINotFullList = nullptr;
         m_lookaside.Term();
     }
     Assert( NULL == m_pRCIList );
@@ -1092,7 +1092,7 @@ VOID CResourceManager::Free( VOID * const pv )
 
     //  ignore frees of NULL pointers
     //
-    if ( NULL == pv )
+    if ( nullptr == pv )
     {
         return;
     }
@@ -1140,7 +1140,7 @@ VOID CResourceManager::Free( VOID * const pv )
 #endif // !RM_DEFERRED_FREE
 
         //  If fails return the object to the chunk
-        CResourceChunkInfo  *pRCI           = NULL;
+        CResourceChunkInfo  *pRCI           = nullptr;
         LONG                cUsedInChunk    = 0;
 
         MarkAsFreed_( pv, RCI_Free );
@@ -1234,8 +1234,8 @@ BOOL CResourceManager::FGetNotFullChunk_()
 {
     //  Try to find another not completely full chunk to use
     CResourceChunkInfo *pRCI;
-    pRCI = NULL;
-    while ( NULL != m_pRCINotFullList )
+    pRCI = nullptr;
+    while ( nullptr != m_pRCINotFullList )
     {
         OSSYNC_FOREVER
         {
@@ -1245,7 +1245,7 @@ BOOL CResourceManager::FGetNotFullChunk_()
                 break;
             }
         }
-        pRCI->m_pRCINextNotFull = NULL;
+        pRCI->m_pRCINextNotFull = nullptr;
         LONG    cUsedInChunk = cRCIIsFree;
         const LONG cLock = cChunkProtect + 1;
         OSSYNC_FOREVER
@@ -1296,14 +1296,14 @@ BOOL CResourceManager::FAllocateNewChunk_()
 //
 //  Checks the m_pRCIFreeList for reusable free RCI
 {
-    CResourceChunkInfo *pRCI = NULL;
+    CResourceChunkInfo *pRCI = nullptr;
     //  OK, obviously we have to allocate another chunk
     //  check the RCI free list first
-    if ( NULL != m_pRCIFreeList )
+    if ( nullptr != m_pRCIFreeList )
     {
         VOID *pvData;
-        pvData = PvOSMemoryPageAllocEx( m_cbChunkSize, NULL, m_fAllocTopDown );
-        if ( NULL == pvData )
+        pvData = PvOSMemoryPageAllocEx( m_cbChunkSize, nullptr, m_fAllocTopDown );
+        if ( nullptr == pvData )
         {
             return fFalse;
         }
@@ -1326,13 +1326,13 @@ BOOL CResourceManager::FAllocateNewChunk_()
     else if ( m_cAllocatedRCIMax > m_cAllocatedRCI )
     {
         pRCI = new CResourceChunkInfo( this );
-        if ( NULL == pRCI )
+        if ( nullptr == pRCI )
         {
             return fFalse;
         }
         //  allocate the chunk
-        pRCI->m_pvData = PvOSMemoryPageAllocEx( m_cbChunkSize, NULL, m_fAllocTopDown );
-        if ( NULL == pRCI->m_pvData )
+        pRCI->m_pvData = PvOSMemoryPageAllocEx( m_cbChunkSize, nullptr, m_fAllocTopDown );
+        if ( nullptr == pRCI->m_pvData )
         {
             delete pRCI;
             return fFalse;
@@ -1386,7 +1386,7 @@ VOID *CResourceManager::PvRFOLAlloc_( CResourceChunkInfo * const pRCI )
 //  the check that RFOL is not empty is performed on higher level
 {
     Assert( NULL != pRCI );
-    CResourceFreeObjectList *pRFOL      = NULL;
+    CResourceFreeObjectList *pRFOL      = nullptr;
     //  take from the free list
     //  we have an option to avoid the critical section ( cmpxgch8b )
 #ifdef RM_STATISTICS
@@ -1444,7 +1444,7 @@ INLINE VOID *CResourceManager::PvNewAlloc_( CResourceChunkInfo * const pRCI )
         //  ... the chunk does not have unused object
         if ( cNextAlloc == m_cObjectsPerChunk )
         {
-            return NULL;
+            return nullptr;
         }
         //  ... or we successfully allocate one
         if ( AtomicCompareExchange( const_cast<LONG *>( &pRCI->m_cNextAlloc ), cNextAlloc, cNextAlloc+1 ) == cNextAlloc )
@@ -1468,7 +1468,7 @@ BOOL CResourceManager::FReleaseAllocChunk_()
 //  and we will succeed to allocate an object from the chunk
 {
     CResourceChunkInfo *pRCI = m_pRCIToAlloc;
-    if ( NULL != pRCI )
+    if ( nullptr != pRCI )
     {
         OSSYNC_FOREVER
         {
@@ -1482,7 +1482,7 @@ BOOL CResourceManager::FReleaseAllocChunk_()
             {
                 if ( AtomicCompareExchange( const_cast<LONG *>( &pRCI->m_cUsed ), cUsedInChunk, m_cObjectsPerChunk ) == cUsedInChunk )
                 {
-                    m_pRCIToAlloc = NULL;
+                    m_pRCIToAlloc = nullptr;
                     return fTrue;
                 }
             }
@@ -1505,7 +1505,7 @@ VOID *CResourceManager::PvAllocFromChunk_( CResourceChunkInfo * const pRCI )
 //  will succeed. Then tries to get a new object if it fails gets an object
 //  from RFOL
 {
-    VOID *pvResult = NULL;
+    VOID *pvResult = nullptr;
     Assert( NULL != pRCI );
     OSSYNC_FOREVER
     {
@@ -1526,7 +1526,7 @@ VOID *CResourceManager::PvAllocFromChunk_( CResourceChunkInfo * const pRCI )
                 {
                     pvResult = PvNewAlloc_( pRCI );
                 }
-                if ( NULL == pvResult )
+                if ( nullptr == pvResult )
                 {
                     pvResult = PvRFOLAlloc_( pRCI );
                 }
@@ -1535,7 +1535,7 @@ VOID *CResourceManager::PvAllocFromChunk_( CResourceChunkInfo * const pRCI )
         }
         else
         {
-            return NULL;
+            return nullptr;
         }
     }
 }
@@ -1563,13 +1563,13 @@ VOID *CResourceManager::PvAlloc_(
 #endif  //  MEM_CHECK
     )
 {
-    VOID *pvResult = NULL;
+    VOID *pvResult = nullptr;
 
     //  RFS
     //
     if ( !RFSAlloc( UnknownAllocResource ) )
     {
-        pvResult = NULL;
+        pvResult = nullptr;
     }
 
     //  we are redirecting all object allocations to the heap
@@ -1580,7 +1580,7 @@ VOID *CResourceManager::PvAlloc_(
         //
         if ( m_cbObjectAlign >= 256 )
         {
-            pvResult = PvOSMemoryPageAllocEx( m_cbAlignedObject, NULL, m_fAllocTopDown );
+            pvResult = PvOSMemoryPageAllocEx( m_cbAlignedObject, nullptr, m_fAllocTopDown );
         }
 
         //  objects with medium alignment should use aligned heap blocks
@@ -1610,13 +1610,13 @@ VOID *CResourceManager::PvAlloc_(
 #endif // !RM_DEFERRED_FREE
 
         //  if we haven't found one
-        if ( NULL == pvResult )
+        if ( nullptr == pvResult )
         {
             CResourceChunkInfo *pRCI;
             pRCI = m_pRCIToAlloc;
 
             //  acquire object from the current chunk
-            if ( NULL == pRCI || NULL == ( pvResult = PvAllocFromChunk_( pRCI ) ) )
+            if ( nullptr == pRCI || nullptr == ( pvResult = PvAllocFromChunk_( pRCI ) ) )
             {
                 //  there is no current chunk or the chunk is empty
                 Assert( NULL == pvResult );
@@ -1625,7 +1625,7 @@ VOID *CResourceManager::PvAlloc_(
 #ifdef RM_STATISTICS
                 m_cWaitAllocTries++;
 #endif // RM_STATISTICS
-                if ( NULL != pRCI )
+                if ( nullptr != pRCI )
                 {
                     while ( !m_critLARefiller.FTryEnter() )
                     {
@@ -1633,7 +1633,7 @@ VOID *CResourceManager::PvAlloc_(
                         m_cWaitAllocLoops++;
 #endif // RM_STATISTICS
                         pvResult = PvAllocFromChunk_( pRCI );
-                        if ( NULL != pvResult )
+                        if ( nullptr != pvResult )
                         {
 #ifdef RM_STATISTICS
                             m_cWaitAllocSuccess++;
@@ -1641,7 +1641,7 @@ VOID *CResourceManager::PvAlloc_(
                             goto End;
                         }
                         pRCI = pRCI->m_pRCINextNotFull;
-                        if ( NULL == pRCI )
+                        if ( nullptr == pRCI )
                         {
                             m_critLARefiller.Enter();
                             break;
@@ -1672,7 +1672,7 @@ VOID *CResourceManager::PvAlloc_(
                     {
                         pvResult = PvNewAlloc_( pRCI );
                     }
-                    if ( NULL == pvResult )
+                    if ( nullptr == pvResult )
                     {
                         pvResult = PvRFOLAlloc_( pRCI );
                     }
@@ -1774,7 +1774,7 @@ INT CResourceManager::CalcObjectsPerSection(INT *pcbSectionHeader) const
 #endif  //  MEM_CHECK
     }
 
-    if (NULL != pcbSectionHeader)
+    if (nullptr != pcbSectionHeader)
     {
         *pcbSectionHeader = cbSectionHeader;
     }
@@ -1968,9 +1968,9 @@ CResourceManager *CResourceManager::PRMFromResid( JET_RESID resid )
 {
     CResourceManager *pRM;
     pRM = CRMContainer::PRMFind( resid );
-    if ( NULL != pRM && pRM->m_lookaside.FInit() )
+    if ( nullptr != pRM && pRM->m_lookaside.FInit() )
         return pRM;
-    return NULL;
+    return nullptr;
 }
 
 //======================================
@@ -1983,7 +1983,7 @@ BOOL CResourceManager::FMemoryLeak() { return fMemoryLeak; }
 ERR CResource::ErrSetParam( JET_RESOPER resop, DWORD_PTR dwParam )
 {
     ERR err = JET_errSuccess;
-    if ( NULL != m_pRM )
+    if ( nullptr != m_pRM )
     {
         err = ErrERRCheck( JET_errAlreadyInitialized );
     }
@@ -2009,7 +2009,7 @@ ERR CResource::ErrSetParam( JET_RESOPER resop, DWORD_PTR dwParam )
 ERR CResource::ErrGetParam( JET_RESOPER resop, DWORD_PTR * const pdwParam ) const
 {
     ERR err = JET_errSuccess;
-    if ( NULL != pdwParam )
+    if ( nullptr != pdwParam )
     {
         if ( JET_resoperTag != resop )
         {
@@ -2034,7 +2034,7 @@ ERR CResource::ErrGetParam( JET_RESOPER resop, DWORD_PTR * const pdwParam ) cons
                 *pdwParam = (DWORD_PTR)m_quota.GetQuota();
                 break;
             case JET_resoperCurrentUse:
-                if ( NULL != m_pRM )
+                if ( nullptr != m_pRM )
                 {
                     *pdwParam = (DWORD_PTR)( m_quota.GetQuota() - m_quota.GetQuotaFree() );
                 }
@@ -2094,7 +2094,7 @@ BOOL CResource::FCloseToQuota()
 
     // An instance that is in recovery has no
     // quota.
-    if ( m_pinst != NULL &&
+    if ( m_pinst != nullptr &&
         m_pinst->FRecovering() )
     {
         return fFalse;
@@ -2121,7 +2121,7 @@ ERR CResource::ErrInit(
     Assert( NULL == m_pRM );
     CResourceManager *pRM;
     pRM = CResourceManager::PRMFromResid( resid );
-    if ( NULL == pRM )
+    if ( nullptr == pRM )
     {
         err = ErrERRCheck( JET_errInternalError );
     }
@@ -2152,8 +2152,8 @@ ERR CResource::ErrInit(
 VOID CResource::Term()
 {
     CResourceManager *pRM;
-    pRM = (CResourceManager *)AtomicExchangePointer( (void **)&m_pRM, NULL );
-    if ( NULL != pRM )
+    pRM = (CResourceManager *)AtomicExchangePointer( (void **)&m_pRM, nullptr );
+    if ( nullptr != pRM )
     {
         pRM->Unlink( this );
         m_quota.Term();
@@ -2185,11 +2185,11 @@ VOID *CResource::PvAlloc_(
 
     Assert( m_pRM->ResID() != JET_residPAGE );  //  this is deprecated
 
-    VOID *pv = NULL;
+    VOID *pv = nullptr;
     if ( m_quota.FAcquire() )
     {
         pv = m_pRM->PvRESAlloc_( szFile, lLine );
-        if ( NULL == pv )
+        if ( nullptr == pv )
         {
             m_quota.Release();
         }
@@ -2241,12 +2241,12 @@ VOID CResource::AssertValid( const JET_RESID resid, const VOID * const pv )
 BOOL CResource::FCallingProgramPassedValidJetHandle( _In_ const JET_RESID resid, _In_ const VOID * const pv )
 {
     BOOL                fInvalid    = fFalse;
-    CResourceSection*   pRS         = NULL;
-    CResourceManager*   pRM         = NULL;
+    CResourceSection*   pRS         = nullptr;
+    CResourceManager*   pRM         = nullptr;
 
     //  normally NULL/MAXINT pointers are caught by the exception handler but
     //  we will shortcut that here to avoid that
-    if( NULL == pv || (void *)~0 == pv )
+    if( nullptr == pv || (void *)~0 == pv )
     {
         return fFalse;
     }
@@ -2323,7 +2323,7 @@ BOOL CResource::FCallingProgramPassedValidJetHandle( _In_ const JET_RESID resid,
     //  verify that the object is currently not freed
     //
     if (    *( (DWORD_PTR*)( (BYTE*)pv + 0 ) ) == DWORD_PTR( &CResourceManager::FreedResource ) &&
-            ( NULL == pRM ||
+            ( nullptr == pRM ||
                 *( (DWORD_PTR*)( (BYTE*)pv + pRM->m_cbAlignedObject - sizeof( DWORD_PTR ) ) ) == DWORD_PTR( &CResourceManager::FreedResource ) ) )
     {
         fInvalid = fTrue;
@@ -2349,7 +2349,7 @@ DWORD CRUnitTest1( DWORD_PTR resid )
     ERR err;
     DWORD_PTR size;
     semCRUnitTest.Acquire();
-    CallS( ErrRESGetResourceParam( NULL, (JET_RESID)resid, JET_resoperSize, &size ) );
+    CallS( ErrRESGetResourceParam( nullptr, (JET_RESID)resid, JET_resoperSize, &size ) );
     Assert( FPowerOf2( cbAlignDefault ) );
     for ( i = 1; (1 << i) < cbAlignDefault; i++ )
     {
@@ -2371,23 +2371,23 @@ DWORD CRUnitTest1( DWORD_PTR resid )
     {
         LONG l;
         l = rand() % max;
-        if ( NULL == av[l] )
+        if ( nullptr == av[l] )
         {
             av[l] = CR.PvRESAlloc();
         }
         else
         {
             CR.Free( av[l] );
-            av[l] = NULL;
+            av[l] = nullptr;
         }
     }
 HandleError:
     for ( i = 0; i < max; i++)
     {
-        if ( NULL != av[i] )
+        if ( nullptr != av[i] )
         {
             CR.Free( av[i] );
-            av[i] = NULL;
+            av[i] = nullptr;
         }
     }
     CR.Term();
@@ -2409,7 +2409,7 @@ DWORD CRUnitTest2( DWORD_PTR resid )
     INT         iTail   = 0;
 
     semCRUnitTest.Acquire();
-    CallS( ErrRESGetResourceParam( NULL, (JET_RESID)resid, JET_resoperSize, &size ) );
+    CallS( ErrRESGetResourceParam( nullptr, (JET_RESID)resid, JET_resoperSize, &size ) );
     Assert( FPowerOf2( cbAlignDefault ) );
     for ( i = 1; (1 << i) < cbAlignDefault; i++ )
     {
@@ -2440,24 +2440,24 @@ DWORD CRUnitTest2( DWORD_PTR resid )
         if ( l >= ( ( iHead + max - iTail ) % max ) )
         {
             av[iHead] = CR.PvRESAlloc();
-            if ( NULL != av[iHead] )
+            if ( nullptr != av[iHead] )
             {
                 iHead = ( iHead + 1 ) % max;
             }
         }
         else
         {
-            Enforce( NULL != av[iTail] );
+            Enforce( nullptr != av[iTail] );
             CR.Free( av[iTail] );
-            av[iTail] = NULL;
+            av[iTail] = nullptr;
             iTail = ( iTail + 1 ) % max;
         }
     }
 HandleError:
-    for ( i = iTail; NULL != av[i]; i = ( i + 1 ) % max )
+    for ( i = iTail; nullptr != av[i]; i = ( i + 1 ) % max )
     {
         CR.Free( av[i] );
-        av[i] = NULL;
+        av[i] = nullptr;
     }
     CR.Term();
     if ( AtomicDecrement( &lCRUnitTestCounter ) == 0 )
@@ -2478,7 +2478,7 @@ VOID CResource::UnitTest()
             continue;
         }
         char szName[JET_resTagSize + 1];
-        CallS( ErrRESGetResourceParam( NULL, resid, JET_resoperTag, (DWORD_PTR *)szName ) );
+        CallS( ErrRESGetResourceParam( nullptr, resid, JET_resoperTag, (DWORD_PTR *)szName ) );
         (*CPRINTFSTDOUT::PcprintfInstance())( "%-4.4s:", szName );
         DWORD dwTime = TickOSTimeCurrent();
         for ( INT j = 1; j < 40; j++ )
@@ -2694,7 +2694,7 @@ static const JetTestCaller<CResourceTestFixtureNoLookaside> crtf6("CResource.Mul
 //  class CRMContainer
 
 INLINE CRMContainer::CRMContainer( JET_RESID resid ) :
-        m_pNext( NULL ),
+        m_pNext( nullptr ),
         m_RM( resid )
     {}
 
@@ -2704,30 +2704,30 @@ CResourceManager *CRMContainer::PRMFind( JET_RESID resid )
 {
     CRMContainer *pRMC;
     pRMC = g_pRMContainer;
-    while ( NULL != pRMC && resid != pRMC->m_RM.ResID() )
+    while ( nullptr != pRMC && resid != pRMC->m_RM.ResID() )
     {
         pRMC = pRMC->m_pNext;
     }
-    if ( NULL != pRMC )
+    if ( nullptr != pRMC )
     {
         return &pRMC->m_RM;
     }
-    return NULL;
+    return nullptr;
 }
 
 
 //======================================
 BOOL CRMContainer::FAdd( JET_RESID resid )
 {
-    CRMContainer *pRMC = NULL;
+    CRMContainer *pRMC = nullptr;
     if ( !fOSRMPreinitPostTerm )
     {
         s_critAddDelete.Enter();
     }
-    if ( JET_residNull != resid && NULL == PRMFind( resid ) )
+    if ( JET_residNull != resid && nullptr == PRMFind( resid ) )
     {
         pRMC = new CRMContainer( resid );
-        if ( NULL != pRMC )
+        if ( nullptr != pRMC )
         {
             pRMC->m_pNext = g_pRMContainer;
             g_pRMContainer = pRMC;
@@ -2737,7 +2737,7 @@ BOOL CRMContainer::FAdd( JET_RESID resid )
     {
         s_critAddDelete.Leave();
     }
-    return NULL != pRMC ? fTrue: fFalse;
+    return nullptr != pRMC ? fTrue: fFalse;
 }
 
 
@@ -2750,11 +2750,11 @@ VOID CRMContainer::Delete( JET_RESID resid )
     }
     CRMContainer *pRMC;
     pRMC = (CRMContainer *)((CHAR *)&g_pRMContainer - OffsetOf( CRMContainer, m_pNext ));
-    while ( NULL != pRMC->m_pNext && resid != pRMC->m_pNext->m_RM.ResID() )
+    while ( nullptr != pRMC->m_pNext && resid != pRMC->m_pNext->m_RM.ResID() )
     {
         pRMC = pRMC->m_pNext;
     }
-    if ( NULL != pRMC->m_pNext )
+    if ( nullptr != pRMC->m_pNext )
     {
         CRMContainer *pRMCTemp;
         pRMCTemp = pRMC->m_pNext;
@@ -2778,7 +2778,7 @@ INLINE VOID CRMContainer::CalcAllocatedObjects( JET_RESID resid, void* pvBuf )
     if ( pvBuf )
     {
         CResourceManager * pRM = CRMContainer::PRMFind( resid );
-        if ( NULL == pRM )
+        if ( nullptr == pRM )
         {
             goto HandleError;
         }
@@ -2805,7 +2805,7 @@ INLINE VOID CRMContainer::CalcUsedObjects( JET_RESID resid, void* pvBuf )
     if ( pvBuf )
     {
         CResourceManager * pRM = CRMContainer::PRMFind( resid );
-        if ( NULL == pRM )
+        if ( nullptr == pRM )
         {
             goto HandleError;
         }
@@ -2832,7 +2832,7 @@ INLINE VOID CRMContainer::CalcQuotaObjects( JET_RESID resid, void* pvBuf )
     if ( pvBuf )
     {
         CResourceManager * pRM = CRMContainer::PRMFind( resid );
-        if ( NULL == pRM )
+        if ( nullptr == pRM )
         {
             goto HandleError;
         }
@@ -2874,7 +2874,7 @@ LOCAL CResource *PCResourceFromResid( INST * const pinst, JET_RESID resid )
                 return &pinst->m_pver->m_cresBucket;
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 //======================================
@@ -2898,7 +2898,7 @@ ERR ErrRESSetResourceParam(
 
     Assert( resid != JET_residPAGE );   //  this is deprecated
 
-    if ( NULL != pcres )
+    if ( nullptr != pcres )
     {
         return pcres->ErrSetParam( resop, dwParam );
     }
@@ -2929,7 +2929,7 @@ ERR ErrRESSetResourceParam(
     CResourceManager *pRM;
 
     pRM = CRMContainer::PRMFind( resid );
-    if ( NULL == pRM )
+    if ( nullptr == pRM )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -2944,14 +2944,14 @@ ERR ErrRESGetResourceParam(
         DWORD_PTR *pdwParam )
 {
     ERR err = JET_errSuccess;
-    if ( NULL == pdwParam )
+    if ( nullptr == pdwParam )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
     CResource *pcres;
     pcres = PCResourceFromResid( pinst, resid );
     //  set per instance parameter
-    if ( NULL != pcres )
+    if ( nullptr != pcres )
     {
         return pcres->ErrGetParam( resop, pdwParam );
     }
@@ -2959,7 +2959,7 @@ ERR ErrRESGetResourceParam(
     CResourceManager *pRM;
 
     pRM = CRMContainer::PRMFind( resid );
-    if ( NULL == pRM )
+    if ( nullptr == pRM )
     {
         CallR( ErrERRCheck( JET_errInvalidParameter ) );
     }
@@ -2997,7 +2997,7 @@ VOID OSRMTerm()
     {
         CResourceManager *pRM;
         pRM = CRMContainer::PRMFind( resid );
-        if ( NULL != pRM )
+        if ( nullptr != pRM )
         {
             pRM->Term();
         }
@@ -3020,7 +3020,7 @@ ERR ErrOSRMInit()
 #endif // RTM
         CResourceManager *pRM;
         pRM = CRMContainer::PRMFind( resid );
-        if ( NULL != pRM )
+        if ( nullptr != pRM )
         {
             Call( pRM->ErrInit() );
         }
@@ -3066,7 +3066,7 @@ VOID OSRMPostterm()
     {
         CResourceManager *pRM;
         pRM = CRMContainer::PRMFind( resid );
-        if ( NULL != pRM )
+        if ( nullptr != pRM )
         {
             CRMContainer::Delete( resid );
         }

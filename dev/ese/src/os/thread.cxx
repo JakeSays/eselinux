@@ -48,7 +48,7 @@ static BOOL FOSThreadITlsRegister( _TLS* ptls )
 
     EnterCriticalSection( &g_csTlsGlobal );
     
-    if ( NULL == g_ptlsGlobal )
+    if ( nullptr == g_ptlsGlobal )
     {
         //  allocate a new TLS entry
 
@@ -156,7 +156,7 @@ static void OSThreadITlsUnregister( _TLS* ptls )
 
     //  we are the last to unregister our TLS
 
-    if ( g_ptlsGlobal == NULL )
+    if ( g_ptlsGlobal == nullptr )
     {
         //  deallocate TLS entry
 
@@ -193,11 +193,11 @@ BOOL FOSThreadITlsAlloc()
 
     //  we don't yet have any TLS
 
-    _TLS* ptls  = ( NULL != g_ptlsGlobal ?
+    _TLS* ptls  = ( nullptr != g_ptlsGlobal ?
                         reinterpret_cast<_TLS *>( TlsGetValue( g_dwTlsIndex ) ) :
-                        NULL );
+                        nullptr );
 
-    if ( NULL == ptls )
+    if ( nullptr == ptls )
     {
         //  allocate memory for this thread's TLS
 
@@ -272,11 +272,11 @@ _TLS* const _Ptls()
 {
     DWORD dwSavedGLE = GetLastError();
 
-    _TLS * ptls = ( NULL != g_ptlsGlobal ?
+    _TLS * ptls = ( nullptr != g_ptlsGlobal ?
                         reinterpret_cast<_TLS *>( TlsGetValue( g_dwTlsIndex ) ) :
-                        NULL );
+                        nullptr );
 
-    if ( NULL == ptls )
+    if ( nullptr == ptls )
     {
         while ( !FOSThreadITlsAlloc() )
         {
@@ -473,7 +473,7 @@ const ERR ErrUtilThreadICreate(
     //  allocate memory to pass thread args
 
     _THREAD* const p_thread = (_THREAD*)LocalAlloc( 0, sizeof( _THREAD ) );
-    if ( NULL == p_thread )
+    if ( nullptr == p_thread )
     {
         Error( ErrERRCheck( JET_errOutOfMemory ) );
     }
@@ -483,14 +483,14 @@ const ERR ErrUtilThreadICreate(
     p_thread->pfnStart      = pfnStart;
     p_thread->dwParam       = dwParam;
     p_thread->szStart       = szStart;
-    p_thread->hThread       = NULL;
+    p_thread->hThread       = nullptr;
     p_thread->idThread      = 0;
     p_thread->fFinish       = fFalse;
     p_thread->fEndSelf      = fFalse;
 
     //  create the thread in suspended animation
 
-    p_thread->hThread = HANDLE( CreateThread(   NULL,
+    p_thread->hThread = HANDLE( CreateThread(   nullptr,
                                                 cbStack,
                                                 LPTHREAD_START_ROUTINE( UtilThreadIThreadBase ),
                                                 (void*) p_thread,
@@ -634,7 +634,7 @@ BOOL FOSThreadPreinit()
         return fFalse;
     }
     g_fcsTlsGlobalInit = fTrue;
-    g_ptlsGlobal = NULL;
+    g_ptlsGlobal = nullptr;
     g_dwTlsIndex = dwTlsInvalid;
 
     return fTrue;

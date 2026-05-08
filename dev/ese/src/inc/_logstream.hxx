@@ -53,7 +53,7 @@ public:
     virtual BOOL FIsOldLrckVersionSeen() const = 0;
     virtual VOID ResetOldLrckVersionSecSize() = 0;
 
-    virtual LONG GetCurrentFileGen( LOGTIME * plogtime = NULL ) const = 0;
+    virtual LONG GetCurrentFileGen( LOGTIME * plogtime = nullptr ) const = 0;
     virtual const LGFILEHDR *GetCurrentFileHdr() const = 0;
     virtual VOID SaveCurrentFileHdr() = 0;
     virtual ERR ErrLGGetDesiredLogVersion( _In_ const JET_ENGINEFORMATVERSION efv, _Out_ const LogVersion ** const pplgv ) = 0;
@@ -117,7 +117,7 @@ public:
     virtual BOOL FRemovedLogs() = 0;
     virtual VOID ResetRemovedLogs() = 0;
 
-    virtual ERR ErrLGOpenFile( PCWSTR pszPath = NULL, BOOL fReadOnly = fFalse ) = 0;
+    virtual ERR ErrLGOpenFile( PCWSTR pszPath = nullptr, BOOL fReadOnly = fFalse ) = 0;
     virtual VOID LGCloseFile() = 0;
     virtual ERR SetPfapi( IFileAPI * pfapi ) = 0;
     virtual VOID ResetPfapi() = 0;
@@ -132,7 +132,7 @@ public:
         __in_ecount( cLogData ) const BYTE * const  rgpbLogData[],  // buffer range
         const size_t                                cLogData,       // range length
         const DWORD                                 dwLogIdErr,
-        BOOL * const                                pfFlushed = NULL,
+        BOOL * const                                pfFlushed = nullptr,
         const BOOL                                  fGeneralizeError = fFalse,
         const LGPOS&                                lgposWriteEnd = lgposMin
         ) = 0;
@@ -143,11 +143,11 @@ public:
         const ULONG             cbLogData,  // size
         const BYTE * const      pbLogData,  // buffer
         const DWORD             dwLogIdErr,
-        BOOL * const            pfFlushed = NULL,
+        BOOL * const            pfFlushed = nullptr,
         const BOOL              fGeneralizeError = fFalse,
         const LGPOS&            lgposWriteEnd = lgposMin
         ) = 0;
-    virtual ERR ErrLGFlushLogFileBuffers( const IOFLUSHREASON iofr, BOOL * const pfFlushed = NULL ) = 0;
+    virtual ERR ErrLGFlushLogFileBuffers( const IOFLUSHREASON iofr, BOOL * const pfFlushed = nullptr ) = 0;
     virtual void LGAssertFullyFlushedBuffers() = 0;
     virtual ERR ErrLGTermFlushLog( const BOOL fCleanTerm ) = 0;
     virtual ERR ErrLGReadSectorData(
@@ -233,14 +233,14 @@ public:
         _In_ PCWSTR wszLogFolder,
         const enum eLGFileNameSpec eLogType,
         LONG lGen,
-        __in_opt PCWSTR wszLogExt = NULL ) const = 0;
+        __in_opt PCWSTR wszLogExt = nullptr ) const = 0;
 
     virtual ERR ErrLGGetGenerationRange(
             _In_ PCWSTR wszFindPath,
             LONG* plgenLow,
             LONG* plgenHigh,
             _In_ BOOL fLooseExt = fFalse,
-            __out_opt BOOL * pfDefaultExt = NULL ) = 0;
+            __out_opt BOOL * pfDefaultExt = nullptr ) = 0;
     virtual ERR ErrLGGetGenerationRangeExt(
             _In_ PCWSTR wszFindPath,
             LONG* plgenLow,
@@ -251,7 +251,7 @@ public:
             _In_ PCWSTR             wszLogFolder,
             INT                     gen,
             IFileAPI **const        ppfapi,
-            __in_opt PCWSTR         wszLogExt = NULL ) = 0;
+            __in_opt PCWSTR         wszLogExt = nullptr ) = 0;
     virtual VOID LGRSTDeleteLogs(
             _In_ PCWSTR wszLog, INT genLow,
             INT genHigh,
@@ -284,7 +284,7 @@ public:
         if ( m_plgfilehdr )
         {
             OSMemoryPageFree( m_plgfilehdr );
-            m_plgfilehdr = NULL;
+            m_plgfilehdr = nullptr;
         }
     }
 
@@ -415,7 +415,7 @@ public:
 
     //  current file generation
     //
-    LONG GetCurrentFileGen( LOGTIME * ptmCreate = NULL ) const;
+    LONG GetCurrentFileGen( LOGTIME * ptmCreate = nullptr ) const;
     const LGFILEHDR *GetCurrentFileHdr() const;
     VOID SaveCurrentFileHdr();
 
@@ -598,7 +598,7 @@ public:
         return (BYTE*) ( UINT_PTR( pb ) & mask );
     }
 
-    ERR ErrLGOpenFile( PCWSTR pszPath = NULL, BOOL fReadOnly = fFalse );
+    ERR ErrLGOpenFile( PCWSTR pszPath = nullptr, BOOL fReadOnly = fFalse );
     VOID LGCloseFile();
 
     ERR SetPfapi( IFileAPI * pfapi )
@@ -610,12 +610,12 @@ public:
 
     VOID ResetPfapi()
     {
-        m_pfapiLog = NULL;
+        m_pfapiLog = nullptr;
     }
 
     BOOL FLGFileOpened() const
     {
-        return (m_pfapiLog != NULL);
+        return (m_pfapiLog != nullptr);
     }
 
     ERR ErrFileSize( QWORD *pqwSize )
@@ -631,7 +631,7 @@ public:
         __in_ecount( cLogData ) const BYTE * const      rgpbLogData[],  // buffer range
         const size_t                                    cLogData,       // range length
         const DWORD                                     dwLogIdErr,
-        BOOL * const                                    pfFlushed = NULL,
+        BOOL * const                                    pfFlushed = nullptr,
         const BOOL                                      fGeneralizeError = fFalse,
         const LGPOS&                                    lgposWriteEnd = lgposMin
         )
@@ -639,7 +639,7 @@ public:
         return ErrLGIWriteSectorData( m_pfapiLog, rgIor, lgenData, ibLogData, rgcbLogData, rgpbLogData, cLogData, dwLogIdErr, pfFlushed, fGeneralizeError, lgposWriteEnd );
     }
 
-    ERR ErrLGFlushLogFileBuffers( const IOFLUSHREASON iofr, BOOL * const pfFlushed = NULL );
+    ERR ErrLGFlushLogFileBuffers( const IOFLUSHREASON iofr, BOOL * const pfFlushed = nullptr );
     void LGAssertFullyFlushedBuffers();
     ERR ErrLGTermFlushLog( const BOOL fCleanTerm )
     {
@@ -667,7 +667,7 @@ public:
         const ULONG             cbLogData,  // size
         const BYTE * const      pbLogData,  // buffer
         const DWORD             dwLogIdErr,
-        BOOL * const            pfFlushed = NULL,
+        BOOL * const            pfFlushed = nullptr,
         const BOOL              fGeneralizeError = fFalse,
         const LGPOS&            lgposWriteEnd = lgposMin
         )
@@ -745,9 +745,9 @@ public:
         _In_ PCWSTR wszLogFolder,
         const enum eLGFileNameSpec eLogType,
         LONG lGen,
-        __in_opt PCWSTR wszLogExt = NULL ) const;
+        __in_opt PCWSTR wszLogExt = nullptr ) const;
 
-    ERR ErrLGGetGenerationRange( _In_ PCWSTR wszFindPath, LONG* plgenLow, LONG* plgenHigh, _In_ BOOL fLooseExt = fFalse, __out_opt BOOL * pfDefaultExt = NULL );
+    ERR ErrLGGetGenerationRange( _In_ PCWSTR wszFindPath, LONG* plgenLow, LONG* plgenHigh, _In_ BOOL fLooseExt = fFalse, __out_opt BOOL * pfDefaultExt = nullptr );
     ERR ErrLGGetGenerationRangeExt( _In_ PCWSTR wszFindPath, LONG* plgenLow, LONG* plgenHigh, _In_ PCWSTR wszLogExt );
 
     BOOL FCreatedNewLogFileDuringRedo()
@@ -784,7 +784,7 @@ private:
         _In_ PCWSTR             wszLogFolder,
         INT                         gen,
         IFileAPI **const        ppfapi,
-        __in_opt PCWSTR         wszLogExt = NULL );
+        __in_opt PCWSTR         wszLogExt = nullptr );
     VOID LGRSTDeleteLogs( _In_ PCWSTR wszLog, INT genLow, INT genHigh, BOOL fIncludeJetLog );
 
 

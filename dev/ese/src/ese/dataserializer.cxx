@@ -44,7 +44,7 @@ void UtilPrintColumnValue(
               CPRINTF * const pcprintf )
 //  ================================================================
 {
-    if( NULL == pv || 0 == cb )
+    if( nullptr == pv || 0 == cb )
     {
         ( *pcprintf )("<null>" );
     }
@@ -282,7 +282,7 @@ ERR TableDataStore::ErrCreateColumn( const char * const szColumn, const JET_COLT
         JET_COLUMNDEF columndef = {0};
         columndef.cbStruct = sizeof( columndef );
         columndef.coltyp = coltyp;
-        Call( ErrIsamAddColumn( m_sesid, m_tableid, szColumn, &columndef, NULL, 0, NULL ) );
+        Call( ErrIsamAddColumn( m_sesid, m_tableid, szColumn, &columndef, nullptr, 0, nullptr ) );
     }
 
     Call( ErrIsamCommitTransaction( m_sesid, JET_bitCommitLazyFlush ) );
@@ -390,13 +390,13 @@ ERR TableDataStore::ErrUpdate()
     Assert( m_fInUpdate );
     
     ERR err;
-    Call( ErrIsamUpdate( m_sesid, m_tableid, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( m_sesid, m_tableid, nullptr, 0, nullptr, NO_GRBIT ) );
     m_fInUpdate = false;
     Call( ErrIsamCommitTransaction( m_sesid, JET_bitCommitLazyFlush ) );
     m_fInTransaction = false;
 
 {
-    BFLatch bfl = { 0 };
+    BFLatch bfl = { nullptr };
     PIBTraceContextScope tcScope = ( ( PIB* )m_sesid )->InitTraceContextScope();
     tcScope->nParentObjectClass = TceFromFUCB( ( FUCB* )m_tableid );
     tcScope->SetDwEngineObjid( ObjidFDP( ( FUCB* )m_tableid ) );
@@ -446,7 +446,7 @@ HandleError:
 ERR TableDataStore::ErrSetColumn_( const JET_COLUMNID columnid, const void * const pv, const size_t cb )
 {
     ERR err;
-    Call( ErrIsamSetColumn( m_sesid, m_tableid, columnid, pv, cb, NO_GRBIT, NULL ) );
+    Call( ErrIsamSetColumn( m_sesid, m_tableid, columnid, pv, cb, NO_GRBIT, nullptr ) );
 
 HandleError:
     return err;
@@ -471,7 +471,7 @@ ERR TableDataStore::ErrRetrieveColumn_(
         cbMaxT,
         &cbActualT,
         NO_GRBIT,
-        NULL ) );
+        nullptr ) );
 
 HandleError:
     *pcbActual = cbActualT;
@@ -511,7 +511,7 @@ ERR TableDataStoreFactory::ErrOpen_(
     ERR err;
     JET_OPERATIONCONTEXT operationContext = { OCUSER_DBSCAN, 0, 0, 0 };
 
-    *ppstore = NULL;
+    *ppstore = nullptr;
     
     const JET_INSTANCE inst = ( JET_INSTANCE )pinst;
     JET_SESID sesid         = JET_sesidNil;
@@ -523,7 +523,7 @@ ERR TableDataStoreFactory::ErrOpen_(
     // Set tracing info for the session
     Call( ErrIsamSetSessionParameter( sesid, JET_sesparamOperationContext, &operationContext, sizeof( operationContext ) ) );
 
-    Call( ErrIsamOpenDatabase( sesid, wszDatabase, NULL, &dbid, NO_GRBIT ) );
+    Call( ErrIsamOpenDatabase( sesid, wszDatabase, nullptr, &dbid, NO_GRBIT ) );
 
     // open or create the table
     err = ErrIsamOpenTable( sesid, dbid, &tableid, szTable, NO_GRBIT );
@@ -608,7 +608,7 @@ ERR TableDataStoreFactory::ErrCreateRecord_( const JET_SESID sesid, const JET_TA
     fInTransaction = true;
     Call( ErrIsamPrepareUpdate( sesid, tableid, JET_prepInsert ) );
     fInUpdate = true;
-    Call( ErrIsamUpdate( sesid, tableid, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( sesid, tableid, nullptr, 0, nullptr, NO_GRBIT ) );
     fInUpdate = false;
     Call( ErrIsamCommitTransaction( sesid, JET_bitCommitLazyFlush ) );
     fInTransaction = false;
@@ -737,7 +737,7 @@ ERR DataSerializer::ErrLoadBindings( const IDataStore * const pstore )
 {
     ERR err = JET_errSuccess;
 
-    BYTE * pb = NULL;
+    BYTE * pb = nullptr;
     size_t cbMax = 0;
     size_t cbActual;
 
@@ -867,7 +867,7 @@ ERR MemoryDataStore::ErrLoadDataFromColumn(
     const size_t cbMax ) const
 {
     const INT i = IColumn( szColumn );
-    if( -1 != i && NULL != m_rgpbData[i].get() )
+    if( -1 != i && nullptr != m_rgpbData[i].get() )
     {
         *pcbActual = m_rgcbData[i];
         const size_t cbToCopy = min( cbMax, *pcbActual );

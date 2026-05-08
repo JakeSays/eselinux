@@ -71,8 +71,8 @@ class IVolumeAPI  //  fsapi
 
         virtual ERR ErrDiskSpace(   const WCHAR* const  wszPath,
                                     QWORD* const        pcbFreeForUser,
-                                    QWORD* const        pcbTotalForUser = NULL,
-                                    QWORD* const        pcbFreeOnDisk = NULL ) = 0;
+                                    QWORD* const        pcbTotalForUser = nullptr,
+                                    QWORD* const        pcbFreeOnDisk = nullptr ) = 0;
 
 
         //  returns the sector size for the specified path

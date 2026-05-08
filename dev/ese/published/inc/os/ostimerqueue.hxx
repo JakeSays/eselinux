@@ -37,7 +37,7 @@ VOID OSTimerTaskScheduleTask(
     const void * const              pvRuntimeContext,
     const TICK                      dtickMinDelay,
     const TICK                      dtickSlopDelay,
-    const void **                   ppvRuntimeContextCancelled = NULL );
+    const void **                   ppvRuntimeContextCancelled = nullptr );
 
 #define dtickSlopNoWake             0xFFFFFFFF
 
@@ -51,7 +51,7 @@ VOID OSTimerTaskScheduleTask(
 //
 //  can not call this from the PfnTimerTask callback.
 //
-VOID OSTimerTaskCancelTask( POSTIMERTASK postt, _Out_opt_ const void ** ppvRuntimeContextCancelled = NULL );
+VOID OSTimerTaskCancelTask( POSTIMERTASK postt, _Out_opt_ const void ** ppvRuntimeContextCancelled = nullptr );
 
 //  cleans up and frees the timer task scheduler object
 //

@@ -258,7 +258,7 @@ ERR CIoStats::ErrCreateStats( CIoStats ** ppiostatsOut, const BOOL fDatacenterGr
 {
     ERR err = JET_errSuccess;
 
-    CIoStats * piostatsOut = NULL;
+    CIoStats * piostatsOut = nullptr;
 
     AllocR( piostatsOut = new CIoStats() );
 
@@ -289,7 +289,7 @@ ERR CIoStats::ErrCreateStats( CIoStats ** ppiostatsOut, const BOOL fDatacenterGr
     piostatsOut->Tare();
 
     *ppiostatsOut = piostatsOut;
-    piostatsOut = NULL;
+    piostatsOut = nullptr;
 
 HandleError:
 
@@ -305,9 +305,9 @@ CIoStats::CIoStats() :
     m_rwl( CLockBasicInfo( CSyncBasicInfo( "IO Stats Tracker" ), rankIoStats, 0 ) )
 #endif
 {
-    m_piostats_ = NULL;
-    m_pvLargeAlloc = NULL;
-    m_pvSmallAlloc = NULL;
+    m_piostats_ = nullptr;
+    m_pvLargeAlloc = nullptr;
+    m_pvSmallAlloc = nullptr;
     m_tickLastFastDataUpdate = 0;
     m_tickSpikeBaselineCompletedTime = 0;
 }

@@ -14,7 +14,7 @@ class TTARRAY
                     :   pgno( pgnoNull ),
                         fWriteLatch( fFalse )
                 {
-                    bfl.pv          = NULL;
+                    bfl.pv          = nullptr;
                     bfl.dwContext   = 0;
                 }
             
@@ -33,8 +33,8 @@ class TTARRAY
         VOID BeginRun( PIB* const ppib, RUN* const prun );
         VOID EndRun( PIB* const ppib, RUN* const prun );
         
-        ERR ErrSetValue( PIB * const ppib, const ULONG ulEntry, const ULONG ulValue, RUN* const prun = NULL );
-        ERR ErrGetValue( PIB * const ppib, const ULONG ulEntry, ULONG * const pulValue, RUN* const prun = NULL ) const;
+        ERR ErrSetValue( PIB * const ppib, const ULONG ulEntry, const ULONG ulValue, RUN* const prun = nullptr );
+        ERR ErrGetValue( PIB * const ppib, const ULONG ulEntry, ULONG * const pulValue, RUN* const prun = nullptr ) const;
 
         ULONG CEntries() const;
         

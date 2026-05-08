@@ -42,7 +42,7 @@ LONG LDIRUserRWLazyTrxCommit0CEFLPv(LONG iInstance,void *pvBuf)
 
 LONG LDIRUserTrxCommit0CEFLPv(LONG iInstance,void *pvBuf)
 {
-    if ( NULL != pvBuf )
+    if ( nullptr != pvBuf )
     {
         *((LONG *)pvBuf) = cDIRUserROTrxCommit0.Get( iInstance ) + cDIRUserRWDurableTrxCommit0.Get( iInstance ) + cDIRUserRWLazyTrxCommit0.Get( iInstance );
     }
@@ -67,7 +67,7 @@ LONG LDIRUserRWTrxRollback0CEFLPv(LONG iInstance,void *pvBuf)
 
 LONG LDIRUserTrxRollback0CEFLPv(LONG iInstance,void *pvBuf)
 {
-    if ( NULL != pvBuf )
+    if ( nullptr != pvBuf )
     {
         *((LONG *)pvBuf) = cDIRUserROTrxRollback0.Get( iInstance ) + cDIRUserRWTrxRollback0.Get( iInstance );
     }
@@ -103,7 +103,7 @@ LONG LDIRSystemRWLazyTrxCommit0CEFLPv(LONG iInstance,void *pvBuf)
 
 LONG LDIRSystemTrxCommit0CEFLPv(LONG iInstance,void *pvBuf)
 {
-    if ( NULL != pvBuf )
+    if ( nullptr != pvBuf )
     {
         *((LONG *)pvBuf) = cDIRSystemROTrxCommit0.Get( iInstance ) + cDIRSystemRWDurableTrxCommit0.Get( iInstance ) + cDIRSystemRWLazyTrxCommit0.Get( iInstance );
     }
@@ -129,7 +129,7 @@ LONG LDIRSystemRWTrxRollback0CEFLPv(LONG iInstance,void *pvBuf)
 
 LONG LDIRSystemTrxRollback0CEFLPv(LONG iInstance,void *pvBuf)
 {
-    if ( NULL != pvBuf )
+    if ( nullptr != pvBuf )
     {
         *((LONG *)pvBuf) = cDIRSystemROTrxRollback0.Get( iInstance ) + cDIRSystemRWTrxRollback0.Get( iInstance );
     }
@@ -1596,7 +1596,7 @@ ERR ErrDIRIndexRecordCount( FUCB *pfucb, ULONG64 *pullCount, ULONG64 ullCountMos
     INST *  pinst   = PinstFromPfucb( pfucb );
     CPG     cpgPreread;
     BOOKMARK bm;
-    BYTE    *pb = NULL;
+    BYTE    *pb = nullptr;
 
     CheckFUCB( pfucb->ppib, pfucb );
     Assert( !Pcsr( pfucb )->FLatched() );
@@ -1669,7 +1669,7 @@ ERR ErrDIRIndexRecordCount( FUCB *pfucb, ULONG64 *pullCount, ULONG64 ullCountMos
 
     Assert( pfucb->bmCurr.key.Cb() + pfucb->bmCurr.data.Cb() > 0 );
     pb = new BYTE[ pfucb->bmCurr.key.Cb() + pfucb->bmCurr.data.Cb() ];
-    if ( pb == NULL )
+    if ( pb == nullptr )
     {
         Call( ErrERRCheck( JET_errOutOfMemory ) );
     }
@@ -1765,7 +1765,7 @@ ERR ErrDIRIndexRecordCount( FUCB *pfucb, ULONG64 *pullCount, ULONG64 ullCountMos
     }
 
 HandleError:
-    if ( pb != NULL )
+    if ( pb != nullptr )
     {
         if ( err == JET_errSuccess )
         {
@@ -1779,7 +1779,7 @@ HandleError:
         }
         bm.Nullify();
         delete[] pb;
-        pb = NULL;
+        pb = nullptr;
     }
     Assert( pb == NULL );
     Assert( !Pcsr( pfucb )->FLatched() );
@@ -1996,7 +1996,7 @@ ERR ErrDIRCommitTransaction( PIB *ppib, JET_GRBIT grbit, DWORD cmsecDurableCommi
 
             plog->LGAddLgpos( &lgposCommitRec, sizeof( LRCOMMIT0 ) - 1 );
 
-            if ( pCommitId != NULL )
+            if ( pCommitId != nullptr )
             {
                 const SIGNATURE signLogCommit = PinstFromPpib( ppib )->m_plog->SignLog();
                 pCommitId->signLog = *(const JET_SIGNATURE *)&signLogCommit;

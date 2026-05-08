@@ -23,7 +23,7 @@ LONG LEncryptionCEFLPv( LONG iInstance, void *pvBuf )
 PERFInstanceLiveTotalWithClass<QWORD> cEncryptionTotalDhrts;
 LONG LEncryptionLatencyCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CusecHRTFromDhrt( cEncryptionTotalDhrts.Get( iInstance ) );
     }
@@ -47,7 +47,7 @@ LONG LDecryptionCEFLPv( LONG iInstance, void *pvBuf )
 PERFInstanceLiveTotalWithClass<QWORD> cDecryptionTotalDhrts;
 LONG LDecryptionLatencyCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*)pvBuf = CusecHRTFromDhrt( cDecryptionTotalDhrts.Get( iInstance ) );
     }
@@ -64,7 +64,7 @@ ErrOSUEncrypt(
     _In_                                            const   FUCB *pfucb,
     _In_                                            const   FUCB *pfucbTable )
 {
-    if ( pfucbTable == NULL )
+    if ( pfucbTable == nullptr )
     {
         pfucbTable = pfucb;
     }
@@ -89,7 +89,7 @@ ErrOSUDecrypt(
     _In_                                        const   FUCB *pfucb,
     _In_                                        const   FUCB *pfucbTable )
 {
-    if ( pfucbTable == NULL )
+    if ( pfucbTable == nullptr )
     {
         pfucbTable = pfucb;
     }
@@ -131,7 +131,7 @@ ErrOSUDecrypt(
             irgsz,
             rgsz,
             0,
-            NULL,
+            nullptr,
             PinstFromPfucb( pfucb ) );
     }
 

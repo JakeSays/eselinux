@@ -98,7 +98,7 @@ ERR ErrFILEOpenTable(
     _Out_ FUCB      **ppfucb,
     _In_ const CHAR *szName,
     _In_ ULONG      grbit = NO_GRBIT,
-    _In_opt_ FDPINFO        *pfdpinfo = NULL );
+    _In_opt_ FDPINFO        *pfdpinfo = nullptr );
 ERR ErrFILECloseTable( PIB *ppib, FUCB *pfucb );
 
 
@@ -128,8 +128,8 @@ ERR ErrFILEIndexBatchTerm(
     const ULONG cIndexesToBuild,
     ULONG       * const rgcRecInput,
     STATUSINFO  * const pstatus,
-    BOOL        *pfCorruptionEncountered = NULL,
-    CPRINTF     * const pcprintf = NULL );
+    BOOL        *pfCorruptionEncountered = nullptr,
+    CPRINTF     * const pcprintf = nullptr );
 ERR ErrFILEBuildAllIndexes(
     PIB         * const ppib,
     FUCB        * const pfucbTable,
@@ -137,7 +137,7 @@ ERR ErrFILEBuildAllIndexes(
     STATUSINFO  * const pstatus,
     const ULONG cIndexBatchMaxRequested,
     const BOOL  fCheckOnly = fFalse,
-    CPRINTF     * const pcprintf = NULL );
+    CPRINTF     * const pcprintf = nullptr );
 
 INLINE ERR ErrFILEIAccessIndex(
     PIB * const         ppib,

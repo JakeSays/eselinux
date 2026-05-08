@@ -56,7 +56,7 @@ ERR ErrIOUpdateCheckpoints( INST * pinst );
 
 INLINE BOOL FIODatabaseOpen( IFMP ifmp )
 {
-    return BOOL( NULL != g_rgfmp[ ifmp ].Pfapi() );
+    return BOOL( nullptr != g_rgfmp[ ifmp ].Pfapi() );
 }
 
 ERR ErrIOOpenDatabase(
@@ -151,7 +151,7 @@ class UPDATETHREADSTATSCOUNTERS
         //
         VOID TabulateCounters()
         {
-            if ( NULL != m_ptscounters )
+            if ( nullptr != m_ptscounters )
             {
                 //  snapshot final stats
                 //
@@ -171,7 +171,7 @@ class UPDATETHREADSTATSCOUNTERS
                 //  NULL out pointer to signify that counters have already been tabulated (in case
                 //  you want to manually force tabulation of counters before the destructor is called
                 //
-                m_ptscounters = NULL;
+                m_ptscounters = nullptr;
             }
         }
 #endif  //  MINIMAL_FUNCTIONALITY
@@ -521,7 +521,7 @@ class CIOFilePerf
                     default: AssertSz( fFalse, "Unknown iofile type = %d", iofileT );
                     }
                     Assert( ifmp == 0 || ( FMP::FAllocatedFmp( ifmp ) && ( piolatstatDb = g_rgfmp[ifmp].Piostats( iotypeT ) ) ) );
-                    if ( ( ifmp != 0 ) && FMP::FAllocatedFmp( ifmp ) && ( ( piolatstatDb = g_rgfmp[ifmp].Piostats( iotypeT ) ) != NULL ) )
+                    if ( ( ifmp != 0 ) && FMP::FAllocatedFmp( ifmp ) && ( ( piolatstatDb = g_rgfmp[ifmp].Piostats( iotypeT ) ) != nullptr ) )
                     {
                         piolatstatDb->AddIoSample( dhrtIOElapsed );
                         if ( piolatstatDb->FStartUpdate() )
@@ -696,8 +696,8 @@ inline ERR CIOFilePerf::ErrFileOpen(
     _Out_ IFileAPI ** const             ppfapi )
 {
     ERR                     err;
-    IFileAPI *              pfapi       = NULL;
-    IFilePerfAPI *          pfpapi      = NULL;
+    IFileAPI *              pfapi       = nullptr;
+    IFilePerfAPI *          pfpapi      = nullptr;
 
     Assert( pinstNil != pinst );
 
@@ -711,7 +711,7 @@ inline ERR CIOFilePerf::ErrFileOpen(
     if ( err < JET_errSuccess )
     {
         Assert( pfapi == NULL );
-        pfapi = NULL;
+        pfapi = nullptr;
         delete pfpapi;
         goto HandleError;
     }
@@ -736,8 +736,8 @@ inline ERR CIOFilePerf::ErrFileCreate(
     _Out_ IFileAPI ** const             ppfapi )
 {
     ERR                     err;
-    IFileAPI *              pfapi       = NULL;
-    IFilePerfAPI *          pfpapi      = NULL;
+    IFileAPI *              pfapi       = nullptr;
+    IFilePerfAPI *          pfpapi      = nullptr;
 
     Assert( pinstNil != pinst );
 

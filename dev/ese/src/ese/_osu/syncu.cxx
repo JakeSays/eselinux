@@ -19,7 +19,7 @@ ERR ErrOSUSyncInit()
 
 //  init statics
 
-BYTE* PLS::s_pbPerfCounters = NULL;
+BYTE* PLS::s_pbPerfCounters = nullptr;
 ULONG PLS::s_cbPerfCounters = 0;
 
 

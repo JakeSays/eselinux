@@ -24,11 +24,11 @@ ERR SyncPerformsFAtomicIncrementPointerMaxPvoid::ErrTest()
     TestCheck( fFalse == FAtomicIncrementPointerMax( &pvoid, &pvoidI, (void*)0x100000002 ) );
     TestCheck( (QWORD)pvoidI == 0x100000001 );
 #else
-    volatile void * pvoid = 0;
-    void * pvoidI = 0;
+    volatile void * pvoid = nullptr;
+    void * pvoidI = nullptr;
 
     TestCheck( fTrue == FAtomicIncrementPointerMax( &pvoid, &pvoidI, (void*)3 ) );
-    TestCheck( pvoidI == 0 );
+    TestCheck( pvoidI == nullptr );
     TestCheck( fTrue == FAtomicIncrementPointerMax( &pvoid, &pvoidI, (void*)3 ) );
     TestCheck( (INT)pvoidI == 1 );
     TestCheck( fTrue == FAtomicIncrementPointerMax( &pvoid, &pvoidI, (void*)3 ) );
@@ -445,14 +445,14 @@ ERR SyncPerformsAtomicExchangeAddPointerBasicOnPvoid::ErrTest()
 {
     ERR err = JET_errSuccess;
 
-    void * pvoid = NULL;
+    void * pvoid = nullptr;
     size_t cb = 0;
 
-    TestCheck( NULL == AtomicExchangeAddPointer( &pvoid, this ) );  //  silly, as this is not the kind of things we use this for
+    TestCheck( nullptr == AtomicExchangeAddPointer( &pvoid, this ) );  //  silly, as this is not the kind of things we use this for
     TestCheck( this == AtomicExchangeAddPointer( &pvoid, (void*)-((SIGNED_PTR)this) ) );
-    TestCheck( pvoid == NULL );
+    TestCheck( pvoid == nullptr );
 
-    TestCheck( 0 == AtomicExchangeAddPointer( (void**)&cb, (void*)40 ) );               // "alloc"
+    TestCheck( nullptr == AtomicExchangeAddPointer( (void**)&cb, (void*)40 ) );               // "alloc"
     TestCheck( 40 == (size_t)AtomicExchangeAddPointer( (void**)&cb, (void*)40 ) );      // "alloc"
     TestCheck( 80 == (size_t)AtomicExchangeAddPointer( (void**)&cb, (void*)40 ) );      // "alloc"
     TestCheck( 120 == (size_t)AtomicExchangeAddPointer( (void**)&cb, (void*)-40 ) );    // "free"
@@ -482,15 +482,15 @@ ERR SyncPerformsAtomicLinklistBasicOperations::ErrTest()
         void *  pvNext; //  just easier to link to next
 } AStructForLinking;
 
-    void * pvHead = NULL;
+    void * pvHead = nullptr;
 
-    AStructForLinking   n1 = { 1, NULL };
-    AStructForLinking   n2 = { 2, NULL };
-    AStructForLinking   n3 = { 3, NULL };
+    AStructForLinking   n1 = { 1, nullptr };
+    AStructForLinking   n2 = { 2, nullptr };
+    AStructForLinking   n3 = { 3, nullptr };
     
     AtomicAddLinklistNode( &n1, &(n1.pvNext), &pvHead );
     TestCheck( pvHead == &n1 );
-    TestCheck( n1.pvNext == NULL );
+    TestCheck( n1.pvNext == nullptr );
 
     AtomicAddLinklistNode( &n2, &(n2.pvNext), &pvHead );
     TestCheck( pvHead == &n2 );
@@ -500,9 +500,9 @@ ERR SyncPerformsAtomicLinklistBasicOperations::ErrTest()
 
 {
     AStructForLinking * pvList = (AStructForLinking*)PvAtomicRetrieveLinklist( &pvHead );
-    TestCheck( pvHead == NULL );    // empties list
+    TestCheck( pvHead == nullptr );    // empties list
 
-    TestCheck( NULL == PvAtomicRetrieveLinklist( &pvHead ) );   // 2nd call gets nothing.
+    TestCheck( nullptr == PvAtomicRetrieveLinklist( &pvHead ) );   // 2nd call gets nothing.
 
 {
     //  List should be inverted ...
@@ -596,12 +596,12 @@ ERR SyncPerformsAtomicCompareExchangePointerBasicOnPvoid::ErrTest()
 
     void * pvoid = &err;
 
-    TestCheck( NULL != AtomicCompareExchangePointer( &pvoid, NULL, this ) );
-    TestCheck( &err == AtomicCompareExchangePointer( &pvoid, NULL, this ) );
+    TestCheck( nullptr != AtomicCompareExchangePointer( &pvoid, nullptr, this ) );
+    TestCheck( &err == AtomicCompareExchangePointer( &pvoid, nullptr, this ) );
 
-    TestCheck( &err == AtomicCompareExchangePointer( &pvoid, &err, NULL ) );
+    TestCheck( &err == AtomicCompareExchangePointer( &pvoid, &err, nullptr ) );
 
-    TestCheck( NULL == AtomicCompareExchangePointer( &pvoid, NULL, this ) );
+    TestCheck( nullptr == AtomicCompareExchangePointer( &pvoid, nullptr, this ) );
 
 HandleError:
     return err;
@@ -682,9 +682,9 @@ ERR SyncPerformsAtomicExchangePointerBasicOnPvoid::ErrTest()
 {
     ERR err = JET_errSuccess;
 
-    void * pvoid = NULL;
+    void * pvoid = nullptr;
 
-    TestCheck( NULL == AtomicExchangePointer( &pvoid, (void*)this ) );
+    TestCheck( nullptr == AtomicExchangePointer( &pvoid, (void*)this ) );
 
     TestCheck( this == pvoid );
 

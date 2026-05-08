@@ -33,7 +33,7 @@ class TASKMGR
 
         ERR ErrInit( INST *const pinst, const INT cThread );
         ERR ErrTerm();
-        ERR ErrPostTask( const TASK pfnTask, const ULONG_PTR ul, TaskInfo * pTaskInfo = NULL );
+        ERR ErrPostTask( const TASK pfnTask, const ULONG_PTR ul, TaskInfo * pTaskInfo = nullptr );
 
     private:
 

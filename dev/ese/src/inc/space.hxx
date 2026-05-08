@@ -191,7 +191,7 @@ ERR ErrSPGetExt(
     PGNO        *ppgnoFirst,
     ULONG       fSPFlags = 0,
     UINT        fPageFlags = 0,
-    OBJID       *pobjidFDP = NULL );
+    OBJID       *pobjidFDP = nullptr );
 
 ERR ErrSPGetPage(
     __inout FUCB *          pfucb,
@@ -210,7 +210,7 @@ ERR ErrSPCaptureNonRevertableFDPRootPage(
     PIB* ppib,
     FCB* pfcbFDPToFree,
     const PGNO pgnoLVRoot,
-    CPG* const pcpgCaptured = NULL );
+    CPG* const pcpgCaptured = nullptr );
 
 ERR ErrSPFreeExt(
     FUCB* const pfucb,
@@ -248,7 +248,7 @@ ERR ErrSPGetInfo(
     const ULONG               cbMax,
     const ULONG               fSPExtentsRequested,
     const GET_CACHED_INFO     gciType,
-    CPRINTF * const           pcprintf = NULL );
+    CPRINTF * const           pcprintf = nullptr );
 
 ERR ErrSPGetExtentInfo(
     _Inout_ PIB *       ppib,
@@ -263,7 +263,7 @@ ERR ErrSPTrimRootAvail(
     _In_ PIB *ppib,
     _In_ const IFMP ifmp,
     _In_ CPRINTF * const pcprintf,
-    _Out_opt_ CPG * const pcpgTrimmed = NULL );
+    _Out_opt_ CPG * const pcpgTrimmed = nullptr );
 
 // Shrink done reason.
 typedef enum
@@ -335,7 +335,7 @@ ERR ErrSPGetSpaceCategoryRange(
     _In_ const PGNO pgnoLast,
     _In_ const BOOL fRunFullSpaceCat,
     _In_ const JET_SPCATCALLBACK pfnCallback,
-    _In_opt_ VOID* const pvContext = NULL );
+    _In_opt_ VOID* const pvContext = nullptr );
 
 // Space category helpers.
 BOOL FSPSpaceCatStrictlyLeaf( const SpaceCategoryFlags spcatf );
@@ -402,7 +402,7 @@ ERR ErrSPREPAIRValidateSpaceNode(
     _Out_       PCWSTR *        pwszPoolName );
 
 ERR ErrSPTrimDBTaskInit( const IFMP ifmp );
-VOID SPTrimDBTaskStop( INST * pinst, const WCHAR * wszDatabaseFullName = NULL );
+VOID SPTrimDBTaskStop( INST * pinst, const WCHAR * wszDatabaseFullName = nullptr );
 
 INLINE BOOL FSPExpectedError( const ERR err )
 {

@@ -681,7 +681,7 @@ class RCE
         BYTE                m_rgbData[0];           //  this stores the BOOKMARK of the node and then possibly the data portion
 };
 
-RCE * const prceNil     = 0;
+RCE * const prceNil     = nullptr;
 #ifdef DEBUG
 #ifdef _WIN64
 RCE * const prceInvalid = (RCE *)0xFEADFEADFEADFEAD;
@@ -1521,7 +1521,7 @@ VOID VERNullifyFailedDMLRCE( RCE * prce );
 VOID VERNullifyInactiveVersionsOnBM( const FUCB * pfucb, const BOOKMARK& bm );
 VOID VERNullifyAllVersionsOnFCB( FCB * const pfcb );
 
-VOID VERInsertRCEIntoLists( FUCB *pfucbNode, CSR *pcsr, RCE *prce, const VERPROXY *pverproxy = NULL );
+VOID VERInsertRCEIntoLists( FUCB *pfucbNode, CSR *pcsr, RCE *prce, const VERPROXY *pverproxy = nullptr );
 
 //  ================================================================
 INLINE TRX TrxVERISession ( const FUCB * const pfucb )
@@ -1554,7 +1554,7 @@ UINT UiVERHash( IFMP ifmp, PGNO pgnoFDP, const BOOKMARK& bookmark, const UINT cr
 
 
 struct BUCKET;
-BUCKET * const pbucketNil = 0;
+BUCKET * const pbucketNil = nullptr;
 
 class VER
     :   public CZeroInit
@@ -1813,8 +1813,8 @@ struct BUCKETHDR
 {
     BUCKETHDR( VER* const pverIn, BYTE* const rgb )
         :   pver( pverIn ),
-            pbucketPrev( NULL ),
-            pbucketNext( NULL ),
+            pbucketPrev( nullptr ),
+            pbucketNext( nullptr ),
             prceNextNew( (RCE *)rgb ),
             prceOldest( (RCE*)rgb ),
             pbLastDelete( rgb )

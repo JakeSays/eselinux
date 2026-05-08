@@ -99,7 +99,7 @@ class CResource
     CQuota              m_quota;
 
 public:
-    INLINE          CResource( INST * pinst = NULL );
+    INLINE          CResource( INST * pinst = nullptr );
     INLINE          ~CResource();
             ERR     ErrSetParam( JET_RESOPER resop, DWORD_PTR dwParam );
                 //  some of the parameter will be passed to the resource manager
@@ -296,7 +296,7 @@ INLINE VOID CQuota::Release()
 //  Class CResource
 
 INLINE CResource::CResource( INST * pinst ) :
-    m_pRM( NULL ),
+    m_pRM( nullptr ),
     m_pinst( pinst )
     {}
 

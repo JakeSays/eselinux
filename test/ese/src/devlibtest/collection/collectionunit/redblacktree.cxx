@@ -27,8 +27,8 @@ ERR RedBlackTreeINodeConstructor::ErrTest()
 
     typedef CRedBlackTree<INT, char> Tree;
     Tree::BaseType::InvasiveContext inode( 1 );
-    TestCheck( NULL == inode.PnodeLeft() );
-    TestCheck( NULL == inode.PnodeRight() );
+    TestCheck( nullptr == inode.PnodeLeft() );
+    TestCheck( nullptr == inode.PnodeRight() );
     TestCheck( Red == inode.Color() );
     TestCheck( 1 == inode.Key() );
 
@@ -44,8 +44,8 @@ ERR RedBlackTreeNodeConstructor::ErrTest()
 
     typedef CRedBlackTree<INT, char> Tree;
     Tree::Node node('a');
-    TestCheck(NULL == node.PnodeLeft());
-    TestCheck(NULL == node.PnodeRight());
+    TestCheck(nullptr == node.PnodeLeft());
+    TestCheck(nullptr == node.PnodeRight());
     TestCheck(Red == node.Color());
     TestCheck(0 == node.Key());
     TestCheck('a' == node.Data());
@@ -69,12 +69,12 @@ ERR RedBlackTreeSetINodeMembers::ErrTest()
     // SetRight()
     inode1.SetRight( &inode2 );
     TestCheck( &inode2 == inode1.PnodeRight() );
-    inode1.SetRight( NULL );
+    inode1.SetRight( nullptr );
 
     // SetLeft()
     inode2.SetLeft( &inode1 );
     TestCheck( &inode1 == inode2.PnodeLeft() );
-    inode2.SetLeft( NULL );
+    inode2.SetLeft( nullptr );
 
     // SetKey
     inode1.SetKey( 10 );
@@ -445,7 +445,7 @@ HandleError:
     if ( err < JET_errSuccess )
     {
         delete[] *pprgNodes;
-        *pprgNodes = NULL;
+        *pprgNodes = nullptr;
     }
     return err;
 }
@@ -560,7 +560,7 @@ CUnitTest( RedBlackTreeInvasiveMakeEmpty, 0, "" );
 ERR RedBlackTreeInvasiveMakeEmpty::ErrTest()
 {
     ERR err;
-    CRedBlackTree<INT, INT>::Node** prgNodes = NULL;
+    CRedBlackTree<INT, INT>::Node** prgNodes = nullptr;
 
     INT keys[ 4096 ];
     for ( INT i = 0; i < _countof( keys ); ++i )
@@ -580,15 +580,15 @@ ERR RedBlackTreeInvasiveMakeEmpty::ErrTest()
 HandleError:
     itree.MakeEmpty();
 
-    if ( prgNodes != NULL )
+    if ( prgNodes != nullptr )
     {
         for ( INT i = 0; i < _countof( keys ); ++i )
         {
             delete prgNodes[i];
-            prgNodes[i] = NULL;
+            prgNodes[i] = nullptr;
         }
         delete[] prgNodes;
-        prgNodes = NULL;
+        prgNodes = nullptr;
     }
 
     return err;
@@ -759,7 +759,7 @@ ERR RedBlackTreeMultiKeyTestBasicInsertDelete::ErrTest()
     INT i;
     TESTIFILEIBOFFSET   iib = { 1, 0x3000 };
     TESTIFILEIBOFFSET   iibNearest = { 0x42, 0x424242424242 };
-    TESTIOREQ *         pioreq = NULL;
+    TESTIOREQ *         pioreq = nullptr;
 
     BstfSetVerbosity( bvlPrintTests );
 
@@ -774,7 +774,7 @@ ERR RedBlackTreeMultiKeyTestBasicInsertDelete::ErrTest()
     TESTIFILEIBOFFSET keySeparate;
 
     TestCheck( Tree::ERR::errEntryNotFound == irbt.ErrFindNearest( iib, &iibNearest, &pioreq ) );
-    TestCheck( pioreq == NULL );
+    TestCheck( pioreq == nullptr );
     // the value is left a whatever it was when not found...
     TestCheck( iibNearest.m_iFile == 0x42 );
     TestCheck( iibNearest.m_ibOffset == 0x424242424242 );
@@ -830,7 +830,7 @@ ERR RedBlackTreeMultiKeyTestInsertDup::ErrTest()
 
     TESTIFILEIBOFFSET   iib = { 1, 0x3000 };
     TESTIFILEIBOFFSET   iibNearest = { 0x42, 0x424242424242 };
-    TESTIOREQ *         pioreq = NULL;
+    TESTIOREQ *         pioreq = nullptr;
 
     BstfSetVerbosity( bvlPrintTests );
 
@@ -846,7 +846,7 @@ ERR RedBlackTreeMultiKeyTestInsertDup::ErrTest()
     TESTIFILEIBOFFSET keySeparate;
 
     TestCheck( Tree::ERR::errEntryNotFound == irbt.ErrFindNearest( iib, &iibNearest, &pioreq ) );
-    TestCheck( pioreq == NULL );
+    TestCheck( pioreq == nullptr );
     // the value is left a whatever it was when not found...
     TestCheck( iibNearest.m_iFile == 0x42 );
     TestCheck( iibNearest.m_ibOffset == 0x424242424242 );
@@ -883,7 +883,7 @@ ERR RedBlackTreeMultiKeyFindNearest::ErrTest()
     INT i;
     TESTIFILEIBOFFSET   iib = { 1, 0x3000 };
     TESTIFILEIBOFFSET   iibNearest = { 0x42, 0x424242424242 };
-    TESTIOREQ *         pioreq = NULL;
+    TESTIOREQ *         pioreq = nullptr;
 
     BstfSetVerbosity( bvlPrintTests );
 
@@ -899,7 +899,7 @@ ERR RedBlackTreeMultiKeyFindNearest::ErrTest()
     TESTIOREQ * rgpioreqValidList [] = { &ioreq6, &ioreq2, &ioreq1, &ioreq8, &ioreq3 }; // in psuedo-random order
 
     TestCheck( Tree::ERR::errEntryNotFound == irbt.ErrFindNearest( iib, &iibNearest, &pioreq ) );
-    TestCheck( pioreq == NULL );
+    TestCheck( pioreq == nullptr );
     // the value is left a whatever it was when not found...
     TestCheck( iibNearest.m_iFile == 0x42 );
     TestCheck( iibNearest.m_ibOffset == 0x424242424242 );
@@ -1018,7 +1018,7 @@ ERR RedBlackTreeMultiKeyTestMoveOp::ErrTest()
     INT i;
     TESTIFILEIBOFFSET   iib = { 1, 0x3000 };
     TESTIFILEIBOFFSET   iibNearest = { 0x42, 0x424242424242 };
-    TESTIOREQ *         pioreq = NULL;
+    TESTIOREQ *         pioreq = nullptr;
 
     BstfSetVerbosity( bvlPrintTests );
 
@@ -1033,7 +1033,7 @@ ERR RedBlackTreeMultiKeyTestMoveOp::ErrTest()
     TESTIFILEIBOFFSET keySeparate;
 
     TestCheck( Tree::ERR::errEntryNotFound == irbt.ErrFindNearest( iib, &iibNearest, &pioreq ) );
-    TestCheck( pioreq == NULL );
+    TestCheck( pioreq == nullptr );
     // the value is left a whatever it was when not found...
     TestCheck( iibNearest.m_iFile == 0x42 );
     TestCheck( iibNearest.m_ibOffset == 0x424242424242 );
@@ -1162,7 +1162,7 @@ public:
 
         TITree * ptitGuaranteed = ( pctInFirstHalf >= 10 && pctInFirstHalf <= 90 ) ?
                                         ( rand() % 2 ? ptitHalf : ptitOther ) :
-                                        NULL;
+                                        nullptr;
         for( ULONG iioreq = 0; iioreq < _countof( m_rgioreq ); iioreq++ )
         {
             COLLAssert( m_rgioreq[ iioreq ].m_icKeyCheck.m_ibOffset != 0 );
@@ -1177,7 +1177,7 @@ public:
                 }
                 else
                 {
-                    ptitGuaranteed = NULL;
+                    ptitGuaranteed = nullptr;
                     COLLAssert( !ptitHalf->FEmpty() );
                     COLLAssert( !ptitOther->FEmpty() );
                 }
@@ -1206,8 +1206,8 @@ public:
             BOOL fFound = fFalse;
             for ( ULONG iFile = 1; iFile < 3; iFile++ )
             {
-                TESTIOREQ * pioreqOne = NULL;
-                TESTIOREQ * pioreqTwo = NULL;
+                TESTIOREQ * pioreqOne = nullptr;
+                TESTIOREQ * pioreqTwo = nullptr;
 
                 const TESTIFILEIBOFFSET iibNextCheck = { iFile, ib };
 
@@ -1258,7 +1258,7 @@ public:
 
     static TESTIOREQ * PioreqSelectRandItem( TITree * const ptit )
     {
-        TESTIOREQ * pioreqRet = NULL;
+        TESTIOREQ * pioreqRet = nullptr;
         TITree::ERR err;
         TESTIFILEIBOFFSET iibSearching;
 
@@ -1298,7 +1298,7 @@ public:
             return pioreqRet;
         }
 
-        pioreqRet = NULL;
+        pioreqRet = nullptr;
 
         return pioreqRet;
     }
@@ -1312,8 +1312,8 @@ public:
             BOOL fFound = fFalse;
             for ( ULONG iFile = 1; iFile < 3; iFile++ )
             {
-                TESTIOREQ * pioreqOne = NULL;
-                TESTIOREQ * pioreqTwo = NULL;
+                TESTIOREQ * pioreqOne = nullptr;
+                TESTIOREQ * pioreqTwo = nullptr;
 
                 const TESTIFILEIBOFFSET iibNextCheck = { iFile, ib };
 

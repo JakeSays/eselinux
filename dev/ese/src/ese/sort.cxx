@@ -79,8 +79,8 @@ ERR ErrSORTOpen( PIB *ppib, FUCB **ppfucb, const BOOL fRemoveDuplicateKey, const
     ERR     err         = JET_errSuccess;
     FUCB    * pfucb     = pfucbNil;
     SCB     * pscb      = pscbNil;
-    SPAIR   * rgspair   = 0;
-    BYTE    * rgbRec    = 0;
+    SPAIR   * rgspair   = nullptr;
+    BYTE    * rgbRec    = nullptr;
 
     /*  allocate a new SCB
     /**/
@@ -127,10 +127,10 @@ ERR ErrSORTOpen( PIB *ppib, FUCB **ppfucb, const BOOL fRemoveDuplicateKey, const
 
     /*  allocate sort pair buffer and record buffer
     /**/
-    Alloc( rgspair = ( SPAIR * )( PvOSMemoryPageAlloc( cbSortMemFastUsed, NULL ) ) );
+    Alloc( rgspair = ( SPAIR * )( PvOSMemoryPageAlloc( cbSortMemFastUsed, nullptr ) ) );
     pscb->rgspair   = rgspair;
 
-    Alloc( rgbRec = ( BYTE * )( PvOSMemoryPageAlloc( cbSortMemNormUsed, NULL ) ) );
+    Alloc( rgbRec = ( BYTE * )( PvOSMemoryPageAlloc( cbSortMemNormUsed, nullptr ) ) );
     pscb->rgbRec    = rgbRec;
 
     /*  initialize sort pair buffer
@@ -190,12 +190,12 @@ ERR ErrSORTInsert( FUCB *pfucb, const KEY& key, const DATA& data )
     LONG    cbKey;
     LONG    cbData;
     LONG    irec;
-    SREC    * psrec         = 0;
-    SPAIR   * pspair        = 0;
-    BYTE    * pbSrc         = 0;
-    BYTE    * pbSrcMac      = 0;
-    BYTE    * pbDest        = 0;
-    BYTE    * pbDestMic     = 0;
+    SREC    * psrec         = nullptr;
+    SPAIR   * pspair        = nullptr;
+    BYTE    * pbSrc         = nullptr;
+    BYTE    * pbSrcMac      = nullptr;
+    BYTE    * pbDest        = nullptr;
+    BYTE    * pbDestMic     = nullptr;
     ERR     err             = JET_errSuccess;
 
     //  check input and input mode
@@ -336,9 +336,9 @@ ERR ErrSORTEndInsert( FUCB *pfucb )
         //  free sort memory
 
         OSMemoryPageFree( pscb->rgspair );
-        pscb->rgspair = NULL;
+        pscb->rgspair = nullptr;
         OSMemoryPageFree( pscb->rgbRec );
-        pscb->rgbRec = NULL;
+        pscb->rgbRec = nullptr;
 
         //  perform all but final merge
 
@@ -380,7 +380,7 @@ HandleError:
 ERR ErrSORTFirst( FUCB * pfucb )
 {
     SCB     * const pscb    = pfucb->u.pscb;
-    SREC    * psrec         = 0;
+    SREC    * psrec         = nullptr;
     LONG    irec;
     ERR     err             = JET_errSuccess;
 
@@ -429,7 +429,7 @@ ERR ErrSORTFirst( FUCB * pfucb )
 ERR ErrSORTLast( FUCB *pfucb )
 {
     SCB     *pscb   = pfucb->u.pscb;
-    SREC    *psrec  = 0;
+    SREC    *psrec  = nullptr;
     LONG    irec;
     ERR     err = JET_errSuccess;
 
@@ -506,7 +506,7 @@ ERR ErrSORTLast( FUCB *pfucb )
 ERR ErrSORTNext( FUCB *pfucb )
 {
     SCB     *pscb   = pfucb->u.pscb;
-    SREC    *psrec  = 0;
+    SREC    *psrec  = nullptr;
     LONG    irec;
     ERR     err = JET_errSuccess;
 
@@ -732,10 +732,10 @@ VOID SORTICloseRun( PIB * const ppib, SCB * const pscb )
 
     /*  if our output buffer is still latched, unlatch it
     /**/
-    if ( pscb->bflOut.pv != NULL )
+    if ( pscb->bflOut.pv != nullptr )
     {
         BFWriteUnlatch( &pscb->bflOut );
-        pscb->bflOut.pv         = NULL;
+        pscb->bflOut.pv         = nullptr;
         pscb->bflOut.dwContext  = 0;
     }
 
@@ -1071,7 +1071,7 @@ LOCAL ERR ErrSORTIOutputRun( SCB * pscb )
     RUNINFO runinfo;
     LONG    ispair;
     LONG    irec;
-    SREC*   psrec       = NULL;
+    SREC*   psrec       = nullptr;
     SREC*   psrecLast;
 
     //  verify that there are records to put to disk
@@ -1118,7 +1118,7 @@ LOCAL ERR ErrSORTIOutputRun( SCB * pscb )
 
         //  reset sort/merge run output
         //
-        pscb->bflOut.pv         = NULL;
+        pscb->bflOut.pv         = nullptr;
         pscb->bflOut.dwContext  = 0;
 
         //  reset merge run input
@@ -1588,10 +1588,10 @@ LOCAL ERR ErrSORTIRunStart( SCB *pscb, QWORD cb, RUNINFO *pruninfo )
     //  initialize output run data
 
     pscb->pgnoNext          = pruninfo->run;
-    pscb->bflOut.pv         = NULL;
+    pscb->bflOut.pv         = nullptr;
     pscb->bflOut.dwContext  = 0;
-    pscb->pbOutMac          = NULL;
-    pscb->pbOutMax          = NULL;
+    pscb->pbOutMac          = nullptr;
+    pscb->pbOutMax          = nullptr;
 
     return JET_errSuccess;
 }
@@ -1631,10 +1631,10 @@ LOCAL ERR ErrSORTIRunInsert( SCB *pscb, RUNINFO* pruninfo, SREC *psrec )
     {
         //  page is full, so release it so it can be lazily-written to disk
 
-        if ( pscb->bflOut.pv != NULL )
+        if ( pscb->bflOut.pv != nullptr )
         {
             BFWriteUnlatch( &pscb->bflOut );
-            pscb->bflOut.pv         = NULL;
+            pscb->bflOut.pv         = nullptr;
             pscb->bflOut.dwContext  = 0;
         }
 
@@ -1688,10 +1688,10 @@ INLINE VOID SORTIRunEnd( SCB * pscb, RUNINFO* pruninfo )
 {
     //  unlatch page so it can be lazily-written to disk
 
-    if ( pscb->bflOut.pv != NULL )
+    if ( pscb->bflOut.pv != nullptr )
     {
         BFWriteUnlatch( &pscb->bflOut );
-        pscb->bflOut.pv         = NULL;
+        pscb->bflOut.pv         = nullptr;
         pscb->bflOut.dwContext  = 0;
     }
 
@@ -1817,15 +1817,15 @@ LOCAL ERR ErrSORTIRunOpen( SCB *pscb, RUNINFO *pruninfo, RCB **pprcb )
 
     for ( ipbf = 0; ipbf < cpgClusterSize; ipbf++ )
     {
-        prcb->rgbfl[ipbf].pv        = NULL;
+        prcb->rgbfl[ipbf].pv        = nullptr;
         prcb->rgbfl[ipbf].dwContext = 0;
     }
 
     prcb->ipbf          = cpgClusterSize;
-    prcb->pbInMac       = NULL;
-    prcb->pbInMax       = NULL;
+    prcb->pbInMac       = nullptr;
+    prcb->pbInMax       = nullptr;
     prcb->cbRemaining   = prcb->runinfo.cbRun;
-    prcb->pvAssy        = NULL;
+    prcb->pvAssy        = nullptr;
 
     //  preread the first part of the run, to be access paged later as required
 
@@ -1880,21 +1880,21 @@ LOCAL ERR ErrSORTIRunNext( RCB * prcb, SREC **ppsrec )
     //  free second to last assembly buffer, if present, and make last
     //  assembly buffer the second to last assembly buffer
 
-    if ( pscb->pvAssyLast != NULL )
+    if ( pscb->pvAssyLast != nullptr )
     {
         BFFree( pscb->pvAssyLast );
     }
     pscb->pvAssyLast = prcb->pvAssy;
-    prcb->pvAssy = NULL;
+    prcb->pvAssy = nullptr;
 
     //  abandon last buffer, if present
 
-    if ( pscb->bflLast.pv != NULL )
+    if ( pscb->bflLast.pv != nullptr )
     {
         CLockDeadlockDetectionInfo::DisableOwnershipTracking();
         BFRenouncePage( &pscb->bflLast, fTrue );
         CLockDeadlockDetectionInfo::EnableOwnershipTracking();
-        pscb->bflLast.pv        = NULL;
+        pscb->bflLast.pv        = nullptr;
         pscb->bflLast.dwContext = 0;
     }
 
@@ -1904,11 +1904,11 @@ LOCAL ERR ErrSORTIRunNext( RCB * prcb, SREC **ppsrec )
     {
         //  make sure we don't hold on to the last page of the run
 
-        if ( prcb->rgbfl[prcb->ipbf].pv != NULL )
+        if ( prcb->rgbfl[prcb->ipbf].pv != nullptr )
         {
             pscb->bflLast.pv        = prcb->rgbfl[prcb->ipbf].pv;
             pscb->bflLast.dwContext = prcb->rgbfl[prcb->ipbf].dwContext;
-            prcb->rgbfl[prcb->ipbf].pv          = NULL;
+            prcb->rgbfl[prcb->ipbf].pv          = nullptr;
             prcb->rgbfl[prcb->ipbf].dwContext   = 0;
         }
 
@@ -1960,7 +1960,7 @@ LOCAL ERR ErrSORTIRunNext( RCB * prcb, SREC **ppsrec )
 
         pscb->bflLast.pv        = prcb->rgbfl[prcb->ipbf].pv;
         pscb->bflLast.dwContext = prcb->rgbfl[prcb->ipbf].dwContext;
-        prcb->rgbfl[prcb->ipbf].pv          = NULL;
+        prcb->rgbfl[prcb->ipbf].pv          = nullptr;
         prcb->rgbfl[prcb->ipbf].dwContext   = 0;
     }
     else
@@ -2061,15 +2061,15 @@ LOCAL ERR ErrSORTIRunNext( RCB * prcb, SREC **ppsrec )
 
 HandleError:
     for ( ipbf = 0; ipbf < cpgClusterSize; ipbf++ )
-        if ( prcb->rgbfl[ipbf].pv != NULL )
+        if ( prcb->rgbfl[ipbf].pv != nullptr )
         {
             CLockDeadlockDetectionInfo::DisableOwnershipTracking();
             BFRenouncePage( &prcb->rgbfl[ipbf], fTrue );
             CLockDeadlockDetectionInfo::EnableOwnershipTracking();
-            prcb->rgbfl[ipbf].pv        = NULL;
+            prcb->rgbfl[ipbf].pv        = nullptr;
             prcb->rgbfl[ipbf].dwContext = 0;
         }
-    *ppsrec = NULL;
+    *ppsrec = nullptr;
     return err;
 }
 
@@ -2082,7 +2082,7 @@ LOCAL VOID SORTIRunClose( RCB *prcb )
 
     //  free record assembly buffer
 
-    if ( prcb->pvAssy != NULL )
+    if ( prcb->pvAssy != nullptr )
     {
         BFFree( prcb->pvAssy );
     }
@@ -2090,12 +2090,12 @@ LOCAL VOID SORTIRunClose( RCB *prcb )
     //  unpin all read-ahead buffers
 
     for ( ipbf = 0; ipbf < cpgClusterSize; ipbf++ )
-        if ( prcb->rgbfl[ipbf].pv != NULL )
+        if ( prcb->rgbfl[ipbf].pv != nullptr )
         {
             CLockDeadlockDetectionInfo::DisableOwnershipTracking();
             BFRenouncePage( &prcb->rgbfl[ipbf], fTrue );
             CLockDeadlockDetectionInfo::EnableOwnershipTracking();
-            prcb->rgbfl[ipbf].pv        = NULL;
+            prcb->rgbfl[ipbf].pv        = nullptr;
             prcb->rgbfl[ipbf].dwContext = 0;
         }
 
@@ -2162,7 +2162,7 @@ LOCAL ERR ErrSORTIMergeToRun( SCB *pscb, RUNLINK *prunlinkSrc, RUNLINK **pprunli
     //  create a new run to receive merge data
 
     prunlink = PrunlinkRUNLINKAlloc();
-    if ( NULL == prunlink )
+    if ( nullptr == prunlink )
     {
         err = ErrERRCheck( JET_errOutOfMemory );
         goto EndMerge;
@@ -2232,9 +2232,9 @@ LOCAL ERR ErrSORTIMergeStart( SCB *pscb, RUNLINK *prunlinkSrc )
     /*  init merge data in SCB
     /**/
     pscb->crunMerge             = crun;
-    pscb->bflLast.pv            = NULL;
+    pscb->bflLast.pv            = nullptr;
     pscb->bflLast.dwContext     = 0;
-    pscb->pvAssyLast            = NULL;
+    pscb->pvAssyLast            = nullptr;
 
     OSTrace( JET_tracetagSortPerf, OSFormat( "MERGE:  %ld runs -(details to follow)", crun ) );
 
@@ -2294,7 +2294,7 @@ LOCAL ERR ErrSORTIMergeFirst( SCB *pscb, SREC **ppsrec )
 
 HandleError:
     Assert( err != JET_errNoCurrentRecord );
-    *ppsrec = NULL;
+    *ppsrec = nullptr;
     return err;
 }
 
@@ -2333,18 +2333,18 @@ LOCAL VOID SORTIMergeEnd( SCB *pscb )
 
     //  free / abandon BFs
 
-    if ( pscb->bflLast.pv != NULL )
+    if ( pscb->bflLast.pv != nullptr )
     {
         CLockDeadlockDetectionInfo::DisableOwnershipTracking();
         BFRenouncePage( &pscb->bflLast, fTrue );
         CLockDeadlockDetectionInfo::EnableOwnershipTracking();
-        pscb->bflLast.pv        = NULL;
+        pscb->bflLast.pv        = nullptr;
         pscb->bflLast.dwContext = 0;
     }
-    if ( pscb->pvAssyLast != NULL )
+    if ( pscb->pvAssyLast != nullptr )
     {
         BFFree( pscb->pvAssyLast );
-        pscb->pvAssyLast = NULL;
+        pscb->pvAssyLast = nullptr;
     }
 
     //  close all input runs
@@ -2374,7 +2374,7 @@ LOCAL ERR ErrSORTIMergeNextChamp( SCB *pscb, SREC **ppsrec )
     //  read next record (or lack thereof) from input run as the new
     //  contender for champ
 
-    *ppsrec = NULL;
+    *ppsrec = nullptr;
     err = ErrSORTIRunNext( pmtnodeLoser->prcb, &pmtnodeChamp->psrec );
     if ( err < 0 && err != JET_errNoCurrentRecord )
         return err;
@@ -2408,7 +2408,7 @@ LOCAL ERR ErrSORTIMergeNextChamp( SCB *pscb, SREC **ppsrec )
 
     //  return the new champion
 
-    if ( ( *ppsrec = pmtnodeChamp->psrec ) == NULL )
+    if ( ( *ppsrec = pmtnodeChamp->psrec ) == nullptr )
         return ErrERRCheck( JET_errNoCurrentRecord );
 
     return JET_errSuccess;
@@ -2477,7 +2477,7 @@ LOCAL ERR ErrSORTIOptTreeMerge( SCB *pscb )
 
     //  perform all but the final merge
 
-    Call( ErrSORTIOptTreeMergeDF( pscb, potnode, NULL ) );
+    Call( ErrSORTIOptTreeMergeDF( pscb, potnode, nullptr ) );
 
     //  update the runlist information for the final merge
 
@@ -2768,7 +2768,7 @@ LOCAL ERR ErrSORTIOptTreeMergeDF( SCB *pscb, OTNODE *potnode, RUNLINK **pprunlin
 
     //  merge all runs for this node
 
-    if ( pprunlink != NULL )
+    if ( pprunlink != nullptr )
     {
         //  merge the runs in the runlist
 

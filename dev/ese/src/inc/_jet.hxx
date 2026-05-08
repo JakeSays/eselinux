@@ -131,20 +131,20 @@ inline ERR CAutoISZ< cchMax, osstrConversion >::
 ErrSet( const WCHAR * sz )
 {
     ERR         err         = JET_errSuccess;
-    char *      szNew       = NULL;
+    char *      szNew       = nullptr;
 
     if ( m_sz != m_szPreAlloc )
     {
         delete[] m_sz;
     }
-    m_sz = NULL;
+    m_sz = nullptr;
     m_cb = 0;
 
     if (sz)
     {
         size_t      cch;
 
-        err = ErrOSSTRUnicodeToAscii( sz, NULL, 0, &cch, OSSTR_NOT_LOSSY, osstrConversion );
+        err = ErrOSSTRUnicodeToAscii( sz, nullptr, 0, &cch, OSSTR_NOT_LOSSY, osstrConversion );
 
         // we don't expect other errors but still be check
         Assert( JET_errBufferTooSmall == err );
@@ -164,11 +164,11 @@ ErrSet( const WCHAR * sz )
             Alloc( szNew = static_cast<char *>( new char[cch] ) );
         }
 
-        Call( ErrOSSTRUnicodeToAscii( sz, szNew, cch, NULL, OSSTR_NOT_LOSSY, osstrConversion ) );
+        Call( ErrOSSTRUnicodeToAscii( sz, szNew, cch, nullptr, OSSTR_NOT_LOSSY, osstrConversion ) );
 
         m_cb = cch * sizeof( char );
         m_sz = szNew;
-        szNew = NULL;
+        szNew = nullptr;
     }
 
 HandleError:

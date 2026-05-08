@@ -56,7 +56,7 @@ DWORD WINAPI AtomicAddTest::AddThread_( LPVOID pvContext )
 }
 
 AtomicAddTest::AtomicAddTest( const QWORD qwValue, const LONG cAdditions, const LONG cParallelThreads ) : 
-    m_hThreads( NULL ),
+    m_hThreads( nullptr ),
     m_cParallelThreads( cParallelThreads ),
     m_fSuceeded( false ),
     m_cAdditions( cAdditions ),
@@ -65,10 +65,10 @@ AtomicAddTest::AtomicAddTest( const QWORD qwValue, const LONG cAdditions, const 
     QWORD qwExpectedValue = m_qwValue;
     
     m_hThreads = new HANDLE[cParallelThreads];
-    TestAssert( m_hThreads != NULL );
+    TestAssert( m_hThreads != nullptr );
 
     m_rgThreadData = new ADD_THREAD_DATA[cParallelThreads];
-    TestAssert( m_rgThreadData != NULL );
+    TestAssert( m_rgThreadData != nullptr );
 
     for ( LONG iThread = 0 ; iThread < cParallelThreads ; iThread++ )
     {
@@ -76,8 +76,8 @@ AtomicAddTest::AtomicAddTest( const QWORD qwValue, const LONG cAdditions, const 
         m_rgThreadData[iThread].pqwValue = &m_qwValue;
         m_rgThreadData[iThread].qwAddition = ( iThread * 0x100000001 );
         
-        m_hThreads[iThread] = CreateThread( NULL, 0, AtomicAddTest::AddThread_, &(m_rgThreadData[iThread]), 0, NULL );
-        TestAssert( m_hThreads[iThread] != NULL );
+        m_hThreads[iThread] = CreateThread( nullptr, 0, AtomicAddTest::AddThread_, &(m_rgThreadData[iThread]), 0, nullptr );
+        TestAssert( m_hThreads[iThread] != nullptr );
 
         qwExpectedValue += ( iThread * 0x100000001 * cAdditions );
     }
@@ -96,9 +96,9 @@ AtomicAddTest::AtomicAddTest( const QWORD qwValue, const LONG cAdditions, const 
 AtomicAddTest::~AtomicAddTest()
 {
     delete[] m_hThreads;
-    m_hThreads = NULL;
+    m_hThreads = nullptr;
     delete[] m_rgThreadData;
-    m_rgThreadData = NULL;
+    m_rgThreadData = nullptr;
 }
 
 bool AtomicAddTest::FSuceeded() const

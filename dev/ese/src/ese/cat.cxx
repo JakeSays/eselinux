@@ -662,8 +662,8 @@ LOCAL ERR ErrCATIRetrieveLocaleInformation(
     ULONG cbActual;
     DATA dataField;
     WCHAR wszLocaleNameT[NORM_LOCALE_NAME_MAX_LENGTH];
-    WCHAR * const wszOutputLocaleName = ( NULL != wszLocaleName ) ? wszLocaleName : wszLocaleNameT;
-    const ULONG cchLocaleNameT = ( NULL != wszLocaleName ) ? cchLocaleName : _countof( wszLocaleNameT );
+    WCHAR * const wszOutputLocaleName = ( nullptr != wszLocaleName ) ? wszLocaleName : wszLocaleNameT;
+    const ULONG cchLocaleNameT = ( nullptr != wszLocaleName ) ? cchLocaleName : _countof( wszLocaleNameT );
     BOOL fUserSpecifiedLocale = fFalse; // Was JET_bitIndexUnicode specified?
     BOOL fLocalizedText = fFalse; // Is there a cp==1200 column present?
 
@@ -672,10 +672,10 @@ LOCAL ERR ErrCATIRetrieveLocaleInformation(
     QWORD qwDummyVersion;
     DWORD dwNormalizationFlagsDummy;
 
-    LCID * const plcidOutput = ( NULL != plcid ) ? plcid : &lcidDummy;
-    SORTID * const psortidOutput = ( NULL != psortidCustomSortVersion ) ? psortidCustomSortVersion : &sortidDummyVersion;
-    QWORD * const pqwOutputSortVersion = ( NULL != pqwSortVersion ) ? pqwSortVersion : &qwDummyVersion;
-    DWORD * const pdwOutputNormalizationFlags = ( NULL != pdwNormalizationFlags ) ? pdwNormalizationFlags : &dwNormalizationFlagsDummy;
+    LCID * const plcidOutput = ( nullptr != plcid ) ? plcid : &lcidDummy;
+    SORTID * const psortidOutput = ( nullptr != psortidCustomSortVersion ) ? psortidCustomSortVersion : &sortidDummyVersion;
+    QWORD * const pqwOutputSortVersion = ( nullptr != pqwSortVersion ) ? pqwSortVersion : &qwDummyVersion;
+    DWORD * const pdwOutputNormalizationFlags = ( nullptr != pdwNormalizationFlags ) ? pdwNormalizationFlags : &dwNormalizationFlagsDummy;
 
     *plcidOutput = 0;
     *pqwOutputSortVersion = 0;
@@ -964,7 +964,7 @@ ERR ErrCATCheckJetSpaceHints(
 
     //  Check "version" and bail right off.
     //
-    if ( NULL == pSpaceHints || pSpaceHints->cbStruct != sizeof(*pSpaceHints) )
+    if ( nullptr == pSpaceHints || pSpaceHints->cbStruct != sizeof(*pSpaceHints) )
     {
         Assert( fAllowCorrection ); // probably an error.
         Error( ErrERRCheck( JET_errInvalidParameter ) );
@@ -1142,7 +1142,7 @@ ULONG * PulCATIGetExtendedHintsStart(
     )
 {
     Assert( pcTotalHints );
-    ULONG * pulHints = NULL;
+    ULONG * pulHints = nullptr;
     if ( sysobj == sysobjTable && !fDeferredLongValueHints )
     {
         //  The grbit is the start of the extended hints
@@ -1232,7 +1232,7 @@ LOCAL ERR ErrCATIMarshallExtendedSpaceHints(
     pBuffer[cbSetBuffer] = bCATExtendedSpaceHintsVersion;
     cbSetBuffer += sizeof(bCATExtendedSpaceHintsVersion);
 
-    UnalignedLittleEndian< ULONG > * puleArray = NULL;
+    UnalignedLittleEndian< ULONG > * puleArray = nullptr;
     puleArray = (UnalignedLittleEndian< ULONG > *) &(pBuffer[cbSetBuffer]);
 
     ULONG iHint = 0;
@@ -1294,7 +1294,7 @@ ERR ErrCATIUnmarshallExtendedSpaceHints(
         Error( ErrERRCheck( JET_errCatalogCorrupted ) );
     }
 
-    UnalignedLittleEndian< ULONG > * puleArray = NULL;
+    UnalignedLittleEndian< ULONG > * puleArray = nullptr;
     puleArray = (UnalignedLittleEndian< ULONG > *)&(pBuffer[sizeof(bCATExtendedSpaceHintsVersion)]);
     ULONG cArray = ( cbBuffer - sizeof(bCATExtendedSpaceHintsVersion) ) / sizeof(ULONG);
 
@@ -1733,7 +1733,7 @@ ERR ErrCATISetSpaceHints(
 {
     ERR     err = JET_errSuccess;
 
-    if ( NULL == pSpacehints )
+    if ( nullptr == pSpacehints )
     {
         AssertSz( fFalse, "This should not happen anymore." );
         Assert( rgdata[ iMSO_SpaceUsage ].Cb() == 0 );
@@ -1792,7 +1792,7 @@ ERR ErrCATISetSpaceHints(
         jsphCheck.cbStruct = sizeof(jsphCheck);
         jsphCheck.cbInitial = pSpacehints->cbInitial;
         jsphCheck.ulInitialDensity = pSpacehints->ulInitialDensity;
-        ResetSPH( &jsphCheck, fDeferredLongValueHints ? NULL : pSpacehints, sysobj );
+        ResetSPH( &jsphCheck, fDeferredLongValueHints ? nullptr : pSpacehints, sysobj );
         // Consider making this handle NULL or zero length pbBuffer, and put after if...
         OnDebug( const ERR errT = )
         ErrCATIUnmarshallExtendedSpaceHints( 
@@ -1913,7 +1913,7 @@ ERR ErrCATIRetrieveSpaceHints(
 
         //  There are no extended space hints, which means
         //  that we should pick up the template space hints.
-        if ( NULL != pTemplateSpaceHints )
+        if ( nullptr != pTemplateSpaceHints )
         {
             UtilMemCpy( pSpacehints, pTemplateSpaceHints, sizeof(JET_SPACEHINTS) );
         }
@@ -2024,11 +2024,11 @@ LOCAL ERR ErrCATPopulateCatalog(
                 pgnoFDP,
                 objidTable,
                 szTableName,
-                NULL,
+                nullptr,
                 JET_bitObjectSystem|JET_bitObjectTableFixedDDL,
                 &jsphCatalog,
                 0,
-                NULL,
+                nullptr,
                 0 );
     if( JET_errTableDuplicate == err && fExpectKeyDuplicateErrors )
     {
@@ -2048,7 +2048,7 @@ LOCAL ERR ErrCATPopulateCatalog(
         }
 
         field.coltyp    = FIELD_COLTYP( rgcdescMSO[i].coltyp );
-        field.cbMaxLen  = UlCATColumnSize( field.coltyp, 0, NULL );
+        field.cbMaxLen  = UlCATColumnSize( field.coltyp, 0, nullptr );
 
         //  only supported flag for system table columns is JET_bitColumnNotNULL
         field.ffield    = 0;
@@ -2068,10 +2068,10 @@ LOCAL ERR ErrCATPopulateCatalog(
                 rgcdescMSO[i].szColName,
                 rgcdescMSO[i].columnid,
                 &field,
-                NULL,
+                nullptr,
                 0,
-                NULL,
-                NULL,
+                nullptr,
+                nullptr,
                 0 );
         if( JET_errColumnDuplicate == err && fExpectKeyDuplicateErrors )
         {
@@ -2417,7 +2417,7 @@ INLINE ERR ErrCATIInsert(
 
     /*  insert record into system table
     /**/
-    err = ErrIsamUpdate( ppib, pfucbCatalog, NULL, 0, NULL, NO_GRBIT );
+    err = ErrIsamUpdate( ppib, pfucbCatalog, nullptr, 0, nullptr, NO_GRBIT );
     if( err < 0 )
     {
         CallS( ErrIsamPrepareUpdate( ppib, pfucbCatalog, JET_prepCancel ) );
@@ -2506,7 +2506,7 @@ ERR ErrCATAddTable(
     rgdata[iMSO_RootFlag].SetPv(        (BYTE *)&bTrue );
     rgdata[iMSO_RootFlag].SetCb(        sizeof(bTrue) );
 
-    if ( NULL != szTemplateTableName )
+    if ( nullptr != szTemplateTableName )
     {
         rgdata[iMSO_TemplateTable].SetPv( (BYTE *)szTemplateTableName );
         rgdata[iMSO_TemplateTable].SetCb( strlen(szTemplateTableName) );
@@ -2746,7 +2746,7 @@ ERR ErrCATAddTableIndex(
 
     Assert( pspacehints );
     Assert( pspacehints->cbInitial % g_cbPage == 0 );
-    err = ErrCATISetSpaceHints( pfucbCatalog, sysobjIndex, fFalse, pspacehints, NULL,
+    err = ErrCATISetSpaceHints( pfucbCatalog, sysobjIndex, fFalse, pspacehints, nullptr,
                 rgExtendeSpaceHintBuffer, sizeof(rgExtendeSpaceHintBuffer),
                 rgdata, _countof(rgdata) );
     if ( err < JET_errSuccess )
@@ -3216,7 +3216,7 @@ ERR ErrCATSeekObjectByObjid(
     Call( ErrCATISeekTableObject( ppib, pfucbCatalog, objidTable, sysobj, objid ) );
     Assert( Pcsr( pfucbCatalog )->FLatched() );
 
-    if ( NULL != ppgnoFDP )
+    if ( nullptr != ppgnoFDP )
     {
         Assert( fidMSO_PgnoFDP.FFixed() );
         Call( ErrRECIRetrieveFixedColumn(
@@ -3230,7 +3230,7 @@ ERR ErrCATSeekObjectByObjid(
         *ppgnoFDP = *(UnalignedLittleEndian< PGNO > *) dataField.Pv();
     }
 
-    if ( ( NULL != szName ) && ( 0 != cchName ) )
+    if ( ( nullptr != szName ) && ( 0 != cchName ) )
     {
         Assert( fidMSO_Name.FVar() );
         Call( ErrRECIRetrieveVarColumn(
@@ -3282,7 +3282,7 @@ ERR ErrCATSeekTable(
     Call( ErrCATISeekTable( ppib, pfucbCatalog, szTableName ) );
     Assert( Pcsr( pfucbCatalog )->FLatched() );
 
-    if ( NULL != ppgnoTableFDP )
+    if ( nullptr != ppgnoTableFDP )
     {
         Assert( fidMSO_PgnoFDP.FFixed() );
         Call( ErrRECIRetrieveFixedColumn(
@@ -3297,7 +3297,7 @@ ERR ErrCATSeekTable(
 //      UtilMemCpy( ppgnoTableFDP, dataField.Pv(), sizeof(PGNO) );
     }
 
-    if ( NULL != pobjidTable )
+    if ( nullptr != pobjidTable )
     {
         Assert( fidMSO_Id.FFixed() );
         Call( ErrRECIRetrieveFixedColumn(
@@ -3340,7 +3340,7 @@ ERR ErrCATSeekTableByObjid(
         const PGNO pgnoFDPSys = PgnoCATTableFDP( objidTable );
         *ppgnoTableFDP = pgnoFDPSys;
 
-        if ( NULL != szTableName && 0 != cchTableName )
+        if ( nullptr != szTableName && 0 != cchTableName )
         {
             switch ( objidTable )
             {
@@ -3614,7 +3614,7 @@ LOCAL ERR ErrCATIDeleteTableColumn(
             (BYTE *)&coltyp,
             sizeof(coltyp),
             0,
-            NULL ) );
+            nullptr ) );
 
     // Replace column name with bogus name of the form "JetStub_<objidFDP>_<fid>".
     OSStrCbCopyA( szStubName, sizeof(szStubName), szDeletedColumnStubPrefix );
@@ -3641,7 +3641,7 @@ LOCAL ERR ErrCATIDeleteTableColumn(
             (BYTE *)szStubName,
             (ULONG)strlen( szStubName ),
             NO_GRBIT,
-            NULL ) );
+            nullptr ) );
 
     // Reset the user defined default bit so that we don't try to resolve the
     // callback on this column in the future
@@ -3655,11 +3655,11 @@ LOCAL ERR ErrCATIDeleteTableColumn(
                 (BYTE *)&ffield,
                 sizeof(ULONG),
                 0,
-                NULL ) );
+                nullptr ) );
     }
 
 
-    Call( ErrIsamUpdate( ppib, pfucbCatalog, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( ppib, pfucbCatalog, nullptr, 0, nullptr, NO_GRBIT ) );
 
     //  Set return value.
     *pcolumnid = columnid;
@@ -3840,7 +3840,7 @@ LOCAL ERR ErrCATIDeleteDbObject(
     ERR             err;
     FUCB *          pfucbCatalog        = pfucbNil;
     BOOKMARK        bm;
-    BYTE            *pbBookmark         = NULL;
+    BYTE            *pbBookmark         = nullptr;
     ULONG           cbBookmark;
 
     Call( ErrCATOpen( ppib, ifmp, &pfucbCatalog, fFalse ) );
@@ -3968,7 +3968,7 @@ ERR ErrCATDeleteTableIndex(
     CATResetExtentPageCounts( ppib, ifmp, objidIndex );
 
     // Best effort.  Downside is leaking a single row in the DeferredPopulateKey store.
-    (VOID)ErrCATSetDeferredPopulateKey( ifmp, objidIndex, NULL, 0 );
+    (VOID)ErrCATSetDeferredPopulateKey( ifmp, objidIndex, nullptr, 0 );
 
     return JET_errSuccess;
 }
@@ -3985,7 +3985,7 @@ ERR ErrCATAccessTableColumn(
 {
     ERR             err;
     FUCB            *pfucbCatalog   = pfucbNil;
-    const BOOL      fSearchByName   = ( szColumnName != NULL );
+    const BOOL      fSearchByName   = ( szColumnName != nullptr );
     DATA            dataField;
     JET_COLTYP      coltyp;
 
@@ -4125,7 +4125,7 @@ ERR ErrCATChangePgnoFDPLastSetTime(
     ERR         errNoMoreWrite  = JET_errSuccess;
     FUCB *      pfucbCatalog    = pfucbNil;
     BOOKMARK    bm;
-    BYTE        *pbBookmark     = NULL;
+    BYTE        *pbBookmark     = nullptr;
     ULONG       cbBookmark;
 
     Assert( ppib );
@@ -4168,8 +4168,8 @@ ERR ErrCATChangePgnoFDPLastSetTime(
         (BYTE *)&ftCurrent,
         sizeof( __int64 ),
         NO_GRBIT,
-        NULL ) );
-    Call( ErrIsamUpdate( ppib, pfucbCatalog, NULL, 0, NULL, NO_GRBIT ) );
+        nullptr ) );
+    Call( ErrIsamUpdate( ppib, pfucbCatalog, nullptr, 0, nullptr, NO_GRBIT ) );
 
     Call( ErrCATClose( ppib, pfucbCatalog ) );
     pfucbCatalog = pfucbNil;
@@ -4186,8 +4186,8 @@ ERR ErrCATChangePgnoFDPLastSetTime(
         (BYTE *)&ftCurrent,
         sizeof( __int64 ),
         NO_GRBIT,
-        NULL ) );
-    Call( ErrIsamUpdate( ppib, pfucbCatalog, NULL, 0, NULL, NO_GRBIT ) );
+        nullptr ) );
+    Call( ErrIsamUpdate( ppib, pfucbCatalog, nullptr, 0, nullptr, NO_GRBIT ) );
 
 HandleError:
     RESBOOKMARK.Free( pbBookmark );
@@ -4230,7 +4230,7 @@ HandleError:
             _countof( rgcwsz ),
             rgcwsz,
             0,
-            NULL,
+            nullptr,
             PinstFromPpib( ppib ) );
         OSTraceResumeGC();
     }
@@ -4246,7 +4246,7 @@ LOCAL VOID RegisterPgnoFDPLastSetTimeTask(
     const __int64   ftCurrent )
 {
     ERR err = JET_errSuccess;
-    DBPGNOFDPLASTSETTIMETASK * ptask    = NULL;
+    DBPGNOFDPLASTSETTIMETASK * ptask    = nullptr;
 
     if ( PinstFromIfmp( ifmp )->m_pver->m_fSyncronousTasks || g_rgfmp[ ifmp ].FDetachingDB() )
     {
@@ -4257,7 +4257,7 @@ LOCAL VOID RegisterPgnoFDPLastSetTimeTask(
 
     Alloc( ptask = new DBPGNOFDPLASTSETTIMETASK( ifmp, objidTable, objid, sysobj, ftCurrent ) );
     Call( PinstFromIfmp( ifmp )->Taskmgr().ErrTMPost( TASK::DispatchGP, ptask ) );
-    ptask = NULL;
+    ptask = nullptr;
 
 HandleError:
 
@@ -4306,12 +4306,12 @@ ERR ErrCATAccessTableLV(
             // LV tree has yet to be created.
             err = JET_errSuccess;
             *ppgnoLVFDP = pgnoNull;
-            if( NULL != pobjidLV )
+            if( nullptr != pobjidLV )
             {
                 *pobjidLV   = objidNil;
             }
 
-            if ( NULL != pftPgnoLVFDPLastSet )
+            if ( nullptr != pftPgnoLVFDPLastSet )
             {
                 *pftPgnoLVFDPLastSet = 0;
             }
@@ -4368,7 +4368,7 @@ ERR ErrCATAccessTableLV(
             Assert( dataField.Cb() == 0 );
         }
 
-        if( NULL != pobjidLV )
+        if( nullptr != pobjidLV )
         {
             *pobjidLV = objidLV;
         }
@@ -4385,7 +4385,7 @@ ERR ErrCATAccessTableLV(
             ftPgnoFDPLastSet = ftCurrent;
         }
 
-        if ( NULL != pftPgnoLVFDPLastSet )
+        if ( nullptr != pftPgnoLVFDPLastSet )
         {
             *pftPgnoLVFDPLastSet = ftPgnoFDPLastSet;
         }
@@ -4425,7 +4425,7 @@ ERR ErrCATGetTableInfoCursor(
     Assert( NULL != ppfucbInfo );
 
     //  Can only open a system table cursor on a specific record.
-    if ( NULL == szTableName || '\0' == *szTableName )
+    if ( nullptr == szTableName || '\0' == *szTableName )
     {
         err = ErrERRCheck( JET_errObjectNotFound );
         return err;
@@ -4512,7 +4512,7 @@ ERR ErrCATGetTableAllocInfo(
     Assert( Pcsr( pfucbCatalog )->FLatched() );
 
     //  pages are optional, density is not
-    if ( NULL != pulPages )
+    if ( nullptr != pulPages )
     {
         Assert( fidMSO_Pages.FFixed() );
         Call( ErrRECIRetrieveFixedColumn(
@@ -4541,7 +4541,7 @@ ERR ErrCATGetTableAllocInfo(
     *pulDensity = *(UnalignedLittleEndian< ULONG > *) dataField.Pv();
 //  UtilMemCpy( pulDensity, dataField.Pv(), sizeof(ULONG) );
 
-    if ( NULL != ppgnoFDP )
+    if ( nullptr != ppgnoFDP )
     {
         Assert( fidMSO_PgnoFDP.FFixed() );
         Call( ErrRECIRetrieveFixedColumn(
@@ -4628,12 +4628,12 @@ ERR ErrCATGetIndexLcid(
 
     Call( ErrCATIRetrieveLocaleInformation(
         pfucbCatalog,
-        NULL,
+        nullptr,
         0,
         plcid,
-        NULL,
-        NULL,
-        NULL ) );
+        nullptr,
+        nullptr,
+        nullptr ) );
 
 HandleError:
 
@@ -4671,10 +4671,10 @@ ERR ErrCATGetIndexLocaleName(
         pfucbCatalog,
         wszLocaleName,
         cchLocaleName,
-        NULL,
-        NULL,
-        NULL,
-        NULL ) );
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr ) );
 
 HandleError:
 
@@ -4711,12 +4711,12 @@ ERR ErrCATGetIndexSortVersion(
 
     Call( ErrCATIRetrieveLocaleInformation(
         pfucbCatalog,
-        NULL,
+        nullptr,
         0,
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
         &qwVersion,
-        NULL ) );
+        nullptr ) );
 
     *pdwOutputSortVersion = DwNLSVersionFromSortVersion( qwVersion );
 
@@ -4755,12 +4755,12 @@ ERR ErrCATGetIndexDefinedSortVersion(
 
     Call( ErrCATIRetrieveLocaleInformation(
         pfucbCatalog,
-        NULL,
+        nullptr,
         0,
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
         &qwVersion,
-        NULL ) );
+        nullptr ) );
 
     *pdwOutputDefinedSortVersion = DwDefinedVersionFromSortVersion( qwVersion );
 
@@ -4796,12 +4796,12 @@ ERR ErrCATGetIndexSortid(
 
     Call( ErrCATIRetrieveLocaleInformation(
         pfucbCatalog,
-        NULL,
+        nullptr,
         0,
-        NULL,
+        nullptr,
         psortid,
-        NULL,
-        NULL ) );
+        nullptr,
+        nullptr ) );
 
 HandleError:
 
@@ -5007,7 +5007,7 @@ ERR ErrCATGetIndexSegments(
         Assert( Pcsr( pfucbCatalog )->FLatched() );
         CallS( ErrDIRRelease( pfucbCatalog ) );
 
-        Call( ErrCATSeekTable( ppib, ifmp, szTemplateTable, NULL, &objidTemplateTable ) );
+        Call( ErrCATSeekTable( ppib, ifmp, szTemplateTable, nullptr, &objidTemplateTable ) );
         Assert( objidNil != objidTemplateTable );
     }
     else
@@ -5379,7 +5379,7 @@ INLINE ERR ErrCATIInitCatalogTDB( INST *pinst, IFMP ifmp, TDB **pptdbNew )
         field.strhashFieldName = StrHashValue( pcdesc->szColName );
         field.coltyp = FIELD_COLTYP( pcdesc->coltyp );
         Assert( field.coltyp != JET_coltypNil );
-        field.cbMaxLen = UlCATColumnSize( pcdesc->coltyp, 0, NULL );
+        field.cbMaxLen = UlCATColumnSize( pcdesc->coltyp, 0, nullptr );
 
         /*  flag for system table columns is JET_bitColumnNotNULL
         /**/
@@ -5523,7 +5523,7 @@ ERR ErrCATInitCatalogFCB( FUCB *pfucbTable )
                     fTrue,
                     pgnoTableFDP,
                     PSystemSpaceHints(eJSPHDefaultUserTable),
-                    NULL ) );
+                    nullptr ) );
 
             pfcb->Lock();
             pfcb->SetInitialIndex();
@@ -5578,7 +5578,7 @@ ERR ErrCATInitCatalogFCB( FUCB *pfucbTable )
                     fFalse,
                     pgnoIndexFDP,
                     PSystemSpaceHints(eJSPHDefaultUserTable),
-                    NULL );
+                    nullptr );
             if ( err < 0 )
             {
                 DIRClose( pfucbSecondaryIndex );
@@ -6174,7 +6174,7 @@ LOCAL ERR ErrCATIInitFIELD(
         UtilMemCpy( szCallback, dataField.Pv(), cbDataFieldMSO );
         szCallback[cbDataFieldMSO] = '\0';
 
-        JET_CALLBACK callback = NULL;
+        JET_CALLBACK callback = nullptr;
         if ( BoolParam( PinstFromPpib( ppib ), JET_paramEnablePersistedCallbacks ) )
         {
             Call( ErrCALLBACKResolve( szCallback, &callback ) );
@@ -6188,7 +6188,7 @@ LOCAL ERR ErrCATIInitFIELD(
                 fidMSO_CallbackData,
                 1,
                 dataRec,
-                NULL,
+                nullptr,
                 0,
                 &cbUserData ) );
         Assert( JET_errSuccess == err
@@ -6197,14 +6197,14 @@ LOCAL ERR ErrCATIInitFIELD(
 
         CBDESC * pcbdesc;
         pcbdesc = new CBDESC;
-        if( NULL == pcbdesc )
+        if( nullptr == pcbdesc )
         {
             Call( ErrERRCheck( JET_errOutOfMemory ) );
         }
 
         if( 0 == cbUserData )
         {
-            pcbdesc->pvContext  = NULL;
+            pcbdesc->pvContext  = nullptr;
             pcbdesc->cbContext  = 0;
         }
         else
@@ -6212,7 +6212,7 @@ LOCAL ERR ErrCATIInitFIELD(
             pcbdesc->pvContext = (BYTE *)PvOSMemoryHeapAlloc( cbUserData );
             pcbdesc->cbContext  = cbUserData;
 
-            if( NULL == pcbdesc->pvContext )
+            if( nullptr == pcbdesc->pvContext )
             {
                 delete pcbdesc;
                 Call( ErrERRCheck( JET_errOutOfMemory ) );
@@ -6758,13 +6758,13 @@ DoneFields:
     }
 
     precdangling = (RECDANGLING *)PvOSMemoryHeapAlloc( sizeof(RECDANGLING) + fucbFake.dataWorkBuf.Cb() );
-    if ( NULL == precdangling )
+    if ( nullptr == precdangling )
     {
         err = ErrERRCheck( JET_errOutOfMemory );
         goto HandleError;
     }
 
-    precdangling->precdanglingNext = NULL;
+    precdangling->precdanglingNext = nullptr;
     precdangling->data.SetPv( (BYTE *)precdangling + sizeof(RECDANGLING) );
     fucbFake.dataWorkBuf.CopyInto( precdangling->data );
     ptdb->SetPdataDefaultRecord( &( precdangling->data ) );
@@ -6952,7 +6952,7 @@ LOCAL ERR ErrIndexUnicodeState(
         Call( ErrNORMGetSortVersion( wszLocaleName, &qwVersionCurrent, &sortID ) );
 
         if( !FNORMNLSVersionEquals( qwVersionCreated, qwVersionCurrent ) ||
-            ( ( NULL != psortID ) && !FSortIDEquals( psortID, &sortID ) ) )
+            ( ( nullptr != psortID ) && !FSortIDEquals( psortID, &sortID ) ) )
         {
             WCHAR wszSortIDPersisted[PERSISTED_SORTID_MAX_LENGTH] = L"";
             WCHAR wszSortIDCurrent[PERSISTED_SORTID_MAX_LENGTH] = L"";
@@ -7211,7 +7211,7 @@ LOCAL ERR ErrCATIInitIDB(
                                     ptdbCatalog,
                                     dataRec,
                                     fFalse,
-                                    NULL,
+                                    nullptr,
                                     pjsph ) );
     }
 
@@ -7686,7 +7686,7 @@ LOCAL ERR ErrCATIInitIndexFCBs(
         /*  read the data
         /**/
 
-        FCB * pfcbTemplate = NULL;
+        FCB * pfcbTemplate = nullptr;
         JET_SPACEHINTS jsph = { 0 };
 
         err = ErrCATIInitIDB(
@@ -7816,7 +7816,7 @@ CheckPrimary:
                                         fTrue,
                                         pfcb->PgnoFDP(),
                                         pjsphPrimary, // actually default sequential
-                                        NULL );
+                                        nullptr );
         if ( errInit < 0 )
         {
             err = errInit;
@@ -8050,7 +8050,7 @@ LOCAL ERR ErrCATIInitCallbacks(
 {
     ERR             err                         = JET_errSuccess;
     BOOL            fMovedOffCurrentRecord      = fFalse;
-    JET_CALLBACK    callback                    = NULL;
+    JET_CALLBACK    callback                    = nullptr;
     ULONG           cbtyp;
     CHAR            szCallback[JET_cbColumnMost+1];
     DATA            dataField;
@@ -8133,16 +8133,16 @@ LOCAL ERR ErrCATIInitCallbacks(
                 }
 
                 CBDESC * const pcbdescInsert = new CBDESC;  //  freed in TDB::Delete
-                if( NULL == pcbdescInsert )
+                if( nullptr == pcbdescInsert )
                 {
                     Call( ErrERRCheck( JET_errOutOfMemory ) );
                 }
 
-                pcbdescInsert->pcbdescNext  = NULL;
-                pcbdescInsert->ppcbdescPrev = NULL;
+                pcbdescInsert->pcbdescNext  = nullptr;
+                pcbdescInsert->ppcbdescPrev = nullptr;
                 pcbdescInsert->pcallback    = callback;
                 pcbdescInsert->cbtyp        = cbtyp;
-                pcbdescInsert->pvContext    = NULL;
+                pcbdescInsert->pvContext    = nullptr;
                 pcbdescInsert->cbContext    = 0;
                 pcbdescInsert->ulId         = 0;
                 pcbdescInsert->fPermanent   = fTrue;
@@ -8430,7 +8430,7 @@ ERR ErrCATInitFCB( FUCB *pfucbTable, OBJID objidTable, const BOOL fSkipPgnoFDPLa
                     pfucbCatalog->u.pfcb->Ptdb(),
                     pfucbCatalog->kdfCurr.data,
                     fFalse,
-                    pfcb->FDerivedTable() ? &jsphTemplate : NULL,
+                    pfcb->FDerivedTable() ? &jsphTemplate : nullptr,
                     &jsphPrimary ) );
     CallS( err );   // no warnings in this case ...
 
@@ -8441,7 +8441,7 @@ ERR ErrCATInitFCB( FUCB *pfucbTable, OBJID objidTable, const BOOL fSkipPgnoFDPLa
                     pfucbCatalog->u.pfcb->Ptdb(),
                     pfucbCatalog->kdfCurr.data,
                     fTrue,
-                    NULL,
+                    nullptr,
                     &jsphPrimaryDeferredLV ) );
     CallSx( err, JET_wrnColumnNull );
     fSetDeferredLVSpacehints = ( err != JET_wrnColumnNull );
@@ -8511,7 +8511,7 @@ ERR ErrCATInitFCB( FUCB *pfucbTable, OBJID objidTable, const BOOL fSkipPgnoFDPLa
                 szTableName,
                 pfcb->FTemplateTable(),
                 pfcbTemplateTable,
-                fSetDeferredLVSpacehints ? &jsphPrimaryDeferredLV :  NULL,
+                fSetDeferredLVSpacehints ? &jsphPrimaryDeferredLV :  nullptr,
                 &ptdb ) );
     CallSx( err, wrnCATNoMoreRecords );
     fHitEOF = ( wrnCATNoMoreRecords == err );
@@ -8547,7 +8547,7 @@ ERR ErrCATInitFCB( FUCB *pfucbTable, OBJID objidTable, const BOOL fSkipPgnoFDPLa
                     fTrue,
                     pfcb->PgnoFDP(),
                     &jsphPrimary,   // sequential space hints.
-                    NULL ) );
+                    nullptr ) );
         ptdb->ResetRgbitAllIndex();
         Assert( pfcbNil == pfcb->PfcbNextIndex() );
     }
@@ -8696,7 +8696,7 @@ ERR ErrCATInitTempFCB( FUCB *pfucbTable )
         fTrue,
         pfcb->PgnoFDP(),
         PSystemSpaceHints(eJSPHDefaultUserIndex),
-        NULL ) );
+        nullptr ) );
 
     Assert( pfcb->PfcbNextIndex() == pfcbNil );
 
@@ -8782,7 +8782,7 @@ ULONG UlCATColumnSize( JET_COLTYP coltyp, INT cbMax, BOOL *pfMaxTruncated )
             break;
     }
 
-    if ( pfMaxTruncated != NULL )
+    if ( pfMaxTruncated != nullptr )
     {
         *pfMaxTruncated = fTruncated;
     }
@@ -8849,8 +8849,8 @@ ERR ErrCATStats(
                     (BYTE *)&le_sr,
                     sizeof(LE_SR),
                     NO_GRBIT,
-                    NULL ) );
-        Call( ErrIsamUpdate( ppib, pfucbCatalog, NULL, 0, NULL, NO_GRBIT ) );
+                    nullptr ) );
+        Call( ErrIsamUpdate( ppib, pfucbCatalog, nullptr, 0, nullptr, NO_GRBIT ) );
     }
     else
     {
@@ -8893,7 +8893,7 @@ ERR ErrCATChangePgnoFDP( PIB * ppib, IFMP ifmp, OBJID objidTable, OBJID objid, S
     ERR         err             = JET_errSuccess;
     FUCB *      pfucbCatalog    = pfucbNil;
     BOOKMARK    bm;
-    BYTE        *pbBookmark     = NULL;
+    BYTE        *pbBookmark     = nullptr;
     ULONG       cbBookmark;
 
     BOOL fUpdatePgnoFDPLastSetTime  = BoolParam( PinstFromPpib( ppib ), JET_paramFlight_EnablePgnoFDPLastSetTime ) &&
@@ -8927,7 +8927,7 @@ ERR ErrCATChangePgnoFDP( PIB * ppib, IFMP ifmp, OBJID objidTable, OBJID objid, S
                 (BYTE *)&pgnoFDPNew,
                 sizeof(PGNO),
                 NO_GRBIT,
-                NULL ) );
+                nullptr ) );
 
     // If pgno fdp is being changed, we will also update pgnofdp last set time.
     if ( fUpdatePgnoFDPLastSetTime )
@@ -8939,10 +8939,10 @@ ERR ErrCATChangePgnoFDP( PIB * ppib, IFMP ifmp, OBJID objidTable, OBJID objid, S
             (BYTE *)&ftCurrent,
             sizeof( __int64 ),
             NO_GRBIT,
-            NULL ) );
+            nullptr ) );
     }
 
-    Call( ErrIsamUpdate( ppib, pfucbCatalog, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( ppib, pfucbCatalog, nullptr, 0, nullptr, NO_GRBIT ) );
 
     CallS( ErrCATClose( ppib, pfucbCatalog ) );
     pfucbCatalog = pfucbNil;
@@ -8959,7 +8959,7 @@ ERR ErrCATChangePgnoFDP( PIB * ppib, IFMP ifmp, OBJID objidTable, OBJID objid, S
                 (BYTE *)&pgnoFDPNew,
                 sizeof(PGNO),
                 NO_GRBIT,
-                NULL ) );
+                nullptr ) );
 
     // If pgno fdp is being changed, we will also update pgnofdp last set time.
     if ( fUpdatePgnoFDPLastSetTime )
@@ -8971,10 +8971,10 @@ ERR ErrCATChangePgnoFDP( PIB * ppib, IFMP ifmp, OBJID objidTable, OBJID objid, S
             (BYTE *)&ftCurrent,
             sizeof( __int64 ),
             NO_GRBIT,
-            NULL ) );
+            nullptr ) );
     }
 
-    Call( ErrIsamUpdate( ppib, pfucbCatalog, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( ppib, pfucbCatalog, nullptr, 0, nullptr, NO_GRBIT ) );
 
 HandleError:
     RESBOOKMARK.Free( pbBookmark );
@@ -9024,7 +9024,7 @@ LOCAL ERR ErrCATIChangeColumnDefaultValue(
                 &ulFlags,
                 sizeof(ulFlags),
                 NO_GRBIT,
-                NULL ) );
+                nullptr ) );
 
     Call( ErrIsamSetColumn(
                 ppib,
@@ -9033,8 +9033,8 @@ LOCAL ERR ErrCATIChangeColumnDefaultValue(
                 dataDefault.Pv(),
                 dataDefault.Cb(),
                 NO_GRBIT,
-                NULL ) );
-    Call( ErrIsamUpdate( ppib, pfucbCatalog, NULL, 0, NULL, NO_GRBIT ) );
+                nullptr ) );
+    Call( ErrIsamUpdate( ppib, pfucbCatalog, nullptr, 0, nullptr, NO_GRBIT ) );
 
 HandleError:
     if( err < 0 )
@@ -9057,7 +9057,7 @@ ERR ErrCATChangeColumnDefaultValue(
     ERR         err;
     FUCB *      pfucbCatalog        = pfucbNil;
     BOOKMARK    bm;
-    BYTE        *pbBookmark         = NULL;
+    BYTE        *pbBookmark         = nullptr;
     ULONG       cbBookmark;
 
     CallR( ErrDIRBeginTransaction( ppib, 55013, NO_GRBIT ) );
@@ -9300,16 +9300,16 @@ LOCAL ERR ErrCATIUpgradeLocaleForOneIndex(
     fInUpdate = fTrue;
 
     // There may or may not be a locale name. Store it just in case! Also stamp the new Version and Sort ID (GUID).
-    Call( ErrIsamSetColumn( ppib, pfucbCatalog, fidMSO_LocaleName, pidb->WszLocaleName(), LOSStrLengthW( pidb->WszLocaleName() ) * sizeof( *pidb->WszLocaleName() ), JET_bitNil, NULL ) );
-    Call( ErrIsamSetColumn( ppib, pfucbCatalog, fidMSO_Version, &qwSortVersionToStore, sizeof( qwSortVersionToStore ), NO_GRBIT, NULL ) );
-    Call( ErrIsamSetColumn( ppib, pfucbCatalog, fidMSO_SortID, &sortidCurrentOS, sizeof( sortidCurrentOS ), NO_GRBIT, NULL ) );
+    Call( ErrIsamSetColumn( ppib, pfucbCatalog, fidMSO_LocaleName, pidb->WszLocaleName(), LOSStrLengthW( pidb->WszLocaleName() ) * sizeof( *pidb->WszLocaleName() ), JET_bitNil, nullptr ) );
+    Call( ErrIsamSetColumn( ppib, pfucbCatalog, fidMSO_Version, &qwSortVersionToStore, sizeof( qwSortVersionToStore ), NO_GRBIT, nullptr ) );
+    Call( ErrIsamSetColumn( ppib, pfucbCatalog, fidMSO_SortID, &sortidCurrentOS, sizeof( sortidCurrentOS ), NO_GRBIT, nullptr ) );
 
     if ( !fShadow )
     {
         Call( ErrCATIAddLocale( ppib, pfucbCatalog->ifmp, pidb->WszLocaleName(), sortidCurrentOS, qwSortVersionCurrentOS ) );
     }
 
-    Call( ErrIsamUpdate( ppib, pfucbCatalog, NULL, 0, NULL, JET_bitNil ) );
+    Call( ErrIsamUpdate( ppib, pfucbCatalog, nullptr, 0, nullptr, JET_bitNil ) );
     fInUpdate = fFalse;
 }
 
@@ -9359,7 +9359,7 @@ LOCAL ERR ErrCATIUpgradeLocaleForTableIndex(
     Call( ErrCATOpen( ppib, pfmp->Ifmp(), &pfucbCatalog, fFalse ) );
     Assert( pfucbNil != pfucbCatalog );
 
-    Call( ErrCATSeekTable( ppib, pfmp->Ifmp(), szTableName, NULL, &objidTable ) );
+    Call( ErrCATSeekTable( ppib, pfmp->Ifmp(), szTableName, nullptr, &objidTable ) );
 
     // The shadow catalog doesn't have the right indices to look up the Index by Name,
     // so let's grab it from the Real catalog
@@ -9376,7 +9376,7 @@ LOCAL ERR ErrCATIUpgradeLocaleForTableIndex(
 
     Call( ErrDIRRelease( pfucbCatalog ) );
 
-    Call( ErrIsamSetCurrentIndex( ppib, pfucbCatalog, NULL ) );
+    Call( ErrIsamSetCurrentIndex( ppib, pfucbCatalog, nullptr ) );
     Call( ErrCATIUpgradeLocaleForOneIndex( ppib, pidb, objidTable, objidIndex, pfucbCatalog, fFalse ) );
     CallS( ErrCATClose( ppib, pfucbCatalog ) );
     pfucbCatalog = pfucbNil;
@@ -9385,17 +9385,17 @@ LOCAL ERR ErrCATIUpgradeLocaleForTableIndex(
     Call( ErrCATOpen( ppib, pfmp->Ifmp(), &pfucbCatalog, fTrue ) );
     Assert( pfucbNil != pfucbCatalog );
 
-    Call( ErrCATSeekTable( ppib, pfmp->Ifmp(), szTableName, NULL, &objidTableShadow ) );
+    Call( ErrCATSeekTable( ppib, pfmp->Ifmp(), szTableName, nullptr, &objidTableShadow ) );
     Assert( objidTable == objidTableShadow );
 
-    Call( ErrIsamSetCurrentIndex( ppib, pfucbCatalog, NULL ) );
+    Call( ErrIsamSetCurrentIndex( ppib, pfucbCatalog, nullptr ) );
     Call( ErrCATIUpgradeLocaleForOneIndex( ppib, pidb, objidTableShadow, objidIndex, pfucbCatalog, fTrue ) );
     CallS( ErrCATClose( ppib, pfucbCatalog ) );
     pfucbCatalog = pfucbNil;
 
     if ( fInTrx )
     {
-        Call( ErrDIRCommitTransaction( ppib, JET_bitNil, 0, NULL ) );
+        Call( ErrDIRCommitTransaction( ppib, JET_bitNil, 0, nullptr ) );
         fInTrx = fFalse;
     }
 
@@ -9647,7 +9647,7 @@ LOCAL ERR ErrCATIDeleteOrUpdateLocalizedIndexesInTable(
                     UtilReportEvent(
                             eventWarning,
                             DATA_DEFINITION_CATEGORY,
-                            PRIMARY_INDEX_OUT_OF_DATE_ERROR_ID, _countof( rgsz ), rgsz, 0, NULL, PinstFromPpib( ppib ) );
+                            PRIMARY_INDEX_OUT_OF_DATE_ERROR_ID, _countof( rgsz ), rgsz, 0, nullptr, PinstFromPpib( ppib ) );
 
                     OSUHAPublishEvent(
                         HaDbFailureTagAlertOnly, PinstFromPpib( ppib ), HA_DATA_DEFINITION_CATEGORY,
@@ -9662,7 +9662,7 @@ LOCAL ERR ErrCATIDeleteOrUpdateLocalizedIndexesInTable(
                     UtilReportEvent(
                             eventWarning,
                             DATA_DEFINITION_CATEGORY,
-                            SECONDARY_INDEX_OUT_OF_DATE_ERROR_ID, _countof( rgsz ), rgsz, 0, NULL, PinstFromPpib( ppib ) );
+                            SECONDARY_INDEX_OUT_OF_DATE_ERROR_ID, _countof( rgsz ), rgsz, 0, nullptr, PinstFromPpib( ppib ) );
 
                     OSUHAPublishEvent(
                         HaDbFailureTagAlertOnly, PinstFromPpib( ppib ), HA_DATA_DEFINITION_CATEGORY,
@@ -9676,7 +9676,7 @@ LOCAL ERR ErrCATIDeleteOrUpdateLocalizedIndexesInTable(
                     UtilReportEvent(
                             eventInformation,
                             DATA_DEFINITION_CATEGORY,
-                            DO_SECONDARY_INDEX_CLEANUP_ID, _countof( rgsz ), rgsz, 0, NULL, PinstFromPpib( ppib ) );
+                            DO_SECONDARY_INDEX_CLEANUP_ID, _countof( rgsz ), rgsz, 0, nullptr, PinstFromPpib( ppib ) );
                     *pfIndexesDeleted = fTrue;
 
                     //  Ensure that we can always delete the index - same reason as above case.
@@ -10003,7 +10003,7 @@ ERR ErrCATDeleteOrUpdateOutOfDateLocalizedIndexes(
                             pfucbCatalog,
                             wszLocaleName,
                             _countof( wszLocaleName ),
-                            NULL,
+                            nullptr,
                             &sortID,
                             &qwSortVersion,
                             &dwNormalizationFlags ) );
@@ -10137,7 +10137,7 @@ LOCAL ERR ErrCATIRenameTable(
             sizeof( ulFlags ),
             &cbActual,
             JET_bitRetrieveCopy,
-            NULL ) );
+            nullptr ) );
 
     if( ulFlags & JET_bitObjectTableTemplate
         || ulFlags & JET_bitObjectTableFixedDDL )
@@ -10153,8 +10153,8 @@ LOCAL ERR ErrCATIRenameTable(
             szNameNew,
             (ULONG)strlen( szNameNew ),
             NO_GRBIT,
-            NULL ) );
-    Call( ErrIsamUpdate( ppib, pfucbCatalog, NULL, 0, NULL, NO_GRBIT ) );
+            nullptr ) );
+    Call( ErrIsamUpdate( ppib, pfucbCatalog, nullptr, 0, nullptr, NO_GRBIT ) );
     fUpdatePrepared = fFalse;
 
 HandleError:
@@ -10311,9 +10311,9 @@ LOCAL ERR ErrCATIRenameTableObject(
             szNameNew,
             (ULONG)strlen( szNameNew ),
             NO_GRBIT,
-            NULL ) );
+            nullptr ) );
 
-    if ( NULL != pulFlags )
+    if ( nullptr != pulFlags )
     {
         Call( ErrIsamSetColumn(
                 ppib,
@@ -10322,10 +10322,10 @@ LOCAL ERR ErrCATIRenameTableObject(
                 pulFlags,
                 sizeof(ULONG),
                 NO_GRBIT,
-                NULL ) );
+                nullptr ) );
     }
 
-    Call( ErrIsamUpdate( ppib, pfucbCatalog, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( ppib, pfucbCatalog, nullptr, 0, nullptr, NO_GRBIT ) );
     fUpdatePrepared = fFalse;
 
 HandleError:
@@ -10359,7 +10359,7 @@ ERR ErrCATRenameColumn(
 
     FCB             * const pfcbTable   = pfucbTable->u.pfcb;
     TDB             * const ptdbTable   = pfcbTable->Ptdb();
-    FIELD           * pfield            = NULL;
+    FIELD           * pfield            = nullptr;
     OBJID           objidTable;
     COLUMNID        columnid;
     ULONG           ulFlags;
@@ -10446,7 +10446,7 @@ ERR ErrCATRenameColumn(
                 sysobjColumn,
                 columnid,
                 szNameNew,
-                fPrimaryIndexPlaceholder ? &ulFlags : NULL,
+                fPrimaryIndexPlaceholder ? &ulFlags : nullptr,
                 fFalse ) );
     Call( ErrCATIRenameTableObject(
                 ppib,
@@ -10455,7 +10455,7 @@ ERR ErrCATRenameColumn(
                 sysobjColumn,
                 columnid,
                 szNameNew,
-                fPrimaryIndexPlaceholder ? &ulFlags : NULL,
+                fPrimaryIndexPlaceholder ? &ulFlags : nullptr,
                 fTrue ) );
 
     //  once the commit succeeds, no errors can be generated
@@ -10557,7 +10557,7 @@ ERR ErrCATIConvert(
 
     CallR( ErrIsamPrepareUpdate( ppib, pfucbCatalog, JET_prepReplaceNoLock ) );
     Call( ErrIsamSetColumns( (JET_SESID)ppib, (JET_VTID)pfucbCatalog, psetcols, csetcols ) );
-    Call( ErrIsamUpdate( ppib, pfucbCatalog, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( ppib, pfucbCatalog, nullptr, 0, nullptr, NO_GRBIT ) );
 
 HandleError:
     if( err < 0 )
@@ -10584,7 +10584,7 @@ ERR ErrCATAddColumnCallback(
     PGNO        pgnoFDPTable    = pgnoNull;
     FUCB *      pfucbCatalog    = pfucbNil;
     BOOKMARK    bm;
-    BYTE        *pbBookmark     = NULL;
+    BYTE        *pbBookmark     = nullptr;
     ULONG       cbBookmark;
     DATA        dataField;
     FIELDFLAG   ffield      = 0;
@@ -10696,7 +10696,7 @@ ERR ErrCATConvertColumn(
     PGNO        pgnoFDPTable    = pgnoNull;
     FUCB *      pfucbCatalog    = pfucbNil;
     BOOKMARK    bm;
-    BYTE        *pbBookmark     = NULL;
+    BYTE        *pbBookmark     = nullptr;
     ULONG       cbBookmark;
     FIELDFLAG   ffield = 0;
 
@@ -10823,7 +10823,7 @@ ERR ErrCATIncreaseMaxColumnSize(
     FUCB *              pfucbCatalog    = pfucbNil;
     DATA                dataField;
     BOOKMARK            bm;
-    BYTE                *pbBookmark     = NULL;
+    BYTE                *pbBookmark     = nullptr;
     ULONG               cbBookmark;
     JET_SETCOLUMN       rgsetcolumn[1];
 
@@ -10963,7 +10963,7 @@ ERR ErrCATChangeIndexDensity(
     PGNO                pgnoFDPTable    = pgnoNull;
     FUCB *              pfucbCatalog    = pfucbNil;
     BOOKMARK            bm;
-    BYTE                *pbBookmark     = NULL;
+    BYTE                *pbBookmark     = nullptr;
     ULONG               cbBookmark;
     JET_SETCOLUMN       rgsetcolumn[1];
 
@@ -10990,7 +10990,7 @@ ERR ErrCATChangeIndexDensity(
     //
     Call( ErrCATOpen( ppib, ifmp, &pfucbCatalog, fFalse ) );
 
-    if ( NULL != szIndex )
+    if ( nullptr != szIndex )
     {
         //  index specified, so go to that index
         //
@@ -11111,7 +11111,7 @@ ERR ErrCATSetDeferredPopulateKey(
     ERR  err             = JET_errSuccess;
     WCHAR wszEntryKey[9];
 
-    if ( NULL == g_rgfmp[ifmp].PkvpsMSysDeferredPopulateKeys() )
+    if ( nullptr == g_rgfmp[ifmp].PkvpsMSysDeferredPopulateKeys() )
     {
         // If we don't have a KVP store for deferred populate keys for this FMP,
         // then we should only be trying to set a 0 length value (i.e. deleting
@@ -11155,7 +11155,7 @@ ERR ErrCATChangeIndexFlags(
     ERR                 err             = JET_errSuccess;
     FUCB *              pfucbCatalog    = pfucbNil;
     BOOKMARK            bm;
-    BYTE                *pbBookmark     = NULL;
+    BYTE                *pbBookmark     = nullptr;
     ULONG               cbBookmark;
     LE_IDXFLAG          le_idxflag;
     JET_SETCOLUMN       rgsetcolumn[1];
@@ -11186,7 +11186,7 @@ ERR ErrCATChangeIndexFlags(
     //
     Call( ErrCATOpen( ppib, ifmp, &pfucbCatalog, fFalse ) );
 
-    if ( NULL != szIndex )
+    if ( nullptr != szIndex )
     {
         //  index specified, so go to that index
         //
@@ -11267,13 +11267,13 @@ LOCAL ERR ErrCATIChangeOneCallbackDLL(
     ERR err;
 
     BOOKMARK bm;
-    BYTE * pbBookmark = NULL;
+    BYTE * pbBookmark = nullptr;
     ULONG cbBookmark;
 
     FUCB * pfucbShadowCatalog = pfucbNil;
 
     Call( ErrIsamPrepareUpdate( ppib, pfucbCatalog, JET_prepReplaceNoLock ) );
-    Call( ErrIsamSetColumn( ppib, pfucbCatalog, fidMSO_Callback, szCallbackNew, cbCallbackNew, NO_GRBIT, NULL ) );
+    Call( ErrIsamSetColumn( ppib, pfucbCatalog, fidMSO_Callback, szCallbackNew, cbCallbackNew, NO_GRBIT, nullptr ) );
     Alloc( pbBookmark = (BYTE *)RESBOOKMARK.PvRESAlloc() );
     Call( ErrIsamUpdate( ppib, pfucbCatalog, pbBookmark, cbBookmarkAlloc, &cbBookmark, NO_GRBIT ) );
     Assert( cbBookmark <= cbBookmarkAlloc );
@@ -11286,8 +11286,8 @@ LOCAL ERR ErrCATIChangeOneCallbackDLL(
     Call( ErrCATOpen( ppib, pfucbCatalog->ifmp, &pfucbShadowCatalog, fTrue ) );
     Call( ErrDIRGotoBookmark( pfucbShadowCatalog, bm ) );
     Call( ErrIsamPrepareUpdate( ppib, pfucbShadowCatalog, JET_prepReplaceNoLock ) );
-    Call( ErrIsamSetColumn( ppib, pfucbShadowCatalog, fidMSO_Callback, szCallbackNew, cbCallbackNew, NO_GRBIT, NULL ) );
-    Call( ErrIsamUpdate( ppib, pfucbShadowCatalog, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamSetColumn( ppib, pfucbShadowCatalog, fidMSO_Callback, szCallbackNew, cbCallbackNew, NO_GRBIT, nullptr ) );
+    Call( ErrIsamUpdate( ppib, pfucbShadowCatalog, nullptr, 0, nullptr, NO_GRBIT ) );
 
 HandleError:
     if( pfucbNil != pfucbShadowCatalog )
@@ -11352,7 +11352,7 @@ LOCAL ERR ErrCATIPossiblyChangeOneCallbackDLL(
     if( 0 == _strnicmp( szOldDLL, szCallbackCurrent, cchOldDLL ) )
     {
         const CHAR * const pchSep = strchr( szCallbackCurrent, chCallbackSep );
-        if( NULL == pchSep )
+        if( nullptr == pchSep )
         {
             Error( ErrERRCheck( JET_errInvalidParameter ) );
         }
@@ -11733,7 +11733,7 @@ LOCAL ERR ErrCATIAddConditionalColumnsToIndex(
 //-
 {
     ERR         err;
-    BYTE        *pbBookmark = NULL;
+    BYTE        *pbBookmark = nullptr;
     ULONG       cbBookmark;
     BOOKMARK    bm;
     UINT        iidxseg;
@@ -11894,7 +11894,7 @@ LOCAL ERR ErrCATIAddConditionalColumnsToIndex(
     Call( ErrDIRGotoBookmark( pfucbShadowCatalog, bm ) );
     Call( ErrIsamPrepareUpdate( ppib, pfucbShadowCatalog, JET_prepReplaceNoLock ) );
     Call( ErrIsamSetColumns( (JET_SESID)ppib, (JET_VTID)pfucbShadowCatalog, rgsetcolumn, csetcols ) );
-    Call( ErrIsamUpdate( ppib, pfucbShadowCatalog, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( ppib, pfucbShadowCatalog, nullptr, 0, nullptr, NO_GRBIT ) );
 
 HandleError:
 
@@ -11980,7 +11980,7 @@ ERR ErrCATAddConditionalColumnsToAllIndexes(
         Assert( Pcsr( pfucbCatalog )->FLatched() );
         CallS( ErrDIRRelease( pfucbCatalog ) );
 
-        Call( ErrCATSeekTable( ppib, ifmp, szTemplateTable, NULL, &objidTemplateTable ) );
+        Call( ErrCATSeekTable( ppib, ifmp, szTemplateTable, nullptr, &objidTemplateTable ) );
         Assert( objidNil != objidTemplateTable );
 
         columnidLeast = FID( fidtypFixed, fidlimLeast );
@@ -12157,7 +12157,7 @@ ERR ErrCATAddConditionalColumnsToAllIndexes(
                     pfucbCatalog,
                     objidTable,
                     fTemplateTable,
-                    ( objidNil != objidTemplateTable ? &tcibTemplateTable : NULL ),
+                    ( objidNil != objidTemplateTable ? &tcibTemplateTable : nullptr ),
                     &le_idxflag,
                     rgidxseg,
                     &cidxseg,
@@ -12313,10 +12313,10 @@ LOCAL ERR ErrCATIClearUnicodeFixupFlagsOnOneRecord(
     fInUpdate = fTrue;
 
     idxflag.fidb = (IDBFLAG)(idxflag.fidb & ~fidbUnicodeFixupOn_Deprecated);
-    Call( ErrIsamSetColumn( sesid, tableid, fidMSO_Flags, &idxflag, sizeof( idxflag ), NO_GRBIT, NULL ) );
+    Call( ErrIsamSetColumn( sesid, tableid, fidMSO_Flags, &idxflag, sizeof( idxflag ), NO_GRBIT, nullptr ) );
 
     Assert( fInUpdate );
-    Call( ErrIsamUpdate( sesid, tableid, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( sesid, tableid, nullptr, 0, nullptr, NO_GRBIT ) );
     fInUpdate = fFalse;
     *pfReset = fTrue;
 
@@ -12861,7 +12861,7 @@ ERR ErrCATIRetrieveColumn(
             sizeof( T ),
             &cbActual,
             NO_GRBIT,
-            NULL );
+            nullptr );
     Assert( cbActual == sizeof( T ) || JET_errSuccess != err );
     return err;
 }
@@ -12882,7 +12882,7 @@ ERR ErrCATISetColumn(
             &value,
             sizeof( T ),
             NO_GRBIT,
-            NULL );
+            nullptr );
 }
 
 //  ================================================================
@@ -12925,7 +12925,7 @@ ERR ErrCATIInsertMSObjidsRecord(
     Call( ErrCATISetColumn( sesid, msoInfo.tableid, msoInfo.columnidType, sysobj ) );
     Call( ErrCATISetColumn( sesid, msoInfo.tableid, msoInfo.columnidObjid, objid ) );
     Call( ErrCATISetColumn( sesid, msoInfo.tableid, msoInfo.columnidObjidTable, objidTable ) );
-    Call( ErrDispUpdate( sesid, msoInfo.tableid, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrDispUpdate( sesid, msoInfo.tableid, nullptr, 0, nullptr, NO_GRBIT ) );
     fInUpdate = fFalse;
 
 HandleError:
@@ -13279,9 +13279,9 @@ ERR ErrCATCreateMSObjids(
 
     JET_COLUMNCREATE_A  rgcolumncreateMSObjids[] = {
 //      { cbStruct,                   szColumn,     coltyp,               cbMax, grbit,               pvDefault, cbDefault, cp, columnid, err            }
-        { sizeof(JET_COLUMNCREATE_A), "objid",      JET_coltypLong,       4,     JET_bitColumnTagged, NULL,      0,         0,  0,        JET_errSuccess },
-        { sizeof(JET_COLUMNCREATE_A), "objidTable", JET_coltypLong,       4,     JET_bitColumnTagged, NULL,      0,         0,  0,        JET_errSuccess },
-        { sizeof(JET_COLUMNCREATE_A), "type",       JET_coltypShort,      2,     JET_bitColumnTagged, NULL,      0,         0,  0,        JET_errSuccess },
+        { sizeof(JET_COLUMNCREATE_A), "objid",      JET_coltypLong,       4,     JET_bitColumnTagged, nullptr,      0,         0,  0,        JET_errSuccess },
+        { sizeof(JET_COLUMNCREATE_A), "objidTable", JET_coltypLong,       4,     JET_bitColumnTagged, nullptr,      0,         0,  0,        JET_errSuccess },
+        { sizeof(JET_COLUMNCREATE_A), "type",       JET_coltypShort,      2,     JET_bitColumnTagged, nullptr,      0,         0,  0,        JET_errSuccess },
     };
 
     JET_INDEXCREATE3_A  rgindexcreateMSObjids[] = {
@@ -13292,31 +13292,31 @@ ERR ErrCATCreateMSObjids(
             sizeof( szMSObjidIndexKey ),                    // length of key
             JET_bitIndexPrimary,                            // index options
             100,                                            // index density
-            NULL,                                           // pidxunicode2 for the index
+            nullptr,                                           // pidxunicode2 for the index
             0,                                              // maximum length of variable length columns in index key
-            NULL,                                           // pointer to conditional column structure
+            nullptr,                                           // pointer to conditional column structure
             0,                                              // number of conditional columns
             JET_errSuccess,                                 // returned error code,
             255,                                            // maximum key size
-            NULL                                            // space hints
+            nullptr                                            // space hints
         },
     };
 
     JET_TABLECREATE5_A  tablecreateMSObjids = {
         sizeof( JET_TABLECREATE5_A ),       // size of this structure
         const_cast<char *>( szMSObjids ),   // name of table
-        NULL,                               // name of base table
+        nullptr,                               // name of base table
         1,                                  // initial pages
         100,                                // density
         rgcolumncreateMSObjids,             // columns to create
         _countof(rgcolumncreateMSObjids),   // number of columns to create
         rgindexcreateMSObjids,              // array of index creation info
         _countof(rgindexcreateMSObjids),    // number of indexes to create
-        NULL,                               // callback to use for this table
+        nullptr,                               // callback to use for this table
         JET_cbtypNull,                      // when the callback should be called
         JET_bitTableCreateSystemTable | JET_bitTableCreateFixedDDL,     // grbit
-        NULL,                               // Sequential index space hints.
-        NULL,                               // LV index space hints
+        nullptr,                               // Sequential index space hints.
+        nullptr,                               // LV index space hints
         0,                                  // cbSeparateLV threshold
         0,                                  // cbLVChunkMax
         JET_TABLEID( pfucbNil ),            // returned tableid
@@ -13335,12 +13335,12 @@ ERR ErrCATCreateMSObjids(
     Assert( columnidMSObjids_objidTable == rgcolumncreateMSObjids[1].columnid );
     Assert( columnidMSObjids_type       == rgcolumncreateMSObjids[2].columnid );
 
-    if ( NULL != ppgnoFDP )
+    if ( nullptr != ppgnoFDP )
     {
         *ppgnoFDP = PgnoFDP( (FUCB *)tablecreateMSObjids.tableid );
     }
 
-    if ( NULL != pobjidFDP )
+    if ( nullptr != pobjidFDP )
     {
         *pobjidFDP = ObjidFDP( (FUCB *)tablecreateMSObjids.tableid );
     }
@@ -13588,7 +13588,7 @@ ERR ErrCATPossiblyDeleteMSObjidsRecord(
             sizeof( sysobj ),
             &cbActual,
             NO_GRBIT,
-            NULL ) );
+            nullptr ) );
     Assert( sizeof( sysobj ) == cbActual );
 
     OBJID objid;
@@ -13600,7 +13600,7 @@ ERR ErrCATPossiblyDeleteMSObjidsRecord(
             sizeof( objid ),
             &cbActual,
             NO_GRBIT,
-            NULL ) );
+            nullptr ) );
     Assert( sizeof( objid ) == cbActual );
 
     OBJID objidTable;
@@ -13612,7 +13612,7 @@ ERR ErrCATPossiblyDeleteMSObjidsRecord(
             sizeof( objidTable ),
             &cbActual,
             NO_GRBIT,
-            NULL ) );
+            nullptr ) );
     Assert( sizeof( objid ) == cbActual );
 
     const bool fIsBTree = ( sysobjTable == sysobj || sysobjIndex == sysobj || sysobjLongValue == sysobj );
@@ -13711,7 +13711,7 @@ BOOL FCATIExtentPageCountCacheCacheableObject(
     PCWSTR *ppReasonNotUpdatable
     )
 {
-    *ppReasonNotUpdatable = NULL;
+    *ppReasonNotUpdatable = nullptr;
 
     if ( g_fRepair )
     {
@@ -13905,7 +13905,7 @@ VOID CATIExtentPageCountsCacheReportError(
         _countof( rgwsz ),
         rgwsz,
         0,
-        NULL,
+        nullptr,
         PinstFromPpib( ppib ) );
 }
 
@@ -14077,9 +14077,9 @@ VOID CATSetExtentPageCounts(
                   columnidMSExtentPageCountCache_epccesFlag,
                   &epccesFlag,
                   sizeof( epccesFlag ),
-                  NULL,
+                  nullptr,
                   NO_GRBIT,
-                  NULL ) );
+                  nullptr ) );
         Assert( JET_errSuccess == err );
         switch ( epccesFlag )
         {
@@ -14143,9 +14143,9 @@ VOID CATSetExtentPageCounts(
     Call( ErrIsamUpdate(
               ppib,
               pfucbExtentPageCountCache,
-              NULL,
+              nullptr,
               0,
-              NULL,
+              nullptr,
               JET_bitUpdateNoVersion ) );
 
 HandleError:
@@ -14484,9 +14484,9 @@ ERR _ErrCATAdjustExtentPageCountsPrepare(
               columnidMSExtentPageCountCache_epccesFlag,
               &epccesFlag,
               sizeof( epccesFlag ),
-              NULL,
+              nullptr,
               NO_GRBIT,
-              NULL ) );
+              nullptr ) );
 
     switch ( epccesFlag )
     {
@@ -14523,15 +14523,15 @@ ERR _ErrCATAdjustExtentPageCountsPrepare(
               &epccesFlag,
               sizeof( epccesFlag ),
               NO_GRBIT,
-              NULL ) );
+              nullptr ) );
     Assert( JET_errSuccess == err );
 
     Call( ErrIsamUpdate(
               ppib,
               pfucbExtentPageCountCache,
-              NULL,
+              nullptr,
               0,
-              NULL,
+              nullptr,
               JET_bitUpdateNoVersion ) );
     Assert( JET_errSuccess == err );
 
@@ -14758,9 +14758,9 @@ VOID CATAdjustExtentPageCounts(
     Call( ErrIsamUpdate(
               ppib,
               pfucbExtentPageCountCache,
-              NULL,
+              nullptr,
               0,
-              NULL,
+              nullptr,
               JET_bitUpdateNoVersion ) );
 
 HandleError:
@@ -14939,12 +14939,12 @@ ERR ErrCATGetExtentPageCounts(
 
     Assert( cpgOE >= cpgAE );
 
-    if ( NULL != pcpgOE )
+    if ( nullptr != pcpgOE )
     {
         *pcpgOE = cpgOE;
     }
 
-    if ( NULL != pcpgAE )
+    if ( nullptr != pcpgAE )
     {
         *pcpgAE = cpgAE;
     }
@@ -14975,8 +14975,8 @@ HandleError:
 ERR ErrCATCreateMSExtentPageCountCache(
         _In_ PIB * const ppib,
         const IFMP ifmp,
-        PGNO *ppgnoFDP = NULL,
-        OBJID *pobjidFDP = NULL
+        PGNO *ppgnoFDP = nullptr,
+        OBJID *pobjidFDP = nullptr
     )
 //  ================================================================
 {
@@ -14990,10 +14990,10 @@ ERR ErrCATCreateMSExtentPageCountCache(
 
     JET_COLUMNCREATE_A  rgcolumncreateMSExtentPageCountCache[] = {
 //      { cbStruct,                   szColumn,     coltyp,                 cbMax, grbit,               pvDefault, cbDefault, cp, columnid, err            }
-        { sizeof(JET_COLUMNCREATE_A), "objid",      JET_coltypLong,         4,     JET_bitColumnFixed,  NULL,      0,         0,  0,        JET_errSuccess },
-        { sizeof(JET_COLUMNCREATE_A), "cpgAE",      JET_coltypLong,         4,     JET_bitColumnFixed,  NULL,      0,         0,  0,        JET_errSuccess },
-        { sizeof(JET_COLUMNCREATE_A), "cpgOE",      JET_coltypLong,         4,     JET_bitColumnFixed,  NULL,      0,         0,  0,        JET_errSuccess },
-        { sizeof(JET_COLUMNCREATE_A), "flag",       JET_coltypUnsignedByte, 1,     JET_bitColumnFixed,  NULL,      0,         0,  0,        JET_errSuccess },
+        { sizeof(JET_COLUMNCREATE_A), "objid",      JET_coltypLong,         4,     JET_bitColumnFixed,  nullptr,      0,         0,  0,        JET_errSuccess },
+        { sizeof(JET_COLUMNCREATE_A), "cpgAE",      JET_coltypLong,         4,     JET_bitColumnFixed,  nullptr,      0,         0,  0,        JET_errSuccess },
+        { sizeof(JET_COLUMNCREATE_A), "cpgOE",      JET_coltypLong,         4,     JET_bitColumnFixed,  nullptr,      0,         0,  0,        JET_errSuccess },
+        { sizeof(JET_COLUMNCREATE_A), "flag",       JET_coltypUnsignedByte, 1,     JET_bitColumnFixed,  nullptr,      0,         0,  0,        JET_errSuccess },
     };
 
     JET_INDEXCREATE3_A  rgindexcreateMSExtentPageCountCache[] = {
@@ -15004,31 +15004,31 @@ ERR ErrCATCreateMSExtentPageCountCache(
             sizeof( szMSExtentPageCountCacheIndexKey ),                 // length of key
             JET_bitIndexPrimary,                            // index options
             100,                                            // index density
-            NULL,                                           // pidxunicode2 for the index
+            nullptr,                                           // pidxunicode2 for the index
             0,                                              // maximum length of variable length columns in index key
-            NULL,                                           // pointer to conditional column structure
+            nullptr,                                           // pointer to conditional column structure
             0,                                              // number of conditional columns
             JET_errSuccess,                                 // returned error code,
             255,                                            // maximum key size
-            NULL                                            // space hints
+            nullptr                                            // space hints
         },
     };
 
     JET_TABLECREATE5_A  tablecreateMSExtentPageCountCache = {
         sizeof( JET_TABLECREATE5_A ),       // size of this structure
         const_cast<char *>( szMSExtentPageCountCache ), // name of table
-        NULL,                               // name of base table
+        nullptr,                               // name of base table
         1,                                  // initial pages
         100,                                // density
         rgcolumncreateMSExtentPageCountCache,           // columns to create
         _countof(rgcolumncreateMSExtentPageCountCache), // number of columns to create
         rgindexcreateMSExtentPageCountCache,            // array of index creation info
         _countof(rgindexcreateMSExtentPageCountCache),  // number of indexes to create
-        NULL,                               // callback to use for this table
+        nullptr,                               // callback to use for this table
         JET_cbtypNull,                      // when the callback should be called
         JET_bitTableCreateSystemTable | JET_bitTableCreateFixedDDL,     // grbit
-        NULL,                               // Sequential index space hints.
-        NULL,                               // LV index space hints
+        nullptr,                               // Sequential index space hints.
+        nullptr,                               // LV index space hints
         0,                                  // cbSeparateLV threshold
         0,                                  // cbLVChunkMax
         JET_TABLEID( pfucbNil ),            // returned tableid
@@ -15053,11 +15053,11 @@ ERR ErrCATCreateMSExtentPageCountCache(
     Assert( columnidMSExtentPageCountCache_cpgOE      == rgcolumncreateMSExtentPageCountCache[2].columnid );
     Assert( columnidMSExtentPageCountCache_epccesFlag == rgcolumncreateMSExtentPageCountCache[3].columnid );
 
-    if ( NULL != ppgnoFDP )
+    if ( nullptr != ppgnoFDP )
     {
         *ppgnoFDP = PgnoFDP( (FUCB *)tablecreateMSExtentPageCountCache.tableid );
     }
-    if ( NULL != pobjidFDP )
+    if ( nullptr != pobjidFDP )
     {
         *pobjidFDP = ObjidFDP( (FUCB *)tablecreateMSExtentPageCountCache.tableid );
     }
@@ -15073,7 +15073,7 @@ ERR ErrCATCreateMSExtentPageCountCache(
         _countof( rgwsz ),
         rgwsz,
         0,
-        NULL,
+        nullptr,
         PinstFromPpib( ppib ) );
 
     Assert( fInTransaction );
@@ -15121,7 +15121,7 @@ ERR ErrCATDeleteMSExtentPageCountCache(
     BOOL    fInTransaction  = fFalse;
     IFMP    ifmpT;
 
-    if ( NULL != pfTableExisted )
+    if ( nullptr != pfTableExisted )
     {
         *pfTableExisted = fFalse;
     }
@@ -15131,7 +15131,7 @@ ERR ErrCATDeleteMSExtentPageCountCache(
     fDatabaseOpen = fTrue;
 
     Assert( !fInTransaction );
-    err = ErrCATSeekTable( ppib, ifmp, szMSExtentPageCountCache, NULL, NULL );
+    err = ErrCATSeekTable( ppib, ifmp, szMSExtentPageCountCache, nullptr, nullptr );
 
     switch ( err )
     {
@@ -15151,7 +15151,7 @@ ERR ErrCATDeleteMSExtentPageCountCache(
     }
 
     // Table exists
-    if ( NULL != pfTableExisted )
+    if ( nullptr != pfTableExisted )
     {
         *pfTableExisted = fTrue;
     }
@@ -15194,7 +15194,7 @@ ERR ErrCATDeleteMSExtentPageCountCache(
         _countof( rgwsz ),
         rgwsz,
         0,
-        NULL,
+        nullptr,
         PinstFromPpib( ppib ) );
 
 HandleError:
@@ -15284,9 +15284,9 @@ ERR ErrCATGetNextRootObject(
             JET_INDEX_RANGE indexRange;
             indexRange.rgStartColumns = &indexColumn;
             indexRange.cStartColumns = 1;
-            indexRange.rgEndColumns = NULL;
+            indexRange.rgEndColumns = nullptr;
             indexRange.cEndColumns = 0;
-            Call( ErrIsamPrereadIndexRange( (JET_SESID)ppib, (JET_TABLEID)pfucbCatalog, &indexRange, 0, lMax, JET_bitPrereadForward, NULL ) );
+            Call( ErrIsamPrereadIndexRange( (JET_SESID)ppib, (JET_TABLEID)pfucbCatalog, &indexRange, 0, lMax, JET_bitPrereadForward, nullptr ) );
 
             // Go to the first record.
             Call( ErrIsamMakeKey( ppib, pfucbCatalog, &bTrue, sizeof( bTrue ), JET_bitNewKey | JET_bitFullColumnStartLimit ) );
@@ -15389,7 +15389,7 @@ ERR ErrCATGetNextRootObject(
     objid = *( (UnalignedLittleEndian<OBJID>*)dataField.Pv() );
     Assert( objid != objidNil );
 
-    if ( ppgnoFDP != NULL )
+    if ( ppgnoFDP != nullptr )
     {
         // Retrieve the pgnoFDP.
         Call( ErrRECIRetrieveFixedColumn( pfcbNil, pfucbCatalog->u.pfcb->Ptdb(), fidMSO_PgnoFDP, pfucbCatalog->kdfCurr.data, &dataField ) );
@@ -15398,7 +15398,7 @@ ERR ErrCATGetNextRootObject(
         Assert( pgnoFDP != pgnoNull );
     }
 
-    if ( szObjectName != NULL )
+    if ( szObjectName != nullptr )
     {
         // Retrieve the object name.
         Call( ErrRECIRetrieveVarColumn( pfcbNil, pfucbCatalog->u.pfcb->Ptdb(), fidMSO_Name, pfucbCatalog->kdfCurr.data, &dataField ) );
@@ -15413,11 +15413,11 @@ HandleError:
     if ( err >= JET_errSuccess )
     {
         *pobjid = objid;
-        if ( szObjectName != NULL )
+        if ( szObjectName != nullptr )
         {
             OSStrCbCopyA( szObjectName, sizeof( szObjectNameT ), szObjectNameT );
         }
-        if ( ppgnoFDP != NULL )
+        if ( ppgnoFDP != nullptr )
         {
             *ppgnoFDP = pgnoFDP;
         }
@@ -15425,11 +15425,11 @@ HandleError:
     else
     {
         *pobjid = objidNil;
-        if ( szObjectName != NULL )
+        if ( szObjectName != nullptr )
         {
             *szObjectName = '\0';
         }
-        if ( ppgnoFDP != NULL )
+        if ( ppgnoFDP != nullptr )
         {
             *ppgnoFDP = pgnoNull;
         }
@@ -16000,7 +16000,7 @@ ERR ErrCATVerifyMSObjids(
             sesid,
             rgcolumndef,
             _countof( rgcolumndef ),
-            NULL,
+            nullptr,
             JET_bitTTErrorOnDuplicateInsertion,
             &msoInfoTemp.tableid,
             rgcolumnid,
@@ -16094,7 +16094,7 @@ ERR ErrCATIPopulateMSLocales( _In_ PIB * const ppib, const IFMP ifmp );
 
 INLINE BOOL FCATIIsMSLocalesConsistencyMarker( const WCHAR * const wszMSLocalesKey, const INT cMSLocalesValue )
 {
-    if ( ( wszMSLocalesKey != NULL ) &&
+    if ( ( wszMSLocalesKey != nullptr ) &&
             ( LOSStrCompareW( wszMSLocalesKey, g_wszMSLocalesConsistencyMarkerKey ) == 0 )&&
             ( cMSLocalesValue == g_cMSLocalesConsistencyMarkerValue ) )
     {
@@ -16120,7 +16120,7 @@ ERR ErrCATIInitMSDeferredPopulateKeys(
     BOOL fAllowCreation )
 {
     ERR err = JET_errSuccess;
-    CKVPStore * pkvps = NULL;
+    CKVPStore * pkvps = nullptr;
     IFMP ifmpOpen = ifmpNil;
 
     Assert( ppib != ppibNil );  //  This function assumes a valid session.
@@ -16140,7 +16140,7 @@ ERR ErrCATIInitMSDeferredPopulateKeys(
     //  set the MSysDeferredPopulateKeys store value in the FMP
 
     g_rgfmp[ ifmp ].SetKVPMSysDeferredPopulateKeys( pkvps );
-    pkvps = NULL;   // owned by FMP now ...
+    pkvps = nullptr;   // owned by FMP now ...
     Assert( g_rgfmp[ ifmp ].PkvpsMSysDeferredPopulateKeys() );
 
 HandleError:
@@ -16166,7 +16166,7 @@ ERR ErrCATICreateMSLocales(
     const IFMP ifmp )
 {
     ERR err = JET_errSuccess;
-    CKVPStore * pkvps = NULL;
+    CKVPStore * pkvps = nullptr;
     IFMP ifmpOpen = ifmpNil;
 
     Assert( ppib != ppibNil );  //  This function assumes a valid session.
@@ -16182,7 +16182,7 @@ ERR ErrCATICreateMSLocales(
     //  set the MSysLocales store value in the FMP
 
     g_rgfmp[ ifmp ].SetKVPMSysLocales( pkvps );
-    pkvps = NULL;   // owned by FMP now ...
+    pkvps = nullptr;   // owned by FMP now ...
     Assert( g_rgfmp[ ifmp ].PkvpsMSysLocales() );
 
 HandleError:
@@ -16212,10 +16212,10 @@ ERR ErrCATDeleteMSLocales(
     ERR     err             = JET_errSuccess;
     BOOL    fDatabaseOpen   = fFalse;
     BOOL    fInTransaction  = fFalse;
-    PIB *   ppib            = NULL;
+    PIB *   ppib            = nullptr;
     IFMP    ifmpT           = ifmpNil;
 
-    if ( NULL == ppibProvided )
+    if ( nullptr == ppibProvided )
     {
         Call( ErrPIBBeginSession( PinstFromIfmp( ifmp ), &ppib, procidNil, fFalse ) );
     }
@@ -16261,7 +16261,7 @@ HandleError:
         CallS( ErrDBCloseDatabase( ppib, ifmpT, NO_GRBIT ) );
     }
 
-    if ( NULL == ppibProvided )
+    if ( nullptr == ppibProvided )
     {
         PIBEndSession( ppib );
     }
@@ -16281,10 +16281,10 @@ ERR ErrCATDeleteMSDeferredPopulateKeys(
     ERR     err             = JET_errSuccess;
     BOOL    fDatabaseOpen   = fFalse;
     BOOL    fInTransaction  = fFalse;
-    PIB *   ppib            = NULL;
+    PIB *   ppib            = nullptr;
     IFMP    ifmpT           = ifmpNil;
 
-    if ( NULL == ppibProvided )
+    if ( nullptr == ppibProvided )
     {
         Call( ErrPIBBeginSession( PinstFromIfmp( ifmp ), &ppib, procidNil, fFalse ) );
     }
@@ -16321,7 +16321,7 @@ HandleError:
         CallS( ErrDBCloseDatabase( ppib, ifmpT, NO_GRBIT ) );
     }
 
-    if ( NULL == ppibProvided )
+    if ( nullptr == ppibProvided )
     {
         PIBEndSession( ppib );
     }
@@ -16436,7 +16436,7 @@ VOID CATTermMSLocales( FMP * const pfmp )
     if ( pfmp->PkvpsMSysLocales() )
     {
         CKVPStore * pkvps = pfmp->PkvpsMSysLocales();
-        pfmp->SetKVPMSysLocales( NULL );
+        pfmp->SetKVPMSysLocales( nullptr );
         pkvps->KVPTermStore();
         delete pkvps;
     }
@@ -16449,7 +16449,7 @@ VOID CATTermMSDeferredPopulateKeys( FMP * const pfmp )
     if ( pfmp->PkvpsMSysDeferredPopulateKeys() )
     {
         CKVPStore * pkvps = pfmp->PkvpsMSysDeferredPopulateKeys();
-        pfmp->SetKVPMSysDeferredPopulateKeys( NULL );
+        pfmp->SetKVPMSysDeferredPopulateKeys( nullptr );
         pkvps->KVPTermStore();
         delete pkvps;
     }
@@ -16616,10 +16616,10 @@ ERR ErrCATIAccumulateIndexLocales(
                     pfucbCatalog,
                     wszLocaleName,
                     _countof( wszLocaleName ),
-                    NULL,
+                    nullptr,
                     &sortID,
                     &qwSortVersion,
-                    NULL ) );
+                    nullptr ) );
 
                 LOCALENAMEINFO li;
                 li.m_qwVersion = qwSortVersion;
@@ -16702,7 +16702,7 @@ ERR ErrCATInitMSDeferredPopulateKeys(
         Error( ErrERRCheck( JET_errEngineFormatVersionParamTooLowForRequestedFeature ) );
     }
 
-    if( NULL == pfmp->PkvpsMSysDeferredPopulateKeys() )
+    if( nullptr == pfmp->PkvpsMSysDeferredPopulateKeys() )
     {
         // No KVPStore has been located or created yet.  Try now.
         Call( ErrCATIInitMSDeferredPopulateKeys( ppib, ifmp, fAllowCreation ) );
@@ -17014,7 +17014,7 @@ INLINE ERR ErrCATIParseLocaleNameInfo(
     //  First, grab the LocaleName out of the key
     //
     wszCurr = wcschr( wszLocaleEntryKey, L'=' );
-    if ( wszCurr == NULL ||
+    if ( wszCurr == nullptr ||
          *wszCurr == L'\0' ||
          wszCurr == wszLocaleEntryKey )
     {
@@ -17051,7 +17051,7 @@ INLINE ERR ErrCATIParseLocaleNameInfo(
     //
     wszCurr = wcschr( wszCurr, L',' );
 
-    if ( wszCurr == NULL ||
+    if ( wszCurr == nullptr ||
          *wszCurr == L'\0' ||
          *( wszCurr + 1 ) == L'\0' )
     {
@@ -17064,7 +17064,7 @@ INLINE ERR ErrCATIParseLocaleNameInfo(
 #endif // DEBUG
 
     wszCurr = wcschr( wszCurr, L'=' );
-    if ( wszCurr == NULL ||
+    if ( wszCurr == nullptr ||
          *wszCurr == L'\0' ||
          *( wszCurr + 1 ) == L'\0' )
     {
@@ -17090,7 +17090,7 @@ INLINE ERR ErrCATIParseLocaleNameInfo(
     //
     wszCurr = wcschr( wszCurr, L',' );
 
-    if ( wszCurr == NULL ||
+    if ( wszCurr == nullptr ||
          *wszCurr == L'\0' ||
          *( wszCurr + 1 ) == L'\0' )
     {
@@ -17103,7 +17103,7 @@ INLINE ERR ErrCATIParseLocaleNameInfo(
 #endif // DEBUG
 
     wszCurr = wcschr( wszCurr, L'=' );
-    if ( wszCurr == NULL ||
+    if ( wszCurr == nullptr ||
          *wszCurr == L'\0' ||
          * (wszCurr + 1 ) == L'\0' )
     {
@@ -17112,7 +17112,7 @@ INLINE ERR ErrCATIParseLocaleNameInfo(
 
     wszCurr++;
 
-    WCHAR * pwszNull = NULL;
+    WCHAR * pwszNull = nullptr;
     *pqwSortedVersion = _wcstoui64( wszCurr, &pwszNull, 16 );
 
     if ( *pwszNull != L'\0' ) // expect that's the end of the key.
@@ -17187,7 +17187,7 @@ LOCAL ERR ErrCATIGetLocaleInfo(
     )
 {
     ERR err             = JET_errSuccess;
-    PWSTR       pwszLCID    = NULL;
+    PWSTR       pwszLCID    = nullptr;
 
     Assert( NULL != pkvpscursor );
     Assert( NULL != plocaleinfo );
@@ -17196,7 +17196,7 @@ LOCAL ERR ErrCATIGetLocaleInfo(
     //  First, grab the LCID out of the key
     //
     OSStrCharFindW( pkvpscursor->WszKVPSCursorCurrKey(), L'=', &pwszLCID );
-    if ( pwszLCID == NULL ||
+    if ( pwszLCID == nullptr ||
          *pwszLCID == L'\0' ||
          *( pwszLCID + 1 ) == L'\0' )
     {
@@ -17204,7 +17204,7 @@ LOCAL ERR ErrCATIGetLocaleInfo(
     }
 
     pwszLCID++;
-    WCHAR * pwszVer = NULL;
+    WCHAR * pwszVer = nullptr;
     DWORD lcid = wcstol( pwszLCID, &pwszVer, 10 );
     if ( lcid == 0 )
     {
@@ -17215,7 +17215,7 @@ LOCAL ERR ErrCATIGetLocaleInfo(
     //  Second, grab the Sort Version out of the key
     //
     OSStrCharFindW( pwszVer, L'=', &pwszVer );
-    if ( pwszVer == NULL ||
+    if ( pwszVer == nullptr ||
          *pwszVer == L'\0' ||
          *( pwszVer + 1 ) == L'\0' )
     {
@@ -17223,7 +17223,7 @@ LOCAL ERR ErrCATIGetLocaleInfo(
     }
 
     pwszVer++;
-    WCHAR * pwszNull = NULL;
+    WCHAR * pwszNull = nullptr;
     QWORD qwSortedVersion = _wcstoui64( pwszVer, &pwszNull, 16 );
     Expected( *pwszNull == L'\0' ); // expect that's the end of the key.
 
@@ -17415,7 +17415,7 @@ ERR ErrCATIGetLocaleNameInfo(
     QWORD qwSortedVersion;
     WCHAR wszLocaleName[NORM_LOCALE_NAME_MAX_LENGTH];
 
-    if ( NULL != wcsstr( pkvpscursor->WszKVPSCursorCurrKey(), L"LCID" ) )
+    if ( nullptr != wcsstr( pkvpscursor->WszKVPSCursorCurrKey(), L"LCID" ) )
     {
         //old key format in KVP which was L"LCID=%d,Ver=%I64x"
         LOCALEINFO lcidInfo;
@@ -17500,14 +17500,14 @@ ERR ErrCATCheckForOutOfDateLocales(
 {
     ERR err = JET_errSuccess;
     CKVPStore kvpsMSysLocales( ifmp, wszMSLocales );
-    CKVPStore::CKVPSCursor * pkvpscursor = NULL;
+    CKVPStore::CKVPSCursor * pkvpscursor = nullptr;
     BOOL fInitKVP = fFalse;
 
     *pfOutOfDateNLSVersion = fFalse;
 
     // We don't use g_rgfmp[ifmp].PkvpsMSysLocales() for 2 reasons, (A) it's not initialized
     // yet, and (B) it's not read only ...
-    Call( kvpsMSysLocales.ErrKVPInitStore( NULL, CKVPStore::eReadOnly, g_dwMSLocalesMajorVersions ) );
+    Call( kvpsMSysLocales.ErrKVPInitStore( nullptr, CKVPStore::eReadOnly, g_dwMSLocalesMajorVersions ) );
 
     fInitKVP = fTrue;
 
@@ -17559,7 +17559,7 @@ ERR ErrCATCheckForOutOfDateLocales(
                     6,
                     rgsz,
                     0,
-                    NULL,
+                    nullptr,
                     PinstFromIfmp( ifmp ) );
 
             if ( li.m_qwVersion > qwSortVersionOS )
@@ -17610,7 +17610,7 @@ ERR ErrCATCheckForOutOfDateLocales(
                     6,
                     rgsz,
                     0,
-                    NULL,
+                    nullptr,
                     PinstFromIfmp( ifmp ) );
 
             OSTrace( JET_tracetagUpgrade, OSFormat( "Due to localeName = %ws, which changed Sort ID from %ws to %ws, this DB needs index upgrades.\n",
@@ -17659,7 +17659,7 @@ ERR ErrCATVerifyMSLocales(
     )
 {
     ERR err = JET_errSuccess;
-    CKVPStore::CKVPSCursor * pkvpscursorMSysLocalesTable = NULL;
+    CKVPStore::CKVPSCursor * pkvpscursorMSysLocalesTable = nullptr;
     CLocaleNameInfoArray    arrayLocalesInDB;
 #ifdef DEBUG
     BOOL fInvariantLocaleSeen = fFalse;
@@ -17842,7 +17842,7 @@ ERR ErrCATVerifyMSLocales(
     //
     pkvpscursorMSysLocalesTable->KVPSCursorEnd();
     delete pkvpscursorMSysLocalesTable;
-    pkvpscursorMSysLocalesTable = NULL;
+    pkvpscursorMSysLocalesTable = nullptr;
 
     //  Look for the consistency marker.
     //
@@ -17906,7 +17906,7 @@ ERR ErrCATDumpMSLocales( JET_SESID sesid, const IFMP ifmp )
 
     CKVPStore kvpsMSysLocales( ifmp, wszMSLocales );
 
-    err = kvpsMSysLocales.ErrKVPInitStore( NULL, CKVPStore::eReadOnly, g_dwMSLocalesMajorVersions );
+    err = kvpsMSysLocales.ErrKVPInitStore( nullptr, CKVPStore::eReadOnly, g_dwMSLocalesMajorVersions );
 
     if ( JET_errObjectNotFound == err )
     {

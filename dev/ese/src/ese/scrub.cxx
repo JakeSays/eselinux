@@ -149,7 +149,7 @@ void DBMLogStartFailure( const IFMP ifmp, const ERR err )
         isz,
         rgcwszT,
         0,
-        NULL,
+        nullptr,
         PinstFromIfmp( ifmp ));
 }
 
@@ -202,7 +202,7 @@ ERR ErrIsamDatabaseScan(
     // in case non-zeroed values are passed in.
 
     if ( fStartContinuousScan &&
-        ( ( ( pcsecMax != NULL ) && ( *pcsecMax != 0 ) ) || ( cmsecSleep != 0 ) || ( pfnCallback != NULL ) ) )
+        ( ( ( pcsecMax != nullptr ) && ( *pcsecMax != 0 ) ) || ( cmsecSleep != 0 ) || ( pfnCallback != nullptr ) ) )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
@@ -267,7 +267,7 @@ LOCAL ERR ErrSCANDumpOneMSysDefragColumn(
     ERR err;
     __int64 qw = 12345678;
 
-    WCHAR * wszAlloc = NULL;
+    WCHAR * wszAlloc = nullptr;
 
     const INT cchColumnName = 25;
     const COLUMNID columnid = ColumnidFromMSysScanColumnName( szColumn );
@@ -283,18 +283,18 @@ LOCAL ERR ErrSCANDumpOneMSysDefragColumn(
         sizeof( qw ),
         &cbActual,
         NO_GRBIT,
-        NULL ) );
+        nullptr ) );
     CallS( err );
     Assert( sizeof( qw ) == cbActual );
 
-    if( 0 != qw && NULL != strstr( szColumn, "DateTime" ) )
+    if( 0 != qw && nullptr != strstr( szColumn, "DateTime" ) )
     {
         // Column name contains 'DateTime', format it as such
         size_t cchRequired;
         
         Call( ErrUtilFormatFileTimeAsDate(
             qw,
-            0,
+            nullptr,
             0,
             &cchRequired) );
         Alloc( wszAlloc = new WCHAR[cchRequired] );
@@ -305,11 +305,11 @@ LOCAL ERR ErrSCANDumpOneMSysDefragColumn(
             &cchRequired) );
         wprintf( L"%.*s ", (ULONG)cchRequired, wszAlloc );
         delete [] wszAlloc;
-        wszAlloc = NULL;
+        wszAlloc = nullptr;
 
         Call( ErrUtilFormatFileTimeAsTime(
             qw,
-            0,
+            nullptr,
             0,
             &cchRequired) );
         Alloc( wszAlloc = new WCHAR[cchRequired] );
@@ -320,7 +320,7 @@ LOCAL ERR ErrSCANDumpOneMSysDefragColumn(
             &cchRequired) );
         wprintf( L"%.*s (0x%I64x)\n", (ULONG)cchRequired, wszAlloc, qw );
         delete [] wszAlloc;
-        wszAlloc = NULL;
+        wszAlloc = nullptr;
     }
     else
     {
@@ -420,18 +420,18 @@ LOCAL_BROKEN ERR ErrSCANCreateMSysScan( _In_ PIB * const ppib, const IFMP ifmp )
     {
         sizeof(JET_TABLECREATE5_A),
         (CHAR *)szMSysScan,
-        NULL,
+        nullptr,
         1,  // only 1 record so only 1 page is needed
         100,
         rgjccMSysScan,
         ccolMsysScan,
-        NULL,
+        nullptr,
         0,
-        NULL,
+        nullptr,
         0,
         JET_bitTableCreateFixedDDL|JET_bitTableCreateSystemTable,
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
         0,
         0,
         JET_TABLEID( pfucbNil ),
@@ -456,7 +456,7 @@ LOCAL_BROKEN ERR ErrSCANCreateMSysScan( _In_ PIB * const ppib, const IFMP ifmp )
     pfucb = (FUCB *)jtcMSysScan.tableid;
 
     Call( ErrIsamPrepareUpdate( ppib, pfucb, JET_prepInsert ) )
-    Call( ErrIsamUpdate( ppib, pfucb, NULL, 0, NULL, NO_GRBIT ) );
+    Call( ErrIsamUpdate( ppib, pfucb, nullptr, 0, nullptr, NO_GRBIT ) );
     Call( ErrFILECloseTable( ppib, pfucb ) );
     pfucb = pfucbNil;
     Call( ErrDIRCommitTransaction( ppib, JET_bitCommitLazyFlush ) );
@@ -490,7 +490,7 @@ ERR ErrDBUTLScrub( JET_SESID sesid, const JET_DBUTIL_W *pdbutil )
 {
     ERR err = JET_errSuccess;
     PIB * const ppib = reinterpret_cast<PIB *>( sesid );
-    SCRUBDB * pscrubdb = NULL;
+    SCRUBDB * pscrubdb = nullptr;
 
     LOGTIME logtimeScrub;
 
@@ -498,7 +498,7 @@ ERR ErrDBUTLScrub( JET_SESID sesid, const JET_DBUTIL_W *pdbutil )
     tcScope->nParentObjectClass = tceNone;
     tcScope->iorReason.SetIort( iortScrubbing );
 
-    Call( ErrIsamAttachDatabase( sesid, pdbutil->szDatabase, fFalse, NULL, 0, NO_GRBIT ) );
+    Call( ErrIsamAttachDatabase( sesid, pdbutil->szDatabase, fFalse, nullptr, 0, NO_GRBIT ) );
 
     //  WARNING: must set ifmp to 0 to ensure high-dword is
     //  initialised on 64-bit, because we'll be casting this
@@ -508,7 +508,7 @@ ERR ErrDBUTLScrub( JET_SESID sesid, const JET_DBUTIL_W *pdbutil )
     Call( ErrIsamOpenDatabase(
         sesid,
         pdbutil->szDatabase,
-        NULL,
+        nullptr,
         reinterpret_cast<JET_DBID *>( &ifmp ),
         NO_GRBIT
         ) );
@@ -520,7 +520,7 @@ ERR ErrDBUTLScrub( JET_SESID sesid, const JET_DBUTIL_W *pdbutil )
     dbtimeLastScrubNew = g_rgfmp[ifmp].DbtimeLast();
     
     pscrubdb = new SCRUBDB( ifmp );
-    if( NULL == pscrubdb )
+    if( nullptr == pscrubdb )
     {
         return ErrERRCheck( JET_errOutOfMemory );
     }
@@ -538,9 +538,9 @@ ERR ErrDBUTLScrub( JET_SESID sesid, const JET_DBUTIL_W *pdbutil )
     JET_PFNSTATUS pfnStatus;
     pfnStatus = reinterpret_cast<JET_PFNSTATUS>( pdbutil->pfnCallback );
     
-    if ( NULL != pfnStatus )
+    if ( nullptr != pfnStatus )
     {
-        (VOID)pfnStatus( sesid, JET_snpScrub, JET_sntBegin, NULL );
+        (VOID)pfnStatus( sesid, JET_snpScrub, JET_sntBegin, nullptr );
     }
 
     PGNO pgno;
@@ -558,7 +558,7 @@ ERR ErrDBUTLScrub( JET_SESID sesid, const JET_DBUTIL_W *pdbutil )
         pgno += cpgPreread;
 
         snprog.cunitDone = pscrubdb->Scrubstats().cpgSeen;
-        if ( NULL != pfnStatus )
+        if ( nullptr != pfnStatus )
         {
             (VOID)pfnStatus( sesid, JET_snpScrub, JET_sntProgress, &snprog );
         }
@@ -572,7 +572,7 @@ ERR ErrDBUTLScrub( JET_SESID sesid, const JET_DBUTIL_W *pdbutil )
             && pscrubdb->Scrubstats().err >= JET_errSuccess )
         {
             snprog.cunitDone = pscrubdb->Scrubstats().cpgSeen;
-            if ( NULL != pfnStatus )
+            if ( nullptr != pfnStatus )
             {
                 (VOID)pfnStatus( sesid, JET_snpScrub, JET_sntProgress, &snprog );
             }
@@ -585,16 +585,16 @@ ERR ErrDBUTLScrub( JET_SESID sesid, const JET_DBUTIL_W *pdbutil )
     }
 
     snprog.cunitDone = pscrubdb->Scrubstats().cpgSeen;
-    if ( NULL != pfnStatus )
+    if ( nullptr != pfnStatus )
     {
         (VOID)pfnStatus( sesid, JET_snpScrub, JET_sntProgress, &snprog );
     }
 
     Call( pscrubdb->ErrTerm() );
     
-    if ( NULL != pfnStatus )
+    if ( nullptr != pfnStatus )
     {
-        (VOID)pfnStatus( sesid, JET_snpRepair, JET_sntComplete, NULL );
+        (VOID)pfnStatus( sesid, JET_snpRepair, JET_sntComplete, nullptr );
     }
 
     g_rgfmp[ifmp].SetDbtimeLastScrub( dbtimeLastScrubNew );
@@ -617,12 +617,12 @@ ERR ErrDBUTLScrub( JET_SESID sesid, const JET_DBUTIL_W *pdbutil )
     err = pscrubdb->Scrubstats().err;
     
     delete pscrubdb;
-    pscrubdb = NULL;
+    pscrubdb = nullptr;
 
     Call( err );
 
 HandleError:
-    if( NULL != pscrubdb )
+    if( nullptr != pscrubdb )
     {
         const ERR errT = pscrubdb->ErrTerm();
         if( err >= 0 && errT < 0 )
@@ -644,7 +644,7 @@ SCRUBDB::SCRUBDB( const IFMP ifmp ) :
     m_constants.pcprintfVerbose = CPRINTFSTDOUT::PcprintfInstance();
     m_constants.pcprintfDebug   = CPRINTFSTDOUT::PcprintfInstance();
     m_constants.objidMax        = 0;
-    m_constants.pobjidinfo      = 0;
+    m_constants.pobjidinfo      = nullptr;
     m_constants.cobjidinfo      = 0;
 
     m_stats.err                 = JET_errSuccess;
@@ -733,7 +733,7 @@ ERR SCRUBDB::ErrTerm()
     CallS( m_taskmgr.ErrTerm() );
 
     delete [] m_constants.pobjidinfo;
-    m_constants.pobjidinfo = NULL;
+    m_constants.pobjidinfo = nullptr;
 
     err = m_stats.err;
     
@@ -746,7 +746,7 @@ ERR SCRUBDB::ErrScrubPages( const PGNO pgnoFirst, const CPG cpg )
 //  ================================================================
 {
     SCRUBTASK * ptask = new SCRUBTASK( m_ifmp, pgnoFirst, cpg, &m_context );
-    if( NULL == ptask )
+    if( nullptr == ptask )
     {
         return ErrERRCheck( JET_errOutOfMemory );
     }
@@ -766,7 +766,7 @@ SCRUBTASK::SCRUBTASK( const IFMP ifmp, const PGNO pgnoFirst, const CPG cpg, cons
     m_pgnoFirst( pgnoFirst ),
     m_cpg( cpg ),
     m_pcontext( pcontext ),
-    m_pobjidinfoCached( NULL ),
+    m_pobjidinfoCached( nullptr ),
     m_objidNotFoundCached( objidNil )
 //  ================================================================
 {
@@ -1092,7 +1092,7 @@ LOCAL ERR ErrSCRUBGetObjidsFromCatalog(
     ERR err;
     DATA data;
 
-    *ppobjidinfo    = NULL;
+    *ppobjidinfo    = nullptr;
     *pcobjidinfo    = 0;
 
     const LONG      cobjidinfoChunk     = 64;
@@ -1100,7 +1100,7 @@ LOCAL ERR ErrSCRUBGetObjidsFromCatalog(
     LONG            cobjidinfoAllocated = cobjidinfoChunk;
     OBJIDINFO   *   pobjidinfo          = new OBJIDINFO[cobjidinfoChunk];
 
-    if( NULL == pobjidinfo )
+    if( nullptr == pobjidinfo )
     {
         return ErrERRCheck( JET_errOutOfMemory );
     }
@@ -1210,7 +1210,7 @@ LOCAL ERR ErrSCRUBGetObjidsFromCatalog(
                 OBJIDINFO * const pobjidinfoOld = pobjidinfo;
                 OBJIDINFO * const pobjidinfoNew = new OBJIDINFO[cobjidinfoAllocatedNew];
                 
-                if( NULL == pobjidinfoNew )
+                if( nullptr == pobjidinfoNew )
                 {
                     Call( ErrERRCheck( JET_errOutOfMemory ) );
                 }
@@ -1253,7 +1253,7 @@ HandleError:
     else
     {
         delete [] pobjidinfo;
-        *ppobjidinfo    = NULL;
+        *ppobjidinfo    = nullptr;
         *pcobjidinfo        = 0;
     }
     return err;

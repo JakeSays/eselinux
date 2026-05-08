@@ -93,14 +93,14 @@ class CSR
                 const IFMP          ifmp,
                 const PGNO          pgno,
                 const LATCH         latch,
-                BFLatch* const      pbflHint = NULL,
+                BFLatch* const      pbflHint = nullptr,
                 const BOOL fUninitPageOk = fFalse );
         ERR     ErrGetReadPage(
                 PIB                 *ppib,
                 const IFMP          ifmp,
                 const PGNO          pgno,
                 const BFLatchFlags  bflf,
-                BFLatch* const      pbflHint = NULL );
+                BFLatch* const      pbflHint = nullptr );
         ERR     ErrGetRIWPage(
                 PIB                 *ppib,
                 const IFMP          ifmp,
@@ -190,14 +190,14 @@ class CSR
                 const IFMP          ifmp,
                 const PGNO          pgno,
                 const BFLatchFlags  bflf,
-                BFLatch* const      pbflHint = NULL );
+                BFLatch* const      pbflHint = nullptr );
                 
         ERR     ErrGetRIWPage_(
                 PIB                 *ppib,
                 const IFMP          ifmp,
                 const PGNO          pgno,
                 const BFLatchFlags  bflf,
-                BFLatch* const      pbflHint = NULL );
+                BFLatch* const      pbflHint = nullptr );
     
         ERR     ErrGetNewPreInitPage_(
                 PIB                 *ppib,
@@ -598,7 +598,7 @@ HandleError:
                 _countof( rgwsz ),
                 rgwsz,
                 0,
-                NULL,
+                nullptr,
                 PinstFromIfmp( ifmp ) );
         OSTraceResumeGC();
     }
@@ -675,7 +675,7 @@ HandleError:
                 _countof( rgwsz ),
                 rgwsz,
                 0,
-                NULL,
+                nullptr,
                 PinstFromIfmp( ifmp ) );
         OSTraceResumeGC();
     }
@@ -747,7 +747,7 @@ INLINE ERR CSR::ErrGetRIWPage(
     const IFMP          ifmp,
     const PGNO          pgno )
 {
-    return ErrGetRIWPage_( ppib, ifmp, pgno, bflfDefault, NULL );
+    return ErrGetRIWPage_( ppib, ifmp, pgno, bflfDefault, nullptr );
 }
 
 INLINE ERR CSR::ErrGetRIWPage(
@@ -756,7 +756,7 @@ INLINE ERR CSR::ErrGetRIWPage(
     const PGNO          pgno,
     const BFLatchFlags  bflf )
 {
-    return ErrGetRIWPage_( ppib, ifmp, pgno, bflf, NULL );
+    return ErrGetRIWPage_( ppib, ifmp, pgno, bflf, nullptr );
 }
 
 INLINE ERR CSR::ErrGetRIWPage_(

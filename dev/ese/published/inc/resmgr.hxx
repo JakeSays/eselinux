@@ -512,7 +512,7 @@ class CLRUKResourceUtilityManager
         };
 
         // Note: These externalized APIs must be passed an externalized tick count as it is immediately adjusted, so the default value must be TickRESMGRTimeCurrent().
-        ERR ErrCacheResource( const CKey& key, CResource* const pres, _In_ TICK tickNowExternal, const ULONG_PTR pctCachePriorityExternal, const BOOL fUseHistory = fTrue, __out_opt BOOL * pfInHistory = NULL, const CResource* const presHistoryProvided = NULL );
+        ERR ErrCacheResource( const CKey& key, CResource* const pres, _In_ TICK tickNowExternal, const ULONG_PTR pctCachePriorityExternal, const BOOL fUseHistory = fTrue, __out_opt BOOL * pfInHistory = nullptr, const CResource* const presHistoryProvided = nullptr );
         ResMgrTouchFlags RmtfTouchResource( CResource* const pres, const ULONG_PTR pctCachePriorityExternal, const TICK tickNowExternal = TickRESMGRTimeCurrent() );
         void PuntResource( CResource* const pres, const TICK dtick );
         BOOL FRecentlyTouched( CResource* const pres, const TICK dtickRecent );
@@ -1458,7 +1458,7 @@ ErrCacheResource( const CKey& key, CResource* const pres, _In_ TICK tickNowExter
         _RestoreHistory( key, pic, tickNow, pctCachePriority, &fInHistory );
         fRecoveredFromHistory = fInHistory;
 
-        if ( pfInHistory != NULL )
+        if ( pfInHistory != nullptr )
         {
             *pfInHistory = fInHistory;
         }
@@ -1529,7 +1529,7 @@ ErrCacheResource( const CKey& key, CResource* const pres, _In_ TICK tickNowExter
 
     //  insert this resource into the resource LRUK 
 
-    errLRUK = _ErrInsertResource( &lock, pres, NULL );
+    errLRUK = _ErrInsertResource( &lock, pres, nullptr );
 
     RESMGRAssert(   errLRUK == CResourceLRUK::ERR::errSuccess ||
                     errLRUK == CResourceLRUK::ERR::errOutOfMemory );
@@ -1857,8 +1857,8 @@ BeginResourceScan( CLock* const plock )
     RS_STATISTICS( plock->m_stats.m_tickBeginResScan = tickNow );
 
     RESMGRAssert( plock->m_UpdateList.FEmpty() && plock->m_StuckList.FEmpty() );
-    plock->m_presStuckList = NULL;
-    plock->m_presStuckListNext = NULL;
+    plock->m_presStuckList = nullptr;
+    plock->m_presStuckListNext = nullptr;
 
     //  move before the first entry in the resource LRUK
 
@@ -1944,7 +1944,7 @@ ErrGetNextResource( CLock* const plock, CResource** const ppres )
 
     RESMGRTrace( rmttScanProcessing, L"\t\t\tErrGetNextRes()\n" );
 
-    *ppres  = NULL;
+    *ppres  = nullptr;
     memset( &plock->m_icCurrentBI, 0, sizeof(plock->m_icCurrentBI) );
 #ifdef DEBUG
     plock->m_picCheckBI = NULL;
@@ -2145,7 +2145,7 @@ ErrGetNextResource( CLock* const plock, CResource** const ppres )
 
             //  we still do not have a current resource
 
-            if ( *ppres == NULL )
+            if ( *ppres == nullptr )
             {
                 BOOL fNeedToMoveToCurrentIndex = fFalse;
 
@@ -2217,7 +2217,7 @@ ErrGetNextResource( CLock* const plock, CResource** const ppres )
                         plock->m_fHasLrukLock = fFalse;
                     }
 
-                    plock->m_presStuckList      = NULL;
+                    plock->m_presStuckList      = nullptr;
                     plock->m_presStuckListNext  = plock->m_StuckList.PrevMost();
                 }
             }   //  end if ( *ppres == NULL )
@@ -2235,7 +2235,7 @@ ErrGetNextResource( CLock* const plock, CResource** const ppres )
             plock->m_presStuckList      = ( plock->m_presStuckList ?
                                                 plock->m_StuckList.Next( plock->m_presStuckList ) :
                                                 plock->m_presStuckListNext );
-            plock->m_presStuckListNext  = NULL;
+            plock->m_presStuckListNext  = nullptr;
 
             //  we have a current resource
 
@@ -2309,14 +2309,14 @@ ErrGetNextResource( CLock* const plock, CResource** const ppres )
         //  currency may have been restored above, set errLRUK to success if we got to the end of the index
         //  to force an extra iteration because we may have a resource to return
 
-        if ( ( *ppres == NULL ) && ( errLRUK == CResourceLRUK::ERR::errNoCurrentEntry ) && fReestablishedCurrentIndex )
+        if ( ( *ppres == nullptr ) && ( errLRUK == CResourceLRUK::ERR::errNoCurrentEntry ) && fReestablishedCurrentIndex )
         {
             errLRUK = CResourceLRUK::ERR::errSuccess;
         }
     }
-    while ( *ppres == NULL && errLRUK != CResourceLRUK::ERR::errNoCurrentEntry );
+    while ( *ppres == nullptr && errLRUK != CResourceLRUK::ERR::errNoCurrentEntry );
 
-    if ( *ppres != NULL )
+    if ( *ppres != nullptr )
     {
         RESMGRTrace( rmttScanProcessing, L"\t\t\t\tReturning pres:pic = %p:%p { %u, [0] %u, [1] %u, %u, %u, %hu }\n",
                         *ppres, _PicFromPres( *ppres ), _PicFromPres( *ppres )->m_tickLast,
@@ -2408,7 +2408,7 @@ ErrEvictCurrentResource( CLock* const plock, const CKey& key, const BOOL fKeepHi
 
         plock->m_presStuckListNext = plock->m_StuckList.Next( pres );
         plock->m_StuckList.Remove( pres );
-        plock->m_presStuckList = NULL;
+        plock->m_presStuckList = nullptr;
 
         RESMGRAssert( !plock->m_fHasLrukLock );
         m_ResourceLRUK.LockKeyPtr( plock->m_tickIndexCurrent, pres, &plock->m_lock );
@@ -2490,7 +2490,7 @@ EndResourceScan( CLock* const plock )
             plock->m_UpdateList.Remove( pres );
 
 
-            const CResourceLRUK::ERR errLRUK = _ErrInsertResource( plock, pres, NULL );
+            const CResourceLRUK::ERR errLRUK = _ErrInsertResource( plock, pres, nullptr );
 
             if ( errLRUK == CResourceLRUK::ERR::errSuccess )
             {
@@ -2917,7 +2917,7 @@ _ErrInsertResource( CLock * const plock, CResource * const pres, const TICK * pt
         //  repositioned after the current bucket in ErrGetNextResource().
         //  Note that ErrCacheResource() does not hit this codepath because ptickReserved is NULL in that case, i.e.,
         //  we're not trying to move a resource, but rather insert it for the first time.
-        if ( ( ptickReserved != NULL ) && ( m_ResourceLRUK.CmpKey( tickIndexTarget, *ptickReserved ) <= 0 ) )
+        if ( ( ptickReserved != nullptr ) && ( m_ResourceLRUK.CmpKey( tickIndexTarget, *ptickReserved ) <= 0 ) )
         {
             errLRUK = CResourceLRUK::ERR::errOutOfMemory;
             break;
@@ -2942,7 +2942,7 @@ _ErrInsertResource( CLock * const plock, CResource * const pres, const TICK * pt
 
             //  We're about to try an insertion at an older bucket where we pulled it from. See comment a few lines above
             //  in this function.
-            if ( ( ptickReserved != NULL ) && ( m_ResourceLRUK.CmpKey( tickIndexTarget, *ptickReserved ) <= 0 ) )
+            if ( ( ptickReserved != nullptr ) && ( m_ResourceLRUK.CmpKey( tickIndexTarget, *ptickReserved ) <= 0 ) )
             {
                 errLRUK = CResourceLRUK::ERR::errOutOfMemory;
                 break;
@@ -3341,7 +3341,7 @@ _StoreHistory( const CKey& key, CInvasiveContext* const pic )
     
     //  we allocated a history record
 
-    if ( phist == NULL )
+    if ( phist == nullptr )
     {
         return;
     }

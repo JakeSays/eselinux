@@ -548,13 +548,13 @@ public:
         {
             free( m_pValues );
         }
-        m_pValues = NULL;
+        m_pValues = nullptr;
         m_cValues = 0;
         if( m_pcValues )
         {
             free( m_pcValues );
         }
-        m_pcValues = NULL;
+        m_pcValues = nullptr;
         AssertValid();
         m_rwlGrowing.LeaveAsWriter();
     }
@@ -564,8 +564,8 @@ public:
         //  but can't include that here, due to errors (and layering violation).
         m_rwlGrowing( CLockBasicInfo( CSyncBasicInfo( "CPerfectHistogramStats" ), 10 /* rankBasicStats */, 0 ) )
     {
-        m_pValues = NULL;
-        m_pcValues = NULL;
+        m_pValues = nullptr;
+        m_pcValues = nullptr;
         m_fInReadValues = fFalse;
         Zero();
         AssertValid();
@@ -577,8 +577,8 @@ public:
         //  but can't include that here, due to errors (and layering violation).
         m_rwlGrowing( CLockBasicInfo( CSyncBasicInfo( "CPerfectHistogramStats" ), 10 /* rankBasicStats */, 0 ) )
     {
-        m_pValues = NULL;
-        m_pcValues = NULL;
+        m_pValues = nullptr;
+        m_pcValues = nullptr;
         m_fInReadValues = fFalse;
         Zero();
         AssertValid();
@@ -634,8 +634,8 @@ public:
 
             SAMPLE * pNewValues = (SAMPLE*) malloc( (ULONG)( m_cValues + 1 ) * sizeof( SAMPLE ) );
             CHITS * pcNewCounts = (CHITS*) malloc( (ULONG)( m_cValues + 1 ) * sizeof( CHITS ) );
-            if ( pNewValues == NULL ||
-                pcNewCounts == NULL )
+            if ( pNewValues == nullptr ||
+                pcNewCounts == nullptr )
             {
                 AssertValid();
                 m_rwlGrowing.LeaveAsWriter();
@@ -734,7 +734,7 @@ public:
         STATAssert( m_rwlGrowing.FReader() || m_fDisableEnumerationLocking );
         AssertValid();
 
-        if ( pSamples == NULL )
+        if ( pSamples == nullptr )
         {
             return ERR::errInvalidParameter;
         }
@@ -766,7 +766,7 @@ public:
         STATAssert( m_rwlGrowing.FReader() || m_fDisableEnumerationLocking );
         AssertValid();
 
-        if ( pcHits == NULL )
+        if ( pcHits == nullptr )
         {
             return ERR::errInvalidParameter;
         }
@@ -816,7 +816,7 @@ public:
             return ERR::wrnOutOfSamples;
         }
 
-        if ( pPercentile == NULL || pSample == NULL ||
+        if ( pPercentile == nullptr || pSample == nullptr ||
                 *pPercentile < 1 || *pPercentile > 100 )
         {
             return ERR::errInvalidParameter;
@@ -1115,7 +1115,7 @@ class CSegmentedHistogram : public CStats {
 
 
         CSegmentedHistogram( SAMPLE * rgSampleSegments, ULONG cSampleSegments, void * pHitsData, ULONG cbHitsData ) :
-            m_pValues ( NULL ),
+            m_pValues ( nullptr ),
             m_cValues ( 0 )
         {
             STATAssert( cSampleSegments );
@@ -1212,7 +1212,7 @@ class CSegmentedHistogram : public CStats {
         {
             AssertValid();
 
-            if ( pSamples == NULL )
+            if ( pSamples == nullptr )
             {
                 return ERR::errInvalidParameter;
             }
@@ -1267,7 +1267,7 @@ class CSegmentedHistogram : public CStats {
 
             AssertValid();
 
-            if ( pcHits == NULL )
+            if ( pcHits == nullptr )
             {
                 return ERR::errInvalidParameter;
             }
@@ -1860,7 +1860,7 @@ class CCompoundHistogram : public CStats {
                 STATAssertSz( fFalse, "Either make the array of samples + histos variable or extend it a little." );
                 return ERR::errInvalidParameter;
             }
-            if ( phisto == NULL )
+            if ( phisto == nullptr )
             {
                 // consider just presuming client code failed to allocate, and returning OOM for this?
                 return ERR::errInvalidParameter;
@@ -1891,7 +1891,7 @@ class CCompoundHistogram : public CStats {
 
         CStats::ERR ErrAddSample( const SAMPLE qwSample )
         {
-            CStats * phisto = NULL;
+            CStats * phisto = nullptr;
             if ( FFindSampleHisto_( qwSample, &phisto ) )
             {
                 const CStats::ERR errStat = phisto->ErrAddSample( qwSample );
@@ -2203,7 +2203,7 @@ inline void PrintStats( CStats * pCS )
 {
     CStats::ERR csErr;
 
-    if ( pCS == NULL )
+    if ( pCS == nullptr )
     {
         wprintf(L"   NULL pointer to object of class CStats!\n");
         return;
@@ -2250,7 +2250,7 @@ inline void PrintStats( CStats * pCS, SAMPLE dcChunk )
     SAMPLE cChunk = 0;
     CHITS cHits = 0;
 
-    if ( pCS == NULL )
+    if ( pCS == nullptr )
     {
         wprintf(L"   NULL pointer to object of class CStats!\n");
         return;

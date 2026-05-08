@@ -443,18 +443,18 @@ class IFileAPI  //  fapi
                                 const DWORD         cbData,
         __out_bcount( cbData )  BYTE* const         pbData,
                                 const OSFILEQOS     grbitQOS,
-                                const PfnIOComplete pfnIOComplete   = NULL,
+                                const PfnIOComplete pfnIOComplete   = nullptr,
                                 const DWORD_PTR     keyIOComplete   = 0,
-                                const PfnIOHandoff  pfnIOHandoff    = NULL,
-                                const VOID *        pioreq          = NULL ) = 0;
+                                const PfnIOHandoff  pfnIOHandoff    = nullptr,
+                                const VOID *        pioreq          = nullptr ) = 0;
         virtual ERR ErrIOWrite( const TraceContext& tc,
                                 const QWORD         ibOffset,
                                 const DWORD         cbData,
                                 const BYTE* const   pbData,
                                 const OSFILEQOS     grbitQOS,
-                                const PfnIOComplete pfnIOComplete   = NULL,
+                                const PfnIOComplete pfnIOComplete   = nullptr,
                                 const DWORD_PTR     keyIOComplete   = 0,
-                                const PfnIOHandoff  pfnIOHandoff    = NULL ) = 0;
+                                const PfnIOHandoff  pfnIOHandoff    = nullptr ) = 0;
 
         //  causes any unissued asynchronous I/Os for the current file to be
         //  issued eventually

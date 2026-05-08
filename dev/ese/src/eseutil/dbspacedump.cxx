@@ -443,57 +443,57 @@ ESEUTIL_SPACE_FIELDS rgSpaceFields [] =
 {
 
     //  enum                            cchFieldSize,   wszFieldName,       wszSubField,    grbitRequired
-    { eSPFieldNone,                     3,          L"N/A",                     NULL,   0x0                         },
+    { eSPFieldNone,                     3,          L"N/A",                     nullptr,   0x0                         },
 
     // Note: 2-levels of indenting is the worst case for a long name, b/c under an Idx/LV the OE/AE trees would have short names.
-    { eSPFieldNameFull,                 64 + 13,    L"FullName",                NULL,   JET_bitDBUtilSpaceInfoBasicCatalog  },
-    { eSPFieldOwningTableName,          64 + 4,     L"OwningTableName",         NULL,   JET_bitDBUtilSpaceInfoBasicCatalog  },
-    { eSPFieldType,                     4,          L"Type",                    NULL,   JET_bitDBUtilSpaceInfoBasicCatalog  },  // legacy
-    { eSPFieldObjid,                    10,         L"ObjidFDP",                NULL,   JET_bitDBUtilSpaceInfoBasicCatalog  },  // legacy
-    { eSPFieldPgnoFDP,                  10,         L"PgnoFDP",                 NULL,   JET_bitDBUtilSpaceInfoBasicCatalog  },  // legacy
+    { eSPFieldNameFull,                 64 + 13,    L"FullName",                nullptr,   JET_bitDBUtilSpaceInfoBasicCatalog  },
+    { eSPFieldOwningTableName,          64 + 4,     L"OwningTableName",         nullptr,   JET_bitDBUtilSpaceInfoBasicCatalog  },
+    { eSPFieldType,                     4,          L"Type",                    nullptr,   JET_bitDBUtilSpaceInfoBasicCatalog  },  // legacy
+    { eSPFieldObjid,                    10,         L"ObjidFDP",                nullptr,   JET_bitDBUtilSpaceInfoBasicCatalog  },  // legacy
+    { eSPFieldPgnoFDP,                  10,         L"PgnoFDP",                 nullptr,   JET_bitDBUtilSpaceInfoBasicCatalog  },  // legacy
 
-    { eSPFieldPriExt,                   7,          L"PriExt",                  NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },  // legacy
-    { eSPFieldPriExtType,               10,         L"PriExtType",              NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldPriExtCpg,                9,          L"PriExtCpg",               NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldPgnoOE,                   10,         L"PgnoOE",                  NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldPgnoAE,                   10,         L"PgnoAE",                  NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldOwnedPgnoMin,             10,         L"OwnPgnoMin",              NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldOwnedPgnoMax,             10,         L"OwnPgnoMax",              NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldOwnedExts,                10,         L"OwnedExts",               NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldOwnedCPG,                 10,         L"Owned",                   NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },  // legacy
-    { eSPFieldOwnedCPGCache,            12,         L"Owned(Cache)",           NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldOwnedMB,                  8 + 4,      L"Owned(MB)",               NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldOwnedPctOfDb,             9,          L"O%OfDb",                  NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldOwnedPctOfTable,          9,          L"O%OfTable",               NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldDataCPG,                  10,         L"Data",                    NULL,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
-    { eSPFieldDataMB,                   8 + 4,      L"Data(MB)",                NULL,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
-    { eSPFieldDataPctOfDb,              9,          L"D%OfDb",                  NULL,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
+    { eSPFieldPriExt,                   7,          L"PriExt",                  nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },  // legacy
+    { eSPFieldPriExtType,               10,         L"PriExtType",              nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldPriExtCpg,                9,          L"PriExtCpg",               nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldPgnoOE,                   10,         L"PgnoOE",                  nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldPgnoAE,                   10,         L"PgnoAE",                  nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldOwnedPgnoMin,             10,         L"OwnPgnoMin",              nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldOwnedPgnoMax,             10,         L"OwnPgnoMax",              nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldOwnedExts,                10,         L"OwnedExts",               nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldOwnedCPG,                 10,         L"Owned",                   nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },  // legacy
+    { eSPFieldOwnedCPGCache,            12,         L"Owned(Cache)",           nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldOwnedMB,                  8 + 4,      L"Owned(MB)",               nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldOwnedPctOfDb,             9,          L"O%OfDb",                  nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldOwnedPctOfTable,          9,          L"O%OfTable",               nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldDataCPG,                  10,         L"Data",                    nullptr,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
+    { eSPFieldDataMB,                   8 + 4,      L"Data(MB)",                nullptr,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
+    { eSPFieldDataPctOfDb,              9,          L"D%OfDb",                  nullptr,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
 
-    { eSPFieldAvailExts,                10,         L"AvailExts",               NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldAvailCPG,                 10,         L"Available",               NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },  // legacy
-    { eSPFieldAvailCPGCache,            12,         L"Avail(Cache)",            NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldAvailMB,                  8 + 4,      L"Avail(MB)",               NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldAvailPctOfTable,          9,          L"Avail%Tbl",               NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldSplitBuffersCPG,          10,         L"SPBuffers",               NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldSplitBuffersMB,           8 + 4,      L"SPBuf(MB)",               NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldSplitBuffersPctOfTable,   9,          L"SPBuf%Tbl",               NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldSpaceTreeReservedCPG,     10,         L"SpcReserve",              NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldAutoInc,                  10,         L"AutoInc",                 NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldReservedCPG,              10,         L"Reserved",                NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },  // legacy
-    { eSPFieldReservedMB,               8 + 4,      L"Reser(MB)",               NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
-    { eSPFieldReservedPctOfTable,       9,          L"Reser%Tbl",               NULL,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldAvailExts,                10,         L"AvailExts",               nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldAvailCPG,                 10,         L"Available",               nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },  // legacy
+    { eSPFieldAvailCPGCache,            12,         L"Avail(Cache)",            nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldAvailMB,                  8 + 4,      L"Avail(MB)",               nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldAvailPctOfTable,          9,          L"Avail%Tbl",               nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldSplitBuffersCPG,          10,         L"SPBuffers",               nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldSplitBuffersMB,           8 + 4,      L"SPBuf(MB)",               nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldSplitBuffersPctOfTable,   9,          L"SPBuf%Tbl",               nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldSpaceTreeReservedCPG,     10,         L"SpcReserve",              nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldAutoInc,                  10,         L"AutoInc",                 nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldReservedCPG,              10,         L"Reserved",                nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },  // legacy
+    { eSPFieldReservedMB,               8 + 4,      L"Reser(MB)",               nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
+    { eSPFieldReservedPctOfTable,       9,          L"Reser%Tbl",               nullptr,   JET_bitDBUtilSpaceInfoSpaceTrees    },
 
     { eSPFieldOwnedExtents,             cchMAMH,    L"OwnExt",                  szMAMH, JET_bitDBUtilSpaceInfoSpaceTrees    },
     { eSPFieldGeneralAvailExtents,      cchMAMH,    L"GenAvailExt",             szMAMH, JET_bitDBUtilSpaceInfoSpaceTrees    },
     { eSPFieldContigAvailExtents,       cchMAMH,    L"ContigAvailExt",          szMAMH, JET_bitDBUtilSpaceInfoSpaceTrees    },
 
-    { eSPFieldEmpty,                    5,          L"Empty",                   NULL,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
-    { eSPFieldInternalCPG,              10,         L"Internal",                NULL,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
-    { eSPFieldInternalMB,               8 + 4,      L"Internal(MB)",            NULL,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
-    { eSPFieldDepth,                    5,          L"Depth",                   NULL,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
-    { eSPFieldIORuns,                   6,          L"IORuns",                  NULL,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
+    { eSPFieldEmpty,                    5,          L"Empty",                   nullptr,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
+    { eSPFieldInternalCPG,              10,         L"Internal",                nullptr,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
+    { eSPFieldInternalMB,               8 + 4,      L"Internal(MB)",            nullptr,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
+    { eSPFieldDepth,                    5,          L"Depth",                   nullptr,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
+    { eSPFieldIORuns,                   6,          L"IORuns",                  nullptr,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
     { eSPFieldIORunsHisto,              cchRunsH,   L"IORuns(histo)",           szRunsH,JET_bitDBUtilSpaceInfoParentOfLeaf  },
-    { eSPFieldForwardScans,             8,          L"FwdScans",                NULL,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
+    { eSPFieldForwardScans,             8,          L"FwdScans",                nullptr,   JET_bitDBUtilSpaceInfoParentOfLeaf  },
 
     { eSPFieldIntFreeBytesMAM,          cchMAMH,    L"Int:FreeBytes",           szMAMH, JET_bitDBUtilSpaceInfoParentOfLeaf  },
     { eSPFieldIntNodeCountsMAM,         cchMAMH,    L"Int:Nodes",               szMAMH, JET_bitDBUtilSpaceInfoParentOfLeaf  },
@@ -508,43 +508,43 @@ ESEUTIL_SPACE_FIELDS rgSpaceFields [] =
     { eSPFieldFreeBytesMAM,             cchMAMH,    L"Data:FreeBytes",          szMAMH, JET_bitDBUtilSpaceInfoFullWalk      },
     { eSPFieldNodeCountsMAM,            cchMAMH,    L"Data:Nodes",              szMAMH, JET_bitDBUtilSpaceInfoFullWalk      },
     { eSPFieldNodeCounts,               cchNodesH,  L"Data:Nodes(histo)",       szNodesH, JET_bitDBUtilSpaceInfoFullWalk    },
-    { eSPFieldNodePctOfTable,           9,          L"Node%Tbl",                NULL,   JET_bitDBUtilSpaceInfoFullWalk      },
+    { eSPFieldNodePctOfTable,           9,          L"Node%Tbl",                nullptr,   JET_bitDBUtilSpaceInfoFullWalk      },
     { eSPFieldKeySizesMAM,              cchMAMH,    L"Data:KeySizes",           szMAMH, JET_bitDBUtilSpaceInfoFullWalk      },
     { eSPFieldDataSizesMAM,             cchMAMH,    L"Data:DataSizes",          szMAMH, JET_bitDBUtilSpaceInfoFullWalk      },
     { eSPFieldKeyCompMAM,               cchMAMH,    L"Data:KeyComp",            szMAMH, JET_bitDBUtilSpaceInfoFullWalk      },
     { eSPFieldResvTagsMAM,              cchMAMH,    L"Data:ReservedTags",       szMAMH, JET_bitDBUtilSpaceInfoFullWalk      },
     { eSPFieldUnreclaimedMAM,           cchMAMH,    L"Data:Unreclaim",          szMAMH, JET_bitDBUtilSpaceInfoFullWalk      },
-    { eSPFieldVersionedNodes,           10,         L"VersndNode",              NULL,   JET_bitDBUtilSpaceInfoFullWalk      },
+    { eSPFieldVersionedNodes,           10,         L"VersndNode",              nullptr,   JET_bitDBUtilSpaceInfoFullWalk      },
 
-    { eSPFieldLVRefs,                   12,         L"cLVRefs",                 NULL,   JET_bitDBUtilSpaceInfoFullWalk      },
-    { eSPFieldCorruptLVs,               12,         L"cCorrLVs",                NULL,   JET_bitDBUtilSpaceInfoFullWalk      },
-    { eSPFieldSeparatedRootChunks,      12,         L"cSepRtChk",               NULL,   JET_bitDBUtilSpaceInfoFullWalk      },
-    { eSPFieldPartiallyDeletedLVs,      12,         L"cPartDelLVs",             NULL,   JET_bitDBUtilSpaceInfoFullWalk      },
-    { eSPFieldLidMax,                   12,         L"lidMax",                  NULL,   JET_bitDBUtilSpaceInfoFullWalk      },
-    { eSPFieldLVChunkMax,               12,         L"LV:ChunkSize",            NULL,   JET_bitDBUtilSpaceInfoFullWalk      },
+    { eSPFieldLVRefs,                   12,         L"cLVRefs",                 nullptr,   JET_bitDBUtilSpaceInfoFullWalk      },
+    { eSPFieldCorruptLVs,               12,         L"cCorrLVs",                nullptr,   JET_bitDBUtilSpaceInfoFullWalk      },
+    { eSPFieldSeparatedRootChunks,      12,         L"cSepRtChk",               nullptr,   JET_bitDBUtilSpaceInfoFullWalk      },
+    { eSPFieldPartiallyDeletedLVs,      12,         L"cPartDelLVs",             nullptr,   JET_bitDBUtilSpaceInfoFullWalk      },
+    { eSPFieldLidMax,                   12,         L"lidMax",                  nullptr,   JET_bitDBUtilSpaceInfoFullWalk      },
+    { eSPFieldLVChunkMax,               12,         L"LV:ChunkSize",            nullptr,   JET_bitDBUtilSpaceInfoFullWalk      },
     { eSPFieldLVSize,                   cchCAH,     L"LV:Size",                 szCAH,  JET_bitDBUtilSpaceInfoFullWalk      },
     { eSPFieldLVSizeHisto,              cchLVB,     L"LV:Size(histo)",          szLVB,  JET_bitDBUtilSpaceInfoFullWalk      },
-    { eSPFieldLVComp,                   12,         L"LV:Comp",                 NULL,   JET_bitDBUtilSpaceInfoFullWalk      },
+    { eSPFieldLVComp,                   12,         L"LV:Comp",                 nullptr,   JET_bitDBUtilSpaceInfoFullWalk      },
     { eSPFieldLVCompHisto,              cchLVB,     L"LV:Comp(histo)",          szLVB,  JET_bitDBUtilSpaceInfoFullWalk      },
     { eSPFieldLVRatioHisto,             cchLVR,     L"LV:Ratio(histo)",         szLVR,  JET_bitDBUtilSpaceInfoFullWalk      },
-    { eSPFieldLVSeeks,                  12,         L"LV:Seeks",                NULL,   JET_bitDBUtilSpaceInfoFullWalk      },
+    { eSPFieldLVSeeks,                  12,         L"LV:Seeks",                nullptr,   JET_bitDBUtilSpaceInfoFullWalk      },
     { eSPFieldLVSeeksHisto,             cchLVS,     L"LV:Seeks(histo)",         szLVS,  JET_bitDBUtilSpaceInfoFullWalk      },
-    { eSPFieldLVBytes,                  12,         L"LV:Bytes",                NULL,   JET_bitDBUtilSpaceInfoFullWalk      },
+    { eSPFieldLVBytes,                  12,         L"LV:Bytes",                nullptr,   JET_bitDBUtilSpaceInfoFullWalk      },
     { eSPFieldLVBytesHisto,             cchLVB,     L"LV:Bytes(histo)",         szLVB,  JET_bitDBUtilSpaceInfoFullWalk      },
-    { eSPFieldLVExtraSeeks,             13,         L"LV:ExtraSeeks",           NULL,   JET_bitDBUtilSpaceInfoFullWalk      },
+    { eSPFieldLVExtraSeeks,             13,         L"LV:ExtraSeeks",           nullptr,   JET_bitDBUtilSpaceInfoFullWalk      },
     { eSPFieldLVExtraSeeksHisto,        cchLVES,    L"LV:ExtraSeeks(histo)",    szLVES, JET_bitDBUtilSpaceInfoFullWalk      },
-    { eSPFieldLVExtraBytes,             13,         L"LV:ExtraBytes",           NULL,   JET_bitDBUtilSpaceInfoFullWalk      },
+    { eSPFieldLVExtraBytes,             13,         L"LV:ExtraBytes",           nullptr,   JET_bitDBUtilSpaceInfoFullWalk      },
     { eSPFieldLVExtraBytesHisto,        cchLVEB,    L"LV:ExtraBytes(histo)",    szLVEB, JET_bitDBUtilSpaceInfoFullWalk      },
 
-    { eSPFieldSHInitialDensity,         11,         L"SH:IDensity",             NULL,   JET_bitDBUtilSpaceInfoBasicCatalog  },
-    { eSPFieldSHInitialSize,            12,         L"SH:ISize(KB)",            NULL,   JET_bitDBUtilSpaceInfoBasicCatalog  },
-    { eSPFieldSHGrbit,                  9,          L"SH:grbit",                NULL,   JET_bitDBUtilSpaceInfoBasicCatalog  },
-    { eSPFieldSHMaintDensity,           11,         L"SH:MDensity",             NULL,   JET_bitDBUtilSpaceInfoBasicCatalog  },
-    { eSPFieldSHGrowthPct,              9,          L"SH:Growth",               NULL,   JET_bitDBUtilSpaceInfoBasicCatalog  },
-    { eSPFieldSHMinExtent,              13,         L"SH:MinExt(KB)",           NULL,   JET_bitDBUtilSpaceInfoBasicCatalog  },
-    { eSPFieldSHMaxExtent,              13,         L"SH:MaxExt(KB)",           NULL,   JET_bitDBUtilSpaceInfoBasicCatalog  },
+    { eSPFieldSHInitialDensity,         11,         L"SH:IDensity",             nullptr,   JET_bitDBUtilSpaceInfoBasicCatalog  },
+    { eSPFieldSHInitialSize,            12,         L"SH:ISize(KB)",            nullptr,   JET_bitDBUtilSpaceInfoBasicCatalog  },
+    { eSPFieldSHGrbit,                  9,          L"SH:grbit",                nullptr,   JET_bitDBUtilSpaceInfoBasicCatalog  },
+    { eSPFieldSHMaintDensity,           11,         L"SH:MDensity",             nullptr,   JET_bitDBUtilSpaceInfoBasicCatalog  },
+    { eSPFieldSHGrowthPct,              9,          L"SH:Growth",               nullptr,   JET_bitDBUtilSpaceInfoBasicCatalog  },
+    { eSPFieldSHMinExtent,              13,         L"SH:MinExt(KB)",           nullptr,   JET_bitDBUtilSpaceInfoBasicCatalog  },
+    { eSPFieldSHMaxExtent,              13,         L"SH:MaxExt(KB)",           nullptr,   JET_bitDBUtilSpaceInfoBasicCatalog  },
 
-    { eSPFieldName,                     23,         L"Name",                    NULL,   JET_bitDBUtilSpaceInfoBasicCatalog  },  // legacy
+    { eSPFieldName,                     23,         L"Name",                    nullptr,   JET_bitDBUtilSpaceInfoBasicCatalog  },  // legacy
 
 };
 
@@ -876,7 +876,7 @@ JET_ERR ErrPrintField(
 
         case eSPFieldType:
         {
-            WCHAR * szType = NULL;
+            WCHAR * szType = nullptr;
             assert( pBTStats->pBasicCatalog );
             switch( pBTStats->pBasicCatalog->eType )
             {
@@ -1542,7 +1542,7 @@ JET_ERR ErrSpaceDumpCtxInit( _Out_ void ** ppvContext )
 
     EseutilDbspacedumpUnitTest();
 
-    if ( NULL == ppvContext )
+    if ( nullptr == ppvContext )
     {
         assertSz( fFalse, "Huh?" );
         return ErrERRCheck( JET_errInvalidParameter );
@@ -1551,7 +1551,7 @@ JET_ERR ErrSpaceDumpCtxInit( _Out_ void ** ppvContext )
     //  Allocate and init the context
     //
     ESEUTIL_SPACE_DUMP_CTX * pespCtx = (ESEUTIL_SPACE_DUMP_CTX*)malloc( sizeof(ESEUTIL_SPACE_DUMP_CTX) );
-    if ( pespCtx == NULL )
+    if ( pespCtx == nullptr )
     {
         wprintf(L"Failed to allocate %d bytes, failing command.\n", (INT)sizeof(ESEUTIL_SPACE_DUMP_CTX) );
         return ErrERRCheck( JET_errOutOfMemory );
@@ -1576,13 +1576,13 @@ JET_ERR ErrSpaceDumpCtxGetGRBIT(
     JET_ERR err = JET_errSuccess;
     ESEUTIL_SPACE_DUMP_CTX * pespCtx = (ESEUTIL_SPACE_DUMP_CTX*)pvContext;
 
-    if ( NULL == pespCtx || NULL == pgrbit )
+    if ( nullptr == pespCtx || nullptr == pgrbit )
     {
         assertSz( fFalse, "Huh?" );
         return ErrERRCheck( JET_errInvalidParameter );
     }
 
-    if ( NULL == pespCtx->rgeFields )
+    if ( nullptr == pespCtx->rgeFields )
     {
         // User didn't request any specific fields, use default.
         Call( ErrSpaceDumpCtxSetFields( pvContext, L"#default" ) );
@@ -1719,7 +1719,7 @@ JET_ERR ErrSpaceDumpCtxSetFields(
     JET_ERR err = JET_errSuccess;
     ESEUTIL_SPACE_DUMP_CTX * pespCtx = (ESEUTIL_SPACE_DUMP_CTX*)pvContext;
 
-    if ( NULL == pespCtx || NULL == wszFields )
+    if ( nullptr == pespCtx || nullptr == wszFields )
     {
         assertSz( fFalse, "Huh?" );
         return ErrERRCheck( JET_errInvalidParameter );
@@ -1810,7 +1810,7 @@ JET_ERR ErrSpaceDumpCtxSetFields(
     }
     
     pespCtx->rgeFields = (E_SP_FIELD*) malloc( cb );
-    if ( NULL == pespCtx->rgeFields )
+    if ( nullptr == pespCtx->rgeFields )
     {
         wprintf(L"Failed to allocate %d bytes, failing command.\n", cb );
         Error( ErrERRCheck( JET_errOutOfMemory ) );
@@ -1855,7 +1855,7 @@ JET_ERR ErrSpaceDumpCtxSetFields(
     {
         //  No fields, will use /f#default.
         free( pespCtx->rgeFields );
-        pespCtx->rgeFields = NULL;
+        pespCtx->rgeFields = nullptr;
     }
     
     err = JET_errSuccess;
@@ -1876,7 +1876,7 @@ JET_ERR ErrSpaceDumpCtxSetOptions(
     JET_ERR err = JET_errSuccess;
     ESEUTIL_SPACE_DUMP_CTX * pespCtx = (ESEUTIL_SPACE_DUMP_CTX*)pvContext;
 
-    if ( NULL == pespCtx )
+    if ( nullptr == pespCtx )
     {
         assertSz( fFalse, "Huh?" );
         return ErrERRCheck( JET_errInvalidParameter );
@@ -2404,7 +2404,7 @@ JET_ERR EseutilPrintSpaceTrees(
 
 BOOL FChildOfDbRoot( _In_ const BTREE_STATS * const pBTreeStats )
 {
-    if ( pBTreeStats->pParent == NULL )
+    if ( pBTreeStats->pParent == nullptr )
         return fFalse;
     if ( pBTreeStats->pParent->pBasicCatalog->objidFDP != 1 /* DbRoot */ )
         return fFalse;
@@ -2412,7 +2412,7 @@ BOOL FChildOfDbRoot( _In_ const BTREE_STATS * const pBTreeStats )
 }
 BOOL FChildOfTable( _In_ const BTREE_STATS * const pBTreeStats )
 {
-    if ( pBTreeStats->pParent == NULL )
+    if ( pBTreeStats->pParent == nullptr )
         return fFalse;
     if ( pBTreeStats->pParent->pBasicCatalog->eType != eBTreeTypeUserClusteredIndex )
         return fFalse;
@@ -2420,7 +2420,7 @@ BOOL FChildOfTable( _In_ const BTREE_STATS * const pBTreeStats )
 }
 BOOL FChildOfLV( _In_ const BTREE_STATS * const pBTreeStats )
 {
-    if ( pBTreeStats->pParent == NULL )
+    if ( pBTreeStats->pParent == nullptr )
         return fFalse;
     if ( pBTreeStats->pParent->pBasicCatalog->eType != eBTreeTypeInternalLongValue )
         return fFalse;
@@ -2428,7 +2428,7 @@ BOOL FChildOfLV( _In_ const BTREE_STATS * const pBTreeStats )
 }
 BOOL FChildOfSecIdx( _In_ const BTREE_STATS * const pBTreeStats )
 {
-    if ( pBTreeStats->pParent == NULL )
+    if ( pBTreeStats->pParent == nullptr )
         return fFalse;
     if ( pBTreeStats->pParent->pBasicCatalog->eType != eBTreeTypeUserSecondaryIndex )
         return fFalse;
@@ -2764,7 +2764,7 @@ JET_ERR EseutilEvalBTreeData(
     }
 
     assert( pBTreeStats->pBasicCatalog );   // silly to ask w/o catalog.
-    if ( NULL == pBTreeStats->pBasicCatalog )
+    if ( nullptr == pBTreeStats->pBasicCatalog )
     {
         //  ESE and ESEUTIL do not agree about presence of basic catalog info, bad versions?
         wprintf(L"The ESE engine did not return expected catalog data.\n");
@@ -3008,7 +3008,7 @@ void EseutilTrackSpaceComplete(
     BTREE_STATS_BASIC_CATALOG   FakeBasicCatalog = { sizeof(BTREE_STATS_BASIC_CATALOG),
                                                         eBTreeTypeUserClusteredIndex,   // this is our fake B+Tree / table
                                                         L"",
-                                                        0x0, 0x0, NULL
+                                                        0x0, 0x0, nullptr
                                                     };
     BTREE_STATS_SPACE_TREES     EmptySpaceTrees = { sizeof(BTREE_STATS_SPACE_TREES),
                                                         0, 0, fFalse, 0, 0, // cpgPrimary, cpgLastAlloc, fMultiExtent, pgnoOE, pgnoAE
@@ -3019,15 +3019,15 @@ void EseutilTrackSpaceComplete(
                                                         fTrue,              // fEmptyTree
                                                         0,                  // cpgInternal
                                                         0,                  // cpgData
-                                                        0, NULL, 0, NULL        // phistoIOContiguousRuns, cForwardScans, pInternalPageStats.
+                                                        0, nullptr, 0, nullptr        // phistoIOContiguousRuns, cForwardScans, pInternalPageStats.
                                                     };
     BTREE_STATS                 EmptyBTreeStats = { sizeof(BTREE_STATS),
                                                         0x0,                    // grbitData ...
-                                                        NULL,               // do not need parent ...
+                                                        nullptr,               // do not need parent ...
                                                         &FakeBasicCatalog,  // space trees that are empty
                                                         &EmptySpaceTrees,   // more space data that is empty
                                                         &EmptyParentOfLeaf,
-                                                        NULL
+                                                        nullptr
                                                     };
 
     //  Finalize the space calculations by claiming one more table.
@@ -3042,7 +3042,7 @@ JET_ERR ErrSpaceDumpCtxComplete(
 {
     ESEUTIL_SPACE_DUMP_CTX * pespCtx = (ESEUTIL_SPACE_DUMP_CTX *)pvContext;
 
-    if ( pespCtx == NULL || err != JET_errSuccess )
+    if ( pespCtx == nullptr || err != JET_errSuccess )
     {
         //  Haha, just kidding ... only cleanup ...
         goto HandleError;
@@ -3337,7 +3337,7 @@ JET_ERR ErrLegacySpaceDumpEvalBTreeData(
         return ErrERRCheck( JET_errInvalidParameter );
     }
 
-    if ( NULL == pBTreeStats->pBasicCatalog || NULL == pBTreeStats->pSpaceTrees )
+    if ( nullptr == pBTreeStats->pBasicCatalog || nullptr == pBTreeStats->pSpaceTrees )
     {
         //  ESE and ESEUTIL do not agree about presence of basic catalog info, bad versions?
         wprintf(L"The ESE engine did not return expected catalog data.\n");
@@ -3430,7 +3430,7 @@ JET_ERR JetLegacyDBSpaceDump( JET_DBUTIL_W * pdbutilW )
     JET_ERR err = JET_errSuccess;
 
     if ( pdbutilW->op != opDBUTILDumpSpace ||
-        pdbutilW->pfnCallback != NULL )
+        pdbutilW->pfnCallback != nullptr )
     {
         printf("Does not look like a proper util argument\n");
         return ErrERRCheck( JET_errInvalidParameter );

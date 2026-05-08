@@ -59,9 +59,9 @@ ERR SimpleQueueListTest::ErrTest()
 
     //  create list elements, and Queue
 
-    RandomStruct rs1 = { 0x10000, NULL, 0x10000 };
-    RandomStruct rs2 = { 0x20000, NULL, 0x20000 };
-    RandomStruct rs3 = { 0x30000, NULL, 0x30000 };
+    RandomStruct rs1 = { 0x10000, nullptr, 0x10000 };
+    RandomStruct rs2 = { 0x20000, nullptr, 0x20000 };
+    RandomStruct rs3 = { 0x30000, nullptr, 0x30000 };
 
     CSimpleQueue< RandomStruct > Queue;
     CSimpleQueue< RandomStruct > Queue2;
@@ -75,8 +75,8 @@ ERR SimpleQueueListTest::ErrTest()
 
     TestCheck( Queue.FEmpty() );
     TestCheck( 0 == Queue.CElements() );
-    TestCheck( NULL == Queue.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
-    TestCheck( NULL == Queue.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );   // works twice in a row.
+    TestCheck( nullptr == Queue.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
+    TestCheck( nullptr == Queue.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );   // works twice in a row.
     TestCheck( 0 == Queue.CElements() );
     
     //  test dirty mem ctor
@@ -92,7 +92,7 @@ ERR SimpleQueueListTest::ErrTest()
 
     TestCheck( pHeadCtorTest->FEmpty() );
     TestCheck( 0 == Queue.CElements() );
-    TestCheck( NULL == pHeadCtorTest->RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
+    TestCheck( nullptr == pHeadCtorTest->RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
 
     //  test single element insertion, removal, etc
 
@@ -106,7 +106,7 @@ ERR SimpleQueueListTest::ErrTest()
     TestCheck( &rs1 == prs );
     TestCheck( rs1.ulSig1 == rs1.ulSig2 );
     TestCheck( 0 == Queue.CElements() );
-    TestCheck( NULL == Queue.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
+    TestCheck( nullptr == Queue.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
     TestCheck( 0 == Queue.CElements() );
 
     //  test two element insertion, element removal, etc
@@ -124,7 +124,7 @@ ERR SimpleQueueListTest::ErrTest()
 
     TestCheck( &rs1 == prs );
     TestCheck( rs1.ulSig1 == rs1.ulSig2 );
-    TestCheck( NULL == prs->pNext );        // should be delinked.
+    TestCheck( nullptr == prs->pNext );        // should be delinked.
     TestCheck( !Queue.FEmpty() );           // should have another element in list
     TestCheck( 1 == Queue.CElements() );
 
@@ -134,7 +134,7 @@ ERR SimpleQueueListTest::ErrTest()
 
     TestCheck( &rs2 == prs );
     TestCheck( rs2.ulSig1 == rs2.ulSig2 );
-    TestCheck( NULL == prs->pNext );        // should be delinked.
+    TestCheck( nullptr == prs->pNext );        // should be delinked.
     TestCheck( Queue.FEmpty() );
 
     //  test two element insertion, and list removal, etc
@@ -166,7 +166,7 @@ ERR SimpleQueueListTest::ErrTest()
     TestCheck( 1 == Queue.CElements() );
     TestCheck( &rs3 == Queue.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
     TestCheck( 0 == Queue.CElements() );
-    TestCheck( NULL == Queue.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
+    TestCheck( nullptr == Queue.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
 
     //  test actual queue like behavior empty ...
 
@@ -182,7 +182,7 @@ ERR SimpleQueueListTest::ErrTest()
     TestCheck( &rs2 == Queue.Head() );
     TestCheck( &rs2 == Queue.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
     TestCheck( &rs3 == Queue.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
-    TestCheck( NULL == Queue.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
+    TestCheck( nullptr == Queue.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
     TestCheck( 0 == Queue.CElements() );
     
     //  test prev most and later next most ...
@@ -199,7 +199,7 @@ ERR SimpleQueueListTest::ErrTest()
     TestCheck( &rs3 == Queue.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
     TestCheck( Queue.FEmpty() );
     TestCheck( 0 == Queue.CElements() );
-    TestCheck( NULL == Queue.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
+    TestCheck( nullptr == Queue.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
 
     //  test linked list-based queue .ctor
 

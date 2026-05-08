@@ -53,7 +53,7 @@ ERR ObjectPoolTest::ErrAllocateOneObject()
     
     ObjectPool<TestStruct, 2> pool;
     TestStruct * const pstruct = pool.Allocate();
-    TestCheck(NULL != pstruct);
+    TestCheck(nullptr != pstruct);
     pool.Free(pstruct);
 
 HandleError:
@@ -103,7 +103,7 @@ ERR ObjectPoolTest::ErrAllocateManyObjects()
     for(INT i = 0; i < cstructs; ++i)
     {
         rgpstructs[i] = pool.Allocate();
-        TestCheck(NULL != rgpstructs[i]);
+        TestCheck(nullptr != rgpstructs[i]);
     }
     for(INT i = 0; i < cstructs; ++i)
     {

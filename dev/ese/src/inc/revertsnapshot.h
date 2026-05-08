@@ -227,20 +227,20 @@ struct CSnapshotBuffer
     CSnapshotBuffer( ULONG startingSegment, CResource *pcresRBSBuf )
     {
         Reset( startingSegment );
-        m_pBuffer = NULL;
+        m_pBuffer = nullptr;
         // Just needed for operator delete
         m_pcresRBSBuf = pcresRBSBuf;
     }
 
     virtual ~CSnapshotBuffer()
     {
-        if ( m_pBuffer != NULL )
+        if ( m_pBuffer != nullptr )
         {
-            if ( AtomicCompareExchangePointer( &s_pReserveBuffer, NULL, m_pBuffer ) != NULL )
+            if ( AtomicCompareExchangePointer( &s_pReserveBuffer, nullptr, m_pBuffer ) != nullptr )
             {
                 OSMemoryPageFree( m_pBuffer );
             }
-            m_pBuffer = NULL;
+            m_pBuffer = nullptr;
             AtomicDecrement( &s_cAllocatedBuffers );
         }
     }
@@ -250,17 +250,17 @@ struct CSnapshotBuffer
         m_cStartSegment = startingSegment;
         m_ibNextRecord = sizeof( RBSSEGHDR );
         m_cbValidData = 0;
-        m_pNextBuffer = NULL;
+        m_pNextBuffer = nullptr;
     }
 
     ERR ErrAllocBuffer()
     {
         Assert( m_pBuffer == NULL );
         ERR err;
-        m_pBuffer = (BYTE *)AtomicExchangePointer( &s_pReserveBuffer, NULL );
-        if ( m_pBuffer == NULL )
+        m_pBuffer = (BYTE *)AtomicExchangePointer( &s_pReserveBuffer, nullptr );
+        if ( m_pBuffer == nullptr )
         {
-            AllocR( m_pBuffer = (BYTE *)PvOSMemoryPageAlloc( cbRBSBufferSize, NULL ) );
+            AllocR( m_pBuffer = (BYTE *)PvOSMemoryPageAlloc( cbRBSBufferSize, nullptr ) );
         }
         AtomicIncrement( &s_cAllocatedBuffers );
         return JET_errSuccess;
@@ -275,11 +275,11 @@ struct CSnapshotBuffer
 
     static VOID PreAllocReserveBuffer()
     {
-        if ( s_pReserveBuffer == NULL )
+        if ( s_pReserveBuffer == nullptr )
         {
-            BYTE *pBuffer = (BYTE *)PvOSMemoryPageAlloc( cbRBSBufferSize, NULL );
-            if ( pBuffer != NULL &&
-                 AtomicCompareExchangePointer( &s_pReserveBuffer, NULL, pBuffer ) != NULL )
+            BYTE *pBuffer = (BYTE *)PvOSMemoryPageAlloc( cbRBSBufferSize, nullptr );
+            if ( pBuffer != nullptr &&
+                 AtomicCompareExchangePointer( &s_pReserveBuffer, nullptr, pBuffer ) != nullptr )
             {
                 OSMemoryPageFree( pBuffer );
             }
@@ -288,8 +288,8 @@ struct CSnapshotBuffer
 
     static VOID FreeReserveBuffer()
     {
-        VOID *pBuffer = AtomicExchangePointer( &s_pReserveBuffer, NULL );
-        if ( pBuffer != NULL )
+        VOID *pBuffer = AtomicExchangePointer( &s_pReserveBuffer, nullptr );
+        if ( pBuffer != nullptr )
         {
             OSMemoryPageFree( pBuffer );
         }
@@ -302,8 +302,8 @@ struct CSnapshotBuffer
 struct CSnapshotReadBuffer : public CSnapshotBuffer
 {
     CSnapshotReadBuffer( ULONG startingSegment )
-        : CSnapshotBuffer( startingSegment, NULL ),
-          m_pvAssembledRec( NULL ),
+        : CSnapshotBuffer( startingSegment, nullptr ),
+          m_pvAssembledRec( nullptr ),
           m_cbAssembledRec( 0 )
     {}
 
@@ -845,7 +845,7 @@ INLINE VOID CRevertSnapshot::FreeFileApi( )
         // TODO SOMEONE: If flush fails do we ignore free'ing or is this best effort?
         ErrUtilFlushFileBuffers( m_pfapiRBS, iofrDefensiveCloseFlush );
         delete m_pfapiRBS;
-        m_pfapiRBS = NULL;
+        m_pfapiRBS = nullptr;
     }
 }
 
@@ -854,7 +854,7 @@ INLINE VOID CRevertSnapshot::FreeHdr( )
     if ( m_prbsfilehdrCurrent )
     {
         OSMemoryPageFree( m_prbsfilehdrCurrent );
-        m_prbsfilehdrCurrent = NULL;
+        m_prbsfilehdrCurrent = nullptr;
     }
 }
 
@@ -863,7 +863,7 @@ INLINE VOID CRevertSnapshot::FreeCurrentFilePath()
     if ( m_wszRBSCurrentFile )
     {
         OSMemoryHeapFree( m_wszRBSCurrentFile );
-        m_wszRBSCurrentFile = NULL;
+        m_wszRBSCurrentFile = nullptr;
     }
 }
 
@@ -872,7 +872,7 @@ INLINE VOID CRevertSnapshot::FreeCurrentLogDirPath()
     if ( m_wszRBSCurrentLogDir )
     {
         OSMemoryHeapFree( m_wszRBSCurrentLogDir );
-        m_wszRBSCurrentLogDir = NULL;
+        m_wszRBSCurrentLogDir = nullptr;
     }
 }
 
@@ -881,13 +881,13 @@ INLINE VOID CRevertSnapshot::FreePaths( )
     if ( m_wszRBSAbsRootDirPath )
     {
         OSMemoryHeapFree( m_wszRBSAbsRootDirPath );
-        m_wszRBSAbsRootDirPath = NULL;
+        m_wszRBSAbsRootDirPath = nullptr;
     }
 
     if ( m_wszRBSBaseName )
     {
         OSMemoryHeapFree( m_wszRBSBaseName );
-        m_wszRBSBaseName = NULL;
+        m_wszRBSBaseName = nullptr;
     }
 
     FreeCurrentFilePath();

@@ -246,10 +246,10 @@ public:
                     const DWORD         cbData,
         __out_bcount( cbData )  BYTE* const         pbData,
                     const OSFILEQOS     grbitQOS,
-                    const PfnIOComplete pfnIOComplete   = NULL,
+                    const PfnIOComplete pfnIOComplete   = nullptr,
                     const DWORD_PTR     keyIOComplete   = 0,
-                    const PfnIOHandoff  pfnIOHandoff    = NULL,
-                    const VOID *        /*pioreq*/      = NULL ) override
+                    const PfnIOHandoff  pfnIOHandoff    = nullptr,
+                    const VOID *        /*pioreq*/      = nullptr ) override
     {
         //  PfnIOHandoff fires synchronously at submission time — engine
         //  uses it to mark the IO as "in-flight" before this returns.
@@ -300,9 +300,9 @@ public:
                     const DWORD         cbData,
                     const BYTE* const   pbData,
                     const OSFILEQOS     grbitQOS,
-                    const PfnIOComplete pfnIOComplete   = NULL,
+                    const PfnIOComplete pfnIOComplete   = nullptr,
                     const DWORD_PTR     keyIOComplete   = 0,
-                    const PfnIOHandoff  pfnIOHandoff    = NULL ) override
+                    const PfnIOHandoff  pfnIOHandoff    = nullptr ) override
     {
         if ( pfnIOHandoff )
         {
@@ -495,7 +495,7 @@ extern "C" ERR CSyncFile_ErrFileCreate( const WCHAR* wszPath, IFileAPI::FileMode
     const DWORD dwDisp   = ( fmf & IFileAPI::fmfOverwriteExisting ) ? CREATE_ALWAYS : CREATE_NEW;
     const DWORD dwFlags  = DwFlagsFromFmf( fmf );
 
-    HANDLE h = CreateFileW( wszPath, dwAccess, dwShare, NULL, dwDisp, dwFlags, NULL );
+    HANDLE h = CreateFileW( wszPath, dwAccess, dwShare, nullptr, dwDisp, dwFlags, nullptr );
     if ( h == INVALID_HANDLE_VALUE )
     {
         const DWORD gle = GetLastError();
@@ -533,7 +533,7 @@ extern "C" ERR CSyncFile_ErrFileOpen( const WCHAR* wszPath, IFileAPI::FileModeFl
     const DWORD dwShare  = DwShareModeFromFmf( fmf );
     const DWORD dwFlags  = DwFlagsFromFmf( fmf );
 
-    HANDLE h = CreateFileW( wszPath, dwAccess, dwShare, NULL, OPEN_EXISTING, dwFlags, NULL );
+    HANDLE h = CreateFileW( wszPath, dwAccess, dwShare, nullptr, OPEN_EXISTING, dwFlags, nullptr );
     if ( h == INVALID_HANDLE_VALUE )
     {
         const DWORD gle = GetLastError();

@@ -525,9 +525,9 @@ ERR ErrOSUInitPerfmonStorage()
     if ( g_fDisablePerfmon )
     {
         g_cchInstanceNames = 0;
-        g_wszInstanceNames = NULL;
-        g_wszInstanceNamesOut = NULL;
-        g_rgbInstanceAggregationIDs = NULL;
+        g_wszInstanceNames = nullptr;
+        g_wszInstanceNamesOut = nullptr;
+        g_rgbInstanceAggregationIDs = nullptr;
     }
     else
     {
@@ -563,9 +563,9 @@ ERR ErrOSUInitPerfmonStorage()
     if ( g_fDisablePerfmon )
     {
         g_cchDatabaseNames = 0;
-        g_wszDatabaseNames = NULL;
-        g_wszDatabaseNamesOut = NULL;
-        g_rgbDatabaseAggregationIDs = NULL;
+        g_wszDatabaseNames = nullptr;
+        g_wszDatabaseNamesOut = nullptr;
+        g_rgbDatabaseAggregationIDs = nullptr;
     }
     else
     {
@@ -590,19 +590,19 @@ HandleError:
     {
         g_cchInstanceNames = 0;
         delete[] g_wszInstanceNames;
-        g_wszInstanceNames = NULL;
+        g_wszInstanceNames = nullptr;
         delete[] g_wszInstanceNamesOut;
-        g_wszInstanceNamesOut = NULL;
+        g_wszInstanceNamesOut = nullptr;
         delete[] g_rgbInstanceAggregationIDs;
-        g_rgbInstanceAggregationIDs = NULL;
+        g_rgbInstanceAggregationIDs = nullptr;
 
         g_cchDatabaseNames = 0;
         delete[] g_wszDatabaseNames;
-        g_wszDatabaseNames = NULL;
+        g_wszDatabaseNames = nullptr;
         delete[] g_wszDatabaseNamesOut;
-        g_wszDatabaseNamesOut = NULL;
+        g_wszDatabaseNamesOut = nullptr;
         delete[] g_rgbDatabaseAggregationIDs;
-        g_rgbDatabaseAggregationIDs = NULL;
+        g_rgbDatabaseAggregationIDs = nullptr;
     }
 
     return err;
@@ -615,21 +615,21 @@ void OSUTermPerfmonStorage()
     //  free ESE instance names
     delete[] g_wszInstanceNames;
     delete[] g_wszInstanceNamesOut;
-    g_wszInstanceNames = NULL;
-    g_wszInstanceNamesOut = NULL;
+    g_wszInstanceNames = nullptr;
+    g_wszInstanceNamesOut = nullptr;
     g_cchInstanceNames = 0;
     delete[] g_rgbInstanceAggregationIDs;
-    g_rgbInstanceAggregationIDs = NULL;
+    g_rgbInstanceAggregationIDs = nullptr;
     g_cInstances = 0;
 
     //  free DB names
     delete[] g_wszDatabaseNames;
     delete[] g_wszDatabaseNamesOut;
-    g_wszDatabaseNames = NULL;
-    g_wszDatabaseNamesOut = NULL;
+    g_wszDatabaseNames = nullptr;
+    g_wszDatabaseNamesOut = nullptr;
     g_cchDatabaseNames = 0;
     delete[] g_rgbDatabaseAggregationIDs;
-    g_rgbDatabaseAggregationIDs = NULL;
+    g_rgbDatabaseAggregationIDs = nullptr;
     g_cDatabases = 0;
 }
 
@@ -690,7 +690,7 @@ const ERR ErrOSUInit()
     //  configure timeout deadlock detection
     OSSyncConfigDeadlockTimeoutDetection( !FNegTest( fDisableTimeoutDeadlockDetection ) );
 
-    OSTraceWriteRefLog( ostrlSystemFixed, sysosrtlOsuInitDone, NULL );
+    OSTraceWriteRefLog( ostrlSystemFixed, sysosrtlOsuInitDone, nullptr );
 
     //  early check that globals are good (so we don't get caught in the fast path out above)
 
@@ -766,7 +766,7 @@ void OSUTerm()
     }
     Assert( CInitTermLock::ERR::errTermBegun == errTerm );
 
-    OSTraceWriteRefLog( ostrlSystemFixed, sysosrtlOsuTermStart, NULL );
+    OSTraceWriteRefLog( ostrlSystemFixed, sysosrtlOsuTermStart, nullptr );
 
     OnDebug( g_fOSUInit = fFalse );
 

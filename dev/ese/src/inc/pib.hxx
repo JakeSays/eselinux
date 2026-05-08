@@ -165,7 +165,7 @@ public:
             critCursors( CLockBasicInfo( CSyncBasicInfo( szPIBCursors ), rankPIBCursors, 0 ) ),
             critConcurrentDDL( CLockBasicInfo( CSyncBasicInfo( szPIBConcurrentDDL ), rankPIBConcurrentDDL, 0 ) ),
             critLogBeginTrx( CLockBasicInfo( CSyncBasicInfo( szPIBLogBeginTrx ), rankPIBLogBeginTrx, 0 ) ),
-            ptlsApi( NULL ),
+            ptlsApi( nullptr ),
             ptlsTrxBeginLast( Ptls() ),
             asigWaitLogWrite( CSyncBasicInfo( _T( "PIB::asigWaitLogWrite" ) ) ),
             m_level( 0 ),
@@ -190,13 +190,13 @@ public:
             // A dangling pointer to this PIB's utc on the TLS was detected !
             // We messed up JetEndSession() !
             FireWall( "PibUtcCleanup" );
-            TLSSetUserTraceContext( NULL );
+            TLSSetUserTraceContext( nullptr );
         }
 
-        if ( m_pClientCommitContextGeneric != NULL )
+        if ( m_pClientCommitContextGeneric != nullptr )
         {
             delete[] m_pClientCommitContextGeneric;
-            m_pClientCommitContextGeneric = NULL;
+            m_pClientCommitContextGeneric = nullptr;
             m_cbClientCommitContextGeneric = 0;
             m_cbClientCommitContextGenericAllocated = 0;
         }
@@ -608,7 +608,7 @@ INLINE BOOL PIB::FMacroGoing()  const
     ASSERT_VALID( this );
 
     MACRO   *pMacro;
-    for ( pMacro = m_pMacroNext; pMacro != NULL; pMacro = pMacro->PMacroNext() )
+    for ( pMacro = m_pMacroNext; pMacro != nullptr; pMacro = pMacro->PMacroNext() )
     {
         if ( pMacro->Dbtime() != dbtimeNil )
         {
@@ -625,7 +625,7 @@ INLINE BOOL PIB::FMacroGoing( DBTIME dbtime )   const
     ASSERT_VALID( this );
 
     MACRO   *pMacro;
-    for ( pMacro = m_pMacroNext; pMacro != NULL; pMacro = pMacro->PMacroNext() )
+    for ( pMacro = m_pMacroNext; pMacro != nullptr; pMacro = pMacro->PMacroNext() )
     {
         if ( pMacro->Dbtime() == dbtime )
         {
@@ -650,7 +650,7 @@ INLINE ERR PIB::ErrSetMacroGoing( DBTIME dbtime )
     }
     #endif
 
-    for ( pMacro = m_pMacroNext; pMacro != NULL; pMacro = pMacro->PMacroNext() )
+    for ( pMacro = m_pMacroNext; pMacro != nullptr; pMacro = pMacro->PMacroNext() )
     {
         if ( pMacro->Dbtime() == dbtimeNil )
         {
@@ -662,7 +662,7 @@ INLINE ERR PIB::ErrSetMacroGoing( DBTIME dbtime )
     //  allocate another MACRO
     //
     pMacro = (MACRO *) PvOSMemoryHeapAlloc( sizeof( MACRO ) );
-    if ( NULL == pMacro )
+    if ( nullptr == pMacro )
     {
         return ErrERRCheck( JET_errOutOfMemory );
     }
@@ -686,14 +686,14 @@ INLINE VOID PIB::ResetMacroGoing( DBTIME dbtime )
     ASSERT_VALID( this );
 
     MACRO *     pMacro;
-    MACRO *     pMacroPrev  = NULL;
+    MACRO *     pMacroPrev  = nullptr;
 
-    for ( pMacro = m_pMacroNext; pMacro != NULL; pMacroPrev = pMacro, pMacro = pMacro->PMacroNext() )
+    for ( pMacro = m_pMacroNext; pMacro != nullptr; pMacroPrev = pMacro, pMacro = pMacro->PMacroNext() )
     {
         if ( pMacro->Dbtime() == dbtime )
         {
             Assert( m_pMacroNext != NULL );
-            if ( m_pMacroNext->PMacroNext() == NULL )
+            if ( m_pMacroNext->PMacroNext() == nullptr )
             {
                 //  only macro in session -- leave for later use
                 //
@@ -704,7 +704,7 @@ INLINE VOID PIB::ResetMacroGoing( DBTIME dbtime )
             {
                 //  remove from list and release
                 //
-                if ( NULL == pMacroPrev )
+                if ( nullptr == pMacroPrev )
                 {
                     m_pMacroNext = pMacro->PMacroNext();
                 }
@@ -728,27 +728,27 @@ INLINE VOID PIB::MACRO::ResetBuffer()
 {
     m_ibLogrecAvail = 0;
 
-    if ( NULL != m_rgfmppgnoFreed )
+    if ( nullptr != m_rgfmppgnoFreed )
     {
         delete m_rgfmppgnoFreed;
-        m_rgfmppgnoFreed = NULL;
+        m_rgfmppgnoFreed = nullptr;
     }
 }
 
 INLINE VOID PIB::MACRO::ReleaseBuffer()
 {
-    if ( NULL != m_rgbLogrec )
+    if ( nullptr != m_rgbLogrec )
     {
         OSMemoryHeapFree( m_rgbLogrec );
-        m_rgbLogrec = NULL;
+        m_rgbLogrec = nullptr;
         m_ibLogrecAvail = 0;
         m_cbLogrecMac = 0;
     }
 
-    if ( NULL != m_rgfmppgnoFreed )
+    if ( nullptr != m_rgfmppgnoFreed )
     {
         delete m_rgfmppgnoFreed;
-        m_rgfmppgnoFreed = NULL;
+        m_rgfmppgnoFreed = nullptr;
     }
 }
 
@@ -772,7 +772,7 @@ INLINE ERR PIB::MACRO::ErrInsertLogrec( const VOID * pv, const ULONG cb )
         
         BYTE *  rgbLogrec       = reinterpret_cast<BYTE *>( PvOSMemoryHeapAlloc( cbLogrecMacOld + cbAlloc ) );
 
-        if ( NULL == rgbLogrec )
+        if ( nullptr == rgbLogrec )
         {
             return ErrERRCheck( JET_errOutOfMemory );
         }
@@ -782,7 +782,7 @@ INLINE ERR PIB::MACRO::ErrInsertLogrec( const VOID * pv, const ULONG cb )
         m_rgbLogrec = rgbLogrec;
         m_cbLogrecMac = cbLogrecMacOld + cbAlloc;
 
-        if ( NULL != rgbLogrecOld )
+        if ( nullptr != rgbLogrecOld )
         {
             OSMemoryHeapFree( rgbLogrecOld );
         }
@@ -800,7 +800,7 @@ INLINE VOID * PIB::PvLogrec( DBTIME dbtime )    const
     ASSERT_VALID( this );
 
     MACRO   *pMacro;
-    for ( pMacro = m_pMacroNext; pMacro != NULL; pMacro = pMacro->PMacroNext() )
+    for ( pMacro = m_pMacroNext; pMacro != nullptr; pMacro = pMacro->PMacroNext() )
     {
         if ( pMacro->Dbtime() == dbtime )
         {
@@ -809,7 +809,7 @@ INLINE VOID * PIB::PvLogrec( DBTIME dbtime )    const
     }
 
     Assert( fFalse );
-    return NULL;
+    return nullptr;
 }
 
 
@@ -818,7 +818,7 @@ INLINE SIZE_T PIB::CbSizeLogrec( DBTIME dbtime )    const
     ASSERT_VALID( this );
 
     MACRO   *pMacro;
-    for ( pMacro = m_pMacroNext; pMacro != NULL; pMacro = pMacro->PMacroNext() )
+    for ( pMacro = m_pMacroNext; pMacro != nullptr; pMacro = pMacro->PMacroNext() )
     {
         if ( pMacro->Dbtime() == dbtime )
         {
@@ -835,7 +835,7 @@ INLINE ERR PIB::ErrInsertLogrec( DBTIME dbtime, const VOID * pv, const ULONG cb 
 {
     ASSERT_VALID( this );
 
-    for ( MACRO * pMacro = m_pMacroNext; pMacro != NULL; pMacro = pMacro->PMacroNext() )
+    for ( MACRO * pMacro = m_pMacroNext; pMacro != nullptr; pMacro = pMacro->PMacroNext() )
     {
         if ( pMacro->Dbtime() == dbtime )
         {
@@ -861,7 +861,7 @@ INLINE ERR PIB::MACRO::ErrInsertPgnoFreed( IFMP ifmp, const PGNO pgnoFreed )
     CArray< CFMPPage >::ERR errArray = CArray< CFMPPage >::ERR::errSuccess;
     CFMPPage fmppage( ifmp, pgnoFreed );
 
-    if ( m_rgfmppgnoFreed == NULL )
+    if ( m_rgfmppgnoFreed == nullptr )
     {
         Alloc( m_rgfmppgnoFreed = new CArray< CFMPPage >() );
     }
@@ -882,7 +882,7 @@ INLINE ERR PIB::ErrInsertPgnoFreed( const DBTIME dbtime, IFMP ifmp, const PGNO p
 {
     ASSERT_VALID( this );
 
-    for ( MACRO* pMacro = m_pMacroNext; pMacro != NULL; pMacro = pMacro->PMacroNext() )
+    for ( MACRO* pMacro = m_pMacroNext; pMacro != nullptr; pMacro = pMacro->PMacroNext() )
     {
         if ( pMacro->Dbtime() == dbtime )
         {
@@ -899,7 +899,7 @@ INLINE ERR PIB::ErrAllocPvRecordFormatConversionBuffer()
 //  ================================================================
 {
     Assert( NULL == m_pvRecordFormatConversionBuffer );
-    if( NULL == ( m_pvRecordFormatConversionBuffer = PvOSMemoryPageAlloc( g_cbPage, NULL ) ) )
+    if( nullptr == ( m_pvRecordFormatConversionBuffer = PvOSMemoryPageAlloc( g_cbPage, nullptr ) ) )
     {
         return ErrERRCheck( JET_errOutOfMemory );
     }
@@ -910,11 +910,11 @@ INLINE ERR PIB::ErrAllocPvRecordFormatConversionBuffer()
 INLINE VOID PIB::FreePvRecordFormatConversionBuffer()
 //  ================================================================
 {
-    if ( NULL != m_pvRecordFormatConversionBuffer )
+    if ( nullptr != m_pvRecordFormatConversionBuffer )
     {
         OSMemoryPageFree( m_pvRecordFormatConversionBuffer );
     }
-    m_pvRecordFormatConversionBuffer = NULL;
+    m_pvRecordFormatConversionBuffer = nullptr;
 }
 
 #define cbMaxCommitCtx  30*1000
@@ -1148,7 +1148,7 @@ INLINE void PIB::SetUserTraceContextInTls() const
 INLINE void PIB::ClearUserTraceContextInTls() const
 //  ================================================================
 {
-    const UserTraceContext* ptcPrev = TLSSetUserTraceContext( NULL );
+    const UserTraceContext* ptcPrev = TLSSetUserTraceContext( nullptr );
     Assert( ptcPrev == Putc() );
 }
 
@@ -1279,7 +1279,7 @@ INLINE VOID PIBSetTrxBegin0( PIB * const ppib )
     Assert ( !ppibTrxOldest || ( INT( ppibTrxOldest->trxBegin0 - ppib->trxBegin0 ) <= 0 ) );
 #endif
     // Oldest transaction can only change if this is the first transaction
-    if ( ppls->m_ilTrxOldest.PrevMost() == NULL )
+    if ( ppls->m_ilTrxOldest.PrevMost() == nullptr )
     {
         pinst->SetTrxOldestCachedMayBeStale();
     }
@@ -1301,7 +1301,7 @@ INLINE VOID PIBResetTrxBegin0( PIB * const ppib )
     Assert( NULL == ppib->prceNewest );
 
     INST::PLS* const ppls = ppib->m_pplsTrxOldest;
-    if ( ppls != NULL )
+    if ( ppls != nullptr )
     {
         ppls->m_rwlPIBTrxOldest.EnterAsWriter();
         // Oldest transaction can only change if this is the first transaction
@@ -1325,7 +1325,7 @@ INLINE VOID PIBResetTrxBegin0( PIB * const ppib )
 INLINE ERR PIB::ErrPIBSetSessionContext( const DWORD_PTR dwContext )
 {
     Assert( dwPIBSessionContextNull != dwContext );
-    if ( dwPIBSessionContextNull != AtomicCompareExchangePointer( (void**)&dwSessionContext, (void*)dwPIBSessionContextNull, (void*)dwContext ) )
+    if ( nullptr != AtomicCompareExchangePointer( (void**)&dwSessionContext, (void*)nullptr, (void*)dwContext ) )
         return ErrERRCheck( JET_errSessionContextAlreadySet );
 
     Assert( 0 == dwSessionContextThreadId );
@@ -1581,7 +1581,7 @@ INLINE TraceContext* PIBGetEtcFunctor::operator()() const
 {
     // Get the TraceContext from the TLS pointer cached on the PIB
     // Eliminates the call to GetTlsValue() which is significant CPU on AD cpu traces
-    return m_ppib->ptlsApi != NULL ?
+    return m_ppib->ptlsApi != nullptr ?
         const_cast<TraceContext*>( PetcTLSGetEngineContextCached( m_ppib->ptlsApi ) ) :
         const_cast<TraceContext*>( PetcTLSGetEngineContext() );
 }

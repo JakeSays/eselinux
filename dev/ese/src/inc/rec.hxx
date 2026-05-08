@@ -1110,8 +1110,8 @@ ERR ErrRECRetrieveSLongField(
     BYTE            *pb,
     ULONG           cbMax,
     ULONG           *pcbActual,
-    JET_PFNREALLOC  pfnRealloc          = NULL,
-    void*           pvReallocContext    = NULL,
+    JET_PFNREALLOC  pfnRealloc          = nullptr,
+    void*           pvReallocContext    = nullptr,
     const RCE       * const prceBase    = prceNil
     );
 
@@ -1248,7 +1248,7 @@ ERR ErrRECSeparateLV(
     _In_ const BOOL         fEncrypted,
     _Out_ LvId              * const plid,
     __in_opt FUCB           **ppfucb,
-    __in_opt LVROOT2        *plvrootInit = NULL );
+    __in_opt LVROOT2        *plvrootInit = nullptr );
 
 ERR ErrRECAffectSeparateLV( FUCB *pfucb, LvId *plid, ULONG fLVAffect );
 
@@ -1306,7 +1306,7 @@ ERR ErrRECIAccessColumn(
     FUCB            * pfucb,
     COLUMNID        columnid,
     FIELD           * pfieldFixed = pfieldNil,
-    BOOL            * pfEncrypted = NULL );
+    BOOL            * pfEncrypted = nullptr );
 ERR ErrRECIRetrieveFixedColumn(
     FCB             * const pfcb,
     const TDB       * ptdb,
@@ -1809,7 +1809,7 @@ ERR ErrRECIRetrieveColumnFromKey(
 INLINE VOID RECReleaseKeySearchBuffer( FUCB *pfucb )
 {
     // release key buffer if one was allocated
-    if ( NULL != pfucb->dataSearchKey.Pv() )
+    if ( nullptr != pfucb->dataSearchKey.Pv() )
     {
         if ( FFUCBUsingTableSearchKeyBuffer( pfucb ) )
         {
@@ -1848,7 +1848,7 @@ VOID RECAddMoveFilter(
 VOID RECRemoveMoveFilter(
     FUCB * const                    pfucb,
     PFN_MOVE_FILTER const           pfnMoveFilter,
-    MOVE_FILTER_CONTEXT ** const    ppmoveFilterContextRemoved = NULL );
+    MOVE_FILTER_CONTEXT ** const    ppmoveFilterContextRemoved = nullptr );
 ERR ErrRECCheckMoveFilter( FUCB * const pfucb, MOVE_FILTER_CONTEXT* const pmoveFilterContext );
 VOID RECRemoveCursorFilter( FUCB * const pfucb );
 
@@ -1886,7 +1886,7 @@ ERR ErrRECCallback(
         void * const pvArg1,
         void * const pvArg2,
         const ULONG ulUnused,
-        BOOL *pfCallbackCalled = NULL );
+        BOOL *pfCallbackCalled = nullptr );
 
 #if defined( DEBUG ) || !defined( RTM )
 ERR ErrRECSessionWriteConflict( FUCB *pfucb );
@@ -1897,7 +1897,7 @@ ERR ErrRECSessionWriteConflict( FUCB *pfucb );
 
 INLINE VOID RECIAllocCopyBuffer( FUCB * const pfucb )
 {
-    if ( NULL == pfucb->pvWorkBuf )
+    if ( nullptr == pfucb->pvWorkBuf )
     {
         BFAlloc( bfasIndeterminate, &pfucb->pvWorkBuf );
         Assert ( NULL != pfucb->pvWorkBuf );
@@ -1908,11 +1908,11 @@ INLINE VOID RECIAllocCopyBuffer( FUCB * const pfucb )
 
 INLINE VOID RECIFreeCopyBuffer( FUCB * const pfucb )
 {
-    if ( NULL != pfucb->pvWorkBuf )
+    if ( nullptr != pfucb->pvWorkBuf )
     {
         BFFree( pfucb->pvWorkBuf );
-        pfucb->pvWorkBuf = NULL;
-        pfucb->dataWorkBuf.SetPv( NULL );   //  verify that no one uses BF anymore
+        pfucb->pvWorkBuf = nullptr;
+        pfucb->dataWorkBuf.SetPv( nullptr );   //  verify that no one uses BF anymore
     }
 }
 
@@ -1967,6 +1967,6 @@ ERR ErrRECCreateColumnReference(
     const LvId              lid,
     ULONG* const            pcbReference,
     BYTE** const            prgbReference,
-    const JET_PFNREALLOC    pfnRealloc = NULL,
-    const void* const       pvReallocContext = NULL
+    const JET_PFNREALLOC    pfnRealloc = nullptr,
+    const void* const       pvReallocContext = nullptr
     );

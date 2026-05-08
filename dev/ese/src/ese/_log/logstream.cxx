@@ -34,9 +34,9 @@ LONG LLGBytesWrittenCEFLPv( LONG iInstance, void *pvBuf )
 LOG_STREAM::LOG_STREAM( INST * pinst, LOG * pLog )
     : m_pLog( pLog ),
       m_pinst( pinst ),
-      m_pLogWriteBuffer( NULL ),
-      m_plgfilehdr( NULL ),
-      m_plgfilehdrT( NULL ),
+      m_pLogWriteBuffer( nullptr ),
+      m_plgfilehdr( nullptr ),
+      m_plgfilehdrT( nullptr ),
       m_fLogSequenceEnd( fFalse ),
       m_ls( lsNormal ),
       m_csecLGFile( 0 ),
@@ -44,8 +44,8 @@ LOG_STREAM::LOG_STREAM( INST * pinst, LOG * pLog )
       m_csecFileSavedForOB0( 0 ),
       m_lGenSavedForOB0( 0 ),
       m_lgposUndoForOB0( lgposMin ),
-      m_pfapiLog( NULL ),
-      m_pfapiJetTmpLog( NULL ),
+      m_pfapiLog( nullptr ),
+      m_pfapiJetTmpLog( nullptr ),
       m_fCreateAsynchResUsed( fFalse ),
       m_fCreateAsynchZeroFilled( fFalse ),
       m_errCreateAsynch( JET_errSuccess ),
@@ -57,9 +57,9 @@ LOG_STREAM::LOG_STREAM( INST * pinst, LOG * pLog )
       m_ibJetTmpLog( 0 ),
       m_cIOTmpLog( 0 ),
       m_cIOTmpLogMax( 0 ),
-      m_rgibTmpLog( NULL ),
-      m_rgcbTmpLog( NULL ),
-      m_wszLogExt( NULL ),
+      m_rgibTmpLog( nullptr ),
+      m_rgcbTmpLog( nullptr ),
+      m_wszLogExt( nullptr ),
       m_cbSecVolume( 0 ),
       m_cbSec_( 0 ),
       m_log2cbSec_( 0 ),
@@ -87,7 +87,7 @@ LOG_STREAM::LOG_STREAM( INST * pinst, LOG * pLog )
 #ifdef DEBUG
     ErrOSTraceCreateRefLog( 1000, 0, &m_pEmitTraceLog );
 #else
-    m_pEmitTraceLog = NULL;
+    m_pEmitTraceLog = nullptr;
 #endif
 
     PERFOpt( cLGLogFileGenerated.Clear( m_pinst ) );
@@ -101,10 +101,10 @@ LOG_STREAM::~LOG_STREAM()
     PERFOpt( cLGWrite.Clear( m_pinst ) );
     PERFOpt( cbLGWritten.Clear( m_pinst ) );
 
-    if ( m_pEmitTraceLog != NULL )
+    if ( m_pEmitTraceLog != nullptr )
     {
         OSTraceDestroyRefLog( m_pEmitTraceLog );
-        m_pEmitTraceLog = NULL;
+        m_pEmitTraceLog = nullptr;
     }
 
     // A clean lifecycle of this object should not allow it to get here with these allocated.
@@ -121,7 +121,7 @@ VOID LOG_STREAM::SetLogBuffers(
 
 LONG LOG_STREAM::GetCurrentFileGen( LOGTIME * ptmCreate ) const
 {
-    if ( ptmCreate != NULL && m_plgfilehdr != NULL )
+    if ( ptmCreate != nullptr && m_plgfilehdr != nullptr )
     {
         *ptmCreate = m_plgfilehdr->lgfilehdr.tmCreate;
     }
@@ -180,7 +180,7 @@ ERR LOG_STREAM::ErrLGInitSetInstanceWiseParameters()
                 1,
                 szPathT,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
 
         return ErrERRCheck( JET_errFileNotFound );
@@ -209,7 +209,7 @@ ERR LOG_STREAM::ErrLGInitSetInstanceWiseParameters()
                 _countof( rgszT ),
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
 
         m_cbSecVolume = 4096;
@@ -396,7 +396,7 @@ ERR LOG_STREAM::ErrLGInit()
     //  which is 16-byte for MIPS and 512-byte for at least one NT
     //  platform.
     //
-    Alloc( m_plgfilehdr = (LGFILEHDR *)PvOSMemoryPageAlloc( sizeof(LGFILEHDR) * 2, NULL ) );
+    Alloc( m_plgfilehdr = (LGFILEHDR *)PvOSMemoryPageAlloc( sizeof(LGFILEHDR) * 2, nullptr ) );
     //  This is * 4 because,
     //      one for the first log file header (m_plgfilehdr), 
     //      one for the second temp log file header (m_plgfilehdrT)
@@ -424,7 +424,7 @@ ERR LOG_STREAM::ErrLGInitTmpLogBuffers()
     const DWORD cIOTmpLog = max( CbLGLogFileSize() / ( 2 * cbLogExtendPattern ), 1 );
     m_rgibTmpLog = new QWORD[ cIOTmpLog ];
     m_rgcbTmpLog = new DWORD[ cIOTmpLog ];
-    if ( m_rgibTmpLog != NULL && m_rgcbTmpLog != NULL )
+    if ( m_rgibTmpLog != nullptr && m_rgcbTmpLog != nullptr )
     {
         m_cIOTmpLogMax = cIOTmpLog;
         m_asigCreateAsynchIOCompleted.Set();
@@ -442,9 +442,9 @@ VOID LOG_STREAM::LGTermTmpLogBuffers()
 {
     m_cIOTmpLogMax = 0;
     delete[] m_rgibTmpLog;
-    m_rgibTmpLog = NULL;
+    m_rgibTmpLog = nullptr;
     delete[] m_rgcbTmpLog;
-    m_rgcbTmpLog = NULL;
+    m_rgcbTmpLog = nullptr;
 }
 
 /*
@@ -534,11 +534,11 @@ ERR LOG_STREAM::ErrLGReadFileHdr(
     QWORD   qwCalculatedFileSize;
     BOOL    fLogWriteBufferLocked = fFalse;
 
-    if ( pfapiLog == NULL )
+    if ( pfapiLog == nullptr )
     {
         pfapiLog = m_pfapiLog;
     }
-    if ( plgfilehdr == NULL )
+    if ( plgfilehdr == nullptr )
     {
         plgfilehdr = m_plgfilehdr;
     }
@@ -653,7 +653,7 @@ HandleError:
                 csz - 1,
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
         }
         else
@@ -665,7 +665,7 @@ HandleError:
                 csz,
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
         }
 
@@ -697,8 +697,8 @@ ERR LOG_STREAM::ErrLGIFormatFeatureEnabled( _In_ const JET_ENGINEFORMATVERSION e
     //  Slow path - search version table for EFV and check directly ...
     //
 
-    const FormatVersions * pfmtversFormatFeature = NULL;
-    CallS( ErrGetDesiredVersion( NULL /* must be NULL to bypass staging */, efvFormatFeature, &pfmtversFormatFeature ) );
+    const FormatVersions * pfmtversFormatFeature = nullptr;
+    CallS( ErrGetDesiredVersion( nullptr /* must be NULL to bypass staging */, efvFormatFeature, &pfmtversFormatFeature ) );
     if ( pfmtversFormatFeature )
     {
         if ( CmpLgVer( lgvCurrentFromLogGenTip, pfmtversFormatFeature->lgv ) >= 0 )
@@ -872,7 +872,7 @@ OpenLog:
             return err;
         }
 
-        err = ErrUtilPathExists( m_pinst->m_pfsapi, wszPathJetTmpLog, NULL );
+        err = ErrUtilPathExists( m_pinst->m_pfsapi, wszPathJetTmpLog, nullptr );
         if ( err < 0 )
         {
             //  edb.jtx/log does not exist, and there's some problem accessing
@@ -891,7 +891,7 @@ OpenLog:
             // Ok, really fail this time, because we've tried both log extensions.
             //
 
-            if ( m_wszLogExt == NULL )
+            if ( m_wszLogExt == nullptr )
             {
                 // If no log extension is choosen yet, set the m_wszLogName back
                 // to the default, so no one is confused.
@@ -1038,7 +1038,7 @@ ERR LOG_STREAM::ErrLGRIOpenRedoLogFile( LGPOS *plgposRedoFrom, INT *pfStatus )
 
     /*  read the log file header to verify generation number
     /**/
-    CallR( ErrLGReadFileHdr( NULL, IorpLogRead( m_pLog ), m_plgfilehdr, fCheckLogID ) );
+    CallR( ErrLGReadFileHdr( nullptr, IorpLogRead( m_pLog ), m_plgfilehdr, fCheckLogID ) );
 
     // XXX
     // At this point, if m_lgposLastRec.isec == 0, that means
@@ -1070,7 +1070,7 @@ ERR LOG_STREAM::ErrLGRIOpenRedoLogFile( LGPOS *plgposRedoFrom, INT *pfStatus )
         /*  and return error flag.
         /**/
         delete m_pfapiLog;
-        m_pfapiLog = NULL;
+        m_pfapiLog = nullptr;
 
         *pfStatus = fNoProperLogFile;
     }
@@ -1085,7 +1085,7 @@ LOG_STREAM::ErrLGICreateOneReservedLogFile(
     const LONG              lgenDebug ) // lgenDebug can be signal - lgenSignalReserveID / 0x80000003
 {
     ERR                     err;
-    IFileAPI *              pfapi   = NULL;
+    IFileAPI *              pfapi   = nullptr;
 
     Assert( lgenDebug > 0 || lgenDebug == lgenSignalReserveID );
     // when lgenDebug is not lgenSignalReserveID, it is from shadow logging ... we could check
@@ -1221,7 +1221,7 @@ ERR LOG_STREAM::ErrLGInitCreateReserveLogFiles()
     //  Cleanup any legacy res ext logs, mismatched sized res logs, or if the pool is
     //  excessively large (more than cInitialReserveLogs) ...
 
-    IFileFindAPI*   pffapi          = NULL;
+    IFileFindAPI*   pffapi          = nullptr;
     QWORD           cbSize;
     const QWORD     cbSizeExpected  = QWORD( m_csecLGFile ) * m_cbSec;
 
@@ -1267,7 +1267,7 @@ ERR LOG_STREAM::ErrLGInitCreateReserveLogFiles()
         }
 
         delete pffapi;
-        pffapi = NULL;
+        pffapi = nullptr;
     }
 
 
@@ -1332,9 +1332,9 @@ ERR LOG_STREAM::ErrLGIGrowReserveLogPool(
                         LOGGING_RECOVERY_CATEGORY,
                         LOW_LOG_DISK_SPACE,
                         0,
-                        NULL,
+                        nullptr,
                         0,
-                        NULL,
+                        nullptr,
                         m_pinst );
             }
 
@@ -1373,7 +1373,7 @@ ERR LOG_STREAM::ErrLGIOpenReserveLogFile(
     Assert( wszPathJetTmpLog );
     Assert( lgenNextDebug > 0 ); // shouldn't be signal or anything else.
 
-    *ppfapi = NULL;
+    *ppfapi = nullptr;
 
     Assert( m_rwlLGResFiles.FNotWriter() );
     m_rwlLGResFiles.EnterAsWriter();
@@ -1435,9 +1435,9 @@ ERR LOG_STREAM::ErrLGIOpenReserveLogFile(
                 LOGGING_RECOVERY_CATEGORY,
                 LOW_LOG_DISK_SPACE,
                 0,
-                NULL,
+                nullptr,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
 
         m_ls = lsQuiesce;
@@ -1481,7 +1481,7 @@ ERR LOG_STREAM::ErrLGIOpenReserveLogFile(
                     irgpsz,
                     rgpsz,
                     0,
-                    NULL,
+                    nullptr,
                     m_pinst );
 
             m_ls = lsOutOfDiskSpace;
@@ -1534,7 +1534,7 @@ ERR LOG_STREAM::ErrLGIOpenTempLogFile(
     const QWORD qwSize = QWORD( m_csecLGFile ) * m_cbSec;
     TraceContextScope tcScope( iorpLog );
 
-    *ppfapi = NULL;
+    *ppfapi = nullptr;
     *pfResUsed = fFalse;
     *pfZeroFilled = fFalse;
 
@@ -1580,7 +1580,7 @@ ERR LOG_STREAM::ErrLGIOpenTempLogFile(
         //  We don't have an edbtmp.jtx/log open because we couldn't reuse an old log file,
         //  so try to create a new one.
 
-        if ( NULL != *ppfapi )
+        if ( nullptr != *ppfapi )
         {
             CallS( err );
 
@@ -1588,8 +1588,8 @@ ERR LOG_STREAM::ErrLGIOpenTempLogFile(
             Call( (*ppfapi)->ErrSize( &qwFileSize, IFileAPI::filesizeLogical ) );
             if ( qwFileSize == qwSize )
             {
-                LGFILEHDR * const plgfilehdr = (LGFILEHDR *)PvOSMemoryPageAlloc( sizeof( LGFILEHDR ), NULL );
-                if ( plgfilehdr != NULL )
+                LGFILEHDR * const plgfilehdr = (LGFILEHDR *)PvOSMemoryPageAlloc( sizeof( LGFILEHDR ), nullptr );
+                if ( plgfilehdr != nullptr )
                 {
                     TraceContextScope tcScopeT( iorpHeader );
                     if ( ErrLGIReadFileHeader( *ppfapi, *tcScopeT, QosSyncDefault( m_pinst ), plgfilehdr ) >= JET_errSuccess &&
@@ -1651,7 +1651,7 @@ HandleError:
             //  Temp log, we will flush before adding log to required range
             (*ppfapi)->SetNoFlushNeeded();
             delete *ppfapi;
-            *ppfapi = NULL;
+            *ppfapi = nullptr;
 
             (void)m_pinst->m_pfsapi->ErrFileDelete( wszPathJetTmpLog );
         }
@@ -1677,7 +1677,7 @@ ERR LOG_STREAM::ErrLGIReuseArchivedLogFile(
     Assert( wszPathJetTmpLog );
     Assert( lgenNextDebug > 0 || lgenNextDebug == lGenSignalTempID );
 
-    *ppfapi = NULL;
+    *ppfapi = nullptr;
 
     //  If circular log file flag set and backup not in progress
     //  then find oldest log file and if no longer needed for
@@ -1697,7 +1697,7 @@ ERR LOG_STREAM::ErrLGIReuseArchivedLogFile(
         //
         LONG lgenLGGlobalOldest = 0;
 
-        (void)ErrLGGetGenerationRange( SzParam( m_pinst, JET_paramLogFilePath ), &lgenLGGlobalOldest, NULL );
+        (void)ErrLGGetGenerationRange( SzParam( m_pinst, JET_paramLogFilePath ), &lgenLGGlobalOldest, nullptr );
 
         //  if found oldest generation and older than checkpoint,
         //  then move log file to szJetTempLog.  Note that the checkpoint
@@ -1866,7 +1866,7 @@ VOID LOG_STREAM::LGCreateAsynchIOIssue( const LGPOS& lgposLogRec )
     DWORD cIOIssued = 0;
     if ( m_critJetTmpLog.FTryEnter() )
     {
-        if ( NULL != m_pfapiJetTmpLog && !m_fCreateAsynchZeroFilled )
+        if ( nullptr != m_pfapiJetTmpLog && !m_fCreateAsynchZeroFilled )
         {
             Assert( m_ibJetTmpLog <= QWORD( CbLGLogFileSize() ) );
             Assert( m_cIOTmpLog == 0 );
@@ -2046,7 +2046,7 @@ VOID LOG_STREAM::LGCreateAsynchCancel( const BOOL fWaitForTask )
             m_pfapiJetTmpLog->SetNoFlushNeeded();
         }
         delete m_pfapiJetTmpLog;
-        m_pfapiJetTmpLog = NULL;
+        m_pfapiJetTmpLog = nullptr;
         m_fCreateAsynchResUsed = fFalse;
         m_fCreateAsynchZeroFilled = fFalse;
         m_errCreateAsynch = JET_errSuccess;
@@ -2152,7 +2152,7 @@ ERR LOG_STREAM::ErrOpenTempLogFile(
 
         err         = m_errCreateAsynch;
 
-        m_pfapiJetTmpLog        = NULL;
+        m_pfapiJetTmpLog        = nullptr;
         m_fCreateAsynchResUsed  = fFalse;
         m_fCreateAsynchZeroFilled = fFalse;
         m_errCreateAsynch       = JET_errSuccess;
@@ -2168,7 +2168,7 @@ ERR LOG_STREAM::ErrOpenTempLogFile(
             Assert( ! *pfResUsed );
 
             delete *ppfapi;
-            *ppfapi = NULL;
+            *ppfapi = nullptr;
 
             //  Upon disk full from asynchronous log file creation, there must
             //  be an edbtmp.jtx/log at this point because any creation errors
@@ -2229,7 +2229,7 @@ ERR LOG_STREAM::ErrFormatLogFile(
     if ( JET_errDiskFull == err && ! *pfResUsed )
     {
         delete *ppfapi;
-        *ppfapi = NULL;
+        *ppfapi = nullptr;
 
         //  If we can't delete the current edbtmp.jtx/log, we are in a bad place.
 
@@ -2282,7 +2282,7 @@ ERR LOG_STREAM::ErrLGIWriteFileHdr(
 
     //  issue the write
 
-    Call( ErrLGIWriteSectorData( pfapi, IOR( iorpLog, iorsHeader ), plgfilehdr->lgfilehdr.le_lGeneration, 0, sizeof( LGFILEHDR ), (BYTE*)plgfilehdr, LOG_HEADER_WRITE_ERROR_ID, NULL, fTrue ) );
+    Call( ErrLGIWriteSectorData( pfapi, IOR( iorpLog, iorsHeader ), plgfilehdr->lgfilehdr.le_lGeneration, 0, sizeof( LGFILEHDR ), (BYTE*)plgfilehdr, LOG_HEADER_WRITE_ERROR_ID, nullptr, fTrue ) );
     
     Assert( m_critLGWrite.FOwner() );
 
@@ -2364,7 +2364,7 @@ ERR LOG_STREAM::ErrLGGetDesiredLogVersion( _In_ const JET_ENGINEFORMATVERSION ef
     ERR err = JET_errSuccess;
     Assert( pplgv );
 
-    const FormatVersions * pfmtversLogDesired = NULL;
+    const FormatVersions * pfmtversLogDesired = nullptr;
     if ( (LONG)UlParam( m_pinst, JET_paramEngineFormatVersion ) == JET_efvUsePersistedFormat )
     {
         Call( ErrLGFindHighestMatchingLogMajors( m_lgvHighestRecovered, &pfmtversLogDesired ) );
@@ -2536,7 +2536,7 @@ VOID LOG_STREAM::CheckForGenerationOverflow()
                     _countof( rgpszString ),
                     rgpszString,
                     0,
-                    NULL,
+                    nullptr,
                     m_pinst );
 
             OSUHAPublishEvent(
@@ -2694,7 +2694,7 @@ HandleError:
         (*ppfapiTmpLog)->SetNoFlushNeeded();
     }
     delete *ppfapiTmpLog;
-    *ppfapiTmpLog = NULL;
+    *ppfapiTmpLog = nullptr;
     return err;
 }
 
@@ -2811,7 +2811,7 @@ ERR LOG_STREAM::ErrLGINewLogFile(
     )
 {
     ERR                     err;
-    IFileAPI*               pfapiTmpLog = NULL;
+    IFileAPI*               pfapiTmpLog = nullptr;
     WCHAR                   wszArchivePath[ IFileSystemAPI::cchPathMax ];   // generational name of current log file if any
 
     Assert( m_critLGWrite.FOwner() );
@@ -2942,7 +2942,7 @@ ERR LOG_STREAM::ErrLGIUseNewLogFile( _Inout_ IFileAPI ** ppfapiNewLog )
 
     delete m_pfapiLog;
     m_pfapiLog = *ppfapiNewLog;
-    *ppfapiNewLog = NULL;
+    *ppfapiNewLog = nullptr;
 
     m_pLogWriteBuffer->LockBuffer();
 
@@ -2961,7 +2961,7 @@ ERR LOG_STREAM::ErrLGIUseNewLogFile( _Inout_ IFileAPI ** ppfapiNewLog )
 ERR LOG_STREAM::ErrLGNewLogFile( LONG lgen, BOOL fLGFlags )
 {
     ERR err;
-    IFileAPI* pfapiNewLog = NULL;
+    IFileAPI* pfapiNewLog = nullptr;
     Assert( m_critLGWrite.FOwner() );
 
     err = ErrLGINewLogFile( lgen, fLGFlags, &pfapiNewLog );
@@ -2974,7 +2974,7 @@ ERR LOG_STREAM::ErrLGNewLogFile( LONG lgen, BOOL fLGFlags )
         {
             (void)ErrLGIFlushLogFileBuffers( pfapiNewLog, iofrDefensiveErrorPath );
             delete pfapiNewLog;
-            pfapiNewLog = NULL;
+            pfapiNewLog = nullptr;
         }
     }
 
@@ -2985,7 +2985,7 @@ ERR LOG_STREAM::ErrLGNewLogFile( LONG lgen, BOOL fLGFlags )
         {
             (void)ErrLGIFlushLogFileBuffers( m_pfapiLog, iofrPersistClosingLogFile );
             delete m_pfapiLog;
-            m_pfapiLog = NULL;
+            m_pfapiLog = nullptr;
         }
         else if ( !m_pLog->FNoMoreLogWrite() )
         {
@@ -3049,7 +3049,7 @@ ERR LOG_STREAM::ErrLGSwitchToNewLogFile( LONG lgenToSwitchTo, BOOL fLGFlags )
                 // close log file because ErrLGNewLogFile( fLGOldLogInBackup ) does not
                 // expect an open log file.
                 delete m_pfapiLog;
-                m_pfapiLog = NULL;
+                m_pfapiLog = nullptr;
             }
             else
             {
@@ -3395,7 +3395,7 @@ ERR LOG_STREAM::ErrLGGetGenerationRangeExt( _In_ PCWSTR wszFindPath, LONG* plgen
     ERR             err         = JET_errSuccess;
     WCHAR           wszFind[ IFileSystemAPI::cchPathMax ];
     WCHAR           wszFileName[ IFileSystemAPI::cchPathMax ];
-    IFileFindAPI*   pffapi      = NULL;
+    IFileFindAPI*   pffapi      = nullptr;
 
     LONG            lGenMax     = 0;
     LONG            lGenMin     = lGenerationMaxDuringRecovery + 1;
@@ -3559,7 +3559,7 @@ ERR LOG_STREAM::ErrLGRemoveCommittedLogs( _In_ LONG lGenToDeleteFrom )
                             _countof( rgszT ),
                             rgszT,
                             0,
-                            NULL,
+                            nullptr,
                             m_pinst );
     }
 
@@ -3572,7 +3572,7 @@ ERR LOG_STREAM::ErrLGRStartNewLog(
     )
 {
     ERR err = JET_errSuccess;
-    IFileAPI* pfapiNewLog = NULL;
+    IFileAPI* pfapiNewLog = nullptr;
 
     /* we run out of log files, create a new edb.jtx/log in current
      * directory for later use.
@@ -3594,7 +3594,7 @@ HandleError:
     {
         (void)ErrLGIFlushLogFileBuffers( pfapiNewLog, iofrDefensiveErrorPath );
         delete pfapiNewLog;
-        pfapiNewLog = NULL;
+        pfapiNewLog = nullptr;
     }
     m_critLGWrite.Leave();
     return err;
@@ -3616,7 +3616,7 @@ ERR LOG_STREAM::ErrLGRRestartLOGAtLogGen(
 
     //  set m_pfapiLog as NULL to indicate it is closed
     //
-    m_pfapiLog = NULL;
+    m_pfapiLog = nullptr;
 
     LGMakeLogName( wszPath, sizeof(wszPath), eCurrentLog );
 
@@ -3636,7 +3636,7 @@ ERR LOG_STREAM::ErrLGRRestartLOGAtLogGen(
                 sizeof(rgszT) / sizeof(rgszT[0]),
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
     }
 
@@ -3706,7 +3706,7 @@ ERR LOG_STREAM::ErrLGRICleanupMismatchedLogFiles( BOOL fExtCleanup )
 
     m_critLGWrite.Enter();
     delete m_pfapiLog;
-    m_pfapiLog = NULL;
+    m_pfapiLog = nullptr;
 
     LGCreateAsynchCancel( fFalse );
 
@@ -3802,10 +3802,10 @@ ERR LOG_STREAM::ErrLGRICleanupMismatchedLogFiles( BOOL fExtCleanup )
 
     m_pLog->ResetRecoveryState();
 
-    IFileAPI* pfapiNewLog = NULL;
+    IFileAPI* pfapiNewLog = nullptr;
     err = ErrLGINewLogFile( (m_pLog->LgenInitial()-1), fLGOldLogNotExists, &pfapiNewLog );
     delete pfapiNewLog;
-    pfapiNewLog = NULL;
+    pfapiNewLog = nullptr;
 
 #ifdef DEBUG
     //  The log file stream should be consistent at this point.
@@ -3819,7 +3819,7 @@ ERR LOG_STREAM::ErrLGRICleanupMismatchedLogFiles( BOOL fExtCleanup )
 
         //  reset fSignLogSetGlobal because we have a new log signature now (setup by ErrLGNewLogFile)
 
-        m_pLog->ErrLGSetSignLog( NULL, fFalse );
+        m_pLog->ErrLGSetSignLog( nullptr, fFalse );
 
         m_pLogWriteBuffer->LockBuffer();
         memcpy( m_plgfilehdr, m_plgfilehdrT, sizeof( LGFILEHDR ) );
@@ -3844,7 +3844,7 @@ ERR LOG_STREAM::ErrLGRICleanupMismatchedLogFiles( BOOL fExtCleanup )
 
             //  read the log file hdr and initialize the log params (including the new log signature)
 
-            err = ErrLGReadFileHdr( NULL, iorpLog, m_plgfilehdr, fFalse );
+            err = ErrLGReadFileHdr( nullptr, iorpLog, m_plgfilehdr, fFalse );
 #ifdef DEBUG
             if ( err >= JET_errSuccess )
             {
@@ -3875,7 +3875,7 @@ ERR LOG_STREAM::ErrLGRICleanupMismatchedLogFiles( BOOL fExtCleanup )
 ERR LOG_STREAM::ErrLGDeleteOutOfRangeLogFiles()
 {
     ERR             err = JET_errSuccess;
-    LGFILEHDR *     plgfilehdr = NULL;
+    LGFILEHDR *     plgfilehdr = nullptr;
     const LONG      lCurrentGeneration = m_plgfilehdr->lgfilehdr.le_lGeneration;
 
     Assert( lCurrentGeneration != 0 );
@@ -3912,7 +3912,7 @@ ERR LOG_STREAM::ErrLGDeleteOutOfRangeLogFiles()
     //  we need a buffer to read the log headers
     //  so that we can check that they do not match the current signature.
     //
-    AllocR( plgfilehdr = (LGFILEHDR *)PvOSMemoryPageAlloc( sizeof(LGFILEHDR), NULL ) );
+    AllocR( plgfilehdr = (LGFILEHDR *)PvOSMemoryPageAlloc( sizeof(LGFILEHDR), nullptr ) );
 
     WCHAR           wszFileFrom[16];
     WCHAR           wszFileTo[16];
@@ -3930,13 +3930,13 @@ ERR LOG_STREAM::ErrLGDeleteOutOfRangeLogFiles()
             sizeof(rgszT) / sizeof(rgszT[0]),
             rgszT,
             0,
-            NULL,
+            nullptr,
             m_pinst );
 
     for ( lgen = lgenMin; lgen <= lgenMax; lgen++ )
     {
         WCHAR       wszFullName[IFileSystemAPI::cchPathMax];
-        IFileAPI *  pfapiT = NULL;
+        IFileAPI *  pfapiT = nullptr;
 
         Assert( lgen > 0 );
         err = ErrLGRSTOpenLogFile( SzParam( m_pinst, JET_paramLogFilePath ), lgen, &pfapiT );
@@ -3950,7 +3950,7 @@ ERR LOG_STREAM::ErrLGDeleteOutOfRangeLogFiles()
         //
         err = ErrLGReadFileHdr( pfapiT, iorpLog, plgfilehdr, fCheckLogID );
         delete pfapiT;
-        pfapiT = NULL;
+        pfapiT = nullptr;
         Call ( err );
 
         //  file present with current signature,
@@ -3987,13 +3987,13 @@ ERR LOG_STREAM::ErrLGCreateNewLogStream( BOOL * const pfJetLogGeneratedDuringSof
     
     m_critLGWrite.Enter();
     
-    IFileAPI* pfapiNewLog = NULL;
+    IFileAPI* pfapiNewLog = nullptr;
     Call( ErrLGINewLogFile( m_pLog->LgenInitial()-1, fLGOldLogNotExists, &pfapiNewLog ) ); // generation 0 + 1
 
     Call( ErrLGIFlushLogFileBuffers( pfapiNewLog, iofrPersistClosingLogFile ) );
 
     delete pfapiNewLog;
-    pfapiNewLog = NULL;
+    pfapiNewLog = nullptr;
 
     m_pLogWriteBuffer->LockBuffer();
     UtilMemCpy( m_plgfilehdr, m_plgfilehdrT, sizeof( LGFILEHDR ) );
@@ -4017,7 +4017,7 @@ HandleError:
     {
         (void)ErrLGIFlushLogFileBuffers( pfapiNewLog, iofrDefensiveErrorPath );
         delete pfapiNewLog;
-        pfapiNewLog = NULL;
+        pfapiNewLog = nullptr;
     }
 
     m_critLGWrite.Leave();
@@ -4095,7 +4095,7 @@ VOID LOG_STREAM::LGIReportLogTruncation(
             2,
             rgszT,
             0,
-            NULL,
+            nullptr,
             m_pinst );
 }
 
@@ -4109,7 +4109,7 @@ VOID LOG_STREAM::LGTruncateLogsAfterRecovery()
     //
     //  UNDONE: what caused the failure???
     //
-    (void)ErrLGGetGenerationRange( SzParam( m_pinst, JET_paramLogFilePath ), &lgenMic, NULL );
+    (void)ErrLGGetGenerationRange( SzParam( m_pinst, JET_paramLogFilePath ), &lgenMic, nullptr );
 
     if ( lgenMic > 0 )
     {
@@ -4132,9 +4132,9 @@ VOID LOG_STREAM::LGTruncateLogsAfterRecovery()
                 LOGGING_RECOVERY_CATEGORY,
                 BACKUP_NO_TRUNCATE_LOG_FILES,
                 0,
-                NULL,
+                nullptr,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
     }
 }
@@ -4165,9 +4165,9 @@ ERR LOG_STREAM::ErrLGTruncateLog(
                 fSnapshot?OS_SNAPSHOT_BACKUP:LOGGING_RECOVERY_CATEGORY,
                 BACKUP_NO_TRUNCATE_LOG_FILES,
                 0,
-                NULL,
+                nullptr,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
     }
 
@@ -4224,7 +4224,7 @@ ERR LOG_STREAM::ErrLGTruncateLog(
                 _countof( rgszT ),
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
 
     }
@@ -4252,7 +4252,7 @@ ERR LOG_STREAM::ErrLGOpenFile( PCWSTR pszPath, BOOL fReadOnly )
     m_critLGWrite.Enter();
 
     delete m_pfapiLog;
-    m_pfapiLog = NULL;
+    m_pfapiLog = nullptr;
 
     ULONG cLogDigits;
     LONG lgen;
@@ -4279,7 +4279,7 @@ VOID LOG_STREAM::LGCloseFile()
     m_critLGWrite.Enter();
 
     delete m_pfapiLog;
-    m_pfapiLog = NULL;
+    m_pfapiLog = nullptr;
 
     m_critLGWrite.Leave();
 }
@@ -4289,11 +4289,11 @@ LOG_STREAM::LGVerifyFileHeaderOnInit()
 {
     //  first lets make sure this version of the log file header is in fact what is written
     //  to m_pfapiLog.
-    LGFILEHDR * plgfilehdrT = (LGFILEHDR *)PvOSMemoryPageAlloc( sizeof(LGFILEHDR), NULL );
+    LGFILEHDR * plgfilehdrT = (LGFILEHDR *)PvOSMemoryPageAlloc( sizeof(LGFILEHDR), nullptr );
     if ( plgfilehdrT )
     {
         const ERR errT = ErrLGReadFileHdr(
-                NULL,
+                nullptr,
                 iorpHeader,
                 plgfilehdrT,
                 fFalse,
@@ -4394,7 +4394,7 @@ ERR LOG_STREAM::ErrLGFlushLogFileBuffers( const IOFLUSHREASON iofr, BOOL * const
     // If we are just in the middle of recovery, ignore the call, i.e. will flush later, otherwise flush the volume
     else if ( m_pLog->FLogDisabledDueToRecoveryFailure() || m_pLog->FLGLogPaused() )
     {
-        IFileAPI *pfapiLog = NULL;
+        IFileAPI *pfapiLog = nullptr;
         LGMakeLogName( eCurrentLog );
         err = CIOFilePerf::ErrFileOpen(
                                     m_pinst->m_pfsapi,

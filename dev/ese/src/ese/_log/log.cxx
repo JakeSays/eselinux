@@ -137,7 +137,7 @@ PERFInstanceDelayedTotal<QWORD, INST, fFalse, fFalse> ibLGTip;
 
 LONG LLGCheckpointDepthCEFLPv( LONG iInstance, VOID *pvBuf )
 {
-    if ( NULL != pvBuf )
+    if ( nullptr != pvBuf )
     {
         const QWORD ibTip           = ibLGTip.Get( iInstance );
         const QWORD ibCheckpoint    = ibLGCheckpoint.Get( iInstance );
@@ -149,7 +149,7 @@ LONG LLGCheckpointDepthCEFLPv( LONG iInstance, VOID *pvBuf )
 
 LONG LLGLogGenerationCheckpointDepthCEFLPv( LONG iInstance, VOID *pvBuf )
 {
-    if ( NULL != pvBuf )
+    if ( nullptr != pvBuf )
     {
         const QWORD cbLogFileSize   = cbLGFileSize.Get( iInstance );
 
@@ -170,7 +170,7 @@ LONG LLGLogGenerationCheckpointDepthCEFLPv( LONG iInstance, VOID *pvBuf )
 
 LONG LLGLogGenerationDatabaseConsistencyDepthCEFLPv( LONG iInstance, VOID *pvBuf )
 {
-    if ( NULL != pvBuf )
+    if ( nullptr != pvBuf )
     {
         const QWORD cbLogFileSize   = cbLGFileSize.Get( iInstance );
 
@@ -192,7 +192,7 @@ LONG LLGLogGenerationDatabaseConsistencyDepthCEFLPv( LONG iInstance, VOID *pvBuf
 PERFInstanceDelayedTotal<QWORD, INST, fFalse, fFalse> cbLGCheckpointDepthMax;
 LONG LLGLogGenerationCheckpointDepthTargetCEFLPv( LONG iInstance, VOID *pvBuf )
 {
-    if ( NULL != pvBuf )
+    if ( nullptr != pvBuf )
     {
         const QWORD cbLogFileSize = cbLGFileSize.Get( iInstance );
 
@@ -211,14 +211,14 @@ LOG::LOG( INST *pinst )
         m_fDisableCheckpoint( fTrue ),
         m_lgenInitial( 1 ),
         m_critShadowLogConsume( CLockBasicInfo( CSyncBasicInfo( szShadowLogConsume ), rankShadowLogConsume, 0 ) ),
-        m_pshadlog( NULL ),
+        m_pshadlog( nullptr ),
         m_fAfterEndAllSessions( fTrue )
 {
-    m_pLogStream = NULL;
-    m_pLogReadBuffer = NULL;
-    m_pLogWriteBuffer = NULL;
-    m_pctablehash = NULL;
-    m_pcsessionhash = NULL;
+    m_pLogStream = nullptr;
+    m_pLogReadBuffer = nullptr;
+    m_pLogWriteBuffer = nullptr;
+    m_pctablehash = nullptr;
+    m_pcsessionhash = nullptr;
     PERFOpt( ibLGCheckpoint.Clear( m_pinst ) );
     PERFOpt( ibLGDbConsistency.Clear( m_pinst ) );
     PERFOpt( cbLGCheckpointDepthMax.Clear( m_pinst ) );
@@ -284,7 +284,7 @@ VOID LOG::LGReportError( const MessageId msgid, const ERR err, const WCHAR* cons
                         _countof( rgpsz ),
                         rgpsz,
                         0,
-                        NULL,
+                        nullptr,
                         m_pinst );
 }
 
@@ -396,8 +396,8 @@ ERR LOG::ErrLGInit( BOOL *pfNewCheckpointFile )
 
     //  Initialize trace mechanism
 
-    m_pttFirst = NULL;
-    m_pttLast = NULL;
+    m_pttFirst = nullptr;
+    m_pttLast = nullptr;
 
     // SOFT_HARD: leave, not important
     Assert( m_fHardRestore || m_pLogStream->LogExt() == NULL );
@@ -674,7 +674,7 @@ ERR LOG::ErrLGLogRec(   const DATA* const           rgdata,
     //
     while ( ( err = ErrLGTryLogRec( rgdata, cdata, fLGFlags, lgenBegin0, plgposLogRec ) ) == errLGNotSynchronous )
     {
-        if ( NULL != pcrit )
+        if ( nullptr != pcrit )
             pcrit->Leave();
 
         m_pLogWriteBuffer->WriteToClearSpace();
@@ -692,7 +692,7 @@ ERR LOG::ErrLGLogRec(   const DATA* const           rgdata,
             g_fStallFirewallFired = fTrue;
         }
 
-        if ( NULL != pcrit )
+        if ( nullptr != pcrit )
             pcrit->Enter();
     }
 
@@ -719,16 +719,16 @@ ERR LOG::ErrLGTryLogRec(    const DATA* const   rgdata,
                 if ( err >= JET_errSuccess )
                 {
                     m_pttFirst = ptt->pttNext;
-                    if ( m_pttFirst == NULL )
+                    if ( m_pttFirst == nullptr )
                     {
                         Assert( m_pttLast == ptt );
-                        m_pttLast = NULL;
+                        m_pttLast = nullptr;
                     }
                     OSMemoryHeapFree( ptt );
                 }
             }
             m_critLGTrace.Leave();
-        } while ( m_pttFirst != NULL && err == JET_errSuccess );
+        } while ( m_pttFirst != nullptr && err == JET_errSuccess );
 
         if ( err != JET_errSuccess )
             return err;
@@ -824,10 +824,10 @@ ERR LOG::ErrLGITrace(
         AllocR( ptt = (TEMPTRACE *) PvOSMemoryHeapAlloc( sizeof( TEMPTRACE ) + strlen(sz) + 1 ) );
         UtilMemCpy( ptt->szData, sz, strlen(sz) + 1 );
         ptt->ppib = ppib;
-        ptt->pttNext = NULL;
+        ptt->pttNext = nullptr;
 
         m_critLGTrace.Enter();
-        if ( m_pttLast != NULL )
+        if ( m_pttLast != nullptr )
             m_pttLast->pttNext = ptt;
         else
             m_pttFirst = ptt;
@@ -1100,7 +1100,7 @@ ERR ErrLGICheckVersionCompatibility( const INST * const pinst, const LGFILEHDR* 
                     _countof( rgszT ),
                     rgszT,
                     0,
-                    NULL,
+                    nullptr,
                     pinst );
         }
         else
@@ -1137,7 +1137,7 @@ ERR ErrLGICheckVersionCompatibility( const INST * const pinst, const LGFILEHDR* 
                     _countof( rgszT ),
                     rgszT,
                     0,
-                    NULL,
+                    nullptr,
                     pinst );
         }
 
@@ -1146,7 +1146,7 @@ ERR ErrLGICheckVersionCompatibility( const INST * const pinst, const LGFILEHDR* 
 
     //  Evaluate the allowed/desired version.
 
-    const FormatVersions * pfmtversAllowed = NULL;
+    const FormatVersions * pfmtversAllowed = nullptr;
     JET_ENGINEFORMATVERSION efvUser = pinst ?
                                         (JET_ENGINEFORMATVERSION)UlParam( pinst, JET_paramEngineFormatVersion ) :
                                         EfvMaxSupported();
@@ -1164,7 +1164,7 @@ ERR ErrLGICheckVersionCompatibility( const INST * const pinst, const LGFILEHDR* 
             //  if we fail, we'll just try to lookup EfvMaxSupported(),  but with NULL for pinst to side step
             //  the staging.
             FireWall( OSFormat( "GetHighestLgMajorFailedVer:%lu.%lu.%lu", (ULONG)lgv.ulLGVersionMajor, (ULONG)lgv.ulLGVersionUpdateMajor, (ULONG)lgv.ulLGVersionUpdateMinor ) );
-            CallS( ErrGetDesiredVersion( NULL, efvUser, &pfmtversAllowed ) );
+            CallS( ErrGetDesiredVersion( nullptr, efvUser, &pfmtversAllowed ) );
         }
     }
 
@@ -1174,7 +1174,7 @@ ERR ErrLGICheckVersionCompatibility( const INST * const pinst, const LGFILEHDR* 
         efvUser = efvUser & ~JET_efvAllowHigherPersistedFormat;
     }
 
-    if ( pfmtversAllowed == NULL )
+    if ( pfmtversAllowed == nullptr )
     {
         CallS( ErrGetDesiredVersion( pinst, efvUser, &pfmtversAllowed ) );
         if ( CmpLgVer( LgvFromLgfilehdr( plgfilehdr ), PfmtversEngineMax()->lgv ) > 0 )
@@ -1209,11 +1209,11 @@ ERR ErrLGICheckVersionCompatibility( const INST * const pinst, const LGFILEHDR* 
                 _countof( rgszT ),
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 pinst );
 
         
-        if( pinst == NULL )
+        if( pinst == nullptr )
         {
             FireWall( "CheckingLogVerWithoutInst" ); // is this even possible
             err = JET_errSuccess;   // should already be true
@@ -1307,7 +1307,7 @@ ERR ErrSetUserDbHeaderInfos(
     Assert( ppdbinfomisc );
 
     JET_DBINFOMISC7 * const pdbinfomisc = new JET_DBINFOMISC7[ dbidMax ];
-    if( 0 == pdbinfomisc )
+    if( nullptr == pdbinfomisc )
     {
         return ErrERRCheck( JET_errOutOfMemory );
     }
@@ -1351,19 +1351,19 @@ VOID CleanupRecoveryControl(
     {
         precctrl->OpenLog.cdbinfomisc = 0;
         delete[] precctrl->OpenLog.rgdbinfomisc;
-        precctrl->OpenLog.rgdbinfomisc = NULL;
+        precctrl->OpenLog.rgdbinfomisc = nullptr;
     }
     else if ( snt == JET_sntMissingLog )
     {
         precctrl->MissingLog.cdbinfomisc = 0;
         delete[] precctrl->MissingLog.rgdbinfomisc;
-        precctrl->MissingLog.rgdbinfomisc = NULL;
+        precctrl->MissingLog.rgdbinfomisc = nullptr;
     }
     else if ( snt == JET_sntBeginUndo )
     {
         precctrl->BeginUndo.cdbinfomisc = 0;
         delete[] precctrl->BeginUndo.rgdbinfomisc;
-        precctrl->BeginUndo.rgdbinfomisc = NULL;
+        precctrl->BeginUndo.rgdbinfomisc = nullptr;
     }
 }
 
@@ -1373,7 +1373,7 @@ ERR LOG::ErrLGISetQuitWithoutUndo( const ERR errBeginUndo )
     if ( errBeginUndo == JET_errRecoveredWithoutUndo )
     {
         m_errBeginUndo = errBeginUndo;
-        (void)m_pLogStream->ErrLGGetGenerationRange( m_wszLogCurrent, NULL, &m_lgenHighestAtEndOfRedo );
+        (void)m_pLogStream->ErrLGGetGenerationRange( m_wszLogCurrent, nullptr, &m_lgenHighestAtEndOfRedo );
         m_fCurrentGenExistsAtEndOfRedo = m_pLogStream->FCurrentLogExists();
     }
 #endif
@@ -1382,7 +1382,7 @@ ERR LOG::ErrLGISetQuitWithoutUndo( const ERR errBeginUndo )
 
 ERR LOG::ErrLGIBeginUndoCallback_( _In_ const CHAR * szFile, const ULONG lLine )
 {
-    const ERR err = ErrLGRecoveryControlCallback( m_pinst, NULL, NULL, JET_sntBeginUndo, JET_errSuccess, 0, fFalse, 0, szFile, lLine );
+    const ERR err = ErrLGRecoveryControlCallback( m_pinst, nullptr, nullptr, JET_sntBeginUndo, JET_errSuccess, 0, fFalse, 0, szFile, lLine );
     return ErrLGISetQuitWithoutUndo( err );
 }
 
@@ -1392,7 +1392,7 @@ BOOL LOG::FLGILgenHighAtRedoStillHolds()
     if ( m_errBeginUndo == JET_errRecoveredWithoutUndo )
     {
         LONG lgenHighCurrent;
-        (void)m_pLogStream->ErrLGGetGenerationRange( m_wszLogCurrent, NULL, &lgenHighCurrent );
+        (void)m_pLogStream->ErrLGGetGenerationRange( m_wszLogCurrent, nullptr, &lgenHighCurrent );
         const BOOL fCurrentLogExists = m_pLogStream->FCurrentLogExists();
 
         // validate
@@ -1469,7 +1469,7 @@ ERR ErrLGRecoveryControlCallback(
 
         case JET_sntOpenCheckpoint:
             recctrl.OpenCheckpoint.cbStruct = sizeof( recctrl.OpenCheckpoint );
-            recctrl.OpenCheckpoint.wszCheckpoint = NULL;
+            recctrl.OpenCheckpoint.wszCheckpoint = nullptr;
             break;
 
         case JET_sntMissingLog:
@@ -1559,7 +1559,7 @@ ERR ErrLGRecoveryControlCallback(
                 _countof(rgsz),
                 rgsz,
                 0,
-                NULL,
+                nullptr,
                 pinst );
     }
 
@@ -1605,7 +1605,7 @@ HandleError:
 
 ERR ErrLGDbAttachedCallback_( INST *pinst, FMP *pfmp, const CHAR *szFile, const LONG lLine )
 {
-    const ERR err = ErrLGRecoveryControlCallback( pinst, pfmp, NULL, JET_sntAttachedDb, JET_errSuccess, 0, fFalse, 0, szFile, lLine );
+    const ERR err = ErrLGRecoveryControlCallback( pinst, pfmp, nullptr, JET_sntAttachedDb, JET_errSuccess, 0, fFalse, 0, szFile, lLine );
 
     // reset backup context's suspended flag when ErrLGDbAttachedCallback is fired to allow future backups.
     if ( BoolParam( pinst, JET_paramFlight_EnableBackupDuringRecovery ) )
@@ -1620,7 +1620,7 @@ ERR ErrLGDbAttachedCallback_( INST *pinst, FMP *pfmp, const CHAR *szFile, const 
 
 ERR ErrLGDbDetachingCallback_( INST *pinst, FMP *pfmp, const CHAR *szFile, const LONG lLine )
 {
-    const ERR err = ErrLGRecoveryControlCallback( pinst, pfmp, NULL, JET_sntDetachingDb, JET_errSuccess, 0, fFalse, 0, szFile, lLine );
+    const ERR err = ErrLGRecoveryControlCallback( pinst, pfmp, nullptr, JET_sntDetachingDb, JET_errSuccess, 0, fFalse, 0, szFile, lLine );
 
     // suspend backup context when ErrLGDbDetachingCallback is fired, and wait for client to close it up.
     if ( BoolParam( pinst, JET_paramFlight_EnableBackupDuringRecovery ) )
@@ -1665,7 +1665,7 @@ ERR ErrLGDbDetachingCallback_( INST *pinst, FMP *pfmp, const CHAR *szFile, const
                 csz,
                 rgszT,
                 0,
-                NULL,
+                nullptr,
                 pinst );
         }
 
@@ -2258,7 +2258,7 @@ ERR LOG::ErrLGLockCheckpointAndUpdateGenRequired( const LONG lGenCommitted, cons
                         0,  //  do not update gen min consistent
                         lGenCommitted, // logs committed
                         logtimeGenMaxCreate,
-                        NULL );
+                        nullptr );
     m_critCheckpoint.Leave();
     //}
 
@@ -2298,7 +2298,7 @@ LOG::LGLoadAttachmentsFromFMP(
         pfmpT->RwlDetaching().EnterAsReader();
         // Assert( lgenNewFile >= pfmpT->LgposDetach().lGeneration );
         if ( pfmpT->FLogOn() &&
-             NULL != pfmpT->Pdbfilehdr() &&
+             nullptr != pfmpT->Pdbfilehdr() &&
              ( ( !fUsePatchchk &&
                  0 != CmpLgpos( lgposMin, pfmpT->LgposAttach() ) &&
                  CmpLgpos( lgposNext, pfmpT->LgposAttach() ) > 0 &&
@@ -2409,7 +2409,7 @@ LOG::LGLoadAttachmentsFromFMP(
 ERR LOG::ErrLGLoadFMPFromAttachments( BYTE *pbAttach )
 {
     ERR                             err             = JET_errSuccess;
-    const ATTACHINFO                *pattachinfo    = NULL;
+    const ATTACHINFO                *pattachinfo    = nullptr;
     const BYTE                      *pbT;
 
     for ( pbT = pbAttach; 0 != *pbT; pbT += sizeof(ATTACHINFO) + pattachinfo->CbNames() )
@@ -2459,14 +2459,14 @@ void LOG::LGISetInitialGen( _In_ const LONG lgenStart )
 ERR LOG::ErrLGICheckpointInit( BOOL *pfGlobalNewCheckpointFile )
 {
     ERR         err;
-    IFileAPI *  pfapiCheckpoint = NULL;
+    IFileAPI *  pfapiCheckpoint = nullptr;
     WCHAR   wszPathJetChkLog[IFileSystemAPI::cchPathMax];
     PCWSTR  wszChkExt = WszLGGetDefaultExt( fTrue );
 
     *pfGlobalNewCheckpointFile = fFalse;
 
     Assert( m_pcheckpoint == NULL );
-    Alloc( m_pcheckpoint = (CHECKPOINT *)PvOSMemoryPageAlloc( sizeof(CHECKPOINT), NULL ) );
+    Alloc( m_pcheckpoint = (CHECKPOINT *)PvOSMemoryPageAlloc( sizeof(CHECKPOINT), nullptr ) );
 
     //  Initialize. Used by perfmon counters
     m_pcheckpoint->checkpoint.le_lgposCheckpoint = lgposMin;
@@ -2488,7 +2488,7 @@ TryAnotherExtension:
                             &pfapiCheckpoint );
     if ( err == JET_errFileNotFound )
     {
-        if ( m_pLogStream->LogExt() == NULL && FLGIsDefaultExt( fTrue, wszChkExt ) )
+        if ( m_pLogStream->LogExt() == nullptr && FLGIsDefaultExt( fTrue, wszChkExt ) )
         {
             wszChkExt = WszLGGetOtherExt( fTrue );
             goto TryAnotherExtension;
@@ -2500,7 +2500,7 @@ TryAnotherExtension:
         Call( err );
 
         // Success, if we haven't settled on a log ext yet, settle it now.
-        if ( m_pLogStream->LogExt() == NULL )
+        if ( m_pLogStream->LogExt() == nullptr )
         {
             // SOFT_HARD: leave, not important
             Assert( !m_fHardRestore );
@@ -2508,7 +2508,7 @@ TryAnotherExtension:
             m_pLogStream->LGSetLogExt( FLGIsLegacyExt( fTrue, wszChkExt ), fFalse);
         }
         delete pfapiCheckpoint;
-        pfapiCheckpoint = NULL;
+        pfapiCheckpoint = nullptr;
     }
 
     m_fDisableCheckpoint = fFalse;
@@ -2517,10 +2517,10 @@ TryAnotherExtension:
 HandleError:
     if ( err < 0 )
     {
-        if ( m_pcheckpoint != NULL )
+        if ( m_pcheckpoint != nullptr )
         {
             OSMemoryPageFree( m_pcheckpoint );
-            m_pcheckpoint = NULL;
+            m_pcheckpoint = nullptr;
         }
     }
 
@@ -2536,10 +2536,10 @@ VOID LOG::LGICheckpointTerm( VOID )
 
     Assert( m_fDisableCheckpoint );
 
-    if ( m_pcheckpoint != NULL )
+    if ( m_pcheckpoint != nullptr )
     {
         OSMemoryPageFree( m_pcheckpoint );
-        m_pcheckpoint = NULL;
+        m_pcheckpoint = nullptr;
     }
 
     m_critCheckpoint.Leave();
@@ -2555,7 +2555,7 @@ ERR LOG::ErrLGReadCheckpoint( _In_ PCWSTR wszCheckpointFile, CHECKPOINT *pcheckp
     ERR     err;
     BOOL    fReadRealCheckpoint = fFalse;
 
-    if ( pcheckpoint == NULL )
+    if ( pcheckpoint == nullptr )
     {
         fReadRealCheckpoint = fTrue;
         pcheckpoint = m_pcheckpoint;
@@ -2773,7 +2773,7 @@ VOID LOG::LGIUpdateCheckpoint( CHECKPOINT *pcheckpoint )
     //  find the oldest transaction with an uncommitted update
     //
     m_pinst->m_critPIB.Enter();
-    for ( ppibT = m_pinst->m_ppibGlobal; ppibT != NULL; ppibT = ppibT->ppibNext )
+    for ( ppibT = m_pinst->m_ppibGlobal; ppibT != nullptr; ppibT = ppibT->ppibNext )
     {
         //  verify that the PIB is active, but in truth, it should
         //  be impossible to be inactive (because it would have
@@ -2853,7 +2853,7 @@ VOID LOG::LGIUpdateCheckpoint( CHECKPOINT *pcheckpoint )
                             _countof( rgpwsz ),
                             rgpwsz,
                             0,
-                            NULL,
+                            nullptr,
                             m_pinst );
                 }
             }
@@ -2962,7 +2962,7 @@ VOID LOG::LGIUpdateCheckpoint( CHECKPOINT *pcheckpoint )
 
             CFlushMap* const pfm = pfmp->PFlushMap();
             LGPOS lgposFmMinRequiredT = lgposMin;
-            if ( ( pfm != NULL ) && pfm->FRecoverable() )
+            if ( ( pfm != nullptr ) && pfm->FRecoverable() )
             {
                 lgposFmMinRequiredT.lGeneration = pfm->LGetFmGenMinRequired();
             }
@@ -3029,7 +3029,7 @@ VOID LOG::LGIUpdateCheckpoint( CHECKPOINT *pcheckpoint )
             FMP* const pfmp = &g_rgfmp[ifmp];
             CFlushMap* const pfm = pfmp->PFlushMap();
             LGPOS lgposFmMinRequired = lgposMin;
-            if ( ( pfm != NULL ) && pfm->FRecoverable() )
+            if ( ( pfm != nullptr ) && pfm->FRecoverable() )
             {
                 lgposFmMinRequired.lGeneration = pfm->LGetFmGenMinRequired();
                 lgposFmMinRequired.isec = (USHORT)m_pLogStream->CSecHeader();
@@ -3206,9 +3206,9 @@ ERR LOG::ErrLGIUpdateCheckpointFile( const BOOL fForceUpdate, CHECKPOINT * pchec
 
     Assert( m_critCheckpoint.FOwner() );
 
-    if ( NULL == pcheckpointT )
+    if ( nullptr == pcheckpointT )
     {
-        AllocR( pcheckpointT = (CHECKPOINT *)PvOSMemoryPageAlloc(  sizeof( CHECKPOINT ), NULL ) );
+        AllocR( pcheckpointT = (CHECKPOINT *)PvOSMemoryPageAlloc(  sizeof( CHECKPOINT ), nullptr ) );
         fCheckpointTAlloc = fTrue;
     }
 
@@ -3365,7 +3365,7 @@ ERR LOG::ErrLGUpdateCheckpointFile( const BOOL fForceUpdate )
     ERR             err             = JET_errSuccess;
     CHECKPOINT *    pcheckpointT;
     
-    AllocR( pcheckpointT = (CHECKPOINT *)PvOSMemoryPageAlloc(  sizeof( CHECKPOINT ), NULL ) );
+    AllocR( pcheckpointT = (CHECKPOINT *)PvOSMemoryPageAlloc(  sizeof( CHECKPOINT ), nullptr ) );
 
     m_critCheckpoint.Enter();
 
@@ -3623,12 +3623,12 @@ ULONG LOG::CSecLGHeader() const
 
 VOID LOG::LGWriteTip( LGPOS *plgpos )
 {
-    LGWriteAndFlushTip( plgpos, NULL );
+    LGWriteAndFlushTip( plgpos, nullptr );
 }
 
 VOID LOG::LGFlushTip( LGPOS *plgpos )
 {
-    LGWriteAndFlushTip( NULL, plgpos );
+    LGWriteAndFlushTip( nullptr, plgpos );
 }
 
 VOID LOG::LGWriteAndFlushTip( LGPOS *plgposWrite, LGPOS *plgposFlush )
@@ -3982,7 +3982,7 @@ VOID LOG::ResetCheckpoint( SIGNATURE *psignlog )
     PERFOpt( ibLGCheckpoint.Set( m_pinst, m_pLogStream->CbOffsetLgpos( m_pcheckpoint->checkpoint.le_lgposCheckpoint, lgposMin ) ) );
     PERFOpt( ibLGDbConsistency.Set( m_pinst, m_pLogStream->CbOffsetLgpos( m_pcheckpoint->checkpoint.le_lgposDbConsistency, lgposMin ) ) );
 
-    if ( psignlog != NULL )
+    if ( psignlog != nullptr )
     {
         m_pcheckpoint->checkpoint.signLog = *psignlog;
     }
@@ -3994,7 +3994,7 @@ ERR LOG::ErrLGSetSignLog(
 {
     ERR err = JET_errSuccess;
 
-    if ( psignLog == NULL )
+    if ( psignLog == nullptr )
     {
         m_fSignLogSet = fFalse;
     }
@@ -4053,7 +4053,7 @@ ERR LOG::ErrLGVerifyFileSize( QWORD qwFileSize )
         // enforce. Set the size using the current log file on the user's behalf
 
         qwSystemFileSize = qwFileSize;
-        Call( Param( m_pinst, JET_paramLogFileSize )->Set( m_pinst, ppibNil, LONG( qwFileSize / 1024 ), NULL ) );
+        Call( Param( m_pinst, JET_paramLogFileSize )->Set( m_pinst, ppibNil, LONG( qwFileSize / 1024 ), nullptr ) );
     }
     if ( qwFileSize != qwSystemFileSize )
     {

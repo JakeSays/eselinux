@@ -111,9 +111,9 @@ class CFlushMap
             public:
                 // Constructors/destructors.
                 FlushMapPageDescriptor( const FMPGNO fmpgnoT ) :
-                    pv( NULL ),
-                    pvWriteBuffer( NULL ),
-                    rgbitRuntime( NULL ),
+                    pv( nullptr ),
+                    pvWriteBuffer( nullptr ),
+                    rgbitRuntime( nullptr ),
                     dbtimeMax( dbtimeNil ),
                     fFlags( 0 ),
                     sxwl( CLockBasicInfo( CSyncBasicInfo( "FlushMapPageDescriptor::sxwl" ), rankFlushMapAccess, IGetPageLockSubrank_( fmpgnoT ) ) ),
@@ -410,8 +410,8 @@ class CFlushMap
             void* const pv,
             const FMPGNO fmpgno,
             const BOOL fCorrectError = fTrue,
-            XECHECKSUM* const pchecksumPersisted = NULL,
-            XECHECKSUM* const pchecksumCalculated = NULL );
+            XECHECKSUM* const pchecksumPersisted = nullptr,
+            XECHECKSUM* const pchecksumCalculated = nullptr );
         CFMPG CfmpgGetRequiredFmDataPageCount_( const PGNO pgnoReq );
         CFMPG CfmpgGetPreferredFmDataPageCount_( const PGNO pgnoReq );
         QWORD CbGetRequiredFmFileSize_( const CFMPG cfmpgDataNeeded );
@@ -783,8 +783,8 @@ class CFlushMapForDump : public CFlushMap
 
     public:
         // Static helpers.
-        static ERR ErrChecksumFlushMapFile( _In_ INST* const pinst, _In_ const WCHAR* const wszFmFilePath, __in_opt IFileSystemConfiguration* pfsconfig = NULL );
-        static ERR ErrDumpFlushMapPage( _In_ INST* const pinst, _In_ const WCHAR* const wszFmFilePath, _In_ const FMPGNO fmpgno, _In_ const BOOL fDumpFlushStates, __in_opt IFileSystemConfiguration* pfsconfig = NULL );
+        static ERR ErrChecksumFlushMapFile( _In_ INST* const pinst, _In_ const WCHAR* const wszFmFilePath, __in_opt IFileSystemConfiguration* pfsconfig = nullptr );
+        static ERR ErrDumpFlushMapPage( _In_ INST* const pinst, _In_ const WCHAR* const wszFmFilePath, _In_ const FMPGNO fmpgno, _In_ const BOOL fDumpFlushStates, __in_opt IFileSystemConfiguration* pfsconfig = nullptr );
 
 
     public:

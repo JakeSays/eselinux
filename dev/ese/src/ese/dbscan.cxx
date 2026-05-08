@@ -889,7 +889,7 @@ public:
     virtual INT CSecMax()           { return m_csecMax; }
     virtual INT CSecMinScanTime()   { return 0; }
     virtual DWORD DwThrottleSleep() { return m_dwThrottleSleep; }
-    virtual INST * Pinst()          { return NULL; }
+    virtual INST * Pinst()          { return nullptr; }
 
 private:
     const INT       m_csecMax;
@@ -1214,7 +1214,7 @@ ERR MSysDBM::ErrDumpTable( const IFMP ifmp )
     INST * const pinst = PinstFromIfmp( ifmp );
     const wchar_t * const wszDatabase = g_rgfmp[ifmp].WszDatabaseName();
     
-    IDataStore * ptableStore = NULL;
+    IDataStore * ptableStore = nullptr;
     
     err = TableDataStoreFactory::ErrOpenExisting( pinst, wszDatabase, szMSysDBM, &ptableStore );
     if ( JET_errObjectNotFound == err )
@@ -1303,7 +1303,7 @@ ERR DBMScanFactory::ErrPdbmScanCreate_( const IFMP ifmp, _Out_ IDBMScan ** pdbms
 {
     ERR err = JET_errSuccess;
     
-    *pdbmscan = NULL;
+    *pdbmscan = nullptr;
     
     INST * const pinst = PinstFromIfmp( ifmp );
     FMP * const pfmp = g_rgfmp+ifmp;
@@ -1392,7 +1392,7 @@ ERR DBMScanFactory::ErrPdbmScanCreateSingleScan(
 {
     ERR err = JET_errSuccess;
     
-    *pdbmscan = NULL;
+    *pdbmscan = nullptr;
     
     INST * const pinst = PinstFromIfmp( ifmp );
     FMP * const pfmp = g_rgfmp+ifmp;
@@ -1474,7 +1474,7 @@ HandleError:
 // Create a scan object for automatic scan (i.e. a scan not started by JetDatabaseScan, or started by JetDatabaseScan with JET_bitDatabaseScanBatchStartContinuous)
 ERR DBMScanFactory::ErrPdbmScanCreate( const IFMP ifmp, _Out_ IDBMScan ** pdbmscan )
 {
-    *pdbmscan = NULL;
+    *pdbmscan = nullptr;
     if ( PinstFromIfmp( ifmp )->FRecovering() )
     {
         return ErrPdbmScanCreateForRecovery_( ifmp, pdbmscan );
@@ -1622,7 +1622,7 @@ DBMScanReader::DBMScanReader( const IFMP ifmp ) :
     m_ifmp( ifmp ),
     m_pgnoLastPreread( 0 ),
     m_cpgLastPreread( 0 ),
-    m_pvPages( NULL ),
+    m_pvPages( nullptr ),
     m_fPagesReRead( fFalse ),
     m_objidMSysObjids( objidNil )
 {
@@ -1638,10 +1638,10 @@ DBMScanReader::~DBMScanReader()
     }
 #endif // DEBUG
 
-    if ( m_pvPages != NULL )
+    if ( m_pvPages != nullptr )
     {
         OSMemoryPageFree( m_pvPages );
-        m_pvPages = NULL;
+        m_pvPages = nullptr;
     }
 }
 
@@ -1649,7 +1649,7 @@ ERR
 DBMScanReader::InitDBMScanReader()
 {
     ERR err = JET_errSuccess;
-    Alloc( m_pvPages = ( BYTE * )PvOSMemoryPageAlloc( g_cbPage * cpgPrereadMax, NULL ) );
+    Alloc( m_pvPages = ( BYTE * )PvOSMemoryPageAlloc( g_cbPage * cpgPrereadMax, nullptr ) );
 
 HandleError:
     return err;
@@ -1676,7 +1676,7 @@ void DBMScanReader::PrereadPages( const PGNO pgnoFirst, const CPG cpg )
 
     TraceContextScope tcScope( iortDbScan );
     tcScope->nParentObjectClass = tceNone;
-    BFPrereadPageRange( m_ifmp, pgnoFirst, cpg, NULL, m_rgfPageAlreadyCached, bfprfDefault | bfprfDBScan, BfpriBackgroundRead( m_ifmp, ppibNil ), *tcScope );
+    BFPrereadPageRange( m_ifmp, pgnoFirst, cpg, nullptr, m_rgfPageAlreadyCached, bfprfDefault | bfprfDBScan, BfpriBackgroundRead( m_ifmp, ppibNil ), *tcScope );
     g_rgfmp[m_ifmp].UpdatePgnoPreReadScanMax( pgnoFirst + cpg - 1 );
 
     INT cpgRun = 0;
@@ -1730,9 +1730,9 @@ VOID DBMScanFormatOpticalTime_( const __int64 ft, __out_ecount( cchLastFullCompl
 CDBMScanFollower::CDBMScanFollower()
 {
     m_pgnoHighestContigCompleted = pgnoNull;
-    m_pstate = NULL;
-    m_pscanobsFileCheck = NULL;
-    m_pscanobsLgriEvents = NULL;
+    m_pstate = nullptr;
+    m_pscanobsFileCheck = nullptr;
+    m_pscanobsLgriEvents = nullptr;
 }
 
 CDBMScanFollower::~CDBMScanFollower()
@@ -1746,10 +1746,10 @@ CDBMScanFollower::~CDBMScanFollower()
 ERR CDBMScanFollower::ErrRegisterFollower( FMP * const pfmp, const PGNO pgnoStart )
 {
     ERR                         err = JET_errSuccess;
-    DBMScanObserver *           pscanobsPerfmon = NULL;
-    DBMScanObserver *           pscanobsLgriEvents = NULL;
-    DBMScanObserver *           pscanobsFileCheck = NULL;
-    IDBMScanState *             pstate = NULL;
+    DBMScanObserver *           pscanobsPerfmon = nullptr;
+    DBMScanObserver *           pscanobsLgriEvents = nullptr;
+    DBMScanObserver *           pscanobsFileCheck = nullptr;
+    IDBMScanState *             pstate = nullptr;
 
     if ( m_pstate )
     {
@@ -1774,13 +1774,13 @@ ERR CDBMScanFollower::ErrRegisterFollower( FMP * const pfmp, const PGNO pgnoStar
     }
 
     m_pstate = pstate;
-    pstate = NULL;
+    pstate = nullptr;
     m_pscanobsFileCheck = pscanobsFileCheck;
-    pscanobsFileCheck = NULL;
+    pscanobsFileCheck = nullptr;
     m_pscanobsLgriEvents = pscanobsLgriEvents;
-    pscanobsLgriEvents = NULL;
+    pscanobsLgriEvents = nullptr;
     m_pscanobsPerfmon = pscanobsPerfmon;
-    pscanobsPerfmon = NULL;
+    pscanobsPerfmon = nullptr;
 
     //  Must initialize m_pgnoHighestContigCompleted to allow our tracking of the current progress towards
     //  a complete DBScan pass
@@ -1839,7 +1839,7 @@ ERR CDBMScanFollower::ErrRegisterFollower( FMP * const pfmp, const PGNO pgnoStar
 
             const WCHAR* rgwsz[] = { pfmp->WszDatabaseName(), wszCpgSkipped, wszCpgPctFile, wszPgnoLast, wszPgnoStart };
             UtilReportEvent( eventInformation, ONLINE_DEFRAG_CATEGORY,
-                SCAN_CHECKSUM_RESUME_SKIPPED_PAGES_ID, _countof( rgwsz ), rgwsz, 0, NULL, pfmp->Pinst() );
+                SCAN_CHECKSUM_RESUME_SKIPPED_PAGES_ID, _countof( rgwsz ), rgwsz, 0, nullptr, pfmp->Pinst() );
         }
         m_pstate->ResumedPass();
         m_pscanobsLgriEvents->ResumedPass( m_pstate );
@@ -1886,7 +1886,7 @@ VOID CDBMScanFollower::DeRegisterFollower( const FMP * const pfmp, const DBMScan
                 DBMScanFormatOpticalTime_( m_pstate->FtPrevPassCompletionTime(), wszLastFullCompletionTime, _countof( wszLastFullCompletionTime ) );
                 const WCHAR* rgwsz[] = { pfmp->WszDatabaseName(), wszLastFullCompletionTime };
                 UtilReportEvent( eventInformation, ONLINE_DEFRAG_CATEGORY,
-                    SCAN_CHECKSUM_INCOMPLETE_PASS_FINISHED_ID, _countof( rgwsz ), rgwsz, 0, NULL, pfmp->Pinst() );
+                    SCAN_CHECKSUM_INCOMPLETE_PASS_FINISHED_ID, _countof( rgwsz ), rgwsz, 0, nullptr, pfmp->Pinst() );
 
                 //  Not technically accurate but leaves the pass variable at the suspended 
                 //  value of 1, which is more interesting.
@@ -1917,26 +1917,26 @@ VOID CDBMScanFollower::DeRegisterFollower( const FMP * const pfmp, const DBMScan
     }
 
     delete m_pscanobsPerfmon;
-    m_pscanobsPerfmon = NULL;
+    m_pscanobsPerfmon = nullptr;
 
     delete m_pscanobsLgriEvents;
-    m_pscanobsLgriEvents = NULL;
+    m_pscanobsLgriEvents = nullptr;
 
     delete m_pscanobsFileCheck;
-    m_pscanobsFileCheck = NULL;
+    m_pscanobsFileCheck = nullptr;
 
 #ifdef ENABLE_JET_UNIT_TEST
     //  m_pstate setup by test hook, don't free
 #else
     delete m_pstate;
 #endif
-    m_pstate = NULL;
+    m_pstate = nullptr;
 }
 
 BOOL CDBMScanFollower::FStopped() const
 {
     //  If we don't have any m_pstate, we're either not started or stopped.
-    return m_pstate == NULL;
+    return m_pstate == nullptr;
 }
 
 VOID CDBMScanFollower::CompletePage( const PGNO pgno, const BOOL fBadPage )
@@ -1958,7 +1958,7 @@ VOID CDBMScanFollower::CompletePage( const PGNO pgno, const BOOL fBadPage )
     Assert( m_pstate->PgnoHighestChecked() >= pgno );
 
     //  Log an event if we are taking too long in this scan
-    m_pscanobsLgriEvents->ReadPage( m_pstate, pgno, NULL );
+    m_pscanobsLgriEvents->ReadPage( m_pstate, pgno, nullptr );
 
     // We will only update state if we incremented by 1 page, meaning we have continuously covered
     // every page.  This has some ramifications, the most significant is, if redo (i.e. repl) crashes, 
@@ -1971,7 +1971,7 @@ VOID CDBMScanFollower::CompletePage( const PGNO pgno, const BOOL fBadPage )
 
     Assert( m_pstate->PgnoContinuousHighWatermark() == m_pgnoHighestContigCompleted );
 
-    m_pscanobsPerfmon->ReadPage( m_pstate, pgno, NULL );
+    m_pscanobsPerfmon->ReadPage( m_pstate, pgno, nullptr );
 
     if ( fBadPage )
     {
@@ -2051,7 +2051,7 @@ ERR DBMScanReader::ErrReadPage( const PGNO pgno, PIB* const ppib, DBMObjectCache
     // If we aren't aware of the objid of MsysObjids we will compute it before we latch the page to avoid deadlocking.
     if ( m_objidMSysObjids == objidNil && !PinstFromIfmp( m_ifmp )->FRecovering() )
     {
-        Call( ErrCATSeekTable( ppib, m_ifmp, szMSObjids, NULL, &m_objidMSysObjids ) );
+        Call( ErrCATSeekTable( ppib, m_ifmp, szMSObjids, nullptr, &m_objidMSysObjids ) );
         Assert( m_objidMSysObjids != objidNil );
     }
 
@@ -2597,7 +2597,7 @@ void DBMScanObserverCallback::FinishedPass_( const IDBMScanState * const pstate 
 
     CPG cpgPass = pstate->CpgScannedPrevPass();
     
-    ( *m_pfnCallback )( m_sesid, m_dbid, JET_tableidNil, JET_cbtypScanCompleted, &csecPass, &cpgPass, NULL, 0 );
+    ( *m_pfnCallback )( m_sesid, m_dbid, JET_tableidNil, JET_cbtypScanCompleted, &csecPass, &cpgPass, nullptr, 0 );
 }
 
 //  ================================================================
@@ -2643,7 +2643,7 @@ void DBMScanObserverFileCheck::StartedPass_( const IDBMScanState * const )
             _countof( rgwsz ),
             rgwsz,
             0,
-            NULL,
+            nullptr,
             PinstFromIfmp( m_ifmp ) );
         
         OSUHAEmitFailureTag( PinstFromIfmp( m_ifmp ), HaDbFailureTagAlertOnly, L"56b7d404-da5c-4065-8104-9a1449cd1ce5" );
@@ -2703,7 +2703,7 @@ void DBMScanObserverEvents::StartedPass_( const IDBMScanState * const pstate )
         _countof( rgwsz ),
         rgwsz,
         0,
-        NULL,
+        nullptr,
         Pinst_() );
 }
 
@@ -2739,7 +2739,7 @@ void DBMScanObserverEvents::ResumedPass_( const IDBMScanState * const pstate )
         _countof( rgwsz ),
         rgwsz,
         0,
-        NULL,
+        nullptr,
         Pinst_(),
         JET_EventLoggingLevelMedium );
 }
@@ -2828,7 +2828,7 @@ void DBMScanObserverEvents::FinishedPass_( const IDBMScanState * const pstate )
                 _countof( rgwsz ),
                 rgwsz,
                 0,
-                NULL,
+                nullptr,
                 Pinst_() );
         }
         else
@@ -2841,7 +2841,7 @@ void DBMScanObserverEvents::FinishedPass_( const IDBMScanState * const pstate )
                 _countof( rgwsz ),
                 rgwsz,
                 0,
-                NULL,
+                nullptr,
                 Pinst_() );
         }
     }
@@ -2876,7 +2876,7 @@ void DBMScanObserverEvents::NotifyStats_( const IDBMScanState * const pstate )
         _countof( rgwsz ),
         rgwsz,
         0,
-        NULL,
+        nullptr,
         Pinst_(),
         JET_EventLoggingLevelMedium );
 }
@@ -2916,7 +2916,7 @@ void DBMScanObserverRecoveryEvents::StartedPass_( const IDBMScanState * const ps
         _countof( rgwsz ),
         rgwsz,
         0,
-        NULL,
+        nullptr,
         Pinst_() );
     SetPassDeadline_( pstate );
 }
@@ -2958,7 +2958,7 @@ void DBMScanObserverRecoveryEvents::ResumedPass_( const IDBMScanState * const ps
         _countof( rgwsz ),
         rgwsz,
         0,
-        NULL,
+        nullptr,
         Pinst_(),
         JET_EventLoggingLevelMedium );
     SetPassDeadline_( pstate );
@@ -2966,7 +2966,7 @@ void DBMScanObserverRecoveryEvents::ResumedPass_( const IDBMScanState * const ps
 
 void DBMScanObserverRecoveryEvents::SuspendedPass_( const IDBMScanState * const pstate )
 {
-    if ( Pfmp_()->Pinst() == NULL /* the unit test uses a mock FMP, that doesn't have a real inst */ ||
+    if ( Pfmp_()->Pinst() == nullptr /* the unit test uses a mock FMP, that doesn't have a real inst */ ||
         UlParam( Pfmp_()->Pinst(), JET_paramEnableDBScanInRecovery ) & bitDBScanInRecoveryFollowActive )
     {
         //  In the FollowActive mode a suspended DBScan results in an actually incomplete DBScan so we want to 
@@ -2988,7 +2988,7 @@ void DBMScanObserverRecoveryEvents::SuspendedPass_( const IDBMScanState * const 
             _countof( rgwsz ),
             rgwsz,
             0,
-            NULL,
+            nullptr,
             Pinst_() );
         
     }
@@ -3034,7 +3034,7 @@ void DBMScanObserverRecoveryEvents::FinishedPass_( const IDBMScanState * const p
         _countof( rgwsz ),
         rgwsz,
         0,
-        NULL,
+        nullptr,
         Pinst_() );
 }
 
@@ -3090,7 +3090,7 @@ void DBMScanObserverRecoveryEvents::ReportPassIsOverdue_( const IDBMScanState * 
             _countof( rgwsz ),
             rgwsz,
             0,
-            NULL,
+            nullptr,
             Pinst_() );
     }
 }
@@ -3660,7 +3660,7 @@ ERR DBMScanObserverCleanup::ErrDeleteZeroRefCountLV( FCB *pfcbLV, const BOOKMARK
     Assert( m_ppib->Level() == levelMin );
     Call( ptask->ErrExecute( m_ppib ) );
 HandleError:
-    if ( ptask != NULL )
+    if ( ptask != nullptr )
     {
         delete ptask;
     }
@@ -3834,7 +3834,7 @@ ERR DBMScanObserverCleanup::ErrZeroLVChunks_(
     CSR csrT;
     CSR * pcsrT = pcsrRoot;
     
-    SCRUBOPER * rgscruboper = NULL;
+    SCRUBOPER * rgscruboper = nullptr;
     while ( true )
     {
         bool fSawLV = fFalse;
@@ -4042,7 +4042,7 @@ ERR DBMScanObserverCleanup::ErrCleanupDeletedNodes_( CSR * const pcsr )
     Assert( pcsr->Cpage().FAssertRDWLatch() );
 
     ERR err = JET_errSuccess;
-    SCRUBOPER * rgscruboper = NULL;
+    SCRUBOPER * rgscruboper = nullptr;
 
     if ( !BoolParam( PinstFromPpib( m_ppib ), JET_paramZeroDatabaseUnusedSpace ) )
     {
@@ -4176,7 +4176,7 @@ HandleError:
                 2,
                 rgcwsz,
                 0,
-                NULL,
+                nullptr,
                 PinstFromPpib( m_ppib ) );
 
             OSUHAPublishEvent(
@@ -4193,7 +4193,7 @@ HandleError:
                 3,
                 rgcwsz,
                 0,
-                NULL,
+                nullptr,
                 PinstFromPpib( m_ppib ) );
         }
     }
@@ -4608,14 +4608,14 @@ void DBMObjectCache::CloseObjectAt_( const INT index )
 
             const TDB *ptdb = pfcb->Ptdb();
             Assert( ptdb );
-            if ( NULL != ptdb )
+            if ( nullptr != ptdb )
             {
                 // If we're closing a table with an LV tree that is also cached, we need to
                 // close the LV tree also.  If we don't, we end up with problems if someone deletes
                 // the table (deleting the the LV tree), leaving an orphaned FUCB for the LV tree
                 // here that points to an FCB that may have been purged.
                 const FCB *pfcbLV = ptdb->PfcbLV();
-                if ( NULL != pfcbLV )
+                if ( nullptr != pfcbLV )
                 {
                     // If this is cached, we need to close it also.
                     INT indexLV = IndexOfObjid_( pfcbLV->ObjidFDP() );
@@ -4655,7 +4655,7 @@ DBMScan::DBMScan(
     m_critSignalControl( CLockBasicInfo( CSyncBasicInfo( _T("DBMScan::m_critSignalControl" ) ), rankDBMScanSignalControl, 0 ) ),
     m_msigDBScanStop( CSyncBasicInfo( _T("DBMScan::m_msigDBScanStop" ) ) ),
     m_msigDBScanGo( CSyncBasicInfo( _T("DBMScan::m_msigDBScanGo" ) ) ),
-    m_pidbmScanSerializationObj( NULL ),
+    m_pidbmScanSerializationObj( nullptr ),
     m_cscansFinished( 0 ),
     m_fNeedToSuspendPass( false ),
     m_fSerializeScan( false )
@@ -4802,13 +4802,13 @@ void DBMScan::TermDBMScan_()
     }
     m_threadDBMScan = 0;
     ResetScanStop_();
-    if ( m_pidbmScanSerializationObj != NULL )
+    if ( m_pidbmScanSerializationObj != nullptr )
     {
         Assert( !g_dbmSerializerFactory.FSerializerFactoryEmpty() );
         Assert( m_pidbmScanSerializationObj->CSerializerRef() > 0 );
         g_dbmSerializerFactory.UnregisterSerializer( m_pidbmScanSerializationObj );
     }
-    m_pidbmScanSerializationObj = NULL;
+    m_pidbmScanSerializationObj = nullptr;
     Assert( !FIsDBMScanRunning_() );
 }
 
@@ -5186,7 +5186,7 @@ bool DBMScanSerializerDummy::FEnqueueAndWait( DBMScan * const pdbmScan, const IN
 void DBMScanSerializerDummy::Dequeue( DBMScan * const pdbmScan )
 {
     Assert( FDBMScanCurrent( pdbmScan ) );
-    m_pdbmScan = NULL;
+    m_pdbmScan = nullptr;
 }
 
 bool DBMScanSerializerDummy::FDBMScanCurrent( DBMScan * const pdbmScan )
@@ -5205,7 +5205,7 @@ DWORD DBMScanSerializerDummy::DwTimeSlice() const
 
 DBMScanSerializerDummy::DBMScanSerializerDummy( const ULONG_PTR ulKey ) :
     IDBMScanSerializer( ulKey, IDBMScanSerializer::idbmstypDummy ),
-    m_pdbmScan( NULL )
+    m_pdbmScan( nullptr )
 {
 }
 
@@ -5295,7 +5295,7 @@ void DBMScanSerializer::Dequeue( DBMScan * const pdbmScan )
             Assert( pdbmScan != pdbmScanNext );
 
             //  If there's someone waiting, we need to signal it.
-            if ( pdbmScanNext != NULL )
+            if ( pdbmScanNext != nullptr )
             {
                 pdbmScanNext->TrySetScanGo();
             }
@@ -5362,7 +5362,7 @@ void DBMScanSerializerFactory::TermSerializerFactory()
 
     //  Iterate and free memory.
     for ( DBMScanSerializer * pdbmSerializer = m_ilSerializers.PrevMost();
-            pdbmSerializer != NULL;
+            pdbmSerializer != nullptr;
             pdbmSerializer = m_ilSerializers.PrevMost() )
     {
         m_ilSerializers.Remove( pdbmSerializer );
@@ -5380,16 +5380,16 @@ ERR DBMScanSerializerFactory::ErrRegisterSerializer_( const ULONG_PTR ulKey, con
     ERR err = JET_errSuccess;
 
     Assert( ppidbmSerializer != NULL );
-    *ppidbmSerializer = NULL;
+    *ppidbmSerializer = nullptr;
     
     m_critSerializer.Enter();
 
-    DBMScanSerializer * pdbmSerializer = NULL;
+    DBMScanSerializer * pdbmSerializer = nullptr;
     if ( !fDummy )
     {
         //  Key lookup.
         for ( pdbmSerializer = m_ilSerializers.PrevMost();
-                pdbmSerializer != NULL;
+                pdbmSerializer != nullptr;
                 pdbmSerializer = m_ilSerializers.Next( pdbmSerializer ) )
         {
             if ( pdbmSerializer->UlSerializerKey() == ulKey )
@@ -5400,7 +5400,7 @@ ERR DBMScanSerializerFactory::ErrRegisterSerializer_( const ULONG_PTR ulKey, con
     }
 
     //  Have we found the object?
-    if ( pdbmSerializer != NULL )
+    if ( pdbmSerializer != nullptr )
     {
         Assert( !fDummy );
         //  We just need to increment the ref count.
@@ -5413,7 +5413,7 @@ ERR DBMScanSerializerFactory::ErrRegisterSerializer_( const ULONG_PTR ulKey, con
     else
     {
         //  Allocate a new one and insert it into the list.
-        IDBMScanSerializer* pidbmSerializerNew = NULL;
+        IDBMScanSerializer* pidbmSerializerNew = nullptr;
         if ( fDummy )
         {
             pidbmSerializerNew = new DBMScanSerializerDummy( ulKey );
@@ -5679,7 +5679,7 @@ ERR ErrDBMEmitDivergenceCheck(
             _countof( rgwsz ),
             rgwsz,
             0,
-            NULL,
+            nullptr,
             g_rgfmp[ifmp].Pinst() );
 
         OSUHAPublishEvent(  HaDbFailureTagCorruption,

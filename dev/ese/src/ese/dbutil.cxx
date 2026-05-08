@@ -8,7 +8,7 @@
 
 #include "stat.hxx"
 
-LOCAL ERR ErrDBUTLDumpTables( DBCCINFO *pdbccinfo, PFNTABLE pfntable, VOID* pvCtx = NULL );
+LOCAL ERR ErrDBUTLDumpTables( DBCCINFO *pdbccinfo, PFNTABLE pfntable, VOID* pvCtx = nullptr );
 
 
 #if !defined( MINIMAL_FUNCTIONALITY ) || defined( DEBUGGER_EXTENSION )
@@ -158,7 +158,7 @@ VOID DBUTLDumpRec( const LONG cbPage, const FUCB * const pfucbTable, const VOID 
         const BOOL fTemplateColumn = ptdbTemplate == ptdbNil ? fFalse : fid <= ptdbTemplate->FidFixedLast() ? fTrue : fFalse;
         const COLUMNID columnid = ColumnidOfFid( fid, fTemplateColumn );
 
-        const FIELD * const     pfield      = ( ptdb != ptdbNil ) ? ptdb->Pfield( columnid ) : NULL;
+        const FIELD * const     pfield      = ( ptdb != ptdbNil ) ? ptdb->Pfield( columnid ) : nullptr;
         BOOL                    fDeleted    = fFalse;
         const CHAR *            szType      = "UnknownColType";
         const CHAR *            szColumn    = "UnknownColName ";
@@ -166,7 +166,7 @@ VOID DBUTLDumpRec( const LONG cbPage, const FUCB * const pfucbTable, const VOID 
         {
             fDeleted = ( 0 == pfield->itagFieldName );
             szType   = ( fDeleted ? "<deleted>" : SzColumnType( pfield->coltyp ) );
-            szColumn = ( fDeleted ? "<deleted>" : ( fTemplateColumn ? ptdbTemplate : ptdb )->SzFieldName( pfield->itagFieldName, ptdbTemplate != NULL && !fTemplateColumn /* was: fFalse */ ) );
+            szColumn = ( fDeleted ? "<deleted>" : ( fTemplateColumn ? ptdbTemplate : ptdb )->SzFieldName( pfield->itagFieldName, ptdbTemplate != nullptr && !fTemplateColumn /* was: fFalse */ ) );
         }
         const CHAR * const      szHddlSrc   = SzTableColType( ptdbTemplate, fTemplateColumn );
 
@@ -230,7 +230,7 @@ VOID DBUTLDumpRec( const LONG cbPage, const FUCB * const pfucbTable, const VOID 
         const BOOL fTemplateColumn = ptdbTemplate == ptdbNil ? fFalse : fid <= ptdbTemplate->FidVarLast() ? fTrue : fFalse;
         const COLUMNID columnid = ColumnidOfFid( fid, fTemplateColumn );
 
-        const FIELD * const     pfield      = ( ptdb != ptdbNil ) ? ptdb->Pfield( columnid ) : NULL;
+        const FIELD * const     pfield      = ( ptdb != ptdbNil ) ? ptdb->Pfield( columnid ) : nullptr;
         BOOL                    fDeleted    = fFalse;
         const CHAR *            szType      = "UnknownColType";
         const CHAR *            szColumn    = "UnknownColName ";
@@ -238,7 +238,7 @@ VOID DBUTLDumpRec( const LONG cbPage, const FUCB * const pfucbTable, const VOID 
         {
             fDeleted    = ( 0 == pfield->itagFieldName );
             szType      = ( fDeleted ? "<deleted>" : SzColumnType( pfield->coltyp ) );
-            szColumn    = ( fDeleted ? "<deleted>" : ( fTemplateColumn ? ptdbTemplate : ptdb )->SzFieldName( pfield->itagFieldName, ptdbTemplate != NULL && !fTemplateColumn /* was: fFalse */ ) );
+            szColumn    = ( fDeleted ? "<deleted>" : ( fTemplateColumn ? ptdbTemplate : ptdb )->SzFieldName( pfield->itagFieldName, ptdbTemplate != nullptr && !fTemplateColumn /* was: fFalse */ ) );
         }
         const CHAR * const      szHddlSrc   = SzTableColType( ptdbTemplate, fTemplateColumn );
 
@@ -286,7 +286,7 @@ VOID DBUTLDumpRec( const LONG cbPage, const FUCB * const pfucbTable, const VOID 
         const BOOL fTemplateColumn = ptdbTemplate == ptdbNil ? fFalse : ti.Fid() <= ptdbTemplate->FidTaggedLast() ? fTrue : fFalse;
         const COLUMNID columnid = ColumnidOfFid( ti.Fid(), fTemplateColumn );
 
-        const FIELD * const     pfield      = ( ptdb != ptdbNil ) ? ptdb->Pfield( columnid ) : NULL;
+        const FIELD * const     pfield      = ( ptdb != ptdbNil ) ? ptdb->Pfield( columnid ) : nullptr;
         BOOL                    fDeleted    = fFalse;
         const CHAR *            szType      = "UnknownColType";
         const CHAR *            szColumn    = "UnknownColName ";
@@ -294,7 +294,7 @@ VOID DBUTLDumpRec( const LONG cbPage, const FUCB * const pfucbTable, const VOID 
         {
             fDeleted    = ( 0 == pfield->itagFieldName );
             szType      = ( fDeleted ? "<deleted>" : SzColumnType( pfield->coltyp ) );
-            szColumn    = ( fDeleted ? "<deleted>" : ( fTemplateColumn ? ptdbTemplate : ptdb )->SzFieldName( pfield->itagFieldName, ptdbTemplate != NULL && !fTemplateColumn /* was: fFalse */ ) );
+            szColumn    = ( fDeleted ? "<deleted>" : ( fTemplateColumn ? ptdbTemplate : ptdb )->SzFieldName( pfield->itagFieldName, ptdbTemplate != nullptr && !fTemplateColumn /* was: fFalse */ ) );
 
             Assert( !!ti.FLV() == ( ( pfield->coltyp == JET_coltypLongText ) || ( pfield->coltyp == JET_coltypLongBinary ) ) );
         }
@@ -363,7 +363,7 @@ VOID DBUTLDumpRec( const LONG cbPage, const FUCB * const pfucbTable, const VOID 
 
                 CallSx( ErrPKDecompressData(
                     dataCompressed,
-                    NULL,  // The pfucb from debugger is half filled, passing NULL here only makes PKDecompress not update perf counters and report events (by deref PinstFromIfmp( pfucb-ifmp )).
+                    nullptr,  // The pfucb from debugger is half filled, passing NULL here only makes PKDecompress not update perf counters and report events (by deref PinstFromIfmp( pfucb-ifmp )).
                     rgbDecompressed,
                     sizeof(rgbDecompressed),
                     &cbDecompressed ),
@@ -553,7 +553,7 @@ LOCAL_BROKEN ERR ErrDBUTLRegExt( DBCCINFO *pdbccinfo, PGNO pgnoFirst, CPG cpg, B
                 sizeof(fAvailT2),
                 &cbActual,
                 0,
-                NULL ) );
+                nullptr ) );
 
             Assert( err == JET_wrnColumnNull || cbActual == sizeof(fAvailT2) );
             if ( err != JET_wrnColumnNull )
@@ -575,7 +575,7 @@ LOCAL_BROKEN ERR ErrDBUTLRegExt( DBCCINFO *pdbccinfo, PGNO pgnoFirst, CPG cpg, B
                 sizeof(fChecked),
                 &cbActual,
                 0,
-                NULL ) );
+                nullptr ) );
 
             Assert( cbActual == sizeof(fChecked) );
 
@@ -593,7 +593,7 @@ LOCAL_BROKEN ERR ErrDBUTLRegExt( DBCCINFO *pdbccinfo, PGNO pgnoFirst, CPG cpg, B
                 (BYTE *) &pgno,
                 sizeof(pgno),
                 0,
-                NULL ) );
+                nullptr ) );
         }
 
         /*  set FChecked
@@ -604,7 +604,7 @@ LOCAL_BROKEN ERR ErrDBUTLRegExt( DBCCINFO *pdbccinfo, PGNO pgnoFirst, CPG cpg, B
             (BYTE *)&fChecked,
             sizeof(fChecked),
             0,
-            NULL ) );
+            nullptr ) );
 
         /*  fAvail set if in AvailExt node
         /**/
@@ -616,12 +616,12 @@ LOCAL_BROKEN ERR ErrDBUTLRegExt( DBCCINFO *pdbccinfo, PGNO pgnoFirst, CPG cpg, B
                 (BYTE *) &fAvail,
                 sizeof(fAvail),
                 0,
-                NULL ) );
+                nullptr ) );
         }
 
         /*  update
         /**/
-        Call( ErrDispUpdate( sesid, tableid, NULL, 0, NULL, 0 ) );
+        Call( ErrDispUpdate( sesid, tableid, nullptr, 0, nullptr, 0 ) );
         
         /*  commit
         /**/
@@ -690,7 +690,7 @@ LOCAL_BROKEN ERR ErrDBUTLPrintPageDump( DBCCINFO *pdbccinfo )
             sizeof(pgnoThis),
             &cbT,
             0,
-            NULL ) );
+            nullptr ) );
         Assert( sizeof(pgnoThis) == cbT );
         
         //  FAvail
@@ -701,7 +701,7 @@ LOCAL_BROKEN ERR ErrDBUTLPrintPageDump( DBCCINFO *pdbccinfo )
             sizeof(fAvail),
             &cbT,
             0,
-            NULL ) );
+            nullptr ) );
         Assert( sizeof(fAvail) == cbT || JET_wrnColumnNull == err );
         
         //  FChecked
@@ -712,7 +712,7 @@ LOCAL_BROKEN ERR ErrDBUTLPrintPageDump( DBCCINFO *pdbccinfo )
             sizeof(fChecked),
             &cbT,
             0,
-            NULL ) );
+            nullptr ) );
         Assert( cbT == sizeof(fChecked) );
         Assert( fChecked || fAvail );
         
@@ -724,7 +724,7 @@ LOCAL_BROKEN ERR ErrDBUTLPrintPageDump( DBCCINFO *pdbccinfo )
             sizeof(pgnoLeft),
             &cbT,
             0,
-            NULL ) );
+            nullptr ) );
         Assert( cbT == sizeof(pgnoLeft) );
         
         Call( ErrDispRetrieveColumn( sesid,
@@ -734,7 +734,7 @@ LOCAL_BROKEN ERR ErrDBUTLPrintPageDump( DBCCINFO *pdbccinfo )
              sizeof(pgnoRight),
              &cbT,
              0,
-             NULL ) );
+             nullptr ) );
         Assert( cbT == sizeof(pgnoRight) );
         
         //  free space
@@ -745,7 +745,7 @@ LOCAL_BROKEN ERR ErrDBUTLPrintPageDump( DBCCINFO *pdbccinfo )
             sizeof(cbFreeSpace),
             &cbT,
             0,
-            NULL ) );
+            nullptr ) );
         Assert( cbT == sizeof(cbFreeSpace) );
 
         //  print
@@ -1865,7 +1865,7 @@ LOCAL INT PrintTableMetaData( const TABLEDEF * ptabledef, void * pv )
     if ( ptabledef->fFlags & JET_bitObjectTableTemplate )
         printf( "    Template=yes\n" );
 
-    if ( NULL != ptabledef->szTemplateTable
+    if ( nullptr != ptabledef->szTemplateTable
         && '\0' != ptabledef->szTemplateTable[0] )
     {
         Assert( ptabledef->fFlags & JET_bitObjectTableDerived );
@@ -1944,7 +1944,7 @@ ERR ErrDBUTLGetIfmpFucbOfPage(
     _In_ const CPAGE& cpage,
     _Out_ IFMP * pifmp,
     _Out_ FUCB ** ppfucb,
-    _Out_writes_bytes_opt_(cbObjName) WCHAR * wszObjName = NULL,
+    _Out_writes_bytes_opt_(cbObjName) WCHAR * wszObjName = nullptr,
     _In_ ULONG cbObjName = 0 );
 #define cbDbutlObjNameMost ( JET_cbNameMost + 40 + 1 )
 ERR ErrDBUTLGetIfmpFucbOfPage( _Inout_ JET_SESID sesid, PCWSTR wszDatabase, _In_ const CPAGE& cpage, _Out_ IFMP * pifmp, _Out_ FUCB ** ppfucbObj, _Out_writes_bytes_opt_(cbObjName) WCHAR * wszObjName, _In_ ULONG cbObjName )
@@ -1961,14 +1961,14 @@ ERR ErrDBUTLGetIfmpFucbOfPage( _Inout_ JET_SESID sesid, PCWSTR wszDatabase, _In_
     TRY
     {
         // Disable index checking as we won't be using any _unicode text_ indexes.
-        (void)SetParam( reinterpret_cast<PIB*>( sesid )->m_pinst, NULL, JET_paramEnableIndexChecking, JET_IndexCheckingOff, NULL );
+        (void)SetParam( reinterpret_cast<PIB*>( sesid )->m_pinst, nullptr, JET_paramEnableIndexChecking, JET_IndexCheckingOff, nullptr );
 
         //  Must open database RO because it is already opened above us to directly read the page data.
-        Call( ErrIsamAttachDatabase( sesid, wszDatabase, fFalse, NULL, 0, JET_bitDbReadOnly ) );
-        err = ErrIsamOpenDatabase( sesid, wszDatabase, NULL, &jdbid, JET_bitDbReadOnly );
+        Call( ErrIsamAttachDatabase( sesid, wszDatabase, fFalse, nullptr, 0, JET_bitDbReadOnly ) );
+        err = ErrIsamOpenDatabase( sesid, wszDatabase, nullptr, &jdbid, JET_bitDbReadOnly );
         if ( err < JET_errSuccess )
         {
-            CallS( ErrIsamDetachDatabase( sesid, NULL, wszDatabase ) );
+            CallS( ErrIsamDetachDatabase( sesid, nullptr, wszDatabase ) );
             Assert( jdbid == JET_dbidNil );
             jdbid = JET_dbidNil;
         }
@@ -2039,7 +2039,7 @@ HandleError:
     {
         //  This shouldn't fail for a RO attach?
         CallS( ErrIsamCloseDatabase( sesid, jdbid, NO_GRBIT ) );
-        CallS( ErrIsamDetachDatabase( sesid, NULL, wszDatabase ) );
+        CallS( ErrIsamDetachDatabase( sesid, nullptr, wszDatabase ) );
     }
 
     return err;
@@ -2057,7 +2057,7 @@ void DBUTLCloseIfmpFucb( _Inout_ JET_SESID sesid, PCWSTR wszDatabase, _In_ IFMP 
     if ( ifmp != ifmpNil )
     {
         CallS( ErrIsamCloseDatabase( sesid, ifmp, NO_GRBIT ) );
-        CallS( ErrIsamDetachDatabase( sesid, NULL, wszDatabase ) );
+        CallS( ErrIsamDetachDatabase( sesid, nullptr, wszDatabase ) );
     }
 }
 
@@ -2105,18 +2105,18 @@ LOCAL ERR ErrDBUTLDumpNode( JET_SESID sesid, IFileSystemAPI *const pfsapi, const
     ERR             err         = JET_errSuccess;
     KEYDATAFLAGS    kdf;
     CPAGE           cpage;
-    IFileAPI*       pfapi       = NULL;
+    IFileAPI*       pfapi       = nullptr;
     QWORD           ibOffset    = OffsetOfPgno( pgno );
-    VOID*           pvPage      = NULL;
-    CHAR*           szBuf       = NULL;
+    VOID*           pvPage      = nullptr;
+    CHAR*           szBuf       = nullptr;
     const INT       cbWidth     = UtilCprintfStdoutWidth() >= 116 ? 32 : 16;
     INT             ilineCurrent;
     TraceContextScope   tcUtil  ( iorpDirectAccessUtil );
     IFMP            ifmp        = ifmpNil;
     FUCB *          pfucbTable  = pfucbNil;
 
-    pvPage = PvOSMemoryPageAlloc( g_cbPage, NULL );
-    if( NULL == pvPage )
+    pvPage = PvOSMemoryPageAlloc( g_cbPage, nullptr );
+    if( nullptr == pvPage )
     {
         Call( ErrERRCheck( JET_errOutOfMemory ) );
     }
@@ -2158,9 +2158,9 @@ LOCAL ERR ErrDBUTLDumpNode( JET_SESID sesid, IFileSystemAPI *const pfsapi, const
             Call( ErrERRCheck( JET_errInvalidParameter ) );
         }
 
-        VOID *  pvBuf   = PvOSMemoryPageAlloc( g_cbPage, NULL );
+        VOID *  pvBuf   = PvOSMemoryPageAlloc( g_cbPage, nullptr );
 
-        if( NULL == pvBuf )
+        if( nullptr == pvBuf )
         {
             Call( ErrERRCheck( JET_errOutOfMemory ) );
         }
@@ -2170,8 +2170,8 @@ LOCAL ERR ErrDBUTLDumpNode( JET_SESID sesid, IFileSystemAPI *const pfsapi, const
         Call( err );
     }
 
-    szBuf = (CHAR *)PvOSMemoryPageAlloc( g_cbPage * 8, NULL );
-    if( NULL == szBuf )
+    szBuf = (CHAR *)PvOSMemoryPageAlloc( g_cbPage * 8, nullptr );
+    if( nullptr == szBuf )
     {
         Call( ErrERRCheck( JET_errOutOfMemory ) );
     }
@@ -2258,16 +2258,16 @@ LOCAL ERR ErrDBUTLDumpTag( JET_SESID sesid, IFileSystemAPI* const pfsapi, const 
     ERR             err = JET_errSuccess;
     KEYDATAFLAGS    kdf;
     CPAGE           cpage;
-    IFileAPI* pfapi = NULL;
+    IFileAPI* pfapi = nullptr;
     QWORD           ibOffset = OffsetOfPgno( pgno );
-    VOID* pvPage = NULL;
-    CHAR* szBuf = NULL;
+    VOID* pvPage = nullptr;
+    CHAR* szBuf = nullptr;
     const INT       cbWidth = UtilCprintfStdoutWidth() >= 116 ? 32 : 16;
     INT             itagCurr;
     TraceContextScope   tcUtil( iorpDirectAccessUtil );
 
-    pvPage = PvOSMemoryPageAlloc( g_cbPage, NULL );
-    if ( NULL == pvPage )
+    pvPage = PvOSMemoryPageAlloc( g_cbPage, nullptr );
+    if ( nullptr == pvPage )
     {
         Call( ErrERRCheck( JET_errOutOfMemory ) );
     }
@@ -2310,9 +2310,9 @@ LOCAL ERR ErrDBUTLDumpTag( JET_SESID sesid, IFileSystemAPI* const pfsapi, const 
             Call( ErrERRCheck( JET_errInvalidParameter ) );
         }
 
-        VOID* pvBuf = PvOSMemoryPageAlloc( g_cbPage, NULL );
+        VOID* pvBuf = PvOSMemoryPageAlloc( g_cbPage, nullptr );
 
-        if ( NULL == pvBuf )
+        if ( nullptr == pvBuf )
         {
             Call( ErrERRCheck( JET_errOutOfMemory ) );
         }
@@ -2322,8 +2322,8 @@ LOCAL ERR ErrDBUTLDumpTag( JET_SESID sesid, IFileSystemAPI* const pfsapi, const 
         Call( err );
     }
 
-    szBuf = (CHAR*) PvOSMemoryPageAlloc( g_cbPage * 8, NULL );
-    if ( NULL == szBuf )
+    szBuf = (CHAR*) PvOSMemoryPageAlloc( g_cbPage * 8, nullptr );
+    if ( nullptr == szBuf )
     {
         Call( ErrERRCheck( JET_errOutOfMemory ) );
     }
@@ -2452,7 +2452,7 @@ LOCAL ERR ErrDBUTLSeekToKey_(
     CHAR                szKey[cbKeyAlloc];
     CHAR                szData[cbKeyAlloc];
     const ULONG         cbPrintedKey        = (ULONG)strlen( szPrintedKey );
-    const ULONG         cbPrintedData       = ( NULL != szPrintedData ? (ULONG)strlen( szPrintedData ) : 0 );
+    const ULONG         cbPrintedData       = ( nullptr != szPrintedData ? (ULONG)strlen( szPrintedData ) : 0 );
     BOOKMARK            bm;
     INT                 compare;
     INT                 iline;
@@ -2600,12 +2600,12 @@ LOCAL ERR ErrDBUTLDumpPage(
 {
     ERR                     err         = JET_errSuccess;
     IFileSystemAPI * const  pfsapi      = pinst->m_pfsapi;
-    IFileAPI *              pfapi       = NULL;
+    IFileAPI *              pfapi       = nullptr;
     CPAGE                   cpage;
     TraceContextScope       tcUtil      ( iorpDirectAccessUtil );
 
-    VOID * const pvPage = PvOSMemoryPageAlloc( g_cbPage, NULL );
-    if( NULL == pvPage )
+    VOID * const pvPage = PvOSMemoryPageAlloc( g_cbPage, nullptr );
+    if( nullptr == pvPage )
     {
         CallR( ErrERRCheck( JET_errOutOfMemory ) );
     }
@@ -2640,7 +2640,7 @@ LOCAL ERR ErrDBUTLDumpPage(
         Call( cpage.ErrCheckPage( CPRINTFSTDOUT::PcprintfInstance(), pgvr::DbutilPageDump ) );
     }
     
-    if ( NULL != wszPrintedKeyToSeek && 0 != cpage.Clines() )
+    if ( nullptr != wszPrintedKeyToSeek && 0 != cpage.Clines() )
     {
         CAutoSZ szPrintedKeyToSeek;
         CAutoSZ szPrintedDataToSeek;
@@ -2666,7 +2666,7 @@ LOCAL ERR ErrDBUTLDumpPage(
         const INT cbWidth = UtilCprintfStdoutWidth() >= 116 ? 32 : 16;
 
         CHAR * szBuf = new CHAR[g_cbPage * 8];
-        if( NULL == szBuf )
+        if( nullptr == szBuf )
         {
             Call( ErrERRCheck( JET_errOutOfMemory ) );
         }
@@ -2728,8 +2728,8 @@ public:
         //  These asserts means someone forgot to process the pgnoDoneSentinel, and the last run was not added to m_pStats.
         Assert( m_pgnoPrevious == pgnoDoneSentinel );
         Assert( m_cpgCurrRun ==  0 );
-        m_pStats = NULL;
-        m_pcForwardScans = NULL;
+        m_pStats = nullptr;
+        m_pcForwardScans = nullptr;
     }
 
     ERR ErrBreak( void )
@@ -2873,20 +2873,20 @@ class CBTreeStatsManager {
             m_bts.pParent = pbtsParent;
             
             m_bts.pBasicCatalog = ( m_bts.grbitData & JET_bitDBUtilSpaceInfoBasicCatalog ) ?
-                                    &m_btsBasicCatalog : NULL;
+                                    &m_btsBasicCatalog : nullptr;
             m_bts.pSpaceTrees   = ( m_bts.grbitData & JET_bitDBUtilSpaceInfoSpaceTrees ) ?
-                                    &m_btsSpaceTrees : NULL;
+                                    &m_btsSpaceTrees : nullptr;
             m_bts.pParentOfLeaf = ( m_bts.grbitData & JET_bitDBUtilSpaceInfoParentOfLeaf ) ?
-                                    &m_btsParentOfLeaf : NULL;
+                                    &m_btsParentOfLeaf : nullptr;
             if ( m_bts.pParentOfLeaf )
             {
                 m_bts.pParentOfLeaf->pInternalPageStats = &m_btsInternalPageSpace;
             }
             m_bts.pFullWalk     = ( m_bts.grbitData & JET_bitDBUtilSpaceInfoFullWalk ) ?
-                                    &m_btsFullWalk : NULL;
+                                    &m_btsFullWalk : nullptr;
             m_bts.pLvData       = ( m_bts.grbitData & JET_bitDBUtilSpaceInfoBasicCatalog &&
                                     m_bts.grbitData & JET_bitDBUtilSpaceInfoFullWalk ) ?
-                                    &m_btsLvData : NULL;
+                                    &m_btsLvData : nullptr;
         }
         
         static void ResetParentOfLeaf( BTREE_STATS_PARENT_OF_LEAF * pPOL )
@@ -2949,12 +2949,12 @@ class CBTreeStatsManager {
             if ( pbtsST->prgOwnedExtents )
             {
                 delete [] pbtsST->prgOwnedExtents;
-                pbtsST->prgOwnedExtents = NULL;
+                pbtsST->prgOwnedExtents = nullptr;
             }
             if ( pbtsST->prgAvailExtents )
             {
                 delete [] pbtsST->prgAvailExtents;
-                pbtsST->prgAvailExtents = NULL;
+                pbtsST->prgAvailExtents = nullptr;
             }
             Assert( pbtsST->prgOwnedExtents == NULL );  // don't leak
             Assert( pbtsST->prgAvailExtents == NULL );  // don't leak
@@ -3177,7 +3177,7 @@ LOCAL ERR ErrDBUTLGetDataPageStats(
                             ifmp, pgnoFDP,
                             // fVistFlags not relevant, we're visiting the leaf here.
                             //  const ULONG             fVisitFlags,
-                            NULL, NULL,
+                            nullptr, nullptr,
                             ErrAccumulatePageStats, pFullWalk );
     }
     else
@@ -3190,29 +3190,29 @@ LOCAL ERR ErrDBUTLGetDataPageStats(
         {
             EVAL_LV_PAGE_CTX ctx = { 0 };
             ctx.cpgAccumMax = 0;
-            ctx.rgpgnoAccum = NULL;
+            ctx.rgpgnoAccum = nullptr;
             ctx.pLvData = pLvData;
     
-            CPAGE::PFNVISITNODE     rgpfnzErrVisitNode[3] = { ErrAccumulatePageStats, ErrAccumulateLvNodeData, NULL };
-            void *                  rgpvzVisitNodeCtx[3] = { pFullWalk, &ctx, NULL };
+            CPAGE::PFNVISITNODE     rgpfnzErrVisitNode[3] = { ErrAccumulatePageStats, ErrAccumulateLvNodeData, nullptr };
+            void *                  rgpvzVisitNodeCtx[3] = { pFullWalk, &ctx, nullptr };
 
             err = ErrBTUTLAcross( ifmp, pgnoFDP,
                                 CPAGE::fPageLeaf,
                                 ErrAccumulateLvPageData, &ctx,
                                 rgpfnzErrVisitNode, rgpvzVisitNodeCtx );
 
-            if ( ctx.rgpgnoAccum != NULL )
+            if ( ctx.rgpgnoAccum != nullptr )
             {
                 delete[] ctx.rgpgnoAccum;
                 ctx.cpgAccumMax = 0;
-                ctx.rgpgnoAccum = NULL;
+                ctx.rgpgnoAccum = nullptr;
             }
         }
         else
         {
             err = ErrBTUTLAcross( ifmp, pgnoFDP,
                                 CPAGE::fPageLeaf,
-                                NULL, NULL,
+                                nullptr, nullptr,
                                 ErrAccumulatePageStats, pFullWalk );
         }
     }
@@ -3271,7 +3271,7 @@ LOCAL ERR ErrDBUTLGetSpaceTreeInfo(
     Call( ErrBTIGotoRoot( pfucb, latchReadNoTouch ) );
 
     NDGetExternalHeader ( pfucb, noderfIsamAutoInc );
-    if ( pfucb->kdfCurr.data.Cb() != 0 && pfucb->kdfCurr.data.Pv() != NULL )
+    if ( pfucb->kdfCurr.data.Cb() != 0 && pfucb->kdfCurr.data.Pv() != nullptr )
     {
         pbtsSpaceTree->fAutoIncPresents = fTrue;
         const QWORD qwAutoInc = *(QWORD*)pfucb->kdfCurr.data.Pv();
@@ -3505,7 +3505,7 @@ ERR EvalInternalPageNodes(
 
     //  Now compute b-tree based stats.
     //
-    if ( pkdf == NULL )
+    if ( pkdf == nullptr )
     {
         Assert( itag == 0 );    // we don't process the external header as a regular node...
         return JET_errSuccess;
@@ -3605,7 +3605,7 @@ ERR ErrDBUTLGetAdditionalSpaceData(
                     ifmp,
                     pgnoFDP,
                     pbts->pFullWalk,
-                    pbts->pBasicCatalog->eType == eBTreeTypeInternalLongValue ? pbts->pLvData : NULL ) );
+                    pbts->pBasicCatalog->eType == eBTreeTypeInternalLongValue ? pbts->pLvData : nullptr ) );
     }
 
 HandleError:
@@ -3674,7 +3674,7 @@ ERR ErrDBUTLEnumSingleSpaceTree(
             Assert( pbts->pBasicCatalog->eType == eBTreeTypeInternalSpaceAE );
             OSStrCbCopyW( pbts->pBasicCatalog->rgName, sizeof(pbts->pBasicCatalog->rgName), L"[Avail Extents]" );
         }
-        pbts->pBasicCatalog->pSpaceHints = NULL;
+        pbts->pBasicCatalog->pSpaceHints = nullptr;
     }
 
     //  Setup space tree info.
@@ -3689,7 +3689,7 @@ ERR ErrDBUTLEnumSingleSpaceTree(
         pbts->pSpaceTrees->cpgSpaceTreeAvailable = 0;
 
         BTREE_STATS_PARENT_OF_LEAF  btsSpaceTree = { 0 };
-        EVAL_INT_PAGE_CTX ctx = { NULL, &btsSpaceTree };
+        EVAL_INT_PAGE_CTX ctx = { nullptr, &btsSpaceTree };
 
         Call( ErrBTUTLAcross( ifmp,
                     pgnoFDP,
@@ -3717,7 +3717,7 @@ ERR ErrDBUTLEnumSingleSpaceTree(
                     ifmp,
                     pgnoFDP,
                     pbts->pFullWalk,
-                    NULL ) );
+                    nullptr ) );
     }
 
     //  Initiate callback.
@@ -3755,7 +3755,7 @@ ERR ErrDBUTLEnumSpaceTrees(
         pbts->pBasicCatalog->objidFDP = pbts->pParent->pBasicCatalog->objidFDP;
         Assert( pbts->pParent->pBasicCatalog->objidFDP == objidParent );
         Assert( pbts->pBasicCatalog->objidFDP == objidParent ); // lets make really sure.
-        pbts->pBasicCatalog->pSpaceHints = NULL;
+        pbts->pBasicCatalog->pSpaceHints = nullptr;
     }
 
     //
@@ -3831,7 +3831,7 @@ ERR ErrDBUTLEnumIndexSpace( const INDEXDEF * pindexdef, void * pv )
     }
 
     CPRINTF * const pcprintf = ( pdbues->grbitDbUtilOptions & JET_bitDBUtilOptionDumpVerbose ) ?
-        CPRINTFSTDOUT::PcprintfInstance() : NULL;
+        CPRINTFSTDOUT::PcprintfInstance() : nullptr;
 
     //  Setup other BTree stats data.
     //
@@ -3922,7 +3922,7 @@ ERR ErrDBUTLEnumTableSpace( const TABLEDEF * ptabledef, void * pv )
     }
 
     CPRINTF * const pcprintf = ( pdbues->grbitDbUtilOptions & JET_bitDBUtilOptionDumpVerbose ) ?
-        CPRINTFSTDOUT::PcprintfInstance() : NULL;
+        CPRINTFSTDOUT::PcprintfInstance() : nullptr;
 
     //  Setup other BTree stats data.
     //
@@ -4392,7 +4392,7 @@ LOCAL ERR ErrDBUTLDumpOneIndex( PIB * ppib, FUCB * pfucbCatalog, VOID * pfnCallb
                 objidTable,
                 szTableName,
                 cchTableName,
-                NULL ) );
+                nullptr ) );
 
         // ... then open it in read-only mode.
         CallR( ErrFILEOpenTable(
@@ -4406,17 +4406,17 @@ LOCAL ERR ErrDBUTLDumpOneIndex( PIB * ppib, FUCB * pfucbCatalog, VOID * pfnCallb
 
         // Let's now find the derived index...
         for ( pfcbDerivedIndex = pfucbDerivedTable->u.pfcb;
-            NULL != pfcbDerivedIndex;
+            nullptr != pfcbDerivedIndex;
             pfcbDerivedIndex = pfcbDerivedIndex->PfcbNextIndex() )
         {
-            if ( NULL != pfcbDerivedIndex->Pidb() && ( UtilCmpName( indexdef.szName, ptdbDerivedTable->SzIndexName( pfcbDerivedIndex->Pidb()->ItagIndexName(), pfcbDerivedIndex->FDerivedIndex() ) ) == 0 ) )
+            if ( nullptr != pfcbDerivedIndex->Pidb() && ( UtilCmpName( indexdef.szName, ptdbDerivedTable->SzIndexName( pfcbDerivedIndex->Pidb()->ItagIndexName(), pfcbDerivedIndex->FDerivedIndex() ) ) == 0 ) )
             {
                 break;
             }
         }
 
         Assert( pfcbDerivedIndex );
-        if ( NULL == pfcbDerivedIndex )
+        if ( nullptr == pfcbDerivedIndex )
         {
             CallR( JET_errCatalogCorrupted );
         }
@@ -4493,7 +4493,7 @@ LOCAL ERR ErrDBUTLDumpOneIndex( PIB * ppib, FUCB * pfucbCatalog, VOID * pfnCallb
             indexdef.ccolumnidDef,
             fFalse,
             fFalse,
-            NULL );
+            nullptr );
 
         Assert( rgretrievecolumn[iretcolIdxsegConditional].cbActual <= sizeof(FID) * JET_ccolKeyMost );
         Assert( rgretrievecolumn[iretcolIdxsegConditional].cbActual % sizeof(FID) == 0);
@@ -4506,7 +4506,7 @@ LOCAL ERR ErrDBUTLDumpOneIndex( PIB * ppib, FUCB * pfucbCatalog, VOID * pfnCallb
             indexdef.ccolumnidConditional,
             fTrue,
             fFalse,
-            NULL );
+            nullptr );
     }
 
     CallR( ErrCATGetIndexSegments(
@@ -4759,7 +4759,7 @@ LOCAL ERR ErrDBUTLDumpTables( PIB * ppib, IFMP ifmp, _In_ PCWSTR wszTableName, P
     
     Call( ErrIsamSetCurrentIndex( ppib, pfucbCatalog, szMSORootObjectsIndex ) );
 
-    if ( NULL != wszTableName )
+    if ( nullptr != wszTableName )
     {
         //  find the table we want and dump it
         const BYTE  bTrue   = 0xff;
@@ -5015,8 +5015,8 @@ LOCAL ERR ErrDBUTLDumpTables( DBCCINFO *pdbccinfo, PFNTABLE pfntable, VOID * pvC
     dbutil.edbdump      = opEDBDumpTables;
     dbutil.grbitOptions = pdbccinfo->grbitOptions;
     
-    dbutil.szTable      = ( NULL == pdbccinfo->wszTable || L'\0' == pdbccinfo->wszTable[0] ?
-                                NULL :
+    dbutil.szTable      = ( nullptr == pdbccinfo->wszTable || L'\0' == pdbccinfo->wszTable[0] ?
+                                nullptr :
                                 pdbccinfo->wszTable );
 
     return ErrDBUTLDump( sesid, &dbutil );
@@ -5058,7 +5058,7 @@ LOCAL ERR ErrDBUTLDumpSpaceCat( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
             sesid,
             pdbutil->spcatOptions.szDatabase,
             fFalse,
-            NULL,
+            nullptr,
             0,
             JET_bitDbReadOnly ) );
     fDbAttached = fTrue;
@@ -5066,7 +5066,7 @@ LOCAL ERR ErrDBUTLDumpSpaceCat( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
     Call( ErrIsamOpenDatabase(
             sesid,
             pdbutil->spcatOptions.szDatabase,
-            NULL,
+            nullptr,
             &dbid,
             JET_bitDbExclusive | JET_bitDbReadOnly ) );
     fDbOpen = fTrue;
@@ -5100,7 +5100,7 @@ HandleError:
 
     if ( fDbAttached )
     {
-        (void)ErrIsamDetachDatabase( sesid, NULL, pdbutil->spcatOptions.szDatabase );
+        (void)ErrIsamDetachDatabase( sesid, nullptr, pdbutil->spcatOptions.szDatabase );
         fDbAttached = fFalse;
     }
 
@@ -5112,7 +5112,7 @@ LOCAL ERR ErrDBUTLDumpCachedFileHeader( const WCHAR* const wszFilePath, const JE
 //  ================================================================
 {
     ERR                 err     = JET_errSuccess;
-    IBlockCacheFactory* pbcf    = NULL;
+    IBlockCacheFactory* pbcf    = nullptr;
 
     Call( COSBlockCacheFactory::ErrCreate( &pbcf ) );
 
@@ -5128,7 +5128,7 @@ LOCAL ERR ErrDBUTLDumpCacheFile( const WCHAR* const wszFilePath, const JET_GRBIT
 //  ================================================================
 {
     ERR                 err     = JET_errSuccess;
-    IBlockCacheFactory* pbcf    = NULL;
+    IBlockCacheFactory* pbcf    = nullptr;
 
     Call( COSBlockCacheFactory::ErrCreate( &pbcf ) );
 
@@ -5202,7 +5202,7 @@ LOCAL VOID DBUTLIReportSpaceLeakEstimationSucceeded(
         _countof( rgwsz ),
         rgwsz,
         0,
-        NULL,
+        nullptr,
         pfmp->Pinst() );
     OSTraceResumeGC();
 }
@@ -5233,7 +5233,7 @@ LOCAL VOID DBUTLIReportSpaceLeakEstimationFailed(
         _countof( rgwsz ),
         rgwsz,
         0,
-        NULL,
+        nullptr,
         pfmp->Pinst() );
     OSTraceResumeGC();
 }
@@ -5244,7 +5244,7 @@ LOCAL ERR ErrDBUTLIEstimateRootSpaceLeak( PIB* const ppib, const IFMP ifmp )
 {
     ERR err = JET_errSuccess;
     FMP* const pfmp = g_rgfmp + ifmp;
-    const CHAR* szContext = NULL;
+    const CHAR* szContext = nullptr;
     const HRT hrtStart = HrtHRTCount();
     BOOL fRunning = fFalse;
     JET_THREADSTATS jtsStart = { 0 }, jtsEnd = { 0 };
@@ -5296,7 +5296,7 @@ LOCAL ERR ErrDBUTLIEstimateRootSpaceLeak( PIB* const ppib, const IFMP ifmp )
         CPG cpgPrimaryObject = cpgNil;
 
         // Check if it is cached.
-        err = ErrCATGetExtentPageCounts( ppib, ifmp, objidLast, &cpgPrimaryObject, NULL );
+        err = ErrCATGetExtentPageCounts( ppib, ifmp, objidLast, &cpgPrimaryObject, nullptr );
         if ( err >= JET_errSuccess )
         {
             cCachedPrimary++;
@@ -5638,7 +5638,7 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
     {
         //  the current operation requires szDatabase != NULL
 
-        if ( NULL == pdbutil->szDatabase || L'\0' == pdbutil->szDatabase[0] )
+        if ( nullptr == pdbutil->szDatabase || L'\0' == pdbutil->szDatabase[0] )
         {
             return ErrERRCheck( JET_errDatabaseInvalidName );
         }
@@ -5648,7 +5648,7 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
     {
         //  the current operation requires szDatabase != NULL
 
-        if ( NULL == pdbutil->rbsOptions.szDatabase || L'\0' == pdbutil->rbsOptions.szDatabase[0] )
+        if ( nullptr == pdbutil->rbsOptions.szDatabase || L'\0' == pdbutil->rbsOptions.szDatabase[0] )
         {
             return ErrERRCheck( JET_errDatabaseInvalidName );
         }
@@ -5667,7 +5667,7 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
     if ( opDBUTILEstimateRootSpaceLeak == pdbutil->op )
     {
         // We need a JET_DBID, not a DB name.
-        if ( ( pdbutil->szDatabase != NULL ) || ( pdbutil->dbid == JET_dbidNil ) )
+        if ( ( pdbutil->szDatabase != nullptr ) || ( pdbutil->dbid == JET_dbidNil ) )
         {
             return ErrERRCheck( JET_errInvalidParameter );
         }
@@ -5753,13 +5753,13 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
 
             if ( (ULONG)UlParam( pinst, JET_paramEngineFormatVersion ) == JET_efvUsePersistedFormat )
             {
-                DBFILEHDR * pdbfilehdr = NULL;
+                DBFILEHDR * pdbfilehdr = nullptr;
                 JET_ENGINEFORMATVERSION efvSourceDb = JET_efvExchange55Rtm;
 
-                AllocR( pdbfilehdr = (DBFILEHDR * )PvOSMemoryPageAlloc( g_cbPage, NULL ) );
+                AllocR( pdbfilehdr = (DBFILEHDR * )PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
                 memset( pdbfilehdr, 0, g_cbPage );
 
-                IFileAPI * pfapi = NULL;
+                IFileAPI * pfapi = nullptr;
                 if ( CIOFilePerf::ErrFileOpen(
                                         pinst->m_pfsapi,
                                         pinst,
@@ -5781,7 +5781,7 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
                                                         urhfReadOnly );
                     if ( err >= JET_errSuccess )
                     {
-                        const FormatVersions * pfmtvers = NULL;
+                        const FormatVersions * pfmtvers = nullptr;
                         err = ErrDBFindHighestMatchingDbMajors( pdbfilehdr->Dbv(), &pfmtvers, fTrue /* allow bad version, client may try to defrag too high version */ );
                         if ( err >= JET_errSuccess )
                         {
@@ -5796,14 +5796,14 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
                 Assert( efvSourceDb != JET_efvUsePersistedFormat );
                 Assert( efvSourceDb != JET_efvExchange55Rtm );
 
-                err = SetParam( pinst, NULL, JET_paramEngineFormatVersion, efvSourceDb, NULL );
+                err = SetParam( pinst, nullptr, JET_paramEngineFormatVersion, efvSourceDb, nullptr );
             }
             Assert( JET_efvUsePersistedFormat != UlParam( pinst, JET_paramEngineFormatVersion ) );
 
             err = ErrIsamAttachDatabase(    sesid,
                                             pdbutil->szDatabase,
                                             fFalse,
-                                            NULL,
+                                            nullptr,
                                             0,
                                             JET_bitDbReadOnly );
             if ( JET_errSuccess != err )
@@ -5816,10 +5816,10 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
                                             pinst->m_pfsapi,
                                             pdbutil->szTable,
                                             JET_PFNSTATUS( pdbutil->pfnCallback ),
-                                            NULL,
+                                            nullptr,
                                             pdbutil->grbitOptions );
 
-            errDetach = ErrIsamDetachDatabase( sesid, NULL, pdbutil->szDatabase );
+            errDetach = ErrIsamDetachDatabase( sesid, nullptr, pdbutil->szDatabase );
 
             if ( err >= JET_errSuccess && errDetach < JET_errSuccess )
             {
@@ -5836,7 +5836,7 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
             err = ErrIsamAttachDatabase(    sesid,
                                             pdbutil->szDatabase,
                                             fFalse,
-                                            NULL,
+                                            nullptr,
                                             0,
                                             JET_bitDbExclusive );
             if ( JET_errSuccess != err )
@@ -5850,7 +5850,7 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
                                        CPRINTFSTDOUT::PcprintfInstance(),
                                        pdbutil->grbitOptions );
 
-            errDetach = ErrIsamDetachDatabase( sesid, NULL, pdbutil->szDatabase );
+            errDetach = ErrIsamDetachDatabase( sesid, nullptr, pdbutil->szDatabase );
 
             if ( err >= JET_errSuccess && errDetach < JET_errSuccess )
             {
@@ -5907,11 +5907,11 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
     Assert( NULL != pdbutil->szDatabase );
     OSStrCbCopyW( dbccinfo.wszDatabase, sizeof(dbccinfo.wszDatabase), pdbutil->szDatabase );
 
-    if ( NULL != pdbutil->szTable )
+    if ( nullptr != pdbutil->szTable )
     {
         OSStrCbCopyW( dbccinfo.wszTable, sizeof(dbccinfo.wszTable), pdbutil->szTable );
     }
-    if ( NULL != pdbutil->szIndex )
+    if ( nullptr != pdbutil->szIndex )
     {
         OSStrCbCopyW( dbccinfo.wszIndex, sizeof(dbccinfo.wszIndex), pdbutil->szIndex );
     }
@@ -5933,14 +5933,14 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
     CallR( ErrIsamAttachDatabase(   sesid,
                                     dbccinfo.wszDatabase,
                                     fFalse,
-                                    NULL,
+                                    nullptr,
                                     0,
                                     grbitAttach ) );
     Assert( JET_wrnDatabaseAttached != err );   // Since logging/recovery is disabled.
 
     Call( ErrIsamOpenDatabase(      sesid,
                                     dbccinfo.wszDatabase,
-                                    NULL,
+                                    nullptr,
                                     &dbid,
                                     grbitAttach ) );
 
@@ -5959,7 +5959,7 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
 
         case opDBUTILDumpSpace:
         {
-            if ( NULL == pdbutil->pfnCallback )
+            if ( nullptr == pdbutil->pfnCallback )
             {
                 //  We are causing incompatibility if anyone actually utilizes space 
                 //  dump.  If we really want to preserve, we can move the legacy space
@@ -5971,7 +5971,7 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
             Call( ErrSCANDumpMSysScan( dbccinfo.ppib, dbccinfo.ifmp ) );
             Call( MSysDBM::ErrDumpTable( dbccinfo.ifmp ) );
 
-            CBTreeStatsManager btsDbRootManager( pdbutil->grbitOptions, NULL /* DbRoot has no parent */ );
+            CBTreeStatsManager btsDbRootManager( pdbutil->grbitOptions, nullptr /* DbRoot has no parent */ );
             BTREE_STATS * pbts = btsDbRootManager.Pbts();
 
             if ( pbts->pBasicCatalog )
@@ -5989,7 +5989,7 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
             {
                 CPRINTF * const pcprintf = ( pdbutil->grbitOptions & JET_bitDBUtilOptionDumpVerbose ) ?
                                                 CPRINTFSTDOUT::PcprintfInstance() :
-                                                NULL;
+                                                nullptr;
                 CallR( ErrDBUTLGetSpaceTreeInfo(
                             dbccinfo.ppib,
                             dbccinfo.ifmp,
@@ -6037,8 +6037,8 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
             dbues.ppib = (JET_SESID)dbccinfo.ppib;
             dbues.ifmp = dbccinfo.ifmp;
             dbues.grbitDbUtilOptions = pdbutil->grbitOptions;
-            dbues.wszSelectedTable = ( NULL == dbccinfo.wszTable || L'\0' == dbccinfo.wszTable[0] ?
-                                        NULL :
+            dbues.wszSelectedTable = ( nullptr == dbccinfo.wszTable || L'\0' == dbccinfo.wszTable[0] ?
+                                        nullptr :
                                         dbccinfo.wszTable );
             dbues.pbts = btsTableManager.Pbts();
             dbues.pfnBTreeStatsAnalysisFunc = (JET_PFNSPACEDATA)pdbutil->pfnCallback;
@@ -6102,7 +6102,7 @@ HandleError:
         (VOID)ErrIsamCloseDatabase( sesid, dbid, 0 );
     }
 
-    (VOID)ErrIsamDetachDatabase( sesid, NULL, dbccinfo.wszDatabase );
+    (VOID)ErrIsamDetachDatabase( sesid, nullptr, dbccinfo.wszDatabase );
 
     fflush( stdout );
 #endif // !MINIMAL_FUNCTIONALITY

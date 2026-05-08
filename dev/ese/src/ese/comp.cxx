@@ -66,7 +66,7 @@ class CMEMLIST
 
 //  ================================================================
 CMEMLIST::CMEMLIST() :
-    m_pvHead( 0 ),
+    m_pvHead( nullptr ),
     m_cbAllocated( 0 )
 //  ================================================================
 {
@@ -98,13 +98,13 @@ VOID * CMEMLIST::PvAlloc( const ULONG cb )
     //
     if ( cbActualAllocate < cb )
     {
-        return NULL;
+        return nullptr;
     }
 
     VOID * const pvNew = PvOSMemoryHeapAlloc( cbActualAllocate );
-    if( NULL == pvNew )
+    if( nullptr == pvNew )
     {
-        return NULL;
+        return nullptr;
     }
 
     VOID * const pvReturn = reinterpret_cast<BYTE *>( pvNew ) + sizeof( VOID* );
@@ -130,7 +130,7 @@ VOID CMEMLIST::FreeAllMemory()
     }
 
     m_cbAllocated   = 0;
-    m_pvHead        = NULL;
+    m_pvHead        = nullptr;
 }
 
 
@@ -221,7 +221,7 @@ INLINE ERR ErrCMPOpenDB(
     BOOL           fDBOpen = fFalse;
     ULONG          ulParamVal = 1;
     JET_SETDBPARAM setdbparam = { JET_dbparamMaintainExtentPageCountCache, &ulParamVal, sizeof(ulParamVal) };
-    JET_SETDBPARAM *psetdbparam = NULL;
+    JET_SETDBPARAM *psetdbparam = nullptr;
     ULONG          csetdbparam = 0;
     JET_GRBIT      grbitCreateForDefrag    = JET_bitDbRecoveryOff|JET_bitDbVersioningOff;
     //  open the source DB Exclusive and ReadOnly
@@ -241,7 +241,7 @@ INLINE ERR ErrCMPOpenDB(
 
     // Look up the ExtentPageCountCache table.  If it exists in the original DB, we need to create
     // it in the new DB.
-    err = ErrCATSeekTable( pcompactinfo->ppib, pcompactinfo->ifmpSrc, szMSExtentPageCountCache, NULL, NULL );
+    err = ErrCATSeekTable( pcompactinfo->ppib, pcompactinfo->ifmpSrc, szMSExtentPageCountCache, nullptr, nullptr );
     switch ( err )
     {
         case JET_errSuccess:
@@ -270,7 +270,7 @@ INLINE ERR ErrCMPOpenDB(
                 dbidMax,
                 CpgDBDatabaseMinMin(),  //  using min-min minimizes DB size, and provides good testing.
                 fFalse, // fSparseEnabledFile
-                NULL,
+                nullptr,
                 psetdbparam,
                 csetdbparam,
                 grbitCreateForDefrag ) );
@@ -398,7 +398,7 @@ LOCAL VOID CMPCopyOneIndex(
 
     Assert( NULL != pidxcreate->pidxunicode );
 
-    if ( NULL != pidxcreate->pidxunicode->szLocaleName )
+    if ( nullptr != pidxcreate->pidxunicode->szLocaleName )
     {
         CallS( ErrOSStrCbCopyW( pidxcreate->pidxunicode->szLocaleName, sizeof( WCHAR ) * NORM_LOCALE_NAME_MAX_LENGTH, pidb->WszLocaleName() ) );
     }
@@ -454,7 +454,7 @@ LOCAL ERR ErrCMPCreateTableColumnIndex(
     ULONG           cConditionalColumns;
     ULONG           ccolSingleValue = 0;
     ULONG           cbActual;
-    JET_COLUMNID    *mpcolumnidcolumnidTagged = NULL;
+    JET_COLUMNID    *mpcolumnidcolumnidTagged = nullptr;
     FID             fidTaggedHighest = 0;
     ULONG           cTagged = 0;
     BOOL            fLocalAlloc = fFalse;
@@ -656,7 +656,7 @@ LOCAL ERR ErrCMPCreateTableColumnIndex(
                     JET_cbNameMost,
                     &cbActual,
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
 
         Assert( cbActual <= JET_cbNameMost );
         szCurrColumn[cbActual] = '\0';
@@ -688,7 +688,7 @@ LOCAL ERR ErrCMPCreateTableColumnIndex(
                     sizeof( pcolcreateCurr->coltyp ),
                     &cbActual,
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         Assert( cbActual == sizeof( JET_COLTYP ) );
         Assert( JET_coltypNil != pcolcreateCurr->coltyp );
 
@@ -700,7 +700,7 @@ LOCAL ERR ErrCMPCreateTableColumnIndex(
                     sizeof( pcolcreateCurr->cbMax ),
                     &cbActual,
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         Assert( cbActual == sizeof( ULONG ) );
 
         Call( ErrDispRetrieveColumn(
@@ -711,7 +711,7 @@ LOCAL ERR ErrCMPCreateTableColumnIndex(
                     sizeof( pcolcreateCurr->grbit ),
                     &cbActual,
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         Assert( cbActual == sizeof( JET_GRBIT ) );
 
         Call( ErrDispRetrieveColumn(
@@ -722,14 +722,14 @@ LOCAL ERR ErrCMPCreateTableColumnIndex(
                     sizeof( pcolcreateCurr->cp ),
                     &cbActual,
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         Assert( cbActual == sizeof( USHORT ) );
 
         /*  retrieve default value.
         /**/
         if( pcolcreateCurr->grbit & JET_bitColumnUserDefinedDefault )
         {
-            JET_USERDEFINEDDEFAULT_A * pudd = NULL;
+            JET_USERDEFINEDDEFAULT_A * pudd = nullptr;
 
             //  don't want to pass in NULL
             BYTE b;
@@ -741,7 +741,7 @@ LOCAL ERR ErrCMPCreateTableColumnIndex(
                         sizeof( b ),
                         &pcolcreateCurr->cbDefault,
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
 
             Alloc( pcolcreateCurr->pvDefault = cmemlist.PvAlloc( pcolcreateCurr->cbDefault ) );
 
@@ -753,7 +753,7 @@ LOCAL ERR ErrCMPCreateTableColumnIndex(
                         pcolcreateCurr->cbDefault,
                         &pcolcreateCurr->cbDefault,
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
             Assert( JET_wrnBufferTruncated != err );
             Assert( JET_wrnColumnNull != err );
             Assert( pcolcreateCurr->cbDefault > 0 );
@@ -770,7 +770,7 @@ LOCAL ERR ErrCMPCreateTableColumnIndex(
             pudd = (JET_USERDEFINEDDEFAULT_A *)pcolcreateCurr->pvDefault;
             pudd->szCallback = ((CHAR*)(pcolcreateCurr->pvDefault)) + sizeof( JET_USERDEFINEDDEFAULT_A );
             pudd->pbUserData = ((BYTE*)(pudd->szCallback)) + strlen( pudd->szCallback ) + 1;
-            if( NULL != pudd->szDependantColumns )
+            if( nullptr != pudd->szDependantColumns )
             {
                 pudd->szDependantColumns = (CHAR *)pudd->pbUserData + pudd->cbUserData;
             }
@@ -791,7 +791,7 @@ LOCAL ERR ErrCMPCreateTableColumnIndex(
                         cbDefaultRecRemaining,
                         &pcolcreateCurr->cbDefault,
                         NO_GRBIT,
-                        NULL ) );
+                        nullptr ) );
             Assert( JET_wrnBufferTruncated != err );
             Assert( pcolcreateCurr->cbDefault < cbDefaultRecRemaining );    // can never reach cbDefaultRecRemaining, because of record overhead
             pcolcreateCurr->pvDefault = pbCurrDefault;
@@ -811,7 +811,7 @@ LOCAL ERR ErrCMPCreateTableColumnIndex(
                     sizeof( JET_COLUMNID ),
                     &cbActual,
                     NO_GRBIT,
-                    NULL ) );
+                    nullptr ) );
         Assert( cbActual == sizeof( JET_COLUMNID ) );
 
         if ( pcolcreateCurr->grbit & JET_bitColumnTagged )
@@ -1003,7 +1003,7 @@ HandleError:
     if ( err < 0  &&  mpcolumnidcolumnidTagged )
     {
         OSMemoryHeapFree( mpcolumnidcolumnidTagged );
-        mpcolumnidcolumnidTagged = NULL;
+        mpcolumnidcolumnidTagged = nullptr;
     }
 
     if ( fLocalAlloc )
@@ -1034,25 +1034,25 @@ LOCAL ERR ErrCMPCopyTable(
     CPG             cpgTableSrc;
     const CPG       cpgDbExtensionSizeSave = (CPG)UlParam( pinst, JET_paramDbExtensionSize );
     JET_COLUMNLIST  columnList;
-    JET_COLUMNID    *mpcolumnidcolumnidTagged = NULL;
+    JET_COLUMNID    *mpcolumnidcolumnidTagged = nullptr;
     STATUSINFO      *pstatus = pcompactinfo->pstatus;
     ULONG           crowCopied = 0;
     QWORD           qwAutoIncRecMax;
     ULONG           rgulAllocInfo[] = { ulCMPDefaultPages, ulCMPDefaultDensity };
-    CHAR            *szTemplateTableName = NULL;
+    CHAR            *szTemplateTableName = nullptr;
     BOOL            fCorruption = fFalse;
     JET_TABLECREATE5_A  tablecreate = {
                         sizeof(JET_TABLECREATE5_A),
                         (CHAR *)szObjectName,
-                        NULL,                   // Template table
+                        nullptr,                   // Template table
                         ulCMPDefaultPages,
                         ulCMPDefaultDensity,
-                        NULL, 0,                // Columns
-                        NULL, 0,                // Indexes
-                        NULL, 0,                // Callbacks
+                        nullptr, 0,                // Columns
+                        nullptr, 0,                // Indexes
+                        nullptr, 0,                // Callbacks
                         NO_GRBIT,
-                        NULL,
-                        NULL,
+                        nullptr,
+                        nullptr,
                         0,
                         0,
                         JET_TABLEID( pfucbNil ),
@@ -1140,8 +1140,8 @@ LOCAL ERR ErrCMPCopyTable(
     Call( ErrIsamGetTableColumnInfo(
                 reinterpret_cast<JET_SESID>( ppib ),
                 reinterpret_cast<JET_TABLEID>( pfucbSrc ),
-                NULL,
-                NULL,
+                nullptr,
+                nullptr,
                 &columnList,
                 sizeof(columnList),
                 JET_ColInfoList|JET_ColInfoGrbitCompacting,
@@ -1302,7 +1302,7 @@ LOCAL ERR ErrCMPCopyTable(
     //  a limit (I somewhat arbitrarily chose the limit to be a number of pages
     //  equal to the page size)
     //
-    Call( Param( pinst, JET_paramDbExtensionSize )->Set( pinst, ppibNil, max( cpgDbExtensionSizeSave, (CPG)min( g_rgfmp[ pcompactinfo->ifmpSrc ].CbPage(), cpgTableSrc / 100 ) ), NULL ) );
+    Call( Param( pinst, JET_paramDbExtensionSize )->Set( pinst, ppibNil, max( cpgDbExtensionSizeSave, (CPG)min( g_rgfmp[ pcompactinfo->ifmpSrc ].CbPage(), cpgTableSrc / 100 ) ), nullptr ) );
 
     Call( ErrSORTCopyRecords(
                 ppib,
@@ -1390,7 +1390,7 @@ LOCAL ERR ErrCMPCopyTable(
     }
 
 HandleError:
-    CallS( Param( pinst, JET_paramDbExtensionSize )->Set( pinst, ppibNil, cpgDbExtensionSizeSave, NULL ) );
+    CallS( Param( pinst, JET_paramDbExtensionSize )->Set( pinst, ppibNil, cpgDbExtensionSizeSave, nullptr ) );
 
     if ( pfucbNil != pfucbDest )
     {
@@ -1398,12 +1398,12 @@ HandleError:
         CallS( ErrFILECloseTable( ppib, pfucbDest ) );
     }
 
-    if ( mpcolumnidcolumnidTagged != NULL )
+    if ( mpcolumnidcolumnidTagged != nullptr )
     {
         OSMemoryHeapFree( mpcolumnidcolumnidTagged );
     }
 
-    if ( szTemplateTableName != NULL )
+    if ( szTemplateTableName != nullptr )
     {
         OSMemoryHeapFree( szTemplateTableName );
     }
@@ -1621,7 +1621,7 @@ INLINE ERR ErrCMPCopyTables( COMPACTINFO *pcompactinfo )
                     pcompactinfo,
                     pfucbCatalog,
                     fTrue,
-                    NULL ) );
+                    nullptr ) );
     }
 
     Call( ErrCATClose( pcompactinfo->ppib, pfucbCatalog ) );
@@ -1679,7 +1679,7 @@ ERR ISAMAPI ErrIsamCompact(
     JET_GRBIT       grbit )
 {
     ERR             err                 = JET_errSuccess;
-    COMPACTINFO     *pcompactinfo       = NULL;
+    COMPACTINFO     *pcompactinfo       = nullptr;
     BOOL            fDatabasesOpened    = fFalse;
     STATUSINFO      statusinfo          = { 0 };
 
@@ -1701,7 +1701,7 @@ ERR ISAMAPI ErrIsamCompact(
         goto Cleanup;
     }
 
-    if ( NULL != pfnStatus )
+    if ( nullptr != pfnStatus )
     {
         pcompactinfo->pstatus = &statusinfo;
         memset( pcompactinfo->pstatus, 0, sizeof(STATUSINFO) ); //  just in case = { 0 } doesn't work
@@ -1715,12 +1715,12 @@ ERR ISAMAPI ErrIsamCompact(
                     pcompactinfo->pstatus,
                     wszDatabaseSrc,
                     szCompactAction,
-                    ( grbit & JET_bitCompactStats ) ? wszCompactStatsFile : NULL ) );
+                    ( grbit & JET_bitCompactStats ) ? wszCompactStatsFile : nullptr ) );
     }
 
     else
     {
-        pcompactinfo->pstatus = NULL;
+        pcompactinfo->pstatus = nullptr;
     }
 
     /* Open and create the databases */
@@ -1735,7 +1735,7 @@ ERR ISAMAPI ErrIsamCompact(
     }
     fDatabasesOpened = fTrue;
 
-    if ( NULL != pfnStatus )
+    if ( nullptr != pfnStatus )
     {
         Assert( pcompactinfo->pstatus );
 
@@ -1899,7 +1899,7 @@ HandleError:
             err = errT;
     }
 
-    if ( NULL != pfnStatus )        // top off status meter
+    if ( nullptr != pfnStatus )        // top off status meter
     {
         Assert( pcompactinfo->pstatus );
 

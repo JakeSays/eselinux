@@ -31,7 +31,7 @@ ERR ErrOSCreateLowMemoryNotification(
     PosixMemoryNotification * pn = new PosixMemoryNotification;
     if ( !pn )
     {
-        *ppNotification = NULL;
+        *ppNotification = nullptr;
         return ErrERRCheck( JET_errOutOfMemory );
     }
     pn->pfnCallback = pfnCallback;

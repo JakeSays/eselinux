@@ -57,7 +57,7 @@ CLogRedoMap::~CLogRedoMap()
 
 VOID CLogRedoMap::ClearLogRedoMap()
 {
-    m_rmt = NULL;
+    m_rmt = nullptr;
     m_ifmp = ifmpNil;
 }
 
@@ -81,7 +81,7 @@ HandleError:
 
 VOID CLogRedoMap::TermLogRedoMap()
 {
-    if ( m_rmt != NULL )
+    if ( m_rmt != nullptr )
     {
         m_rmt->MakeEmpty();
         delete m_rmt;
@@ -92,7 +92,7 @@ VOID CLogRedoMap::TermLogRedoMap()
 
 BOOL CLogRedoMap::FLogRedoMapEnabled() const
 {
-    return ( m_rmt != NULL );
+    return ( m_rmt != nullptr );
 }
 
 BOOL CLogRedoMap::FPgnoSet( _In_ const PGNO pgno ) const

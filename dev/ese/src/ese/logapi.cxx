@@ -184,11 +184,11 @@ INLINE ERR ErrLGDeferBeginTransaction( PIB *ppib )
 
 //  WARNING: If fVersion bit needs to be set, ensure it's set before
 //  calling this function, as it will be reset if necessary.
-INLINE VOID LGISetTrx( PIB *ppib, LRPAGE_ *plrpage, const VERPROXY * const pverproxy = NULL )
+INLINE VOID LGISetTrx( PIB *ppib, LRPAGE_ *plrpage, const VERPROXY * const pverproxy = nullptr )
 {
     Assert( ppibNil != ppib );
     
-    if ( NULL == pverproxy )
+    if ( nullptr == pverproxy )
     {
         plrpage->le_trxBegin0 = ppib->trxBegin0;
         plrpage->level = ppib->Level();
@@ -303,7 +303,7 @@ ERR ErrLGInsert( const FUCB             * const pfucb,
     Assert( !( dirflag & fDIRNoLog ) );
     Assert( g_rgfmp[pfucb->ifmp].FLogOn() );
 
-    PIB * const ppib = pverproxy != NULL &&
+    PIB * const ppib = pverproxy != nullptr &&
                     trxMax == pverproxy->prcePrimary->TrxCommitted() ?
                         pverproxy->prcePrimary->Pfucb()->ppib :
                         pfucb->ppib;
@@ -338,7 +338,7 @@ ERR ErrLGInsert( const FUCB             * const pfucb,
         lrinsert.SetFUnique();
     if ( FFUCBSpace( pfucb ) )
         lrinsert.SetFSpace();
-    if ( NULL != pverproxy )
+    if ( nullptr != pverproxy )
         lrinsert.SetFConcCI();
 
     lrinsert.le_rceid       = rceid;
@@ -421,7 +421,7 @@ ERR ErrLGFlagInsertAndReplaceData( const FUCB           * const pfucb,
     Assert( !( dirflag & fDIRNoLog ) );
     Assert( g_rgfmp[pfucb->ifmp].FLogOn() );
 
-    PIB * const ppib = pverproxy != NULL &&
+    PIB * const ppib = pverproxy != nullptr &&
                     trxMax == pverproxy->prcePrimary->TrxCommitted() ?
                         pverproxy->prcePrimary->Pfucb()->ppib :
                         pfucb->ppib;
@@ -456,7 +456,7 @@ ERR ErrLGFlagInsertAndReplaceData( const FUCB           * const pfucb,
         lrfiard.SetFUnique();
     if ( FFUCBSpace( pfucb ) )
         lrfiard.SetFSpace();
-    if ( NULL != pverproxy )
+    if ( nullptr != pverproxy )
         lrfiard.SetFConcCI();
 
     lrfiard.le_rceid            = rceidInsert;
@@ -543,7 +543,7 @@ ERR ErrLGFlagInsert( const FUCB             * const pfucb,
               pfucbNil != pverproxy->prcePrimary->Pfucb() &&
               ppibNil != pverproxy->prcePrimary->Pfucb()->ppib ) );
 
-    PIB * const ppib = pverproxy != NULL &&
+    PIB * const ppib = pverproxy != nullptr &&
                     trxMax == pverproxy->prcePrimary->TrxCommitted() ?
                         pverproxy->prcePrimary->Pfucb()->ppib :
                         pfucb->ppib;
@@ -573,7 +573,7 @@ ERR ErrLGFlagInsert( const FUCB             * const pfucb,
         lrflaginsert.SetFUnique();
     if ( FFUCBSpace( pfucb ) )
         lrflaginsert.SetFSpace();
-    if ( NULL != pverproxy )
+    if ( nullptr != pverproxy )
         lrflaginsert.SetFConcCI();
 
     lrflaginsert.le_rceid       = rceid;
@@ -870,7 +870,7 @@ ERR ErrLGScrub(
         lrscrub.SetFUnusedPage();
         lrscrub.SetCbData( (USHORT)cbPadding );
         lrscrub.SetCscrubOper( 0 );
-        rgdata[idata].SetPv( NULL );
+        rgdata[idata].SetPv( nullptr );
         rgdata[idata].SetCb( 0 );
         Assert( lrscrub.FUnusedPage() );
     }
@@ -1264,7 +1264,7 @@ LOCAL ERR ErrLGIPageMoveRootsInMacro(
     for ( CPG ipg = 1; ipg <= 3; ipg++ )
     {
         CSR* pcsrSource = pcsrNil;
-        DATA* pdataBeforeSource = NULL;
+        DATA* pdataBeforeSource = nullptr;
         PGNO pgnoNew = pgnoNull;
         DBTIME dbtimeBefore = dbtimeNil;
         ULONG fMoveFlags = LRPAGEMOVE::fRootNone;
@@ -1462,7 +1462,7 @@ LOCAL INLINE ERR ErrLGIReplace(
     rgdata[0].SetPv( (BYTE *)&lrreplace );
     rgdata[0].SetCb( sizeof(LRREPLACE) );
 
-    if ( NULL != pdataDiff )
+    if ( nullptr != pdataDiff )
     {
         lrreplace.lrtyp     = lrtypReplaceD;
         lrreplace.SetCb( (USHORT)pdataDiff->Cb() );
@@ -1545,7 +1545,7 @@ ERR ErrLGRootPageMove(
     ERR err = JET_errSuccess;
     FMP* const pfmp = g_rgfmp + ifmp;
     LOG* const plog = PinstFromIfmp( ifmp )->m_plog;
-    PGNO *rgpgnoRef = NULL;
+    PGNO *rgpgnoRef = nullptr;
     DBTIME dbtimeMacro = dbtimeNil;
     BOOL fAbortMacro = fFalse;
     LGPOS lgposThrowAway = lgposMin;
@@ -1573,7 +1573,7 @@ ERR ErrLGRootPageMove(
 
     // Children objects.
     for ( ROOTMOVECHILD* prmc = prm->prootMoveChildren;
-            prmc != NULL;
+            prmc != nullptr;
             prmc = prmc->prootMoveChildNext )
     {
         cpgRef++;
@@ -1632,7 +1632,7 @@ ERR ErrLGRootPageMove(
 
     // Log updates to children's external headers.
     for ( ROOTMOVECHILD* prmc = prm->prootMoveChildren;
-            prmc != NULL;
+            prmc != nullptr;
             prmc = prmc->prootMoveChildNext )
     {
         Call( ErrLGISetExternalHeaderNoTableInMacro(
@@ -1665,7 +1665,7 @@ ERR ErrLGRootPageMove(
                 &prm->csrCatObj[iCat],
                 prm->dataBeforeCatObj[iCat],
                 prm->dataNewCatObj[iCat],
-                NULL,
+                nullptr,
                 rceidNull,
                 fDIRNoVersion,
                 &lgposThrowAway,
@@ -1678,7 +1678,7 @@ ERR ErrLGRootPageMove(
         {
             Assert( prm->pgnoCatClustIdx[iCat] != pgnoNull );
             CSR* pcsr = pcsrNil;
-            DATA* pdata = NULL;
+            DATA* pdata = nullptr;
             DBTIME dbtimeBeforeReplace = dbtimeNil;
 
             if ( prm->pgnoCatClustIdx[iCat] != prm->pgnoCatObj[iCat] )
@@ -1706,7 +1706,7 @@ ERR ErrLGRootPageMove(
                     pcsr,
                     *pdata,
                     prm->dataNewCatClustIdx[iCat],
-                    NULL,
+                    nullptr,
                     rceidNull,
                     fDIRNoVersion,
                     &lgposThrowAway,
@@ -1955,7 +1955,7 @@ ERR ErrLGFlagDelete( const FUCB * const pfucb,
               pfucbNil != pverproxy->prcePrimary->Pfucb() &&
               ppibNil != pverproxy->prcePrimary->Pfucb()->ppib ) );
 
-    PIB * const ppib = pverproxy != NULL &&
+    PIB * const ppib = pverproxy != nullptr &&
                     trxMax == pverproxy->prcePrimary->TrxCommitted() ?
                         pverproxy->prcePrimary->Pfucb()->ppib :
                         pfucb->ppib;
@@ -1992,7 +1992,7 @@ ERR ErrLGFlagDelete( const FUCB * const pfucb,
         lrflagdelete.SetFUnique();
     if ( FFUCBSpace( pfucb ) )
         lrflagdelete.SetFSpace();
-    if ( NULL != pverproxy )
+    if ( nullptr != pverproxy )
         lrflagdelete.SetFConcCI();
 
     LGISetTrx( ppib, &lrflagdelete, pverproxy );
@@ -2541,7 +2541,7 @@ ERR ErrLGCommitTransaction( PIB *ppib, const LEVEL levelCommitTo, BOOL fFireRedo
             rgdata[1].SetCb( ppib->CbClientCommitContextGeneric() );
 
             // Cannot log in same call as lrCommit0 because we would not get the lgpos of the commit0 LR in that case.
-            CallR( plog->ErrLGLogRec( rgdata, 2, 0, ppib->lgposStart.lGeneration, NULL ) );
+            CallR( plog->ErrLGLogRec( rgdata, 2, 0, ppib->lgposStart.lGeneration, nullptr ) );
         }
 
         lrcommit0.lrtyp = lrtypCommit0;
@@ -3080,7 +3080,7 @@ ERR ErrLGForceLogRollover(
 {
     INST * const        pinst       = PinstFromPpib( ppib );
     LOG * const         plog        = pinst->m_plog;
-    const ULONG         cbTrace     = ( NULL != szTrace ? (ULONG)LOSStrLengthA( szTrace ) + 1 : 0 );
+    const ULONG         cbTrace     = ( nullptr != szTrace ? (ULONG)LOSStrLengthA( szTrace ) + 1 : 0 );
     ULONG               idata       = 0;
     const ULONG         cdata       = 3;
     DATA                rgdata[ cdata ];
@@ -3476,11 +3476,11 @@ ERR ErrLGSplit( const FUCB          * const pfucb,
                 const VERPROXY      * const pverproxy )
 {
     ERR         err = JET_errSuccess;
-    BYTE *pbDataCompressed = NULL, *pbDataDehydrated = NULL;
+    BYTE *pbDataCompressed = nullptr, *pbDataDehydrated = nullptr;
 
     INST *pinst = PinstFromIfmp( pfucb->ifmp );
     LOG *plog = pinst->m_plog;
-    PGNO *rgpgno = NULL;
+    PGNO *rgpgno = nullptr;
     BOOL fAbortMacro = fFalse;
 
     Assert( !plog->FRecovering() || fRecoveringUndo == plog->FRecoveringMode() );
@@ -3497,7 +3497,7 @@ ERR ErrLGSplit( const FUCB          * const pfucb,
               pfucbNil != pverproxy->prcePrimary->Pfucb() &&
               ppibNil != pverproxy->prcePrimary->Pfucb()->ppib ) );
 
-    PIB * const ppib = pverproxy != NULL &&
+    PIB * const ppib = pverproxy != nullptr &&
                     trxMax == pverproxy->prcePrimary->TrxCommitted() ?
                         pverproxy->prcePrimary->Pfucb()->ppib :
                         pfucb->ppib;
@@ -3518,7 +3518,7 @@ ERR ErrLGSplit( const FUCB          * const pfucb,
     CPG cpgno = 3;
     CPG ipgno = 0;
     
-    for ( ; psplitPath->psplitPathParent != NULL; psplitPath = psplitPath->psplitPathParent )
+    for ( ; psplitPath->psplitPathParent != nullptr; psplitPath = psplitPath->psplitPathParent )
     {
         // Each level of the path touches at most 3 pgnos.
         cpgno += 3;
@@ -3534,7 +3534,7 @@ ERR ErrLGSplit( const FUCB          * const pfucb,
 
     //  log splits top-down
 
-    for ( ; psplitPath != NULL; psplitPath = psplitPath->psplitPathChild )
+    for ( ; psplitPath != nullptr; psplitPath = psplitPath->psplitPathChild )
     {
         DATA        rgdata[6];
         USHORT      idata = 0;
@@ -3555,8 +3555,8 @@ ERR ErrLGSplit( const FUCB          * const pfucb,
         lrsplit.le_procid               = ppib->procid;
 
         lrsplit.le_pgno             = psplitPath->csr.Pgno();
-        lrsplit.le_pgnoParent       = psplitPath->psplitPathParent != NULL ? psplitPath->psplitPathParent->csr.Pgno() : pgnoNull;
-        lrsplit.le_dbtimeParentBefore      = psplitPath->psplitPathParent != NULL ? psplitPath->psplitPathParent->dbtimeBefore : dbtimeNil;
+        lrsplit.le_pgnoParent       = psplitPath->psplitPathParent != nullptr ? psplitPath->psplitPathParent->csr.Pgno() : pgnoNull;
+        lrsplit.le_dbtimeParentBefore      = psplitPath->psplitPathParent != nullptr ? psplitPath->psplitPathParent->dbtimeBefore : dbtimeNil;
         lrsplit.le_pgnoFDP          = PgnoFDP( pfucb );
         lrsplit.le_objidFDP         = ObjidFDP( pfucb );
 
@@ -3573,7 +3573,7 @@ ERR ErrLGSplit( const FUCB          * const pfucb,
             lrsplit.SetFUnique();
         if ( FFUCBSpace( pfucb ) )
             lrsplit.SetFSpace();
-        if ( NULL != pverproxy )
+        if ( nullptr != pverproxy )
             lrsplit.SetFConcCI();
 
         LGISetTrx( ppib, &lrsplit, pverproxy );
@@ -3581,7 +3581,7 @@ ERR ErrLGSplit( const FUCB          * const pfucb,
         rgdata[idata].SetPv( (BYTE *) &lrsplit );
         rgdata[idata++].SetCb( sizeof (LRSPLITNEW) );
 
-        if ( psplitPath->psplit == NULL )
+        if ( psplitPath->psplit == nullptr )
         {
             //  UNDONE: spin off separate log operation for parent page
             //
@@ -3648,10 +3648,10 @@ ERR ErrLGSplit( const FUCB          * const pfucb,
                 DATA dataToSet;
                 dataToSet.SetPv( const_cast<VOID*>( psplitPath->csr.Cpage().PvBuffer() ) );
                 dataToSet.SetCb( g_cbPage );
-                if ( ( pbDataCompressed != NULL ||
-                       ( pbDataCompressed = PbPKAllocCompressionBuffer() ) != NULL ) &&
-                     ( pbDataDehydrated != NULL ||
-                       ( pbDataDehydrated = PbPKAllocCompressionBuffer() ) != NULL ) )
+                if ( ( pbDataCompressed != nullptr ||
+                       ( pbDataCompressed = PbPKAllocCompressionBuffer() ) != nullptr ) &&
+                     ( pbDataDehydrated != nullptr ||
+                       ( pbDataDehydrated = PbPKAllocCompressionBuffer() ) != nullptr ) )
                 {
                     Assert( CbPKCompressionBuffer() == g_cbPage );
 
@@ -3700,7 +3700,7 @@ ERR ErrLGSplit( const FUCB          * const pfucb,
     
     //  log leaf-level operation
     
-    if ( psplitPathLeaf->psplit != NULL &&
+    if ( psplitPathLeaf->psplit != nullptr &&
          psplitPathLeaf->psplit->splitoper != splitoperNone )
     {
         const SPLIT *psplit = psplitPathLeaf->psplit;
@@ -3745,7 +3745,7 @@ ERR ErrLGSplit( const FUCB          * const pfucb,
                                     &psplitPathLeaf->csr,
                                     psplit->rglineinfo[psplit->ilineOper].kdf.data,
                                     kdfOper.data,
-                                    NULL,           // UNDONE: logdiff for split
+                                    nullptr,           // UNDONE: logdiff for split
                                     rceid1,
                                     dirflag,
                                     plgpos,
@@ -3788,11 +3788,11 @@ HandleError:
 ERR ErrLGMerge( const FUCB *pfucb, MERGEPATH *pmergePathLeaf, LGPOS *plgpos )
 {
     ERR     err = JET_errSuccess;
-    BYTE *pbDataCompressed = NULL, *pbDataDehydrated = NULL;
+    BYTE *pbDataCompressed = nullptr, *pbDataDehydrated = nullptr;
 
     INST *pinst = PinstFromIfmp( pfucb->ifmp );
     LOG *plog = pinst->m_plog;
-    PGNO *rgpgno = NULL;
+    PGNO *rgpgno = nullptr;
     BOOL fAbortMacro = fFalse;
 
     Assert( !plog->FRecovering() || fRecoveringUndo == plog->FRecoveringMode() );
@@ -3823,7 +3823,7 @@ ERR ErrLGMerge( const FUCB *pfucb, MERGEPATH *pmergePathLeaf, LGPOS *plgpos )
     CPG cpgno = 3;
     CPG ipgno = 0;
     
-    for ( ; pmergePath->pmergePathParent != NULL && latchWrite == pmergePath->pmergePathParent->csr.Latch();
+    for ( ; pmergePath->pmergePathParent != nullptr && latchWrite == pmergePath->pmergePathParent->csr.Latch();
             pmergePath = pmergePath->pmergePathParent )
     {
         // Each level of the path touches at most 3 pgnos.
@@ -3840,7 +3840,7 @@ ERR ErrLGMerge( const FUCB *pfucb, MERGEPATH *pmergePathLeaf, LGPOS *plgpos )
 
     //  log merges top-down
 
-    for ( ; pmergePath != NULL; pmergePath = pmergePath->pmergePathChild )
+    for ( ; pmergePath != nullptr; pmergePath = pmergePath->pmergePathChild )
     {
         Assert( latchWrite == pmergePath->csr.Latch() );
 
@@ -3883,8 +3883,8 @@ ERR ErrLGMerge( const FUCB *pfucb, MERGEPATH *pmergePathLeaf, LGPOS *plgpos )
 
         LGISetTrx( pfucb->ppib, &lrmerge );
 
-        lrmerge.le_pgnoParent   = pmergePath->pmergePathParent != NULL ? pmergePath->pmergePathParent->csr.Pgno() : pgnoNull;
-        lrmerge.le_dbtimeParentBefore = pmergePath->pmergePathParent != NULL ? pmergePath->pmergePathParent->dbtimeBefore : dbtimeNil;
+        lrmerge.le_pgnoParent   = pmergePath->pmergePathParent != nullptr ? pmergePath->pmergePathParent->csr.Pgno() : pgnoNull;
+        lrmerge.le_dbtimeParentBefore = pmergePath->pmergePathParent != nullptr ? pmergePath->pmergePathParent->dbtimeBefore : dbtimeNil;
 
         lrmerge.le_pgnoFDP      = PgnoFDP( pfucb );
         lrmerge.le_objidFDP     = ObjidFDP( pfucb );
@@ -3893,7 +3893,7 @@ ERR ErrLGMerge( const FUCB *pfucb, MERGEPATH *pmergePathLeaf, LGPOS *plgpos )
         rgdata[idata++].SetCb( sizeof (LRMERGENEW) );
 
         lrmerge.SetCbPageBeforeImage( 0 );
-        if ( pmerge != NULL )
+        if ( pmerge != nullptr )
         {
             Assert( pgnoNull == pmerge->csrLeft.Pgno() ||
                     pmerge->csrLeft.FDirty() );
@@ -3930,10 +3930,10 @@ ERR ErrLGMerge( const FUCB *pfucb, MERGEPATH *pmergePathLeaf, LGPOS *plgpos )
                 DATA dataToSet;
                 dataToSet.SetPv( const_cast<VOID*>( pmergePath->csr.Cpage().PvBuffer() ) );
                 dataToSet.SetCb( g_cbPage );
-                if ( ( pbDataCompressed != NULL ||
-                       ( pbDataCompressed = PbPKAllocCompressionBuffer() ) != NULL ) &&
-                     ( pbDataDehydrated != NULL ||
-                       ( pbDataDehydrated = PbPKAllocCompressionBuffer() ) != NULL ) )
+                if ( ( pbDataCompressed != nullptr ||
+                       ( pbDataCompressed = PbPKAllocCompressionBuffer() ) != nullptr ) &&
+                     ( pbDataDehydrated != nullptr ||
+                       ( pbDataDehydrated = PbPKAllocCompressionBuffer() ) != nullptr ) )
                 {
                     Assert( CbPKCompressionBuffer() == g_cbPage );
 
@@ -4504,7 +4504,7 @@ ERR ErrLGMacroAbort( PIB *ppib, DBTIME dbtime, LGPOS *plgpos )
     // lossy failover from 2 to 1, passive 3 increseeds, replays, and now sees a commit at the head
     // of logfile 10.
     
-    return ErrLGIMacroEnd( ppib, dbtime, lrtypMacroAbort, ifmpNil, NULL, 0, plgpos );
+    return ErrLGIMacroEnd( ppib, dbtime, lrtypMacroAbort, ifmpNil, nullptr, 0, plgpos );
 }
 
 ERR ErrLGShutDownMark( INST *pinst, LGPOS *plgposRec )
@@ -4621,7 +4621,7 @@ ERR ErrLGLogBackup(
     LGPOS           lgposLocal;
 
     //  caller not interested in knowing the lgpos of this LR ...
-    if ( plgposLogRec == NULL )
+    if ( plgposLogRec == nullptr )
     {
         plgposLogRec = &lgposLocal;
     }
@@ -4656,7 +4656,7 @@ ERR ErrLGLogBackup(
         lr.phaseDetails.le_lgposMark = *plgpos;
     }
     //  if you can not afford a logtime, one will be assigned to you.
-    if ( plogtime == NULL )
+    if ( plogtime == nullptr )
     {
         Assert( ePhase == LRLOGBACKUP::fLGBackupPhaseBegin ||
                 ePhase == LRLOGBACKUP::fLGBackupPhaseTruncate ||
@@ -4837,7 +4837,7 @@ HandleError:
 ERR ErrLGIgnoredRecord( LOG * const plog, const IFMP ifmp, const INT cb )
 {
     ERR             err;
-    BYTE*           pb = NULL;
+    BYTE*           pb = nullptr;
     DATA            rgdata[2];
     LRIGNORED       lr( lrtypIgnored19 );
 
@@ -5212,7 +5212,7 @@ ERR ErrLrToLogCsvSimple(
 
     // stack based vars, for optimal perf
     #define LR_STACK_CSV_LINES   6
-    const WCHAR *               rgszLogRecordsCsvFormats[LR_STACK_CSV_LINES] = { 0 };
+    const WCHAR *               rgszLogRecordsCsvFormats[LR_STACK_CSV_LINES] = { nullptr };
     SIMPLE_CSV_CHG_INFO         rgChangeInfo[LR_STACK_CSV_LINES] = { 0 };
 
     WCHAR const **              pLogRecordsCsvFormats = rgszLogRecordsCsvFormats;
@@ -5901,7 +5901,7 @@ And here was the list of the log file after recovery
         case lrtypCreateDB:
         {
             const LRCREATEDB * const plrcreatedb = (LRCREATEDB *) plr;
-            WCHAR * wszDbPath = NULL;
+            WCHAR * wszDbPath = nullptr;
             BYTE* pb;
             ULONG cb = ( plrcreatedb->FVersionInfo() ? sizeof(LRCREATEDB::VersionInfo) : 0 );   //  older format didn't have version info
 
@@ -5941,7 +5941,7 @@ And here was the list of the log file after recovery
         case lrtypAttachDB:
         {
             const LRATTACHDB * const plrattachdb = (LRATTACHDB *) plr;
-            WCHAR * wszDbPath = NULL;
+            WCHAR * wszDbPath = nullptr;
             const BYTE * pb = reinterpret_cast<const BYTE *>( plrattachdb ) + sizeof(LRATTACHDB);
             ULONG cb = 0;
 
@@ -5969,7 +5969,7 @@ And here was the list of the log file after recovery
         case lrtypDetachDB:
         {
             const LRDETACHDB * const plrdetachdb = (LRDETACHDB *) plr;
-            WCHAR * wszDbPath = NULL;
+            WCHAR * wszDbPath = nullptr;
             const BYTE * pb = reinterpret_cast<const BYTE*>( plrdetachdb ) + sizeof(LRDETACHDB);
             ULONG cb = 0;
             if ( plrdetachdb->FUnicodeNames() )
@@ -6941,12 +6941,12 @@ HandleError:
     if ( pLogRecordsCsvFormats != rgszLogRecordsCsvFormats )
     {
         free ( pLogRecordsCsvFormats );
-        pLogRecordsCsvFormats = NULL;
+        pLogRecordsCsvFormats = nullptr;
     }
     if ( pChangeInfo != rgChangeInfo )
     {
         free( pChangeInfo );
-        pChangeInfo = NULL;
+        pChangeInfo = nullptr;
     }
 
     return(err);
@@ -7076,7 +7076,7 @@ VOID CheckEndOfNOPList( const LR *plr, LOG *plog )
     const ULONG cNOP    = plog->GetNOP();
 
     Assert( cNOP > 0 );
-    if ( NULL == plr || lrtypNOP != plr->lrtyp )
+    if ( nullptr == plr || lrtypNOP != plr->lrtyp )
     {
         if ( cNOP > 1 )
         {
@@ -7099,7 +7099,7 @@ ERR ErrDownConvertName(
     ERR err = ErrOSSTRUnicodeToAscii( wszName, szName, cchName );
     if ( JET_errUnicodeTranslationFail == err )
     {
-        err = ErrOSSTRUnicodeToAscii( wszName, szName, cchName, NULL, OSSTR_ALLOW_LOSSY );
+        err = ErrOSSTRUnicodeToAscii( wszName, szName, cchName, nullptr, OSSTR_ALLOW_LOSSY );
         Assert( err == JET_errSuccess );
         CallR( err );   // just in case, if not success, fail ...
         err = wrnLossy;
@@ -7134,7 +7134,7 @@ VOID LrToSz(
 {
     LRTYP   lrtyp;
     CHAR    rgchBuf[cbLRBuf];
-    const UINT iVerbosityLevel = ( plog != NULL ) ? plog->IDumpVerbosityLevel() : LOG::ldvlMax;
+    const UINT iVerbosityLevel = ( plog != nullptr ) ? plog->IDumpVerbosityLevel() : LOG::ldvlMax;
 #ifndef DEBUGGER_EXTENSION
     Assert( plog != NULL );
 #endif
@@ -8295,9 +8295,9 @@ VOID LrToSz(
         case lrtypBackup2:
         {
             LRLOGBACKUP *plrlb = (LRLOGBACKUP *) plr;
-            CHAR * szBackupPhase = NULL;
-            CHAR * szBackupType = NULL;
-            CHAR * szBackupScope = NULL;
+            CHAR * szBackupPhase = nullptr;
+            CHAR * szBackupType = nullptr;
+            CHAR * szBackupScope = nullptr;
 
             switch ( plrlb->eBackupPhase )
             {
@@ -8743,12 +8743,12 @@ ERR  ErrAddPageRef( _In_ const DBID                                             
     // realloc input buffer if it is too small to accept the new page reference
     const ULONG cPageRefMin = 128;
     const ULONG cPageRefNew = *pcPageRef + 1;
-    if ( *prgPageRef == NULL || *pcPageRefAlloc < cPageRefNew )
+    if ( *prgPageRef == nullptr || *pcPageRefAlloc < cPageRefNew )
     {
         ULONG       cPageRefAllocNew    = max(cPageRefMin, max( cPageRefNew, *pcPageRefAlloc * 2 ) );
-        PageRef*    rgPageRefNew        = NULL;
+        PageRef*    rgPageRefNew        = nullptr;
         Alloc( rgPageRefNew = new PageRef[cPageRefAllocNew] );
-        if ( *prgPageRef != NULL )
+        if ( *prgPageRef != nullptr )
         {
             memcpy( rgPageRefNew, *prgPageRef, sizeof( PageRef ) * *pcPageRefAlloc );
             delete[] * prgPageRef;

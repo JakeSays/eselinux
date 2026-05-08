@@ -227,12 +227,12 @@ static void RunAsync( const LPTHREAD_START_ROUTINE pfn, RSLRUK* const prslruk, R
     WIContext context;
 
     context.pfn = pfn;
-    context.hEventWorkItem = CreateEvent( NULL, TRUE, FALSE, NULL );
+    context.hEventWorkItem = CreateEvent( nullptr, TRUE, FALSE, nullptr );
     context.prslruk = prslruk;
     context.plock = plock;
     context.prs = prs;
 
-    TestCheck( context.hEventWorkItem != NULL );
+    TestCheck( context.hEventWorkItem != nullptr );
     TestCheck( ResetEvent( context.hEventWorkItem ) != 0 );
     TestCheck( QueueUserWorkItem( AsyncWorkItem, &context, WT_EXECUTEDEFAULT ) != 0 );
     TestCheck( WaitForSingleObject( context.hEventWorkItem, INFINITE ) == WAIT_OBJECT_0 );
@@ -269,7 +269,7 @@ HandleError:
 // Asynchronously evict a resource.
 static void EvictResource( RSLRUK* const prslruk, RandomStruct* const prs )
 {
-    RunAsync( EvictResource_, prslruk, NULL, prs );
+    RunAsync( EvictResource_, prslruk, nullptr, prs );
 }
 
 // Asynchronously evict current resource.
@@ -574,7 +574,7 @@ ERR LrukDifferentPrioritiesCorrelatedTouchesTest::ErrTest()
     const INT rankRSLRUK = 70;
     RSLRUK rslruk( rankRSLRUK );
     RSLRUK::CLock lockLRUK;
-    RandomStruct* prs = NULL;
+    RandomStruct* prs = nullptr;
     RSKEY rskeyCold, rskeyHot;
     RSLRUK::ResMgrTouchFlags rmtf;
     INT cFound = 0;
@@ -1146,7 +1146,7 @@ ERR SimpleLrukDelayedEvictionTest::ErrTest()
     RSLRUK rslruk( rankRSLRUK );
     RSLRUK::CLock lockLRUK;
     RSKEY rskeyCold, rskeyHot;
-    RandomStruct* prs = NULL;
+    RandomStruct* prs = nullptr;
     RSLRUK::ResMgrTouchFlags rmtf;
     INT cFound = 0;
 
@@ -1552,7 +1552,7 @@ ERR LrukApproximateIndexExpansion::ErrTest()
     RandomStruct* rgrs = new RandomStruct[ cResources ];
     RSKEY rskeyCold, rskeyHot;
     RSLRUK::ResMgrTouchFlags rmtf;
-    RandomStruct* prs = NULL;
+    RandomStruct* prs = nullptr;
     INT cFound = 0;
 
     wprintf( L"\tTesting LRUK (index expansion) ...\n");

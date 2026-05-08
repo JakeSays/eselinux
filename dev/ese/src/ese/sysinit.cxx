@@ -285,7 +285,7 @@ ERR INST::ErrINSTInit( )
     CallJ( ErrLVInit( this ), TermVER );
 
     // If revert snapshot cleaner is not initialized and RBS file path was set, initialize them.
-    if ( m_prbscleaner == NULL )
+    if ( m_prbscleaner == nullptr )
     {
         CallJ( RBSCleanerFactory::ErrRBSCleanerCreate( this, &m_prbscleaner ), TermRBS );
     }
@@ -303,7 +303,7 @@ TermRBS:
     if ( m_prbscleaner )
     {
         delete m_prbscleaner;
-        m_prbscleaner = NULL;
+        m_prbscleaner = nullptr;
     }
 
     LVTerm( this );
@@ -369,14 +369,14 @@ ERR INST::ErrINSTCreateTempDatabase_( void* const pvInst )
     Call( ErrFaultInjection( 41776 ) );
     Call( ErrDBCreateDatabase(
                 ppib,
-                NULL,
+                nullptr,
                 SzParam( pInst, JET_paramTempPath ),
                 &ifmp,
                 dbidTemp,
                 (CPG)max( cpgMultipleExtentMin, UlParam( pInst, JET_paramPageTempDBMin ) ),
                 fFalse, // fSparseEnabledFile
-                NULL,
-                NULL,
+                nullptr,
+                nullptr,
                 0,
                 grbit ) );
     Assert( ifmp != g_ifmpMax );

@@ -54,18 +54,18 @@ public:
                             const DWORD         cbData,
     __out_bcount( cbData )  BYTE* const         pbData,
                             const OSFILEQOS     grbitQOS,
-                            const PfnIOComplete pfnIOComplete   = NULL,
+                            const PfnIOComplete pfnIOComplete   = nullptr,
                             const DWORD_PTR     keyIOComplete   = 0,
-                            const PfnIOHandoff  pfnIOHandoff    = NULL,
-                            const VOID *        pioreq          = NULL  ) override;
+                            const PfnIOHandoff  pfnIOHandoff    = nullptr,
+                            const VOID *        pioreq          = nullptr  ) override;
     ERR ErrIOWrite( const TraceContext& tc,
                             const QWORD         ibOffset,
                             const DWORD         cbData,
                             const BYTE* const       pbData,
                             const OSFILEQOS     grbitQOS,
-                            const PfnIOComplete pfnIOComplete   = NULL,
+                            const PfnIOComplete pfnIOComplete   = nullptr,
                             const DWORD_PTR     keyIOComplete   = 0,
-                            const PfnIOHandoff  pfnIOHandoff    = NULL ) override { AssertSz( fFalse, "NYI!" ); return ErrERRCheck( JET_errNyi ); }
+                            const PfnIOHandoff  pfnIOHandoff    = nullptr ) override { AssertSz( fFalse, "NYI!" ); return ErrERRCheck( JET_errNyi ); }
     ERR ErrIOIssue() override { AssertSz( fFalse, "NYI!" ); return ErrERRCheck( JET_errNyi ); }
     ERR ErrMMRead(  const QWORD     ibOffset,
                             const QWORD     cbSize,

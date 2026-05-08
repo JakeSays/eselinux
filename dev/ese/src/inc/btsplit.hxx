@@ -199,9 +199,9 @@ struct SPLITPATH
     SPLITPATH()
         :   dbtimeBefore( dbtimeInvalid ),
             fFlagsBefore( 0 ),
-            psplitPathParent( NULL ),
-            psplitPathChild( NULL ),
-            psplit( NULL )
+            psplitPathParent( nullptr ),
+            psplitPathChild( nullptr ),
+            psplit( nullptr )
     {
     }
     ~SPLITPATH()
@@ -210,11 +210,11 @@ struct SPLITPATH
         csr.ReleasePage();
         if ( psplitPathParent )
         {
-            psplitPathParent->psplitPathChild = NULL;
+            psplitPathParent->psplitPathChild = nullptr;
         }
         if ( psplitPathChild )
         {
-            psplitPathChild->psplitPathParent = NULL;
+            psplitPathChild->psplitPathParent = nullptr;
         }
     }
 
@@ -378,11 +378,11 @@ struct MERGEPATH
         csr.ReleasePage();
         if ( pmergePathParent )
         {
-            pmergePathParent->pmergePathChild = NULL;
+            pmergePathParent->pmergePathChild = nullptr;
         }
         if ( pmergePathChild )
         {
-            pmergePathChild->pmergePathParent = NULL;
+            pmergePathChild->pmergePathParent = nullptr;
         }
     }
 

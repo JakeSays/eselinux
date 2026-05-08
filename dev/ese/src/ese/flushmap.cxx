@@ -13,7 +13,7 @@ PERFInstanceDelayedTotal<> cFMPagesTotal;
 
 LONG LFMPagesWrittenAsyncCEFLPv( LONG iInstance, void* pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         cFMPagesWrittenAsync.PassTo( iInstance, pvBuf );
     }
@@ -23,7 +23,7 @@ LONG LFMPagesWrittenAsyncCEFLPv( LONG iInstance, void* pvBuf )
 
 LONG LFMPagesWrittenSyncCEFLPv( LONG iInstance, void* pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         cFMPagesWrittenSync.PassTo( iInstance, pvBuf );
     }
@@ -33,7 +33,7 @@ LONG LFMPagesWrittenSyncCEFLPv( LONG iInstance, void* pvBuf )
 
 LONG LFMDirtyPagesCEFLPv( LONG iInstance, void* pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         cFMPagesDirty.PassTo( iInstance, pvBuf );
     }
@@ -43,7 +43,7 @@ LONG LFMDirtyPagesCEFLPv( LONG iInstance, void* pvBuf )
 
 LONG LFMTotalPagesCEFLPv( LONG iInstance, void* pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         cFMPagesTotal.PassTo( iInstance, pvBuf );
     }
@@ -100,7 +100,7 @@ ERR CFlushMap::ErrGetFmPathFromDbPath(
     _In_z_ const WCHAR* const wszDbPath )
 {
     ERR err = JET_errSuccess;
-    IFileSystemAPI* pfsapi = NULL;
+    IFileSystemAPI* pfsapi = nullptr;
     WCHAR wszDbFolder[ IFileSystemAPI::cchPathMax ] = { L"\0" };
     WCHAR wszDbFileName[ IFileSystemAPI::cchPathMax ] = { L"\0" };
     WCHAR wszDbExtension[ IFileSystemAPI::cchPathMax ] = { L"\0" };
@@ -166,12 +166,12 @@ ERR CFlushMap::ErrChecksumFmPage_(
         &fCorrectableError,
         &ibitCorrupted );
 
-    if ( pchecksumPersisted != NULL )
+    if ( pchecksumPersisted != nullptr )
     {
         *pchecksumPersisted = checksumPersisted.rgChecksum[ 0 ];
     }
 
-    if ( pchecksumCalculated != NULL )
+    if ( pchecksumCalculated != nullptr )
     {
         *pchecksumCalculated = checksumCalculated.rgChecksum[ 0 ];
     }
@@ -449,13 +449,13 @@ ERR CFlushMap::ErrAttachFlushMap_()
             }
             else
             {
-                if ( m_pfapi != NULL )
+                if ( m_pfapi != nullptr )
                 {
                     WaitForFlushMapIoQuiesce_();
                     DisallowFlushMapIo_();
                     m_pfapi->SetNoFlushNeeded();
                     delete m_pfapi;
-                    m_pfapi = NULL;
+                    m_pfapi = nullptr;
                 }
 
                 if ( !m_fReadOnly )
@@ -530,13 +530,13 @@ ERR CFlushMap::ErrAttachFlushMap_()
             }
             else if ( fFileExists )
             {
-                if ( m_pfapi != NULL )
+                if ( m_pfapi != nullptr )
                 {
                     WaitForFlushMapIoQuiesce_();
                     DisallowFlushMapIo_();
                     m_pfapi->SetNoFlushNeeded();
                     delete m_pfapi;
-                    m_pfapi = NULL;
+                    m_pfapi = nullptr;
                 }
 
                 LogEventFmFileDeleted_( wszFmFilePath, wszDeletedReason );
@@ -572,13 +572,13 @@ HandleError:
     {
         LogEventFmFileAttachFailed_( wszFmFilePath, err );
 
-        if ( m_pfapi != NULL )
+        if ( m_pfapi != nullptr )
         {
             WaitForFlushMapIoQuiesce_();
             DisallowFlushMapIo_();
             m_pfapi->SetNoFlushNeeded();
             delete m_pfapi;
-            m_pfapi = NULL;
+            m_pfapi = nullptr;
         }
     }
 
@@ -630,7 +630,7 @@ void CFlushMap::TermFlushMap_()
             }
 
             delete m_pfapi;
-            m_pfapi = NULL;
+            m_pfapi = nullptr;
         }
         else
         {
@@ -644,7 +644,7 @@ void CFlushMap::TermFlushMap_()
         // All data pages.
         for ( FMPGNO fmpgno = 0; fmpgno < m_cfmpgAllocated; fmpgno++ )
         {
-            FlushMapPageDescriptor* pfmd = NULL;
+            FlushMapPageDescriptor* pfmd = nullptr;
             CallS( ErrGetDescriptorFromFmPgno_( fmpgno, &pfmd ) );
             pfmd->sxwl.AcquireWriteLatch();
             Assert( !pfmd->FReadInProgress() );
@@ -658,7 +658,7 @@ void CFlushMap::TermFlushMap_()
     }
 
     delete m_pfsapi;
-    m_pfsapi = NULL;
+    m_pfsapi = nullptr;
 
 #ifdef DEBUG
     // Go through all pages to make sure it's truly clean.
@@ -681,7 +681,7 @@ void CFlushMap::TermFlushMap_()
     Assert( !m_fmdFmPg0.sxwl.FLatched() );
     
     // All page descriptors (except for the first data page, which is always pre-allocated).
-    if ( m_rgfmd != NULL )
+    if ( m_rgfmd != nullptr )
     {
         Assert( m_cbfmdReserved > 0 );
         Assert( ( m_cbfmdCommitted > 0 ) || ( m_cfmdCommitted == 0 ) );
@@ -693,7 +693,7 @@ void CFlushMap::TermFlushMap_()
             Assert( !pfmd->sxwl.FLatched() );
             pfmd->ResetDirty( m_pinst );
 
-            if ( pfmd->pv != NULL )
+            if ( pfmd->pv != nullptr )
             {
                 Assert( ifmd > 0 );
                 Assert( ifmd < m_cfmpgAllocated );
@@ -707,7 +707,7 @@ void CFlushMap::TermFlushMap_()
 
         // Free descriptor pages.
         OSMemoryPageFree( m_rgfmd );
-        m_rgfmd = NULL;
+        m_rgfmd = nullptr;
         m_cfmdCommitted = 0;
         m_cbfmdReserved = 0;
         m_cbfmdCommitted = 0;
@@ -725,7 +725,7 @@ void CFlushMap::TermFlushMap_()
     Assert( m_sxwlSectionFlush.FNotOwner() );
 
     // Free flush map data page pointed by the static descriptor.
-    if ( m_fmdFmPg0.pv != NULL )
+    if ( m_fmdFmPg0.pv != nullptr )
     {
         Assert( m_cfmpgAllocated >= 1 );
         Assert( m_cbfmAllocated == ( 1 * m_cbFmPageInMemory ) );
@@ -746,12 +746,12 @@ void CFlushMap::TermFlushMap_()
     new( &m_fmdFmHdr ) FlushMapPageDescriptor( s_fmpgnoHdr );
 
     // Free write buffer.
-    if ( m_pvSectionFlushAsyncWriteBuffer != NULL )
+    if ( m_pvSectionFlushAsyncWriteBuffer != nullptr )
     {
         Assert( !m_fReadOnly );
         Assert( m_msSectionFlush.FEmpty() );
         OSMemoryPageFree( m_pvSectionFlushAsyncWriteBuffer );
-        m_pvSectionFlushAsyncWriteBuffer = NULL;
+        m_pvSectionFlushAsyncWriteBuffer = nullptr;
         m_cbSectionFlushAsyncWriteBufferReserved = 0;
         m_cbSectionFlushAsyncWriteBufferCommitted = 0;
         m_ibSectionFlushAsyncWriteBufferNext = 0;
@@ -779,7 +779,7 @@ void CFlushMap::TermFlushMap_()
         PERFOpt( cFMPagesTotal.Add( m_pinst->m_iInstance, -m_cfmpgAllocated ) );
     }
     m_pinst = pinstNil;
-    m_pfapi = NULL;
+    m_pfapi = nullptr;
     m_fInitialized = fFalse;
     m_cfmpgAllocated = 0;
 
@@ -787,14 +787,14 @@ void CFlushMap::TermFlushMap_()
     {
         OSTimerTaskCancelTask( m_posttWriteFmHeaderPageComplete );
         OSTimerTaskDelete( m_posttWriteFmHeaderPageComplete );
-        m_posttWriteFmHeaderPageComplete = NULL;
+        m_posttWriteFmHeaderPageComplete = nullptr;
     }
 }
 
 INLINE ERR CFlushMap::ErrGetDescriptorFromFmPgno_( const FMPGNO fmpgno, FlushMapPageDescriptor** const ppfmd )
 {
     ERR err = JET_errSuccess;
-    FlushMapPageDescriptor* pfmd = NULL;
+    FlushMapPageDescriptor* pfmd = nullptr;
     const BOOL fFmHeaderPage = FIsFmHeader_( fmpgno );
 
     Assert( !m_fDumpMode );
@@ -866,7 +866,7 @@ ERR CFlushMap::ErrAllocateDescriptorsCapacity_( const CFMPG cfmdNeeded )
     }
 
     // We may need to run the memory reservation code.
-    if ( m_rgfmd == NULL )
+    if ( m_rgfmd == nullptr )
     {
         Assert( m_cbfmdReserved == 0 );
         Assert( m_cbfmdCommitted == 0 );
@@ -880,7 +880,7 @@ ERR CFlushMap::ErrAllocateDescriptorsCapacity_( const CFMPG cfmdNeeded )
         const DWORD cbfmdReserved = roundup( cbfmdCommittedMax, OSMemoryPageReserveGranularity() );
         Assert( ( cbfmdReserved & ( m_cbDescriptorPage - 1 ) ) == 0 );
 
-        Alloc( m_rgfmd = (FlushMapPageDescriptor*)PvOSMemoryPageReserve( cbfmdReserved, NULL ) );
+        Alloc( m_rgfmd = (FlushMapPageDescriptor*)PvOSMemoryPageReserve( cbfmdReserved, nullptr ) );
         m_cbfmdReserved = cbfmdReserved;
         m_cbfmdCommitted = 0;
     }
@@ -895,7 +895,7 @@ ERR CFlushMap::ErrAllocateDescriptorsCapacity_( const CFMPG cfmdNeeded )
     
     if ( !FOSMemoryPageCommit( (BYTE*)m_rgfmd + cbfmdCommitted, cbfmdCommittedNeeded - cbfmdCommitted ) )
     {
-        Alloc( NULL );
+        Alloc( nullptr );
     }
 
     // Initialize all objects.
@@ -930,7 +930,7 @@ ERR CFlushMap::ErrAllocateFmDataPageCapacity_( const CFMPG cfmpgNeeded )
 
     for ( FMPGNO fmpgno = m_cfmpgAllocated; fmpgno < cfmpgNeeded; fmpgno++ )
     {
-        FlushMapPageDescriptor* pfmd = NULL;
+        FlushMapPageDescriptor* pfmd = nullptr;
         CallS( ErrGetDescriptorFromFmPgno_( fmpgno, &pfmd ) );
         Call( ErrAllocateFmPage_( pfmd ) );
         m_cbfmAllocated += m_cbFmPageInMemory;
@@ -965,15 +965,15 @@ ERR CFlushMap::ErrAllocateFmPage_( FlushMapPageDescriptor* const pfmd )
         // for sure is successfully persisted to disk. We do this such that we are always
         // able to quickly return values that are guaranteed to be successfully persisted
         // without having to wait for any ongoing I/O.
-        Alloc( pfmd->pvWriteBuffer = PvOSMemoryPageAlloc( m_cbFmPageInMemory, NULL ) );
+        Alloc( pfmd->pvWriteBuffer = PvOSMemoryPageAlloc( m_cbFmPageInMemory, nullptr ) );
         Alloc( pfmd->pv = new BYTE[ sizeof( FMFILEHDR ) ] );
     }
     else
     {
-        Alloc( pfmd->pv = PvOSMemoryPageAlloc( m_cbFmPageInMemory, NULL ) );
+        Alloc( pfmd->pv = PvOSMemoryPageAlloc( m_cbFmPageInMemory, nullptr ) );
         if ( m_fPersisted )
         {
-            Alloc( pfmd->rgbitRuntime = PvOSMemoryPageAlloc( m_cbRuntimeBitmapPage, NULL ) );
+            Alloc( pfmd->rgbitRuntime = PvOSMemoryPageAlloc( m_cbRuntimeBitmapPage, nullptr ) );
         }
     }
 
@@ -993,7 +993,7 @@ HandleError:
 
 void CFlushMap::FreeFmPage_( FlushMapPageDescriptor* const pfmd )
 {
-    if ( pfmd == NULL )
+    if ( pfmd == nullptr )
     {
         return;
     }
@@ -1013,9 +1013,9 @@ void CFlushMap::FreeFmPage_( FlushMapPageDescriptor* const pfmd )
         OSMemoryPageFree( pfmd->rgbitRuntime );
     }
 
-    pfmd->pvWriteBuffer = NULL;
-    pfmd->pv = NULL;
-    pfmd->rgbitRuntime = NULL;
+    pfmd->pvWriteBuffer = nullptr;
+    pfmd->pv = nullptr;
+    pfmd->rgbitRuntime = nullptr;
     pfmd->ResetAllocated();
     pfmd->sxwl.ReleaseWriteLatch();
 }
@@ -1032,7 +1032,7 @@ void CFlushMap::InitializeFmDataPageCapacity_( const CFMPG cfmpgNeeded )
 
     for ( FMPGNO fmpgno = ( m_cfmpgAllocated - 1 ); ( fmpgno >= 0 ) && !fFoundValid; fmpgno-- )
     {
-        FlushMapPageDescriptor* pfmd = NULL;
+        FlushMapPageDescriptor* pfmd = nullptr;
         CallS( ErrGetDescriptorFromFmPgno_( fmpgno, &pfmd ) );
         pfmd->sxwl.AcquireExclusiveLatch();
         if ( !pfmd->FValid() )
@@ -1069,7 +1069,7 @@ void CFlushMap::PrereadFlushMap_( const CFMPG cfmpg )
     for ( FMPGNO fmpgno = 0; fmpgno < cfmpg; fmpgno++ )
     {
         const BOOL fLastPage = ( ( fmpgno + 1 ) == cfmpg );
-        FlushMapPageDescriptor* pfmd = NULL;
+        FlushMapPageDescriptor* pfmd = nullptr;
         CallS( ErrGetDescriptorFromFmPgno_( fmpgno, &pfmd ) );
         Assert( pfmd->FAllocated() );
         Assert( !pfmd->FValid() );
@@ -1111,7 +1111,7 @@ void CFlushMap::PrereadFlushMap_( const CFMPG cfmpg )
             // Don't overwhelm the disk. Wait for the I/Os to complete.
             for ( FMPGNO fmpgnoIoPending = fmpgnoFirst; fmpgnoIoPending <= fmpgnoLast; fmpgnoIoPending++ )
             {
-                FlushMapPageDescriptor* pfmdIoPending = NULL;
+                FlushMapPageDescriptor* pfmdIoPending = nullptr;
                 CallS( ErrGetDescriptorFromFmPgno_( fmpgnoIoPending, &pfmdIoPending ) );
                 pfmdIoPending->sxwl.AcquireSharedLatch();
                 Assert( pfmdIoPending->FValid() );
@@ -1154,7 +1154,7 @@ void CFlushMap::InitializeFmDataPage_( FlushMapPageDescriptor* const pfmd )
     memset( pfmd->pv, 0, s_cbFlushMapPageOnDisk );
     new( pfmd->pv ) FlushMapDataPageHdr();
     FlushMapDataPageHdr* const pfmpghdr = (FlushMapDataPageHdr*)( pfmd->pv );
-    if ( pfmd->rgbitRuntime != NULL )
+    if ( pfmd->rgbitRuntime != nullptr )
     {
         memset( pfmd->rgbitRuntime, 0xFF, m_cbRuntimeBitmapPage );
     }
@@ -1227,12 +1227,12 @@ ERR CFlushMap::ErrPrepareFmPageForWrite_( FlushMapPageDescriptor* const pfmd, co
 
     BOOL fDirtyExpected = pfmd->FDirty();
 
-    if ( pfmd->pvWriteBuffer == NULL )
+    if ( pfmd->pvWriteBuffer == nullptr )
     {
         if ( fSync )
         {
             // Allocate brand new memory.
-            pfmd->pvWriteBuffer = PvOSMemoryPageAlloc( m_cbFmPageInMemory, NULL );
+            pfmd->pvWriteBuffer = PvOSMemoryPageAlloc( m_cbFmPageInMemory, nullptr );
         }
         else
         {
@@ -1341,7 +1341,7 @@ HandleError:
 ERR CFlushMap::ErrReadFmPage_( FlushMapPageDescriptor* const pfmd, const BOOL fSync, const OSFILEQOS qos )
 {
     ERR err = JET_errSuccess;
-    const IFileAPI::PfnIOComplete pfnIoComplete = fSync ? NULL : OsReadIoComplete_;
+    const IFileAPI::PfnIOComplete pfnIoComplete = fSync ? nullptr : OsReadIoComplete_;
     const DWORD_PTR keyIoComplete = fSync ? 0 : (DWORD_PTR)this;
 
     OnDebug( AssertPreIo_( fFalse, pfmd ) );
@@ -1376,7 +1376,7 @@ ERR CFlushMap::ErrReadFmPage_( FlushMapPageDescriptor* const pfmd, const BOOL fS
 ERR CFlushMap::ErrWriteFmPage_( FlushMapPageDescriptor* const pfmd, const BOOL fSync, const OSFILEQOS qos )
 {
     ERR err = JET_errSuccess;
-    const IFileAPI::PfnIOComplete pfnIoComplete = fSync ? NULL : OsWriteIoComplete_;
+    const IFileAPI::PfnIOComplete pfnIoComplete = fSync ? nullptr : OsWriteIoComplete_;
     const DWORD_PTR keyIoComplete = fSync ? 0 : (DWORD_PTR)this;
     
     OnDebug( AssertPreIo_( fTrue, pfmd ) );
@@ -1424,7 +1424,7 @@ void CFlushMap::OsReadIoComplete_(
     }
     
     const FMPGNO fmpgno = FmPgnoOfOffset_( ibOffset );
-    FlushMapPageDescriptor* pfmd = NULL;
+    FlushMapPageDescriptor* pfmd = nullptr;
 
     AssertSz( !pfm->m_fDumpMode, "Dump mode is not supposed to perform async I/O." );
     CallS( pfm->ErrGetDescriptorFromFmPgno_( fmpgno, &pfmd ) );
@@ -1449,7 +1449,7 @@ void CFlushMap::OsWriteIoComplete_(
     Assert( cbData == s_cbFlushMapPageOnDisk );
     
     const FMPGNO fmpgno = FmPgnoOfOffset_( ibOffset );
-    FlushMapPageDescriptor* pfmd = NULL;
+    FlushMapPageDescriptor* pfmd = nullptr;
 
     AssertSz( !pfm->m_fDumpMode, "Dump mode is not supposed to perform async I/O." );
     CallS( pfm->ErrGetDescriptorFromFmPgno_( fmpgno, &pfmd ) );
@@ -1598,7 +1598,7 @@ ERR CFlushMap::ErrWriteIoComplete_( const ERR errIo, const BOOL fSync, const BOO
         if ( !fFmHeaderPage )
         {
             OSMemoryPageFree( pfmd->pvWriteBuffer );
-            pfmd->pvWriteBuffer = NULL;
+            pfmd->pvWriteBuffer = nullptr;
         }
 
         pfmd->ResetSyncWriteInProgress();
@@ -1607,7 +1607,7 @@ ERR CFlushMap::ErrWriteIoComplete_( const ERR errIo, const BOOL fSync, const BOO
     {
         if ( !fFmHeaderPage )
         {
-            pfmd->pvWriteBuffer = NULL;
+            pfmd->pvWriteBuffer = nullptr;
         }
         
         pfmd->ResetAsyncWriteInProgress();
@@ -1739,7 +1739,7 @@ void CFlushMap::FlushOneSection_( OnDebug2( const BOOL fCleanFlushMap, const BOO
     // Look for the next valid dirty page.
     for ( fmpgnoSectionFlushFirst = m_fmpgnoSectionFlushNext; fmpgnoSectionFlushFirst <= fmpgnoUsedMax; fmpgnoSectionFlushFirst++ )
     {
-        FlushMapPageDescriptor* pfmd = NULL;
+        FlushMapPageDescriptor* pfmd = nullptr;
         CallS( ErrGetDescriptorFromFmPgno_( fmpgnoSectionFlushFirst, &pfmd ) );
         Assert( pfmd->FAllocated() );
 
@@ -1803,7 +1803,7 @@ void CFlushMap::FlushOneSection_( OnDebug2( const BOOL fCleanFlushMap, const BOO
             ( fmpgnoSectionFlushCheck <= fmpgnoUsedMax ) && ( ( fmpgnoSectionFlushCheck - fmpgnoSectionFlushFirst + 1 ) <= cfmpgWriteMax );
             fmpgnoSectionFlushCheck++ )
     {
-        FlushMapPageDescriptor* pfmd = NULL;
+        FlushMapPageDescriptor* pfmd = nullptr;
         CallS( ErrGetDescriptorFromFmPgno_( fmpgnoSectionFlushCheck, &pfmd ) );
 
         // First page should be dirty and valid.
@@ -1821,7 +1821,7 @@ void CFlushMap::FlushOneSection_( OnDebug2( const BOOL fCleanFlushMap, const BOO
             FMPGNO fmpgnoSectionFlush;
             for ( fmpgnoSectionFlush = fmpgnoSectionFlushLast + 1; fmpgnoSectionFlush <= fmpgnoSectionFlushCheck; fmpgnoSectionFlush++ )
             {
-                FlushMapPageDescriptor* pfmdWrite = NULL;
+                FlushMapPageDescriptor* pfmdWrite = nullptr;
                 CallS( ErrGetDescriptorFromFmPgno_( fmpgnoSectionFlush, &pfmdWrite ) );
                 Assert( pfmdWrite->FValid() );
                 pfmdWrite->sxwl.AcquireWriteLatch();
@@ -1940,7 +1940,7 @@ void CFlushMap::CompleteOneSectionFlush_()
     FMPGNO fmpgno;
     for ( fmpgno = m_fmpgnoSectionFlushFirst; fmpgno <= m_fmpgnoSectionFlushLast;)
     {
-        FlushMapPageDescriptor* pfmd = NULL;
+        FlushMapPageDescriptor* pfmd = nullptr;
         CallS( ErrGetDescriptorFromFmPgno_( fmpgno, &pfmd ) );
 
         Assert( !pfmd->FAsyncWriteInProgress() );
@@ -2262,7 +2262,7 @@ HandleError:
 ERR CFlushMap::ErrSetRangePgnoFlushType_( const PGNO pgnoFirst, const CPG cpg, const CPAGE::PageFlushType pgft, const DBTIME dbtime, const BOOL fWait )
 {
     ERR err = JET_errSuccess;
-    FlushMapPageDescriptor* pfmd = NULL;
+    FlushMapPageDescriptor* pfmd = nullptr;
     FMPGNO fmpgnoFirst = s_fmpgnoUninit;
     FMPGNO fmpgnoLast = s_fmpgnoUninit;
 
@@ -2442,7 +2442,7 @@ void CFlushMap::SetFlushType_( FlushMapPageDescriptor* const pfmd, const PGNO pg
 
 BOOL CFlushMap::FGetFlushTypeRuntime_( FlushMapPageDescriptor* const pfmd, const PGNO pgno )
 {
-    if ( pfmd->rgbitRuntime == NULL )
+    if ( pfmd->rgbitRuntime == nullptr )
     {
         return fTrue;
     }
@@ -2455,7 +2455,7 @@ BOOL CFlushMap::FGetFlushTypeRuntime_( FlushMapPageDescriptor* const pfmd, const
 
 void CFlushMap::SetFlushTypeRuntimeState_( FlushMapPageDescriptor* const pfmd, const PGNO pgno, const BOOL fRuntime )
 {
-    if ( pfmd->rgbitRuntime == NULL )
+    if ( pfmd->rgbitRuntime == nullptr )
     {
         return;
     }
@@ -2479,7 +2479,7 @@ void CFlushMap::LogEventFmFileAttachFailed_( const WCHAR* const wszFmFilePath, c
         _countof( rgpwsz ),
         rgpwsz,
         0,
-        NULL,
+        nullptr,
         m_pinst );
 }
 
@@ -2494,7 +2494,7 @@ void CFlushMap::LogEventFmFileDeleted_( const WCHAR* const wszFmFilePath, const 
         _countof( rgpwsz ),
         rgpwsz,
         0,
-        NULL,
+        nullptr,
         m_pinst );
 }
 
@@ -2509,7 +2509,7 @@ void CFlushMap::LogEventFmFileCreated_( const WCHAR* const wszFmFilePath )
         _countof( rgpwsz ),
         rgpwsz,
         0,
-        NULL,
+        nullptr,
         m_pinst );
 }
 
@@ -2532,7 +2532,7 @@ void CFlushMap::LogEventFmHdrValidationFailed_( const ERR err, const WCHAR* cons
         _countof( rgpwsz ),
         rgpwsz,
         0,
-        NULL,
+        nullptr,
         m_pinst );
 }
 
@@ -2557,7 +2557,7 @@ void CFlushMap::LogEventFmDataPageValidationFailed_( const ERR err, const FMPGNO
         _countof( rgpwsz ),
         rgpwsz,
         0,
-        NULL,
+        nullptr,
         m_pinst );
 }
 
@@ -2586,7 +2586,7 @@ void CFlushMap::LogEventFmInconsistentDbTime_( const FMPGNO fmpgno, const DBTIME
         _countof( rgpwsz ),
         rgpwsz,
         0,
-        NULL,
+        nullptr,
         m_pinst );
 }
 
@@ -2603,8 +2603,8 @@ CFlushMap::CFlushMap() :
     m_fReadOnly( fFalse ),
     m_fCleanForTerm( fFalse ),
     m_pinst( pinstNil ),
-    m_pfsapi( NULL ),
-    m_pfapi( NULL ),
+    m_pfsapi( nullptr ),
+    m_pfapi( nullptr ),
     m_cInFlightIo( lMin ),
     m_sxwlSectionFlush( CLockBasicInfo( CSyncBasicInfo( "CFlushMap::m_sxwlSectionFlush" ), rankFlushMapAsyncWrite, 0 ) ),
     m_fmpgnoSectionFlushFirst( s_fmpgnoUninit ),
@@ -2614,7 +2614,7 @@ CFlushMap::CFlushMap() :
     m_errSectionFlushWriteLastError( JET_errSuccess ),
     m_msSectionFlush(),
     m_groupSectionFlushWrite( CMeteredSection::groupInvalidNil ),
-    m_pvSectionFlushAsyncWriteBuffer( NULL ),
+    m_pvSectionFlushAsyncWriteBuffer( nullptr ),
     m_cbSectionFlushAsyncWriteBufferReserved( 0 ),
     m_cbSectionFlushAsyncWriteBufferCommitted( 0 ),
     m_ibSectionFlushAsyncWriteBufferNext( 0 ),
@@ -2627,13 +2627,13 @@ CFlushMap::CFlushMap() :
     m_fmdFmHdr( s_fmpgnoHdr ),
     m_fmdFmPg0( 0 ),
     m_critFmdGrowCapacity( CLockBasicInfo( CSyncBasicInfo( "CFlushMap::m_critFmdGrowCapacity" ), rankFlushMapGrowth, 0 ) ),
-    m_rgfmd( NULL ),
+    m_rgfmd( nullptr ),
     m_cfmdCommitted( 0 ),
     m_cfmpgAllocated( 0 ),
     m_cbfmdReserved( 0 ),
     m_cbfmdCommitted( 0 ),
     m_cbfmAllocated( 0 ),
-    m_posttWriteFmHeaderPageComplete( NULL )
+    m_posttWriteFmHeaderPageComplete( nullptr )
 {
     m_sxwlSectionFlush.AcquireWriteLatch();
     m_sxwlSectionFlush.ReleaseOwnership( CSXWLatch::iWriteGroup );
@@ -2696,7 +2696,7 @@ ERR CFlushMap::ErrInitFlushMap()
         {
             const CFMPG cfmpgWriteMax = (CFMPG)UlFunctionalMax( ( (DWORD)UlParam( JET_paramMaxCoalesceWriteSize ) / s_cbFlushMapPageOnDisk ), 1 );
             const DWORD cbAsyncWriteBufferReserved = cfmpgWriteMax * m_cbFmPageInMemory;
-            Alloc( m_pvSectionFlushAsyncWriteBuffer = PvOSMemoryPageReserve( cbAsyncWriteBufferReserved, NULL ) );
+            Alloc( m_pvSectionFlushAsyncWriteBuffer = PvOSMemoryPageReserve( cbAsyncWriteBufferReserved, nullptr ) );
             m_cbSectionFlushAsyncWriteBufferReserved = cbAsyncWriteBufferReserved;
             m_cbSectionFlushAsyncWriteBufferCommitted = 0;
             m_ibSectionFlushAsyncWriteBufferNext = 0;
@@ -2890,13 +2890,13 @@ ERR CFlushMap::ErrSetRangeFlushTypeAndWait( _In_ const PGNO pgnoFirst, _In_ cons
 
 CPAGE::PageFlushType CFlushMap::PgftGetPgnoFlushType( _In_ const PGNO pgno )
 {
-    return PgftGetPgnoFlushType( pgno, dbtimeNil, NULL );
+    return PgftGetPgnoFlushType( pgno, dbtimeNil, nullptr );
 }
 
 CPAGE::PageFlushType CFlushMap::PgftGetPgnoFlushType( _In_ const PGNO pgno, _In_ const DBTIME dbtime, _Out_ BOOL* const pfRuntime )
 {
     ERR err = JET_errSuccess;
-    FlushMapPageDescriptor* pfmd = NULL;
+    FlushMapPageDescriptor* pfmd = nullptr;
     CPAGE::PageFlushType pgft = CPAGE::pgftUnknown;
     DBTIME dbtimeMax = dbtimeNil;
     FMPGNO fmpgno = s_fmpgnoUninit;
@@ -2918,7 +2918,7 @@ CPAGE::PageFlushType CFlushMap::PgftGetPgnoFlushType( _In_ const PGNO pgno, _In_
     pgft = PgftGetFlushType_( pfmd, pgno );
 
     // Get runtime flag.
-    if ( pfRuntime != NULL )
+    if ( pfRuntime != nullptr )
     {
         *pfRuntime = FGetFlushTypeRuntime_( pfmd, pgno );
     }
@@ -3223,7 +3223,7 @@ INLINE FMPGNO CFlushMap::FmpgnoGetFmPgnoFromDbPgno( _In_ const PGNO pgno )
 
 void CFlushMap::EnterDbHeaderFlush( _In_ CFlushMap* const pfm, _Out_ SIGNATURE* const psignDbHdrFlush, _Out_ SIGNATURE* const psignFlushMapHdrFlush )
 {
-    if ( ( pfm != NULL ) && pfm->m_fInitialized )
+    if ( ( pfm != nullptr ) && pfm->m_fInitialized )
     {
         pfm->EnterDbHeaderFlush_( psignDbHdrFlush, psignFlushMapHdrFlush );
     }
@@ -3236,7 +3236,7 @@ void CFlushMap::EnterDbHeaderFlush( _In_ CFlushMap* const pfm, _Out_ SIGNATURE* 
 
 void CFlushMap::LeaveDbHeaderFlush( _In_ CFlushMap* const pfm )
 {
-    if ( ( pfm != NULL ) && pfm->m_fInitialized )
+    if ( ( pfm != nullptr ) && pfm->m_fInitialized )
     {
         pfm->LeaveDbHeaderFlush_();
     }
@@ -3323,7 +3323,7 @@ CPG CFlushMapForAttachedDb::CpgGetDbExtensionSize_()
 
 CFlushMapForAttachedDb::CFlushMapForAttachedDb() :
     CFlushMap(),
-    m_pfmp( NULL )
+    m_pfmp( nullptr )
 {
 }
 
@@ -3417,15 +3417,15 @@ CPG CFlushMapForUnattachedDb::CpgGetDbExtensionSize_()
 CFlushMapForUnattachedDb::CFlushMapForUnattachedDb() :
     CFlushMap(),
     m_fReadOnly_( fFalse ),
-    m_wszFmFilePath_( NULL ),
+    m_wszFmFilePath_( nullptr ),
     m_fRecoverable_( fFalse ),
     m_pinst_( pinstNil ),
-    m_pfsconfig_( NULL ),
+    m_pfsconfig_( nullptr ),
     m_ulDbState_( 0 ),
     m_lGenDbMinRequired_( 0 ),
     m_lGenDbMinConsistent_( 0 ),
-    m_psignDbHdrFlushFromDb_( NULL ),
-    m_psignFlushMapHdrFlushFromDb_( NULL ),
+    m_psignDbHdrFlushFromDb_( nullptr ),
+    m_psignFlushMapHdrFlushFromDb_( nullptr ),
     m_cpgDbExtensionSize_( 0 )
 {
     m_fPersisted_ = fTrue;
@@ -3494,7 +3494,7 @@ ERR CFlushMapForUnattachedDb::ErrGetPersistedFlushMapOrNullObjectIfRuntime(
     _Out_ CFlushMapForUnattachedDb** const ppfm )
 {
     ERR err = JET_errSuccess;
-    CFlushMapForUnattachedDb* pfm = NULL;
+    CFlushMapForUnattachedDb* pfm = nullptr;
     WCHAR wszFmFilePath[ IFileSystemAPI::cchPathMax ] = { L'\0' };
     BOOL fNullObjectWithSuccess = fFalse;
 
@@ -3542,7 +3542,7 @@ HandleError:
     if ( ( err < JET_errSuccess ) || fNullObjectWithSuccess )
     {
         delete pfm;
-        pfm = NULL;
+        pfm = nullptr;
     }
 
     Assert( ppfm != NULL );
@@ -3845,9 +3845,9 @@ HandleError:
 
 CFlushMapForDump::CFlushMapForDump() :
     CFlushMap(),
-    m_wszFmFilePath_( NULL ),
+    m_wszFmFilePath_( nullptr ),
     m_pinst_( pinstNil ),
-    m_pfsconfig_( NULL )
+    m_pfsconfig_( nullptr )
 {
     m_fPersisted_ = fTrue;
     m_fCreateNew_ = fFalse;
@@ -3872,7 +3872,7 @@ void CFlushMapForDump::SetFileSystemConfiguration( _In_ IFileSystemConfiguration
 ERR CFlushMapForDump::ErrDumpFmPage( _In_ const FMPGNO fmpgno, _In_ const BOOL fDumpFlushStates )
 {
     ERR err = JET_errSuccess;
-    FlushMapPageDescriptor* pfmd = NULL;
+    FlushMapPageDescriptor* pfmd = nullptr;
     const BOOL fFmHeaderPage = FIsFmHeader_( fmpgno );
 
     if ( ( fmpgno < 0 ) && !fFmHeaderPage )
@@ -3914,7 +3914,7 @@ HandleError:
 ERR CFlushMapForDump::ErrChecksumFmPage( _In_ const FMPGNO fmpgno )
 {
     ERR err = JET_errSuccess;
-    FlushMapPageDescriptor* pfmd = NULL;
+    FlushMapPageDescriptor* pfmd = nullptr;
     const BOOL fFmHeaderPage = FIsFmHeader_( fmpgno );
 
     if ( ( fmpgno < 0 ) && !fFmHeaderPage )

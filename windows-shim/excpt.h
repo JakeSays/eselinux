@@ -25,7 +25,7 @@ extern "C" {
 // SEH intrinsics — compile-time stubs. Any code that actually executes a
 // __try/__except block must be ported away from SEH on Linux; these stubs
 // only let headers parse.
-inline EXCEPTION_POINTERS* GetExceptionInformation(void) { return 0; }
+inline EXCEPTION_POINTERS* GetExceptionInformation(void) { return nullptr; }
 inline unsigned long GetExceptionCode(void) { return 0; }
 
 #ifdef __cplusplus

@@ -59,8 +59,8 @@ ERR SingleLinkedListTest::ErrTest()
 
     //  create linked list elements, and head
 
-    RandomStruct rs1 = { 0x10000, NULL, 0x10000 };
-    RandomStruct rs2 = { 0x20000, NULL, 0x20000 };
+    RandomStruct rs1 = { 0x10000, nullptr, 0x10000 };
+    RandomStruct rs2 = { 0x20000, nullptr, 0x20000 };
 
     CLocklessLinkedList< RandomStruct > Head;
     CLocklessLinkedList< RandomStruct > Head2;
@@ -72,8 +72,8 @@ ERR SingleLinkedListTest::ErrTest()
     //  test ctor 
 
     TestCheck( Head.FEmpty() );
-    TestCheck( NULL == Head.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
-    TestCheck( NULL == Head.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );    // works twice in a row.
+    TestCheck( nullptr == Head.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
+    TestCheck( nullptr == Head.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );    // works twice in a row.
     
     //  test dirty mem ctor
 
@@ -85,7 +85,7 @@ ERR SingleLinkedListTest::ErrTest()
     TestCheck( (void*)0xBAADF00D != pdata );
 
     TestCheck( pHeadCtorTest->FEmpty() );
-    TestCheck( NULL == pHeadCtorTest->RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
+    TestCheck( nullptr == pHeadCtorTest->RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
 
     //  test single element insertion, removal, etc
 
@@ -97,7 +97,7 @@ ERR SingleLinkedListTest::ErrTest()
 
     TestCheck( &rs1 == prs );
     TestCheck( rs1.ulSig1 == rs1.ulSig2 );
-    TestCheck( NULL == Head.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
+    TestCheck( nullptr == Head.RemovePrevMost( OffsetOf( RandomStruct, pNext ) ) );
 
     //  test two element insertion, element removal, etc
     //      note: rs2 and then rs inserted
@@ -113,7 +113,7 @@ ERR SingleLinkedListTest::ErrTest()
 
     TestCheck( &rs1 == prs );
     TestCheck( rs1.ulSig1 == rs1.ulSig2 );
-    TestCheck( NULL == prs->pNext );        // should be delinked.
+    TestCheck( nullptr == prs->pNext );        // should be delinked.
     TestCheck( !Head.FEmpty() );            // should have another element in list
 
     //      test element 2 removal
@@ -122,7 +122,7 @@ ERR SingleLinkedListTest::ErrTest()
 
     TestCheck( &rs2 == prs );
     TestCheck( rs2.ulSig1 == rs2.ulSig2 );
-    TestCheck( NULL == prs->pNext );        // should be delinked.
+    TestCheck( nullptr == prs->pNext );        // should be delinked.
     TestCheck( Head.FEmpty() );
 
     //  test two element insertion, and list removal, etc

@@ -95,7 +95,7 @@ class CDoubleInPlace
 ERR SegmentedHistogramTest::ErrTest()
 //  ================================================================
 {
-    void * pvHistoStorage = NULL;
+    void * pvHistoStorage = nullptr;
     CSegmentedHistoInPlaceTest inplace;
     CDoubleInPlace inplacedouble;
 
@@ -182,14 +182,14 @@ ERR SegmentedHistogramTest::ErrTest()
 
     TestTest( 40 == pSHS->Mode() );
 
-    pSHS = NULL;
+    pSHS = nullptr;
 
     //  2nd set of tests, using a malloc()'d chunk of memory
     //
 
     ULONG cbHisto = CbCSegmentedHistogram( rgLimitedSegments );
     pvHistoStorage = malloc( cbHisto );
-    if ( pvHistoStorage == NULL )
+    if ( pvHistoStorage == nullptr )
     {
         if ( fPrintStatus )
             wprintf( L"Test %d failed to alloc %d bytes\n", iTest, cbHisto );

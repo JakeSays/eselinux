@@ -4,20 +4,20 @@
 #include "logstd.hxx"
 
 
-extern VOID       ITDBGSetConstants( INST * pinst = NULL);
+extern VOID       ITDBGSetConstants( INST * pinst = nullptr);
 
 ERR ErrLGCheckDBFiles(
     INST *pinst,
     RSTMAP * pDbMapEntry,
     INT genLow,
     INT genHigh,
-    LGPOS *plgposSnapshotRestore = NULL )
+    LGPOS *plgposSnapshotRestore = nullptr )
 {
     ERR             err;
-    DBFILEHDR_FIX * pdbfilehdrDb    = NULL;
-    PATCHHDR *      ppatchHdr       = NULL;;
+    DBFILEHDR_FIX * pdbfilehdrDb    = nullptr;
+    PATCHHDR *      ppatchHdr       = nullptr;;
     SIGNATURE       signLog = pinst->m_plog->SignLog();
-    CFlushMapForUnattachedDb* pfm   = NULL;
+    CFlushMapForUnattachedDb* pfm   = nullptr;
 
     Assert ( pDbMapEntry );
     const WCHAR * wszDatabase = pDbMapEntry->wszNewDatabaseName;
@@ -28,7 +28,7 @@ ERR ErrLGCheckDBFiles(
 
     /*  check if dbfilehdr of database and patchfile are the same.
     /**/
-    Alloc( pdbfilehdrDb = (DBFILEHDR_FIX *)PvOSMemoryPageAlloc( g_cbPage, NULL ) );
+    Alloc( pdbfilehdrDb = (DBFILEHDR_FIX *)PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
     err = ErrUtilReadShadowedHeader(
             pinst,
             pinst->m_pfsapi,
@@ -82,7 +82,7 @@ ERR ErrLGCheckDBFiles(
 
             // UNDONE: change event message and error
             UtilReportEvent( eventError, LOGGING_RECOVERY_CATEGORY,
-                DATABASE_PATCH_FILE_MISMATCH_ERROR_ID, csz, rgszT, 0, NULL, pinst);
+                DATABASE_PATCH_FILE_MISMATCH_ERROR_ID, csz, rgszT, 0, nullptr, pinst);
             Error( ErrERRCheck( JET_errDatabasePatchFileMismatch ) );
         }
 
@@ -93,7 +93,7 @@ ERR ErrLGCheckDBFiles(
         goto EndOfCheckLogRange;
     }
 
-    Alloc( ppatchHdr = (PATCHHDR *)PvOSMemoryPageAlloc( g_cbPage, NULL ) );
+    Alloc( ppatchHdr = (PATCHHDR *)PvOSMemoryPageAlloc( g_cbPage, nullptr ) );
 
     if ( 0 == pdbfilehdrDb->bkinfoFullCur.le_genLow )
     {
@@ -128,7 +128,7 @@ ERR ErrLGCheckDBFiles(
 
         rgszT[0] = wszDatabase;
         UtilReportEvent( eventError, LOGGING_RECOVERY_CATEGORY,
-                    DATABASE_PATCH_FILE_MISMATCH_ERROR_ID, csz, rgszT, 0, NULL, pinst );
+                    DATABASE_PATCH_FILE_MISMATCH_ERROR_ID, csz, rgszT, 0, nullptr, pinst );
         Error( ErrERRCheck( JET_errDatabasePatchFileMismatch ) );
     }
     else
@@ -148,11 +148,11 @@ EndOfCheckLogRange:
         const WCHAR *rgszT[] = { wszT1, wszT2 };
 
         // use szPatch as this should be the path of the log files as well
-        pinst->m_plog->LGFullLogNameFromLogId( wszT1, genLow, NULL );
-        pinst->m_plog->LGFullLogNameFromLogId( wszT2, ulGenLowFound, NULL );
+        pinst->m_plog->LGFullLogNameFromLogId( wszT1, genLow, nullptr );
+        pinst->m_plog->LGFullLogNameFromLogId( wszT2, ulGenLowFound, nullptr );
 
         UtilReportEvent( eventError, LOGGING_RECOVERY_CATEGORY,
-                    STARTING_RESTORE_LOG_TOO_HIGH_ERROR_ID, 2, rgszT, 0, NULL, pinst );
+                    STARTING_RESTORE_LOG_TOO_HIGH_ERROR_ID, 2, rgszT, 0, nullptr, pinst );
         
         OSUHAPublishEvent(  HaDbFailureTagCorruption,
                             pinst,
@@ -174,11 +174,11 @@ EndOfCheckLogRange:
         const WCHAR *rgszT[] = { szT1, szT2 };
 
         // use szPatch as this should be the path of the log files as well
-        pinst->m_plog->LGFullLogNameFromLogId( szT1, genHigh, NULL );
-        pinst->m_plog->LGFullLogNameFromLogId( szT2, ulGenHighFound, NULL );
+        pinst->m_plog->LGFullLogNameFromLogId( szT1, genHigh, nullptr );
+        pinst->m_plog->LGFullLogNameFromLogId( szT2, ulGenHighFound, nullptr );
 
         UtilReportEvent( eventError, LOGGING_RECOVERY_CATEGORY,
-                    ENDING_RESTORE_LOG_TOO_LOW_ERROR_ID, 2, rgszT, 0, NULL, pinst );
+                    ENDING_RESTORE_LOG_TOO_LOW_ERROR_ID, 2, rgszT, 0, nullptr, pinst );
         
         OSUHAPublishEvent(  HaDbFailureTagCorruption,
                             pinst,
@@ -216,10 +216,10 @@ EndOfCheckLogRange:
     //  initialize persisted flush map
     Call( CFlushMapForUnattachedDb::ErrGetPersistedFlushMapOrNullObjectIfRuntime( wszDatabase, pdbfilehdrDb, pinst, &pfm ) );
 
-    Call( ErrUtilWriteUnattachedDatabaseHeaders( pinst, pinst->m_pfsapi, wszDatabase, pdbfilehdrDb, NULL, pfm ) );
+    Call( ErrUtilWriteUnattachedDatabaseHeaders( pinst, pinst->m_pfsapi, wszDatabase, pdbfilehdrDb, nullptr, pfm ) );
     CallS( err );
 
-    if ( pfm != NULL )
+    if ( pfm != nullptr )
     {
         if ( pdbfilehdrDb->Dbstate() == JET_dbstateCleanShutdown )
         {
@@ -256,22 +256,22 @@ ERR LOG::ErrLGIRSTCheckSignaturesLogSequence(
     LONG            gen;
     LONG            genLowT;
     LONG            genHighT;
-    IFileAPI    *pfapiT = NULL;
-    LGFILEHDR       *plgfilehdrT = NULL;
-    LGFILEHDR       *plgfilehdrCur[2] = { NULL, NULL };
-    LGFILEHDR       *plgfilehdrLow = NULL;
-    LGFILEHDR       *plgfilehdrHigh = NULL;
+    IFileAPI    *pfapiT = nullptr;
+    LGFILEHDR       *plgfilehdrT = nullptr;
+    LGFILEHDR       *plgfilehdrCur[2] = { nullptr, nullptr };
+    LGFILEHDR       *plgfilehdrLow = nullptr;
+    LGFILEHDR       *plgfilehdrHigh = nullptr;
     INT             ilgfilehdrAvail = 0;
     INT             ilgfilehdrCur;
     INT             ilgfilehdrPrv;
     BOOL            fReadyToCheckContiguity;
 //  ERR             wrn = JET_errSuccess;
-    PCWSTR          wszLogExt = NULL;
+    PCWSTR          wszLogExt = nullptr;
 
     BOOL fTargetInstanceCheck = fFalse;
-    const WCHAR * wszLogFilePathCheck = NULL;
+    const WCHAR * wszLogFilePathCheck = nullptr;
 
-    AllocR( plgfilehdrT = (LGFILEHDR *)PvOSMemoryPageAlloc( sizeof(LGFILEHDR) * 4, NULL ) );
+    AllocR( plgfilehdrT = (LGFILEHDR *)PvOSMemoryPageAlloc( sizeof(LGFILEHDR) * 4, nullptr ) );
 
     plgfilehdrCur[0] = plgfilehdrT;
     plgfilehdrCur[1] = plgfilehdrT + 1;
@@ -288,23 +288,23 @@ ERR LOG::ErrLGIRSTCheckSignaturesLogSequence(
         ilgfilehdrPrv = ilgfilehdrAvail % 2;
 
         // Restore needs to auto-switch to the appropriate log files extension ...
-        if ( NULL == m_pLogStream->LogExt() )
+        if ( nullptr == m_pLogStream->LogExt() )
         {
             Assert( gen == genLow && wszLogExt == NULL );
             wszLogExt = WszLGGetDefaultExt( fFalse );
         }
         err = m_pLogStream->ErrLGRSTOpenLogFile( wszRestorePath, gen, &pfapiT, wszLogExt );
-        if ( NULL == m_pLogStream->LogExt() )
+        if ( nullptr == m_pLogStream->LogExt() )
         {
             Assert( gen == genLow );
 
             if ( err == JET_errFileNotFound )
             {
                 // Lets fall back and try the other log extension ...
-                if ( pfapiT != NULL ) // just in case ?
+                if ( pfapiT != nullptr ) // just in case ?
                 {
                     delete pfapiT;
-                    pfapiT = NULL;
+                    pfapiT = nullptr;
                 }
                 wszLogExt = WszLGGetOtherExt( fFalse );
                 err = m_pLogStream->ErrLGRSTOpenLogFile( wszRestorePath, gen, &pfapiT, wszLogExt );
@@ -323,7 +323,7 @@ ERR LOG::ErrLGIRSTCheckSignaturesLogSequence(
         Call( err ); // return error if any ...
         Call( m_pLogStream->ErrLGReadFileHdr( pfapiT, iorpRestore, plgfilehdrCur[ ilgfilehdrCur ], fCheckLogID ) );
         delete pfapiT;
-        pfapiT = NULL;
+        pfapiT = nullptr;
 
         if ( gen == genLow )
         {
@@ -349,7 +349,7 @@ ERR LOG::ErrLGIRSTCheckSignaturesLogSequence(
                 m_pLogStream->LGFullLogNameFromLogId( wszT, gen, wszRestorePath );
 
                 UtilReportEvent( eventError, LOGGING_RECOVERY_CATEGORY,
-                    RESTORE_LOG_FILE_HAS_BAD_SIGNATURE_ERROR_ID, csz, rgszT, 0, NULL, m_pinst );
+                    RESTORE_LOG_FILE_HAS_BAD_SIGNATURE_ERROR_ID, csz, rgszT, 0, nullptr, m_pinst );
                 Call( ErrERRCheck( JET_errGivenLogFileHasBadSignature ) );
             }
             if ( memcmp( &plgfilehdrCur[ ilgfilehdrCur ]->lgfilehdr.tmPrevGen,
@@ -363,7 +363,7 @@ ERR LOG::ErrLGIRSTCheckSignaturesLogSequence(
                 OSStrCbFormatW( wszT, sizeof( wszT ), L"%d", gen );
                 rgszT[0] = wszT;
                 UtilReportEvent( eventError, LOGGING_RECOVERY_CATEGORY,
-                    RESTORE_LOG_FILE_NOT_CONTIGUOUS_ERROR_ID, csz, rgszT, 0, NULL, m_pinst );
+                    RESTORE_LOG_FILE_NOT_CONTIGUOUS_ERROR_ID, csz, rgszT, 0, nullptr, m_pinst );
                 Call( ErrERRCheck( JET_errGivenLogFileIsNotContiguous ) );
             }
         }
@@ -382,7 +382,7 @@ ERR LOG::ErrLGIRSTCheckSignaturesLogSequence(
         m_pLogStream->LGFullLogNameFromLogId( wszT, gen, wszRestorePath );
 
         UtilReportEvent( eventError, LOGGING_RECOVERY_CATEGORY,
-                RESTORE_LOG_FILE_MISSING_ERROR_ID, csz, rgszT, 0, NULL, m_pinst );
+                RESTORE_LOG_FILE_MISSING_ERROR_ID, csz, rgszT, 0, nullptr, m_pinst );
         Call( ErrERRCheck( JET_errMissingRestoreLogFiles ) );
     }
 
@@ -460,7 +460,7 @@ ERR LOG::ErrLGIRSTCheckSignaturesLogSequence(
             m_pLogStream->LGFullLogNameFromLogId( wszT, genHighTarget, wszLogFilePathCheck );
 
             UtilReportEvent( eventError, LOGGING_RECOVERY_CATEGORY,
-                    RESTORE_LOG_FILE_MISSING_ERROR_ID, csz, rgszT, 0, NULL, m_pinst );
+                    RESTORE_LOG_FILE_MISSING_ERROR_ID, csz, rgszT, 0, nullptr, m_pinst );
             Call( ErrERRCheck( JET_errMissingRestoreLogFiles ) );
         }
 
@@ -534,13 +534,13 @@ ERR LOG::ErrLGIRSTCheckSignaturesLogSequence(
 
                         Assert(0);
                         UtilReportEvent( eventError, LOGGING_RECOVERY_CATEGORY,
-                                RESTORE_LOG_FILE_MISSING_ERROR_ID, csz, rgszT, 0, NULL, m_pinst );
+                                RESTORE_LOG_FILE_MISSING_ERROR_ID, csz, rgszT, 0, nullptr, m_pinst );
                         Call( ErrERRCheck( JET_errMissingRestoreLogFiles ) );
                     }
                     else
                     {
                         UtilReportEvent( eventError, LOGGING_RECOVERY_CATEGORY,
-                            CURRENT_LOG_FILE_MISSING_ERROR_ID, csz, rgszT, 0, NULL, m_pinst );
+                            CURRENT_LOG_FILE_MISSING_ERROR_ID, csz, rgszT, 0, nullptr, m_pinst );
                         err = ErrERRCheck( JET_errMissingCurrentLogFiles );
                     }
                 }
@@ -554,7 +554,7 @@ ERR LOG::ErrLGIRSTCheckSignaturesLogSequence(
 
         Call( m_pLogStream->ErrLGReadFileHdr( pfapiT, iorpRestore, plgfilehdrCur[ ilgfilehdrCur ], fNoCheckLogID ) );
         delete pfapiT;
-        pfapiT = NULL;
+        pfapiT = nullptr;
 
         if ( memcmp( &plgfilehdrCur[ ilgfilehdrCur ]->lgfilehdr.signLog,
                      &plgfilehdrHigh->lgfilehdr.signLog,
@@ -579,12 +579,12 @@ ERR LOG::ErrLGIRSTCheckSignaturesLogSequence(
                 genCurrent = genHighT + 1;  // to break out the loop
             }
 
-            CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT1, sizeof(wszT1), NULL,
+            CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT1, sizeof(wszT1), nullptr,
                                             ( gen == genHighT + 1 || 0 == gen ) ? eCurrentLog : eArchiveLog,
                                             ( gen == genHighT + 1 || 0 == gen ) ? 0                 : gen ) );
 
             UtilReportEvent( eventWarning, LOGGING_RECOVERY_CATEGORY,
-                    EXISTING_LOG_FILE_HAS_BAD_SIGNATURE_ERROR_ID_2, csz, rgszT, 0, NULL, m_pinst );
+                    EXISTING_LOG_FILE_HAS_BAD_SIGNATURE_ERROR_ID_2, csz, rgszT, 0, nullptr, m_pinst );
 
             err = ErrERRCheck( JET_errExistingLogFileHasBadSignature );
             gen = genCurrent;
@@ -608,16 +608,16 @@ ERR LOG::ErrLGIRSTCheckSignaturesLogSequence(
 //              wrn = ErrERRCheck( JET_wrnExistingLogFileIsNotContiguous );
                 err = ErrERRCheck( JET_errExistingLogFileIsNotContiguous );
 
-                CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT1, sizeof(wszT1), NULL,
+                CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT1, sizeof(wszT1), nullptr,
                                                 ( genPrv == genHighT + 1 || 0 == genPrv ) ? eCurrentLog : eArchiveLog,
                                                 ( genPrv == genHighT + 1 || 0 == genPrv ) ? 0                 : genPrv ) );
-                CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT2, sizeof(wszT2), NULL,
+                CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT2, sizeof(wszT2), nullptr,
                                                 ( genCur == genHighT + 1 || 0 == genCur ) ? eCurrentLog : eArchiveLog,
                                                 ( genCur == genHighT + 1 || 0 == genCur ) ? 0                 : genCur ) );
                 rgszT[0] = wszT1;
                 rgszT[1] = wszT2;
                 UtilReportEvent( eventWarning, LOGGING_RECOVERY_CATEGORY,
-                    EXISTING_LOG_FILE_NOT_CONTIGUOUS_ERROR_ID_2, csz, rgszT, 0, NULL, m_pinst );
+                    EXISTING_LOG_FILE_NOT_CONTIGUOUS_ERROR_ID_2, csz, rgszT, 0, nullptr, m_pinst );
 
                 if ( gen < genLow )
                 {
@@ -651,17 +651,17 @@ ERR LOG::ErrLGIRSTCheckSignaturesLogSequence(
                 LONG genCur = plgfilehdrCur[ ilgfilehdrCur ]->lgfilehdr.le_lGeneration;
                 LONG genPrv = plgfilehdrLow->lgfilehdr.le_lGeneration;
 
-                CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT1, sizeof(wszT1), NULL,
+                CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT1, sizeof(wszT1), nullptr,
                                                 ( genPrv == genHighT + 1 || 0 == genPrv ) ? eCurrentLog : eArchiveLog,
                                                 ( genPrv == genHighT + 1 || 0 == genPrv ) ? 0                 : genPrv ) );
-                CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT2, sizeof(wszT2), NULL,
+                CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT2, sizeof(wszT2), nullptr,
                                                 ( genCur == genHighT + 1 || 0 == genCur ) ? eCurrentLog : eArchiveLog,
                                                 ( genCur == genHighT + 1 || 0 == genCur ) ? 0                 : genCur ) );
 
                 rgszT[0] = wszT1;
                 rgszT[1] = wszT2;
                 UtilReportEvent( eventWarning, LOGGING_RECOVERY_CATEGORY,
-                    EXISTING_LOG_FILE_NOT_CONTIGUOUS_ERROR_ID_2, csz, rgszT, 0, NULL, m_pinst );
+                    EXISTING_LOG_FILE_NOT_CONTIGUOUS_ERROR_ID_2, csz, rgszT, 0, nullptr, m_pinst );
 
                 err = ErrERRCheck( JET_errExistingLogFileIsNotContiguous );
                 fReadyToCheckContiguity = fFalse;
@@ -685,17 +685,17 @@ ERR LOG::ErrLGIRSTCheckSignaturesLogSequence(
                 LONG genCur = plgfilehdrCur[ ilgfilehdrCur ]->lgfilehdr.le_lGeneration;
                 LONG genPrv = plgfilehdrLow->lgfilehdr.le_lGeneration;
 
-                CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT1, sizeof(wszT1), NULL,
+                CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT1, sizeof(wszT1), nullptr,
                                                 ( genPrv == genHighT + 1 || 0 == genPrv ) ? eCurrentLog : eArchiveLog,
                                                 ( genPrv == genHighT + 1 || 0 == genPrv ) ? 0                 : genPrv ) );
-                CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT2, sizeof(wszT2), NULL,
+                CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT2, sizeof(wszT2), nullptr,
                                                 ( genCur == genHighT + 1 || 0 == genCur ) ? eCurrentLog : eArchiveLog,
                                                 ( genCur == genHighT + 1 || 0 == genCur ) ? 0                 : genCur ) );
 
                 rgszT[0] = wszT1;
                 rgszT[1] = wszT2;
                 UtilReportEvent( eventWarning, LOGGING_RECOVERY_CATEGORY,
-                    EXISTING_LOG_FILE_NOT_CONTIGUOUS_ERROR_ID_2, csz, rgszT, 0, NULL, m_pinst );
+                    EXISTING_LOG_FILE_NOT_CONTIGUOUS_ERROR_ID_2, csz, rgszT, 0, nullptr, m_pinst );
 
                 err = ErrERRCheck( JET_errExistingLogFileIsNotContiguous );
 
@@ -721,17 +721,17 @@ ERR LOG::ErrLGIRSTCheckSignaturesLogSequence(
                 LONG genCur = plgfilehdrCur[ ilgfilehdrCur ]->lgfilehdr.le_lGeneration;
                 LONG genPrv = plgfilehdrHigh->lgfilehdr.le_lGeneration;
 
-                CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT1, sizeof(wszT1), NULL,
+                CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT1, sizeof(wszT1), nullptr,
                                                 ( genPrv == genHighT + 1 || 0 == genPrv ) ? eCurrentLog : eArchiveLog,
                                                 ( genPrv == genHighT + 1 || 0 == genPrv ) ? 0                 : genPrv ) );
-                CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT2, sizeof(wszT2), NULL,
+                CallS( m_pLogStream->ErrLGMakeLogNameBaseless( wszT2, sizeof(wszT2), nullptr,
                                                 ( genCur == genHighT + 1 || 0 == genCur ) ? eCurrentLog : eArchiveLog,
                                                 ( genCur == genHighT + 1 || 0 == genCur ) ? 0                 : genCur ) );
 
                 rgszT[0] = wszT1;
                 rgszT[1] = wszT2;
                 UtilReportEvent( eventWarning, LOGGING_RECOVERY_CATEGORY,
-                    EXISTING_LOG_FILE_NOT_CONTIGUOUS_ERROR_ID_2, csz, rgszT, 0, NULL, m_pinst );
+                    EXISTING_LOG_FILE_NOT_CONTIGUOUS_ERROR_ID_2, csz, rgszT, 0, nullptr, m_pinst );
 
                 err = ErrERRCheck( JET_errExistingLogFileIsNotContiguous );
                 break;
@@ -799,7 +799,7 @@ ERR LOG::ErrLGIRSTInitPath(
 {
     ERR err;
 
-    CallR( m_pinst->m_pfsapi->ErrPathComplete( wszBackupPath == NULL ? L"." : wszBackupPath, wszRestorePath ) );
+    CallR( m_pinst->m_pfsapi->ErrPathComplete( wszBackupPath == nullptr ? L"." : wszBackupPath, wszRestorePath ) );
     CallS( m_pinst->m_pfsapi->ErrPathFolderNorm( wszRestorePath, cbRestorePath ) );
 
     m_wszLogCurrent = wszRestorePath;
@@ -838,7 +838,7 @@ ERR LOG::ErrLGIRSTSetupCheckpoint(
 
     /*  read log file header
     /**/
-    Call( m_pLogStream->ErrLGReadFileHdr( NULL, iorpRestore, NULL, fCheckLogID ) );
+    Call( m_pLogStream->ErrLGReadFileHdr( nullptr, iorpRestore, nullptr, fCheckLogID ) );
     m_pcheckpoint->checkpoint.dbms_param = m_pLogStream->GetCurrentFileHdr()->lgfilehdr.dbms_param;
 
     lgposCheckpoint.lGeneration = lgenLow;
@@ -897,7 +897,7 @@ VOID LOG::LGIRSTPrepareCallback(
         /*  check if it is needed to continue the log files in current
         /*  log working directory.
         /**/
-        (void)m_pLogStream->ErrLGGetGenerationRange( SzParam( m_pinst, JET_paramLogFilePath ), NULL, &lgenHighT );
+        (void)m_pLogStream->ErrLGGetGenerationRange( SzParam( m_pinst, JET_paramLogFilePath ), nullptr, &lgenHighT );
 
         /*  check if edb.jtx/log exist, if it is, then add one more generation.
         /**/
@@ -967,7 +967,7 @@ ERR LOG::ErrLGRestore(
     LONG                lgenLow;
     LONG                lgenHigh;
     LGSTATUSINFO        lgstat = { 0 };
-    LGSTATUSINFO        *plgstat = NULL;
+    LGSTATUSINFO        *plgstat = nullptr;
     const WCHAR         *rgszT[2];
     BOOL                fNewCheckpointFile;
     ULONG               cbSecVolumeSave;
@@ -1049,7 +1049,7 @@ ERR LOG::ErrLGRestore(
                 1,
                 szPathT,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
         CallJ( ErrERRCheck( JET_errFileNotFound ), ResetGlobalRepair );
     }
@@ -1121,7 +1121,7 @@ ERR LOG::ErrLGRestore(
 
     Assert( lgenLow > 0 );
     Assert( lgenHigh >= lgenLow );
-    CallJ( ErrLGIRSTCheckSignaturesLogSequence( m_wszRestorePath, wszLogDirPath, lgenLow, lgenHigh, NULL, 0 ), ReturnError );
+    CallJ( ErrLGIRSTCheckSignaturesLogSequence( m_wszRestorePath, wszLogDirPath, lgenLow, lgenHigh, nullptr, 0 ), ReturnError );
 
     Assert( ( LOSStrLengthW( m_wszRestorePath ) + 1 ) * sizeof( WCHAR ) < sizeof( m_wszRestorePath ) );
     Assert( ( LOSStrLengthW( wszLogDirPath ) + 1 ) * sizeof( WCHAR ) < sizeof( wszLogDirPath ) );
@@ -1148,7 +1148,7 @@ ERR LOG::ErrLGRestore(
             2,
             rgszT,
             0,
-            NULL,
+            nullptr,
             m_pinst );
 
     // We could be restoring from a backup that started before the test initial log generation.
@@ -1157,7 +1157,7 @@ ERR LOG::ErrLGRestore(
     /*  all saved log generation files, database backups
     /*  must be in m_wszRestorePath.
     /**/
-    Call( ErrLGIRSTSetupCheckpoint( lgenLow, lgenHigh, NULL ) );
+    Call( ErrLGIRSTSetupCheckpoint( lgenLow, lgenHigh, nullptr ) );
 
     m_lGenLowRestore = lgenLow;
     m_lGenHighRestore = lgenHigh;
@@ -1166,7 +1166,7 @@ ERR LOG::ErrLGRestore(
     /**/
     m_pinst->m_pfnInitCallback = pfn;
     m_pinst->m_pvInitCallbackContext = pvContext;
-    if ( m_pinst->m_pfnInitCallback != NULL )
+    if ( m_pinst->m_pfnInitCallback != nullptr )
     {
         plgstat = &lgstat;
         LGIRSTPrepareCallback( plgstat, lgenHigh, lgenLow, 0 );
@@ -1214,7 +1214,7 @@ ERR LOG::ErrLGRestore(
     //  ErrLGRRedo() gets through the logs, but doesn't set the LOG() to run w/ the newly desired
     //  parameters ( log file size, log ext, etc )
 
-    Call( ErrLGMoveToRunningState( err, NULL ) );
+    Call( ErrLGMoveToRunningState( err, nullptr ) );
 
     //  we should be using the right log file size now
 
@@ -1274,9 +1274,9 @@ TermFMP:
             LOGGING_RECOVERY_CATEGORY,
             STOP_RESTORE_ID,
             0,
-            NULL,
+            nullptr,
             0,
-            NULL,
+            nullptr,
             m_pinst );
 
     m_fSignLogSet = fFalse;
@@ -1379,7 +1379,7 @@ ERR LOG::ErrLGRSTExternalRestore(
     BOOL                fLogDisabledSav;
     DBMS_PARAM          dbms_param;
     LGSTATUSINFO        lgstat = { 0 };
-    LGSTATUSINFO        *plgstat = NULL;
+    LGSTATUSINFO        *plgstat = nullptr;
     const WCHAR         *rgszT[2];
     INT                 irstmap;
     BOOL                fNewCheckpointFile;
@@ -1404,9 +1404,9 @@ ERR LOG::ErrLGRSTExternalRestore(
 
         //  create paths
 
-        CallR( ErrUtilCreatePathIfNotExist( pinst->m_pfsapi, SzParam( pinst, JET_paramTempPath ), NULL, 0 ) );
-        CallR( ErrUtilCreatePathIfNotExist( pinst->m_pfsapi, SzParam( pinst, JET_paramSystemPath ), NULL, 0 ) );
-        CallR( ErrUtilCreatePathIfNotExist( pinst->m_pfsapi, SzParam( pinst, JET_paramLogFilePath ), NULL, 0 ) );
+        CallR( ErrUtilCreatePathIfNotExist( pinst->m_pfsapi, SzParam( pinst, JET_paramTempPath ), nullptr, 0 ) );
+        CallR( ErrUtilCreatePathIfNotExist( pinst->m_pfsapi, SzParam( pinst, JET_paramSystemPath ), nullptr, 0 ) );
+        CallR( ErrUtilCreatePathIfNotExist( pinst->m_pfsapi, SzParam( pinst, JET_paramLogFilePath ), nullptr, 0 ) );
     }
 
     //  Start the restore work
@@ -1441,7 +1441,7 @@ ERR LOG::ErrLGRSTExternalRestore(
                 1,
                 szPathT,
                 0,
-                NULL,
+                nullptr,
                 m_pinst );
         return ErrERRCheck( JET_errFileNotFound );
     }
@@ -1475,7 +1475,7 @@ ERR LOG::ErrLGRSTExternalRestore(
     else
     {
         CallJ( ErrLGIRSTCheckSignaturesLogSequence(
-            m_wszRestorePath, SzParam( m_pinst, JET_paramLogFilePath ), lgenLow, lgenHigh, NULL, 0 ), ReturnError );
+            m_wszRestorePath, SzParam( m_pinst, JET_paramLogFilePath ), lgenLow, lgenHigh, nullptr, 0 ), ReturnError );
     }
 
     fLogDisabledSav = m_fLogDisabled;
@@ -1519,7 +1519,7 @@ ERR LOG::ErrLGRSTExternalRestore(
             2,
             rgszT,
             0,
-            NULL,
+            nullptr,
             m_pinst );
 
 #ifdef DEBUG
@@ -1570,8 +1570,8 @@ ERR LOG::ErrLGRSTExternalRestore(
     /*  set up checkpoint file for restore
     /**/
     Call ( m_pLogStream->ErrLGGetGenerationRange( m_wszRestorePath,
-            !lgenLow?&lgenLow:NULL,
-            !lgenHigh?&lgenHigh:NULL ) );
+            !lgenLow?&lgenLow:nullptr,
+            !lgenHigh?&lgenHigh:nullptr ) );
 
     // We could be restoring from a backup that started before the test initial log generation.
     m_lgenInitial = m_lgenInitial > lgenLow ? lgenLow : m_lgenInitial;
@@ -1585,7 +1585,7 @@ ERR LOG::ErrLGRSTExternalRestore(
     /**/
     m_pinst->m_pfnInitCallback = pfn;
     m_pinst->m_pvInitCallbackContext = pvContext;
-    if ( m_pinst->m_pfnInitCallback != NULL )
+    if ( m_pinst->m_pfnInitCallback != nullptr )
     {
         plgstat = &lgstat;
         LGIRSTPrepareCallback( plgstat, lgenHigh, lgenLow, 0 );
@@ -1616,7 +1616,7 @@ ERR LOG::ErrLGRSTExternalRestore(
     //  ErrLGRRedo() gets through the logs, but doesn't set the LOG() to run w/ the newly desired
     //  parameters ( log file size, log ext, etc )
 
-    Call( ErrLGMoveToRunningState( err, NULL ) );
+    Call( ErrLGMoveToRunningState( err, nullptr ) );
 
     //  we should be using the right log file size by now
 
@@ -1723,9 +1723,9 @@ TermResetGlobals:
             LOGGING_RECOVERY_CATEGORY,
             STOP_RESTORE_ID,
             0,
-            NULL,
+            nullptr,
             0,
-            NULL,
+            nullptr,
             m_pinst );
 
     // signal the caller that we found a running instance
@@ -1756,13 +1756,13 @@ ReturnError:
 ERR LOG::ErrCompareLogs( PCWSTR wszLog1, PCWSTR wszLog2, const BOOL fAllowSubsetIfEmpty, BOOL* const pfLogsDiverged )
 {
     ERR         err         = JET_errSuccess;
-    IFileAPI*   pfapiLog1   = NULL;
-    IFileAPI*   pfapiLog2   = NULL;
+    IFileAPI*   pfapiLog1   = nullptr;
+    IFileAPI*   pfapiLog2   = nullptr;
 
     TraceContextScope tcScope( iorpLog );
 
-    void* pvLog1 = NULL;
-    void* pvLog2 = NULL;
+    void* pvLog1 = nullptr;
+    void* pvLog2 = nullptr;
 
     QWORD cbLog1        = 0;
     QWORD cbLog2        = 0;
@@ -1796,7 +1796,7 @@ ERR LOG::ErrCompareLogs( PCWSTR wszLog1, PCWSTR wszLog2, const BOOL fAllowSubset
 
         // Get last log pos for log1
         m_pLogStream->SetPfapi( pfapiLog1 );
-        Call( m_pLogStream->ErrLGReadFileHdr( NULL, iorpDirectAccessUtil, NULL, fNoCheckLogID, fTrue ) );
+        Call( m_pLogStream->ErrLGReadFileHdr( nullptr, iorpDirectAccessUtil, nullptr, fNoCheckLogID, fTrue ) );
         Call( m_pLogReadBuffer->ErrLGCheckReadLastLogRecordFF( &fCloseNormally, fTrue, fTrue ) );
 
         cbLog1 = m_pLogReadBuffer->LgposFileEnd().isec * m_pLogStream->CbSec();
@@ -1804,7 +1804,7 @@ ERR LOG::ErrCompareLogs( PCWSTR wszLog1, PCWSTR wszLog2, const BOOL fAllowSubset
         // Get last log pos for log2
         m_pLogStream->ResetPfapi();
         m_pLogStream->SetPfapi( pfapiLog2 );
-        Call( m_pLogStream->ErrLGReadFileHdr( NULL, iorpDirectAccessUtil, NULL, fNoCheckLogID, fTrue ) );
+        Call( m_pLogStream->ErrLGReadFileHdr( nullptr, iorpDirectAccessUtil, nullptr, fNoCheckLogID, fTrue ) );
         Call( m_pLogReadBuffer->ErrLGCheckReadLastLogRecordFF( &fCloseNormally, fTrue, fTrue ) );
 
         cbLog2 = m_pLogReadBuffer->LgposFileEnd().isec * m_pLogStream->CbSec();
@@ -1815,8 +1815,8 @@ ERR LOG::ErrCompareLogs( PCWSTR wszLog1, PCWSTR wszLog2, const BOOL fAllowSubset
     cbRemaining = cbLog1;
 
     cbRead = min( cbMaxRead, cbRemaining );
-    pvLog1 = PvOSMemoryPageAlloc( (size_t) cbRead, NULL );
-    pvLog2 = PvOSMemoryPageAlloc( (size_t) cbRead, NULL );
+    pvLog1 = PvOSMemoryPageAlloc( (size_t) cbRead, nullptr );
+    pvLog2 = PvOSMemoryPageAlloc( (size_t) cbRead, nullptr );
         
     while ( cbRemaining > 0 )
     {
@@ -1877,7 +1877,7 @@ ERR LGFileHelper::ErrLGGetGeneration( IFileSystemAPI* const pfsapi, _In_ PCWSTR 
 
     /*  get file name and extension
     /**/
-    err = pfsapi->ErrPathParse( wszFileName, NULL, wszFNameT, wszExtT );
+    err = pfsapi->ErrPathParse( wszFileName, nullptr, wszFNameT, wszExtT );
     CallS( err );
 
     /* if has log file extension

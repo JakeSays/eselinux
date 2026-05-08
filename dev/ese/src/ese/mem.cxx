@@ -21,7 +21,7 @@ INLINE BOOL MEMPOOL::FResizeBuf( ULONG cbNewBufSize )
     Assert( cbNewBufSize >= IbBufFree() );
 
     pbuf = (BYTE *)PvOSMemoryHeapAlloc( cbNewBufSize );
-    if ( pbuf == NULL )
+    if ( pbuf == nullptr )
         return fFalse;
 
     // Copy the old buffer contents to the new, then delete the old buffer.
@@ -229,7 +229,7 @@ ERR MEMPOOL::ErrMEMPOOLInit(
     }
 
     pbuf = (BYTE *)PvOSMemoryHeapAlloc( cbInitialSize );
-    if ( pbuf == NULL )
+    if ( pbuf == nullptr )
         return ErrERRCheck( JET_errOutOfMemory );
 
     rgbTags = (MEMPOOLTAG *)pbuf;
@@ -405,7 +405,7 @@ ERR MEMPOOL::ErrReplaceEntry( ITAG itag, BYTE *rgb, ULONG cb )
         rgbTags = (MEMPOOLTAG *)Pbuf();     // In case buffer relocated to accommodate growth.
     }
 
-    if ( JET_errSuccess == err && rgb != NULL )
+    if ( JET_errSuccess == err && rgb != nullptr )
     {
         // Overwrite the old entry with the new one.
         UtilMemCpy( Pbuf() + rgbTags[itag].ib, rgb, cb );

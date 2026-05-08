@@ -84,7 +84,7 @@ INLINE VOID OLD_STATUS_::Reset_()
     m_csecStart = 0;
     m_csecEvent  = 0;
     m_csecMax = 0;
-    m_callback = NULL;
+    m_callback = nullptr;
 }
 
 INLINE ERR OLD_STATUS_::ErrThreadCreate( const IFMP ifmp, const PUTIL_THREAD_PROC pfn )

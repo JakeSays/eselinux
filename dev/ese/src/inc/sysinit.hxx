@@ -5,7 +5,7 @@
 
 //  function prototypes
 //
-ERR ErrITSetConstants( INST * pinst = NULL );
+ERR ErrITSetConstants( INST * pinst = nullptr );
 
 
 // These options are used to turn expensive debug code on and off

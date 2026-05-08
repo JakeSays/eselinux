@@ -308,21 +308,21 @@ COSBlockCacheFactoryImpl g_bcf;
 ERR COSBlockCacheFactory::ErrCreate( _Out_ IBlockCacheFactory** const ppbcf )
 {
     ERR err = JET_errSuccess;
-    IBlockCacheFactory* pbcf = NULL;
+    IBlockCacheFactory* pbcf = nullptr;
 
-    *ppbcf = NULL;
+    *ppbcf = nullptr;
 
     Alloc( pbcf = new CBlockCacheFactoryWrapper( &g_bcf ) );
 
     *ppbcf = pbcf;
-    pbcf = NULL;
+    pbcf = nullptr;
 
 HandleError:
     delete pbcf;
     if ( err < JET_errSuccess )
     {
         delete *ppbcf;
-        *ppbcf = NULL;
+        *ppbcf = nullptr;
     }
     return err;
 }

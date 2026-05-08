@@ -312,7 +312,7 @@ LOCAL ERR ErrRECIInitAutoIncOldFormat( PIB * const ppib, FCB * const pfcb, QWORD
     // delete nodes might be scrubbed so we wont' find any data
     // on there: skip them
     dib.dirflag = fDIRAllNode | fDIRAllNodesNoCommittedDeleted;
-    dib.pbm = NULL;
+    dib.pbm = nullptr;
 
     if ( pfcbIdx != pfcbNil )
     {
@@ -537,7 +537,7 @@ ERR ErrRECRetrieveAndReserveAutoInc(
     FID     fid     = 0;
     FIELD*  pfield  = pfieldNil;
 
-    if ( pv == NULL )
+    if ( pv == nullptr )
     {
         Error( ErrERRCheck( JET_errInvalidParameter ) );
     }
@@ -878,7 +878,7 @@ ERR VTAPI ErrIsamPrepareUpdate( JET_SESID sesid, JET_VTID vtid, ULONG grbit )
             Assert( pfucb->u.pfcb != pfcbNil );
             pfucb->u.pfcb->EnterDML();
 
-            if ( NULL == pfucb->u.pfcb->Ptdb()->PdataDefaultRecord() )
+            if ( nullptr == pfucb->u.pfcb->Ptdb()->PdataDefaultRecord() )
             {
                 // Only temporary tables and system tables don't have default records
                 // (ie. all "regular" tables have at least a minimal default record).
@@ -1395,12 +1395,12 @@ LOCAL ERR ErrRECICheckUniqueLVMultiValues(
     _In_ const ULONG        itagSequence,
     _In_ const DATA&        dataToSet,
     _In_ const NORM_LOCALE_VER* pnlv,
-    _Out_writes_opt_(JET_cbKeyMost_OLD) BYTE            * rgbLVData = NULL,
+    _Out_writes_opt_(JET_cbKeyMost_OLD) BYTE            * rgbLVData = nullptr,
     _In_ const BOOL     fNormalizedDataToSetIsTruncated = fFalse )
 {
     ERR             err;
     FCB             * const pfcb    = pfucb->u.pfcb;
-    const BOOL      fNormalize      = ( NULL != rgbLVData );
+    const BOOL      fNormalize      = ( nullptr != rgbLVData );
     DATA            dataRetrieved;
     ULONG           itagSequenceT   = 0;
 
@@ -1465,12 +1465,12 @@ LOCAL ERR ErrRECICheckUniqueLVMultiValues(
                                 fFalse,
                                 (BYTE *)dataToSet.Pv(),
                                 dataToSet.Cb(),
-                                NULL ) );               //  pass NULL to force comparison instead of retrieval
+                                nullptr ) );               //  pass NULL to force comparison instead of retrieval
                 }
             }
             else if ( wrnRECCompressed == err )
             {
-                BYTE * pbDecompressed = NULL;
+                BYTE * pbDecompressed = nullptr;
                 INT cbActual = 0;
 
                 CallR( ErrPKAllocAndDecompressData(
@@ -1500,7 +1500,7 @@ LOCAL ERR ErrRECICheckUniqueLVMultiValues(
                 }
 
                 delete[] pbDecompressed;
-                pbDecompressed = NULL;
+                pbDecompressed = nullptr;
                 CallR( err );
             }
             else if ( wrnRECIntrinsicLV == err )
@@ -1655,7 +1655,7 @@ LOCAL ERR ErrFLDSetOneColumn(
             err = ErrERRCheck( JET_errInvalidGrbit );
             return err;
         }
-        else if ( NULL == pdataField->Pv() || 0 == pdataField->Cb() )
+        else if ( nullptr == pdataField->Pv() || 0 == pdataField->Cb() )
         {
             if ( grbit & JET_bitSetZeroLength )
                 fEnforceUniqueMultiValues = fTrue;
@@ -1693,7 +1693,7 @@ LOCAL ERR ErrFLDSetOneColumn(
     CallR( ErrRECIAccessColumn( pfucb, columnid ) );
 
     // If pv is NULL, cb should be 0, except if SetSizeLV is specified.
-    if ( pdataField->Pv() == NULL && !( grbit & JET_bitSetSizeLV ) )
+    if ( pdataField->Pv() == nullptr && !( grbit & JET_bitSetSizeLV ) )
         pdataField->SetCb( 0 );
 
     Assert ( pdataField->Cb() >= 0 );
@@ -1746,7 +1746,7 @@ LOCAL ERR ErrFLDSetOneColumn(
 
         pfcb->LeaveDML();
 
-        if ( fEncrypted && pfucb->pbEncryptionKey == NULL )
+        if ( fEncrypted && pfucb->pbEncryptionKey == nullptr )
         {
             Error( ErrERRCheck( JET_errColumnNoEncryptionKey ) );
         }
@@ -1841,7 +1841,7 @@ LOCAL ERR ErrFLDSetOneColumn(
     //  setting value to NULL
     //
     if ( pdataField->Cb() == 0 && !( grbit & JET_bitSetZeroLength ) )
-        pdataField = NULL;
+        pdataField = nullptr;
 
     Assert( !( grbit & grbitSetColumnInternalFlagsMask ) );
 
@@ -1968,7 +1968,7 @@ ERR VTAPI ErrIsamSetColumn(
     const UPDATEID  updateidSave    = ppib->updateid;
     PIBSetUpdateid( ppib, pfucb->updateid );
 
-    if ( psetinfo != NULL )
+    if ( psetinfo != nullptr )
     {
         if ( psetinfo->cbStruct < sizeof(JET_SETINFO) )
         {
@@ -2182,7 +2182,7 @@ LOCAL ERR ErrRECISetIFixedColumn(
     //  for fixed columns, we interpret setting to zero-length as
     //  the same thing as setting to NULL
     //
-    if ( NULL == pdataField || pdataField->FNull() )
+    if ( nullptr == pdataField || pdataField->FNull() )
     {
         if ( FFIELDNotNull( pfield->ffield ) )
         {
@@ -2317,18 +2317,18 @@ LOCAL ERR ErrRECISetIFixedColumn(
         // between the last one currently in the record and the one we are setting.
         // (note that if the column being set also has a default value, we have
         // to set the default value first in case the actual set fails.
-        const REC * const   precDefault = ( NULL != ptdb->PdataDefaultRecord() ?
+        const REC * const   precDefault = ( nullptr != ptdb->PdataDefaultRecord() ?
                                                     (REC *)ptdb->PdataDefaultRecord()->Pv() :
-                                                    NULL );
+                                                    nullptr );
         Assert( NULL == precDefault ||  // temp/system tables have no default record.
             ( ptdb->PdataDefaultRecord()->Cb() >= REC::cbRecordMin
             && ptdb->PdataDefaultRecord()->Cb() <= REC::CbRecordMostCHECK( g_rgfmp[ pfucb->ifmp ].CbPage() ) ) );
-        if ( NULL != ptdb->PdataDefaultRecord() &&
+        if ( nullptr != ptdb->PdataDefaultRecord() &&
             ptdb->PdataDefaultRecord()->Cb() > REC::CbRecordMost( pfucb ) )
         {
             FireWall( "TemplateDefaultRecTooBig4.2" );
         }
-        if ( NULL != ptdb->PdataDefaultRecord() &&
+        if ( nullptr != ptdb->PdataDefaultRecord() &&
             ( ptdb->PdataDefaultRecord()->Cb() < REC::cbRecordMin
             || ptdb->PdataDefaultRecord()->Cb() > REC::CbRecordMostCHECK( g_rgfmp[ pfucb->ifmp ].CbPage() ) ) )
         {
@@ -2336,7 +2336,7 @@ LOCAL ERR ErrRECISetIFixedColumn(
             return ErrERRCheck( JET_errDatabaseCorrupted );
         }
 
-        fidLastDefaultToBurst = ( NULL != precDefault ?
+        fidLastDefaultToBurst = ( nullptr != precDefault ?
                                   precDefault->FidFixedLastInRec() :
                                   FID( fidtypFixed, fidlimNone ) );
         Assert( fidLastDefaultToBurst.FFixedNone() || fidLastDefaultToBurst.FFixed() );
@@ -2405,7 +2405,7 @@ LOCAL ERR ErrRECISetIFixedColumn(
 
     //  adding NULL: clear bit
     //
-    if ( NULL == pdataField || pdataField->FNull() )
+    if ( nullptr == pdataField || pdataField->FNull() )
     {
         Assert( !FFIELDNotNull( pfield->ffield ) ); //  already verified above
         Assert( !FFIELDAutoincrement( pfield->ffield ) );  //  already verified above
@@ -2591,9 +2591,9 @@ ERR ErrRECISetFixedColumnInLoadedDataBuffer(
 INLINE ULONG CbBurstVarDefaults( TDB *ptdb, FUCB *pfucb, FID fidVarLastInRec, FID fidSet, FID *pfidLastDefault )
 {
     ULONG               cbBurstDefaults     = 0;
-    const REC * const   precDefault         = ( NULL != ptdb->PdataDefaultRecord() ?
+    const REC * const   precDefault         = ( nullptr != ptdb->PdataDefaultRecord() ?
                                                         (REC *)ptdb->PdataDefaultRecord()->Pv() :
-                                                        NULL );
+                                                        nullptr );
 
     // Compute space needed to burst default values.
     // Default values may have to be burst if there are default value columns
@@ -2603,12 +2603,12 @@ INLINE ULONG CbBurstVarDefaults( TDB *ptdb, FUCB *pfucb, FID fidVarLastInRec, FI
     Assert( NULL == precDefault ||  // temp/system tables have no default record.
         ( ptdb->PdataDefaultRecord()->Cb() >= REC::cbRecordMin
         && ptdb->PdataDefaultRecord()->Cb() <= REC::CbRecordMostCHECK( g_rgfmp[ pfucb->ifmp ].CbPage() ) ) );
-    if ( NULL != ptdb->PdataDefaultRecord() &&
+    if ( nullptr != ptdb->PdataDefaultRecord() &&
          ptdb->PdataDefaultRecord()->Cb() > REC::CbRecordMost( pfucb ) )
     {
         FireWall( "BurstVarDefaultsRecTooBig6.2" );
     }
-    if ( NULL != ptdb->PdataDefaultRecord() &&
+    if ( nullptr != ptdb->PdataDefaultRecord() &&
         ( ptdb->PdataDefaultRecord()->Cb() < REC::cbRecordMin
         || ptdb->PdataDefaultRecord()->Cb() > REC::CbRecordMostCHECK( g_rgfmp[ pfucb->ifmp ].CbPage() ) ) )
     {
@@ -2616,7 +2616,7 @@ INLINE ULONG CbBurstVarDefaults( TDB *ptdb, FUCB *pfucb, FID fidVarLastInRec, FI
         return ErrERRCheck( JET_errDatabaseCorrupted );
     }
 
-    *pfidLastDefault = ( NULL != precDefault ?
+    *pfidLastDefault = ( nullptr != precDefault ?
                          precDefault->FidVarLastInRec() :
                          FID( fidtypVar, fidlimNone ) );
     Assert( pfidLastDefault->FVarNone() || pfidLastDefault->FVar() );
@@ -2725,14 +2725,14 @@ ERR ErrRECISetVarColumn(
     //  NULL-value check
     //
     INT     cbCopy;             // Number of bytes to copy from user's buffer
-    if ( NULL == pdataField )
+    if ( nullptr == pdataField )
     {
         if ( FFIELDNotNull( pfield->ffield ) )
             return ErrERRCheck( JET_errNullInvalid );
         else
             cbCopy = 0;
     }
-    else if ( NULL == pdataField->Pv() )
+    else if ( nullptr == pdataField->Pv() )
     {
         cbCopy = 0;
     }
@@ -3069,7 +3069,7 @@ ERR ErrRECISetVarColumn(
 
     //  set value of null-bit in offset
     //
-    if ( NULL == pdataField )
+    if ( nullptr == pdataField )
     {
         SetVarNullBit( *( UnalignedLittleEndian< WORD >*)pib );
     }
@@ -3118,7 +3118,7 @@ ERR ErrRECISetTaggedColumn(
         Assert( fFalse );
         return ErrERRCheck( JET_errColumnNotFound );
     }
-    else if ( NULL == pdataToSet && FFIELDNotNull( pfield->ffield ) )
+    else if ( nullptr == pdataToSet && FFIELDNotNull( pfield->ffield ) )
     {
         return ErrERRCheck( JET_errNullInvalid );
     }
@@ -3131,7 +3131,7 @@ ERR ErrRECISetTaggedColumn(
     //  check for column too long
     //
     if ( pfield->cbMaxLen > 0
-        && NULL != pdataToSet
+        && nullptr != pdataToSet
         && (ULONG)pdataToSet->Cb() > cbMaxLenPhysical )
     {
         // Encrypted columns are only set via ErrRECAOSeparateLV which already checks the max logical size
@@ -3141,7 +3141,7 @@ ERR ErrRECISetTaggedColumn(
 
     //  check fixed size column size
     //
-    if ( NULL != pdataToSet
+    if ( nullptr != pdataToSet
         && pdataToSet->Cb() > 0 )
     {
         switch ( pfield->coltyp )
@@ -3194,7 +3194,7 @@ ERR ErrRECISetTaggedColumn(
 
     //  cannot set column more than CbLVIntrinsicTableMost() bytes
     //
-    if ( NULL != pdataToSet
+    if ( nullptr != pdataToSet
         && (ULONG) pdataToSet->Cb() > CbLVIntrinsicTableMost( pfucb ) )
     {
         return ErrERRCheck( JET_errColumnDoesNotFit );
@@ -3264,7 +3264,7 @@ ERR VTAPI ErrIsamSetColumnDefaultValue(
 
     CallR( ErrUTILCheckName( szColumn, szColumnName, JET_cbNameMost+1 ) );
 
-    if ( NULL == pvData || 0 == cbData )
+    if ( nullptr == pvData || 0 == cbData )
     {
         //  don't currently support null/zero-length default value
         //

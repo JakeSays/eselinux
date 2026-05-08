@@ -214,7 +214,7 @@ class CTaskManager
         ~CTaskManager();
 
         ERR ErrTMInit(  const ULONG                     cThread,
-                        const DWORD_PTR *const          rgThreadContext     = NULL,
+                        const DWORD_PTR *const          rgThreadContext     = nullptr,
                         const BOOL                      fForceMaxThreads    = fFalse );
         VOID TMTerm();
 
@@ -308,8 +308,8 @@ class CGPTaskManager
 
         ERR ErrTMInit( const ULONG cThread = 0 );
         ERR ErrTMPost(  PfnCompletion   pfnCompletion,
-                        VOID *          pvParam     = NULL,
-                        TaskInfo *      pTaskInfo   = NULL );
+                        VOID *          pvParam     = nullptr,
+                        TaskInfo *      pTaskInfo   = nullptr );
         VOID TMTerm();
         ULONG CPostedTasks() { return m_cPostedTasks - 1; }
 };

@@ -170,56 +170,56 @@ ERR ArrayTest::ErrTest()
 
     TestCheck( 0 == array.Size() );
     TestCheck( 0 == array.Capacity() );
-    TestCheck( NULL == array.PEntry( 0 ) );
+    TestCheck( nullptr == array.PEntry( 0 ) );
 
     //  setting a small capacity
 
     TestCheck( CArray<INT>::ERR::errSuccess == array.ErrSetCapacity( 1 ) );
     TestCheck( 0 == array.Size() );
     TestCheck( 1 == array.Capacity() );
-    TestCheck( NULL == array.PEntry( 0 ) );
+    TestCheck( nullptr == array.PEntry( 0 ) );
 
     //  setting a bigger capacity
 
     TestCheck( CArray<INT>::ERR::errSuccess == array.ErrSetCapacity( 10 ) );
     TestCheck( 0 == array.Size() );
     TestCheck( 10 == array.Capacity() );
-    TestCheck( NULL == array.PEntry( 0 ) );
+    TestCheck( nullptr == array.PEntry( 0 ) );
 
     //  setting the capacity too big
 
     TestCheck( CArray<INT>::ERR::errOutOfMemory == array.ErrSetCapacity( SIZE_MAX ) );
     TestCheck( 0 == array.Size() );
     TestCheck( 10 == array.Capacity() );
-    TestCheck( NULL == array.PEntry( 0 ) );
+    TestCheck( nullptr == array.PEntry( 0 ) );
 
     //  setting the size
 
     TestCheck( CArray<INT>::ERR::errSuccess == array.ErrSetSize( 5 ) );
     TestCheck( 5 == array.Size() );
     TestCheck( 10 == array.Capacity() );
-    TestCheck( NULL != array.PEntry( 0 ) );
-    TestCheck( NULL != array.PEntry( 4 ) );
-    TestCheck( NULL == array.PEntry( 5 ) );
+    TestCheck( nullptr != array.PEntry( 0 ) );
+    TestCheck( nullptr != array.PEntry( 4 ) );
+    TestCheck( nullptr == array.PEntry( 5 ) );
 
     //  setting the size too big
 
     TestCheck( CArray<INT>::ERR::errOutOfMemory == array.ErrSetSize( SIZE_MAX ) );
     TestCheck( 5 == array.Size() );
     TestCheck( 10 == array.Capacity() );
-    TestCheck( NULL != array.PEntry( 0 ) );
-    TestCheck( NULL != array.PEntry( 4 ) );
-    TestCheck( NULL == array.PEntry( 5 ) );
+    TestCheck( nullptr != array.PEntry( 0 ) );
+    TestCheck( nullptr != array.PEntry( 4 ) );
+    TestCheck( nullptr == array.PEntry( 5 ) );
 
     //  growing size/capacity 2 by 2
 
     TestCheck( CArray<INT>::ERR::errSuccess == array.ErrSetSize( 13 ) );
     TestCheck( 13 == array.Size() );
     TestCheck( 14 == array.Capacity() );
-    TestCheck( NULL != array.PEntry( 0 ) );
-    TestCheck( NULL != array.PEntry( 12 ) );
-    TestCheck( NULL == array.PEntry( 13 ) );
-    TestCheck( NULL == array.PEntry( 14 ) );
+    TestCheck( nullptr != array.PEntry( 0 ) );
+    TestCheck( nullptr != array.PEntry( 12 ) );
+    TestCheck( nullptr == array.PEntry( 13 ) );
+    TestCheck( nullptr == array.PEntry( 14 ) );
 
     //  setting a different growth
 
@@ -227,10 +227,10 @@ ERR ArrayTest::ErrTest()
     TestCheck( CArray<INT>::ERR::errSuccess == array.ErrSetSize( 17 ) );
     TestCheck( 17 == array.Size() );
     TestCheck( 20 == array.Capacity() );
-    TestCheck( NULL != array.PEntry( 0 ) );
-    TestCheck( NULL != array.PEntry( 16 ) );
-    TestCheck( NULL == array.PEntry( 17 ) );
-    TestCheck( NULL == array.PEntry( 18 ) );
+    TestCheck( nullptr != array.PEntry( 0 ) );
+    TestCheck( nullptr != array.PEntry( 16 ) );
+    TestCheck( nullptr == array.PEntry( 17 ) );
+    TestCheck( nullptr == array.PEntry( 18 ) );
 
     //  setting a different growth (0 will default to 1)
 
@@ -238,10 +238,10 @@ ERR ArrayTest::ErrTest()
     TestCheck( CArray<INT>::ERR::errSuccess == array.ErrSetSize( 29 ) );
     TestCheck( 29 == array.Size() );
     TestCheck( 29 == array.Capacity() );
-    TestCheck( NULL != array.PEntry( 0 ) );
-    TestCheck( NULL != array.PEntry( 28 ) );
-    TestCheck( NULL == array.PEntry( 29 ) );
-    TestCheck( NULL == array.PEntry( 30 ) );
+    TestCheck( nullptr != array.PEntry( 0 ) );
+    TestCheck( nullptr != array.PEntry( 28 ) );
+    TestCheck( nullptr == array.PEntry( 29 ) );
+    TestCheck( nullptr == array.PEntry( 30 ) );
 
     //  setting a different growth
 
@@ -249,10 +249,10 @@ ERR ArrayTest::ErrTest()
     TestCheck( CArray<INT>::ERR::errSuccess == array.ErrSetSize( 40 ) );
     TestCheck( 40 == array.Size() );
     TestCheck( 43 == array.Capacity() );
-    TestCheck( NULL != array.PEntry( 0 ) );
-    TestCheck( NULL != array.PEntry( 39 ) );
-    TestCheck( NULL == array.PEntry( 40 ) );
-    TestCheck( NULL == array.PEntry( 41 ) );
+    TestCheck( nullptr != array.PEntry( 0 ) );
+    TestCheck( nullptr != array.PEntry( 39 ) );
+    TestCheck( nullptr == array.PEntry( 40 ) );
+    TestCheck( nullptr == array.PEntry( 41 ) );
 
     //  setting existing elements
     
@@ -280,10 +280,10 @@ ERR ArrayTest::ErrTest()
     TestCheck( CArray<INT>::ERR::errOutOfMemory == array.ErrSetCapacity( SIZE_MAX ) );
     TestCheck( 40 == array.Size() );
     TestCheck( 43 == array.Capacity() );
-    TestCheck( NULL != array.PEntry( 0 ) );
-    TestCheck( NULL != array.PEntry( 39 ) );
-    TestCheck( NULL == array.PEntry( 40 ) );
-    TestCheck( NULL == array.PEntry( 41 ) );
+    TestCheck( nullptr != array.PEntry( 0 ) );
+    TestCheck( nullptr != array.PEntry( 39 ) );
+    TestCheck( nullptr == array.PEntry( 40 ) );
+    TestCheck( nullptr == array.PEntry( 41 ) );
 
     //  checking if they got set correctly
     
@@ -299,10 +299,10 @@ ERR ArrayTest::ErrTest()
 
     TestCheck( 40 == array.Size() );
     TestCheck( 43 == array.Capacity() );
-    TestCheck( NULL != array.PEntry( 0 ) );
-    TestCheck( NULL != array.PEntry( 39 ) );
-    TestCheck( NULL == array.PEntry( 40 ) );
-    TestCheck( NULL == array.PEntry( 41 ) );
+    TestCheck( nullptr != array.PEntry( 0 ) );
+    TestCheck( nullptr != array.PEntry( 39 ) );
+    TestCheck( nullptr == array.PEntry( 40 ) );
+    TestCheck( nullptr == array.PEntry( 41 ) );
 
     //  setting a default value for new elements
 
@@ -313,10 +313,10 @@ ERR ArrayTest::ErrTest()
     TestCheck( CArray<INT>::ERR::errSuccess == array.ErrSetEntry( 64, g_elementMult * 64 ) );
     TestCheck( 65 == array.Size() );
     TestCheck( 71 == array.Capacity() );
-    TestCheck( NULL != array.PEntry( 0 ) );
-    TestCheck( NULL != array.PEntry( 64 ) );
-    TestCheck( NULL == array.PEntry( 65 ) );
-    TestCheck( NULL == array.PEntry( 66 ) );
+    TestCheck( nullptr != array.PEntry( 0 ) );
+    TestCheck( nullptr != array.PEntry( 64 ) );
+    TestCheck( nullptr == array.PEntry( 65 ) );
+    TestCheck( nullptr == array.PEntry( 66 ) );
     TestCheck( ( g_elementMult * 64 ) == array.Entry( 64 ) );
 
     //  checking if they got set correctly to the default
@@ -332,56 +332,56 @@ ERR ArrayTest::ErrTest()
 
     TestCheck( 0 == arrayClone.Size() );
     TestCheck( 0 == arrayClone.Capacity() );
-    TestCheck( NULL == arrayClone.PEntry( 0 ) );
+    TestCheck( nullptr == arrayClone.PEntry( 0 ) );
 
     //  setting a small capacity
 
     TestCheck( CArray<INT>::ERR::errSuccess == arrayClone.ErrSetCapacity( 1 ) );
     TestCheck( 0 == arrayClone.Size() );
     TestCheck( 1 == arrayClone.Capacity() );
-    TestCheck( NULL == arrayClone.PEntry( 0 ) );
+    TestCheck( nullptr == arrayClone.PEntry( 0 ) );
 
     //  setting a bigger capacity
 
     TestCheck( CArray<INT>::ERR::errSuccess == arrayClone.ErrSetCapacity( 10 ) );
     TestCheck( 0 == arrayClone.Size() );
     TestCheck( 10 == arrayClone.Capacity() );
-    TestCheck( NULL == arrayClone.PEntry( 0 ) );
+    TestCheck( nullptr == arrayClone.PEntry( 0 ) );
 
     //  setting the capacity too big
 
     TestCheck( CArray<INT>::ERR::errOutOfMemory == arrayClone.ErrSetCapacity( SIZE_MAX ) );
     TestCheck( 0 == arrayClone.Size() );
     TestCheck( 10 == arrayClone.Capacity() );
-    TestCheck( NULL == arrayClone.PEntry( 0 ) );
+    TestCheck( nullptr == arrayClone.PEntry( 0 ) );
 
     //  setting the size
 
     TestCheck( CArray<INT>::ERR::errSuccess == arrayClone.ErrSetSize( 5 ) );
     TestCheck( 5 == arrayClone.Size() );
     TestCheck( 10 == arrayClone.Capacity() );
-    TestCheck( NULL != arrayClone.PEntry( 0 ) );
-    TestCheck( NULL != arrayClone.PEntry( 4 ) );
-    TestCheck( NULL == arrayClone.PEntry( 5 ) );
+    TestCheck( nullptr != arrayClone.PEntry( 0 ) );
+    TestCheck( nullptr != arrayClone.PEntry( 4 ) );
+    TestCheck( nullptr == arrayClone.PEntry( 5 ) );
 
     //  growing size/capacity 1 by 1
 
     TestCheck( CArray<INT>::ERR::errSuccess == arrayClone.ErrSetSize( 13 ) );
     TestCheck( 13 == arrayClone.Size() );
     TestCheck( 13 == arrayClone.Capacity() );
-    TestCheck( NULL != arrayClone.PEntry( 0 ) );
-    TestCheck( NULL != arrayClone.PEntry( 12 ) );
-    TestCheck( NULL == arrayClone.PEntry( 13 ) );
-    TestCheck( NULL == arrayClone.PEntry( 14 ) );
+    TestCheck( nullptr != arrayClone.PEntry( 0 ) );
+    TestCheck( nullptr != arrayClone.PEntry( 12 ) );
+    TestCheck( nullptr == arrayClone.PEntry( 13 ) );
+    TestCheck( nullptr == arrayClone.PEntry( 14 ) );
 
     //  cloning the array
 
     TestCheck( CArray<INT>::ERR::errSuccess == arrayClone.ErrClone( array ) );
     TestCheck( 65 == arrayClone.Size() );
     TestCheck( 71 == arrayClone.Capacity() );
-    TestCheck( NULL != arrayClone.PEntry( 0 ) );
-    TestCheck( NULL != arrayClone.PEntry( 64 ) );
-    TestCheck( NULL == arrayClone.PEntry( 65 ) );
+    TestCheck( nullptr != arrayClone.PEntry( 0 ) );
+    TestCheck( nullptr != arrayClone.PEntry( 64 ) );
+    TestCheck( nullptr == arrayClone.PEntry( 65 ) );
     for ( size_t iElement = 0; iElement < 40; iElement++ )
     {
         const INT element = (INT)( g_elementMult * iElement );
@@ -399,9 +399,9 @@ ERR ArrayTest::ErrTest()
 
     TestCheck( 65 == array.Size() );
     TestCheck( 71 == array.Capacity() );
-    TestCheck( NULL != array.PEntry( 0 ) );
-    TestCheck( NULL != array.PEntry( 64 ) );
-    TestCheck( NULL == array.PEntry( 65 ) );
+    TestCheck( nullptr != array.PEntry( 0 ) );
+    TestCheck( nullptr != array.PEntry( 64 ) );
+    TestCheck( nullptr == array.PEntry( 65 ) );
     TestCheck( ( g_elementMult * 64 ) == array.Entry( 64 ) );
 
     //  operating on the clone. growing by one chunk
@@ -409,9 +409,9 @@ ERR ArrayTest::ErrTest()
     TestCheck( CArray<INT>::ERR::errSuccess == arrayClone.ErrSetEntry( 77, g_elementMult * 77 ) );
     TestCheck( 78 == arrayClone.Size() );
     TestCheck( 78 == arrayClone.Capacity() );
-    TestCheck( NULL != arrayClone.PEntry( 0 ) );
-    TestCheck( NULL != arrayClone.PEntry( 77 ) );
-    TestCheck( NULL == arrayClone.PEntry( 78 ) );
+    TestCheck( nullptr != arrayClone.PEntry( 0 ) );
+    TestCheck( nullptr != arrayClone.PEntry( 77 ) );
+    TestCheck( nullptr == arrayClone.PEntry( 78 ) );
     TestCheck( ( g_elementMult * 77 ) == arrayClone.Entry( 77 ) );
 
     //  checking if they got set correctly to the default
@@ -432,9 +432,9 @@ ERR ArrayTest::ErrTest()
     }
     TestCheck( 65 == array.Size() );
     TestCheck( 71 == array.Capacity() );
-    TestCheck( NULL != array.PEntry( 0 ) );
-    TestCheck( NULL != array.PEntry( 64 ) );
-    TestCheck( NULL == array.PEntry( 65 ) );
+    TestCheck( nullptr != array.PEntry( 0 ) );
+    TestCheck( nullptr != array.PEntry( 64 ) );
+    TestCheck( nullptr == array.PEntry( 65 ) );
     TestCheck( ( g_elementMult * 64 ) == array.Entry( 64 ) );
 
     //  shrinking
@@ -442,9 +442,9 @@ ERR ArrayTest::ErrTest()
     TestCheck( CArray<INT>::ERR::errSuccess == array.ErrSetSize( 33 ) );
     TestCheck( 33 == array.Size() );
     TestCheck( 71 == array.Capacity() );
-    TestCheck( NULL != array.PEntry( 0 ) );
-    TestCheck( NULL != array.PEntry( 32 ) );
-    TestCheck( NULL == array.PEntry( 33 ) );
+    TestCheck( nullptr != array.PEntry( 0 ) );
+    TestCheck( nullptr != array.PEntry( 32 ) );
+    TestCheck( nullptr == array.PEntry( 33 ) );
     for ( size_t iElement = 0; iElement < array.Size(); iElement++ )
     {
         const bool fGetPointer = ( iElement % 2 ) == 0;
@@ -458,9 +458,9 @@ ERR ArrayTest::ErrTest()
     TestCheck( CArray<INT>::ERR::errSuccess == array.ErrSetCapacity( 19 ) );
     TestCheck( 19 == array.Size() );
     TestCheck( 19 == array.Capacity() );
-    TestCheck( NULL != array.PEntry( 0 ) );
-    TestCheck( NULL != array.PEntry( 18 ) );
-    TestCheck( NULL == array.PEntry( 19 ) );
+    TestCheck( nullptr != array.PEntry( 0 ) );
+    TestCheck( nullptr != array.PEntry( 18 ) );
+    TestCheck( nullptr == array.PEntry( 19 ) );
     for ( size_t iElement = 0; iElement < array.Size(); iElement++ )
     {
         const bool fGetPointer = ( iElement % 2 ) != 0;
@@ -473,9 +473,9 @@ ERR ArrayTest::ErrTest()
 
     TestCheck( 78 == arrayClone.Size() );
     TestCheck( 78 == arrayClone.Capacity() );
-    TestCheck( NULL != arrayClone.PEntry( 0 ) );
-    TestCheck( NULL != arrayClone.PEntry( 77 ) );
-    TestCheck( NULL == arrayClone.PEntry( 78 ) );
+    TestCheck( nullptr != arrayClone.PEntry( 0 ) );
+    TestCheck( nullptr != arrayClone.PEntry( 77 ) );
+    TestCheck( nullptr == arrayClone.PEntry( 78 ) );
     TestCheck( 0 == arrayClone.Entry( 0 ) );
     TestCheck( ( g_elementMult * 13 ) == arrayClone.Entry( 13 ) );
     TestCheck( ( g_elementMult * 39 ) == arrayClone.Entry( 39 ) );
@@ -495,7 +495,7 @@ ERR ArrayTest::ErrTest()
 
     //  inserting and sorting/searching: empty
 
-    TestCheck( FTestArraySortAndSearch( array, NULL, NULL, 0, NULL, 0 ) );
+    TestCheck( FTestArraySortAndSearch( array, nullptr, nullptr, 0, nullptr, 0 ) );
 
     //  inserting and sorting/searching: 1 element
 

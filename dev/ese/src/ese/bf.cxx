@@ -72,15 +72,15 @@ ERR ErrBFInit( _In_ const LONG cbPageSizeMax )
     Assert( g_rgbBFTemp == NULL );
     Assert( g_pBFAllocLookasideList == NULL );
 
-    g_rgbBFTemp               = NULL;
-    g_pBFAllocLookasideList = NULL;
+    g_rgbBFTemp               = nullptr;
+    g_pBFAllocLookasideList = nullptr;
 
     //  allocate temp buffer and lookaside list.
 
     if ( BoolParam( JET_paramEnableViewCache ) )
     {
-        g_rgbBFTemp = (BYTE*)PvOSMemoryPageAlloc( cbPageSizeMax, NULL );
-        if ( NULL == g_rgbBFTemp )
+        g_rgbBFTemp = (BYTE*)PvOSMemoryPageAlloc( cbPageSizeMax, nullptr );
+        if ( nullptr == g_rgbBFTemp )
         {
             err = ErrERRCheck( JET_errOutOfMemory );
             goto TermMemoryAlloc;
@@ -88,7 +88,7 @@ ERR ErrBFInit( _In_ const LONG cbPageSizeMax )
     }
 
     g_pBFAllocLookasideList = new CSmallLookasideCache();
-    if ( g_pBFAllocLookasideList == NULL )
+    if ( g_pBFAllocLookasideList == nullptr )
     {
         err = ErrERRCheck( JET_errOutOfMemory );
         goto TermMemoryAlloc;
@@ -162,10 +162,10 @@ TermLRUK:
     g_bfhash.Term();
 TermMemoryAlloc:
     OSMemoryPageFree( g_rgbBFTemp );
-    g_rgbBFTemp = NULL;
+    g_rgbBFTemp = nullptr;
 
     delete g_pBFAllocLookasideList;
-    g_pBFAllocLookasideList = NULL;
+    g_pBFAllocLookasideList = nullptr;
 
     BFIFTLTerm();
 
@@ -198,7 +198,7 @@ void BFTerm()
     Assert( g_fBFInitialized );
     Assert( g_fBFCacheInitialized );
 
-    OSTraceWriteRefLog( ostrlSystemFixed, sysosrtlBfTerm, NULL );
+    OSTraceWriteRefLog( ostrlSystemFixed, sysosrtlBfTerm, nullptr );
 
     if ( g_rgfmp )
     {
@@ -226,11 +226,11 @@ void BFTerm()
     g_bfquiesced.Empty();
     
     OSMemoryPageFree( g_rgbBFTemp );
-    g_rgbBFTemp = NULL;
+    g_rgbBFTemp = nullptr;
 
     g_pBFAllocLookasideList->Term();
     delete g_pBFAllocLookasideList;
-    g_pBFAllocLookasideList = NULL;
+    g_pBFAllocLookasideList = nullptr;
 
     g_bfhash.Term();
     BFIFTLTerm();
@@ -250,7 +250,7 @@ ERR ErrBFGetCacheSize( ULONG_PTR* const pcpg )
 {
     //  validate IN args
 
-    if ( pcpg == NULL )
+    if ( pcpg == nullptr )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -451,7 +451,7 @@ ERR ErrBFReadLatchPage( BFLatch* pbfl, IFMP ifmp, PGNO pgno, BFLatchFlags bflf, 
             }
             else
             {
-                ppls    = NULL;
+                ppls    = nullptr;
                 psxwl   = &pbfHint->sxwl;
             }
 
@@ -856,7 +856,7 @@ HandleError:
     }
 #endif // DEBUG
 
-    if ( pfCachedNewPage != NULL )
+    if ( pfCachedNewPage != nullptr )
     {
         *pfCachedNewPage = fCachedNewPage;
     }
@@ -1562,7 +1562,7 @@ void BFDowngradeWriteLatchToReadLatch( BFLatch* pbfl )
 
     //  see if we want to opportunistically version this page to try to flush
 
-    PBF     pbfOpportunisticCheckpointAdv = NULL;
+    PBF     pbfOpportunisticCheckpointAdv = nullptr;
     BFIOpportunisticallyVersionPage( pbf, &pbfOpportunisticCheckpointAdv );
 
     //  generally speaking, we should not write unlatch clean pages.
@@ -1607,7 +1607,7 @@ void BFDowngradeWARLatchToReadLatch( BFLatch* pbfl )
 
     //  see if we want to opportunistically version this page to try to flush
 
-    PBF     pbfOpportunisticCheckpointAdv = NULL;
+    PBF     pbfOpportunisticCheckpointAdv = nullptr;
     BFIOpportunisticallyVersionPage( pbf, &pbfOpportunisticCheckpointAdv );
 
     //  downgrade our exclusive latch to a shared latch
@@ -1640,7 +1640,7 @@ void BFDowngradeRDWLatchToReadLatch( BFLatch* pbfl )
 
     //  see if we want to opportunistically version this page to try to flush
 
-    PBF     pbfOpportunisticCheckpointAdv = NULL;
+    PBF     pbfOpportunisticCheckpointAdv = nullptr;
     BFIOpportunisticallyVersionPage( pbf, &pbfOpportunisticCheckpointAdv );
 
     //  downgrade our exclusive latch to a shared latch
@@ -1869,9 +1869,9 @@ void BFMarkAsSuperCold( BFLatch *pbfl )
 void BFCacheStatus( const IFMP ifmp, const PGNO pgno, BOOL* const pfInCache, ERR* const perrBF, BFDirtyFlags* const pbfdf, BOOL* const pfInRangeLock )
 {
     *pfInCache = fFalse;
-    ( perrBF != NULL ) ? ( *perrBF = JET_errSuccess ) : 0;
-    ( pbfdf != NULL ) ? ( *pbfdf = bfdfMin ) : 0;
-    ( pfInRangeLock != NULL ) ? ( *pfInRangeLock = fFalse ) : 0;
+    ( perrBF != nullptr ) ? ( *perrBF = JET_errSuccess ) : 0;
+    ( pbfdf != nullptr ) ? ( *pbfdf = bfdfMin ) : 0;
+    ( pfInRangeLock != nullptr ) ? ( *pfInRangeLock = fFalse ) : 0;
 
     if ( g_fBFCacheInitialized )
     {
@@ -1885,9 +1885,9 @@ void BFCacheStatus( const IFMP ifmp, const PGNO pgno, BOOL* const pfInCache, ERR
         if ( errHash == BFHash::ERR::errSuccess )
         {
             *pfInCache = fTrue;
-            ( perrBF != NULL ) ? ( *perrBF = pgnopbf.pbf->err ) : 0;
-            ( pbfdf != NULL ) ? ( *pbfdf = (BFDirtyFlags)pgnopbf.pbf->bfdf ) : 0;
-            ( pfInRangeLock != NULL ) ? ( *pfInRangeLock = pgnopbf.pbf->bfbitfield.FRangeLocked() ) : 0;
+            ( perrBF != nullptr ) ? ( *perrBF = pgnopbf.pbf->err ) : 0;
+            ( pbfdf != nullptr ) ? ( *pbfdf = (BFDirtyFlags)pgnopbf.pbf->bfdf ) : 0;
+            ( pfInRangeLock != nullptr ) ? ( *pfInRangeLock = pgnopbf.pbf->bfbitfield.FRangeLocked() ) : 0;
         }
         g_bfhash.ReadUnlockKey( &lock );
     }
@@ -2776,7 +2776,7 @@ void BFIGetLgposOldestBegin0( const IFMP ifmp, LGPOS * const plgpos, const BOOL 
 {
     FMP* pfmp = &g_rgfmp[ ifmp ];
 
-    BFFMPContext* pbffmp = NULL;
+    BFFMPContext* pbffmp = nullptr;
     if ( fExternalLocking )
     {
         //  external locking indicates the caller, already has the appropriate locks
@@ -3080,7 +3080,7 @@ void BFPrereadPageRange( IFMP ifmp, const PGNO pgnoFirst, CPG cpg, CPG* pcpgActu
         if ( err == JET_errSuccess )
         {
             cbfPreread++;
-            if ( rgfPageWasCached != NULL )
+            if ( rgfPageWasCached != nullptr )
             {
                 rgfPageWasCached[ abs( (INT)( pgno - pgnoFirst ) ) ] = fFalse;
             }
@@ -3130,7 +3130,7 @@ void BFPrereadPageRange( IFMP ifmp, const PGNO pgnoFirst, CPG cpg, CPG* pcpgActu
 
     //  set the remaining flags, if required.
 
-    if ( rgfPageWasCached != NULL )
+    if ( rgfPageWasCached != nullptr )
     {
         for ( ; pgno != pgnoFirst + cpg; pgno += lDir )
         {
@@ -3145,7 +3145,7 @@ void BFPrereadPageRange( IFMP ifmp, const PGNO pgnoFirst, CPG cpg, CPG* pcpgActu
 
 void BFPrereadPageList( IFMP ifmp, PGNO* prgpgno, CPG* pcpgActual, const BFPreReadFlags bfprf, const BFPriority bfpri, const TraceContext& tc )
 {
-    PGNO* prgpgnoSorted = NULL;
+    PGNO* prgpgnoSorted = nullptr;
 
     Assert( tc.iorReason.Iorp( ) == iorpNone );
 
@@ -3308,7 +3308,7 @@ void CSmallLookasideCache::Term()
         if ( m_rgpvLocalLookasideBuffers[ipb] )
         {
             OSMemoryPageFree( m_rgpvLocalLookasideBuffers[ipb] );
-            m_rgpvLocalLookasideBuffers[ipb] = NULL;
+            m_rgpvLocalLookasideBuffers[ipb] = nullptr;
             cSlotsFilled++;
         }
     }
@@ -3336,7 +3336,7 @@ void * CSmallLookasideCache::PvAlloc()
     Assert( m_cbBufferSize );
     if ( 0 == m_cbBufferSize )
     {
-        return NULL;
+        return nullptr;
     }
 
     //  check the list of cached buffers
@@ -3345,9 +3345,9 @@ void * CSmallLookasideCache::PvAlloc()
 
     //  if no, allocate one
 
-    if( NULL == pb )
+    if( nullptr == pb )
     {
-        pb = PvOSMemoryPageAlloc( m_cbBufferSize, NULL );
+        pb = PvOSMemoryPageAlloc( m_cbBufferSize, nullptr );
 #ifdef MEMORY_STATS_TRACKING
         m_cAllocs++;
 #endif
@@ -3401,7 +3401,7 @@ void BFIAlloc( __in_range( bfasMin, bfasMax - 1 ) const BFAllocState bfas, void*
 
     //  init OUT args
 
-    *ppv = NULL;
+    *ppv = nullptr;
 
     //  try forever until we allocate a temporary buffer
     const LONG cRFSCountdownOld = RFSThreadDisable( 10 );
@@ -3520,7 +3520,7 @@ void BFAbandonNewPage( BFLatch* const pbfl, const TraceContext& tc )
     pbf->fAbandoned = fTrue;
     BFIPurgeNewPage( pbf, tc );
 
-    pbfl->pv = NULL;
+    pbfl->pv = nullptr;
     pbfl->dwContext = 0;
 }
 
@@ -3589,7 +3589,7 @@ PBF PbfBFIGetFlushOrderLeafWithUndoInfoForExtZeroing( const PBF pbf )
 
 ERR ErrBFPreparePageRangeForExternalZeroing( const IFMP ifmp, const PGNO pgnoFirst, const CPG cpg, const TraceContext& tc )
 {
-    BFLatch bfl = { NULL, 0 };
+    BFLatch bfl = { nullptr, 0 };
     PBF pbf = pbfNil;
     BOOL fLatched = fFalse;
     PBF pbfVersion = pbfNil;
@@ -3772,7 +3772,7 @@ CPG CpgBFGetOptimalLockPageRangeSizeForExternalZeroing( const IFMP ifmp )
 ERR ErrBFLockPageRangeForExternalZeroing( const IFMP ifmp, const PGNO pgnoFirst, const CPG cpg, const BOOL fTrimming, const TraceContext& tc, _Out_ DWORD_PTR* const pdwContext )
 {
     ERR err = JET_errSuccess;
-    BFIPageRangeLock* pbfprl = NULL;
+    BFIPageRangeLock* pbfprl = nullptr;
     FMP* const pfmp = &g_rgfmp[ ifmp ];
 
     Assert( pdwContext != NULL );
@@ -4021,7 +4021,7 @@ void BFUnlockPageRangeForExternalZeroing( const DWORD_PTR dwContext, const Trace
     BFIPageRangeLock* const pbfprl = (BFIPageRangeLock*)dwContext;
 
     // Early failures when locking the range.
-    if ( ( pbfprl == NULL ) || ( pbfprl->rgbfl == NULL ) || ( pbfprl->rgfLatched == NULL ) || ( pbfprl->rgfUncached == NULL ) )
+    if ( ( pbfprl == nullptr ) || ( pbfprl->rgbfl == nullptr ) || ( pbfprl->rgfLatched == nullptr ) || ( pbfprl->rgfUncached == nullptr ) )
     {
         goto HandleError;
     }
@@ -4215,10 +4215,10 @@ void BFIPreFlushOrdered( _In_ const IFMP ifmp, _In_ const PGNO pgnoFirst, _In_ c
 
     //  Allocate a working array of buffers + pgnos ...
 
-    PGNOPBF *       rgpgnopbf = NULL;
+    PGNOPBF *       rgpgnopbf = nullptr;
     LONG_PTR        cbfOrderedFlushMax = cbfInit;
     LONG_PTR        cbfOrderedFlushMac = 0;
-    while( NULL == ( rgpgnopbf = new PGNOPBF[ cbfOrderedFlushMax ] ) )
+    while( nullptr == ( rgpgnopbf = new PGNOPBF[ cbfOrderedFlushMax ] ) )
     {
         cbfOrderedFlushMax = cbfOrderedFlushMax / 2;
         if ( cbfOrderedFlushMax < 10 )
@@ -4232,7 +4232,7 @@ void BFIPreFlushOrdered( _In_ const IFMP ifmp, _In_ const PGNO pgnoFirst, _In_ c
     // this is to reduce chances of (log flush or LLR) dependency hang-ups in our 
     // orderly flushing plan.
 
-    if ( NULL != plog && !plog->FLogDisabled() )
+    if ( nullptr != plog && !plog->FLogDisabled() )
     {
         (void)plog->ErrLGUpdateWaypointIFMP( PinstFromIfmp( ifmp )->m_pfsapi, ifmp );
     }
@@ -4414,7 +4414,7 @@ ERR ErrBFFlush( IFMP ifmp, const OBJID objidFDP, const PGNO pgnoFirst, const PGN
     //  we have an optimized version that flushes an FMP's pages in pgno order for a more
     //  efficient flushing experience.
 
-    if ( objidNil == objidFDP && ( g_rgfmp[ ifmp ].Pfapi() == NULL || g_rgfmp[ ifmp ].FSeekPenalty() ) )
+    if ( objidNil == objidFDP && ( g_rgfmp[ ifmp ].Pfapi() == nullptr || g_rgfmp[ ifmp ].FSeekPenalty() ) )
     {
         BFIPreFlushOrdered( ifmp, pgnoFirst, pgnoLast );
     }
@@ -4624,7 +4624,7 @@ ERR ErrBFFlush( IFMP ifmp, const OBJID objidFDP, const PGNO pgnoFirst, const PGN
 
             if ( 0 != cPageTouchesTooRecentThisRetry )
             {
-                if ( NULL != plog && !plog->FLogDisabled() )
+                if ( nullptr != plog && !plog->FLogDisabled() )
                 {
                     (void)plog->ErrLGUpdateWaypointIFMP( PinstFromIfmp( ifmp )->m_pfsapi, ifmp );
                 }
@@ -5243,7 +5243,7 @@ void BFIBuildReferencedPageListForCrashDump( CReferencedPages * ptableReferenced
                     {
                         const void * const    pvPage  = pfucb->csr.PvBufferForCrashDump();
 
-                        if ( NULL != pvPage )
+                        if ( nullptr != pvPage )
                         {
                             CPagePointer    pagepointer( (DWORD_PTR)pvPage );
 
@@ -5336,7 +5336,7 @@ ErrBFIInspectForInclusionInCrashDump(
 
         cBFInspectedForInclusionInCrashDump++;
 
-        if ( NULL == pbf->pv
+        if ( nullptr == pbf->pv
             || pbf->fQuiesced
             || pbf->fAvailable
             || JET_errPageNotInitialized == pbf->err
@@ -5365,7 +5365,7 @@ ErrBFIInspectForInclusionInCrashDump(
         //  if we see a mismatch between the BF and the VM page
         //  then don't touch it to be on the safe side
 
-        else if ( pvVMPage != NULL &&
+        else if ( pvVMPage != nullptr &&
                   FBFIMismatchedVMPageInCrashDump( (BYTE *)pbf->pv, g_rgcbPageSize[pbf->icbBuffer], (BYTE *)pvVMPage, cbVMPage ) )
         {
             *pfIncludeVMPage = fTrue;
@@ -5541,10 +5541,10 @@ ERR ErrBFConfigureProcessForCrashDump( const JET_GRBIT grbit )
     if ( OSMemoryPageCommitGranularity() == 0 ||
          g_icbCacheMax == icbPageInvalid ||
          cbfInit == 0 ||
-         g_rgpbfChunk == NULL ||
+         g_rgpbfChunk == nullptr ||
          g_cbfChunk == 0 ||
          ( !BoolParam( JET_paramEnableViewCache ) &&
-           ( g_rgpvChunk == NULL ||
+           ( g_rgpvChunk == nullptr ||
              g_cpgChunk == 0 ) ) )
     {
         Error( ErrERRCheck( JET_errIllegalOperation ) );
@@ -5580,7 +5580,7 @@ ERR ErrBFConfigureProcessForCrashDump( const JET_GRBIT grbit )
         //  all chunks beyond that will also be NULL)
 
         for ( size_t iCacheChunk = 0, ibf = 0;
-            ibf < (size_t)cbfInit && iCacheChunk < cCacheChunkMax && NULL != g_rgpvChunk[ iCacheChunk ];
+            ibf < (size_t)cbfInit && iCacheChunk < cCacheChunkMax && nullptr != g_rgpvChunk[ iCacheChunk ];
             iCacheChunk++ )
         {
             const size_t    iVMPageMin      = (size_t)g_rgpvChunk[ iCacheChunk ] >> cbitVMPage;
@@ -5652,7 +5652,7 @@ ERR ErrBFConfigureProcessForCrashDump( const JET_GRBIT grbit )
         for ( IBF ibf = 0; ibf < cbfCacheAddressable; ibf++ )
         {
             fIncludePage = fFalse;
-            err = ErrBFIInspectForInclusionInCrashDump( ibf, grbit, NULL, 0, tableReferencedPages, &fIncludePage );
+            err = ErrBFIInspectForInclusionInCrashDump( ibf, grbit, nullptr, 0, tableReferencedPages, &fIncludePage );
             if ( fIncludePage )
             {
                 const PBF pbf = PbfBFICacheIbf( ibf );
@@ -5779,7 +5779,7 @@ ERR ErrBFPatchPage(
     BFLatch         bfl;
     BFLRUK::CLock   lockLRUK;
     bool            fLockedLRUK = false;
-    PBF             pbf = NULL;
+    PBF             pbf = nullptr;
     CPAGE           cpage;
     TraceContextScope   tcPatchPage( iorpPatchFix );
 
@@ -5915,7 +5915,7 @@ ERR ErrBFPatchPage(
 
     //  evict takes the w-latch from us (even on failure) ...
 
-    pbf = NULL;
+    pbf = nullptr;
 
     if ( err < JET_errSuccess )
     {
@@ -6035,7 +6035,7 @@ ERR ErrBFTestEvictPage( _In_ const IFMP ifmp, _In_ const PGNO pgno )
 
                         //  could not evict the page, flush the page instead
 
-                        (void)ErrBFIFlushPage( pgnopbf.pbf, IOR( iorpDirectAccessUtil, iorfForeground ), qosIODispatchImmediate, bfdfDirty, fFalse /* default */, NULL );
+                        (void)ErrBFIFlushPage( pgnopbf.pbf, IOR( iorpDirectAccessUtil, iorfForeground ), qosIODispatchImmediate, bfdfDirty, fFalse /* default */, nullptr );
 
                         CallS( bfil.ErrIssue() );
 
@@ -6090,7 +6090,7 @@ ERR ErrBFTestEvictPage( _In_ const IFMP ifmp, _In_ const PGNO pgno )
 
 BOOL    g_fBFInitialized = fFalse;
 
-BYTE*   g_rgbBFTemp = NULL;
+BYTE*   g_rgbBFTemp = nullptr;
 
 TICK    g_tickBFPreparingCrashDump;
 size_t  cBFInspectedForInclusionInCrashDump;
@@ -6184,7 +6184,7 @@ double g_csecBFLRUKUncertainty;
 //  BF FTL tracing
 #ifdef MINIMAL_FUNCTIONALITY
 #else  //  !MINIMAL_FUNCTIONALITY
-CFastTraceLog* g_pbfftl = NULL;
+CFastTraceLog* g_pbfftl = nullptr;
 #endif  //  MINIMAL_FUNCTIONALITY
 IOREASON g_iorBFTraceFile( iorpOsLayerTracing );
 
@@ -6206,7 +6206,7 @@ ERR ErrBFIFTLInit()
     WCHAR   wszPath[IFileSystemAPI::cchPathMax];
 
     Assert( g_pbfftl == NULL );
-    Alloc( g_pbfftl = new CFastTraceLog( NULL, &g_fsconfigBFIFTL ) );
+    Alloc( g_pbfftl = new CFastTraceLog( nullptr, &g_fsconfigBFIFTL ) );
 
 //#define BFFTL_TRACE_ALWAYS_ON
 #ifdef BFFTL_TRACE_ALWAYS_ON
@@ -6246,7 +6246,7 @@ HandleError:
     if ( err < JET_errSuccess )
     {
         delete g_pbfftl;
-        g_pbfftl = NULL;
+        g_pbfftl = nullptr;
     }
 #endif  //  MINIMAL_FUNCTIONALITY
 
@@ -6262,7 +6262,7 @@ void BFIFTLTerm()
     g_pbfftl->FTLTerm();
 
     delete g_pbfftl;
-    g_pbfftl = NULL;
+    g_pbfftl = nullptr;
 #endif  //  MINIMAL_FUNCTIONALITY
 }
 
@@ -6922,11 +6922,11 @@ ERR ErrBFICacheInit( _In_ const LONG cbPageSizeMax )
     g_avgCbfCredit.Reset( 0 );
 
     g_cpgChunk            = 0;
-    g_rgpvChunk           = NULL;
+    g_rgpvChunk           = nullptr;
 
     cbfInit             = 0;
     g_cbfChunk            = 0;
-    g_rgpbfChunk          = NULL;
+    g_rgpbfChunk          = nullptr;
 
     Assert( g_rgcbPageSize[icbPage128] == 128 );
     Assert( g_rgcbPageSize[icbPage1KB] == 1024 );
@@ -7066,7 +7066,7 @@ void BFICacheTerm()
     if ( g_rgpbfChunk )
     {
         delete [] g_rgpbfChunk;
-        g_rgpbfChunk = NULL;
+        g_rgpbfChunk = nullptr;
     }
 
     //  free our data chunk table
@@ -7074,7 +7074,7 @@ void BFICacheTerm()
     if ( g_rgpvChunk )
     {
         delete [] g_rgpvChunk;
-        g_rgpvChunk = NULL;
+        g_rgpvChunk = nullptr;
     }
 }
 
@@ -7190,8 +7190,8 @@ ERR ErrBFICacheGrow()
         }
 
         // First, try to unquiesce from the quiesced pool. Remove from the tail (next-most).
-        PBF pbf = NULL;
-        while ( ( cbfCacheSize < cbfCacheTargetNew ) && ( ( pbf = g_bfquiesced.NextMost() ) != NULL ) )
+        PBF pbf = nullptr;
+        while ( ( cbfCacheSize < cbfCacheTargetNew ) && ( ( pbf = g_bfquiesced.NextMost() ) != nullptr ) )
         {
             Assert( pbf->fQuiesced );
             pbf->sxwl.ClaimOwnership( bfltWrite );
@@ -8157,7 +8157,7 @@ ERR ErrBFICacheUpdateStatistics()
 {
     ERR         err                     = JET_errSuccess;
     DWORD       cUpdate                 = 0;
-    IBitmapAPI* pbmapi                  = NULL;
+    IBitmapAPI* pbmapi                  = nullptr;
     size_t      cmmpgResident           = 0;
     size_t      cmmpgNonResident        = 0;
     size_t      cmmpgNewNonResident     = 0;
@@ -8503,14 +8503,14 @@ INLINE void* PvBFICacheIpg( const IPG ipg )
         // Ergh, went off in accept in ESE _internal_ unit test
         //ExpectedSz( fFalse, "This wouldn't return a valid answer in ViewCache, and I don't think it is used there." );
             // though I don't understand why we can't index off the rgbf and get it that way...
-        return NULL;
+        return nullptr;
     }
     else
     {
         // We use g_icbCacheMax because we need to be able to handle a maximum size page
 
         return (    ipg == ipgNil ?
-                        NULL :
+                        nullptr :
                         (BYTE*)g_rgpvChunk[ ipg / g_cpgChunk ] + ( ipg % g_cpgChunk ) * g_rgcbPageSize[g_icbCacheMax] );
     }
 }
@@ -8582,8 +8582,8 @@ IPG IpgBFICachePv( const void* const pv )
 
 BOOL FBFIValidPvAllocType( const BF * const pbf )
 {
-    return ( pbf->bfat == bfatNone && pbf->pv == NULL ) ||
-            ( pbf->bfat != bfatNone && pbf->pv != NULL );
+    return ( pbf->bfat == bfatNone && pbf->pv == nullptr ) ||
+            ( pbf->bfat != bfatNone && pbf->pv != nullptr );
 }
 
 //  designed to operate in the place of "operation" type functions like FOSMemoryPageCommit() where
@@ -8658,7 +8658,7 @@ ERR ErrBFICacheISetDataSize( const LONG_PTR cpgCacheStart, const LONG_PTR cpgCac
             //  reserve a new cache chunk
 
             const size_t cbChunkAlloc = g_cpgChunk * g_rgcbPageSize[g_icbCacheMax];
-            AllocFI( 49416, g_rgpvChunk[ ipgChunkAlloc ] = PvOSMemoryPageReserve( cbChunkAlloc, NULL ) );
+            AllocFI( 49416, g_rgpvChunk[ ipgChunkAlloc ] = PvOSMemoryPageReserve( cbChunkAlloc, nullptr ) );
             g_cbCacheReservedSize += (ULONG_PTR)cbChunkAlloc; //  atomic not required here
             Assert( (LONG_PTR)g_cbCacheReservedSize >= (LONG_PTR)cbChunkAlloc );
 
@@ -8691,7 +8691,7 @@ ERR ErrBFICacheISetDataSize( const LONG_PTR cpgCacheStart, const LONG_PTR cpgCac
         {
             void* const pvChunkFree = g_rgpvChunk[ ipgChunkFree ];
             
-            g_rgpvChunk[ ipgChunkFree ] = NULL;
+            g_rgpvChunk[ ipgChunkFree ] = nullptr;
             const size_t cbChunkFree = g_cpgChunk * g_rgcbPageSize[g_icbCacheMax];
             OSMemoryPageDecommit( pvChunkFree, cbChunkFree );
             OSMemoryPageFree( pvChunkFree );
@@ -8823,7 +8823,7 @@ ERR ErrBFICacheISetStatusSize( const LONG_PTR cbfCacheStart, const LONG_PTR cbfC
         {
             //  reserve a new cache chunk
 
-            AllocFI( 57096, g_rgpbfChunk[ ibfChunkAlloc ] = (PBF)PvOSMemoryPageReserve( g_cbfChunk * sizeof( BF ), NULL ) );
+            AllocFI( 57096, g_rgpbfChunk[ ibfChunkAlloc ] = (PBF)PvOSMemoryPageReserve( g_cbfChunk * sizeof( BF ), nullptr ) );
 
             //  update the cache size to reflect the new cache chunk
             //
@@ -8852,7 +8852,7 @@ ERR ErrBFICacheISetStatusSize( const LONG_PTR cbfCacheStart, const LONG_PTR cbfC
         for ( LONG_PTR ibfChunkFree = ibfChunkNew + 1; ibfChunkFree <= ibfChunkStart; ibfChunkFree++ )
         {
             const PBF pbfChunkFree = g_rgpbfChunk[ ibfChunkFree ];
-            g_rgpbfChunk[ ibfChunkFree ] = NULL;
+            g_rgpbfChunk[ ibfChunkFree ] = nullptr;
             OSMemoryPageDecommit( pbfChunkFree, g_cbfChunk * sizeof( BF ) );
             OSMemoryPageFree( pbfChunkFree );
         }
@@ -9087,7 +9087,7 @@ ERR ErrBFICacheISetSize( const LONG_PTR cbfCacheAddressableNew )
 
             //  clear this BF's page pointer / alloc type
 
-            pbf->pv = NULL;
+            pbf->pv = nullptr;
             pbf->bfat = bfatNone;
 
             Assert( FBFIValidPvAllocType( pbf ) );
@@ -9571,7 +9571,7 @@ ERR CBFIssueList::
 ErrIssue( const BOOL fSync )
 {
     ERR     err         = JET_errSuccess;
-    CEntry* pentry      = NULL;
+    CEntry* pentry      = nullptr;
 
     while ( pentry = m_il.PrevMost() )
     {
@@ -9616,7 +9616,7 @@ HandleError:
 VOID CBFIssueList::
 AbandonLogOps()
 {
-    CEntry* pentry      = NULL;
+    CEntry* pentry      = nullptr;
 
     while ( pentry = m_il.PrevMost() )
     {
@@ -9665,8 +9665,8 @@ ERR CBFIssueList::
 ErrPrepareOper( const IFMP ifmp, const CEntry::eOper oper )
 {
     ERR     err         = JET_errSuccess;
-    CEntry* pentry      = NULL;
-    CEntry* pentryNew   = NULL;
+    CEntry* pentry      = nullptr;
+    CEntry* pentryNew   = nullptr;
 
     if ( m_group < 0 )
     {
@@ -9684,7 +9684,7 @@ ErrPrepareOper( const IFMP ifmp, const CEntry::eOper oper )
 
     Alloc( pentryNew = new CEntry( ifmp, oper ) );
     m_il.InsertAsNextMost( pentryNew );
-    pentryNew = NULL;
+    pentryNew = nullptr;
 
 HandleError:
     delete pentryNew;
@@ -9693,7 +9693,7 @@ HandleError:
 
 BOOL CBFIssueList::FEmpty() const
 {
-    return m_il.PrevMost() == NULL;
+    return m_il.PrevMost() == nullptr;
 }
 
 VOID CBFIssueList::NullifyDiskTiltFake( const IFMP ifmp )
@@ -9704,7 +9704,7 @@ VOID CBFIssueList::NullifyDiskTiltFake( const IFMP ifmp )
         //  if there is only one oper, and it's write oper for this IFMP, and we've only had
         //  one request we can assume it's the fake write oper for the disk tilt oper.  This
         //  is kind of a fragile way to do this.
-        if ( m_il.Next( pentry ) == NULL &&
+        if ( m_il.Next( pentry ) == nullptr &&
                 pentry->Oper() == CEntry::operWrite &&
                 pentry->Ifmp() == ifmp &&
                 pentry->CRequests() == 1 )
@@ -9745,7 +9745,7 @@ LOCAL TICK g_tickLastMaintCacheStats        = 0;    //  last time a cache statis
 LOCAL TICK g_tickLastCacheStatsRequest      = 0;    //  last time a cache statistics maintenance task was requested
 LOCAL TICK g_tickLastMaintCacheSize         = 0;    //  last time a cache size maintenance task was executed
 
-HMEMORY_NOTIFICATION g_pMemoryNotification = NULL;
+HMEMORY_NOTIFICATION g_pMemoryNotification = nullptr;
 
     //  Init / Term
 
@@ -9912,10 +9912,10 @@ void BFIMaintTerm()
 
     // delete memory notification after cache stats since cache stats can
     // use memory notification while quiescing itself
-    if ( g_pMemoryNotification != NULL )
+    if ( g_pMemoryNotification != nullptr )
     {
         OSUnregisterAndDestroyMemoryNotification( g_pMemoryNotification );
-        g_pMemoryNotification = NULL;
+        g_pMemoryNotification = nullptr;
     }
     Assert( g_semMaintCacheSize.CAvail() <= 1 );
     if ( g_posttBFIMaintCacheSizeITask )
@@ -9978,52 +9978,52 @@ void BFIMaintTerm()
     if ( g_posttBFIMaintIdleDatabaseITask )
     {
         OSTimerTaskDelete( g_posttBFIMaintIdleDatabaseITask );
-        g_posttBFIMaintIdleDatabaseITask = NULL;
+        g_posttBFIMaintIdleDatabaseITask = nullptr;
     }
     if ( g_posttBFIMaintCacheResidencyITask )
     {
         OSTimerTaskDelete( g_posttBFIMaintCacheResidencyITask );
-        g_posttBFIMaintCacheResidencyITask = NULL;
+        g_posttBFIMaintCacheResidencyITask = nullptr;
     }
     if ( g_posttBFIMaintIdleCacheStatsITask )
     {
         OSTimerTaskDelete( g_posttBFIMaintIdleCacheStatsITask );
-        g_posttBFIMaintIdleCacheStatsITask = NULL;
+        g_posttBFIMaintIdleCacheStatsITask = nullptr;
     }
     if ( g_posttBFIMaintCacheStatsITask )
     {
         OSTimerTaskDelete( g_posttBFIMaintCacheStatsITask );
-        g_posttBFIMaintCacheStatsITask = NULL;
+        g_posttBFIMaintCacheStatsITask = nullptr;
     }
     if ( g_posttBFIMaintTelemetryITask )
     {
         OSTimerTaskDelete( g_posttBFIMaintTelemetryITask );
-        g_posttBFIMaintTelemetryITask = NULL;
+        g_posttBFIMaintTelemetryITask = nullptr;
     }
     if ( g_posttBFIMaintCacheSizeITask )
     {
         OSTimerTaskDelete( g_posttBFIMaintCacheSizeITask );
-        g_posttBFIMaintCacheSizeITask = NULL;
+        g_posttBFIMaintCacheSizeITask = nullptr;
     }
     if ( g_posttBFIMaintCheckpointITask )
     {
         OSTimerTaskDelete( g_posttBFIMaintCheckpointITask );
-        g_posttBFIMaintCheckpointITask = NULL;
+        g_posttBFIMaintCheckpointITask = nullptr;
     }
     if ( g_posttBFIMaintCheckpointDepthITask )
     {
         OSTimerTaskDelete( g_posttBFIMaintCheckpointDepthITask );
-        g_posttBFIMaintCheckpointDepthITask = NULL;
+        g_posttBFIMaintCheckpointDepthITask = nullptr;
     }
     if ( g_posttBFIMaintAvailPoolIUrgentTask )
     {
         OSTimerTaskDelete( g_posttBFIMaintAvailPoolIUrgentTask );
-        g_posttBFIMaintAvailPoolIUrgentTask = NULL;
+        g_posttBFIMaintAvailPoolIUrgentTask = nullptr;
     }
     if ( g_posttBFIMaintAvailPoolITask )
     {
         OSTimerTaskDelete( g_posttBFIMaintAvailPoolITask );
-        g_posttBFIMaintAvailPoolITask = NULL;
+        g_posttBFIMaintAvailPoolITask = nullptr;
     }
 
     //  all tasks are now shutdown so release cancel lock
@@ -10131,8 +10131,8 @@ LONG_PTR        cbfAvailPoolTarget;
 LONG_PTR        cbfCacheDeadlock;
 LONG_PTR        g_cbfCacheDeadlockMax;
 
-POSTIMERTASK    g_posttBFIMaintAvailPoolIUrgentTask = NULL;
-POSTIMERTASK    g_posttBFIMaintAvailPoolITask = NULL;
+POSTIMERTASK    g_posttBFIMaintAvailPoolIUrgentTask = nullptr;
+POSTIMERTASK    g_posttBFIMaintAvailPoolITask = nullptr;
 
 //  requests that maintenance be performed on the avail pool in either sync or
 //  async mode
@@ -10255,8 +10255,8 @@ ERR ErrBFIMaintAvailPoolRequest( const BFIMaintAvailPoolRequestType bfmaprt )
         if ( psemMaintAvailPoolRequest->FTryAcquire() )
         {
             const ERR errSchedule = fUrgent ?
-                ErrBFIMaintScheduleTask( g_posttBFIMaintAvailPoolIUrgentTask, NULL, dtickMaintAvailPoolRequestUrgent, 0 ) :
-                ErrBFIMaintScheduleTask( g_posttBFIMaintAvailPoolITask, NULL, dtickMaintAvailPoolRequest, 0 );
+                ErrBFIMaintScheduleTask( g_posttBFIMaintAvailPoolIUrgentTask, nullptr, dtickMaintAvailPoolRequestUrgent, 0 ) :
+                ErrBFIMaintScheduleTask( g_posttBFIMaintAvailPoolITask, nullptr, dtickMaintAvailPoolRequest, 0 );
 
             if ( errSchedule < JET_errSuccess )
             {
@@ -10330,18 +10330,18 @@ TICK                g_dtickMaintScavengeTimeout = 0;
 size_t              g_cScavengeTimeSeq = 0;
 
 ULONG               g_iScavengeLastRun = 0;
-BFScavengeStats*    g_rgScavengeLastRuns = NULL; // [ OnDebugOrRetailOrRtm( 150, 30, 4 ) ]; // should always be at least 1 ...
+BFScavengeStats*    g_rgScavengeLastRuns = nullptr; // [ OnDebugOrRetailOrRtm( 150, 30, 4 ) ]; // should always be at least 1 ...
 
 //  We track a time sequence of the last OOB timeout seconds
 
 ULONG               g_iScavengeTimeSeqLast = 0;
-BFScavengeStats*    g_rgScavengeTimeSeq = NULL; // currently every 500 ms for either JET_paramHungIOThreshold (in RETAIL) or
+BFScavengeStats*    g_rgScavengeTimeSeq = nullptr; // currently every 500 ms for either JET_paramHungIOThreshold (in RETAIL) or
                                                 // ( 2 * JET_paramHungIOThreshold ) (in DEBUG) + few extra runs.
                                                 // JET_paramHungIOThreshold's default is 30 seconds.
 
 #ifndef RTM
 //  uses same g_iScavengeTimeSeqLast as g_rgScavengeTimeSeq
-BFScavengeStats*    g_rgScavengeTimeSeqCumulative = NULL;
+BFScavengeStats*    g_rgScavengeTimeSeqCumulative = nullptr;
 #endif // !RTM
 
 #ifdef DEBUG
@@ -10876,7 +10876,7 @@ ERR ErrBFIMaintScavengeIScavengePages( const char* const szContextTraceOnly, con
     BOOL fOwnCacheResizeCritSec = fFalse;
     LONG_PTR cbfCacheAddressableInitial = -1;
     LONG_PTR cbfCacheSizeInitial = -1;
-    PBF pbf = NULL;
+    PBF pbf = nullptr;
 
     //  Init stats.
     //
@@ -10903,7 +10903,7 @@ ERR ErrBFIMaintScavengeIScavengePages( const char* const szContextTraceOnly, con
 
             BFAvail::CLock lockAvail;
             g_bfavail.BeginPoolScan( &lockAvail );
-            pbf = NULL;
+            pbf = nullptr;
             while ( ( cbfCacheSize > cbfCacheTarget ) &&
                     ( g_bfavail.Cobject() > (DWORD)cbfAvailPoolHigh ) &&
                     ( g_bfavail.ErrGetNextObject( &lockAvail, &pbf ) == BFAvail::ERR::errSuccess ) )
@@ -10933,7 +10933,7 @@ ERR ErrBFIMaintScavengeIScavengePages( const char* const szContextTraceOnly, con
     BFLRUK::CLock lockLRUK;
     g_bflruk.BeginResourceScan( &lockLRUK );
     OnDebug( const LONG cbfSuperColdedInitial = g_bflruk.CSuperColdSuccesses() );
-    pbf = NULL;
+    pbf = nullptr;
     statsCurrRun.eStopReason = eScavengeInvalid;
     while ( fTrue )
     {
@@ -11758,14 +11758,14 @@ void BFIMaintScavengeTerm( void )
 {
 #ifndef RTM
     delete[] g_rgScavengeTimeSeqCumulative;
-    g_rgScavengeTimeSeqCumulative = NULL;
+    g_rgScavengeTimeSeqCumulative = nullptr;
 #endif
 
     delete[] g_rgScavengeLastRuns;
-    g_rgScavengeLastRuns = NULL;
+    g_rgScavengeLastRuns = nullptr;
 
     delete[] g_rgScavengeTimeSeq;
-    g_rgScavengeTimeSeq = NULL;
+    g_rgScavengeTimeSeq = nullptr;
 }
 
 
@@ -11775,7 +11775,7 @@ CSemaphore      g_semMaintCheckpointDepthRequest( CSyncBasicInfo( _T( "g_semMain
 
 IFMP            g_ifmpMaintCheckpointDepthStart;
 
-POSTIMERTASK    g_posttBFIMaintCheckpointDepthITask = NULL;
+POSTIMERTASK    g_posttBFIMaintCheckpointDepthITask = nullptr;
 
 #define dtickBFMaintNever   0xFFFFFFFF
 
@@ -11793,7 +11793,7 @@ void BFIMaintCheckpointIDepthRequest_( BF * pbfImplicitlyPinnedDatabase, FMP * p
     }
     else if ( eRequestReason == bfcpdmrRequestIOThreshold )
     {
-        if ( pbfImplicitlyPinnedDatabase == NULL )
+        if ( pbfImplicitlyPinnedDatabase == nullptr )
         {
             FireWall( "CheckpointDepthIoThresholdProvidePinnedPbfArg" );
             return;
@@ -11877,7 +11877,7 @@ void BFIMaintCheckpointIDepthRequest_( BF * pbfImplicitlyPinnedDatabase, FMP * p
 
         OSTrace( JET_tracetagBufferManagerMaintTasks, OSFormat( "Scheduling BFIMaintCheckpointDepthITask immediately (%d).", eRequestReason ) );
 
-        if ( ErrBFIMaintScheduleTask( g_posttBFIMaintCheckpointDepthITask, NULL, 0, 0 ) >= JET_errSuccess )
+        if ( ErrBFIMaintScheduleTask( g_posttBFIMaintCheckpointDepthITask, nullptr, 0, 0 ) >= JET_errSuccess )
         {
             //  we have now lost our right to make async requests
 
@@ -11900,7 +11900,7 @@ void BFIMaintCheckpointDepthRequest( FMP * pfmp, const BFCheckpointDepthMainReas
 {
     Assert( bfcdmr != bfcpdmrRequestIOThreshold );
 
-    BFIMaintCheckpointIDepthRequest_( NULL, pfmp, bfcdmr );
+    BFIMaintCheckpointIDepthRequest_( nullptr, pfmp, bfcdmr );
 }
 
 void BFIMaintCheckpointDepthRequest( BF * pbfImplicitlyPinnedDatabase, const BFCheckpointDepthMainReason bfcdmr )
@@ -11916,7 +11916,7 @@ void BFIMaintCheckpointDepthRequest( BF * pbfImplicitlyPinnedDatabase, const BFC
 
     g_rgfmp[ pbfImplicitlyPinnedDatabase->ifmp ].ImplicitBFContextPin();
 
-    BFIMaintCheckpointIDepthRequest_( pbfImplicitlyPinnedDatabase, NULL, bfcdmr );
+    BFIMaintCheckpointIDepthRequest_( pbfImplicitlyPinnedDatabase, nullptr, bfcdmr );
 
     g_rgfmp[ pbfImplicitlyPinnedDatabase->ifmp ].ImplicitBFContextUnpin();
 }
@@ -11956,7 +11956,7 @@ void BFIMaintCheckpointDepthITask( void*, void* )
                 OSFormat( "Scheduling BFIMaintCheckpointDepthITask for %u ticks in future (next estimated is in %u ticks).", dtickNextScheduleActual, dtickNextSchedule ) );
 
         if ( ErrBFIMaintScheduleTask(   g_posttBFIMaintCheckpointDepthITask,
-                                        NULL,
+                                        nullptr,
                                         dtickNextScheduleActual,
                                         0 ) >= JET_errSuccess )
         {
@@ -12639,7 +12639,7 @@ ERR ErrBFIOB0MaintScan(
     }
     else
     {
-        pbffmp->bfob0.MoveBeforeKeyPtr( BFIOB0Offset( ifmp, &lgposStartBM ), NULL, plockOB0 );
+        pbffmp->bfob0.MoveBeforeKeyPtr( BFIOB0Offset( ifmp, &lgposStartBM ), nullptr, plockOB0 );
     }
 
     while ( pbffmp->bfob0.ErrMoveNext( plockOB0 ) != BFOB0::ERR::errNoCurrentEntry )
@@ -12746,7 +12746,7 @@ ERR ErrBFIOB0MaintScan(
 
             //  Maintain (flush, clean, etc) this entry
 
-            err = ErrBFIOB0MaintEntry( ifmp, pbffmp, pbf, NULL, lgposNewest, cbCheckpointDepth, fOperations );
+            err = ErrBFIOB0MaintEntry( ifmp, pbffmp, pbf, nullptr, lgposNewest, cbCheckpointDepth, fOperations );
 
             if ( err == errDiskTilt )
             {
@@ -13051,7 +13051,7 @@ ERR ErrBFIMaintCheckpointDepthIFlushPagesByIFMP( const IFMP ifmp, BOOL * const p
     //
 
     CFlushMap* const pfm = pfmp->PFlushMap();
-    if ( pfm != NULL )
+    if ( pfm != nullptr )
     {
         const QWORD ibLogTip = ( (QWORD)lgposNewest.lGeneration * pfmp->Pinst()->m_plog->CSecLGFile() + lgposNewest.isec ) * pfmp->Pinst()->m_plog->CbLGSec() + lgposNewest.ib;
         const QWORD cbPreferredChktpDepth = (QWORD)UlParam( pfmp->Pinst(), JET_paramCheckpointDepthMax );
@@ -13096,7 +13096,7 @@ ERR ErrBFIMaintCheckpointDepthIFlushPagesByIFMP( const IFMP ifmp, BOOL * const p
                             &lockOB0Pass1,
                             pbffmp->lgposVersionerBM,
                             &lgposCheckpointOverscan,
-                            NULL,
+                            nullptr,
                             BFOB0MaintOperations( bfob0moVersioning | bfob0moCleaning ) ) );
 
         OSTraceFMP( ifmp, JET_tracetagBufferManagerMaintTasks,
@@ -13340,9 +13340,9 @@ CSemaphore      g_semMaintCheckpointRequest( CSyncBasicInfo( _T( "g_semMaintChec
 
 TICK            g_tickMaintCheckpointLast;
 
-POSTIMERTASK    g_posttBFIMaintCheckpointITask = NULL;
-POSTIMERTASK    g_posttBFIMaintCacheStatsITask = NULL;
-POSTIMERTASK    g_posttBFIMaintIdleCacheStatsITask = NULL;
+POSTIMERTASK    g_posttBFIMaintCheckpointITask = nullptr;
+POSTIMERTASK    g_posttBFIMaintCacheStatsITask = nullptr;
+POSTIMERTASK    g_posttBFIMaintIdleCacheStatsITask = nullptr;
 
 
 //  requests that checkpoint maintenance be performed on behalf of dirty pages
@@ -13361,7 +13361,7 @@ void BFIMaintCheckpointRequest()
     {
         //  schedule a task to maintain the checkpoint
 
-        if ( ErrBFIMaintScheduleTask( g_posttBFIMaintCheckpointITask, NULL, dtickMaintCheckpointDelay, dtickMaintCheckpointFuzz ) >= JET_errSuccess )
+        if ( ErrBFIMaintScheduleTask( g_posttBFIMaintCheckpointITask, nullptr, dtickMaintCheckpointDelay, dtickMaintCheckpointFuzz ) >= JET_errSuccess )
         {
             //  we have now lost our right to make async requests
 
@@ -14176,9 +14176,9 @@ LOCAL void BFIMaintIdleCacheStatsSchedule()
 
     Expected( ( g_posttBFIMaintIdleCacheStatsITask != NULL ) || !g_fBFInitialized );
 
-    if ( g_posttBFIMaintIdleCacheStatsITask != NULL )
+    if ( g_posttBFIMaintIdleCacheStatsITask != nullptr )
     {
-        (void)ErrBFIMaintScheduleTask( g_posttBFIMaintIdleCacheStatsITask, NULL, dtickIdleCacheStatsPeriod, dtickIdleCacheStatsSlop );
+        (void)ErrBFIMaintScheduleTask( g_posttBFIMaintIdleCacheStatsITask, nullptr, dtickIdleCacheStatsPeriod, dtickIdleCacheStatsSlop );
     }
 }
 
@@ -14576,7 +14576,7 @@ void BFIMaintCacheStatsITask( VOID *, VOID * pvContext )
     }
 
     if ( !fQuiesceTask &&
-         ErrBFIMaintScheduleTask( g_posttBFIMaintCacheStatsITask, NULL, dtickMaintCacheStatsPeriod, dtickMaintCacheStatsSlop ) >= JET_errSuccess )
+         ErrBFIMaintScheduleTask( g_posttBFIMaintCacheStatsITask, nullptr, dtickMaintCacheStatsPeriod, dtickMaintCacheStatsSlop ) >= JET_errSuccess )
     {
         // do not need to release the semaphore since we rescheduled ourselves
         return;
@@ -14651,7 +14651,7 @@ INLINE ERR ErrBFIMaintCacheStatsRequest( const BFIMaintCacheStatsRequestType bfm
         //  schedule a task to maintain our cache stats which will in turn manage
         //  our cache size maintenance
 
-        Call( ErrBFIMaintScheduleTask( g_posttBFIMaintCacheStatsITask, NULL, dtickMaintCacheStatsPeriod, dtickMaintCacheStatsSlop ) );
+        Call( ErrBFIMaintScheduleTask( g_posttBFIMaintCacheStatsITask, nullptr, dtickMaintCacheStatsPeriod, dtickMaintCacheStatsSlop ) );
 
         fReleaseSemaphore = fFalse;
         OSTrace( JET_tracetagBufferManagerMaintTasks, OSFormat( "%s:  started Cache Stats Collection", __FUNCTION__ ) );
@@ -14679,7 +14679,7 @@ INLINE void BFIMaintCacheStatsRelease()
     g_semMaintCacheStatsRequest.Release();
 }
 
-POSTIMERTASK    g_posttBFIMaintCacheSizeITask = NULL;
+POSTIMERTASK    g_posttBFIMaintCacheSizeITask = nullptr;
 
 #ifndef RTM
 TICK g_tickMaintCacheSizeRequestLast = 0;
@@ -14769,7 +14769,7 @@ INLINE ERR ErrBFIMaintCacheSizeRequest( OnDebug( BOOL* const pfAcquiredSemaphore
     {
         OnNonRTM( g_tickMaintCacheSizeRequestAsyncLastAttempt = TickOSTimeCurrent() );
         Call( ErrBFIMaintScheduleTask(  g_posttBFIMaintCacheSizeITask,
-                                        NULL,
+                                        nullptr,
                                         dtickMaintCacheSizeRequest,
                                         0 ) );
         OnNonRTM( g_tickMaintCacheSizeRequestAsyncLastSuccess = TickOSTimeCurrent() );
@@ -14899,7 +14899,7 @@ void BFIMaintCacheSizeITask( void*, void* )
     if ( !fDone )
     {
         if ( ErrBFIMaintScheduleTask(   g_posttBFIMaintCacheSizeITask,
-                                        NULL,
+                                        nullptr,
                                         dtickMaintCacheSizeRetry,
                                         0 ) < JET_errSuccess )
         {
@@ -15041,7 +15041,7 @@ INLINE ERR ErrBFIMaintCacheSizeReleaseAndRescheduleIfPending()
         //  will have the its pending request go unnoticed.
 
         err = ErrBFIMaintScheduleTask(  g_posttBFIMaintCacheSizeITask,
-                                        NULL,
+                                        nullptr,
                                         dtickMaintCacheSizeRequest,
                                         0 );
 
@@ -15084,7 +15084,7 @@ CSemaphore      g_semMaintIdleDatabaseRequest( CSyncBasicInfo( _T( "g_semMaintId
 
 TICK            g_tickMaintIdleDatabaseLast;
 
-POSTIMERTASK    g_posttBFIMaintIdleDatabaseITask = NULL;
+POSTIMERTASK    g_posttBFIMaintIdleDatabaseITask = nullptr;
 
 inline const char* BFFormatLGPOS( const LGPOS* const plgpos )
 {
@@ -15160,7 +15160,7 @@ void BFIMaintIdleDatabaseRequest( PBF pbf )
     {
         //  schedule a task to maintain the idle databases
 
-        if ( ErrBFIMaintScheduleTask( g_posttBFIMaintIdleDatabaseITask, NULL, dtickMaintIdleDatabaseDelay, 0 ) >= JET_errSuccess )
+        if ( ErrBFIMaintScheduleTask( g_posttBFIMaintIdleDatabaseITask, nullptr, dtickMaintIdleDatabaseDelay, 0 ) >= JET_errSuccess )
         {
             OSTrace(    JET_tracetagBufferManagerMaintTasks,
                         OSFormat(   "%s:  Idle Database Maintenance Scheduled",
@@ -15377,7 +15377,7 @@ LONG g_fUpdateStatisticsMayRequest = fFalse;
 BOOL g_fMaintCacheResidencyInit = fFalse;
 BOOL g_fEnabledCacheResidencyTask = fTrue;
 
-POSTIMERTASK g_posttBFIMaintCacheResidencyITask = NULL;
+POSTIMERTASK g_posttBFIMaintCacheResidencyITask = nullptr;
 
 void BFIMaintCacheResidencyInit()
 {
@@ -15443,7 +15443,7 @@ INLINE void BFIMaintCacheResidencyRequest()
                 AtomicCompareExchange( &g_fUpdateStatisticsMayRequest, fTrue, fFalse ) == fTrue )
         {
             if ( ErrBFIMaintScheduleTask(   g_posttBFIMaintCacheResidencyITask,
-                                            NULL,
+                                            nullptr,
                                             dtickMaintCacheResidencyPeriod,
                                             0 ) < JET_errSuccess )
             {
@@ -15487,7 +15487,7 @@ void BFIMaintCacheResidencyITask( void*, void* )
         AtomicExchange( &g_fUpdateStatisticsMayRequest, fTrue );
     }
     else if ( ErrBFIMaintScheduleTask( g_posttBFIMaintCacheResidencyITask,
-                                       NULL,
+                                       nullptr,
                                        dtickMaintCacheResidencyPeriod,
                                        0 ) < JET_errSuccess )
     {
@@ -15755,7 +15755,7 @@ JETUNITTEST( BF, BfrsBFISwitchBFResidencyFlagConditional )
 
     //  Cache telemetry
 
-POSTIMERTASK    g_posttBFIMaintTelemetryITask = NULL;
+POSTIMERTASK    g_posttBFIMaintTelemetryITask = nullptr;
 
 void BFIMaintTelemetryRequest()
 {
@@ -15769,7 +15769,7 @@ void BFIMaintTelemetryRequest()
     //  generate telemetry one time period from now
     (VOID)ErrBFIMaintScheduleTask(
         g_posttBFIMaintTelemetryITask,
-        NULL,
+        nullptr,
         dtickTelemetryPeriod,
         0);
 }
@@ -15777,9 +15777,9 @@ void BFIMaintTelemetryRequest()
 void BFIMaintTelemetryITask( VOID *, VOID * pvContext )
 {
     ERR         err                         = JET_errSuccess;
-    LONGLONG**  rgrgcbCacheByIfmpTce        = NULL;
-    LONGLONG**  rgrgcbCacheDirtyByIfmpTce   = NULL;
-    TICK**      rgrgtickMinByIfmpTce        = NULL;
+    LONGLONG**  rgrgcbCacheByIfmpTce        = nullptr;
+    LONGLONG**  rgrgcbCacheDirtyByIfmpTce   = nullptr;
+    TICK**      rgrgtickMinByIfmpTce        = nullptr;
 
     //  compute the cache footprint by ifmp, tce
 
@@ -15788,9 +15788,9 @@ void BFIMaintTelemetryITask( VOID *, VOID * pvContext )
     Alloc( rgrgtickMinByIfmpTce = new TICK*[ g_ifmpMax ] );
     for ( IFMP ifmpT = 0; ifmpT < g_ifmpMax; ifmpT++ )
     {
-        rgrgcbCacheByIfmpTce[ ifmpT ] = NULL;
-        rgrgcbCacheDirtyByIfmpTce[ifmpT] = NULL;
-        rgrgtickMinByIfmpTce[ ifmpT ] = NULL;
+        rgrgcbCacheByIfmpTce[ ifmpT ] = nullptr;
+        rgrgcbCacheDirtyByIfmpTce[ifmpT] = nullptr;
+        rgrgtickMinByIfmpTce[ ifmpT ] = nullptr;
     }
 
     const TICK tickNow = TickOSTimeCurrent();
@@ -15818,7 +15818,7 @@ void BFIMaintTelemetryITask( VOID *, VOID * pvContext )
 
         //  defer allocate our storage
 
-        if ( rgrgcbCacheByIfmpTce[ ifmp ] == NULL )
+        if ( rgrgcbCacheByIfmpTce[ ifmp ] == nullptr )
         {
             Alloc( rgrgcbCacheByIfmpTce[ ifmp ] = new LONGLONG[ tceMax ] );
             Alloc( rgrgcbCacheDirtyByIfmpTce[ifmp] = new LONGLONG[tceMax] );
@@ -16530,10 +16530,10 @@ ERR ErrBFIAllocPage( PBF* const ppbf, _In_ const ICBPage icbBufferSize, const BO
         Enforce( (*ppbf)->err != errBFIPageFaultPending );
         Enforce( (*ppbf)->err != wrnBFPageFlushPending );
         Enforce( (*ppbf)->pWriteSignalComplete == 0 );
-        Enforce( PvBFIAcquireIOContext( *ppbf ) == NULL );
+        Enforce( PvBFIAcquireIOContext( *ppbf ) == nullptr );
 
-        Enforce( (*ppbf)->pbfTimeDepChainNext == NULL );
-        Enforce( (*ppbf)->pbfTimeDepChainPrev == NULL );
+        Enforce( (*ppbf)->pbfTimeDepChainNext == nullptr );
+        Enforce( (*ppbf)->pbfTimeDepChainPrev == nullptr );
         Assert( (*ppbf)->bfdf == bfdfClean );
         Assert( (*ppbf)->fOlderVersion == fFalse );
         Assert( (*ppbf)->fSuspiciouslySlowRead == fFalse );
@@ -16772,17 +16772,17 @@ ERR ErrBFICacheIMapPage( BF * const pbf, const BOOL fNewPage )
     }
     else    //  !fUseHistory
     {
-        pbf->pv = NULL;
+        pbf->pv = nullptr;
     }
 
     //  if we didn't map a view then alloc a page of memory
 
-    if ( pbf->pv == NULL )
+    if ( pbf->pv == nullptr )
     {
         Assert( pbf->bfat != bfatViewMapped );  //  We'll leak a mapping
         Assert( pbf->bfat == bfatNone );        //  Or maybe leak fractional commit?
     
-        if ( !( pbf->pv = PvOSMemoryPageAlloc( cb, NULL ) ) )
+        if ( !( pbf->pv = PvOSMemoryPageAlloc( cb, nullptr ) ) )
         {
             Call( ErrERRCheck( JET_errOutOfMemory ) );
         }
@@ -16831,7 +16831,7 @@ void BFICacheIUnmapPage( BF * const pbf )
             Assert( !FOSMemoryPageAllocated( pbf->pv, g_rgcbPageSize[pbf->icbBuffer] ) );
             if ( pfapi->ErrMMFree( pbf->pv ) >= JET_errSuccess )
             {
-                pbf->pv = NULL;
+                pbf->pv = nullptr;
                 pbf->bfat = bfatNone;
             }
             else
@@ -16846,7 +16846,7 @@ void BFICacheIUnmapPage( BF * const pbf )
             Assert( FOSMemoryPageAllocated( pbf->pv, g_rgcbPageSize[pbf->icbBuffer] ) );
             Assert( !FOSMemoryFileMapped( pbf->pv, g_rgcbPageSize[pbf->icbBuffer] ) );
             OSMemoryPageFree( pbf->pv );
-            pbf->pv = NULL;
+            pbf->pv = nullptr;
             pbf->bfat = bfatNone;
         }
     }
@@ -16862,11 +16862,11 @@ void BFIFreePage( PBF pbf, const BOOL fMRU, const BFFreePageFlags bffpfDangerous
     Enforce( pbf->err != errBFIPageFaultPending );
     Enforce( pbf->err != wrnBFPageFlushPending );
     Enforce( pbf->pWriteSignalComplete == 0 );
-    Enforce( PvBFIAcquireIOContext( pbf ) == NULL );
+    Enforce( PvBFIAcquireIOContext( pbf ) == nullptr );
     AssertSz( !pbf->bfbitfield.FRangeLocked() || pbf->fAbandoned, "BFFreeRangeStillLocked" );
 
-    Enforce( pbf->pbfTimeDepChainNext == NULL );
-    Enforce( pbf->pbfTimeDepChainPrev == NULL );
+    Enforce( pbf->pbfTimeDepChainNext == nullptr );
+    Enforce( pbf->pbfTimeDepChainPrev == nullptr );
 
     Assert( !pbf->fOlderVersion );
 
@@ -17038,7 +17038,7 @@ ERR ErrBFICachePage(    PBF* const ppbf,
     //  allocate a new BF to contain this IFMP / PGNO, assuming the buffer size will need to 
     //  be as large as the page size, and waiting forever if necessary and requested
 
-    if ( pgnopbf.pbf == NULL )
+    if ( pgnopbf.pbf == nullptr )
     {
         const ERR errBufferAlloc = ErrBFIAllocPage( &pgnopbf.pbf, IcbBFIBufferSize( pfmp->CbPage() ), fWait, fMRU );
 
@@ -17186,13 +17186,13 @@ ERR ErrBFICachePage(    PBF* const ppbf,
 
     Enforce( FBFICurrentPage( *ppbf, ifmp, pgno ) );
 
-    Enforce( pgnopbf.pbf->pbfTimeDepChainNext == NULL );
-    Enforce( pgnopbf.pbf->pbfTimeDepChainPrev == NULL );
+    Enforce( pgnopbf.pbf->pbfTimeDepChainNext == nullptr );
+    Enforce( pgnopbf.pbf->pbfTimeDepChainPrev == nullptr );
 
     Enforce( wrnBFPageFlushPending != pgnopbf.pbf->err );
     Enforce( JET_errSuccess == pgnopbf.pbf->err );
     Enforce( 0 == pgnopbf.pbf->pWriteSignalComplete );
-    Enforce( NULL == PvBFIAcquireIOContext( pgnopbf.pbf ) );
+    Enforce( nullptr == PvBFIAcquireIOContext( pgnopbf.pbf ) );
 
     Assert( FBFIValidPvAllocType( pgnopbf.pbf ) );
     Assert( pgnopbf.pbf->bfat != bfatNone );
@@ -17238,7 +17238,7 @@ HandleError:
     AssertRTL( err > -65536 && err < 65536 );
 
     Assert( err < JET_errSuccess );
-    if ( pgnopbf.pbf != NULL )
+    if ( pgnopbf.pbf != nullptr )
     {
         //  release our mapped or allocated BF
 
@@ -17465,7 +17465,7 @@ BOOL FBFIMaintIsImpedingCheckpointMaintenance( _In_ const PBF pbf, _Out_ BOOL * 
             //  than once a log file if we are trying to advance the checkpoint
 
             const PBF pbfOlder = pbf->pbfTimeDepChainNext;
-            if (    NULL == pbfOlder ||
+            if (    nullptr == pbfOlder ||
                     pbf->lgposModify.lGeneration != pbfOlder->lgposModify.lGeneration )
             {
                 return fTrue;
@@ -17479,7 +17479,7 @@ BOOL FBFIMaintIsImpedingCheckpointMaintenance( _In_ const PBF pbf, _Out_ BOOL * 
 
 void BFIMaintImpedingPage( PBF pbf )
 {
-    PBF         pbfVer          = NULL;
+    PBF         pbfVer          = nullptr;
     BOOL    fUrgentMaintReq     = fFalse;
 
     Assert( pbf->sxwl.FOwnExclusiveLatch() || pbf->sxwl.FOwnWriteLatch() );
@@ -17521,7 +17521,7 @@ void BFIMaintImpedingPage( PBF pbf )
 ERR ErrBFIMaintImpedingPageLatch( PBF pbf, _In_ const BOOL fOwnsWrite, BFLatch* pbfl )
 {
     ERR     err                 = JET_errSuccess;
-    PBF     pbfVer              = NULL;
+    PBF     pbfVer              = nullptr;
     BOOL    fUrgentMaintReq     = fFalse;
 
     Assert( PBF( pbfl->dwContext ) == pbf );
@@ -17723,7 +17723,7 @@ void BFIOpportunisticallyVersionPage( PBF pbf, PBF * ppbfOpportunisticCheckpoint
     Assert( pbf->sxwl.FOwnExclusiveLatch() || pbf->sxwl.FOwnWriteLatch() );
 
     Assert( ppbfOpportunisticCheckpointAdv );
-    *ppbfOpportunisticCheckpointAdv = NULL;
+    *ppbfOpportunisticCheckpointAdv = nullptr;
 
     if ( FBFIMaintNeedsOpportunisticFlushing( pbf ) )
     {
@@ -17744,7 +17744,7 @@ void BFIOpportunisticallyVersionCopyPage( PBF pbf, PBF * ppbfNew, _In_ const BOO
     Assert( pbf->bfdf >= bfdfClean );
 
     Assert( ppbfNew );
-    *ppbfNew = NULL;
+    *ppbfNew = nullptr;
 
     //  Disable cleanup checking
     //  Opportunistical operation. Doesn't affect main operation.
@@ -17805,7 +17805,7 @@ ERR ErrBFIVersionPage( PBF pbf, PBF* ppbfOld, const BOOL fWait )
     {
         const size_t cbAlloc = g_rgcbPageSize[icbNewOrigBuffer];
         
-        if ( !( (*ppbfOld)->pv = PvOSMemoryPageAlloc( cbAlloc, NULL ) ) )
+        if ( !( (*ppbfOld)->pv = PvOSMemoryPageAlloc( cbAlloc, nullptr ) ) )
         {
             //  release our allocated BF
 
@@ -17857,7 +17857,7 @@ ERR ErrBFIVersionPage( PBF pbf, PBF* ppbfOld, const BOOL fWait )
         {
             Assert( (*ppbfOld)->bfat == bfatPageAlloc );    //  we JUST set this above?
             OSMemoryPageFree( (*ppbfOld)->pv );
-            (*ppbfOld)->pv = NULL;
+            (*ppbfOld)->pv = nullptr;
             (*ppbfOld)->bfat = bfatNone;
         }
 
@@ -18050,7 +18050,7 @@ ERR ErrBFIVersionCopyPage( PBF pbfOrigOld, PBF* ppbfNewCurr, const BOOL fWait, _
 
         const BOOL fCleanUpStateSaved = FOSSetCleanupState( fFalse );
 
-        if ( !( (*ppbfNewCurr)->pv = PvOSMemoryPageAlloc( cbAlloc, NULL ) ) )
+        if ( !( (*ppbfNewCurr)->pv = PvOSMemoryPageAlloc( cbAlloc, nullptr ) ) )
         {
 
             //  Restore cleanup checking
@@ -18099,7 +18099,7 @@ ERR ErrBFIVersionCopyPage( PBF pbfOrigOld, PBF* ppbfNewCurr, const BOOL fWait, _
                                         TickOSTimeCurrent(),
                                         g_pctCachePriorityNeutral,  // priority is not relevant because the priority in pbfOrigOld will override this value
                                         fFalse,
-                                        NULL,
+                                        nullptr,
                                         pbfOrigOld );
     BFISynchronicity();
 
@@ -18115,7 +18115,7 @@ ERR ErrBFIVersionCopyPage( PBF pbfOrigOld, PBF* ppbfNewCurr, const BOOL fWait, _
         {
             Assert( (*ppbfNewCurr)->bfat == bfatPageAlloc );    //  we JUST set this above?
             OSMemoryPageFree( (*ppbfNewCurr)->pv );
-            (*ppbfNewCurr)->pv = NULL;
+            (*ppbfNewCurr)->pv = nullptr;
             (*ppbfNewCurr)->bfat = bfatNone;
         }
 
@@ -18345,9 +18345,9 @@ ERR ErrBFIPrereadPage( IFMP ifmp, PGNO pgno, const BFPreReadFlags bfprf, const B
 {
     ERR             err     = errBFPageCached;
     BFHash::CLock   lock;
-    VOID *          pioreqReserved = NULL;
+    VOID *          pioreqReserved = nullptr;
     BOOL            fBFOwned = fFalse;
-    PBF             pbf = NULL;
+    PBF             pbf = nullptr;
 
     if ( !FParentObjectClassSet( tc.nParentObjectClass ) )
     {
@@ -18423,7 +18423,7 @@ ERR ErrBFIPrereadPage( IFMP ifmp, PGNO pgno, const BFPreReadFlags bfprf, const B
             tcPreread->iorReason.AddFlag( iorfRepeated );
         }
         CallS( ErrBFIAsyncRead( pbf, qos, pioreqReserved, *tcPreread ) );
-        pioreqReserved = NULL;
+        pioreqReserved = nullptr;
 
         //  success at touching off pre-read, update stats
 
@@ -18438,7 +18438,7 @@ ERR ErrBFIPrereadPage( IFMP ifmp, PGNO pgno, const BFPreReadFlags bfprf, const B
 
 HandleError:
 
-    if ( pioreqReserved != NULL )
+    if ( pioreqReserved != nullptr )
     {
         BFIAsyncReleaseUnusedIOREQ( ifmp, pioreqReserved );
     }
@@ -19096,7 +19096,7 @@ ERR ErrBFIVerifyPageSimplyWork( const PBF pbf, const PAGEValidationReason pgvr )
 {
     BYTE rgBFLocal[sizeof(BF)];
     CPAGE::PGHDR2 pghdr2;
-    void * pvPage = NULL;
+    void * pvPage = nullptr;
 
     // I can't believe this is 10 lines long to ask a very simple question ... 
     if ( !FBFIDatabasePage( pbf ) )
@@ -20154,7 +20154,7 @@ ERR ErrBFILatchPage(    _Out_ BFLatch* const    pbfl,
     {
         Assert( bfltHave == bfltNone );
 
-        if ( pfCachedNewPage != NULL )
+        if ( pfCachedNewPage != nullptr )
         {
             *pfCachedNewPage = fFalse;
         }
@@ -20385,7 +20385,7 @@ ERR ErrBFILatchPage(    _Out_ BFLatch* const    pbfl,
 
                 BFIReleaseSXWL( pgnopbf.pbf, bfltReq );
                 bfltHave = bfltNone;
-                pgnopbf.pbf = NULL;
+                pgnopbf.pbf = nullptr;
                 pgnopbf.pgno = pgnoNull;
 
                 OnDebug( relatchinfo[cRelatches].ulLineContinue = __LINE__ );
@@ -20404,7 +20404,7 @@ ERR ErrBFILatchPage(    _Out_ BFLatch* const    pbfl,
             if ( ( bfltExclusive == bfltReq || bfltWrite == bfltReq ) &&
                     !FBFIUpdatablePage( pgnopbf.pbf ) )
             {
-                PBF pbfNew = NULL;
+                PBF pbfNew = nullptr;
 
                 AssertRTL( pgnopbf.pbf->err > -65536 && pgnopbf.pbf->err < 65536 );
 
@@ -20454,7 +20454,7 @@ ERR ErrBFILatchPage(    _Out_ BFLatch* const    pbfl,
                         //  alright release this page / buffer ...
                         BFIReleaseSXWL( pgnopbf.pbf, bfltReq );
                         bfltHave = bfltNone;
-                        pgnopbf.pbf = NULL;
+                        pgnopbf.pbf = nullptr;
                         pgnopbf.pgno = pgnoNull;
 
                         //  we should still have the real buffer write latched at this point ...
@@ -20479,7 +20479,7 @@ ERR ErrBFILatchPage(    _Out_ BFLatch* const    pbfl,
                         //  dump and bail ...
                         BFIReleaseSXWL( pgnopbf.pbf, bfltReq );
                         bfltHave = bfltNone;
-                        pgnopbf.pbf = NULL;
+                        pgnopbf.pbf = nullptr;
                         pgnopbf.pgno = pgnoNull;
 
                         return errVersion;
@@ -20535,7 +20535,7 @@ ERR ErrBFILatchPage(    _Out_ BFLatch* const    pbfl,
             {
                 BFIReleaseSXWL( pgnopbf.pbf, bfltReq );
                 bfltHave = bfltNone;
-                pgnopbf.pbf = NULL;
+                pgnopbf.pbf = nullptr;
                 pgnopbf.pgno = pgnoNull;
 
                 OnDebug( relatchinfo[cRelatches].ulLineContinue = __LINE__ );
@@ -20553,7 +20553,7 @@ ERR ErrBFILatchPage(    _Out_ BFLatch* const    pbfl,
                 Assert( pgnopbf.pbf->ifmp == ifmp );
                 BFIInitialize( pgnopbf.pbf, tc );
 
-                if ( pfCachedNewPage != NULL )
+                if ( pfCachedNewPage != nullptr )
                 {
                     *pfCachedNewPage = fTrue;
                 }
@@ -20716,7 +20716,7 @@ ERR ErrBFILatchPage(    _Out_ BFLatch* const    pbfl,
 
             //  try to add this page to the cache
 
-            pgnopbf.pbf = NULL;
+            pgnopbf.pbf = nullptr;
             BOOL fRepeatedRead;
             err = ErrBFICachePage(  &pgnopbf.pbf,
                                     ifmp,
@@ -20751,7 +20751,7 @@ ERR ErrBFILatchPage(    _Out_ BFLatch* const    pbfl,
 
                     pgnopbf.pbf->fAbandoned = fFalse;
 
-                    if ( pfCachedNewPage != NULL )
+                    if ( pfCachedNewPage != nullptr )
                     {
                         *pfCachedNewPage = fTrue;
                     }
@@ -21061,7 +21061,7 @@ BOOL FBFIFlushPurgeNukeRelease( PBF pbf, IOREASONPRIMARY iorp )
 
 void BFIUnlatchMaintPage( __inout PBF const pbf, _In_ const BFLatchType bfltHave )
 {
-    PBF     pbfNew = NULL;
+    PBF     pbfNew = nullptr;
 
     Assert( bfltMax != bfltHave );
     Assert( pbf->sxwl.FOwner() );
@@ -21159,7 +21159,7 @@ void BFIUnlatchMaintPage( __inout PBF const pbf, _In_ const BFLatchType bfltHave
 
 PBF PbfBFIGetFlushOrderLeaf( const PBF pbf, const BOOL fFlagCheckpointImpeders )
 {
-    PBF pbfT = NULL;
+    PBF pbfT = nullptr;
 
     //  find a leaf of our branch in the time dependency chain
 
@@ -21391,7 +21391,7 @@ ERR ErrBFIPrepareFlushPage(
                         _Out_opt_ BOOL * const  pfPermanentErr )
 {
     ERR err = JET_errSuccess;
-    FMP* pfmp = NULL;
+    FMP* pfmp = nullptr;
     BOOL fRangeLocked = fFalse;
     TLS * ptls = Ptls();
 
@@ -21399,7 +21399,7 @@ ERR ErrBFIPrepareFlushPage(
     Enforce( pbf->err != errBFIPageFaultPending );
     Enforce( pbf->err != wrnBFPageFlushPending );
     Enforce( pbf->pWriteSignalComplete == 0 );
-    Enforce( PvBFIAcquireIOContext( pbf ) == NULL );
+    Enforce( PvBFIAcquireIOContext( pbf ) == nullptr );
 
     Assert( pbf->sxwl.FOwnExclusiveLatch() || pbf->sxwl.FOwnWriteLatch() );
     Assert( FBFIOwnsLatchType( pbf, bfltHave ) );
@@ -22291,7 +22291,7 @@ bool CBFOpportuneWriter::FVerifyCleanBFs_()
                     UtilReportEvent( eventError,
                             BUFFER_MANAGER_CATEGORY,
                             TRANSIENT_IN_MEMORY_CORRUPTION_DETECTED_ID,
-                            0, NULL );
+                            0, nullptr );
                     EnforceSz( fFalse, "TransientMemoryCorruption" );
                 }
                 else
@@ -22309,7 +22309,7 @@ bool CBFOpportuneWriter::FVerifyCleanBFs_()
                 pbf->sxwl.ReleaseExclusiveLatch();
 
                 // nullify this entry, later RevertBFs_() will skip it
-                m_rgpbf[ ibf ] = NULL;
+                m_rgpbf[ ibf ] = nullptr;
 
                 return false;
             }
@@ -22345,7 +22345,7 @@ HandleError:
 void CBFOpportuneWriter::GetFlushableNeighboringBFs_( const IFMP ifmp, const PGNO pgno, const INT iDelta )
 {
     Assert( 1 == iDelta || -1 == iDelta );
-    PBF pbf = NULL;
+    PBF pbf = nullptr;
     BOOL fMustReleaseLatch = fFalse;
 
     PGNO pgnoOpp = pgno + iDelta;
@@ -22583,7 +22583,7 @@ ERR ErrBFIFlushPage(    __inout const PBF       pbf,
             Call( err );
         }
 
-        Enforce( pbf->pbfTimeDepChainNext == NULL );
+        Enforce( pbf->pbfTimeDepChainNext == nullptr );
 #ifdef DEBUG
         const INT ibfPage = pbf->icbPage;
 #endif
@@ -22729,8 +22729,8 @@ ERR ErrBFIEvictRemoveCleanVersions( PBF pbf )
 
             //  We should make sure we are at least making progress ...
 
-            AssertRTL( pbfLast->pbfTimeDepChainPrev == NULL );
-            AssertRTL( pbfPrev && pbfPrev->pbfTimeDepChainNext == NULL );
+            AssertRTL( pbfLast->pbfTimeDepChainPrev == nullptr );
+            AssertRTL( pbfPrev && pbfPrev->pbfTimeDepChainNext == nullptr );
 
 
             pbfLast->sxwl.ReleaseExclusiveLatch();
@@ -22880,7 +22880,7 @@ ERR ErrBFIEvictPage( PBF pbf, BFLRUK::CLock* plockLRUK, const BFEvictFlags bfefD
     //  the head of the chain, and if we remove a version after we checked, then the called
     //  function will make the right decision from within g_critBFDepend.
 
-    if ( pbf->pbfTimeDepChainNext != NULL )
+    if ( pbf->pbfTimeDepChainNext != nullptr )
     {
         //  we want to remove any clean versions below this
 
@@ -22901,14 +22901,14 @@ ERR ErrBFIEvictPage( PBF pbf, BFLRUK::CLock* plockLRUK, const BFEvictFlags bfefD
     //  out and let flush page clean this up first) and this BF
     //  is clean / untidy or we are allowed to evict dirty BFs
 
-    if ( ( !FBFIIsCleanEnoughForEvict( pbf ) || ( pbf->pbfTimeDepChainNext != NULL ) ) && !fEvictDirty )
+    if ( ( !FBFIIsCleanEnoughForEvict( pbf ) || ( pbf->pbfTimeDepChainNext != nullptr ) ) && !fEvictDirty )
     {
         Error( ErrERRCheck( errBFIPageDirty ) );
     }
 
     //  we currently have this BF locked in the LRUK
 
-    Enforce( pbf->pbfTimeDepChainNext == NULL || fEvictDirty );
+    Enforce( pbf->pbfTimeDepChainNext == nullptr || fEvictDirty );
 
     PBF pbfLocked;
     if ( g_bflruk.ErrGetCurrentResource( plockLRUK, &pbfLocked ) != BFLRUK::ERR::errSuccess )
@@ -22934,7 +22934,7 @@ ERR ErrBFIEvictPage( PBF pbf, BFLRUK::CLock* plockLRUK, const BFEvictFlags bfefD
     Enforce( pbf->err != errBFIPageFaultPending );
     Enforce( pbf->err != wrnBFPageFlushPending );
     Enforce( pbf->pWriteSignalComplete == 0 );
-    Enforce( PvBFIAcquireIOContext( pbf ) == NULL );
+    Enforce( PvBFIAcquireIOContext( pbf ) == nullptr );
 
     if ( fKeepHistory )
     {
@@ -23091,8 +23091,8 @@ ERR ErrBFIEvictPage( PBF pbf, BFLRUK::CLock* plockLRUK, const BFEvictFlags bfefD
 
     //  it should not be part of a dependency chain at this point because we're about to evict it,
     //  which would make the dependent and dependent-upon buffers point to an evicted buffer.
-    Enforce( pbf->pbfTimeDepChainNext == NULL );
-    Enforce( pbf->pbfTimeDepChainPrev == NULL );
+    Enforce( pbf->pbfTimeDepChainNext == nullptr );
+    Enforce( pbf->pbfTimeDepChainPrev == nullptr );
 
     //  if this was an older version, decrement versioned pages count
 
@@ -23294,7 +23294,7 @@ void BFIPurgeAllPageVersions( _Inout_ BFLatch* const pbfl, const TraceContext& t
         }
     }
 
-    pbfl->pv = NULL;
+    pbfl->pv = nullptr;
     pbfl->dwContext = 0;
 }
 
@@ -23480,8 +23480,8 @@ void BFIRenouncePage( _Inout_ PBF pbf, _In_ const BOOL fRenounceDirty )
             //  we will allow the clean thread to evict it later.  this will delay
             //  freeing the BF but will be more scalable
 
-            Enforce( pbf->pbfTimeDepChainPrev == NULL );
-            Enforce( pbf->pbfTimeDepChainNext == NULL );
+            Enforce( pbf->pbfTimeDepChainPrev == nullptr );
+            Enforce( pbf->pbfTimeDepChainNext == nullptr );
 
             BFICleanPage( pbf, bfltWrite );
         }
@@ -23605,7 +23605,7 @@ void BFIDirtyPage( PBF pbf, BFDirtyFlags bfdf, const TraceContext& tc )
         }
     }
 
-    Enforce( pbf->pbfTimeDepChainPrev == NULL );
+    Enforce( pbf->pbfTimeDepChainPrev == nullptr );
 
     //  make this BF dirtier
 
@@ -23652,7 +23652,7 @@ void BFICleanVersion( PBF pbf, BOOL fTearDownFMP )
             pbf->bfbitfield.FDependentPurged() )
     {
 
-        Enforce( pbf->pbfTimeDepChainNext == NULL || fTearDownFMP );
+        Enforce( pbf->pbfTimeDepChainNext == nullptr || fTearDownFMP );
 
         while ( pbf->pbfTimeDepChainPrev != pbfNil ||
                 pbf->pbfTimeDepChainNext != pbfNil )
@@ -23675,7 +23675,7 @@ void BFICleanVersion( PBF pbf, BOOL fTearDownFMP )
                 pbfDepT->bfbitfield.SetFDependentPurged( pbfDepT->bfbitfield.FDependentPurged() || ( wrnBFPageFlushPending != pbf->err ) );
                 pbfDepT->pbfTimeDepChainNext    = pbfNil;
                 pbfT->pbfTimeDepChainPrev       = pbfNil;
-                Enforce( pbfT->pbfTimeDepChainNext == NULL );   // do not orphan ...
+                Enforce( pbfT->pbfTimeDepChainNext == nullptr );   // do not orphan ...
             }
         }
 
@@ -23684,8 +23684,8 @@ void BFICleanVersion( PBF pbf, BOOL fTearDownFMP )
         //  This BF is now clean, we can say it is not impeding the checkpoint
         pbf->bfbitfield.SetFImpedingCheckpoint( fFalse );
 
-        Enforce( pbf->pbfTimeDepChainNext == NULL );
-        Enforce( pbf->pbfTimeDepChainPrev == NULL );
+        Enforce( pbf->pbfTimeDepChainNext == nullptr );
+        Enforce( pbf->pbfTimeDepChainPrev == nullptr );
     }
 }
 
@@ -23704,7 +23704,7 @@ void BFICleanPage( __inout PBF pbf, _In_ const BFLatchType bfltHave, _In_ const 
     Enforce( pbf->err != errBFIPageFaultPending );  // should be true
     //Enforce( pbf->err != wrnBFPageFlushPending ); // not true.
     Enforce( pbf->pWriteSignalComplete == 0 );       // true because we reset the signal before BFICleanPage.
-    Enforce( PvBFIAcquireIOContext( pbf ) == NULL );
+    Enforce( PvBFIAcquireIOContext( pbf ) == nullptr );
 
     //  remove every BF above us and ourself from the time dependency chain
     //
@@ -23715,12 +23715,12 @@ void BFICleanPage( __inout PBF pbf, _In_ const BFLatchType bfltHave, _In_ const 
     {
         g_critBFDepend.Enter();
 
-        Enforce( pbf->pbfTimeDepChainNext == NULL || fTearDown );
+        Enforce( pbf->pbfTimeDepChainNext == nullptr || fTearDown );
 
         BFICleanVersion( pbf, fTearDown );
 
-        Enforce( pbf->pbfTimeDepChainNext == NULL );
-        Enforce( pbf->pbfTimeDepChainPrev == NULL );
+        Enforce( pbf->pbfTimeDepChainNext == nullptr );
+        Enforce( pbf->pbfTimeDepChainPrev == nullptr );
 
         g_critBFDepend.Leave();
     }
@@ -23734,8 +23734,8 @@ void BFICleanPage( __inout PBF pbf, _In_ const BFLatchType bfltHave, _In_ const 
         g_critBFDepend.Leave();
     }
 
-    Enforce( pbf->pbfTimeDepChainNext == NULL );
-    Enforce( pbf->pbfTimeDepChainPrev == NULL );
+    Enforce( pbf->pbfTimeDepChainNext == nullptr );
+    Enforce( pbf->pbfTimeDepChainPrev == nullptr );
 
     //  remove all undo info
 
@@ -24020,9 +24020,9 @@ void* PvBFIAcquireIOContext( PBF pbf )
     OSSYNC_FOREVER
     {
         // NULL context, no I/O currently happening, bail without locking and don't return any I/O context.
-        if ( pvIOContextOld == NULL )
+        if ( pvIOContextOld == nullptr )
         {
-            return NULL;
+            return nullptr;
         }
 
         // Locked, try again.
@@ -24074,7 +24074,7 @@ void BFIResetIOContext( PBF pbf )
         Expected( pvIOContextOld != NULL );
 
         // NULL context, bail.
-        if ( pvIOContextOld == NULL )
+        if ( pvIOContextOld == nullptr )
         {
             return;
         }
@@ -24087,7 +24087,7 @@ void BFIResetIOContext( PBF pbf )
             continue;
         }
 
-        void* const pvIOContextOldReplaced = AtomicCompareExchangePointer( &pbf->pvIOContext, pvIOContextOld, NULL );
+        void* const pvIOContextOldReplaced = AtomicCompareExchangePointer( &pbf->pvIOContext, pvIOContextOld, nullptr );
 
         // Something changed on us, try again.
         if ( pvIOContextOldReplaced != pvIOContextOld )
@@ -24105,7 +24105,7 @@ void BFIResetIOContext( PBF pbf )
 BOOL FBFIIsIOHung( PBF pbf )
 {
     void* const pvIOContext = PvBFIAcquireIOContext( pbf );
-    if ( pvIOContext == NULL )
+    if ( pvIOContext == nullptr )
     {
         return fFalse;
     }
@@ -24147,7 +24147,7 @@ ERR ErrBFIFlushPendingStatus( PBF pbf )
     // layers.
 
     void* const pvIOContext = PvBFIAcquireIOContext( pbf );
-    if ( pvIOContext == NULL )
+    if ( pvIOContext == nullptr )
     {
         Error( ErrERRCheck( errBFIPageFlushPending ) );
     }
@@ -24186,7 +24186,7 @@ void BFIPrepareReadPage( PBF pbf )
     Enforce( pbf->err != errBFIPageFaultPending );
     Enforce( pbf->err != wrnBFPageFlushPending );
     Enforce( pbf->pWriteSignalComplete == 0 );
-    Enforce( PvBFIAcquireIOContext( pbf ) == NULL );
+    Enforce( PvBFIAcquireIOContext( pbf ) == nullptr );
 
     ERR errT = ErrERRCheck( errBFIPageFaultPending );
     pbf->err = SHORT( errT );
@@ -24281,7 +24281,7 @@ void BFISyncRead( PBF pbf, const OSFILEQOS qosIoPriorities, const TraceContext& 
                                 cbData,
                                 pbData,
                                 qosIoUserDispatch | qosIOSignalSlowSyncIO,
-                                NULL,   // Passing a NULL pfnCompletion triggers sync I/O (foreground on this thread).
+                                nullptr,   // Passing a NULL pfnCompletion triggers sync I/O (foreground on this thread).
                                 DWORD_PTR( pbf ),
                                 IFileAPI::PfnIOHandoff( BFISyncReadHandoff )  );
         BFITrackCacheMissLatency( pbf, hrtStart, ( tc.iorReason.Iorf() & iorfReclaimPageFromOS ) ? bftcmrReasonPagingFaultDb : bftcmrReasonSyncRead, qosIoPriorities, tc, err );
@@ -24323,7 +24323,7 @@ void BFISyncReadComplete(   const ERR           err,
 
     //  reset the I/O context, since the operation is officially completed.
 
-    if ( AtomicReadPointer( &pbf->pvIOContext ) != NULL )
+    if ( AtomicReadPointer( &pbf->pvIOContext ) != nullptr )
     {
         BFIResetIOContext( pbf );
     }
@@ -24439,13 +24439,13 @@ ERR ErrBFIAsyncRead( PBF pbf, OSFILEQOS qos, VOID * pioreq, const TraceContext& 
         Assert( BoolParam( JET_paramEnableViewCache ) );
         // the pre-allocated io-req is not needed after all
         BFIAsyncReleaseUnusedIOREQ( pbf->ifmp, pioreq );
-        pioreq = NULL;
+        pioreq = nullptr;
         OSTraceFMP( pbf->ifmp, JET_tracetagBufferManager, OSFormat( "OS File Cache preread skipped for page=[0x%x:0x%x]", (ULONG)pbf->ifmp, pbf->pgno ) );
         
         //  directly fire the I/O completion callbacks for this async read
         FullTraceContext ftc;
         ftc.DeepCopy( GetCurrUserTraceContext().Utc(), tc );
-        BFIAsyncReadHandoff( JET_errSuccess, pfapi, ftc, qos, ibOffset, cbData, pbData, pbf, NULL );
+        BFIAsyncReadHandoff( JET_errSuccess, pfapi, ftc, qos, ibOffset, cbData, pbData, pbf, nullptr );
         BFIAsyncReadComplete( JET_errSuccess, pfapi, ftc, qos, ibOffset, cbData, g_rgbBFTemp, pbf );
         Ptls()->cbfAsyncReadIOs++;  //  should remove this - more accurate, but causes assert.
         CallS( err );   //  we should be returning a success
@@ -24507,7 +24507,7 @@ void BFIAsyncReadHandoff(   const ERR           err,
 {
     Assert( JET_errSuccess == err );    // Yeah!!!
 
-    if ( pvIOContext != NULL )
+    if ( pvIOContext != nullptr )
     {
         BFISetIOContext( pbf, pvIOContext );
     }
@@ -24537,7 +24537,7 @@ void BFIAsyncReadComplete(  const ERR           err,
 
     //  reset the I/O context, since the operation is officially completed.
 
-    if ( AtomicReadPointer( &pbf->pvIOContext ) != NULL )
+    if ( AtomicReadPointer( &pbf->pvIOContext ) != nullptr )
     {
         BFIResetIOContext( pbf );
     }
@@ -24653,7 +24653,7 @@ ERR ErrBFISyncWrite( PBF pbf, const BFLatchType bfltHave, OSFILEQOS qos, const T
                                 cbData,
                                 pbData,
                                 qos,
-                                NULL,   // Passing a NULL pfnCompletion triggers sync I/O (foreground on this thread).
+                                nullptr,   // Passing a NULL pfnCompletion triggers sync I/O (foreground on this thread).
                                 DWORD_PTR( pbf ),
                                 IFileAPI::PfnIOHandoff( BFISyncWriteHandoff ) );
 
@@ -25111,7 +25111,7 @@ void BFIWriteSignalReset( const PBF pbf )
     Assert( pbf->err == wrnBFPageFlushPending );
 
     const ULONG_PTR pInitial = pbf->pWriteSignalComplete;
-    const ULONG_PTR pBefore = (ULONG_PTR)AtomicCompareExchangePointer( (void**)&(pbf->pWriteSignalComplete), (void*)pInitial, NULL );
+    const ULONG_PTR pBefore = (ULONG_PTR)AtomicCompareExchangePointer( (void**)&(pbf->pWriteSignalComplete), (void*)pInitial, nullptr );
     Enforce( pInitial == pBefore ); // should be no competition right now
 }
 
@@ -25183,7 +25183,7 @@ BOOL FBFICacheRemapPage( __inout PBF pbf, IFileAPI* const pfapi )
     ERR errReRead = JET_errSuccess;     // we return neither of these, return just whether we remapped
     ERR errCheckPage = JET_errSuccess;
 
-    VOID * pvFreshMapPage = NULL;
+    VOID * pvFreshMapPage = nullptr;
 
     Assert( UlParam( JET_paramEnableViewCache ) );
     Assert( pbf->sxwl.FOwnWriteLatch() );
@@ -26596,7 +26596,7 @@ LONG LBFPagesWrittenCEFLPv( LONG iInstance, void* pvBuf )
 
 LONG LBFPagesTransferredCEFLPv( LONG iInstance, void* pvBuf )
 {
-    if ( NULL != pvBuf )
+    if ( nullptr != pvBuf )
     {
         *( (LONG *) pvBuf ) = cBFPagesReadAsync.Get( iInstance )
                                 + cBFPagesReadSync.Get( iInstance )
@@ -26834,7 +26834,7 @@ LONG LBFCacheEvictOtherCEFLPv( LONG iInstance, void* pvBuf )
     C_ASSERT( bfefReasonPurgePage < _countof(rgcBFCacheEvictReasons) );
     C_ASSERT( bfefReasonPatch < _countof(rgcBFCacheEvictReasons) );
 
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         LONG lBufPurgeContext, lBufPurgePage, lBufPatch;
         rgcBFCacheEvictReasons[bfefReasonPurgeContext].PassTo( iInstance, &lBufPurgeContext );

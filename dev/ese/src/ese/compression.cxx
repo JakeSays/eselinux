@@ -238,7 +238,7 @@ LONG LCompressionCEFLPv( LONG iInstance, void *pvBuf )
 
 LONG LCompressionLatencyCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*) pvBuf = CusecHRTFromDhrt( CDataCompressorPerfCounters::s_cCompressionTotalDhrts.Get( iInstance ) );
     }
@@ -259,7 +259,7 @@ LONG LDecompressionCEFLPv( LONG iInstance, void *pvBuf )
 
 LONG LDecompressionLatencyCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*) pvBuf = CusecHRTFromDhrt( CDataCompressorPerfCounters::s_cDecompressionTotalDhrts.Get( iInstance ) );
     }
@@ -280,7 +280,7 @@ LONG LXpress10SoftwareDecompressionCEFLPv( LONG iInstance, void *pvBuf )
 
 LONG LXpress10SoftwareDecompressionLatencyCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*) pvBuf = CusecHRTFromDhrt( CDataCompressorPerfCounters::s_cXpress10SoftwareDecompressionTotalDhrts.Get( iInstance ) );
     }
@@ -307,7 +307,7 @@ LONG LXpress10CorsicaCompressionCEFLPv( LONG iInstance, void *pvBuf )
 
 LONG LXpress10CorsicaCompressionLatencyCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*) pvBuf = CusecHRTFromDhrt( CDataCompressorPerfCounters::s_cXpress10CorsicaCompressionTotalDhrts.Get( iInstance ) );
     }
@@ -316,7 +316,7 @@ LONG LXpress10CorsicaCompressionLatencyCEFLPv( LONG iInstance, VOID * pvBuf )
 
 LONG LXpress10CorsicaCompressionHardwareLatencyCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*) pvBuf = CusecHRTFromDhrt( CDataCompressorPerfCounters::s_cXpress10CorsicaCompressionHardwareTotalDhrts.Get( iInstance ) );
     }
@@ -337,7 +337,7 @@ LONG LXpress10CorsicaDecompressionCEFLPv( LONG iInstance, void *pvBuf )
 
 LONG LXpress10CorsicaDecompressionLatencyCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*) pvBuf = CusecHRTFromDhrt( CDataCompressorPerfCounters::s_cXpress10CorsicaDecompressionTotalDhrts.Get( iInstance ) );
     }
@@ -346,7 +346,7 @@ LONG LXpress10CorsicaDecompressionLatencyCEFLPv( LONG iInstance, VOID * pvBuf )
 
 LONG LXpress10CorsicaDecompressionHardwareLatencyCEFLPv( LONG iInstance, VOID * pvBuf )
 {
-    if ( pvBuf != NULL )
+    if ( pvBuf != nullptr )
     {
         *(QWORD*) pvBuf = CusecHRTFromDhrt( CDataCompressorPerfCounters::s_cXpress10CorsicaDecompressionHardwareTotalDhrts.Get( iInstance ) );
     }
@@ -390,7 +390,7 @@ CCompressionBufferCache::CCompressionBufferCache() :
     //  ================================================================
     m_cbBufferSize( 0 ),
     m_cpbCachedCompressionBuffers( 0 ),
-    m_rgpbCachedCompressionBuffers( NULL )
+    m_rgpbCachedCompressionBuffers( nullptr )
 {
 }
 
@@ -433,7 +433,7 @@ void CCompressionBufferCache::Term()
     }
 
     delete[] m_rgpbCachedCompressionBuffers;
-    m_rgpbCachedCompressionBuffers = NULL;
+    m_rgpbCachedCompressionBuffers = nullptr;
     m_cbBufferSize = 0;
 }
 
@@ -442,7 +442,7 @@ BYTE * CCompressionBufferCache::PbAlloc()
 //  ================================================================
 {
     BYTE * pb = GetCachedPtr<BYTE *>( m_rgpbCachedCompressionBuffers, m_cpbCachedCompressionBuffers );
-    if ( NULL == pb )
+    if ( nullptr == pb )
     {
         pb = new BYTE[ CbBufferSize() ];
     }
@@ -718,8 +718,8 @@ CDataCompressor::CDataCompressor() :
     m_cbMax( 0 ),
     m_cencodeCachedMax( 0 ),
     m_cdecodeCachedMax( 0 ),
-    m_rgencodeXpress( NULL ),
-    m_rgdecodeXpress( NULL )
+    m_rgencodeXpress( nullptr ),
+    m_rgdecodeXpress( nullptr )
 #ifdef XPRESS9_COMPRESSION
     ,m_rgencodeXpress9( NULL )
     ,m_rgdecodeXpress9 ( NULL )
@@ -755,10 +755,10 @@ ERR CDataCompressor::ErrXpressEncodeOpen_( _Out_ XpressEncodeStream * const penc
 //  ================================================================
 {
     C_ASSERT( sizeof(void*) == sizeof(XpressEncodeStream) );
-    *pencode = 0;
+    *pencode = nullptr;
 
     XpressEncodeStream encode = GetCachedPtr<XpressEncodeStream>( m_rgencodeXpress, m_cencodeCachedMax );
-    if ( 0 != encode )
+    if ( nullptr != encode )
     {
         // we found a cached XpressEncodeStream
         *pencode = encode;
@@ -768,10 +768,10 @@ ERR CDataCompressor::ErrXpressEncodeOpen_( _Out_ XpressEncodeStream * const penc
     // no cached XpressEncodeStream was found. create one
     encode = XpressEncodeCreate(
                     m_cbMax,                        // max size of data to compress
-                    0,                              // user defined context info (passed to allocfn)
+                    nullptr,                              // user defined context info (passed to allocfn)
                     PvXpressAlloc_,                 // user allocfn
                     xpressLegacyCompressionLevel ); // compression quality - 0 fastest, 9 best
-    if( NULL == encode )
+    if( nullptr == encode )
     {
         return ErrERRCheck( JET_errOutOfMemory );
     }
@@ -802,7 +802,7 @@ void CDataCompressor::XpressEncodeRelease_( XpressEncodeStream encode )
 {
     if ( encode )
     {
-        XpressEncodeClose( encode, 0, XpressFree_ );
+        XpressEncodeClose( encode, nullptr, XpressFree_ );
     }
 }
 
@@ -812,10 +812,10 @@ ERR CDataCompressor::ErrXpressDecodeOpen_( _Out_ XpressDecodeStream * const pdec
 {
     C_ASSERT( sizeof(void*) == sizeof(XpressDecodeStream) );
     
-    *pdecode = 0;
+    *pdecode = nullptr;
 
     XpressDecodeStream decode = GetCachedPtr<XpressDecodeStream>( m_rgdecodeXpress, m_cdecodeCachedMax );
-    if( 0 != decode )
+    if( nullptr != decode )
     {
         // found a cached XpressDecodeStream
         *pdecode = decode;
@@ -824,9 +824,9 @@ ERR CDataCompressor::ErrXpressDecodeOpen_( _Out_ XpressDecodeStream * const pdec
 
     // no cached XpressDecodeStream was found. create one
     decode = XpressDecodeCreate(
-                    0,                  // user defined context info (passed to allocfn)
+                    nullptr,                  // user defined context info (passed to allocfn)
                     PvXpressAlloc_ );   // user allocfn
-    if (NULL == decode)
+    if (nullptr == decode)
     {
         return ErrERRCheck( JET_errOutOfMemory );
     }
@@ -857,7 +857,7 @@ void CDataCompressor::XpressDecodeRelease_( XpressDecodeStream decode )
 {
     if ( decode )
     {
-        XpressDecodeClose( decode, 0, XpressFree_ );
+        XpressDecodeClose( decode, nullptr, XpressFree_ );
     }
 }
 
@@ -1521,7 +1521,7 @@ ERR CDataCompressor::ErrCompressXpress_(
     
     ERR err = JET_errSuccess;
     
-    XpressEncodeStream encode = 0;
+    XpressEncodeStream encode = nullptr;
     Call( ErrXpressEncodeOpen_( &encode ) );
 
     // Reserve 1 BYTE (for the signature) and 1 WORD (for the data length)
@@ -1533,8 +1533,8 @@ ERR CDataCompressor::ErrCompressXpress_(
                         cbDataCompressedMax - cbReserved,   // size of output buffer
                         data.Pv(),                          // pointer to input buffer
                         data.Cb(),                          // size of input buffer
-                        0,                                  // NULL or progress callback
-                        0,                                  // user-defined context that will be passed to ProgressFn
+                        nullptr,                                  // NULL or progress callback
+                        nullptr,                                  // user-defined context that will be passed to ProgressFn
                         0 );                                // call ProgressFn each time ProgressSize bytes processed
     Assert( cbCompressed <= data.Cb() );
     
@@ -2143,7 +2143,7 @@ ERR CDataCompressor::ErrDecompress7BitAscii_(
     }
 
     // no output buffer? just return the size
-    if( 0 == cbDataMax || NULL == pbData )
+    if( 0 == cbDataMax || nullptr == pbData )
     {
         goto HandleError;
     }
@@ -2218,7 +2218,7 @@ ERR CDataCompressor::ErrDecompress7BitUnicode_(
     }
 
     // no output buffer? just return the size
-    if( 0 == cbDataMax || NULL == pbData )
+    if( 0 == cbDataMax || nullptr == pbData )
     {
         goto HandleError;
     }
@@ -2283,7 +2283,7 @@ ERR CDataCompressor::ErrDecompressXpress_(
     ERR err = JET_errSuccess;
     PERFOptDeclare( const HRT hrtStart = HrtHRTCount() );
 
-    XpressDecodeStream decode = 0;
+    XpressDecodeStream decode = nullptr;
 
     // first calculate the final length
     const BYTE * const  pbCompressed    = (BYTE *)dataCompressed.Pv();
@@ -2302,7 +2302,7 @@ ERR CDataCompressor::ErrDecompressXpress_(
     const INT cbCompressedData      = dataCompressed.Cb() - cbHeader;
     const INT cbWanted              = min( *pcbDataActual, cbDataMax );
 
-    if ( NULL == pbData || 0 == cbDataMax )
+    if ( nullptr == pbData || 0 == cbDataMax )
     {
         // no data, just the size
         err = ErrERRCheck( JET_wrnBufferTruncated );
@@ -2937,9 +2937,9 @@ ERR CDataCompressor::ErrInit( const INT cbMin, const INT cbMax )
 
 HandleError:
     delete[] m_rgencodeXpress;
-    m_rgencodeXpress = NULL;
+    m_rgencodeXpress = nullptr;
     delete[] m_rgdecodeXpress;
-    m_rgdecodeXpress = NULL;
+    m_rgdecodeXpress = nullptr;
 #ifdef XPRESS9_COMPRESSION
     delete[] m_rgencodeXpress9;
     m_rgencodeXpress9 = NULL;
@@ -2956,10 +2956,10 @@ void CDataCompressor::Term()
 {
     for ( INT iencode = 0; iencode < m_cencodeCachedMax; ++iencode )
     {
-        if ( m_rgencodeXpress != NULL && m_rgencodeXpress[iencode] != NULL )
+        if ( m_rgencodeXpress != nullptr && m_rgencodeXpress[iencode] != nullptr )
         {
             XpressEncodeRelease_( m_rgencodeXpress[iencode] );
-            m_rgencodeXpress[iencode] = 0;
+            m_rgencodeXpress[iencode] = nullptr;
         }
 #ifdef XPRESS9_COMPRESSION
         if ( m_rgencodeXpress9 != NULL && m_rgencodeXpress9[iencode] != NULL )
@@ -2971,10 +2971,10 @@ void CDataCompressor::Term()
     }
     for ( INT idecode = 0; idecode < m_cdecodeCachedMax; ++idecode )
     {
-        if ( m_rgdecodeXpress != NULL && m_rgdecodeXpress[idecode] != NULL )
+        if ( m_rgdecodeXpress != nullptr && m_rgdecodeXpress[idecode] != nullptr )
         {
             XpressDecodeRelease_( m_rgdecodeXpress[idecode] );
-            m_rgdecodeXpress[idecode] = 0;
+            m_rgdecodeXpress[idecode] = nullptr;
         }
 #ifdef XPRESS9_COMPRESSION
         if ( m_rgdecodeXpress9 != NULL && m_rgdecodeXpress9[idecode] != NULL )
@@ -2986,9 +2986,9 @@ void CDataCompressor::Term()
     }
 
     delete[] m_rgencodeXpress;
-    m_rgencodeXpress = NULL;
+    m_rgencodeXpress = nullptr;
     delete[] m_rgdecodeXpress;
-    m_rgdecodeXpress = NULL;
+    m_rgdecodeXpress = nullptr;
 #ifdef XPRESS9_COMPRESSION
     delete[] m_rgencodeXpress9;
     m_rgencodeXpress9 = NULL;
@@ -3038,7 +3038,7 @@ ERR ErrPKIDecompressData(
 //  ================================================================
 {
     CDataCompressorPerfCounters perfcounters( pinst ? pinst->m_iInstance : 0 );
-    return g_dataCompressor.ErrDecompress( dataCompressed, &perfcounters, pbData, cbDataMax, pcbDataActual, (pinst != NULL) && !BoolParam( pinst, JET_paramFlight_EnableXpress10Compression ) );
+    return g_dataCompressor.ErrDecompress( dataCompressed, &perfcounters, pbData, cbDataMax, pcbDataActual, (pinst != nullptr) && !BoolParam( pinst, JET_paramFlight_EnableXpress10Compression ) );
 }
 
 //  ================================================================
@@ -3077,7 +3077,7 @@ VOID PKIReportDecompressionFailed(
             irgsz,
             rgsz,
             0,
-            NULL,
+            nullptr,
             pinst );
 
     if ( pinst != pinstNil )
@@ -3097,7 +3097,7 @@ ERR ErrPKDecompressData(
 {
     const ERR err = ErrPKIDecompressData(
             dataCompressed,
-            pfucb ? PinstFromPfucb( pfucb ) : NULL,
+            pfucb ? PinstFromPfucb( pfucb ) : nullptr,
             pbData,
             cbDataMax,
             pcbDataActual );
@@ -3125,7 +3125,7 @@ ERR ErrPKDecompressData(
 {
     const ERR err = ErrPKIDecompressData(
             dataCompressed,
-            ( ifmp != ifmpNil ) ? PinstFromIfmp( ifmp ) : NULL,
+            ( ifmp != ifmpNil ) ? PinstFromIfmp( ifmp ) : nullptr,
             pbData,
             cbDataMax,
             pcbDataActual );
@@ -3146,11 +3146,11 @@ ERR ErrPKAllocAndDecompressData(
 {
     ERR err = JET_errSuccess;
 
-    *ppbData = NULL;
+    *ppbData = nullptr;
     *pcbDataActual = 0;
 
     INT cbData;
-    Call( ErrPKDecompressData( dataCompressed, pfucb, NULL, 0, &cbData ) );
+    Call( ErrPKDecompressData( dataCompressed, pfucb, nullptr, 0, &cbData ) );
     Alloc( *ppbData = new BYTE[cbData] );
     Call( ErrPKDecompressData( dataCompressed, pfucb, *ppbData, cbData, pcbDataActual ) );
     Assert( JET_wrnBufferTruncated != err );
@@ -3160,7 +3160,7 @@ HandleError:
     if( err < JET_errSuccess )
     {
         delete[] *ppbData;
-        *ppbData = NULL;
+        *ppbData = nullptr;
         *pcbDataActual = 0;
     }
     return err;

@@ -615,7 +615,7 @@ ERR ErrCATSeekTable(
     _In_ const IFMP         ifmp,
     _In_z_ const CHAR       *szTableName,
     _Out_opt_ PGNO          *ppgnoTableFDP,
-    _Out_opt_ OBJID         *pobjidTable = NULL );
+    _Out_opt_ OBJID         *pobjidTable = nullptr );
 
 ERR ErrCATSeekTableByObjid(
     _In_ PIB          * const ppib,
@@ -638,8 +638,8 @@ ERR ErrCATGetNextRootObject(
     _In_ const BOOL         fSortedByObjId,
     _Inout_ FUCB** const    ppfucbCatalog,
     _Out_ OBJID* const      pobjid,
-    _Out_ PGNO* const       ppgnoFDP = NULL,
-    _Out_writes_opt_z_( JET_cbNameMost + 1 ) CHAR* const szObjectName = NULL );
+    _Out_ PGNO* const       ppgnoFDP = nullptr,
+    _Out_writes_opt_z_( JET_cbNameMost + 1 ) CHAR* const szObjectName = nullptr );
 
 ERR ErrCATGetNextNonRootObject(
     _In_ PIB* const         ppib,
@@ -702,7 +702,7 @@ ERR ErrCATAccessTableColumn(
     const IFMP      ifmp,
     const OBJID     objidTable,
     const CHAR      *szColumnName,
-    JET_COLUMNID    *pcolumnid = NULL,
+    JET_COLUMNID    *pcolumnid = nullptr,
     const BOOL      fLockTableColumn = fFalse );
 ERR ErrCATAccessTableIndex(
     PIB             *ppib,
@@ -714,8 +714,8 @@ ERR ErrCATAccessTableLV(
     const IFMP      ifmp,
     const OBJID     objidTable,
     PGNO            *ppgnoLVFDP,
-    OBJID           *pobjidLV = NULL,
-    __int64         *pftPgnoLVFDPLastSet = NULL,
+    OBJID           *pobjidLV = nullptr,
+    __int64         *pftPgnoLVFDPLastSet = nullptr,
     const BOOL      fSkipPgnoFDPLastSetTime = fFalse );
 
 ERR ErrCATGetTableInfoCursor(
@@ -739,7 +739,7 @@ ERR ErrCATGetTableAllocInfo(
     const OBJID     objidTable,
     ULONG           *pulPages,
     ULONG           *pulDensity,
-    PGNO            *ppgnoFDP = NULL);
+    PGNO            *ppgnoFDP = nullptr);
 ERR ErrCATGetIndexAllocInfo(
     PIB             *ppib,
     const IFMP      ifmp,
@@ -1290,8 +1290,8 @@ INLINE ERR ErrCATExtentPageCountsCached( const FUCB * const pfucb )
         pfucb->ppib,
         pfucb->ifmp,
         pfucb->u.pfcb->ObjidFDP(),
-        NULL,
-        NULL );
+        nullptr,
+        nullptr );
 
     switch ( err )
     {
@@ -1324,8 +1324,8 @@ ERR ErrCATCheckMSObjidsReady(
 ERR ErrCATCreateMSObjids(
         _In_ PIB * const ppib,
         const IFMP ifmp,
-        PGNO * const ppgnoFDP = NULL,
-        OBJID * const pobjidFDP = NULL );
+        PGNO * const ppgnoFDP = nullptr,
+        OBJID * const pobjidFDP = nullptr );
 
 ERR ErrCATDeleteMSObjids(
         _In_ PIB * const ppib,
@@ -1377,7 +1377,7 @@ ERR ErrCATDeleteMSExtentPageCountCache(
         _In_ PIB * const ppib,
         _In_ const IFMP ifmp,
         _In_ const EXTENT_CACHE_DELETE_REASON ecdrReason,
-        _Out_opt_ BOOL *pfTableExisted = NULL
+        _Out_opt_ BOOL *pfTableExisted = nullptr
     );
 
 ERR ErrCATInitMSDeferredPopulateKeys(

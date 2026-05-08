@@ -25,7 +25,7 @@
 //  starting at 1 MB matches the upstream default and is plenty for v1.
 
 QWORD           g_cbZero    = 1024 * 1024;   // 1 MB default extension
-BYTE*           g_rgbZero   = NULL;          // allocated by ErrOSFileInit
+BYTE*           g_rgbZero   = nullptr;          // allocated by ErrOSFileInit
 
 
 ////////////////////////////////////////////////
@@ -46,7 +46,7 @@ void OSFileTerm()
     if ( g_rgbZero )
     {
         OSMemoryPageFree( g_rgbZero );
-        g_rgbZero = NULL;
+        g_rgbZero = nullptr;
     }
 }
 
@@ -54,7 +54,7 @@ ERR  ErrOSFileInit()
 {
     if ( !g_rgbZero )
     {
-        g_rgbZero = (BYTE*)PvOSMemoryPageAlloc( (size_t)g_cbZero, NULL );
+        g_rgbZero = (BYTE*)PvOSMemoryPageAlloc( (size_t)g_cbZero, nullptr );
         if ( !g_rgbZero )
         {
             return ErrERRCheck( JET_errOutOfMemory );
@@ -166,7 +166,7 @@ ERR ErrIOWriteContiguous(   IFileAPI* const                         pfapi,
     if ( cData > _countof(rgStackIoComplete) )
     {
         rgIoComplete = new CIOComplete[cData];
-        if ( rgIoComplete == NULL )
+        if ( rgIoComplete == nullptr )
         {
             Call( ErrERRCheck( JET_errOutOfMemory ) );
         }
@@ -217,7 +217,7 @@ HandleError:
         Assert( rgIoComplete != rgStackIoComplete );
         Assert( rgIoComplete != NULL );
         delete [] rgIoComplete;
-        rgIoComplete = NULL;
+        rgIoComplete = nullptr;
     }
     if ( err == wrnIOSlow || err ==  JET_errSuccess )
     {

@@ -119,10 +119,10 @@ DWORD OSMemoryPageEvictionCount()
     //  After the close paren we are at field 3 (state). Field 12 is majflt.
     while ( tok && field < 10 )
     {
-        tok = strtok( NULL, " " );
+        tok = strtok( nullptr, " " );
         field++;
     }
-    if ( tok ) val = (DWORD)strtoul( tok, NULL, 10 );
+    if ( tok ) val = (DWORD)strtoul( tok, nullptr, 10 );
     return val;
 }
 
@@ -196,10 +196,10 @@ void* PvOSMemoryHeapAllocAlign__( const size_t cbSize, const size_t cbAlign )
     //  posix_memalign requires a power-of-two alignment that is a multiple
     //  of sizeof(void*).
     size_t cbAlignReal = cbAlign < sizeof( void* ) ? sizeof( void* ) : cbAlign;
-    void* pv = NULL;
+    void* pv = nullptr;
     if ( posix_memalign( &pv, cbAlignReal, cbActual ) != 0 )
     {
-        return NULL;
+        return nullptr;
     }
     return pv;
 }
@@ -321,7 +321,7 @@ size_t RegionLookupAndRemove( void* pv )
         if ( g_rgRegion[ i ].pv == pv )
         {
             cb = g_rgRegion[ i ].cb;
-            g_rgRegion[ i ].pv = NULL;
+            g_rgRegion[ i ].pv = nullptr;
             g_rgRegion[ i ].cb = 0;
             break;
         }
@@ -371,7 +371,7 @@ void* PvAlignedMmap( const size_t cbSize, void* const pvHint, const int prot, co
     if ( cbAlign <= cbPage )
     {
         void* pv = mmap( pvHint, cbSize, prot, flags, -1, 0 );
-        return ( pv == MAP_FAILED ) ? NULL : pv;
+        return ( pv == MAP_FAILED ) ? nullptr : pv;
     }
 
     //  Over-allocate by (alignment - page) so that within the mapping there
@@ -381,7 +381,7 @@ void* PvAlignedMmap( const size_t cbSize, void* const pvHint, const int prot, co
     void* base = mmap( pvHint, cbTotal, prot, flags, -1, 0 );
     if ( base == MAP_FAILED )
     {
-        return NULL;
+        return nullptr;
     }
 
     const uintptr_t uBase    = (uintptr_t)base;
@@ -404,7 +404,7 @@ void* PvAlignedMmap( const size_t cbSize, void* const pvHint, const int prot, co
 
 void* PvOSMemoryPageAlloc__( const size_t cbSize, void* const pvHint, const BOOL /*fAllocTopDown*/ )
 {
-    if ( cbSize == 0 ) return NULL;
+    if ( cbSize == 0 ) return nullptr;
     void* pv = PvAlignedMmap( cbSize, pvHint, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS );
     if ( pv ) RegionRecord( pv, cbSize );
     return pv;
@@ -412,7 +412,7 @@ void* PvOSMemoryPageAlloc__( const size_t cbSize, void* const pvHint, const BOOL
 
 void* PvOSMemoryPageReserve__( const size_t cbSize, void* const pvHint )
 {
-    if ( cbSize == 0 ) return NULL;
+    if ( cbSize == 0 ) return nullptr;
     void* pv = PvAlignedMmap( cbSize, pvHint, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE );
     if ( pv ) RegionRecord( pv, cbSize );
     return pv;
@@ -536,17 +536,17 @@ BOOL FOSMemoryFileMappedCowed( const void * const /*pv*/, const size_t /*cb*/ )
 
 const void* PvOSMemoryHookNtQueryInformationProcess( const void* const /*pfnNew*/ )
 {
-    return NULL;
+    return nullptr;
 }
 
 const void* PvOSMemoryHookNtQuerySystemInformation( const void* const /*pfnNew*/ )
 {
-    return NULL;
+    return nullptr;
 }
 
 const void* PvOSMemoryHookGlobalMemoryStatus( const void* const /*pfnNew*/ )
 {
-    return NULL;
+    return nullptr;
 }
 
 
@@ -603,17 +603,17 @@ IBitmapAPI::ERR CFixedBitmap::ErrGet( _In_ const size_t iBit, _Out_ BOOL* const 
 
 CSparseBitmap::CSparseBitmap()
     : m_cbit( 0 ),
-      m_rgbit( NULL ),
+      m_rgbit( nullptr ),
       m_cbitUpdate( 0 ),
       m_cbitCommit( 0 ),
-      m_rgbitCommit( NULL ),
+      m_rgbitCommit( nullptr ),
       m_shfCommit( 0 )
 {}
 
 CSparseBitmap::~CSparseBitmap()
 {
     if ( m_rgbit ) OSMemoryHeapFree( m_rgbit );
-    m_rgbit = NULL;
+    m_rgbit = nullptr;
     m_cbit = 0;
     m_cbitUpdate = 0;
 }
@@ -624,7 +624,7 @@ IBitmapAPI::ERR CSparseBitmap::ErrInitBitmap( const size_t cbit )
     m_cbit = cbit;
     m_cbitUpdate = cbit;
     const size_t cb = ( cbit + 7 ) / 8;
-    m_rgbit = cb ? PvOSMemoryHeapAlloc( cb ) : NULL;
+    m_rgbit = cb ? PvOSMemoryHeapAlloc( cb ) : nullptr;
     if ( cb && !m_rgbit ) return IBitmapAPI::ERR::errOutOfMemory;
     if ( m_rgbit ) memset( m_rgbit, 0, cb );
     return IBitmapAPI::ERR::errSuccess;
@@ -674,7 +674,7 @@ ERR ErrOSMemoryPageResidenceMapScanStart( const size_t /*cbMax*/, _Out_ DWORD * 
 
 ERR ErrOSMemoryPageResidenceMapRetrieve( void* const pv, const size_t cb, IBitmapAPI** const ppbmapi )
 {
-    *ppbmapi = NULL;
+    *ppbmapi = nullptr;
     if ( !pv || !cb ) return ErrERRCheck( JET_errInvalidParameter );
 
     const size_t cbPage = sysconf( _SC_PAGESIZE );
@@ -726,7 +726,7 @@ VOID OSMemoryIPageResidenceMapPostterm() {}
 //  rgpvMap / rgfProtect arrays are honored only for index 0.
 
 COSMemoryMap::COSMemoryMap()
-    : m_pvMap( NULL ),
+    : m_pvMap( nullptr ),
       m_cbMap( 0 ),
       m_cMap( 0 ),
       m_cbReserve( 0 ),
@@ -744,7 +744,7 @@ COSMemoryMap::~COSMemoryMap()
     if ( m_pvMap )
     {
         munmap( m_pvMap, m_cbReserve );
-        m_pvMap = NULL;
+        m_pvMap = nullptr;
     }
 }
 
@@ -765,14 +765,14 @@ COSMemoryMap::ERR COSMemoryMap::ErrOSMMReserve__(
     const BOOL* const   /*rgfProtect*/ )
 {
     if ( cMap == 0 || cbMap == 0 ) return COSMemoryMap::ERR::errOutOfAddressSpace;
-    void* pv = mmap( NULL, cbMap, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0 );
+    void* pv = mmap( nullptr, cbMap, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0 );
     if ( pv == MAP_FAILED ) return COSMemoryMap::ERR::errOutOfAddressSpace;
     m_pvMap = pv;
     m_cbMap = cbMap;
     m_cMap = cMap;
     m_cbReserve = cbMap;
     rgpvMap[ 0 ] = pv;
-    for ( size_t i = 1; i < cMap; ++i ) rgpvMap[ i ] = NULL;
+    for ( size_t i = 1; i < cMap; ++i ) rgpvMap[ i ] = nullptr;
     return COSMemoryMap::ERR::errSuccess;
 }
 
@@ -789,7 +789,7 @@ VOID COSMemoryMap::OSMMFree( void * const /*pv*/ )
     if ( m_pvMap )
     {
         munmap( m_pvMap, m_cbReserve );
-        m_pvMap = NULL;
+        m_pvMap = nullptr;
         m_cbMap = m_cMap = m_cbReserve = m_cbCommit = 0;
     }
 }
@@ -800,7 +800,7 @@ COSMemoryMap::ERR COSMemoryMap::ErrOSMMPatternAlloc__(
     void** const    ppvPattern )
 {
     if ( cbPattern == 0 || cbSize < cbPattern ) return COSMemoryMap::ERR::errOutOfMemory;
-    void* pv = mmap( NULL, cbSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0 );
+    void* pv = mmap( nullptr, cbSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0 );
     if ( pv == MAP_FAILED ) return COSMemoryMap::ERR::errOutOfMemory;
     m_pvMap = pv;
     m_cbMap = cbPattern;
@@ -849,7 +849,7 @@ BOOL FOSMemoryPreinit()
         g_cbPageReserveTotal = (DWORD_PTR)g_cbMemoryTotal;
     }
 
-    RegionRecord( NULL, 0 );  //  touch the table so it's in BSS
+    RegionRecord( nullptr, 0 );  //  touch the table so it's in BSS
     return fTrue;
 }
 

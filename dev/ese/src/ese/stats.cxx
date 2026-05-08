@@ -60,7 +60,7 @@ ERR ErrSTATSComputeIndexStats( PIB *ppib, FCB *pfcbIdx, FUCB *pfucbTable )
             ppib,
             pfucbIdx->ifmp,
             objidTable,
-            pfcbIdx->FPrimaryIndex() ? NULL : szIndexName,
+            pfcbIdx->FPrimaryIndex() ? nullptr : szIndexName,
             &sr,
             fTrue ) );
 
@@ -178,7 +178,7 @@ ERR ErrSTATSRetrieveTableStats(
                 pfucb->ppib,
                 pfucb->ifmp,
                 pfucb->u.pfcb->ObjidFDP(),
-                NULL,
+                nullptr,
                 &sr,
                 fFalse));
 
@@ -216,7 +216,7 @@ ERR ErrSTATSRetrieveIndexStats(
                 pfucbTable->ppib,
                 pfucbTable->ifmp,
                 pfucbTable->u.pfcb->ObjidFDP(),
-                ( fPrimary ? NULL : szIndex),
+                ( fPrimary ? nullptr : szIndex),
                 &sr,
                 fFalse ) );
 

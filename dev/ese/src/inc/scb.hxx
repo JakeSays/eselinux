@@ -173,7 +173,7 @@ struct RUNLINK
     RUNINFO             runinfo;        //  runinfo for this run
 };
 
-RUNLINK * const prunlinkNil = 0;
+RUNLINK * const prunlinkNil = nullptr;
 
 
 //  RUNLINK allocation operators
@@ -222,7 +222,7 @@ struct MTNODE
 //  initialization.  psrecInf is a sentinel value greater than any possible key
 //  and is used to indicate the end of the input stream.
 SREC * const psrecNegInf    = ( SREC * ) -1;
-SREC * const psrecInf       = ( SREC * ) 0;
+SREC * const psrecInf       = ( SREC * ) nullptr;
 
 
 //  Optimized Tree Merge Node
@@ -240,7 +240,7 @@ struct OTNODE
     OTNODE      *potnodeLevelNext;          //  next node (level)
 };
 
-OTNODE * const potnodeNil = (OTNODE *) 0;
+OTNODE * const potnodeNil = (OTNODE *) nullptr;
 
 //  Special value for potnode for the optimized tree merge tree build routine.
 //  potnodeLevel0 means that the current level is comprised of original runs,
@@ -267,8 +267,8 @@ struct SCB
 {
     SCB( const IFMP ifmp, const PGNO pgnoFDP )
         :   fcb( ifmp, pgnoFDP ),
-            rgbRec( NULL ),
-            rgspair( NULL )
+            rgbRec( nullptr ),
+            rgspair( nullptr )
     {
     }
     ~SCB()
@@ -344,7 +344,7 @@ public:
 
 };
 
-SCB * const pscbNil = 0;
+SCB * const pscbNil = nullptr;
 
 //
 //  Resource management
@@ -510,7 +510,7 @@ struct RCB
     QWORD           cbRemaining;            //  remaining bytes of data in run
 };
 
-RCB * const prcbNil = 0;
+RCB * const prcbNil = nullptr;
 
 //  RCB allocation operators
 

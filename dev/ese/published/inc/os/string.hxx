@@ -129,7 +129,7 @@ typedef enum
 ERR ErrOSSTRAsciiToUnicode( _In_ PCSTR const    pszIn,
                             _Out_opt_z_cap_post_count_(cwchOut, *pcwchRequired) PWSTR const     pwszOut,
                             const size_t            cwchOut,
-                            size_t * const          pcwchRequired = NULL,
+                            size_t * const          pcwchRequired = nullptr,
                             const OSSTR_CONVERSION osstrConversion = OSSTR_CONTEXT_DEPENDENT_CONVERSION );
 
 //  convert a wide-char string to a byte string
@@ -138,7 +138,7 @@ typedef enum { OSSTR_NOT_LOSSY = 0, OSSTR_ALLOW_LOSSY = 1 } OSSTR_LOSSY;
 ERR ErrOSSTRUnicodeToAscii( _In_ PCWSTR const       pwszIn,
                             _Out_opt_z_cap_post_count_(cchOut, *pcchRequired) PSTR const        pwszOut,
                             const size_t                cchOut,
-                            size_t * const              pcchRequired = NULL,
+                            size_t * const              pcchRequired = nullptr,
                             const OSSTR_LOSSY       fLossy = OSSTR_NOT_LOSSY,
                             const OSSTR_CONVERSION osstrConversion = OSSTR_CONTEXT_DEPENDENT_CONVERSION );
 

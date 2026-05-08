@@ -429,7 +429,7 @@ class CJournalBuffer  //  jb
     public:
 
         CJournalBuffer()
-            :   CJournalBuffer( 0, NULL )
+            :   CJournalBuffer( 0, nullptr )
         {
         }
 
@@ -1129,9 +1129,9 @@ class ICachedBlockSlab  //  cbs
         virtual ERR ErrWriteCluster(    _In_                const CCachedBlockSlot&                     slot,
                                         _In_                const size_t                                cb,
                                         _In_reads_( cb )    const BYTE* const                           rgb,
-                                        _In_opt_            const ICachedBlockSlab::PfnClusterWritten   pfnClusterWritten   = NULL,
+                                        _In_opt_            const ICachedBlockSlab::PfnClusterWritten   pfnClusterWritten   = nullptr,
                                         _In_opt_            const DWORD_PTR                             keyClusterWritten   = 0,
-                                        _In_opt_            const ICachedBlockSlab::PfnClusterHandoff   pfnClusterHandoff   = NULL ) = 0;
+                                        _In_opt_            const ICachedBlockSlab::PfnClusterHandoff   pfnClusterHandoff   = nullptr ) = 0;
 
         //  Updates the state for the given cached block.
         //
@@ -1151,9 +1151,9 @@ class ICachedBlockSlab  //  cbs
         virtual ERR ErrReadCluster( _In_                const CCachedBlockSlot&                     slot,
                                     _In_                const size_t                                cb,
                                     _Out_writes_( cb )  BYTE* const                                 rgb,
-                                    _In_opt_            const ICachedBlockSlab::PfnClusterRead      pfnClusterRead      = NULL,
+                                    _In_opt_            const ICachedBlockSlab::PfnClusterRead      pfnClusterRead      = nullptr,
                                     _In_opt_            const DWORD_PTR                             keyClusterRead      = 0,
-                                    _In_opt_            const ICachedBlockSlab::PfnClusterHandoff   pfnClusterHandoff   = NULL ) = 0;
+                                    _In_opt_            const ICachedBlockSlab::PfnClusterHandoff   pfnClusterHandoff   = nullptr ) = 0;
 
         //  Verifies that the cluster data matches the cluster state.
         //
@@ -1250,7 +1250,7 @@ class ICachedBlockSlab  //  cbs
         //  Any updates that have not been accepted since the slab was acquired via ErrAcceptUpdates() will not be
         //  saved.
 
-        virtual ERR ErrSave(    _In_opt_    const ICachedBlockSlab::PfnClusterRead  pfnSlabSaved    = NULL,
+        virtual ERR ErrSave(    _In_opt_    const ICachedBlockSlab::PfnClusterRead  pfnSlabSaved    = nullptr,
                                 _In_opt_    const DWORD_PTR                         keySlabSaved    = 0 ) = 0;
 };
 

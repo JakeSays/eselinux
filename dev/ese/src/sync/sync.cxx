@@ -135,12 +135,12 @@ const BOOL CKernelSemaphorePool::FInit()
 
     //  reset members
 
-    m_mpirksemrksem = NULL;
+    m_mpirksemrksem = nullptr;
     m_cksem         = 0;
 
     //  allocate kernel semaphore array
 
-    m_mpirksemrksem = (CReferencedKernelSemaphore*)PvPageReserve( sizeof( CReferencedKernelSemaphore ) * 65536, NULL );
+    m_mpirksemrksem = (CReferencedKernelSemaphore*)PvPageReserve( sizeof( CReferencedKernelSemaphore ) * 65536, nullptr );
 
     if ( !( m_mpirksemrksem ) )
     {
@@ -187,7 +187,7 @@ void CKernelSemaphorePool::Term()
 
     //  reset data members
 
-    m_mpirksemrksem = 0;
+    m_mpirksemrksem = nullptr;
     m_cksem         = 0;
 }
 
@@ -1759,7 +1759,7 @@ CCriticalSection::~CCriticalSection()
 
 CNestableCriticalSectionState::CNestableCriticalSectionState( const CSyncBasicInfo& sbi )
     :   m_sem( sbi ),
-        m_pclsOwner( 0 ),
+        m_pclsOwner( nullptr ),
         m_cEntry( 0 )
 {
 }

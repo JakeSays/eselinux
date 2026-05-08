@@ -1655,12 +1655,12 @@ INLINE VOID FUCBCloseDeferredClosed( FUCB *pfucb )
 
 INLINE VOID FUCBRemoveEncryptionKey( FUCB *pfucb )
 {
-    if ( pfucb->pbEncryptionKey != NULL )
+    if ( pfucb->pbEncryptionKey != nullptr )
     {
         OSMemorySecureZero( pfucb->pbEncryptionKey, pfucb->cbEncryptionKey );
         OSMemoryHeapFree( pfucb->pbEncryptionKey );
     }
-    pfucb->pbEncryptionKey = NULL;
+    pfucb->pbEncryptionKey = nullptr;
     pfucb->cbEncryptionKey = 0;
 }
 

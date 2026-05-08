@@ -175,7 +175,7 @@ class CPRINTINTRINBUF : public CPRINTF
                     m_ichNext++;
                 }
 
-                return m_pprtbuf->m_rgchBuffer[ IchReadNext_() ] == '\0' ? NULL : &( m_pprtbuf->m_rgchBuffer[ IchReadNext_() ] );
+                return m_pprtbuf->m_rgchBuffer[ IchReadNext_() ] == '\0' ? nullptr : &( m_pprtbuf->m_rgchBuffer[ IchReadNext_() ] );
             }
         };
 
@@ -252,10 +252,10 @@ INLINE BOOL CPRINTINTRINBUF::FContains( _In_z_ const CHAR * const szFind )
 {
     BUFCURSOR csr( this );
 
-    const CHAR * szT = NULL;
-    while( ( szT = csr.SzNext() ) != NULL )
+    const CHAR * szT = nullptr;
+    while( ( szT = csr.SzNext() ) != nullptr )
     {
-        if ( strstr( szT, szFind ) != NULL )
+        if ( strstr( szT, szFind ) != nullptr )
         {
             return fTrue;
         }
@@ -274,10 +274,10 @@ INLINE ULONG CPRINTINTRINBUF::CContains( _In_z_ const CHAR * const szFind )
 
     ULONG cHits = 0;
 
-    const CHAR * szT = NULL;
-    while( ( szT = csr.SzNext() ) != NULL )
+    const CHAR * szT = nullptr;
+    while( ( szT = csr.SzNext() ) != nullptr )
     {
-        if ( strstr( szT, szFind ) != NULL )
+        if ( strstr( szT, szFind ) != nullptr )
         {
             cHits++;
         }
@@ -292,10 +292,10 @@ INLINE void CPRINTINTRINBUF::Print( CPRINTF & cprintf )
 {
     BUFCURSOR csr( this );
 
-    const CHAR * szT = NULL;
+    const CHAR * szT = nullptr;
     const BOOL fSzId = fTrue;
     ULONG i = 0;
-    while( ( szT = csr.SzNext() ) != NULL )
+    while( ( szT = csr.SzNext() ) != nullptr )
     {
         if ( fSzId )
             cprintf( (_TCHAR*)"[%d] %hs", i, szT );
@@ -379,7 +379,7 @@ class CPRINTFINDENT : public CPRINTF
 //  ==================================================================================================================
 {
     public:
-        CPRINTFINDENT( CPRINTF* pcprintf, const _TCHAR* szPrefix = NULL );
+        CPRINTFINDENT( CPRINTF* pcprintf, const _TCHAR* szPrefix = nullptr );
     
         void __cdecl operator()( const _TCHAR* szFormat, ... );
 
@@ -447,8 +447,8 @@ INLINE void CPRINTFINDENT::Unindent()
 INLINE CPRINTFINDENT::CPRINTFINDENT( ) :
 //  ================================================================
     m_cindent( 0 ),
-    m_pcprintf( 0 ),
-    m_szPrefix( 0 )
+    m_pcprintf( nullptr ),
+    m_szPrefix( nullptr )
 {
 }
     
@@ -463,7 +463,7 @@ class CPRINTFTLSPREFIX : public CPRINTFINDENT
 //-
 {
     public:
-        CPRINTFTLSPREFIX( CPRINTF* pcprintf, const _TCHAR * const szPrefix = NULL );
+        CPRINTFTLSPREFIX( CPRINTF* pcprintf, const _TCHAR * const szPrefix = nullptr );
     
         void __cdecl operator()( const _TCHAR* szFormat, ... );
 

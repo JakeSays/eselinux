@@ -40,9 +40,9 @@ VOID __stdcall DBEnforceFail( const IFMP ifmp, const CHAR* szMessage, const CHAR
 DbfilehdrLock::DbfilehdrLock() :
     m_rwl(CLockBasicInfo(CSyncBasicInfo(szDbfilehdr), rankDbfilehdr, 0))
 {
-    m_ptlsWriter = NULL;
+    m_ptlsWriter = nullptr;
     m_cRecursion = 0;
-    SetPdbfilehdr(NULL);
+    SetPdbfilehdr(nullptr);
 }
 
 DbfilehdrLock::~DbfilehdrLock()
@@ -102,7 +102,7 @@ void DbfilehdrLock::LeaveAsWriter()
     m_cRecursion--;
     if ( !m_cRecursion )
     {
-        m_ptlsWriter = NULL;
+        m_ptlsWriter = nullptr;
         m_rwl.LeaveAsWriter();
     }
 }
@@ -130,7 +130,7 @@ PdbfilehdrLocked::PdbfilehdrLocked(DbfilehdrLock * const plock) :
 PdbfilehdrLocked::PdbfilehdrLocked(PdbfilehdrLocked& rhs) :
     m_plock(rhs.m_plock)
 {
-    rhs.m_plock = NULL;
+    rhs.m_plock = nullptr;
 }
 
 PdbfilehdrLocked::~PdbfilehdrLocked()
@@ -394,7 +394,7 @@ INLINE IFMP FMP::IfmpMacInUse()
 
 //  Note: g_rgfmp is only _partially_ committed now.  Ifmp = 0 is always uncommitted, and anything from >= s_ifmpMacCommitted is 
 //  also uncommitted and will return false from FMP::FAllocatedFmp().
-FMP *   g_rgfmp       = NULL;     //  database file map
+FMP *   g_rgfmp       = nullptr;     //  database file map
 IFMP    g_ifmpMax     = 0;        //  note: must also check against FMP::FAllocatedFmp() or s_ifmpMacCommitted
 IFMP    g_ifmpTrace = (IFMP)JET_dbidNil;
 
@@ -742,8 +742,8 @@ ERR ErrFMFormatFeatureEnabled( const JET_ENGINEFORMATVERSION efvFormatFeature, c
     //  Slow path - search version table for EFV and check directly ...
     //
 
-    const FormatVersions * pfmtversFeatureVersion = NULL;
-    CallS( ErrGetDesiredVersion( NULL /* must be NULL to bypass staging */, efvFormatFeature, &pfmtversFeatureVersion ) );
+    const FormatVersions * pfmtversFeatureVersion = nullptr;
+    CallS( ErrGetDesiredVersion( nullptr /* must be NULL to bypass staging */, efvFormatFeature, &pfmtversFeatureVersion ) );
     if ( pfmtversFeatureVersion )
     {
         if ( CmpFormatVer( &fmvCurrentFromFile, &pfmtversFeatureVersion->fmv ) >= 0 )
@@ -778,7 +778,7 @@ ERR FMP::ErrCreateFlushMap( const JET_GRBIT grbit )
 //  ================================================================
 {
     ERR err = JET_errSuccess;
-    CFlushMapForAttachedDb* pflushmap = NULL;
+    CFlushMapForAttachedDb* pflushmap = nullptr;
 
     Assert( NULL == m_pflushmap );
     
@@ -788,7 +788,7 @@ ERR FMP::ErrCreateFlushMap( const JET_GRBIT grbit )
         // This is pre- JET_bitPersistedLostFlushDetectionEnabled, so it disables ...
         efvDesired = JET_efvExchange2016Rtm;
     }
-    const FormatVersions * pfmtversDesired = NULL;
+    const FormatVersions * pfmtversDesired = nullptr;
     err = ErrGetDesiredVersion( m_pinst, efvDesired, &pfmtversDesired );
     CallS( err );
     Call( err );
@@ -806,7 +806,7 @@ ERR FMP::ErrCreateFlushMap( const JET_GRBIT grbit )
     Call( pflushmap->ErrInitFlushMap() );
 
     m_pflushmap = pflushmap;
-    pflushmap = NULL;
+    pflushmap = nullptr;
 
 HandleError:
 
@@ -820,7 +820,7 @@ VOID FMP::DestroyFlushMap()
 //  ================================================================
 {
     delete m_pflushmap;
-    m_pflushmap = NULL;
+    m_pflushmap = nullptr;
 }
 
 /*  ErrFMPWriteLatchByNameSz returns the ifmp of the database with the
@@ -1052,7 +1052,7 @@ ERR FMP::ErrStoreDbName(
     ERR                     err;
     const LOG * const       plog                = pinst->m_plog;
     const BOOL              fAlternateDbDir     = ( plog->FRecovering() && !FDefaultParam( pinst, JET_paramAlternateDatabaseRecoveryPath ) );
-    WCHAR *                 wszRelocatedDb      = NULL;
+    WCHAR *                 wszRelocatedDb      = nullptr;
     WCHAR                   wszDbFullName[IFileSystemAPI::cchPathMax];
 
     Assert( NULL != wszDbName );
@@ -1077,7 +1077,7 @@ ERR FMP::ErrStoreDbName(
 
     Assert( NULL == wszRelocatedDb || fAlternateDbDir );
 
-    const SIZE_T    cchRelocatedDb  = ( NULL != wszRelocatedDb ? LOSStrLengthW( wszRelocatedDb ) + 1 : 0 );
+    const SIZE_T    cchRelocatedDb  = ( nullptr != wszRelocatedDb ? LOSStrLengthW( wszRelocatedDb ) + 1 : 0 );
     const SIZE_T    cchDbName       = cchRelocatedDb + LOSStrLengthW( wszDbName ) + 1;
     const SIZE_T    cchAllocate     = cchRelocatedDb + cchDbName;
     SIZE_T          cbNext          = sizeof( WCHAR ) * cchAllocate;
@@ -1092,7 +1092,7 @@ ERR FMP::ErrStoreDbName(
     SetWszDatabaseName( pch );
 
     Assert( NULL != wszRelocatedDb || !fAlternateDbDir );
-    if ( NULL != wszRelocatedDb )
+    if ( nullptr != wszRelocatedDb )
     {
         Assert( fAlternateDbDir );
         OSStrCbCopyW( pchNext, cbNext, wszRelocatedDb );
@@ -1287,7 +1287,7 @@ ERR FMP::ErrNewAndWriteLatch(
     Assert( !FMP::FAllocatedFmp( ifmp ) );
     if ( dbidGiven != dbidTemp )
     {
-        DBFILEHDR_FIX * pdbfilehdr = NULL;
+        DBFILEHDR_FIX * pdbfilehdr = nullptr;
         
         // do we have any fmp entry waiting to be resurrected?
         for ( ifmp = cfmpReserved; ifmp < g_ifmpMax && FMP::FAllocatedFmp( ifmp ); ifmp++ )
@@ -1303,9 +1303,9 @@ ERR FMP::ErrNewAndWriteLatch(
                 Assert( !FUtilZeroed( pbhdrCheck + offsetof( DBFILEHDR, le_ulMagic ), offsetof( DBFILEHDR, le_filetype ) - sizeof( pdbfilehdr->le_ulChecksum ) ) );
 
                 // if we haven't allocated and loaded the signature yet, try that now ...
-                if ( NULL == pdbfilehdr )
+                if ( nullptr == pdbfilehdr )
                 {
-                    pdbfilehdr = (DBFILEHDR_FIX*)PvOSMemoryPageAlloc( g_cbPage, NULL );
+                    pdbfilehdr = (DBFILEHDR_FIX*)PvOSMemoryPageAlloc( g_cbPage, nullptr );
                     if ( pdbfilehdr )
                     {
                         memset( pdbfilehdr, 0, g_cbPage );
@@ -1331,7 +1331,7 @@ ERR FMP::ErrNewAndWriteLatch(
                         // fmp entry recognized
                         Assert( !g_rgfmp[ifmp].FInUse() );
                         OSMemoryPageFree( pdbfilehdr );
-                        pdbfilehdr = NULL;
+                        pdbfilehdr = nullptr;
                         fFoundMatchingFmp = fTrue;
                         goto SelectedIfmp;
                     }
@@ -1342,7 +1342,7 @@ ERR FMP::ErrNewAndWriteLatch(
         if ( pdbfilehdr )
         {
             OSMemoryPageFree( pdbfilehdr );
-            pdbfilehdr = NULL;
+            pdbfilehdr = nullptr;
         }
     }
 
@@ -1632,7 +1632,7 @@ ERR FMP::ErrInitializeOneFmp(
     pfmp->SetTrxOldestTarget( trxMax );
     pfmp->SetTrxNewestWhenDiscardsLastReported( trxMin );
 
-    pfmp->SetKVPMSysDeferredPopulateKeys( NULL );
+    pfmp->SetKVPMSysDeferredPopulateKeys( nullptr );
 
     pfmp->SetWriteLatch( ppib );
     pfmp->SetLgposAttach( lgposMin );
@@ -1640,7 +1640,7 @@ ERR FMP::ErrInitializeOneFmp(
     Assert( FWriterFMPPool() );
     pfmp->SetILgposWaypoint( lgposMin ); // effectively ResetWaypoint(), but we already have rwlFMPPool and we're in FMP.
     pfmp->SetLGenMaxCommittedAttachedDuringRecovery( 0 );
-    pfmp->SetPfapi( NULL );
+    pfmp->SetPfapi( nullptr );
     pfmp->m_cbOwnedFileSize = 0; // not using the setter to avoid asserts.
     pfmp->AcquireIOSizeChangeLatch();
     pfmp->SetExtentPageCountCacheTableInfo( pgnoNull, objidNil );
@@ -1698,7 +1698,7 @@ VOID FMP::ReleaseWriteLatchAndFree( PIB *ppib )
     FMP::AssertVALIDIFMP( ifmp );
 
     OSMemoryHeapFree( WszDatabaseName() );
-    SetWszDatabaseName( NULL );
+    SetWszDatabaseName( nullptr );
 
     /*  Typically these should be disposed / free'd before now, but this catches
      *  the cases of many error paths which have to release and free the FMP.
@@ -1709,7 +1709,7 @@ VOID FMP::ReleaseWriteLatchAndFree( PIB *ppib )
 
     Assert( m_msRangeLock.FEmpty() );
 
-    SetPinst( NULL );
+    SetPinst( nullptr );
     PinstFromPpib( ppib )->m_mpdbidifmp[ Dbid() ] = g_ifmpMax;
     SetDbid( dbidMax );
     Assert( !FExclusiveOpen() );
@@ -1792,7 +1792,7 @@ BOOL FMP::FAllocatedFmp( IFMP ifmp )
 
 BOOL FMP::FAllocatedFmp( const FMP * const pfmp )
 {
-    if ( ( pfmp == NULL ) || ( g_rgfmp == NULL ) )
+    if ( ( pfmp == nullptr ) || ( g_rgfmp == nullptr ) )
     {
         return fFalse;
     }
@@ -1824,12 +1824,12 @@ ERR FMP::ErrNewOneFmp( const IFMP ifmp )
     // Preallocate this to avoid having complicated rollback of the committed state.
     //
 
-    CIoStats * piostatsDbRead = NULL;
-    CIoStats * piostatsDbWrite = NULL;
+    CIoStats * piostatsDbRead = nullptr;
+    CIoStats * piostatsDbWrite = nullptr;
     const SIZE_T crangeMax  = 1;
     const SIZE_T cbrangelock    = sizeof( RANGELOCK ) + crangeMax * sizeof( RANGE );
-    RANGELOCK * prangelockPrealloc0 = NULL;
-    RANGELOCK * prangelockPrealloc1 = NULL;
+    RANGELOCK * prangelockPrealloc0 = nullptr;
+    RANGELOCK * prangelockPrealloc1 = nullptr;
 
     Alloc( prangelockPrealloc0 = (RANGELOCK*)PvOSMemoryHeapAlloc( cbrangelock ) );
     Alloc( prangelockPrealloc1 = (RANGELOCK*)PvOSMemoryHeapAlloc( cbrangelock ) );
@@ -1907,8 +1907,8 @@ ERR FMP::ErrNewOneFmp( const IFMP ifmp )
     Assert( prangelockPrealloc1 != NULL );
     g_rgfmp[ ifmp ].m_rgprangelock[ 0 ] = prangelockPrealloc0;
     g_rgfmp[ ifmp ].m_rgprangelock[ 1 ] = prangelockPrealloc1;
-    prangelockPrealloc0 = NULL;
-    prangelockPrealloc1 = NULL;
+    prangelockPrealloc0 = nullptr;
+    prangelockPrealloc1 = nullptr;
 
     g_rgfmp[ ifmp ].m_rgprangelock[ 0 ]->crange       = 0;
     g_rgfmp[ ifmp ].m_rgprangelock[ 0 ]->crangeMax    = crangeMax;
@@ -1962,7 +1962,7 @@ LOCAL ERR ErrFMPReserveShiftedRgfmp()
     const size_t cbShiftedPages = CbFMPRgfmpShift();
     Assert( cfmpReserved * sizeof(FMP) < OSMemoryPageCommitGranularity() );
 
-    BYTE * pbFmpBuffer = (BYTE*)PvOSMemoryPageReserve( cbFmpArrayPages + cbShiftedPages, NULL );
+    BYTE * pbFmpBuffer = (BYTE*)PvOSMemoryPageReserve( cbFmpArrayPages + cbShiftedPages, nullptr );
     AllocR( pbFmpBuffer );
 
     g_rgfmp = (FMP*)( &( pbFmpBuffer[ cbShiftedPages - ( cfmpReserved * sizeof(FMP) ) ] ) );
@@ -1986,7 +1986,7 @@ LOCAL void FMPUnreserveFreeShiftedRgfmp()
 {
     BYTE * pbFree = ((BYTE*)g_rgfmp) + ( cfmpReserved * sizeof( g_rgfmp[ 0 ] ) ) - CbFMPRgfmpShift();
     OSMemoryPageFree( pbFree );
-    g_rgfmp = NULL;
+    g_rgfmp = nullptr;
 }
 
 ERR FMP::ErrFMPInit( )
@@ -2037,7 +2037,7 @@ VOID FMP::Term( )
     {
         FMP *pfmp = &g_rgfmp[ifmp];
 
-        DBFILEHDR * const pdbfilehdr = pfmp->m_dbfilehdrLock.SetPdbfilehdr(NULL);
+        DBFILEHDR * const pdbfilehdr = pfmp->m_dbfilehdrLock.SetPdbfilehdr(nullptr);
 
         OSMemoryHeapFree( pfmp->WszDatabaseName() );
         OSMemoryPageFree( pdbfilehdr );
@@ -2429,7 +2429,7 @@ ERR FMP::ErrEnsureLogRedoMapsAllocated()
 
     ERR err = JET_errSuccess;
 
-    if ( ( m_pLogRedoMapZeroed != NULL ) && ( m_pLogRedoMapBadDbtime != NULL ) && ( m_pLogRedoMapDbtimeRevert != NULL ) && ( m_pLogRedoMapDbtimeRevertIgnore != NULL ) )
+    if ( ( m_pLogRedoMapZeroed != nullptr ) && ( m_pLogRedoMapBadDbtime != nullptr ) && ( m_pLogRedoMapDbtimeRevert != nullptr ) && ( m_pLogRedoMapDbtimeRevertIgnore != nullptr ) )
     {
         m_sxwlRedoMaps.ReleaseExclusiveLatch();
         return JET_errSuccess;
@@ -2437,25 +2437,25 @@ ERR FMP::ErrEnsureLogRedoMapsAllocated()
 
     m_sxwlRedoMaps.UpgradeExclusiveLatchToWriteLatch();
 
-    if ( m_pLogRedoMapZeroed == NULL )
+    if ( m_pLogRedoMapZeroed == nullptr )
     {
         Alloc( m_pLogRedoMapZeroed = new CLogRedoMap() );
         Call( m_pLogRedoMapZeroed->ErrInitLogRedoMap( Ifmp() ) );
     }
 
-    if ( m_pLogRedoMapBadDbtime == NULL )
+    if ( m_pLogRedoMapBadDbtime == nullptr )
     {
         Alloc( m_pLogRedoMapBadDbtime = new CLogRedoMap() );
         Call( m_pLogRedoMapBadDbtime->ErrInitLogRedoMap( Ifmp() ) );
     }
 
-    if ( m_pLogRedoMapDbtimeRevert == NULL )
+    if ( m_pLogRedoMapDbtimeRevert == nullptr )
     {
         Alloc( m_pLogRedoMapDbtimeRevert = new CLogRedoMap() );
         Call( m_pLogRedoMapDbtimeRevert->ErrInitLogRedoMap( Ifmp() ) );
     }
 
-    if ( m_pLogRedoMapDbtimeRevertIgnore == NULL )
+    if ( m_pLogRedoMapDbtimeRevertIgnore == nullptr )
     {
         Alloc( m_pLogRedoMapDbtimeRevertIgnore = new CLogRedoMap() );
         Call( m_pLogRedoMapDbtimeRevertIgnore->ErrInitLogRedoMap( Ifmp() ) );
@@ -2490,7 +2490,7 @@ VOID FMP::FreeLogRedoMaps( const BOOL fAllocCleanup )
               ( m_pLogRedoMapBadDbtime == NULL ) == ( m_pLogRedoMapDbtimeRevert == NULL ) &&
               ( m_pLogRedoMapDbtimeRevert == NULL ) == ( m_pLogRedoMapDbtimeRevertIgnore == NULL ) ) );
 
-    if ( ( m_pLogRedoMapZeroed == NULL ) && ( m_pLogRedoMapBadDbtime == NULL ) && ( m_pLogRedoMapDbtimeRevert == NULL ) && ( m_pLogRedoMapDbtimeRevertIgnore == NULL ) )
+    if ( ( m_pLogRedoMapZeroed == nullptr ) && ( m_pLogRedoMapBadDbtime == nullptr ) && ( m_pLogRedoMapDbtimeRevert == nullptr ) && ( m_pLogRedoMapDbtimeRevertIgnore == nullptr ) )
     {
         if ( !fAllocCleanup )
         {
@@ -2505,32 +2505,32 @@ VOID FMP::FreeLogRedoMaps( const BOOL fAllocCleanup )
         m_sxwlRedoMaps.UpgradeExclusiveLatchToWriteLatch();
     }
 
-    if ( m_pLogRedoMapZeroed != NULL )
+    if ( m_pLogRedoMapZeroed != nullptr )
     {
         m_pLogRedoMapZeroed->TermLogRedoMap();
         delete m_pLogRedoMapZeroed;
-        m_pLogRedoMapZeroed = NULL;
+        m_pLogRedoMapZeroed = nullptr;
     }
 
-    if ( m_pLogRedoMapBadDbtime != NULL )
+    if ( m_pLogRedoMapBadDbtime != nullptr )
     {
         m_pLogRedoMapBadDbtime->TermLogRedoMap();
         delete m_pLogRedoMapBadDbtime;
-        m_pLogRedoMapBadDbtime = NULL;
+        m_pLogRedoMapBadDbtime = nullptr;
     }
 
-    if ( m_pLogRedoMapDbtimeRevert != NULL )
+    if ( m_pLogRedoMapDbtimeRevert != nullptr )
     {
         m_pLogRedoMapDbtimeRevert->TermLogRedoMap();
         delete m_pLogRedoMapDbtimeRevert;
-        m_pLogRedoMapDbtimeRevert = NULL;
+        m_pLogRedoMapDbtimeRevert = nullptr;
     }
 
-    if ( m_pLogRedoMapDbtimeRevertIgnore != NULL )
+    if ( m_pLogRedoMapDbtimeRevertIgnore != nullptr )
     {
         m_pLogRedoMapDbtimeRevertIgnore->TermLogRedoMap();
         delete m_pLogRedoMapDbtimeRevertIgnore;
-        m_pLogRedoMapDbtimeRevertIgnore = NULL;
+        m_pLogRedoMapDbtimeRevertIgnore = nullptr;
     }
 
     if ( !fAllocCleanup )
@@ -2551,10 +2551,10 @@ BOOL FMP::FRedoMapsEmpty()
     Assert( ( m_pLogRedoMapDbtimeRevert == NULL ) == ( m_pLogRedoMapBadDbtime == NULL ) );
     Assert( ( m_pLogRedoMapDbtimeRevertIgnore == NULL ) == ( m_pLogRedoMapBadDbtime == NULL ) );    
 
-    const BOOL fRedoMapsEmpty = ( ( m_pLogRedoMapZeroed == NULL ) || ( !m_pLogRedoMapZeroed->FAnyPgnoSet() ) ) &&
-                                ( ( m_pLogRedoMapBadDbtime == NULL ) || ( !m_pLogRedoMapBadDbtime->FAnyPgnoSet() ) ) &&
-                                ( ( m_pLogRedoMapDbtimeRevert == NULL ) || ( !m_pLogRedoMapDbtimeRevert->FAnyPgnoSet() ) ) &&
-                                ( ( m_pLogRedoMapDbtimeRevertIgnore == NULL ) || ( !m_pLogRedoMapDbtimeRevertIgnore->FAnyPgnoSet() ) );
+    const BOOL fRedoMapsEmpty = ( ( m_pLogRedoMapZeroed == nullptr ) || ( !m_pLogRedoMapZeroed->FAnyPgnoSet() ) ) &&
+                                ( ( m_pLogRedoMapBadDbtime == nullptr ) || ( !m_pLogRedoMapBadDbtime->FAnyPgnoSet() ) ) &&
+                                ( ( m_pLogRedoMapDbtimeRevert == nullptr ) || ( !m_pLogRedoMapDbtimeRevert->FAnyPgnoSet() ) ) &&
+                                ( ( m_pLogRedoMapDbtimeRevertIgnore == nullptr ) || ( !m_pLogRedoMapDbtimeRevertIgnore->FAnyPgnoSet() ) );
 
     m_sxwlRedoMaps.ReleaseSharedLatch();
 
@@ -2594,9 +2594,9 @@ ERR FMP::ErrSetPdbfilehdr( DBFILEHDR_FIX * pdbfilehdr, _Out_ DBFILEHDR ** ppdbfi
 {
     ERR err = JET_errSuccess;
 
-    *ppdbfilehdr = NULL;
+    *ppdbfilehdr = nullptr;
 
-    if ( NULL != pdbfilehdr && !FReadOnlyAttach() )
+    if ( nullptr != pdbfilehdr && !FReadOnlyAttach() )
     {
         const INST *    pinst       = Pinst();
         DBID            dbid;
@@ -2756,7 +2756,7 @@ ERR FMP::ErrObjidLastIncrementAndGet( OBJID *pobjid )
                 _countof( rgpszT ),
                 rgpszT,
                 0,
-                NULL,
+                nullptr,
                 Pinst() );
 
         OSUHAPublishEvent(
@@ -2786,7 +2786,7 @@ ERR FMP::ErrObjidLastIncrementAndGet( OBJID *pobjid )
                     1,
                     rgpszT,
                     0,
-                    NULL,
+                    nullptr,
                     Pinst() );
         }
     }
@@ -2891,7 +2891,7 @@ ERR FMP::ErrStartDBMScan()
         Call( ErrERRCheck( JET_errDatabaseFileReadOnly ) );
     }
 
-    if ( NULL == m_pdbmScan )
+    if ( nullptr == m_pdbmScan )
     {
         Call( DBMScanFactory::ErrPdbmScanCreate( ifmp, &m_pdbmScan ) );
     }
@@ -2939,7 +2939,7 @@ ERR FMP::ErrStartDBMScanSinglePass(
         Call( ErrERRCheck( JET_errDatabaseFileReadOnly ) );
     }
 
-    if ( NULL == m_pdbmScan )
+    if ( nullptr == m_pdbmScan )
     {
         Call( DBMScanFactory::ErrPdbmScanCreateSingleScan(
             sesid,
@@ -2973,14 +2973,14 @@ VOID FMP::StopDBMScan()
     //  not both concurrently.
     Expected( m_pdbmFollower == NULL );
 
-    if ( NULL != m_pdbmScan )
+    if ( nullptr != m_pdbmScan )
     {
         SemDBM().Acquire();
 
-        if ( NULL != m_pdbmScan )
+        if ( nullptr != m_pdbmScan )
         {
             IDBMScan *  pdbmScan = m_pdbmScan;
-            m_pdbmScan = NULL;
+            m_pdbmScan = nullptr;
 
             pdbmScan->StopDBMScan();
             delete pdbmScan;
@@ -3000,7 +3000,7 @@ BOOL FMP::FDBMScanOn()
     //  to modify this.  Also switching DBM in follower mode off, is a more complex
     //  issue, which could involve a piece of the DB being missed for the whole pass
     //  as in follower mode we pick up whereever replay is at.
-    return ( NULL != m_pdbmScan );
+    return ( nullptr != m_pdbmScan );
 }
 
 //  ================================================================
@@ -3013,7 +3013,7 @@ ERR FMP::ErrCreateDBMScanFollower()
     //  the JetInit() thread.
     Assert( m_pdbmFollower == NULL );
 
-    if ( m_pdbmFollower == NULL )
+    if ( m_pdbmFollower == nullptr )
     {
         ERR err = JET_errSuccess;
         AllocR( m_pdbmFollower = new CDBMScanFollower() );
@@ -3032,7 +3032,7 @@ VOID FMP::DestroyDBMScanFollower()
     {
         Assert( m_pdbmFollower->FStopped() );
         delete m_pdbmFollower;
-        m_pdbmFollower = NULL;
+        m_pdbmFollower = nullptr;
     }
 }
 

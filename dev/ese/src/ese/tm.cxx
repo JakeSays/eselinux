@@ -386,7 +386,7 @@ ERR ISAMAPI ErrIsamSystemInit()
     Call( ErrNORMCheckLocaleName( pinstNil, wszLocaleNameDefault ) );
     AssertNORMConstants();
     QWORD qwSortVersion = 0;
-    err = ErrNORMGetSortVersion( wszLocaleNameDefault, &qwSortVersion, NULL );
+    err = ErrNORMGetSortVersion( wszLocaleNameDefault, &qwSortVersion, nullptr );
     CallS( err );
     Call( err );
     Assert( qwSortVersion != 0 );
@@ -818,7 +818,7 @@ ERR ISAMAPI ErrIsamInit(    JET_INSTANCE    inst,
     const ULONG csz                             = 5;
     WCHAR       rgwszDw[csz][16];
     const WCHAR *rgcwszT[csz];
-    struct TM_REC_CTRL_DEFAULT  RecCtrlDefaults = { 0 };
+    struct TM_REC_CTRL_DEFAULT  RecCtrlDefaults = { nullptr };
 
     Assert( pinst->m_plog );
     Assert( pinst->m_pver );
@@ -840,10 +840,10 @@ ERR ISAMAPI ErrIsamInit(    JET_INSTANCE    inst,
 
         //  create paths
 
-        CallR( ErrUtilCreatePathIfNotExist( pinst->m_pfsapi, SzParam( pinst, JET_paramTempPath ), NULL, 0 ) );
-        CallR( ErrUtilCreatePathIfNotExist( pinst->m_pfsapi, SzParam( pinst, JET_paramSystemPath ), NULL, 0 ) );
-        CallR( ErrUtilCreatePathIfNotExist( pinst->m_pfsapi, SzParam( pinst, JET_paramLogFilePath ), NULL, 0 ) );
-        CallR( ErrUtilCreatePathIfNotExist( pinst->m_pfsapi, SzParam( pinst, JET_paramRBSFilePath ), NULL, 0 ) );
+        CallR( ErrUtilCreatePathIfNotExist( pinst->m_pfsapi, SzParam( pinst, JET_paramTempPath ), nullptr, 0 ) );
+        CallR( ErrUtilCreatePathIfNotExist( pinst->m_pfsapi, SzParam( pinst, JET_paramSystemPath ), nullptr, 0 ) );
+        CallR( ErrUtilCreatePathIfNotExist( pinst->m_pfsapi, SzParam( pinst, JET_paramLogFilePath ), nullptr, 0 ) );
+        CallR( ErrUtilCreatePathIfNotExist( pinst->m_pfsapi, SzParam( pinst, JET_paramRBSFilePath ), nullptr, 0 ) );
     }
 
     //  Get basic global parameters for checking LG parameters
@@ -915,7 +915,7 @@ ERR ISAMAPI ErrIsamInit(    JET_INSTANCE    inst,
             // waypoint between 0 and 1023, set it.
             //
             // We can ignore the error, chances are we'll be successful eventually.  Heck can this fail?
-            (void)Param( pinst, JET_paramWaypointLatency )->Set( pinst, ppibNil, lWaypointDepth, NULL );
+            (void)Param( pinst, JET_paramWaypointLatency )->Set( pinst, ppibNil, lWaypointDepth, nullptr );
         }
     }
 
@@ -960,7 +960,7 @@ ERR ISAMAPI ErrIsamInit(    JET_INSTANCE    inst,
         _countof( rgcwszT ),
         rgcwszT,
         0,
-        NULL,
+        nullptr,
         pinst );
 
     /*  initialize system according to logging disabled
@@ -1067,7 +1067,7 @@ ERR ISAMAPI ErrIsamInit(    JET_INSTANCE    inst,
         WCHAR   wszPathJetChkLog[IFileSystemAPI::cchPathMax];
 
         plog->LGFullNameCheckpoint( wszPathJetChkLog );
-        err = plog->ErrLGReadCheckpoint( wszPathJetChkLog, NULL, fTrue );
+        err = plog->ErrLGReadCheckpoint( wszPathJetChkLog, nullptr, fTrue );
         if ( JET_errCheckpointFileNotFound == err
             && ( fNewCheckpointFile || fJetLogGeneratedDuringSoftStart ) )
         {
@@ -1209,7 +1209,7 @@ ERR ISAMAPI ErrIsamTerm( JET_INSTANCE instance, JET_GRBIT grbit )
     //  term the file-system
 
     delete pinst->m_pfsapi;
-    pinst->m_pfsapi = NULL;
+    pinst->m_pfsapi = nullptr;
 
     IRSCleanUpAllIrsResources( pinst );
 
@@ -1247,7 +1247,7 @@ ERR ISAMAPI ErrIsamTerm( JET_INSTANCE instance, JET_GRBIT grbit )
             _countof( rgcwszT ),
             rgcwszT,
             0,
-            NULL,
+            nullptr,
             pinst );
 
         ULONG rgul[2] = { (ULONG)pinst->m_iInstance, (ULONG)err /* for term dirty */ };
@@ -1271,7 +1271,7 @@ ERR ISAMAPI ErrIsamTerm( JET_INSTANCE instance, JET_GRBIT grbit )
             _countof( rgcwszT ),
             rgcwszT,
             0,
-            NULL,
+            nullptr,
             pinst );
     }
 
@@ -1313,7 +1313,7 @@ ERR ErrIsamSetSessionParameter(
     //  Can do a common check for NULL pvParam, if the cbParam != 0 (essentially 
     //  saying we have a valid buffer).  The cbParam validity has to be checked
     //  on a per sesparamid basis below obviously.
-    if ( pvParam == NULL && cbParam != 0 )
+    if ( pvParam == nullptr && cbParam != 0 )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -1407,7 +1407,7 @@ ERR ErrIsamGetSessionParameter(
 {
     PIB     * ppib  = (PIB *)vsesid;
 
-    if ( pvParam == NULL && pcbParamActual == NULL )
+    if ( pvParam == nullptr && pcbParamActual == nullptr )
     {
         return ErrERRCheck( JET_errInvalidParameter );
     }
@@ -1977,7 +1977,7 @@ ERR ISAMAPI ErrIsamRollback( JET_SESID vsesid, JET_GRBIT grbit )
                 {
                     if ( pfucb->pfucbCurIndex->levelOpen > levelRollback )
                     {
-                        CallS( ErrRECSetCurrentIndex( pfucb, NULL, NULL ) );
+                        CallS( ErrRECSetCurrentIndex( pfucb, nullptr, nullptr ) );
                     }
                 }
             }

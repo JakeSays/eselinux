@@ -106,7 +106,7 @@ void CDefaultFileSystemConfiguration::EmitFailureTag(   const int           /* h
 
 const void* const CDefaultFileSystemConfiguration::PvTraceContext()
 {
-    return NULL;
+    return nullptr;
 }
 
 CDefaultFileSystemConfiguration g_fsconfigDefault;
@@ -864,7 +864,7 @@ ERR COSFileSystem::ErrFileOpen( _In_z_ const WCHAR* const       wszPath,
 
 ERR ErrOSFSCreate( _Out_ IFileSystemAPI** const ppfsapi )
 {
-    return ErrOSFSCreate( NULL, ppfsapi );
+    return ErrOSFSCreate( nullptr, ppfsapi );
 }
 
 ERR ErrOSFSCreate(  _In_ IFileSystemConfiguration * const   pfsconfig,
@@ -872,12 +872,12 @@ ERR ErrOSFSCreate(  _In_ IFileSystemConfiguration * const   pfsconfig,
 {
     ERR                             err         = JET_errSuccess;
     IFileSystemConfiguration* const pfsconfigT  = pfsconfig ? pfsconfig : &g_fsconfigDefault;
-    IFileSystemAPI*                 pfsapi      = NULL;
+    IFileSystemAPI*                 pfsapi      = nullptr;
 
     Alloc( pfsapi = new COSFileSystem( pfsconfigT ) );
 
     *ppfsapi = pfsapi;
-    pfsapi = NULL;
+    pfsapi = nullptr;
 
 HandleError:
     delete pfsapi;

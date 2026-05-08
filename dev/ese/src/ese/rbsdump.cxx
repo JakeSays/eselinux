@@ -222,7 +222,7 @@ VOID RBSRecToSz( const RBSRecord *prbsrec, __out_bcount(cbRBSRec) PSTR szRBSRec,
         }
         case rbsrectypeDbPage:
         {
-            BYTE *pbDataDecompressed = NULL;
+            BYTE *pbDataDecompressed = nullptr;
             DATA dataImage;
             BOOL fValidPage = fFalse;
             OBJID objid = 0;
@@ -234,7 +234,7 @@ VOID RBSRecToSz( const RBSRecord *prbsrec, __out_bcount(cbRBSRec) PSTR szRBSRec,
 
             if ( prbsdbpgrec->m_fFlags )
             {
-                pbDataDecompressed = (BYTE *)PvOSMemoryPageAlloc( g_cbPageFromSnapshot, NULL );
+                pbDataDecompressed = (BYTE *)PvOSMemoryPageAlloc( g_cbPageFromSnapshot, nullptr );
                 if ( pbDataDecompressed &&
                      ErrRBSDecompressPreimage( dataImage, g_cbPageFromSnapshot, pbDataDecompressed, prbsdbpgrec->m_pgno, prbsdbpgrec->m_fFlags ) >= JET_errSuccess )
                 {
@@ -392,8 +392,8 @@ ERR LOCAL ErrDUMPRBSPageFormat( CRevertSnapshot* prbs, PGNO pgnoLast )
 ERR ErrDUMPRBSHeader( INST *pinst, _In_ PCWSTR wszRBS, const BOOL fVerbose )
 {
     ERR              err                    = JET_errSuccess;
-    RBSFILEHDR      *prbsfilehdrPrimary      = NULL;
-    RBSFILEHDR      *prbsfilehdrSecondary    = NULL;
+    RBSFILEHDR      *prbsfilehdrPrimary      = nullptr;
+    RBSFILEHDR      *prbsfilehdrSecondary    = nullptr;
     const DWORD     cbHeader                = sizeof( RBSFILEHDR );
 
     // TODO SOMEONE: Consider renaming DB_HEADER_READER to something like FILE_HEADER_READER
@@ -401,11 +401,11 @@ ERR ErrDUMPRBSHeader( INST *pinst, _In_ PCWSTR wszRBS, const BOOL fVerbose )
     {
         headerRequestPrimaryOnly,
         wszRBS,
-        NULL,
+        nullptr,
         cbHeader,
         -1,
         pinst->m_pfsapi,
-        NULL,
+        nullptr,
         fTrue,
         0,
         0,
@@ -416,11 +416,11 @@ ERR ErrDUMPRBSHeader( INST *pinst, _In_ PCWSTR wszRBS, const BOOL fVerbose )
     {
         headerRequestSecondaryOnly,
         wszRBS,
-        NULL,
+        nullptr,
         cbHeader,
         -1,
         pinst->m_pfsapi,
-        NULL,
+        nullptr,
         fTrue,
         0,
         0,
@@ -438,7 +438,7 @@ ERR ErrDUMPRBSHeader( INST *pinst, _In_ PCWSTR wszRBS, const BOOL fVerbose )
     BOOL fCheckPageSize         = fTrue;
 
     // Primary header.
-    Alloc( prbsfilehdrPrimary = ( RBSFILEHDR* )PvOSMemoryPageAlloc( cbHeader, NULL ) );
+    Alloc( prbsfilehdrPrimary = ( RBSFILEHDR* )PvOSMemoryPageAlloc( cbHeader, nullptr ) );
     dbHeaderReaderPrimary.pbHeader = ( BYTE* )prbsfilehdrPrimary;
     Call( ErrUtilReadSpecificShadowedHeader( pinst, &dbHeaderReaderPrimary ) );
 
@@ -458,7 +458,7 @@ ERR ErrDUMPRBSHeader( INST *pinst, _In_ PCWSTR wszRBS, const BOOL fVerbose )
     }
 
     // Shadow header.
-    Alloc( prbsfilehdrSecondary = ( RBSFILEHDR* )PvOSMemoryPageAlloc( cbHeader, NULL ) );
+    Alloc( prbsfilehdrSecondary = ( RBSFILEHDR* )PvOSMemoryPageAlloc( cbHeader, nullptr ) );
     dbHeaderReaderSecondary.pbHeader = ( BYTE* )prbsfilehdrSecondary;
     Call( ErrUtilReadSpecificShadowedHeader( pinst, &dbHeaderReaderSecondary ) );
 
@@ -527,8 +527,8 @@ ERR ErrDUMPRBSPage( INST *pinst, _In_ PCWSTR wszRBS, PGNO pgnoFirst, PGNO pgnoLa
     WCHAR wszRBSAbs[ cbOSFSAPI_MAX_PATHW ];
     QWORD pgStartOffset         = IbRBSFileOffsetOfSegment( pgnoFirst );
     QWORD pgEndOffset           = IbRBSFileOffsetOfSegment( pgnoFirst + 1) - 1;
-    CRevertSnapshot* prbs       = NULL;
-    IFileAPI *pfapirbs          = NULL;
+    CRevertSnapshot* prbs       = nullptr;
+    IFileAPI *pfapirbs          = nullptr;
     ERR err                     = JET_errSuccess;
 
     Call( ErrDUMPRBSHeader( pinst, wszRBS, fVerbose ) );
@@ -576,7 +576,7 @@ ERR ErrDUMPRBSPage( INST *pinst, _In_ PCWSTR wszRBS, PGNO pgnoFirst, PGNO pgnoLa
     }
 
 HandleError:
-    if ( prbs != NULL )
+    if ( prbs != nullptr )
     {
         delete prbs;
     }
