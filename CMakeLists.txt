@@ -212,6 +212,46 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     # etc. windows-shim/ provides minimal stand-ins so any TU can include them
     # without each subdirectory having to wire up its own include path.
     include_directories(${CMAKE_SOURCE_DIR}/windows-shim)
+
+    # Warning-noise suppressions — each one is verified non-actionable on this
+    # build (see Bucket A audit notes in the May 2026 port log). They fall
+    # into three families:
+    #
+    #   1. Microsoft language extensions we deliberately enable via
+    #      -fms-extensions / -fdeclspec / -fdelayed-template-parsing — the
+    #      warnings flag every site that uses the extension, but the
+    #      extension itself is what makes the engine compile at all.
+    #
+    #   2. Target-irrelevant attributes — `__stdcall` is meaningless on
+    #      x86_64 Linux (single ABI), but the engine's published headers
+    #      sprinkle it on every JET_API entry point.
+    #
+    #   3. C++20 deprecations of patterns the engine relies on (volatile
+    #      ++/--, anonymous-enum bitwise combinations, replacement
+    #      operator new declared inline) — safe in practice; converting
+    #      to the modern equivalent is an out-of-scope refactor.
+    #
+    # `-Wpragma-pack` itself is dropped because it fires on every balanced
+    # `<pshpack*.h>` include and doesn't distinguish actual leaks from
+    # the standard pshpack/poppack pattern. `-Wpragma-pack-suspicious-include`
+    # is the precise leak detector and is enabled in its place.
+    add_compile_options(
+        -Wno-microsoft-goto
+        -Wno-ignored-attributes
+        -Wno-pragma-pack
+        -Wno-invalid-offsetof
+        -Wno-delayed-template-parsing-in-cxx20
+        -Wno-deprecated-volatile
+        -Wno-inconsistent-missing-override
+        -Wno-inline-new-delete
+        -Wno-microsoft-string-literal-from-predefined
+        -Wno-microsoft-cast
+        -Wno-microsoft-sealed
+        -Wno-microsoft-enum-forward-reference
+        -Wno-microsoft-extra-qualification
+        -Wno-deprecated-anon-enum-enum-conversion
+        -Wpragma-pack-suspicious-include
+    )
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Using Microsoft Visual C++
 
