@@ -140,7 +140,7 @@ INLINE ERR ErrCMPInitProgress(
         {
             fprintf(
                 pstatus->hfCompactStats,
-                "\n\n***** %s of database '%ws' started! [%ws version %02d.%02d.%04d.%04d, (%s)]\n",
+                "\n\n***** %s of database '%ls' started! [%ls version %02d.%02d.%04d.%04d, (%s)]\n",
                 szAction,
                 wszDatabaseSrc,
                 WszUtilImageVersionName(),

@@ -21,7 +21,7 @@ class TestPageDataEntryDescriptor : public IEntryDescriptor
 
     void DumpEntry( QwEntryAddr qwAddr, PcvEntry pcvEntry ) const
     {
-        printf( "Entry Dump: %p / %p \n", qwAddr, pcvEntry );
+        printf( "Entry Dump: %p / %p \n", (void*)qwAddr, pcvEntry );
     }
 
     const CMemberDescriptor * PmdMatch( const char * szTarget, const CHAR chDelim = '\0' ) const

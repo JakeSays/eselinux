@@ -905,7 +905,7 @@ JET_ERR ErrDumpCustomersToScreen( JET_SESID sesidT, JET_TABLEID tableidCustomers
         Call( JetRetrieveColumns( sesidT, tableidCustomers, rgretrievecolumnT, 2 ) );
             
         printf( "%-32s", szCustomerNameT );
-        printf("%d\n", lCustomerIDT );
+        printf("%ld\n", lCustomerIDT );
     }
     err = JET_errSuccess;
     printf( "--------------------------------------------------------\n" );
@@ -1141,7 +1141,7 @@ JET_ERR ErrQueryTopThreeOrdersByOrderAmount( JET_SESID sesidT, JET_DBID dbidData
             nullptr ) );
 
         printf( "%-32s", szCustomerNameT );
-        printf( "$%d\n", llOrderAmount/10000 );
+        printf( "$%lld\n", llOrderAmount/10000 );
     }
     err = JET_errSuccess;
     

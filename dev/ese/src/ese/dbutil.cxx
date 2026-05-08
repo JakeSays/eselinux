@@ -1534,7 +1534,7 @@ LOCAL INT PrintIndexMetaData( const INDEXDEF * pindexdef, void * )
 
         printf( "        Localized Text=yes\n" );
         printf( "            Locale Id=%d\n", pindexdef->lcid );
-        printf( "            Locale Name=%ws\n", pindexdef->wszLocaleName );
+        printf( "            Locale Name=%ls\n", pindexdef->wszLocaleName );
         printf( "            LCMap flags=0x%08x\n", pindexdef->dwMapFlags );
 
         //  try to report current sort version. if it has an LCID, convert it to locale and get its sort version. Or
@@ -1551,7 +1551,7 @@ LOCAL INT PrintIndexMetaData( const INDEXDEF * pindexdef, void * )
 
             printf( "            NLSVersion=%d (current OS: %d)\n", pindexdef->dwNLSVersion, DWORD( ( qwCurrSortVersion >> 32 ) & 0xFFFFFFFF ) );
             printf( "            DefinedVersion=%d (current OS: %d)\n", pindexdef->dwDefinedVersion, DWORD( qwCurrSortVersion & 0xFFFFFFFF ) );
-            printf( "            SortID=%ws (current OS: %ws)\n", wszIndexDefSortID, wszSortID );
+            printf( "            SortID=%ls (current OS: %ls)\n", wszIndexDefSortID, wszSortID );
         }
         else
         {
@@ -1560,7 +1560,7 @@ LOCAL INT PrintIndexMetaData( const INDEXDEF * pindexdef, void * )
 
             printf( "            NLSVersion=%d (current OS: <unknown>)\n", pindexdef->dwNLSVersion );
             printf( "            DefinedVersion=%d (current OS: <unknown>)\n", pindexdef->dwDefinedVersion );
-            printf( "            SortID=%ws (current OS: <unknown>)\n", wszIndexDefSortID );
+            printf( "            SortID=%ls (current OS: <unknown>)\n", wszIndexDefSortID );
         }
     }
     if ( pindexdef->fExtendedColumns )
@@ -1830,7 +1830,7 @@ LOCAL INT PrintTableMetaData( const TABLEDEF * ptabledef, void * pv )
 
     printf( "Table Name        PgnoFDP  ObjidFDP    PgnoLV   ObjidLV     Pages  Density\n"
             "==========================================================================\n"
-            "%hs\n", ptabledef->szName );
+            "%s\n", ptabledef->szName );
     printf( "                 " ); // spaces rest to match up with PgnoFDP, ObjidFDP, etc.
     DBUTLPrintfIntN( ptabledef->pgnoFDP, 8 );
     printf( "  " );
@@ -2183,7 +2183,7 @@ LOCAL ERR ErrDBUTLDumpNode( JET_SESID sesid, IFileSystemAPI *const pfsapi, const
         if ( ilineCurrent >= cpage.Clines() )
         {
             Assert( ilineCurrent == 0 );
-            printf( "ERROR:  This page doesn't even have one valid iline.  Q: Blank?  A: %hs\n", cpage.FPageIsInitialized() ? "No" : "Yes" );
+            printf( "ERROR:  This page doesn't even have one valid iline.  Q: Blank?  A: %s\n", cpage.FPageIsInitialized() ? "No" : "Yes" );
             Call( ErrERRCheck( cpage.FPageIsInitialized() ? JET_errInvalidParameter : JET_errPageNotInitialized ) );
         }
 
@@ -2198,7 +2198,7 @@ LOCAL ERR ErrDBUTLDumpNode( JET_SESID sesid, IFileSystemAPI *const pfsapi, const
             if( sizeof( PGNO ) == kdf.data.Cb() )
             {
                 const PGNO pgnoChild = *(reinterpret_cast<UnalignedLittleEndian< PGNO > *>( kdf.data.Pv() ) );
-                printf( "pgnoChild = %lu (0x%x)\n", pgnoChild, pgnoChild );
+                printf( "pgnoChild = %u (0x%x)\n", pgnoChild, pgnoChild );
             }
         }
         else if( cpage.FSpaceTree() )
@@ -2209,7 +2209,7 @@ LOCAL ERR ErrDBUTLDumpNode( JET_SESID sesid, IFileSystemAPI *const pfsapi, const
 
             Call( ErrSPIGetExtentInfo( &kdf, &pgnoLast, &cpg, &sppPool ) );
             // PGNO is usigned long. 
-            printf( "%d (0x%x) pages ending at %lu (0x%x) in pool %lu (%ws)\n", cpg, cpg, pgnoLast, pgnoLast, (ULONG)sppPool, WszPoolName( sppPool ) );
+            printf( "%d (0x%x) pages ending at %u (0x%x) in pool %u (%ls)\n", cpg, cpg, pgnoLast, pgnoLast, (ULONG)sppPool, WszPoolName( sppPool ) );
         }
         else if( cpage.FPrimaryPage() )
         {
@@ -2335,7 +2335,7 @@ LOCAL ERR ErrDBUTLDumpTag( JET_SESID sesid, IFileSystemAPI* const pfsapi, const 
         if ( itagCurr >= ctags )
         {
             Assert( itagCurr == 0 );
-            printf( "ERROR:  This page doesn't even have one valid tag.  Q: Blank?  A: %hs\n", cpage.FPageIsInitialized() ? "No" : "Yes" );
+            printf( "ERROR:  This page doesn't even have one valid tag.  Q: Blank?  A: %s\n", cpage.FPageIsInitialized() ? "No" : "Yes" );
             Call( ErrERRCheck( cpage.FPageIsInitialized() ? JET_errInvalidParameter : JET_errPageNotInitialized ) );
         }
 
@@ -2537,7 +2537,7 @@ LOCAL ERR ErrDBUTLSeekToKey_(
             iline++;
         }
 
-        printf( "    pgno/iline: %lu-%d  (", pgnoCurr, iline );
+        printf( "    pgno/iline: %u-%d  (", pgnoCurr, iline );
         if ( cpage.FRootPage() )
             printf( "root," );
         if ( cpage.FParentOfLeaf() )
@@ -2583,7 +2583,7 @@ LOCAL ERR ErrDBUTLSeekToKey_(
         iline = cpage.Clines( ) - 1;
     }
 
-    printf( "    pgno/iline: %lu-%d  (%sleaf)\n\n", pgnoCurr, iline, ( cpage.FRootPage() ? "root," : "" ) );
+    printf( "    pgno/iline: %u-%d  (%sleaf)\n\n", pgnoCurr, iline, ( cpage.FRootPage() ? "root," : "" ) );
 
     return JET_errSuccess;
 }
@@ -2619,7 +2619,7 @@ LOCAL ERR ErrDBUTLDumpPage(
                                     &pfapi );
     if ( err < 0 )
     {
-        printf( "Cannot open file %ws.\n\n", wszFile );
+        printf( "Cannot open file %ls.\n\n", wszFile );
         Call( err );
     }
     Call( pfapi->ErrIORead( *tcUtil, OffsetOfPgno( pgno ), g_cbPage, (BYTE* const)pvPage, qosIONormal ) );
@@ -6055,7 +6055,7 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
                 err = ErrCATDumpMSLocales( 0, dbccinfo.ifmp );
                 if ( err != JET_errSuccess )
                 {
-                    printf( "Failed to dump %hs table with: %d (continuing on ...).\n", szMSLocales, err );
+                    printf( "Failed to dump %s table with: %d (continuing on ...).\n", szMSLocales, err );
                     // continue on ...
                 }
                 printf( "******************************************************************************\n" );
@@ -6070,7 +6070,7 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
             {
                 printf( "Name                                               Type    ObjidFDP    PgnoFDP             PgnoFDPLastSetTime\n" );
                 printf( "=============================================================================================================\n" );
-                printf( "%-51.5ws Db   ", dbccinfo.wszDatabase );
+                printf( "%-51.5ls Db   ", dbccinfo.wszDatabase );
                 DBUTLPrintfIntN( objidSystemRoot, 10 );
                 printf( " " );
                 DBUTLPrintfIntN( pgnoSystemRoot, 10 );

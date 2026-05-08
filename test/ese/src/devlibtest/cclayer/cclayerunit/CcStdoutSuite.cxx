@@ -24,16 +24,16 @@ ERR CcPrintfPrintsNumbersCorrectly::ErrTest()
     printf( "\tHello to %d platform(s) under ESE.\n", lOne );
 
     ULONG64 ullTwo  = 2;
-    printf( "\tHello to %d platform(s) under ESE.\n", ullTwo );
+    printf( "\tHello to %llu platform(s) under ESE.\n", ullTwo );
 
     QWORD qwThree = 3;
-    printf( "\tHello to %x platform(s) under ESE.\n", qwThree );
+    printf( "\tHello to %llx platform(s) under ESE.\n", qwThree );
 
     LONG rgl[3] = { 0x42, 4, 0x42 };
     printf( "\tHello to %d platform(s) under ESE.\n", rgl[1] );
 
     LONG64 rgll[3] = { 0x42, 5, 0x42 };
-    printf( "\tHello to %I64d platform(s) under ESE.\n", rgll[1] );
+    printf( "\tHello to %lld platform(s) under ESE.\n", rgll[1] );
 
 
     printf( "\tHello to 6 platform(s) under ESE.\n" ); // final and max print.
@@ -53,13 +53,13 @@ ERR CcPrintfPrintsInsertStringsCorrectly::ErrTest()
     printf( "\tHello to %s platform(s) under ESE.\n", szOne );
 
     const wchar_t * wszTwo = L"2";  // mixed mode v1
-    printf( "\tHello to %ws platform(s) under ESE.\n", wszTwo );        //  FAILURE(Debian): Prints explicit "  Hello to %ws platform(s) under ESE."  Awesome.
+    printf( "\tHello to %ls platform(s) under ESE.\n", wszTwo );        //  FAILURE(Debian): Prints explicit "  Hello to %ls platform(s) under ESE."  Awesome.
 
     const wchar_t * wszThree = L"3";
     wprintf( L"\tHello to %ws platform(s) under ESE.\n", wszThree );    //  FAILURE(Debian): See CcPrintfBasicHandwritingIsLegible test 3.
 
     const char * szFour = "4";
-    printf( "\tHello to %hs platform(s) under ESE.\n", szFour );
+    printf( "\tHello to %s platform(s) under ESE.\n", szFour );
 
 
     printf( "\tHello to 5 platform(s) under ESE.\n" ); // final and max print.

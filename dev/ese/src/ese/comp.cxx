@@ -1368,7 +1368,7 @@ LOCAL ERR ErrCMPCopyTable(
             Assert( pstatus->hfCompactStats );
             CMPGetTime( pstatus->timerCopyRecords, &iSec, &iMSec );
             fprintf( pstatus->hfCompactStats,
-                    "%d\t%I64d\t%I64d\t%d\t%d\t%d.%d\t",
+                    "%d\t%lld\t%lld\t%d\t%d\t%d.%d\t",
                     crowCopied,
                     pstatus->cbRawData,
                     pstatus->cbRawDataLV,
@@ -1804,7 +1804,7 @@ ERR ISAMAPI ErrIsamCompact(
 
             fprintf(
                 pcompactinfo->pstatus->hfCompactStats,
-                "    (Source database is %I64d bytes and it owns %d pages, of which %d are available.)\n",
+                "    (Source database is %lld bytes and it owns %d pages, of which %d are available.)\n",
                 QWORD( pcompactinfo->pstatus->cDBPagesOwned + cpgDBReserved ) * g_rgfmp[ pcompactinfo->ifmpSrc ].CbPage(),
                 pcompactinfo->pstatus->cDBPagesOwned,
                 pcompactinfo->pstatus->cDBPagesAvail );
@@ -1845,13 +1845,13 @@ ERR ISAMAPI ErrIsamCompact(
         {
             fprintf(
                 pcompactinfo->pstatus->hfCompactStats,
-                "\nDatabase defragmented to %I64d bytes.\n",
+                "\nDatabase defragmented to %lld bytes.\n",
                 g_rgfmp[pcompactinfo->ifmpDest].CbOwnedFileSize() );
 
             INST *pinst = PinstFromPpib( (PIB *) sesid );
             fprintf(
                 pcompactinfo->pstatus->hfCompactStats,
-                "Temp. database used %I64d bytes during defragmentation.\n",
+                "Temp. database used %lld bytes during defragmentation.\n",
                 g_rgfmp[pinst->m_mpdbidifmp[dbidTemp]].CbOwnedFileSize() );
             fflush( pcompactinfo->pstatus->hfCompactStats );
         }

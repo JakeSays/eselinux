@@ -442,7 +442,7 @@ INT QwordExprEval( void * pVal1, void * pVal2 )
 
 void QwordPrintVal( const void * pVal )
 {
-    ITQUPrintf(" 0x%016I64x", *(QWORD*)pVal );
+    ITQUPrintf(" 0x%016llx", *(QWORD*)pVal );
 }
 
 BOOL PtrReadVal( const char * szPtr, void ** ppvValue )
@@ -763,8 +763,8 @@ ERR ErrMemberFromStructIbCb( size_t ibOffset, size_t cbSize, QwEntryAddr qwEntry
     // out IterationQuery was extricated and generalized from edbg.cxx / CacheQuery.
     if( fFalse )
     {
-        ITQUPrintf( " ErrMemberFromStructIbCb()-> val-lu: %lu\n", ullValue1 );
-        ITQUPrintf( " ErrMemberFromStructIbCb()-> val-I64u: %I64u\n", ullValue1 );
+        ITQUPrintf( " ErrMemberFromStructIbCb()-> val-lu: %llu\n", ullValue1 );
+        ITQUPrintf( " ErrMemberFromStructIbCb()-> val-I64u: %llu\n", ullValue1 );
     }
 
     *pullValue = ullValue1;
@@ -788,7 +788,7 @@ ERR PrintAction( const IEntryDescriptor * const pied, QwEntryAddr qwEntryAddr, P
 {
     const PRINT_ACTION_CONTEXT * ppac = (PRINT_ACTION_CONTEXT*)pContext;
 
-    ITQUPrintf( " pcvEntry=%p: ", qwEntryAddr );
+    ITQUPrintf( " pcvEntry=%p: ", (void*)qwEntryAddr );
 
     for( ULONG iP = 0; iP < ppac->cPrintedMembers; iP++ )
     {
@@ -818,7 +818,7 @@ ERR CountAction( const IEntryDescriptor * const pied, QwEntryAddr qwEntryAddr, P
 ERR CountFinalAction( const IEntryDescriptor * const pied, void * pContext )
 {
     __int64 cAccum = * (__int64*) pContext;
-    ITQUPrintf(" cCount = %I64d\n", cAccum );
+    ITQUPrintf(" cCount = %lld\n", cAccum );
     return IQERR::errSuccess;
 }
 
@@ -849,7 +849,7 @@ ERR AccumFinalAction( const IEntryDescriptor * const pied, void * pContext )
 {
     ITQU_ACCUM_CONTEXT * pC = (ITQU_ACCUM_CONTEXT*)pContext;
 
-    ITQUPrintf(" cCount = %I64d\n", *(pC->pcAccum) );
+    ITQUPrintf(" cCount = %lld\n", *(pC->pcAccum) );
     return IQERR::errSuccess;
 }
 
@@ -921,7 +921,7 @@ ERR MinMaxTargetFinalAction( const IEntryDescriptor * const pied, void * pContex
     }
     else
     {
-        ITQUPrintf( " TargetAddr = 0x%p, %s =", pC->qwTargetAddr, pC->pmd->szMember );
+        ITQUPrintf( " TargetAddr = 0x%p, %s =", (void*)pC->qwTargetAddr, pC->pmd->szMember );
         unsigned __int64 ullValueT;
         const ERR err = pC->pmd->ErrMemberFromEntry( pC->qwTargetAddr, pC->pvTargetEntry, &ullValueT );
         if ( IQERR::errSuccess != err )
@@ -1076,7 +1076,7 @@ inline void IQPrintStats( CStats * pCS, PfnPrintVal pfnPrintValue, const SAMPLE 
                     }
                     ITQUPrintf( "         " );
                     pfnPrintValue( &sampleLast );
-                    ITQUPrintf( " = %I64u\n", (CHITS)0 );
+                    ITQUPrintf( " = %llu\n", (CHITS)0 );
                 }
             }
             else
@@ -1087,11 +1087,11 @@ inline void IQPrintStats( CStats * pCS, PfnPrintVal pfnPrintValue, const SAMPLE 
                     ITQUAssert( sampleSkip > sampleBucketSize )
                     ITQUPrintf( "Warning: " );
                     pfnPrintValue( &sampleLast );
-                    ITQUPrintf( " = %I64u (Begin Skip)\n", (CHITS)0 );
+                    ITQUPrintf( " = %llu (Begin Skip)\n", (CHITS)0 );
                     ITQUPrintf( "Warning: " );
                     sampleLast = sample - sampleBucketSize;
                     pfnPrintValue( &sampleLast );
-                    ITQUPrintf( " = %I64u (End Skip, delta = %I64u (buckets = %I64u))\n", (CHITS)0, sampleSkip, ( sampleSkip ) / sampleBucketSize );
+                    ITQUPrintf( " = %llu (End Skip, delta = %llu (buckets = %llu))\n", (CHITS)0, sampleSkip, ( sampleSkip ) / sampleBucketSize );
 //                  ITQUPrintf( "Warning:    Skipping giant hole in histogram: %I64d buckets, %I64d value long\n", sampleLast - sample, ( sampleLast - sample ) / sampleBucketSize );
                 }
             }
@@ -1099,7 +1099,7 @@ inline void IQPrintStats( CStats * pCS, PfnPrintVal pfnPrintValue, const SAMPLE 
 
         ITQUPrintf( "         " );
         pfnPrintValue( &sample );
-        ITQUPrintf( " = %I64u\n", hits );
+        ITQUPrintf( " = %llu\n", hits );
 
         sampleLast = sample;
     }
@@ -1111,7 +1111,7 @@ inline void IQPrintStats( CStats * pCS, PfnPrintVal pfnPrintValue, const SAMPLE 
 
     if ( fSummary )
     {
-        ITQUPrintf( "   C,Min,Ave(DblAve),Max,Range,Total:      %I64u,%I64u,%I64u(%f),%I64u,%I64u,%I64u\n",
+        ITQUPrintf( "   C,Min,Ave(DblAve),Max,Range,Total:      %llu,%llu,%llu(%f),%llu,%llu,%llu\n",
                 pCS->C(), pCS->Min(), pCS->Ave(), pCS->DblAve(), pCS->Max(), pCS->Max() - pCS->Min() , pCS->Total() );
     }
 
@@ -1202,7 +1202,7 @@ public:
         //
         if ( m_cPsc >= _countof(m_rgpsc) )
         {
-            ITQUPrintf("CAddQuerySubClause() - Adding too many query clauses, only hard compiled to handle %d clauses\n", _countof(m_rgpsc) );
+            ITQUPrintf("CAddQuerySubClause() - Adding too many query clauses, only hard compiled to handle %zu clauses\n", _countof(m_rgpsc) );
             return 0;
         }
         IQPredicateSubClause * ppsc = &(m_rgpsc[m_cPsc]);
@@ -1484,7 +1484,7 @@ IQERR ErrIQConsumePredicateArgs(
     piq = new CIterQuery( pied );
     if ( piq == nullptr )
     {
-        ITQUPrintf( "Couldn't allocate %d bytes\n", sizeof(CIterQuery) );
+        ITQUPrintf( "Couldn't allocate %zu bytes\n", sizeof(CIterQuery) );
         return IQERR::errOutOfMemory;
     }
 

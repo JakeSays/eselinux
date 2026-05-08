@@ -3363,7 +3363,7 @@ JET_ERR ErrLegacySpaceDumpEvalBTreeData(
             printf( "******************************** SPACE DUMP ***********************************\n" );
             printf( "Name                   Type   ObjidFDP    PgnoFDP  PriExt      Owned  Available\n" );
             printf( "===============================================================================\n" );
-            printf( "%-23.23ws Db  ", pBTreeStats->pBasicCatalog->rgName );
+            printf( "%-23.23ls Db  ", pBTreeStats->pBasicCatalog->rgName );
             DBUTLPrintfIntN( pBTreeStats->pBasicCatalog->objidFDP, 10 );
             printf( " " );
             DBUTLPrintfIntN( pBTreeStats->pBasicCatalog->pgnoFDP, 10 );

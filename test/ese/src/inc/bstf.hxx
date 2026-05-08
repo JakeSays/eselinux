@@ -181,7 +181,7 @@ inline void TestReportSuccess_( const char * const szTestType, const char * cons
         {
         PrintClearSuppressedChecks();
 #ifdef BSTF_AVOID_WIN_DEPENDENCE
-        printf( "\t\t\t%hs( %hs ) ... Passed.\n", szTestType, szReason );
+        printf( "\t\t\t%s( %s ) ... Passed.\n", szTestType, szReason );
 #else
         wprintf( L"\t\t\t%hs( %hs ) ... Passed.\n", szTestType, szReason );
 #endif
@@ -193,7 +193,7 @@ inline void TestReportFail_( const char * const szTestType, const char * const s
     PrintClearSuppressedChecks();
     g_cTestsFailed++;
 #ifdef BSTF_AVOID_WIN_DEPENDENCE
-    printf( "\t\t\t%hs( %hs ) ... Failed @ %d!\n", szTestType, szReason, ulLine );
+    printf( "\t\t\t%s( %s ) ... Failed @ %lu!\n", szTestType, szReason, ulLine );
 #else
     wprintf( L"\t\t\t%hs( %hs ) ... Failed @ %d!\n", szTestType, szReason, ulLine );
 #endif

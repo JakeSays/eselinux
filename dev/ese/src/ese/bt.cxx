@@ -7608,15 +7608,15 @@ ERR ErrBTDumpPageUsage( PIB * ppib, const IFMP ifmp, const PGNO pgnoFDP )
 
     printf( "\n\n" );
     printf( "Total pages: %d\n", cTotalPages );
-    printf( "Total nodes: %I64d\n", cTotalNodes );
-    printf( "Total deleted nodes: %I64d\n", cTotalDeleted );
-    printf( "Total versioned nodes: %I64d\n", cTotalVersioned );
-    printf( "Total compressed nodes: %I64d\n", cTotalCompressed );
-    printf( "Total used space: %I64d bytes\n", cbTotalUsed );
-    printf( "Total free space: %I64d bytes\n", cbTotalFree );
-    printf( "Total page overhead: %I64d bytes\n", QWORD( cTotalPages ) * sizeof(CPAGE::PGHDR) );
-    printf( "Total prefix space: %I64d bytes\n", cbTotalPrefix );
-    printf( "Total prefix savings: %I64d bytes\n", cbTotalPrefixSavings );
+    printf( "Total nodes: %lld\n", cTotalNodes );
+    printf( "Total deleted nodes: %lld\n", cTotalDeleted );
+    printf( "Total versioned nodes: %lld\n", cTotalVersioned );
+    printf( "Total compressed nodes: %lld\n", cTotalCompressed );
+    printf( "Total used space: %lld bytes\n", cbTotalUsed );
+    printf( "Total free space: %lld bytes\n", cbTotalFree );
+    printf( "Total page overhead: %lld bytes\n", QWORD( cTotalPages ) * sizeof(CPAGE::PGHDR) );
+    printf( "Total prefix space: %lld bytes\n", cbTotalPrefix );
+    printf( "Total prefix savings: %lld bytes\n", cbTotalPrefixSavings );
     printf( "Total bad prefixes: %d\n", cTotalBadPrefixes );
     printf( "Largest node: %d bytes\n", cbTotalNodeMax );
     printf( "Smallest node: %d bytes\n", ( cbTotalNodeMax > 0 ? cbTotalNodeMin : 0 ) );

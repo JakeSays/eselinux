@@ -678,7 +678,7 @@ struct TESTIFILEIBOFFSET
     // Perhaps we should make this DEBUG only.
     const CHAR * Sz( INT cb, CHAR * szT ) const
     {
-        sprintf_s( szT, cb, "0x%04X:0x%016I64x", m_iFile, m_ibOffset );
+        sprintf_s( szT, cb, "0x%04X:0x%016llx", m_iFile, m_ibOffset );
         return szT;
     }
 };

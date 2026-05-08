@@ -330,7 +330,7 @@ ERR ErrBstfRunTests( const int argc, const char * const argv[] )
 HandleError:
     const unsigned int cMsecElapsed = DWGetTickCount() - cMsecStart;
 
-    printf( "%s ran %d tests (success = %lld, failed = %lld).\r\n", argv[0], g_cTests, g_cTestsSucceeded, g_cTestsFailed );
+    printf( "%s ran %llu tests (success = %lld, failed = %lld).\r\n", argv[0], g_cTests, g_cTestsSucceeded, g_cTestsFailed );
     if ( err >= 0 )
         {
         printf( "%s completes successfully in %d milliseconds.\r\n", argv[0], cMsecElapsed );

@@ -8,7 +8,7 @@
 
 void TestReportErr( long err, unsigned long ulLine, const char *szFileName )
     {
-    printf( "error %d at line %d of %s \r\n", err, ulLine, szFileName );
+    printf( "error %ld at line %ld of %s \r\n", err, ulLine, szFileName );
     }
 
 UNITTEST * UNITTEST::s_punittestHead;

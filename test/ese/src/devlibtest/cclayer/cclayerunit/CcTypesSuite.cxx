@@ -378,7 +378,7 @@ ERR CcBasicTypesAreRightSizes::ErrTest()
     if ( sizeof(void*) == 8 )   //  should work on most platforms
     {
         const QWORD cbPointer = 8;
-        printf( "\t\tDetected 64-bit platform, testing expected variant sized type against %d bytes.\n", cbPointer );
+        printf( "\t\tDetected 64-bit platform, testing expected variant sized type against %llu bytes.\n", cbPointer );
         TestCheck( sizeof(UNSIGNED_PTR) == cbPointer );
         TestCheck( sizeof(SIGNED_PTR) == cbPointer );
         TestCheck( sizeof(size_t) == cbPointer );
@@ -386,7 +386,7 @@ ERR CcBasicTypesAreRightSizes::ErrTest()
     else
     {
         const QWORD cbPointer = 4;
-        printf( "\t\tDetected 64-bit platform, testing expected variant sized type against %d bytes.\n", cbPointer );
+        printf( "\t\tDetected 64-bit platform, testing expected variant sized type against %llu bytes.\n", cbPointer );
         TestCheck( sizeof(UNSIGNED_PTR) == cbPointer );
         TestCheck( sizeof(SIGNED_PTR) == cbPointer );
         TestCheck( sizeof(size_t) == cbPointer );
