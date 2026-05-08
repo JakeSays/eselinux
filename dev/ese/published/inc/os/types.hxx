@@ -302,6 +302,32 @@ inline constexpr BOOL FHostIsLittleEndian()
 
 //  byte swap functions
 
+#if defined( __clang__ ) || defined( __GNUC__ )
+
+//  Use the compiler's bswap intrinsics. The portable C versions below were
+//  miscompiled by clang in this build — _lrotl(x, 16) silently returned 0
+//  for some inputs, which corrupted every UnalignedBigEndian<ULONG> read
+//  (UnalignedBigEndian -> ReverseBytesOnLE -> ReverseFourBytes -> _lrotl).
+//  The first symptom was JET_errSPAvailExtCorrupted on a fresh database,
+//  but every persisted big-endian field was at risk.
+
+inline unsigned __int16 ReverseTwoBytes( const unsigned __int16 w )
+{
+    return __builtin_bswap16( w );
+}
+
+inline unsigned __int32 ReverseFourBytes( const unsigned __int32 dw )
+{
+    return __builtin_bswap32( dw );
+}
+
+inline unsigned __int64 ReverseEightBytes( const unsigned __int64 qw )
+{
+    return __builtin_bswap64( qw );
+}
+
+#else
+
 inline unsigned __int16 ReverseTwoBytes( const unsigned __int16 w )
 {
     return ( unsigned __int16 )( ( ( w & 0xFF00 ) >> 8 ) | ( ( w & 0x00FF ) << 8 ) );
@@ -346,6 +372,8 @@ inline QWORD ReverseEightBytes( const unsigned __int64 qw )
 }
 
 #endif  //  _M_IX86 && TYPES_USE_X86_ASM
+
+#endif  //  __clang__ || __GNUC__
 
 template< class T >
 inline T ReverseNBytes( const T t )
