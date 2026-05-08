@@ -7515,6 +7515,9 @@ void BFIReportCacheStatisticsChanges(
                     RESIDENT_CACHE_IS_RESTORED_ID,
                     _countof( rgwsz ), rgwsz );
                 break;
+            case eResidentCacheStatusNoChange:
+                //  Steady state — no event to emit.
+                break;
         }
 
         //  Store the last cache values.

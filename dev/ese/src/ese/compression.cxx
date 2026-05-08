@@ -2824,6 +2824,13 @@ Try7bitCompression:
                         pbDataCompressed,
                         cbDataCompressedMax,
                         pcbDataCompressedActual );
+
+            default:
+                //  Calculate7BitCompressionScheme_ also reports schemes that
+                //  this 7-bit-compression-only path doesn't apply (XPRESS,
+                //  SCRUB, NONE, ...). Those fall through to the
+                //  errRECCannotCompress return below.
+                break;
         }
     }
 

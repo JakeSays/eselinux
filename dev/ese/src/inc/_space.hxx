@@ -38,16 +38,14 @@ inline const WCHAR * const WszPoolName( _In_ const SpacePool spp )
         case spp::PrimaryExt:                 return L"Pri";
         case spp::OwnedTreeAvail:             return L"OeRes";
         case spp::AvailTreeAvail:             return L"AeRes";
+        case spp::MaxPool:
+            // Special case of unknown — sentinel; you shouldn't be asking
+            // for its name. Folded into the switch so -Wswitch is satisfied.
+            Assert( fFalse );
+            return L"UnknMax";
     }
 
     Assert( fFalse );
-    if ( spp == spp::MaxPool )
-    {
-        // A special case of unknown.  But you shouldn't be asking for the name of this, it
-        // doesn't really have one.
-        return L"UnknMax";
-    }
-
     return L"Unkn";
 }
 

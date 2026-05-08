@@ -2106,7 +2106,12 @@ INLINE BOOL FUp( EseSystemLevel esl )
             return FOSDllUp();
         case eOsal:
             return FOSLayerUp();
-        // NYI - eSys / ErrIsamSystemInit() and eInst / at least one instance is up
+        case eSys:
+        case eInst:
+            // NYI — ErrIsamSystemInit() / at least one instance up. Folded
+            // into the switch so -Wswitch is satisfied; falls through to
+            // the AssertSz below at runtime, which is the existing behaviour.
+            break;
     }
     AssertSz( fFalse, "Unknown ESE system level" );
     return fFalse;

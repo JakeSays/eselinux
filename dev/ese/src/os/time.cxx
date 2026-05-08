@@ -315,6 +315,11 @@ HRT HrtHRTCount()
 
     switch ( g_hrtt )
     {
+        case hrttUninit:
+            // UtilHRTInit() above guarantees g_hrtt is set; this branch
+            // exists only to keep -Wswitch happy.
+            AssertSz( fFalse, "g_hrtt was uninitialized after UtilHRTInit()" );
+            break;
         case hrttNone:
 #pragma prefast(suppress:28159, "ESE has fixed all known 49-day-rollover problems, and GetTickCount64() is slower.")
             qwx.SetDwLow( GetTickCount() );

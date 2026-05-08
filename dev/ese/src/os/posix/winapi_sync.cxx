@@ -136,6 +136,14 @@ DWORD WaitOne( KObject* k, DWORD dwMilliseconds )
         rc = WaitWhile( k, dwMilliseconds, [k]{ return !k->threadFinished; } );
         if ( rc == ETIMEDOUT ) { ret = WAIT_TIMEOUT; break; }
         break;
+
+    case HandleKind::File:
+    case HandleKind::FindFile:
+    case HandleKind::FindVolume:
+        // Engine doesn't synchronize on file or find handles; fail explicitly
+        // rather than blocking on an unrelated condvar.
+        ret = WAIT_FAILED;
+        break;
     }
 
     pthread_mutex_unlock( &k->lock );

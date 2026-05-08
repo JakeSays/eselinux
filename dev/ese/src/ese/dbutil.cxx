@@ -5871,6 +5871,12 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
 
         case opDBUTILEstimateRootSpaceLeak:
             return ErrDBUTLIEstimateRootSpaceLeak( (PIB*)sesid, (IFMP)pdbutil->dbid );
+
+        default:
+            //  This dispatcher handles the dump/checksum subset of
+            //  pdbutil->op values; all other ops fall through to the
+            //  second switch below (or to the post-switch error path).
+            break;
     }
 
 
@@ -5899,6 +5905,10 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
         case opDBUTILDumpMetaData:
         case opDBUTILDumpSpace:
             dbccinfo.op = pdbutil->op;
+            break;
+        default:
+            //  Other ops keep the default opDBUTILConsistency assignment
+            //  done above the switch.
             break;
     }
 

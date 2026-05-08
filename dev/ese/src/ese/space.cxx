@@ -9542,6 +9542,12 @@ LOCAL ERR ErrErrArrayPgnoToJetErr( const CArray<CPgnoFlagged>::ERR err )
 
         case CArray<CPgnoFlagged>::ERR::errOutOfMemory:
             return ErrERRCheck( JET_errOutOfMemory );
+
+        case CArray<CPgnoFlagged>::ERR::errInvalidData:
+            // Treated the same as the catch-all below; folded in to keep
+            // -Wswitch quiet while the AssertSz still fires for the
+            // unhandled case at runtime in DEBUG.
+            break;
     }
 
     AssertSz( fFalse, "UnknownCArray<CPgnoFlagged>::ERR: %s", (int)err );

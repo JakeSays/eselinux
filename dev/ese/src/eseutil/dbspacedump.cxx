@@ -3398,6 +3398,10 @@ JET_ERR ErrLegacySpaceDumpEvalBTreeData(
                 case eBTreeTypeUserSecondaryIndex:
                     wprintf( L"  %-21.21ws Idx ", pBTreeStats->pBasicCatalog->rgName );
                     break;
+                default:
+                    //  Outer switch already filtered to the three types
+                    //  above; other eType values aren't reachable here.
+                    break;
             }
             DBUTLPrintfIntN( pBTreeStats->pBasicCatalog->objidFDP, 10 );
             printf( " " );

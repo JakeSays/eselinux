@@ -2872,6 +2872,10 @@ LOCAL CResource *PCResourceFromResid( INST * const pinst, JET_RESID resid )
                 return &pinst->m_cresTDB;
             case JET_residVERBUCKET:
                 return &pinst->m_pver->m_cresBucket;
+            default:
+                // Other JET_resid* values aren't owned by INST; fall through
+                // to the generic-not-found return below.
+                break;
         }
     }
     return nullptr;
