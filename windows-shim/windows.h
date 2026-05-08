@@ -840,7 +840,9 @@ HRESULT StringCbPrintfW(  wchar_t* dst, size_t cbDst, const wchar_t* fmt, ... );
 #define vswprintf_s( dst, cnt, fmt, ap )  StringCbVPrintfW( (dst), (cnt) * sizeof( wchar_t ), (fmt), (ap) )
 #define _snwprintf_s( dst, sz, cnt, fmt, ... ) StringCbPrintfW( (dst), (sz), (fmt), ##__VA_ARGS__ )
 #define _vsnwprintf_s( dst, sz, cnt, fmt, ap ) StringCbVPrintfW( (dst), (sz), (fmt), (ap) )
-#define _snprintf_s(  dst, sz, cnt, fmt, ... ) snprintf( (dst), (sz), (fmt), ##__VA_ARGS__ )
+// _snprintf_s already defined in cc.hxx (with min(cb,cnt) — slightly
+// safer than this earlier shim form). Avoid the duplicate definition
+// (Wmacro-redefined) by skipping it here.
 #define _vsnprintf_s( dst, sz, cnt, fmt, ap )  vsnprintf( (dst), (sz), (fmt), (ap) )
 
 //  MSVC stack-allocator macros. _malloca normally falls back to heap for

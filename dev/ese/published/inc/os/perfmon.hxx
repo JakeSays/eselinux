@@ -46,11 +46,19 @@ UINT DwPERFCurPerfObj( void );  // perf object for which data is currently being
 
 
 //  Default detail level
+//
+//  Windows' winperf.h defines these as PERF_DETAIL_NOVICE / PERF_DETAIL_WIZARD.
+//  ESE deliberately overrides with engine-specific values (100 and the high
+//  bit). #undef before #define to silence Wmacro-redefined; consumers of
+//  perfmon.hxx will see the engine values, which is what the rest of the
+//  PERFMON code is written against.
 
+#undef PERF_DETAIL_DEFAULT
 #define PERF_DETAIL_DEFAULT     100
 
 //  Development detail level (made visible by a special registry key)
 
+#undef PERF_DETAIL_DEVONLY
 #define PERF_DETAIL_DEVONLY     0x80000000
 
 //  Process Information Function (PIF)
