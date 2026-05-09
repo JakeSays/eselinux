@@ -101,7 +101,10 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     # fails when linking a .so (relocation type errors), so we wire the
     # archives in by hand via generator expressions.
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        add_compile_options(-stdlib=libc++)
+        # -stdlib=libc++ is C++-only; gating with $<COMPILE_LANGUAGE:CXX>
+        # prevents Wunused-command-line-argument when clang is invoked on
+        # the C sources in _xpress (xencode.c, xdecode.c).
+        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-stdlib=libc++>)
         # Use LLVM's lld linker (matches the rest of the toolchain — clang
         # compiler, libc++, compiler-rt, libunwind). Avoids relying on the
         # system's GNU ld and its compatibility quirks.
