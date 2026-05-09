@@ -562,6 +562,45 @@ BOOL FOSMemoryNewMemCheck_( __in_z const CHAR* const /*szFileName*/, const ULONG
     return fTrue;
 }
 
+//  MEM_CHECK file/line accessors — referenced by the inline `operator new`
+//  in os/memory.hxx. The Windows build pulls these from os/memory.cxx
+//  (which depends on the os/_ostls.hxx OSTLS layout); on Linux the OSTLS
+//  surface isn't yet wired through, so stub them out.
+const CHAR * const SzNewFile()
+{
+    return "<unknown>";
+}
+
+ULONG UlNewLine()
+{
+    return 0;
+}
+
+//  Tracking-aware allocation entry points (single-underscore). On Windows
+//  these record (file, line) into a per-allocation header; on Linux the
+//  unit-test build doesn't have the tracking infrastructure ported yet,
+//  so we just discard the metadata and delegate to the non-tracking
+//  variants already defined above.
+void* PvOSMemoryHeapAlloc_( const size_t cbSize, __in_z const CHAR* /*szFile*/, LONG /*lLine*/ )
+{
+    return PvOSMemoryHeapAlloc__( cbSize );
+}
+
+void* PvOSMemoryHeapAllocAlign_( const size_t cbSize, const size_t cbAlign, __in_z const CHAR* /*szFile*/, LONG /*lLine*/ )
+{
+    return PvOSMemoryHeapAllocAlign__( cbSize, cbAlign );
+}
+
+void* PvOSMemoryPageAlloc_( const size_t cbSize, void* const pvHint, const BOOL fAllocTopDown, __in_z const CHAR* /*szFile*/, LONG /*lLine*/ )
+{
+    return PvOSMemoryPageAlloc__( cbSize, pvHint, fAllocTopDown );
+}
+
+void* PvOSMemoryPageReserve_( const size_t cbSize, void* const pvHint, __in_z const CHAR* /*szFile*/, LONG /*lLine*/ )
+{
+    return PvOSMemoryPageReserve__( cbSize, pvHint );
+}
+
 
 //  Bitmap impls — logic isn't OS-specific; we replicate the reference impl.
 

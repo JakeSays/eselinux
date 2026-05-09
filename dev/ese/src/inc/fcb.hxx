@@ -1292,12 +1292,12 @@ INLINE FCB::FCB( IFMP ifmp, PGNO pgnoFDP )
     Assert( pgnoFDP != pgnoNull || g_rgfmp[ ifmp ].Dbid() == dbidTemp );
 
     //  reset latch hints
-    Assert( m_bflPgnoFDP.pv         == NULL );
-    Assert( m_bflPgnoFDP.dwContext  == NULL );
-    Assert( m_bflPgnoOE.pv          == NULL );
-    Assert( m_bflPgnoOE.dwContext   == NULL );
-    Assert( m_bflPgnoAE.pv          == NULL );
-    Assert( m_bflPgnoAE.dwContext   == NULL );
+    Assert( m_bflPgnoFDP.pv         == nullptr );
+    Assert( m_bflPgnoFDP.dwContext  == 0 );
+    Assert( m_bflPgnoOE.pv          == nullptr );
+    Assert( m_bflPgnoOE.dwContext   == 0 );
+    Assert( m_bflPgnoAE.pv          == nullptr );
+    Assert( m_bflPgnoAE.dwContext   == 0 );
 
     Assert( m_ctasksActive == 0 );
 

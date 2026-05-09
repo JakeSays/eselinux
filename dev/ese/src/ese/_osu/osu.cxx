@@ -4,6 +4,14 @@
 #include "osustd.hxx"
 #include "esestd.hxx"
 
+// _MAX_PATH and other Win32 path constants. osustd.hxx omits the windows
+// header on non-MSVC; pull it in here so the OSPath-trap initialization
+// at the end of this TU compiles. libc++ is already in scope via osustd.hxx
+// so the windows.h shim's macro pollution can't reach the system headers.
+#ifndef _MSC_VER
+#include <windows.h>
+#endif
+
 #ifdef USE_WATSON_API
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN

@@ -1048,7 +1048,7 @@ LOCAL_BROKEN ERR ErrDBUTLMungeDatabase(
         LONG    iline;
         DATA    data;
         
-        if( 2 != sscanf_s( rgszCommand[1], "%lu:%d", &pgno, &iline ) )
+        if( 2 != sscanf_s( rgszCommand[1], "%u:%d", &pgno, &iline ) )
         {
             //  we didn't get all the arguments we need
             return ErrERRCheck( JET_errInvalidParameter );
@@ -1066,7 +1066,7 @@ LOCAL_BROKEN ERR ErrDBUTLMungeDatabase(
         LONG    iline;
         DATA    data;
         
-        if( 2 != sscanf_s( rgszCommand[1], "%lu:%d", &pgno, &iline ) )
+        if( 2 != sscanf_s( rgszCommand[1], "%u:%d", &pgno, &iline ) )
         {
             //  we didn't get all the arguments we need
             return ErrERRCheck( JET_errInvalidParameter );
@@ -1083,7 +1083,7 @@ LOCAL_BROKEN ERR ErrDBUTLMungeDatabase(
     {
         PGNO    pgno;
         LONG    iline;
-        if( 2 != sscanf_s( rgszCommand[1], "%lu:%d", &pgno, &iline ) )
+        if( 2 != sscanf_s( rgszCommand[1], "%u:%d", &pgno, &iline ) )
         {
             //  we didn't get all the arguments we need
             return ErrERRCheck( JET_errInvalidParameter );
@@ -1100,7 +1100,7 @@ LOCAL_BROKEN ERR ErrDBUTLMungeDatabase(
         PGNO    pgno;
         LONG    iline;
         
-        if( 2 != sscanf_s( rgszCommand[1], "%lu:%d", &pgno, &iline ) )
+        if( 2 != sscanf_s( rgszCommand[1], "%u:%d", &pgno, &iline ) )
         {
             //  we didn't get all the arguments we need
             return ErrERRCheck( JET_errInvalidParameter );
@@ -5382,7 +5382,7 @@ LOCAL ERR ErrDBUTLIEstimateRootSpaceLeak( PIB* const ppib, const IFMP ifmp )
                     cUncachedPrimary++;
 
                     // Test injection.
-                    OnDebug( while ( objidLast >= (OBJID)UlConfigOverrideInjection( 57894, objidFDPOverMax ) ) );
+                    OnDebug( while ( objidLast >= (OBJID)UlConfigOverrideInjection( 57894, objidFDPOverMax ) ) {} );
 
                     Call( ErrSPGetInfo(
                         ppib,
@@ -5425,7 +5425,8 @@ LOCAL ERR ErrDBUTLIEstimateRootSpaceLeak( PIB* const ppib, const IFMP ifmp )
 
 #ifdef DEBUG
         // Test injection.
-        while ( objidLast >= (OBJID)UlConfigOverrideInjection( 35366, objidFDPOverMax ) );
+        while ( objidLast >= (OBJID)UlConfigOverrideInjection( 35366, objidFDPOverMax ) )
+            ;
         Call( ErrFaultInjection( 55190 ) );
 #endif // DEBUG
     }

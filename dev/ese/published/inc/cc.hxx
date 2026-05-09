@@ -541,6 +541,20 @@ const QWORD     qwMax   = 0xFFFFFFFFFFFFFFFF;
     // ignoring the secure-CRT semantics for the trailing NUL.
     #define sprintf_s( buf, cb, fmt, ... ) snprintf( (buf), (cb), (fmt), ##__VA_ARGS__ )
 
+    // sscanf_s — engine call sites scan integer fields only (no %s/%c), so
+    // the secure-CRT buffer-size args aren't needed; collapse to glibc sscanf.
+    #define sscanf_s( buf, fmt, ... ) sscanf( (buf), (fmt), ##__VA_ARGS__ )
+
+    // fopen_s — narrow-path version of _wfopen_s. Engine uses ASCII paths
+    // and modes here, so delegate to glibc fopen.
+    extern "C" errno_t fopen_s( FILE** ppf, const char* szFile, const char* szMode );
+
+    // wcstok_s — 16-bit-WCHAR string tokenizer. glibc's wcstok takes 32-bit
+    // wchar_t, which is incompatible with -fshort-wchar, so we provide a
+    // small custom impl in winapi_crt.cxx. The engine uses this only for
+    // ';'-separated configuration strings.
+    extern "C" wchar_t* wcstok_s( wchar_t* wsz, const wchar_t* wszDelim, wchar_t** ppwszCtx );
+
 #endif // !_MSC_VER
 
 

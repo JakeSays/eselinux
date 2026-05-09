@@ -13007,6 +13007,7 @@ VOID BTICheckOneSplit( FUCB             *pfucb,
             Assert( psplit->csrNew.Cpage().PgnoNext() == pgnoNull );
 
         case splittypeRight:
+        {
             CSR             *pcsrParent     = &psplitPath->psplitPathParent->csr;
             CSR             *pcsrSplit      = &psplitPath->csr;
             CSR             *pcsrNew        = &psplit->csrNew;
@@ -13174,6 +13175,11 @@ VOID BTICheckOneSplit( FUCB             *pfucb,
                 Assert( !kdfLess.key.FNull() );
                 Assert( CmpKeyWithKeyData( kdfLess.key, pfucb->kdfCurr ) <= 0 );
             }
+        }
+            break;
+
+        case splittypeMax:  //  sentinel; not a real split type
+            break;
     }
 #endif  //  DEBUG
 }

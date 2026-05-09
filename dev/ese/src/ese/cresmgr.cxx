@@ -3373,13 +3373,16 @@ ERR CProfileStorage::ErrInit( const char * const szFileName, const INT iSetMode 
             csecTimeOffset =
                 (HRT)(datetime.hour*3600 + datetime.minute*60 + datetime.second)
                 - csecTimeOffset/HrtHRTFreq();
+            // %ws is MSVC for wide-string; portable narrow fprintf can't
+            // round-trip -fshort-wchar buffers, so emit just the timestamp
+            // in the diagnostic stat-log header. Engine consumers don't
+            // parse the [BEGIN ...] tail.
             fprintf(
                 pFile,
-                "\r\n%02d:%02d:%02d [BEGIN %ws]\r\n",
+                "\r\n%02d:%02d:%02d [BEGIN]\r\n",
                 datetime.hour,
                 datetime.minute,
-                datetime.second,
-                WszUtilProcessName() );
+                datetime.second );
         }
         else
         {
@@ -3422,7 +3425,7 @@ VOID CProfileStorage::Term()
     }
     DATETIME datetime;
     UtilGetCurrentDateTime( &datetime );
-    fprintf( pFile, "%02d:%02d:%02d [END %ws]\r\n", datetime.hour, datetime.minute, datetime.second, WszUtilProcessName() );
+    fprintf( pFile, "%02d:%02d:%02d [END]\r\n", datetime.hour, datetime.minute, datetime.second );
     iMode = 0;
     fclose( pFile );
     pFile = NULL;

@@ -8261,7 +8261,7 @@ ERR CAutoINDEXCREATE2To3_T< JET_INDEXCREATE2_T, JET_INDEXCREATE3_T >::ErrSet( JE
             // When a structure is created on the stack, then the upper 32-bits may be
             // garbage, and we did a raw memcpy() up above.
             AssertSz( ( ( m_rgindexcreateEngine[iIdx].grbit & JET_bitIndexUnicode ) == 0 )
-                    == ( ( DWORD_PTR( m_rgindexcreateEngine[iIdx].pidxunicode ) & 0xffffffff ) == NULL ),
+                    == ( ( DWORD_PTR( m_rgindexcreateEngine[iIdx].pidxunicode ) & 0xffffffff ) == 0 ),
                       "When JET_bitIndexUnicode is set, pidxunicode must be non-NULL." );
 
             //  Finally update the internal "version" of the struct...

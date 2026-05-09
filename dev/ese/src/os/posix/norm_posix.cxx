@@ -34,6 +34,13 @@
 
 #include "osstd.hxx"
 
+// ICU and libc++ system headers must be reached without the MEM_CHECK
+// `#define new ...` from memory.hxx in scope; that macro mangles
+// `operator new(size_t)` declarations inside ICU's localpointer.h and
+// libc++'s <concepts>/<algorithm>. The PCH brings memory.hxx in before
+// this TU runs, so push/undef around the system includes here.
+#pragma push_macro("new")
+#undef new
 #include <unicode/ucol.h>
 #include <unicode/uloc.h>
 #include <unicode/ustring.h>
@@ -43,6 +50,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#pragma pop_macro("new")
 
 const WORD          sortidNone                  = SORT_DEFAULT;
 const LANGID        langidNone                  = MAKELANGID( LANG_NEUTRAL, SUBLANG_NEUTRAL );

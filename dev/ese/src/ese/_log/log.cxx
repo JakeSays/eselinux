@@ -1686,7 +1686,12 @@ ERR LOG::ErrLGOpenPagePatchRequestCallback(
     ERR err;
     
     Assert(pgnoNull != pgno);
-    Assert(dbtimeInvalid != pgno);
+    // Original line was `Assert(dbtimeInvalid != pgno)` — almost certainly
+    // a typo for `dbtime`, but `pgno` (PGNO=unsigned int) can never equal
+    // dbtimeInvalid (a 64-bit -1), so the assertion was always-true.
+    // Preserving the always-true semantics for the Linux port; flagged
+    // alongside the dbshrink.cxx fRecoveringRedo issue for upstream review.
+    // Assert(dbtimeInvalid != pgno);
     Assert(NULL != pvPage);
     Assert(m_fRecovering);
 

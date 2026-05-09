@@ -1314,9 +1314,9 @@ ERR ErrOSTraceIInit()
     const size_t    cchPathTrace    = MAX_PATH + 1;
     WCHAR           wszPathTrace[ cchPathTrace ];
 
-    Assert( NULL == g_fcsThreadTableInit );
-    Assert( NULL == g_hMutexTrace );
-    Assert( NULL == g_hFileTrace );
+    Assert( 0 == g_fcsThreadTableInit );
+    Assert( nullptr == g_hMutexTrace );
+    Assert( nullptr == g_hFileTrace );
 
     if ( !( g_fcsThreadTableInit = InitializeCriticalSectionAndSpinCount( &g_csThreadTable, 1000 ) ) )
     {

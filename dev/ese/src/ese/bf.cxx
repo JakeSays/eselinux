@@ -11807,7 +11807,7 @@ void BFIMaintCheckpointIDepthRequest_( BF * pbfImplicitlyPinnedDatabase, FMP * p
         Expected( Ptls()->fInBFAsyncIOCompletion );
         Expected( !Ptls()->fCheckpoint );
         Assert( pbfImplicitlyPinnedDatabase->err == wrnBFPageFlushPending );
-        Assert( NULL == pbfImplicitlyPinnedDatabase->pWriteSignalComplete );
+        Assert( 0 == pbfImplicitlyPinnedDatabase->pWriteSignalComplete );
 
         // schedule immediately
 
@@ -11917,7 +11917,7 @@ void BFIMaintCheckpointDepthRequest( BF * pbfImplicitlyPinnedDatabase, const BFC
 
     Assert( pbfImplicitlyPinnedDatabase != NULL );
     Assert( pbfImplicitlyPinnedDatabase->err == wrnBFPageFlushPending );
-    Assert( NULL == pbfImplicitlyPinnedDatabase->pWriteSignalComplete );
+    Assert( 0 == pbfImplicitlyPinnedDatabase->pWriteSignalComplete );
     Expected( Ptls()->fInBFAsyncIOCompletion );
 
     g_rgfmp[ pbfImplicitlyPinnedDatabase->ifmp ].ImplicitBFContextPin();
@@ -16388,7 +16388,7 @@ void BFIAssertNewlyAllocatedPage( const PBF pbfNew, const BOOL fAvailPoolAdd )
     Assert( pbfNew->err == JET_errSuccess );
 
     Assert( !pbfNew->bfbitfield.FRangeLocked() );
-    Assert( pbfNew->pWriteSignalComplete == NULL );     // should not be undergoing a write IO
+    Assert( pbfNew->pWriteSignalComplete == 0 );     // should not be undergoing a write IO
     Assert( PvBFIAcquireIOContext( pbfNew ) == NULL );  // should not be undergoing any IO
 
     Assert( pbfNew->prceUndoInfoNext == prceNil );      // verstore info should be reset
@@ -18773,7 +18773,7 @@ ERR ErrBFIValidatePageSlowly( PBF pbf, const BFLatchType bflt, const CPageEvents
 
                 if ( pbf->fSuspiciouslySlowRead &&
                     pbf->err >= JET_errSuccess &&
-                    !g_rgfmp[ pbf->ifmp ].m_fReadOnlyAttach &&
+                    !g_rgfmp[ pbf->ifmp ].FReadOnlyAttach() &&
                     !PinstFromIfmp( pbf->ifmp )->m_fTermInProgress )
                 {
                     //  Note this is a little risky b/c the page is clean and we will call BFIResetLgposOldestBegin0( pbf ) 
@@ -20683,11 +20683,14 @@ ERR ErrBFILatchPage(    _Out_ BFLatch* const    pbfl,
             const BOOL fTouchPage = ( !( bflfT & bflfNoTouch ) && !BoolParam( JET_paramEnableFileCache ) );
 
 #ifndef MINIMAL_FUNCTIONALITY
-            // Cast g_fBFMaintHashedLatches via a local to silence clang's
-            // Wconstant-logical-operand: it's declared `const BOOL = fFalse`
-            // (permanently disabled feature) but reachability depends on
-            // runtime overrides set elsewhere in this file.
-            const BOOL fHashed = g_fBFMaintHashedLatches;
+            // Route g_fBFMaintHashedLatches through a *non-const* local to
+            // silence clang's Wconstant-logical-operand: the global is
+            // declared `const BOOL = fFalse` (permanently disabled feature)
+            // but reachability depends on runtime overrides set elsewhere
+            // in this file. Using a const local doesn't break the fold;
+            // assigning into a non-const BOOL does.
+            BOOL fHashed = fFalse;
+            fHashed = g_fBFMaintHashedLatches;
             if ( fTouchPage &&
                 fHashed &&
                 //  Since we overload tickEligibleForNomination with tickViewLastRefreshed for 
@@ -21209,7 +21212,7 @@ void BFIAssertReadyForWrite( _In_ const PBF pbf )
     Assert( pbf->bfbitfield.FRangeLocked() );
     Assert( pbf->err != errBFIPageFaultPending );
     Assert( pbf->err != wrnBFPageFlushPending );
-    Assert( pbf->pWriteSignalComplete == NULL );
+    Assert( pbf->pWriteSignalComplete == 0 );
     Assert( PvBFIAcquireIOContext( pbf ) == NULL );
 
     //  should be no error, or we couldn't write this
@@ -21769,7 +21772,7 @@ ERR ErrBFIPrepareFlushPage(
     Assert( fRangeLocked );
     Assert( pbf->bfbitfield.FRangeLocked() );
     Assert( irangelock != CMeteredSection::groupTooManyActiveErr );
-    Assert( pbf->irangelock != CMeteredSection::groupTooManyActiveErr );    //  sadly trivially true, consider giving one more bit to irangelock
+    Assert( (CMeteredSection::Group)pbf->irangelock != CMeteredSection::groupTooManyActiveErr );    //  sadly trivially true, consider giving one more bit to irangelock
 
     //  this page is not the full size (required to be persisted on disk), so
     //  rehydrate the page to full size for flush
@@ -23533,7 +23536,7 @@ C_ASSERT( _countof( mpbfdfsz ) == bfdfMax );
 void BFIDirtyPage( PBF pbf, BFDirtyFlags bfdf, const TraceContext& tc )
 {
     Assert( bfdfClean < bfdf ); // don't just call us for fun
-    Assert( !g_rgfmp[ pbf->ifmp ].m_fReadOnlyAttach );    // don't dirty page on R/O DB
+    Assert( !g_rgfmp[ pbf->ifmp ].FReadOnlyAttach() );    // don't dirty page on R/O DB
 
     //  the BF is clean
     if ( pbf->bfdf == bfdfClean )
@@ -26392,7 +26395,7 @@ INLINE void BFIMarkAsSuperCold( PBF pbf, const BOOL fUser )
     Assert( pbf->sxwl.FOwnExclusiveLatch()  ||
             pbf->sxwl.FOwnWriteLatch()      ||
             // this last case is we have the virtual write latch from lockless write IO
-            ( pbf->err == wrnBFPageFlushPending && NULL == pbf->pWriteSignalComplete ) );
+            ( pbf->err == wrnBFPageFlushPending && 0 == pbf->pWriteSignalComplete ) );
 
     g_bflruk.MarkAsSuperCold( pbf );
 

@@ -3037,11 +3037,11 @@ ERR ErrIsamIPrereadIndexRanges(
     FUCB    *pfucb = reinterpret_cast<FUCB *>( vtid );
     BOOL    fAllSingletonRanges = fTrue;
 
-    Alloc( pStartKeys = new (BYTE *[cIndexRanges]) );
+    Alloc( pStartKeys = new BYTE *[cIndexRanges] );
     memset( pStartKeys, 0, sizeof(BYTE *) * cIndexRanges );
     Alloc( startKeyLengths = new DWORD[cIndexRanges] );
     memset( startKeyLengths, 0, sizeof(DWORD) * cIndexRanges );
-    Alloc( pEndKeys = new (BYTE *[cIndexRanges]) );
+    Alloc( pEndKeys = new BYTE *[cIndexRanges] );
     memset( pEndKeys, 0, sizeof(BYTE *) * cIndexRanges );
     Alloc( endKeyLengths = new DWORD[cIndexRanges] );
     memset( endKeyLengths, 0, sizeof(DWORD) * cIndexRanges );

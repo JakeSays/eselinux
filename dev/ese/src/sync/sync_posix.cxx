@@ -595,4 +595,50 @@ void OSSYNCAPI OSSyncTermForES()
 {
 }
 
+//  ESMemoryNew / ESMemoryDelete — referenced by every TU that touches the
+//  sync surface in DEBUG builds (CSyncBasicInfo emits operator new in the
+//  enhanced-state container template). Upstream sync.cxx implements these
+//  on top of the SYNC_ENHANCED_STATE memory-block pool; on Linux we just
+//  delegate to malloc/free, which is enough for the unit tests.
+void* OSSYNCAPI ESMemoryNew( size_t cb )
+{
+    return ::malloc( cb );
+}
+
+void OSSYNCAPI ESMemoryDelete( void* pv )
+{
+    ::free( pv );
+}
+
+#ifdef SYNC_ENHANCED_STATE
+
+//  CSyncBasicInfo / CSyncPerfWait ctor+dtor. SetTypeName / SetInstance and
+//  StartWait / StopWait are inline in sync.hxx; we only need to provide
+//  the lifecycle bodies, mirroring the SYNC_ENHANCED_STATE block in
+//  sync.cxx (which lives behind the file's `#ifdef _WIN32` gate).
+CSyncBasicInfo::CSyncBasicInfo( const char* szInstanceName )
+{
+    m_szInstanceName    = szInstanceName;
+    m_szTypeName        = nullptr;
+    m_psyncobj          = nullptr;
+}
+
+CSyncBasicInfo::~CSyncBasicInfo()
+{
+}
+
+CSyncPerfWait::CSyncPerfWait()
+{
+#ifdef SYNC_ANALYZE_PERFORMANCE
+    m_cWait = 0;
+    m_qwHRTWaitElapsed = 0;
+#endif
+}
+
+CSyncPerfWait::~CSyncPerfWait()
+{
+}
+
+#endif  //  SYNC_ENHANCED_STATE
+
 }  // namespace OSSYNC

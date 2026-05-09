@@ -513,7 +513,7 @@ ERR ErrRstmapSoftCheckDBFiles( INST *pinst, RSTMAP * pDbMapEntry )
     // the map entry is empty at this point
 #ifdef DEBUG
     SIGNATURE signEmpty;
-    memset( &signEmpty, '\0', sizeof(signEmpty) );
+    memset( (void*)&signEmpty, '\0', sizeof(signEmpty) );
     Assert( 0 == memcmp ( &pDbMapEntry->signDatabase, &signEmpty , sizeof(SIGNATURE) ) );
 #endif
 

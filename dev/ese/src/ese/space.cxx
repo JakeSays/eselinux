@@ -1188,7 +1188,7 @@ class SPEXTKEY {
 #ifdef DEBUG
         SPEXTKEY( )     { Invalidate(); }
         ~SPEXTKEY( )        { Invalidate(); }
-        VOID Invalidate()   { memset( this, 0xFF, sizeof(*this) ); }
+        VOID Invalidate()   { memset( (void*)this, 0xFF, sizeof(*this) ); }
 #else
         SPEXTKEY( )     { }
         ~SPEXTKEY( )        { }

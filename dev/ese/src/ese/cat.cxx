@@ -869,7 +869,7 @@ HandleError:
             if ( fLocalizedText )
             {
                 Expected( !FNORMSortidIsZeroes( psortidOutput ) );
-                Expected( !DwNLSVersionFromSortVersion( *pqwOutputSortVersion ) == 0 );
+                Expected( DwNLSVersionFromSortVersion( *pqwOutputSortVersion ) != 0 );
             }
             else
             {

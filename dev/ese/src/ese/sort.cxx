@@ -1977,7 +1977,7 @@ LOCAL ERR ErrSORTIRunNext( RCB * prcb, SREC **ppsrec )
         //  yes, then this pbf should never be null
 
         Assert( prcb->rgbfl[prcb->ipbf].pv != NULL );
-        Assert( prcb->rgbfl[prcb->ipbf].dwContext != NULL );
+        Assert( prcb->rgbfl[prcb->ipbf].dwContext != 0 );
 
         //  set new page data pointers
 

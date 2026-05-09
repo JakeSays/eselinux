@@ -611,7 +611,7 @@ VOID CGPTaskManager::TMIDispatch(   const DWORD     dwError,
                                     const DWORD_PTR dwCompletionKey2 )
 {
     Expected( dwError == ERROR_SUCCESS );
-    Assert( NULL == dwThreadContext );
+    Assert( 0 == dwThreadContext );
     Assert( 0 == dwCompletionKey1 );
     TMIDispatchGP( (VOID *)dwCompletionKey2 );
 }

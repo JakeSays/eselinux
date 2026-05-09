@@ -252,6 +252,10 @@ extern INT g_fMemCheck;
 
 
 #ifdef MEM_CHECK
+//  Bodies live in os/memory.cxx. Previously declared INLINE here while the
+//  body lived out-of-line, which tripped Wundefined-inline. We instead keep
+//  these as ordinary external functions so all TUs that use MEM_CHECK
+//  resolve them at link time against the os/memory.cxx body.
 const CHAR * const SzNewFile();
 ULONG UlNewLine();
 #endif

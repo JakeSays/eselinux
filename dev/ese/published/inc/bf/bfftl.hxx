@@ -216,7 +216,7 @@ INLINE ERR ErrBFIFTLTouch(
 {
     BFTRACE_::BFTouch_ bftouchlong;
 
-    Assert( bflt < 256 );   // stuffed into a byte
+    Assert( (DWORD)bflt < 256 );   // stuffed into a byte
     Assert( pctPriority < 0x80000000 ); // stuffed into a ULONG
 
     bftouchlong.ifmp = (BYTE)ifmp;
@@ -245,7 +245,7 @@ INLINE ERR ErrBFIFTLCache(
 {
     BFTRACE_::BFCache_ bfcache;
 
-    Assert( bflt < 256 );   // stuffed into a byte
+    Assert( (DWORD)bflt < 256 );   // stuffed into a byte
     Assert( pctPriority < 0x80000000 ); // stuffed into a ULONG
 
     bfcache.ifmp = (BYTE)ifmp;
@@ -300,7 +300,7 @@ INLINE ERR ErrBFIFTLDirty(
     const USHORT        lgposModifyIb
     )
 {
-    Assert( bfdf < 256 );
+    Assert( (DWORD)bfdf < 256 );
     BFTRACE_::BFDirty_ bfdirty;
     bfdirty.ifmp = (BYTE)ifmp;
     bfdirty.pgno = pgno;
@@ -318,8 +318,8 @@ INLINE ERR ErrBFIFTLWrite(
     const IOREASONPRIMARY   iorp
     )
 {
-    Assert( bfdf < 256 );
-    Assert( iorp < 256 );
+    Assert( (DWORD)bfdf < 256 );
+    Assert( (DWORD)iorp < 256 );
     BFTRACE_::BFWrite_ bfwrite;
     bfwrite.ifmp = (BYTE)ifmp;
     bfwrite.pgno = pgno;

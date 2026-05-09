@@ -321,7 +321,7 @@ ERR ErrDBSetLastPage( PIB* const ppib, const IFMP ifmp )
 
     Assert( !PinstFromPpib( ppib )->m_plog->FRecovering() ||
                 fRecoveringRedo != PinstFromPpib( ppib )->m_plog->FRecoveringMode() ||
-                g_rgfmp[ ifmp ].m_fCreatingDB ||
+                g_rgfmp[ ifmp ].FCreatingDB() ||
                 // Note: We CAN NOT allow ErrDBSetLastPage() during recovery 
                 // of a patched database, because the database is not completely 
                 // consistent yet.
@@ -901,7 +901,7 @@ void DBISetVersion(
     {
         OSTrace( JET_tracetagUpgrade, OSFormat( "Updating DB.le_efvMaxBinAttachDiagnostic to %d from %d\n", PfmtversEngineMax()->efv, (ULONG)pdbfilehdr->le_efvMaxBinAttachDiagnostic  ) );
         pdbfilehdr->le_efvMaxBinAttachDiagnostic = PfmtversEngineMax()->efv;
-        OnDebug( ifmp != ifmpNil ? g_rgfmp[ifmp].SetDbHeaderUpdateState( FMP::DbHeaderUpdateState::dbhusUpdateSet ) : 3/*does nothing for repair passing ifmpNil*/ );
+        OnDebug( ifmp != ifmpNil ? g_rgfmp[ifmp].SetDbHeaderUpdateState( FMP::DbHeaderUpdateState::dbhusUpdateSet ) : (void)0/*does nothing for repair passing ifmpNil*/ );
         fUpdatedHeader = fTrue;
     }
 
@@ -923,7 +923,7 @@ void DBISetVersion(
         //  Set version on db header
         pdbfilehdr->le_ulVersion = dbvUpdate.ulDbMajorVersion;
         pdbfilehdr->le_ulDaeUpdateMajor = dbvUpdate.ulDbUpdateMajor;
-        OnDebug( ifmp != ifmpNil ? g_rgfmp[ifmp].SetDbHeaderUpdateState( FMP::DbHeaderUpdateState::dbhusUpdateSet ) : 3/*does nothing for repair passing ifmpNil*/ );
+        OnDebug( ifmp != ifmpNil ? g_rgfmp[ifmp].SetDbHeaderUpdateState( FMP::DbHeaderUpdateState::dbhusUpdateSet ) : (void)0/*does nothing for repair passing ifmpNil*/ );
 
         //  This is not a normal usage of ErrDBFormatFeatureEnabled_() as typically code
         //  should be passing the current DB header format in as the 2nd arg.  Do not
@@ -945,7 +945,7 @@ void DBISetVersion(
 #endif
 
             pdbfilehdr->le_ulDaeUpdateMinor = dbvUpdate.ulDbUpdateMinor;
-            OnDebug( ifmp != ifmpNil ? g_rgfmp[ifmp].SetDbHeaderUpdateState( FMP::DbHeaderUpdateState::dbhusUpdateSet ) : 3/*does nothing for repair passing ifmpNil*/ );
+            OnDebug( ifmp != ifmpNil ? g_rgfmp[ifmp].SetDbHeaderUpdateState( FMP::DbHeaderUpdateState::dbhusUpdateSet ) : (void)0/*does nothing for repair passing ifmpNil*/ );
         }
 
         //  Usually this version is not meant to be changed; 0 means it's never set, set it here

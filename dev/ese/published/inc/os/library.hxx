@@ -4,6 +4,21 @@
 #ifndef _OS_LIBRARY_HXX_INCLUDED
 #define _OS_LIBRARY_HXX_INCLUDED
 
+// On non-Windows the secure-CRT entry _wcsupr_s used by the DEBUG-only
+// WszDllSubStr below is implemented in os/posix/strsafe_posix.cxx.
+// Pulling all of windows.h here would bring in macros (min/max/...)
+// that collide with libc++ system headers, so just forward-declare
+// the single symbol used by this header.
+#if !defined(_MSC_VER) && defined(DEBUG)
+#ifdef __cplusplus
+extern "C" {
+#endif
+int _wcsupr_s( wchar_t* str, size_t cchStr );
+#ifdef __cplusplus
+}
+#endif
+#endif
+
 //  -------------------------------------------------------------------------
 //  Compile Options
 //

@@ -5,6 +5,16 @@
 #include <cstdlib>
 #include <wchar.h>
 
+// On non-MSVC, pull in libc++ headers BEFORE os.hxx. memory.hxx defines
+// `new` to a MEM_CHECK-tracking macro that mangles `::new _Tp` inside
+// libc++'s <concepts>; including libc++ first means those headers are
+// already parsed and the macro never sees them.
+#ifndef _MSC_VER
+#include <algorithm>
+#include <type_traits>
+#include <concepts>
+#endif
+
 #include "cc.hxx"
 #include "math.hxx"
 #pragma prefast(push)

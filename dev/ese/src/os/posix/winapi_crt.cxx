@@ -523,4 +523,74 @@ int vfwprintf( FILE* fp, const wchar_t* fmt, va_list args )
     return VFwprintfImpl( fp, fmt, args );
 }
 
+// fopen_s — narrow-path counterpart to _wfopen_s. Engine call sites use
+// ASCII path and mode strings, so this is a thin wrapper over glibc fopen.
+int fopen_s( FILE** ppf, const char* szFile, const char* szMode )
+{
+    if ( !ppf )
+    {
+        return EINVAL;
+    }
+    *ppf = fopen( szFile, szMode );
+    return *ppf ? 0 : errno;
+}
+
+// wcstok_s — 16-bit-WCHAR strtok analogue. glibc's wcstok requires 32-bit
+// wchar_t, which is unusable under -fshort-wchar. The engine only ever
+// passes single-character delimiter strings (';'), so we keep the impl
+// simple and check membership with a short loop. Stateful pointer is
+// supplied by the caller; on the first call wsz is non-null, subsequent
+// calls pass nullptr to continue scanning the remembered context.
+wchar_t* wcstok_s( wchar_t* wsz, const wchar_t* wszDelim, wchar_t** ppwszCtx )
+{
+    if ( !ppwszCtx || !wszDelim )
+    {
+        return nullptr;
+    }
+
+    wchar_t* p = wsz ? wsz : *ppwszCtx;
+    if ( !p )
+    {
+        return nullptr;
+    }
+
+    auto isDelim = [wszDelim]( wchar_t c ) -> bool
+    {
+        for ( const wchar_t* d = wszDelim; *d; ++d )
+        {
+            if ( c == *d )
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    while ( *p && isDelim( *p ) )
+    {
+        ++p;
+    }
+    if ( !*p )
+    {
+        *ppwszCtx = nullptr;
+        return nullptr;
+    }
+
+    wchar_t* tok = p;
+    while ( *p && !isDelim( *p ) )
+    {
+        ++p;
+    }
+    if ( *p )
+    {
+        *p++ = 0;
+        *ppwszCtx = p;
+    }
+    else
+    {
+        *ppwszCtx = nullptr;
+    }
+    return tok;
+}
+
 }  // extern "C"

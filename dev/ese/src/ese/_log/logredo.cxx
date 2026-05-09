@@ -7729,7 +7729,7 @@ LOCAL ERR ErrLGIRedoSplitLineinfo( FUCB                 *pfucb,
     }
 
     AllocR( psplit->rglineinfo = new LINEINFO[psplit->clines] );
-    memset( psplit->rglineinfo, 0, sizeof( LINEINFO ) * psplit->clines );
+    memset( (void*)psplit->rglineinfo, 0, sizeof( LINEINFO ) * psplit->clines );
 
     if ( !FLGNeedRedoCheckDbtimeBefore( pfucb->ifmp, psplitPath->csr, dbtime, psplitPath->dbtimeBefore, &err ) )
     {
@@ -8506,7 +8506,7 @@ ERR LOG::ErrLGRIRedoInitializeMerge( PIB            *ppib,
             Assert( pfucb->kdfCurr.data.FNull() );
         }
 
-        memset( pmerge->rglineinfo, 0, sizeof( LINEINFO ) * clines );
+        memset( (void*)pmerge->rglineinfo, 0, sizeof( LINEINFO ) * clines );
 
         for ( INT iline = 0; iline < clines; iline++ )
         {
