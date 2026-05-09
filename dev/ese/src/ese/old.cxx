@@ -4647,9 +4647,13 @@ HandleError:
 //  has been allocated with new[]
 void FreeBookmarkMemory(BOOKMARK& bm)
 {
-    delete [] bm.key.prefix.Pv();
-    delete [] bm.key.suffix.Pv();
-    delete [] bm.data.Pv();
+    // BOOKMARK members store void*; the actual allocations are
+    // `new BYTE[N]` (see comment above). Cast back to BYTE* before
+    // delete[] — delete[] on void* is UB and clang flags it
+    // Wdelete-incomplete.
+    delete [] static_cast<BYTE*>( bm.key.prefix.Pv() );
+    delete [] static_cast<BYTE*>( bm.key.suffix.Pv() );
+    delete [] static_cast<BYTE*>( bm.data.Pv() );
     bm.Nullify();
 }
 

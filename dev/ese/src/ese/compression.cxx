@@ -747,7 +747,9 @@ void * XPRESS_CALL CDataCompressor::PvXpressAlloc_( _In_opt_ void * pvContext, I
 void XPRESS_CALL CDataCompressor::XpressFree_( _In_opt_ void * pvContext, _Post_ptr_invalid_ void * pvAlloc )
 //  ================================================================
 {
-    delete [] pvAlloc;
+    // XpressAlloc_ does `new BYTE[N]`; cast back to BYTE* before delete[]
+    // (delete[] on void* is UB; clang flags it Wdelete-incomplete).
+    delete [] static_cast<BYTE*>( pvAlloc );
 }
 
 //  ================================================================

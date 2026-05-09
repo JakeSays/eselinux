@@ -5394,7 +5394,7 @@ JetParam::
 {
     if ( m_fFreeValue )
     {
-        delete [] (void*)m_valueCurrent;
+        delete [] (BYTE*)m_valueCurrent;
     }
 }
 
@@ -5474,7 +5474,7 @@ ERR CJetParam::Reset(
 
     if ( m_fFreeValue )
     {
-        delete [] (void*)m_valueCurrent;
+        delete [] (BYTE*)m_valueCurrent;
     }
 
     m_fFreeValue    = fFalse;
@@ -5732,7 +5732,7 @@ ERR CJetParam::SetString(
 
     if ( pjetparam->m_fFreeValue )
     {
-        delete [] (void*)pjetparam->m_valueCurrent;
+        delete [] (BYTE*)pjetparam->m_valueCurrent;
     }
     pjetparam->m_valueCurrent   = (ULONG_PTR)wszNewValue;
     pjetparam->m_fWritten       = fTrue;
@@ -5792,7 +5792,7 @@ ERR CJetParam::SetFolder(
 
     if ( pjetparam->m_fFreeValue )
     {
-        delete [] (void*)pjetparam->m_valueCurrent;
+        delete [] (BYTE*)pjetparam->m_valueCurrent;
     }
     pjetparam->m_valueCurrent   = (ULONG_PTR)wszNewValue;
     pjetparam->m_fWritten       = fTrue;
@@ -5844,7 +5844,7 @@ ERR CJetParam::SetPath(
 
     if ( pjetparam->m_fFreeValue )
     {
-        delete [] (void*)pjetparam->m_valueCurrent;
+        delete [] (BYTE*)pjetparam->m_valueCurrent;
     }
     pjetparam->m_valueCurrent   = (ULONG_PTR)wszNewValue;
     pjetparam->m_fWritten       = fTrue;
@@ -7954,7 +7954,7 @@ ErrSetConfigStoreSpec(  CJetParam* const    pjetparam,
         //  experience elsewhere.
         if ( pjetparam->m_fFreeValue )
         {
-            delete [] (void*)pjetparam->m_valueCurrent;
+            delete [] (BYTE*)pjetparam->m_valueCurrent;
         }
         pjetparam->m_valueCurrent   = 0;
         pjetparam->m_fWritten       = fTrue;
