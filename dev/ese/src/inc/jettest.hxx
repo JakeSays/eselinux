@@ -267,8 +267,13 @@ public:
     CHAR    szMessage[ cchMax ];
     WCHAR   wszIssueSource[ cchMax ];
 
-    // Filter function to catch JetTestEnforceSEHException.
+#ifdef _WIN32
+    // Filter function to catch JetTestEnforceSEHException — Win32 SEH only.
+    // Linux equivalent (sigsetjmp/longjmp around enforce-failure) hasn't
+    // been ported; tests that rely on catching enforce failures are
+    // expected to be skipped on the Linux variant of eselibwithtests.
     static DWORD Filter( _EXCEPTION_POINTERS* lpExcepPtrs );
+#endif
 
     // Call from within an __except handler to cleanup memory allocated for the exception object.
     static void Cleanup();

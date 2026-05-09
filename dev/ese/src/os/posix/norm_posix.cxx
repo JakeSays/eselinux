@@ -555,6 +555,19 @@ ERR ErrNORMMapString(
 }
 
 
+#ifdef DEBUG
+//  AssertNORMConstants() — DEBUG-only sanity checks on the Win32 NLS
+//  flag values (LCMAP_SORTKEY, NORM_IGNORECASE, ...) the engine persists
+//  into index headers. norm.hxx declares the function in DEBUG and
+//  expands to a no-op #define in retail; matching the gate keeps the
+//  PCH consistent. The Linux port routes collation through ICU rather
+//  than NLS, so the constants are irrelevant — the body is empty.
+VOID AssertNORMConstants()
+{
+}
+#endif
+
+
 ////////////////////////////////////////////////
 //  Lifecycle
 

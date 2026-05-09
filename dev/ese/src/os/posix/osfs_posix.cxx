@@ -911,3 +911,21 @@ ERR ErrOSFSInit()
 VOID OSFSTerm()
 {
 }
+
+//  Globals normally defined in os/osfs.cxx (Windows) but referenced from
+//  the engine TUs we compile on Linux too. Without them the engine .so
+//  ships with unresolved imports — fine for libese.so where the Linux
+//  loader doesn't enforce them, but it breaks executable links like
+//  EseLibWithTestsRunner. Provide minimal definitions matching the
+//  Windows defaults.
+
+//  Default path-trap buffer used by OSPath debug helpers. Empty means
+//  no trap installed; nothing to do at runtime.
+WCHAR g_rgwchTrapOSPath[_MAX_PATH] = L"";
+
+//  Atomic-write override (test injection). 0 means use the default
+//  IO size; nonzero values force a specific atomic-write size in
+//  ErrOSFSCheckSparse / OSFSPosixCheckSparse paths. The Linux port
+//  doesn't yet wire the override into io_uring, but the engine reads
+//  the value, so it must exist.
+DWORD g_cbAtomicOverride = 0;

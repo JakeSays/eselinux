@@ -562,6 +562,8 @@ BOOL FOSMemoryNewMemCheck_( __in_z const CHAR* const /*szFileName*/, const ULONG
     return fTrue;
 }
 
+#ifdef MEM_CHECK
+
 //  MEM_CHECK file/line accessors — referenced by the inline `operator new`
 //  in os/memory.hxx. The Windows build pulls these from os/memory.cxx
 //  (which depends on the os/_ostls.hxx OSTLS layout); on Linux the OSTLS
@@ -600,6 +602,21 @@ void* PvOSMemoryPageReserve_( const size_t cbSize, void* const pvHint, __in_z co
 {
     return PvOSMemoryPageReserve__( cbSize, pvHint );
 }
+
+//  COSMemoryMap::ErrOSMMPatternAlloc_ — file/line-tracking front for
+//  ErrOSMMPatternAlloc__. Same pattern as the Pv*Heap*/Pv*Page* shims:
+//  Linux MEM_CHECK doesn't track file/line, so just forward.
+COSMemoryMap::ERR
+COSMemoryMap::ErrOSMMPatternAlloc_( const size_t    cbPattern,
+                                    const size_t    cbSize,
+                                    void** const    ppvPattern,
+                                    __in_z const CHAR* /*szFile*/,
+                                    LONG            /*lLine*/ )
+{
+    return ErrOSMMPatternAlloc__( cbPattern, cbSize, ppvPattern );
+}
+
+#endif  //  MEM_CHECK
 
 
 //  Bitmap impls — logic isn't OS-specific; we replicate the reference impl.

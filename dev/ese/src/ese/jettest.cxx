@@ -7,10 +7,14 @@
 
 #ifdef ENABLE_JET_UNIT_TEST
 
+#ifdef _WIN32
 #include <errhandlingapi.h>
+#endif
 
 extern VOID( *g_pfnReportEnforceFailure )( const WCHAR* wszContext, const CHAR* szMessage, const WCHAR* wszIssueSource );
+#ifdef _WIN32
 void __stdcall JetTestReportEnforceFail( const WCHAR* wszContext, const CHAR* szMessage, const WCHAR* wszIssueSource );
+#endif
 thread_local JetTestEnforceSEHException* JetTestEnforceSEHException::s_pThreadExcep = NULL;
 
 //  ****************************************************************
@@ -157,8 +161,12 @@ INT JetUnitTest::RunTests( const char * const szTest, const IFMP ifmpTest )
         return 1;
     }
 
+#ifdef _WIN32
     // Activate custom enforce failure reporting for testing code enforces.
+    // The hook uses Win32 SEH (RaiseException) to make enforce failures
+    // catchable inside JETUNITTEST bodies. Not ported to Linux yet.
     g_pfnReportEnforceFailure = &JetTestReportEnforceFail;
+#endif
 
     bool fDefaultRun = true;
     const char szWildCard[] = { JetUnitTest::chWildCard, '\0' };
@@ -491,6 +499,7 @@ void JetTestFixture::Fail_( const char * const szFile, const INT line, const cha
     m_presult->AddFailure( failure );
 }
 
+#ifdef _WIN32
 void __stdcall JetTestReportEnforceFail( const WCHAR* wszContext, const CHAR* szMessage, const WCHAR* wszIssueSource )
 {
     JetTestEnforceSEHException* pExcep = new JetTestEnforceSEHException();
@@ -527,6 +536,7 @@ DWORD JetTestEnforceSEHException::Filter( _EXCEPTION_POINTERS* lpExcepPtrs )
         return EXCEPTION_CONTINUE_SEARCH;
     }
 }
+#endif // _WIN32
 
 //  ================================================================
 void JetTestEnforceSEHException::Cleanup()

@@ -11,14 +11,16 @@
 set_source_files_properties(${GEN_OUTPUT_DIRECTORY}/ese/jetapitable.cxx
     PROPERTIES GENERATED TRUE)
 
-add_custom_command(
-    OUTPUT
-        ${GEN_OUTPUT_DIRECTORY}/ese/eselibwithtests/ese.def
-    COMMAND
-        cl /nologo /c /DLIBNAME=ESElibwithtests /DDEBUGGER_EXTENSION /EP /Tc ${ESE_DEV}/src/ese/esent.def > ${GEN_OUTPUT_DIRECTORY}/ese/eselibwithtests/ese.def
-    DEPENDS
-        ${ESE_DEV}/src/ese/esent.def
-)
+if (WIN32)
+    add_custom_command(
+        OUTPUT
+            ${GEN_OUTPUT_DIRECTORY}/ese/eselibwithtests/ese.def
+        COMMAND
+            cl /nologo /c /DLIBNAME=ESElibwithtests /DDEBUGGER_EXTENSION /EP /Tc ${ESE_DEV}/src/ese/esent.def > ${GEN_OUTPUT_DIRECTORY}/ese/eselibwithtests/ese.def
+        DEPENDS
+            ${ESE_DEV}/src/ese/esent.def
+    )
+endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Using Microsoft Visual C++
@@ -27,29 +29,65 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     string(REPLACE "/EHsc" "/EHs-c-" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-add_library(eselibwithtests SHARED
-    ${GEN_OUTPUT_DIRECTORY}/ese/eselibwithtests/ese.def
-    ${GEN_OUTPUT_DIRECTORY}/ese/jetapitable.cxx
-    ${ESE_SOURCES}
-    ../ese.rc
-    ../std.cxx
+# On Linux the test surface is intentionally a SUBSET of the upstream Win32
+# build. The runtime SEH machinery in jettest.cxx (RaiseException +
+# __except filter) plus large chunks of oslayer / log / node test
+# scaffolding pull in Win32 surface that the windows-shim doesn't cover.
+# We start with cpage_test + flushmap_test because they overlap with the
+# BookStoreSample JET_errOutOfBuffers failure path (page format + flush
+# map), and they're written against the engine's portable surface.
+# Additional suites can be moved up into ESE_TEST_SOURCES_LINUX as the
+# windows-shim grows.
+if (WIN32)
+    set(ESE_TEST_SOURCES_WIN32_ONLY
+        daehelpers_test.cxx
+        ../clogredomaps_test.cxx
+        ../checksum_test.cxx
+        ../fmp_test.cxx
+        ../logprereader_test.cxx
+        ../log_test.cxx
+        ../node_test.cxx
+        ../oslayer_test.cxx
+        ../oslayer_iomgr_test.cxx
+        ../osu_test.cxx
+        ../rbscleaner_test.cxx
+    )
+endif()
 
-    # Tests
-    daehelpers_test.cxx
-    ../clogredomaps_test.cxx
-    ../cpage_test.cxx
-    ../checksum_test.cxx
-    ../flushmap_test.cxx
-    ../fmp_test.cxx
+set(ESE_TEST_SOURCES_PORTABLE
     ../jettest.cxx
-    ../logprereader_test.cxx
-    ../log_test.cxx
-    ../node_test.cxx
-    ../oslayer_test.cxx
-    ../oslayer_iomgr_test.cxx
-    ../osu_test.cxx
-    ../rbscleaner_test.cxx
+    ../cpage_test.cxx
+    ../flushmap_test.cxx
 )
+
+# Engine-side glue for the Linux test runner. Lives inside eselibwithtests
+# because it #includes std.hxx (the engine PCH) to make IFMP / ifmpNil
+# visible to JetUnitTest::RunTests; the runner exe stays decoupled.
+if (NOT WIN32)
+    list(APPEND ESE_TEST_SOURCES_PORTABLE runner_entrypoint.cxx)
+endif()
+
+if (WIN32)
+    add_library(eselibwithtests SHARED
+        ${GEN_OUTPUT_DIRECTORY}/ese/eselibwithtests/ese.def
+        ${GEN_OUTPUT_DIRECTORY}/ese/jetapitable.cxx
+        ${ESE_SOURCES}
+        ../ese.rc
+        ../std.cxx
+        ${ESE_TEST_SOURCES_PORTABLE}
+        ${ESE_TEST_SOURCES_WIN32_ONLY}
+    )
+else()
+    # STATIC on Linux: the engine .so already exists for production
+    # consumers; the tests-with-engine variant doesn't need its own
+    # shared object, just a static lib that the runner exe links.
+    add_library(eselibwithtests STATIC
+        ${GEN_OUTPUT_DIRECTORY}/ese/jetapitable.cxx
+        ${ESE_SOURCES}
+        ../std.cxx
+        ${ESE_TEST_SOURCES_PORTABLE}
+    )
+endif()
 
 target_compile_definitions(eselibwithtests PRIVATE
     ENABLE_JET_UNIT_TEST
@@ -83,3 +121,40 @@ target_include_directories(eselibwithtests PRIVATE
     ./
     ../
 )
+
+if (NOT WIN32)
+    target_include_directories(eselibwithtests PRIVATE
+        ${CMAKE_SOURCE_DIR}/windows-shim
+    )
+
+    # Runner exe — minimal main() that forwards argv into the engine-side
+    # entry point in runner_entrypoint.cxx. Kept free of engine includes
+    # so we don't have to pull esestd.hxx into the runner TU.
+    add_executable(EseLibWithTestsRunner runner_posix.cxx)
+
+    # The runner needs a fully resolved engine surface. Two reasons for
+    # --whole-archive here:
+    #  (1) every JETUNITTEST emits a `static s_instance` whose ctor self-
+    #      registers in JetUnitTest::s_ptestHead at module load. Without
+    #      --whole-archive on eselibwithtests, the linker drops those
+    #      .o files as unreferenced, and the registry stays empty.
+    #  (2) sync + osposix carry OS-layer surface (g_rgwchTrapOSPath,
+    #      AssertNORMConstants, COSMemoryMap::*, ...) that the engine TUs
+    #      use but the runner doesn't reference directly. Mirror what
+    #      libese.so does in dev/ese/src/ese/server/CMakeLists.txt.
+    target_link_libraries(EseLibWithTestsRunner PRIVATE
+        dht
+        _errstr
+        _xpress
+        _perfctrs
+        _log
+        _osu
+        checksum
+        checksum_avx
+        -Wl,--whole-archive
+        eselibwithtests
+        sync
+        osposix
+        -Wl,--no-whole-archive
+    )
+endif()
