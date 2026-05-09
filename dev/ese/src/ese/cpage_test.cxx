@@ -1916,9 +1916,18 @@ JETUNITTESTEX ( CPAGE, ErrCheckPagesPerf, JetSimpleUnitTest::dwDontRunByDefault 
             DATA data;
             data.SetPv( rgbData );
 
-            INT cbRecord = 2 + ( rand() % ( sizeof(rgbData) - 1 ) );
+            // cbRecord >= 4 so the synthesised "ND record" below has at
+            // least one byte of key suffix beyond the 2-byte cbSuffix
+            // header. Smaller records (cbRecord 2 or 3) round to a
+            // suffix-cb of 0 in the formula below; ErrCheckPage's
+            // CheckLineBoundedByTag treats a non-leaf-page tag with both
+            // a zero-length key prefix AND suffix as page corruption,
+            // which fails the perf-loop CHECK once the platform's
+            // rand() series happens to roll a small cbRecord. (Pre-
+            // existing latent test bug, observed on Linux's glibc rand.)
+            INT cbRecord = 4 + ( rand() % ( sizeof(rgbData) - 3 ) );
             data.SetCb( cbRecord );
-            Assert( cbRecord >= 2 );
+            Assert( cbRecord >= 4 );
             
             if ( i <= 9 )
             {
