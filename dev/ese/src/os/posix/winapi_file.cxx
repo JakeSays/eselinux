@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/file.h>   // flock
 #include <sys/uio.h>
 #include <unistd.h>
 
@@ -74,8 +75,31 @@ namespace
         if ( flags & FILE_FLAG_NO_BUFFERING ) oflags |= O_DIRECT;
         if ( flags & FILE_FLAG_WRITE_THROUGH ) oflags |= O_SYNC;
         oflags |= O_CLOEXEC;
-        ( void )shareMode;  // POSIX has no equivalent; we always permit shared access
+        ( void )shareMode;
         return oflags;
+    }
+
+    // Translate Win32 dwShareMode into a flock(2) advisory lock mode.
+    // CreateFileW's shareMode says what *other* opens may do while this
+    // handle is alive; POSIX has no primary-handle concept, so we
+    // approximate with whole-file advisory locks:
+    //
+    //   shareMode == 0                  -> LOCK_EX (deny everyone)
+    //   FILE_SHARE_READ only            -> LOCK_EX (deny writers; readers
+    //                                      get denied too — closest we
+    //                                      can do without mandatory locks)
+    //   FILE_SHARE_WRITE present        -> 0 (don't lock — caller is
+    //                                      tolerating another writer)
+    //
+    // Return 0 for "no lock", LOCK_EX otherwise. Used non-blocking so
+    // CreateFileW maps a busy share to ERROR_SHARING_VIOLATION.
+    int FlockModeFromShareMode( DWORD shareMode )
+    {
+        if ( ( shareMode & FILE_SHARE_WRITE ) != 0 )
+        {
+            return 0;
+        }
+        return LOCK_EX;
     }
 
     DWORD AttributesFromMode( mode_t m )
@@ -112,6 +136,26 @@ HANDLE CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode
                       errno == EACCES ? ERROR_ACCESS_DENIED :
                                         ERROR_OPEN_FAILED );
         return INVALID_HANDLE_VALUE;
+    }
+
+    // Apply Win32-share-mode-equivalent advisory locking. Non-blocking so
+    // a contended file fails with ERROR_SHARING_VIOLATION rather than
+    // hanging. Writers take LOCK_EX (deny everyone else); readers take
+    // LOCK_SH (compatible with other LOCK_SH holders, fails against
+    // LOCK_EX). FILE_SHARE_WRITE bypasses both — caller is explicitly
+    // tolerating arbitrary other access.
+    if ( ( dwShareMode & FILE_SHARE_WRITE ) == 0 )
+    {
+        const bool wantWrite = ( dwDesiredAccess & GENERIC_WRITE ) != 0;
+        const int op = ( wantWrite ? LOCK_EX : LOCK_SH ) | LOCK_NB;
+        if ( flock( fd, op ) != 0 )
+        {
+            const int saved_errno = errno;
+            close( fd );
+            SetLastError( saved_errno == EWOULDBLOCK ? ERROR_SHARING_VIOLATION :
+                                                       ERROR_OPEN_FAILED );
+            return INVALID_HANDLE_VALUE;
+        }
     }
 
     KObject* const k = AllocKObject( HandleKind::File );

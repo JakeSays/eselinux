@@ -129,7 +129,19 @@ ULONG ChecksumOldFormatSSE2( const unsigned char * const pb, const ULONG cb )
 
     Unused( pfn );
 
+// Compile the SSE2 body for any compiler that targets x86 — clang/gcc on
+// Linux don't define _M_AMD64/_M_IX86 but the _mm_* intrinsics are
+// available and ABI-compatible. Without this widened gate the function
+// would silently return the hardcoded sentinel below on Linux clang,
+// which is exactly what surfaced via the CFlushMap test suite (the
+// "computed" page checksum was constant and never matched the page's
+// actual contents).
 #if (defined _M_AMD64 || defined _M_IX86 ) && !defined _ARM64EC_
+    #define ESE_X86_SIMD_AVAILABLE 1
+#elif ( defined( __x86_64__ ) || defined( __i386__ ) ) && !defined( _ARM64EC_ )
+    #define ESE_X86_SIMD_AVAILABLE 1
+#endif
+#ifdef ESE_X86_SIMD_AVAILABLE
 
     __m128i owChecksum              = _mm_setzero_si128();
     const   __m128i * pow           = (__m128i *)pb;
@@ -161,11 +173,23 @@ ULONG ChecksumOldFormatSSE2( const unsigned char * const pb, const ULONG cb )
         pow += cm128is;
     }
 
+    // MSVC's __m128i is a struct with named integer-lane members
+    // (m128i_i32[0..3]); clang/gcc model __m128i as a vector type with no
+    // such accessor. Use _mm_extract_epi32 (SSE4.1) to read the lanes
+    // when the compiler doesn't expose the named-member shape.
+#ifdef _MSC_VER
     ulChecksum  ^=
           owChecksum.m128i_i32[0]
         ^ owChecksum.m128i_i32[1]
         ^ owChecksum.m128i_i32[2]
         ^ owChecksum.m128i_i32[3];
+#else
+    // Cast to a 4-element ULONG vector for portable lane access. Avoids
+    // requiring SSE4.1 (which _mm_extract_epi32 needs) — SSE2 baseline
+    // is enough for the rest of this routine.
+    union { __m128i v; ULONG u[4]; } cv = { owChecksum };
+    ulChecksum  ^= cv.u[0] ^ cv.u[1] ^ cv.u[2] ^ cv.u[3];
+#endif
 
     return ulChecksum;
 
@@ -177,6 +201,7 @@ ULONG ChecksumOldFormatSSE2( const unsigned char * const pb, const ULONG cb )
 
 #endif
 }
+#undef ESE_X86_SIMD_AVAILABLE
 
 #endif
 
