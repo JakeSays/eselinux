@@ -6029,7 +6029,7 @@ ERR LOG::ErrLGRIRedoCreateDb(
             ppib, ppib->trxBegin0, wszDbName, 0x0, grbit, fSparseEnabledFileRedo ) );
 
     extern CPG cpgLegacyDatabaseDefaultSize;
-    CPG CpgDBDatabaseMinMin();
+    extern CPG CpgDBDatabaseMinMin();
 
     // With the advent of ESE supporting custom initial DB sizes for Phone 8.1 (so that size of 
     // of the DB is variable at JetCreateDatabase() time) arose a complication for redo in that

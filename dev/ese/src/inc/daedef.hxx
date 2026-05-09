@@ -5294,7 +5294,7 @@ public:
 
     VOID TraceStationId( const TraceStationIdentificationReason tsidr );
 
-    const enum {
+    enum {
             maskAPILocked               = 0xFF000000,
             maskAPISessionCount         = 0x00FFFFFF,
             maskAPIReserved             = 0x80000000,   //  WARNING: don't use high bit to avoid sign problems

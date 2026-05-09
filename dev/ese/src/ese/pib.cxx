@@ -876,7 +876,8 @@ VOID PIBEndSession( PIB *ppib )
     /*  unlink PIB from list
     /**/
     pinst->m_critPIB.Enter();
-    for ( pppib = (PIB**) &pinst->m_ppibGlobal; *pppib != ppib && *pppib != ppibNil; pppib = &( ( *pppib )->ppibNext ) );
+    for ( pppib = (PIB**) &pinst->m_ppibGlobal; *pppib != ppib && *pppib != ppibNil; pppib = &( ( *pppib )->ppibNext ) )
+        ;
     Assert( *pppib != ppibNil );
     *pppib = ( *pppib )->ppibNext;
     pinst->m_critPIB.Leave();

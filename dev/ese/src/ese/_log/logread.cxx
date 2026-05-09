@@ -3049,8 +3049,8 @@ LRestoreNormal:
 //
 //-------------------------------------------------------------------------
 typedef struct {
-    SHORT   cb:15;
-    SHORT   fDebugOnly:1;
+    USHORT  cb:15;
+    USHORT  fDebugOnly:1;
 } LRD;      /* log record descriptor */
 
 

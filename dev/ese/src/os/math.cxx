@@ -9,7 +9,7 @@ unsigned __int64 Ui64FNVHash(   _In_reads_bytes_opt_( cb )  const void* const   
 {
     //  These are optimal numbers for the 64 bit FNV-1a hash.
     static const __int64            FNV_PRIME           = 1099511628211;
-    static const unsigned __int64   FNV_OFFSET_BASIS    = 14695981039346656037;
+    static const unsigned __int64   FNV_OFFSET_BASIS    = 14695981039346656037ULL;
 
     const BYTE* const   pb      = (const BYTE*)pv;
     unsigned __int64    hash    = FNV_OFFSET_BASIS;

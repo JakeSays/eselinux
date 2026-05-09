@@ -600,12 +600,18 @@ const QWORD     qwMax   = 0xFFFFFFFFFFFFFFFF;
 #endif // _MSC_VER
 
 #if !defined(BEGIN_PRAGMA_OPTIMIZE_DISABLE)
+#if defined(_MSC_VER) && !defined(__clang__)
 #define BEGIN_PRAGMA_OPTIMIZE_DISABLE(flags, bug, reason) \
     __pragma(optimize(flags, off))
 #define BEGIN_PRAGMA_OPTIMIZE_ENABLE(flags, bug, reason) \
     __pragma(optimize(flags, on))
 #define END_PRAGMA_OPTIMIZE() \
     __pragma(optimize("", on))
+#else
+#define BEGIN_PRAGMA_OPTIMIZE_DISABLE(flags, bug, reason)
+#define BEGIN_PRAGMA_OPTIMIZE_ENABLE(flags, bug, reason)
+#define END_PRAGMA_OPTIMIZE()
+#endif
 #endif
 
 

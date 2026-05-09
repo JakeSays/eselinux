@@ -365,7 +365,12 @@ ERR ErrRECIRetrieveFixedColumn(
             err = ErrERRCheck( JET_wrnColumnNull );
         }
 
-        if ( fUseDMLLatch || fUseDMLLatchDBG )
+        // In non-DEBUG fUseDMLLatchDBG is a const-fFalse, which trips
+        // Wconstant-logical-operand on the `||`. Force a runtime evaluation
+        // through a non-const local so clang doesn't constant-fold.
+        BOOL fLatchHeld = fUseDMLLatch;
+        fLatchHeld = fLatchHeld || fUseDMLLatchDBG;
+        if ( fLatchHeld )
             pfcb->LeaveDML();
 
         return err;
@@ -487,7 +492,12 @@ ERR ErrRECIRetrieveVarColumn(
             err = ErrERRCheck( JET_wrnColumnNull );
         }
 
-        if ( fUseDMLLatch || fUseDMLLatchDBG )
+        // In non-DEBUG fUseDMLLatchDBG is a const-fFalse, which trips
+        // Wconstant-logical-operand on the `||`. Force a runtime evaluation
+        // through a non-const local so clang doesn't constant-fold.
+        BOOL fLatchHeld = fUseDMLLatch;
+        fLatchHeld = fLatchHeld || fUseDMLLatchDBG;
+        if ( fLatchHeld )
             pfcb->LeaveDML();
 
         return err;

@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-LOCAL const ULONG ulIDInvalid = ~(0UL);
+LOCAL const ULONG ulIDInvalid = ~( (ULONG)0 );
 
 //  ================================================================
 class TESTINJECTION

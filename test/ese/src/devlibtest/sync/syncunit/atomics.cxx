@@ -30,11 +30,11 @@ ERR SyncPerformsFAtomicIncrementPointerMaxPvoid::ErrTest()
     TestCheck( fTrue == FAtomicIncrementPointerMax( &pvoid, &pvoidI, (void*)3 ) );
     TestCheck( pvoidI == nullptr );
     TestCheck( fTrue == FAtomicIncrementPointerMax( &pvoid, &pvoidI, (void*)3 ) );
-    TestCheck( (INT)pvoidI == 1 );
+    TestCheck( (INT)(INT_PTR)pvoidI == 1 );
     TestCheck( fTrue == FAtomicIncrementPointerMax( &pvoid, &pvoidI, (void*)3 ) );
-    TestCheck( (INT)pvoidI == 2 );
+    TestCheck( (INT)(INT_PTR)pvoidI == 2 );
     TestCheck( fFalse == FAtomicIncrementPointerMax( &pvoid, &pvoidI, (void*)3 ) );
-    TestCheck( (INT)pvoidI == 2 );
+    TestCheck( (INT)(INT_PTR)pvoidI == 2 );
 #endif
 
 HandleError:

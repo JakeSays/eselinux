@@ -1420,7 +1420,7 @@ ERR VTAPI ErrIsamRetrieveColumnByReference(
     ULONG       itagSequence            = 0;
 #ifdef DEBUG
     BYTE*       rgbDataVerify           = NULL;
-#endif DEBUG
+#endif // DEBUG
     ULONG       cbActualT;
     ULONG&      cbActual                = pcbActual ? *pcbActual : cbActualT;
                 cbActual                = 0;
@@ -4317,7 +4317,8 @@ LOCAL ERR ErrIsamStreamRecordsOnPrimaryIndex(
         }
         else
         {
-            for ( ccolumnmetadata = 1; ccolumnmetadata < ccolumnidUsed; ccolumnmetadata *= 2 );
+            for ( ccolumnmetadata = 1; ccolumnmetadata < ccolumnidUsed; ccolumnmetadata *= 2 )
+                ;
             Alloc( rgcolumnmetadata = new COLUMN_METADATA[ccolumnmetadata] );
             memset( rgcolumnmetadata, 0, sizeof( rgcolumnmetadata[0] ) * ccolumnmetadata );
         }

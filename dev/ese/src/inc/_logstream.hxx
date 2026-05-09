@@ -1007,7 +1007,7 @@ private:
         return ErrLGIWriteSectorData( pfapi, &ior, lgenData, ibLogData, &cbLogData, &pbLogData, 1, dwLogIdErr, pfFlushed, fGeneralizeError );
     };
 
-    ERR ErrLGIFlushLogFileBuffers( IFileAPI * const pfapiLog, const IOFLUSHREASON iofr, BOOL *pfFlushed = fFalse );
+    ERR ErrLGIFlushLogFileBuffers( IFileAPI * const pfapiLog, const IOFLUSHREASON iofr, BOOL *pfFlushed = nullptr );
 
     VOID LGSzFromLogId( __out_bcount( cbFName ) PWSTR wszLogFileName, size_t cbFName, LONG lGeneration );
 

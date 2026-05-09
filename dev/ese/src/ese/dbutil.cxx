@@ -1742,7 +1742,7 @@ LOCAL INT PrintColumn( const COLUMNDEF * pcolumndef, void * )
             break;
             
         default:
-            OSStrCbFormatA( szUnknown, sizeof(szUnknown), "???(%d)", pcolumndef->coltyp );
+            OSStrCbFormatA( szUnknown, sizeof(szUnknown), "?\?\?(%d)", pcolumndef->coltyp );
             szType = szUnknown;
             break;
     }
@@ -1865,8 +1865,9 @@ LOCAL INT PrintTableMetaData( const TABLEDEF * ptabledef, void * pv )
     if ( ptabledef->fFlags & JET_bitObjectTableTemplate )
         printf( "    Template=yes\n" );
 
-    if ( nullptr != ptabledef->szTemplateTable
-        && '\0' != ptabledef->szTemplateTable[0] )
+    // szTemplateTable is an inline char[N] inside ptabledef; the address
+    // is never null, so the only meaningful check is on the first byte.
+    if ( '\0' != ptabledef->szTemplateTable[0] )
     {
         Assert( ptabledef->fFlags & JET_bitObjectTableDerived );
         printf( "    Derived From: %5s\n", ptabledef->szTemplateTable );
@@ -5015,7 +5016,9 @@ LOCAL ERR ErrDBUTLDumpTables( DBCCINFO *pdbccinfo, PFNTABLE pfntable, VOID * pvC
     dbutil.edbdump      = opEDBDumpTables;
     dbutil.grbitOptions = pdbccinfo->grbitOptions;
     
-    dbutil.szTable      = ( nullptr == pdbccinfo->wszTable || L'\0' == pdbccinfo->wszTable[0] ?
+    // wszTable is an inline WCHAR[N] inside pdbccinfo; the address is
+    // never null, so only the first-byte empty-string check is meaningful.
+    dbutil.szTable      = ( L'\0' == pdbccinfo->wszTable[0] ?
                                 nullptr :
                                 pdbccinfo->wszTable );
 
@@ -6047,7 +6050,8 @@ ERR ISAMAPI ErrIsamDBUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
             dbues.ppib = (JET_SESID)dbccinfo.ppib;
             dbues.ifmp = dbccinfo.ifmp;
             dbues.grbitDbUtilOptions = pdbutil->grbitOptions;
-            dbues.wszSelectedTable = ( nullptr == dbccinfo.wszTable || L'\0' == dbccinfo.wszTable[0] ?
+            // wszTable is an inline WCHAR[N]; the address is never null.
+            dbues.wszSelectedTable = ( L'\0' == dbccinfo.wszTable[0] ?
                                         nullptr :
                                         dbccinfo.wszTable );
             dbues.pbts = btsTableManager.Pbts();

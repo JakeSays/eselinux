@@ -295,7 +295,7 @@ private:
     LONG                m_cWaitAllocTries;
     LONG                m_cWaitAllocSuccess;
     LONG                m_cWaitAllocLoops;
-#endif RM_STATISTICS
+#endif // RM_STATISTICS
 
 public:
 #ifdef DEBUG

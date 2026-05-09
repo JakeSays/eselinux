@@ -1837,11 +1837,11 @@ ERR ErrOSMemoryInit()
 
 #ifdef MEM_CHECK
 
-INLINE const CHAR * const SzNewFile()
+const CHAR * const SzNewFile()
 {
     return Postls()->szNewFile;
 }
-INLINE ULONG UlNewLine()
+ULONG UlNewLine()
 {
     return Postls()->ulNewLine;
 }

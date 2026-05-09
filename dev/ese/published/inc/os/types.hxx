@@ -1012,7 +1012,13 @@ constexpr T max( const T& a, const UnalignedLittleEndian< T >& b ) { return a > 
 
 #ifdef DEBUG
 //  Unfortunately too early for asserts, define a simple one.
+//  Use __builtin_trap() on clang/GCC: writing through NULL is UB and clang
+//  warns the store will be elided, not trapped (-Wnull-dereference).
+#if defined(__clang__) || defined(__GNUC__)
+#define TYPESAssertSz( expr, str )      if ( !(expr)  ) { __builtin_trap(); }
+#else
 #define TYPESAssertSz( expr, str )      if ( !(expr)  ) { *((ULONG*)NULL) = 9; }
+#endif
 #define TYPESAssert( expr )             TYPESAssertSz( (expr), #expr )
 #else
 #define TYPESAssertSz( expr, str )

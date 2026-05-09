@@ -2362,8 +2362,33 @@ VOID SHKPerformRootMove(
 {
     BOOL fPageFDPDelete = fFalse;
 
-    // If we are in redo, get the PageFDPDelete flag so that we could set it on the new page.
-    if ( prm->csrFDP.FLatched() && fRecoveringRedo )
+    // NOTE (Linux port, preserving original behavior):
+    //
+    // The original source read:
+    //
+    //     if ( prm->csrFDP.FLatched() && fRecoveringRedo )
+    //
+    // where `fRecoveringRedo` is NOT the function parameter `fRecoveryRedo`
+    // but the second value of `enum RECOVERING_MODE { fRecoveringNone,
+    // fRecoveringRedo, ... }` — i.e. the integer constant 1. In a boolean
+    // context that constant is always true, so the `&& fRecoveringRedo`
+    // clause was a no-op gate: the block ran whenever the FDP page was
+    // latched, on BOTH the redo path (logredo.cxx, fRecoveryRedo == fTrue)
+    // AND the forward shrink path (dbshrink.cxx:~2216, fRecoveryRedo ==
+    // fFalse). The leading comment ("If we are in redo, ...") suggests the
+    // author intended to gate on the parameter and almost certainly typo'd
+    // the enum constant; the typo has been latent since the code was
+    // written. clang flags it as Wconstant-logical-operand.
+    //
+    // We deliberately preserve the original (always-on) behavior here
+    // rather than "fixing" the gate to the parameter, because forward
+    // callers may have been relying — knowingly or not — on the
+    // FPageFDPRootDelete flag being copied across, and a behavioral change
+    // in this path is out of scope for the Linux port. The `/* && fRecoveringRedo */`
+    // is left in to make the original intent legible at a glance and to be
+    // restored verbatim if Microsoft confirms the original was correct as
+    // written. Tracked as <issue link TBD>.
+    if ( prm->csrFDP.FLatched() /* && fRecoveringRedo */ )
     {
         fPageFDPDelete = prm->csrFDP.Cpage().FPageFDPRootDelete();
     }
@@ -2380,7 +2405,24 @@ VOID SHKPerformRootMove(
 
         if ( fPageFDPDelete )
         {
-            Assert( fRecoveringRedo );
+            // NOTE (Linux port, preserving original behavior):
+            //
+            // The original source read:
+            //
+            //     Assert( fRecoveringRedo );
+            //
+            // which is `Assert( 1 )` — the enum constant fRecoveringRedo
+            // (value 1) in a boolean context, NOT the function parameter
+            // fRecoveryRedo. So this assert never fired in either build.
+            // clang flags it as Wconstant-logical-operand.
+            //
+            // We comment it out (rather than rewriting it as
+            // `Assert( fRecoveryRedo )`) to preserve the original runtime
+            // behavior. Restoring the always-true assert via `Assert( fTrue )`
+            // would also be valid but would obscure the original line.
+            // Pending clarification from Microsoft on whether the intent
+            // was the parameter; tracked as <issue link TBD>.
+            // Assert( fRecoveringRedo );
             prm->csrNewFDP.Cpage().SetPageFDPDelete( fTrue );
         }
 

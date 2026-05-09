@@ -10,8 +10,11 @@
 #include <intsafe.h>
 #pragma prefast(pop)
 
-REF_TRACE_LOG * g_rgprtlFixed[(LONG_PTR)ostrlMaxFixed];
-C_ASSERT( _countof(g_rgprtlFixed) >= (ULONG_PTR)ostrlMaxFixed );
+// ostrlMaxFixed is defined as a sentinel pointer ((POSTRACEREFLOG)0x1); the
+// array size is the integer value of that sentinel. Spell it out so the
+// constant-expression folder doesn't trip on the pointer cast.
+#define cFixedRefLogs   1
+REF_TRACE_LOG * g_rgprtlFixed[cFixedRefLogs];
 
 REF_TRACE_LOG * PrtlOSTraceRefLogIGetFixedLog( POSTRACEREFLOG ptracelog )
 {

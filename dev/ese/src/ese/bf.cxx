@@ -5566,7 +5566,8 @@ ERR ErrBFConfigureProcessForCrashDump( const JET_GRBIT grbit )
 
         const size_t cbVMPage = OSMemoryPageCommitGranularity();
         size_t cbitVMPage;
-        for ( cbitVMPage = 0; (size_t)1 << cbitVMPage != cbVMPage; cbitVMPage++ );
+        for ( cbitVMPage = 0; (size_t)1 << cbitVMPage != cbVMPage; cbitVMPage++ )
+            ;
 
         const size_t    cbfVMPage   = max( 1, cbVMPage / g_rgcbPageSize[g_icbCacheMax] );
         const size_t    cpgBF       = max( 1, g_rgcbPageSize[g_icbCacheMax] / cbVMPage );
@@ -6952,7 +6953,8 @@ ERR ErrBFICacheInit( _In_ const LONG cbPageSizeMax )
                                                     UlParam( JET_paramCacheSizeMin ) * g_rgcbPageSize[g_icbCacheMax] ) );
 
     const LONG_PTR cpgChunkMin = (LONG_PTR)( cbCacheReserveMost / cCacheChunkMax / g_rgcbPageSize[g_icbCacheMax] );
-    for ( g_cpgChunk = 1; g_cpgChunk < cpgChunkMin; g_cpgChunk <<= 1 );
+    for ( g_cpgChunk = 1; g_cpgChunk < cpgChunkMin; g_cpgChunk <<= 1 )
+        ;
     Assert( FPowerOf2( g_cpgChunk ) );
 
     //  allocate worst case storage for the data chunk table
@@ -8236,7 +8238,8 @@ ERR ErrBFICacheUpdateStatistics()
 
         //  compute the parameters required to walk the cache by VM page
         size_t cbitVMPage;
-        for ( cbitVMPage = 0; (size_t)1 << cbitVMPage != cbVMPage; cbitVMPage++ );
+        for ( cbitVMPage = 0; (size_t)1 << cbitVMPage != cbVMPage; cbitVMPage++ )
+            ;
         Expected( cbitVMPage == 12 || cbitVMPage == 13 );   // 4KB (x86/amd64) or 8KB (ia64)
 
         IBF ibfLastUnintendedResident = 0;
@@ -20040,9 +20043,12 @@ NOINLINE void BFIAsyncReadWait( _In_ PBF pbf, _In_ const BFLatchType bfltWaiting
     Assert( FBFIOwnsLatchType( pbf, bfltWaiting ) );
 }
 
-C_ASSERT( bfltShared == CSXWLatch::iSharedGroup );
-C_ASSERT( bfltExclusive == CSXWLatch::iExclusiveGroup );
-C_ASSERT( bfltWrite == CSXWLatch::iWriteGroup );
+// Cast both sides to int so clang doesn't warn about comparing values from
+// two different (anonymous) enum types — they're deliberately aligned by
+// numeric value and we want the static-assert to enforce that.
+C_ASSERT( (int)bfltShared    == (int)CSXWLatch::iSharedGroup );
+C_ASSERT( (int)bfltExclusive == (int)CSXWLatch::iExclusiveGroup );
+C_ASSERT( (int)bfltWrite     == (int)CSXWLatch::iWriteGroup );
 
 const BFLatchFlags bflfDefaultValue = bflfDefault;
 
@@ -20052,7 +20058,10 @@ void BFIInitialize( _In_ PBF pbf, const TraceContext& tc )
 
     const IFMP ifmp = pbf->ifmp;
 
-    AssertRTL( pbf->err > -65536 && pbf->err < 65536 );
+    // pbf->err is SHORT so the bound check is trivially true; widen to INT
+// to silence Wtautological-constant-out-of-range-compare without losing
+// the sanity-check intent.
+AssertRTL( (INT)pbf->err > -65536 && (INT)pbf->err < 65536 );
     if ( pbf->err == errBFIPageNotVerified )
     {
         PERFOpt( cBFCacheUnused.Dec( PinstFromIfmp( ifmp ), pbf->tce ) );
@@ -20409,7 +20418,7 @@ ERR ErrBFILatchPage(    _Out_ BFLatch* const    pbfl,
             {
                 PBF pbfNew = nullptr;
 
-                AssertRTL( pgnopbf.pbf->err > -65536 && pgnopbf.pbf->err < 65536 );
+                AssertRTL( (INT)pgnopbf.pbf->err > -65536 && (INT)pgnopbf.pbf->err < 65536 );
 
                 if ( pgnopbf.pbf->err == wrnBFPageFlushPending &&
                         FBFICompleteFlushPage( pgnopbf.pbf, bfltReq ) )
@@ -20674,8 +20683,13 @@ ERR ErrBFILatchPage(    _Out_ BFLatch* const    pbfl,
             const BOOL fTouchPage = ( !( bflfT & bflfNoTouch ) && !BoolParam( JET_paramEnableFileCache ) );
 
 #ifndef MINIMAL_FUNCTIONALITY
+            // Cast g_fBFMaintHashedLatches via a local to silence clang's
+            // Wconstant-logical-operand: it's declared `const BOOL = fFalse`
+            // (permanently disabled feature) but reachability depends on
+            // runtime overrides set elsewhere in this file.
+            const BOOL fHashed = g_fBFMaintHashedLatches;
             if ( fTouchPage &&
-                g_fBFMaintHashedLatches &&
+                fHashed &&
                 //  Since we overload tickEligibleForNomination with tickViewLastRefreshed for 
                 //  view cache we must prevent view cache pages from being considered for fast
                 //  latches.  A reasonable trade-off.

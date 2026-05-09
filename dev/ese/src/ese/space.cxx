@@ -14117,7 +14117,7 @@ LOCAL ERR ErrSPIGetFsSe(
             const CPG cpgLogicalFileSize = pgnoPreLast + cpgDBReserved;
 
             //  cpg of database should be reasonable
-            Enforce( pgnoPreLast < 0x100000000 );
+            Enforce( (QWORD)pgnoPreLast < 0x100000000 );
 
             //  this includes the DB headers in this cpg size, not cpg of database.
             Enforce( g_rgfmp[ pfucb->ifmp ].CbOwnedFileSize() / g_cbPage < 0x100000000 );

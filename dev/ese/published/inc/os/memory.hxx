@@ -252,8 +252,8 @@ extern INT g_fMemCheck;
 
 
 #ifdef MEM_CHECK
-INLINE const CHAR * const SzNewFile();
-INLINE ULONG UlNewLine();
+const CHAR * const SzNewFile();
+ULONG UlNewLine();
 #endif
 
 _Ret_maybenull_ _Post_writable_byte_size_(cbSize)
