@@ -55,6 +55,7 @@ set(OSPOSIX_WINAPI_SOURCES
     osfs_posix.cxx
     sysinfo_posix.cxx
     task_posix.cxx
+    winapi_compression.cxx
     winapi_console.cxx
     winapi_crt.cxx
     winapi_critsec.cxx

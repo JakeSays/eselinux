@@ -42,16 +42,19 @@ extern "C" int RunJetUnitTestsForRunner( const char* szPattern )
         }
         COSLayerPreInit::DisablePerfmon();
         COSLayerPreInit::DisableTracing();
-        //  RunTests itself initializes the buffer manager on demand for
-        //  any test whose FNeedsBF() is true (see jettest.cxx). We don't
-        //  call ErrOSInit() here because (a) the engine's static-ctor
-        //  pre-init covers FOSPreinit + SetDefaults already and (b) on
-        //  the current Linux port ErrOSInit returns JET_errOutOfMemory
-        //  for reasons unrelated to the page-format / flushmap tests
-        //  this runner is targeting. Tests that depend on the broader
-        //  OS-init (oslayer_test, etc.) aren't in the portable subset
-        //  yet anyway.
+        //  ErrOSInit brings up io_uring, the OS file layer, etc. Tests
+        //  that exercise file I/O paths (CFlushMap.BasicPersistedFlushMap,
+        //  the JETUNITTESTEX BF + CPAGE tests, ...) need this. RunTests
+        //  itself inits the buffer manager on demand for any test whose
+        //  FNeedsBF() is true (see jettest.cxx).
+        const ERR errInit = ErrOSInit();
+        if ( errInit < JET_errSuccess )
+        {
+            std::fprintf( stderr, "ErrOSInit failed: %d\n", (int)errInit );
+            return -1;
+        }
         const INT failures = JetUnitTest::RunTests( szPattern, ifmpNil );
+        OSTerm();
         return (int)failures;
     }
 

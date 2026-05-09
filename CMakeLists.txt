@@ -52,6 +52,17 @@ elseif(UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8)
     add_compile_definitions(
         _AMD64_
         AMD64
+        # On Windows, NTOSFuncPtr (in os/library.hxx) builds each Win32 entry
+        # point as a FunctionLoader<> that lazily LoadLibraryExW's kernel32.dll
+        # and GetProcAddress's the symbol on first call. On Linux the shim'd
+        # Win32 surface is statically linked into libese.so via osposix
+        # (--whole-archive), so we want NTOSFuncPtr to collapse to a direct
+        # `decltype(&func) g_pfn = func;` instead of going through the loader.
+        # Without this, every g_pfn* call site fails with the fail-thunk
+        # (returns NULL or sets GLE) and the engine reports JET_errOutOfMemory
+        # — surfaced first by CFlushMap.BasicPersistedFlushMap's call to
+        # ErrOSTimerTaskCreate -> CreateThreadpoolTimer.
+        ENABLE_STATIC_COMPILED_LOAD_DEPENDENCIES
     )
 else()
     message(FATAL_ERROR "NOTE: NOT setting 64-bit OR 32-bit symbols")

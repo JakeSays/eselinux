@@ -39,6 +39,8 @@
 #include <stdlib.h>     // mkstemp
 #include <string.h>     // strlen
 #include <errno.h>
+#include <dirent.h>     // opendir / readdir
+#include <fnmatch.h>    // fnmatch (wildcard match)
 
 
 ////////////////////////////////////////////////
@@ -658,66 +660,172 @@ ERR COSFileSystem::ErrFolderRemove( const WCHAR* const wszPath )
 
 namespace
 {
-    //  Minimal IFileFindAPI: an empty iterator. ErrNext returns
-    //  errFileNotFound on first call so engine consumers (e.g.,
-    //  ErrLGGetGenerationRangeExt) treat the directory as empty
-    //  and proceed with fresh-log creation. A real FindFirstFileW-
-    //  driven implementation belongs alongside the io_uring file
-    //  layer; this stub is sufficient for first-time database open.
-    class CEmptyFileFind : public IFileFindAPI
+    //  IFileFindAPI implementation. The engine's expectation is the Win32
+    //  FindFirstFile / FindNextFile shape: a path argument that is either
+    //  a literal file/directory name or a wildcard pattern. We split the
+    //  path into a directory portion and a "leaf" portion, opendir() the
+    //  directory, then iterate matching entries using fnmatch().
+    //
+    //  Special case: when the leaf has no wildcard characters, fnmatch
+    //  reduces to literal compare and the iteration produces at most one
+    //  entry — exactly the shape the engine's ErrUtilPathExistsByFindFirst
+    //  needs to confirm a single file's existence.
+    class CFileFind : public IFileFindAPI
     {
     public:
-        ~CEmptyFileFind() override
+        explicit CFileFind( const char* const szPath )
         {
+            // Split into dir + pattern. If no '/', current dir.
+            const char* const pszSlash = ::strrchr( szPath, '/' );
+            if ( pszSlash )
+            {
+                const size_t cchDir = (size_t)( pszSlash - szPath );
+                if ( cchDir + 1 < sizeof( m_szDir ) )
+                {
+                    ::memcpy( m_szDir, szPath, cchDir );
+                    m_szDir[ cchDir ] = '\0';
+                }
+                else
+                {
+                    m_szDir[ 0 ] = '\0';
+                }
+                ::snprintf( m_szPattern, sizeof( m_szPattern ), "%s", pszSlash + 1 );
+            }
+            else
+            {
+                m_szDir[ 0 ] = '.';
+                m_szDir[ 1 ] = '\0';
+                ::snprintf( m_szPattern, sizeof( m_szPattern ), "%s", szPath );
+            }
+            m_pdir = ::opendir( m_szDir );
+            m_szCurEntry[ 0 ] = '\0';
+        }
+
+        ~CFileFind() override
+        {
+            if ( m_pdir )
+            {
+                ::closedir( m_pdir );
+                m_pdir = nullptr;
+            }
         }
 
         ERR ErrNext() override
         {
-            return ErrERRCheck( JET_errFileNotFound );
+            if ( !m_pdir )
+            {
+                return ErrERRCheck( JET_errFileNotFound );
+            }
+            //  Walk dir until we find a non-".", non-".." entry that
+            //  matches the pattern. fnmatch with the default flags handles
+            //  '*' / '?' and treats a non-wildcard pattern as literal compare.
+            for ( ;; )
+            {
+                struct dirent* const pent = ::readdir( m_pdir );
+                if ( !pent )
+                {
+                    return ErrERRCheck( JET_errFileNotFound );
+                }
+                if ( ::strcmp( pent->d_name, "." ) == 0 ||
+                     ::strcmp( pent->d_name, ".." ) == 0 )
+                {
+                    continue;
+                }
+                if ( ::fnmatch( m_szPattern, pent->d_name, 0 ) == 0 )
+                {
+                    ::snprintf( m_szCurEntry, sizeof( m_szCurEntry ), "%s", pent->d_name );
+                    return JET_errSuccess;
+                }
+            }
         }
 
         ERR ErrIsFolder( BOOL* const pfFolder ) override
         {
-            if ( pfFolder )
-            {
-                *pfFolder = fFalse;
-            }
-            return ErrERRCheck( JET_errFileNotFound );
+            if ( pfFolder ) *pfFolder = fFalse;
+            if ( !m_szCurEntry[ 0 ] ) return ErrERRCheck( JET_errFileNotFound );
+            char szFull[ 4096 ];
+            ::snprintf( szFull, sizeof( szFull ), "%s/%s", m_szDir, m_szCurEntry );
+            struct stat st = {};
+            if ( ::stat( szFull, &st ) != 0 ) return ErrERRCheck( JET_errFileNotFound );
+            if ( pfFolder ) *pfFolder = !!S_ISDIR( st.st_mode );
+            return JET_errSuccess;
         }
 
         ERR ErrPath( __out_bcount(OSFSAPI_MAX_PATH*sizeof(WCHAR)) WCHAR* const wszAbsFoundPath ) override
         {
+            if ( !m_szCurEntry[ 0 ] )
+            {
+                if ( wszAbsFoundPath ) wszAbsFoundPath[ 0 ] = L'\0';
+                return ErrERRCheck( JET_errFileNotFound );
+            }
+            char szFull[ 4096 ];
+            ::snprintf( szFull, sizeof( szFull ), "%s/%s", m_szDir, m_szCurEntry );
+            //  Engine wants an absolute path. realpath() resolves it; if
+            //  realpath fails (broken symlink etc.), fall back to the
+            //  composed path so the caller still sees something useful.
+            char szAbs[ 4096 ];
+            char* const pszRet = ::realpath( szFull, szAbs );
+            const char* const pszSrc = pszRet ? szAbs : szFull;
             if ( wszAbsFoundPath )
             {
-                wszAbsFoundPath[ 0 ] = L'\0';
+                if ( osposix::Utf8ToWide( pszSrc, wszAbsFoundPath, OSFSAPI_MAX_PATH ) <= 0 )
+                {
+                    return ErrERRCheck( JET_errInvalidPath );
+                }
             }
-            return ErrERRCheck( JET_errFileNotFound );
+            return JET_errSuccess;
         }
 
         ERR ErrSize( _Out_ QWORD* const pcbSize, _In_ const IFileAPI::FILESIZE /*file*/ ) override
         {
-            if ( pcbSize )
-            {
-                *pcbSize = 0;
-            }
-            return ErrERRCheck( JET_errFileNotFound );
+            if ( pcbSize ) *pcbSize = 0;
+            if ( !m_szCurEntry[ 0 ] ) return ErrERRCheck( JET_errFileNotFound );
+            char szFull[ 4096 ];
+            ::snprintf( szFull, sizeof( szFull ), "%s/%s", m_szDir, m_szCurEntry );
+            struct stat st = {};
+            if ( ::stat( szFull, &st ) != 0 ) return ErrERRCheck( JET_errFileNotFound );
+            if ( pcbSize ) *pcbSize = (QWORD)st.st_size;
+            return JET_errSuccess;
         }
 
         ERR ErrIsReadOnly( BOOL* const pfReadOnly ) override
         {
+            if ( pfReadOnly ) *pfReadOnly = fFalse;
+            if ( !m_szCurEntry[ 0 ] ) return ErrERRCheck( JET_errFileNotFound );
+            char szFull[ 4096 ];
+            ::snprintf( szFull, sizeof( szFull ), "%s/%s", m_szDir, m_szCurEntry );
+            struct stat st = {};
+            if ( ::stat( szFull, &st ) != 0 ) return ErrERRCheck( JET_errFileNotFound );
+            //  POSIX read-only ~= no write bits set (file isn't writable
+            //  by anyone). Engine consumers use this for the read-only DB
+            //  attribute, which doesn't have a clean POSIX analogue; close
+            //  enough.
             if ( pfReadOnly )
             {
-                *pfReadOnly = fFalse;
+                *pfReadOnly = ( ( st.st_mode & ( S_IWUSR | S_IWGRP | S_IWOTH ) ) == 0 );
             }
-            return ErrERRCheck( JET_errFileNotFound );
+            return JET_errSuccess;
         }
+
+    private:
+        DIR*    m_pdir = nullptr;
+        char    m_szDir[ 4096 ];
+        char    m_szPattern[ 256 ];
+        char    m_szCurEntry[ 256 ];
     };
 }
 
-ERR COSFileSystem::ErrFileFind( const WCHAR* const /* wszFind */, IFileFindAPI** const ppffapi )
+ERR COSFileSystem::ErrFileFind( const WCHAR* const wszFind, IFileFindAPI** const ppffapi )
 {
     if ( !ppffapi ) return ErrERRCheck( JET_errInvalidParameter );
-    *ppffapi = new CEmptyFileFind();
+    *ppffapi = nullptr;
+
+    char szPath[ 4096 ];
+    if ( !osposix::WidePathToUtf8( wszFind, szPath, sizeof( szPath ) ) )
+    {
+        return ErrERRCheck( JET_errInvalidPath );
+    }
+    *ppffapi = new CFileFind( szPath );
     if ( !*ppffapi ) return ErrERRCheck( JET_errOutOfMemory );
     return JET_errSuccess;
 }

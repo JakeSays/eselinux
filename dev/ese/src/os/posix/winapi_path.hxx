@@ -20,6 +20,14 @@ namespace osposix
 // Convert a null-terminated UTF-16 path to UTF-8 in caller-provided buffer.
 // Returns the number of bytes written (excluding terminator) on success;
 // 0 on failure. Caller should size buf to at least 4096 bytes.
+//
+// Backslash normalization: the engine speaks Win32-style paths internally
+// (e.g., `.\flushmap.jfm`, `C:\foo\bar`). POSIX treats `\` as a regular
+// character, so passing such paths verbatim to open() / opendir() either
+// creates files with backslashes literally in their names (file create
+// path) or produces lookup failures (find/exists path). Translate `\`
+// to `/` here, once, so every shim consumer sees a POSIX-friendly path.
+// `/` is unchanged so already-POSIX strings remain identical.
 inline int WidePathToUtf8( LPCWSTR wsz, char* buf, int cbBuf )
 {
     if ( !wsz || !buf || cbBuf <= 0 )
@@ -33,6 +41,13 @@ inline int WidePathToUtf8( LPCWSTR wsz, char* buf, int cbBuf )
     if ( n <= 0 )
     {
         return 0;
+    }
+    for ( int i = 0; i < n - 1; ++i )
+    {
+        if ( buf[ i ] == '\\' )
+        {
+            buf[ i ] = '/';
+        }
     }
     return n - 1;
 }

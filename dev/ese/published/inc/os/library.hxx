@@ -372,6 +372,32 @@ public:
 #define NTOSFuncCount( g_pfn, mszzDlls, func, oslf )    \
                         decltype(&func) g_pfn = func;
 
+#define NTOSFuncVoid( g_pfn, mszzDlls, func, oslf )     \
+                        decltype(&func) g_pfn = func;
+
+#define NTOSFuncNtStd( g_pfn, mszzDlls, func, oslf )    \
+                        decltype(&func) g_pfn = func;
+
+#define NTOSFuncError( g_pfn, mszzDlls, func, oslf )    \
+                        decltype(&func) g_pfn = func;
+
+#define NTOSFuncCustom( g_pfn, mszzDlls, func, errorthunk, oslf )   \
+                        decltype(&func) g_pfn = func;
+
+//  Preinit variants are second-stage assignments after a NTOSFuncPD-declared
+//  buffer is constructed. With static load dependencies the global is
+//  already bound at translation time, so these collapse to no-ops.
+#define NTOSFuncStdPreinit( g_pfn, mszzDlls, func, oslf )       (void)0
+#define NTOSFuncPtrPreinit( g_pfn, mszzDlls, func, oslf )       (void)0
+#define NTOSFuncErrorPreinit( g_pfn, mszzDlls, func, oslf )     (void)0
+
+//  NTOSFuncPD is "placement-deferred": a byte buffer + reference that gets
+//  filled in by NTOSFunc*Preinit. With static deps we make g_pfn a real
+//  function-pointer global directly. Engine code only ever calls through
+//  it, so the storage type doesn't matter to call sites.
+#define NTOSFuncPD( g_pfn, func )                       \
+                        decltype(&func) g_pfn = func;
+
 #else // !ENABLE_STATIC_COMPILED_LOAD_DEPENDENCIES
 
 //  The way these work, you identify the return type and pick the right decl macro:
