@@ -4222,7 +4222,7 @@ template< class I >
 typename TFileFilter<I>::CThreadLocalStorageRepository::CStaticThreadLocalStorage TFileFilter<I>::CThreadLocalStorageRepository::s_tls;
 
 template< class I >
-typename CReaderWriterLock TFileFilter<I>::CThrottleContextRepository::s_rwlThrottleContexts( CLockBasicInfo( CSyncBasicInfo( "TFileFilter<I>::CThrottleContextRepository::s_rwlThrottleContexts" ), rankThrottleContexts, 0 ) );
+CReaderWriterLock TFileFilter<I>::CThrottleContextRepository::s_rwlThrottleContexts( CLockBasicInfo( CSyncBasicInfo( "TFileFilter<I>::CThrottleContextRepository::s_rwlThrottleContexts" ), rankThrottleContexts, 0 ) );
 
 template< class I >
 typename TFileFilter<I>::CThrottleContextRepository::CThrottleContextList TFileFilter<I>::CThrottleContextRepository::s_ilThrottleContexts;

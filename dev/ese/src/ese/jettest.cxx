@@ -295,7 +295,7 @@ INT JetUnitTest::RunTests( const char * const szTest, const IFMP ifmpTest )
 
     (void)FNegTestUnset( fLeakingUnflushedIos );
 
-    printf( "\nTests skipped: %ld\n", cSkipped );
+    printf( "\nTests skipped: %d\n", cSkipped );
     return failures;
 }
 

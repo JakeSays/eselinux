@@ -727,7 +727,7 @@ typename TFileIdentification<I>::CVolumeHandleCacheEntry* TFileIdentification<I>
 }
 
 template< class I >
-typename ERR TFileIdentification<I>::ErrAddVolumeByID(  _In_    const VolumeId                                          volumeid,
+ERR TFileIdentification<I>::ErrAddVolumeByID(  _In_    const VolumeId                                          volumeid,
                                                         _In_z_  const WCHAR* const                                      wszPath,
                                                         _In_    const HANDLE                                            hVolume,
                                                         _Out_   TFileIdentification<I>::CVolumeHandleCacheEntry** const ppvhce )

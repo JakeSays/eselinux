@@ -64,7 +64,7 @@ class TCacheThreadLocalStorage
         CInitOnceThreadLocalStorageTable                                        m_initOnceThreadLocalStorageTable;
         CCacheThreadLocalStorageHash                                            m_cacheThreadLocalStorage;
         CCriticalSection                                                        m_critThreadLocalStorage;
-        typename CInvasiveList<CTLS, CCacheThreadLocalStorageBase::OffsetOfILE> m_ilThreadLocalStorage;
+        CInvasiveList<CTLS, CCacheThreadLocalStorageBase::OffsetOfILE>          m_ilThreadLocalStorage;
         CTLS*                                                                   m_pctlsCleanup;
         BOOL                                                                    m_fTerm;
 };

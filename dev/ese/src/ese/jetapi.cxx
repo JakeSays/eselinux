@@ -24809,7 +24809,7 @@ JETUNITTEST( JetApi, CAutoINDEXCREATE2To3 )
 
     for (INT i = 0; i < cindexes; ++i)
     {
-        printf( "rgindexcreatenew[%d].pidxunicode is (szLocaleName=%ws, dwMapFlags=%#x).\n",
+        printf( "rgindexcreatenew[%d].pidxunicode is (szLocaleName=%ls, dwMapFlags=%#x).\n",
                 i,
                 rgindexcreatenew[i].pidxunicode ? rgindexcreatenew[i].pidxunicode->szLocaleName : L"<null>",
                 rgindexcreatenew[i].pidxunicode ? rgindexcreatenew[i].pidxunicode->dwMapFlags : 0);

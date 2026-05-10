@@ -11,8 +11,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     # We have some strings in the code, such as "<???>", that are interpreted as trigraphs by GCC
     add_compile_options(-Wno-trigraphs)
 
-    # warning: offsetof within non-standard-layout type 'IOREQ' is conditionally-supported
-    add_compile_options(-Winvalid-offsetof)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # using Visual Studio C++
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX")

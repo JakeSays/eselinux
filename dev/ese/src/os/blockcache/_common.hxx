@@ -514,7 +514,7 @@ class TPool
                 }
 
                 CCriticalSection                                                m_crit;
-                typename CCountedInvasiveList<CHeader, CHeader::OffsetOfILE>    m_il;
+                CCountedInvasiveList<CHeader, CHeader::OffsetOfILE>             m_il;
         };
 
     private:

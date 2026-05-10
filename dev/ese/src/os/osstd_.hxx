@@ -56,7 +56,9 @@ constexpr auto max( A a, B b ) -> std::common_type_t< A, B >
 #endif
 #endif
 
+#ifndef Unused
 #define Unused( var ) ( var )
+#endif
 
 //** COMPILE OPTIONS *********************************************************
 

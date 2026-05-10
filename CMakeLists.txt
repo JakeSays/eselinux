@@ -4,8 +4,6 @@
 cmake_minimum_required (VERSION 3.20)
 project (ese)
 
-# Keeping at verbose while the project build files are still in flux
-set(CMAKE_MESSAGE_LOG_LEVEL "VERBOSE")
 message(STATUS "[ CXX Default Flags ] = ${CMAKE_CXX_FLAGS}")
 message(STATUS "[ CXX Debug Flags   ] = ${CMAKE_CXX_FLAGS_DEBUG}")
 message(STATUS "[ CXX Release Flags ] = ${CMAKE_CXX_FLAGS_RELEASE}")
@@ -286,6 +284,30 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         # "real-bug" value is low. Suppress.
         -Wno-writable-strings
         -Wpragma-pack-suspicious-include
+        # blockcache headers use MSVC-style unqualified lookup into dependent
+        # template bases pervasively; clang accepts it via -fms-extensions but
+        # still warns. 143 hits, all pre-existing upstream patterns.
+        -Wno-microsoft-template
+        # Assignment-as-condition (if (err = Foo())) is an established Windows
+        # error-handling idiom throughout the engine and test sources.
+        -Wno-parentheses
+        -Wno-logical-not-parentheses
+        # NULL used as DWORD_PTR / integer in blockcache; pre-existing.
+        -Wno-null-conversion
+        -Wno-null-arithmetic
+        # Expression results intentionally discarded in blockcache macros.
+        -Wno-unused-value
+        # memset on non-trivially-copyable structs (IOREQ, DBFILEHDR, etc.)
+        # matches the engine's existing Windows usage; safe in practice.
+        -Wno-nontrivial-memcall
+        # blockcache has `typename` in contexts clang considers non-dependent;
+        # the code compiles correctly with delayed template parsing enabled.
+        -Wno-typename-missing
+        # Inline functions declared in test headers but defined elsewhere
+        # (e.g. FGetBit/SetBit/FlipBit in checksum_test.cxx).
+        -Wno-undefined-inline
+        # delete on void* in blockcache; pre-existing upstream code.
+        -Wno-delete-incomplete
     )
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Using Microsoft Visual C++
