@@ -120,6 +120,11 @@ VOID CTaskManager::TMTerm()
 
             m_rgpTaskNode[iThread]->m_pfnCompletion = TMITermTask;
 
+            //  Balance the decrement that fires at the bottom of the dispatch
+            //  loop when this node is picked up.  ErrTMPost would normally do
+            //  this, but TMTerm inserts directly to avoid allocation.
+            AtomicIncrement( (LONG *)&m_cPostedTasks );
+
             m_critTask.Enter();
             m_ilTask.InsertAsNextMost( m_rgpTaskNode[iThread] );
             m_critTask.Leave();
