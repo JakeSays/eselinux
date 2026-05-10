@@ -59,9 +59,245 @@ namespace
         return NarrowCopyImpl( dst + i, cchDst - i, src );
     }
 
+    // Narrow output sink used by NarrowVPrintfImpl.
+    struct NSink
+    {
+        char*  dst;
+        size_t cap;   // total slots including terminator
+        size_t used;  // chars written so far (excl. terminator)
+        bool   overflow;
+
+        void Put( char c )
+        {
+            if ( used + 1 < cap )
+            {
+                dst[ used++ ] = c;
+            }
+            else
+            {
+                overflow = true;
+            }
+        }
+
+        void PutWide( const wchar_t* ws )
+        {
+            if ( !ws ) ws = L"(null)";
+            while ( *ws )
+            {
+                Put( static_cast<char>( *ws++ ) );
+            }
+        }
+    };
+
+    // Returns true if the format string contains any Windows-specific format
+    // specs that glibc's vsnprintf does not support (%ws, %S, %wc, %C, %I64, %I32).
+    bool FHasWindowsFormatSpec( const char* fmt )
+    {
+        for ( const char* p = fmt; *p; ++p )
+        {
+            if ( p[ 0 ] != '%' ) continue;
+            const char* q = p + 1;
+            if ( *q == '%' ) { ++p; continue; }  // %%
+            // skip flags
+            while ( *q == '-' || *q == '+' || *q == ' ' || *q == '#' || *q == '0' ) ++q;
+            // skip width
+            if ( *q == '*' ) ++q;
+            else while ( *q >= '0' && *q <= '9' ) ++q;
+            // skip precision
+            if ( *q == '.' )
+            {
+                ++q;
+                if ( *q == '*' ) ++q;
+                else while ( *q >= '0' && *q <= '9' ) ++q;
+            }
+            // Windows-specific?
+            if ( *q == 'w' ) return true;         // %ws, %wc
+            if ( *q == 'S' ) return true;         // %S = wide string in narrow fmt
+            if ( *q == 'C' ) return true;         // %C = wide char in narrow fmt
+            if ( q[ 0 ] == 'I' &&
+                 ( ( q[ 1 ] == '6' && q[ 2 ] == '4' ) ||
+                   ( q[ 1 ] == '3' && q[ 2 ] == '2' ) ) ) return true;
+        }
+        return false;
+    }
+
+    // Custom narrow formatter that handles Windows-specific format specs.
+    // Called only when FHasWindowsFormatSpec() is true.
+    HRESULT NarrowCustomVPrintfImpl( char* dst, size_t cchDst, const char* fmt, va_list args )
+    {
+        NSink sink{ dst, cchDst, 0, false };
+
+        for ( const char* p = fmt; *p; )
+        {
+            if ( *p != '%' )
+            {
+                sink.Put( *p++ );
+                continue;
+            }
+            ++p;
+            if ( *p == '%' ) { sink.Put( '%' ); ++p; continue; }
+
+            // Collect spec into a small buffer for passing to snprintf.
+            char spec[ 64 ];
+            size_t sn = 0;
+            spec[ sn++ ] = '%';
+
+            // flags
+            while ( *p == '-' || *p == '+' || *p == ' ' || *p == '#' || *p == '0' )
+            {
+                if ( sn < sizeof( spec ) - 4 ) spec[ sn++ ] = *p;
+                ++p;
+            }
+            // width (* or digits)
+            int   dynWidth = 0;
+            bool  hasDynWidth = false;
+            if ( *p == '*' )
+            {
+                hasDynWidth = true;
+                dynWidth = va_arg( args, int );
+                int w = dynWidth < 0 ? -dynWidth : dynWidth;
+                if ( dynWidth < 0 && sn < sizeof( spec ) - 4 ) spec[ sn++ ] = '-';
+                // encode width as digits
+                char wbuf[ 16 ];
+                int wlen = snprintf( wbuf, sizeof( wbuf ), "%d", w );
+                for ( int i = 0; i < wlen && sn < sizeof( spec ) - 4; ++i ) spec[ sn++ ] = wbuf[ i ];
+                ++p;
+            }
+            else
+            {
+                while ( *p >= '0' && *p <= '9' )
+                {
+                    if ( sn < sizeof( spec ) - 4 ) spec[ sn++ ] = *p;
+                    ++p;
+                }
+            }
+            // precision
+            if ( *p == '.' )
+            {
+                if ( sn < sizeof( spec ) - 4 ) spec[ sn++ ] = '.';
+                ++p;
+                if ( *p == '*' )
+                {
+                    int pr = va_arg( args, int );
+                    char pbuf[ 16 ];
+                    int plen = snprintf( pbuf, sizeof( pbuf ), "%d", pr );
+                    for ( int i = 0; i < plen && sn < sizeof( spec ) - 4; ++i ) spec[ sn++ ] = pbuf[ i ];
+                    ++p;
+                }
+                else
+                {
+                    while ( *p >= '0' && *p <= '9' )
+                    {
+                        if ( sn < sizeof( spec ) - 4 ) spec[ sn++ ] = *p;
+                        ++p;
+                    }
+                }
+            }
+            // size modifier
+            bool wideSpec = false;
+            char sz = 0;
+            if ( *p == 'w' ) { wideSpec = true; ++p; }
+            else if ( *p == 'h' ) { sz = 'h'; ++p; if ( *p == 'h' ) ++p; }
+            else if ( *p == 'l' )
+            {
+                ++p;
+                if ( *p == 'l' ) { sz = 'L'; ++p; }
+                else { sz = 'l'; }
+            }
+            else if ( *p == 'I' )
+            {
+                ++p;
+                if ( p[ 0 ] == '6' && p[ 1 ] == '4' ) { sz = 'L'; p += 2; }
+                else if ( p[ 0 ] == '3' && p[ 1 ] == '2' ) { sz = 0; p += 2; }
+                else { sz = 'z'; }
+            }
+            else if ( *p == 'z' ) { sz = 'z'; ++p; }
+            else if ( *p == 't' ) { sz = 't'; ++p; }
+            else if ( *p == 'L' ) { sz = 'L'; ++p; }
+
+            char conv = *p;
+            if ( *p ) ++p;
+
+            // Handle Windows-specific wide string/char specifiers.
+            if ( ( conv == 's' && wideSpec ) || conv == 'S' )
+            {
+                const wchar_t* ws = va_arg( args, const wchar_t* );
+                sink.PutWide( ws );
+                continue;
+            }
+            if ( ( conv == 'c' && wideSpec ) || conv == 'C' )
+            {
+                int wc = va_arg( args, int );
+                sink.Put( static_cast<char>( wc ) );
+                continue;
+            }
+
+            // Build a POSIX-compatible spec and let snprintf handle it.
+            if ( sz == 'h' )      spec[ sn++ ] = 'h';
+            else if ( sz == 'l' ) spec[ sn++ ] = 'l';
+            else if ( sz == 'L' ) { spec[ sn++ ] = 'l'; spec[ sn++ ] = 'l'; }
+            else if ( sz == 'z' ) spec[ sn++ ] = 'z';
+            else if ( sz == 't' ) spec[ sn++ ] = 't';
+            spec[ sn++ ] = conv;
+            spec[ sn ] = '\0';
+
+            char buf[ 256 ];
+            int n = 0;
+            switch ( conv )
+            {
+            case 'd': case 'i':
+            case 'u': case 'x': case 'X': case 'o':
+                if ( sz == 'L' )      n = snprintf( buf, sizeof( buf ), spec, va_arg( args, long long ) );
+                else if ( sz == 'l' ) n = snprintf( buf, sizeof( buf ), spec, va_arg( args, long ) );
+                else if ( sz == 'z' ) n = snprintf( buf, sizeof( buf ), spec, va_arg( args, size_t ) );
+                else if ( sz == 't' ) n = snprintf( buf, sizeof( buf ), spec, va_arg( args, ptrdiff_t ) );
+                else                  n = snprintf( buf, sizeof( buf ), spec, va_arg( args, int ) );
+                break;
+            case 'p':
+                n = snprintf( buf, sizeof( buf ), spec, va_arg( args, void* ) );
+                break;
+            case 'f': case 'e': case 'g': case 'E': case 'G': case 'a': case 'A':
+                n = snprintf( buf, sizeof( buf ), spec, va_arg( args, double ) );
+                break;
+            case 's':
+            {
+                const char* s = va_arg( args, const char* );
+                if ( !s ) s = "(null)";
+                for ( ; *s; ++s ) sink.Put( *s );
+                n = 0;
+                buf[ 0 ] = '\0';
+                break;
+            }
+            case 'c':
+                sink.Put( static_cast<char>( va_arg( args, int ) ) );
+                n = 0;
+                buf[ 0 ] = '\0';
+                break;
+            default:
+                // Unknown specifier — emit as-is and skip arg.
+                for ( size_t i = 0; i < sn; ++i ) sink.Put( spec[ i ] );
+                n = 0;
+                buf[ 0 ] = '\0';
+                break;
+            }
+            if ( n > 0 )
+            {
+                for ( int i = 0; i < n; ++i ) sink.Put( buf[ i ] );
+            }
+        }
+
+        dst[ sink.used ] = '\0';
+        if ( sink.overflow ) return STRSAFE_E_INSUFFICIENT_BUFFER;
+        return S_OK;
+    }
+
     HRESULT NarrowVPrintfImpl( char* dst, size_t cchDst, const char* fmt, va_list args )
     {
         if ( !dst || cchDst == 0 ) return STRSAFE_E_INVALID_PARAMETER;
+        if ( FHasWindowsFormatSpec( fmt ) )
+        {
+            return NarrowCustomVPrintfImpl( dst, cchDst, fmt, args );
+        }
         const int n = vsnprintf( dst, cchDst, fmt, args );
         if ( n < 0 )
         {

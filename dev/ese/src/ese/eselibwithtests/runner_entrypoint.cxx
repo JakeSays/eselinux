@@ -42,6 +42,11 @@ extern "C" int RunJetUnitTestsForRunner( const char* szPattern )
         }
         COSLayerPreInit::DisablePerfmon();
         COSLayerPreInit::DisableTracing();
+        //  Register the engine TLS size before ErrOSInit so that Ptls() is
+        //  usable in any code path the tests exercise (e.g. file I/O stats).
+        //  Normally ErrOSUSetOSLayerGlobals() does this during full JetInit;
+        //  the test runner bypasses that path, so we wire it up directly.
+        OSPrepreinitSetUserTLSSize( sizeof( TLS ) );
         //  ErrOSInit brings up io_uring, the OS file layer, etc. Tests
         //  that exercise file I/O paths (CFlushMap.BasicPersistedFlushMap,
         //  the JETUNITTESTEX BF + CPAGE tests, ...) need this. RunTests
