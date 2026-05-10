@@ -29,6 +29,7 @@ set(OSPOSIX_PORTED_SOURCES
     ${ESE_DEV}/src/os/os.cxx
     ${ESE_DEV}/src/os/osblockcache.cxx
     ${ESE_DEV}/src/os/osdiag.cxx
+    ${ESE_DEV}/src/os/osdisk.cxx
     ${ESE_DEV}/src/os/ostimerqueue.cxx
     ${ESE_DEV}/src/os/perfmon.cxx
     ${ESE_DEV}/src/os/reftrace.cxx
@@ -49,9 +50,9 @@ set(OSPOSIX_WINAPI_SOURCES
     memory_posix.cxx
     memorynotification_posix.cxx
     norm_posix.cxx
-    osdisk_posix.cxx
     oseventtrace_posix.cxx
     osfile_posix.cxx
+    osfile_stubs_posix.cxx
     osfs_posix.cxx
     sysinfo_posix.cxx
     task_posix.cxx

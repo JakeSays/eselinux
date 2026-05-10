@@ -1099,7 +1099,11 @@ VOID IOREQ::CompleteIO(
     m_crit.Leave();
 }
 
-#ifdef _WIN64
+// Branch on actual pointer size. _WIN64 / _WIN32 are MSVC-only; clang on
+// Linux defines neither, so the original `#ifdef _WIN64 ... #else 32-bit
+// asserts ...` branch incorrectly checks 32-bit struct sizes against the
+// 64-bit Linux build. Use a portable bitness check.
+#if defined(_WIN64) || (defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ == 8)
 C_ASSERT( sizeof(OVERLAPPED) == 32 );
 C_ASSERT( sizeof( CPool< IOREQ, IOREQ::OffsetOfAPIC >::CInvasiveContext ) == 16 );
 C_ASSERT( (OffsetOf( IOREQ, m_apic )%8) == 0 );     // check ic alignment, made more sense when was union on rgbAPIC
@@ -2575,6 +2579,14 @@ void COSDisk::SetSmartEseNoLoadFailed( _In_ const ULONG iStep, _In_ const DWORD 
 
 //  Load optional and extra disk identity and performance configuration.
 //  This function may fail, but will always initialize m_wszModelNumber/SerialNumber/FirmwareRev
+//
+//  Body is Win32-only: SMART_GET_VERSION / SMART_RCV_DRIVE_DATA /
+//  IOCTL_STORAGE_QUERY_PROPERTY / IOCTL_DISK_GET_CACHE_INFORMATION are
+//  Windows-specific storage ioctls with no portable Linux equivalent
+//  (Linux uses sysfs + sg_io for similar information). The function is
+//  also only called from a commented-out site in ErrInitDisk; on Linux
+//  we leave the m_osdi.* fields at their zero-initialized defaults.
+#ifdef _WIN32
 void COSDisk::LoadDiskInfo_( __in_z PCWSTR wszDiskPath, _In_ const DWORD dwDiskNumber )
 {
     BOOL fSuccess;
@@ -2961,6 +2973,19 @@ void COSDisk::LoadCachePerf_( HANDLE hDisk )
     //m_osdi.m_errorOssmptd = ErrorOSDiskIOsStorageQueryProp( hDisk, StorageDeviceMediumProductType, &m_osdi.m_ssmptd, sizeof(m_osdi.m_ssmptd) );
 }
 
+#else // !_WIN32
+
+//  Linux stubs for the disk-info loaders. The non-test engine path on
+//  Linux doesn't currently call these (the only LoadDiskInfo_ caller in
+//  ErrInitDisk is commented out), so a no-op body is sufficient.
+void COSDisk::LoadDiskInfo_( __in_z PCWSTR /*wszDiskPath*/, _In_ const DWORD /*dwDiskNumber*/ )
+{
+}
+void COSDisk::LoadCachePerf_( HANDLE /*hDisk*/ )
+{
+}
+
+#endif // _WIN32
 
 //  Initialize the DISK.
 
@@ -3034,6 +3059,7 @@ ERR COSDisk::ErrInitDisk(   _In_    IFileSystemConfiguration* const pfsconfig,
     WCHAR wszDiskPath[IFileSystemAPI::cchPathMax];
     OSStrCbFormatW( wszDiskPath, sizeof( wszDiskPath ), L"\\\\.\\PhysicalDrive%u", dwDiskNumber );
 
+#ifdef _WIN32
     m_hDisk = CreateFileW(  wszDiskPath,
                             0,
                             FILE_SHARE_READ,
@@ -3048,6 +3074,14 @@ ERR COSDisk::ErrInitDisk(   _In_    IFileSystemConfiguration* const pfsconfig,
         OSTrace( JET_tracetagFile, OSFormat( "\t m_osdi.m_osdspd = { Ver.Size=%d.%d, IncursSeekPenalty=%d };\n",
                     m_osdi.m_osdspd.Version, m_osdi.m_osdspd.Size, m_osdi.m_osdspd.IncursSeekPenalty ) );
     }
+#else
+    //  No \\.\PhysicalDriveN equivalent on Linux. Skip the disk open and
+    //  the seek-penalty query; m_hDisk stays at INVALID_HANDLE_VALUE so
+    //  downstream callers (LoadCachePerf_, QueryDiskPerformance) skip
+    //  their per-handle work.
+    m_hDisk = INVALID_HANDLE_VALUE;
+    m_osdi.m_errorOsdspd = ERROR_INVALID_FUNCTION;
+#endif
 
     //  Best effort (at least some of this will not work / load if not admin or system)
     //  Disabling because of contention seen in repl because of repeated calls
@@ -6374,6 +6408,12 @@ DWORD ErrorRFSIssueFailedIO()
 //  has a race condition where it can return before the kernel sets the event
 //  in the overlapped struct.  this can cause subsequent I/Os that use this
 //  event to return from GetOverlappedResult before the I/O has been completed
+//
+//  Win32-only: OVERLAPPED I/O completion has no Linux equivalent. The Linux
+//  port routes file I/O through io_uring (osposix/iouring_posix.cxx) which
+//  uses its own SQE/CQE machinery; this function and its caller
+//  ErrorIOMgrIssueIO below are not part of the Linux I/O path.
+#ifdef _WIN32
 
 BOOL GetOverlappedResult_(  HANDLE          hFile,
                             LPOVERLAPPED    lpOverlapped,
@@ -6670,6 +6710,33 @@ DWORD ErrorIOMgrIssueIO(
 
     return error;
 }
+
+#else // !_WIN32
+
+//  Linux stubs: callers route through the io_uring path in osposix instead.
+//  Returning ERROR_INVALID_FUNCTION (0x1) ensures any accidental Linux
+//  invocation surfaces as a real error rather than silently succeeding.
+BOOL GetOverlappedResult_( HANDLE, LPOVERLAPPED, LPDWORD, BOOL )
+{
+    SetLastError( ERROR_INVALID_FUNCTION );
+    return FALSE;
+}
+DWORD ErrorIOMgrIssueIO(
+    _In_ COSDisk::IORun*                    /*piorun*/,
+    _In_ const IOREQ::IOMETHOD              /*iomethod*/,
+    __inout const PFILE_SEGMENT_ELEMENT     /*rgfse*/,
+    _In_ const DWORD                        /*cfse*/,
+    _Out_ BOOL *                            pfIOCompleted,
+    _Out_ DWORD *                           pcbTransfer,
+    _Out_ IOREQ **                          ppioreqHead = nullptr )
+{
+    if ( pfIOCompleted ) *pfIOCompleted = FALSE;
+    if ( pcbTransfer )   *pcbTransfer   = 0;
+    if ( ppioreqHead )   *ppioreqHead   = nullptr;
+    return ERROR_INVALID_FUNCTION;
+}
+
+#endif // _WIN32
 
 
 //
@@ -7634,9 +7701,15 @@ INLINE VOID COSDisk::RefreshDiskPerformance()
 }
 
 // Queries the performance of the physical disk
+// Win32-only: IOCTL_DISK_PERFORMANCE returns DISK_PERFORMANCE struct
+// (queue depth, bytes read/written, etc.) per device. Linux exposes
+// similar info via /proc/diskstats but the engine only needs queue
+// depth here; leaving m_cioOsQueueDepth at its existing value is
+// acceptable for the v1 port.
 
 VOID COSDisk::QueryDiskPerformance()
 {
+#ifdef _WIN32
     DISK_PERFORMANCE diskPerformance;
     DWORD dwSize;
     if (    m_hDisk != INVALID_HANDLE_VALUE &&
@@ -7652,6 +7725,7 @@ VOID COSDisk::QueryDiskPerformance()
     {
         m_cioOsQueueDepth = diskPerformance.QueueDepth;
     }
+#endif
 
     m_tickPerformanceLastMeasured = TickOSTimeCurrent();
 }

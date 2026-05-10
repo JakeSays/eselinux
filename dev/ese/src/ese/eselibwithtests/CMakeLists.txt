@@ -58,6 +58,7 @@ set(ESE_TEST_SOURCES_PORTABLE
     ../jettest.cxx
     ../cpage_test.cxx
     ../flushmap_test.cxx
+    ../oslayer_iomgr_test.cxx
 )
 
 # Engine-side glue for the Linux test runner. Lives inside eselibwithtests
@@ -118,6 +119,7 @@ target_include_directories(eselibwithtests PRIVATE
     ${ESE_DEV}/src/inc/_osu/
     ${ESE_DEV}/src/os/
     ${ESE_DEV}/src/os/blockcache/
+    ${ESE_DEV}/src/os/posix/
     ./
     ../
 )
