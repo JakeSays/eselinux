@@ -20,7 +20,7 @@ inline XECHECKSUM MakeChecksumFromECCXORAndPgno(
     return ( high | low );
 }
 
-#if ( defined _M_AMD64 || defined _M_IX86 ) && !defined _CHPE_X86_ARM64_ && !defined _ARM64EC_
+#if ( defined ESE_ARCH_AMD64 || defined ESE_ARCH_X86 ) && !defined _CHPE_X86_ARM64_ && !defined _ARM64EC_
 
 #include <intrin.h>
 #include <emmintrin.h>
@@ -31,6 +31,7 @@ typedef XECHECKSUM  (*PFNCHECKSUMNEWFORMAT)( const unsigned char * const, const 
 typedef ULONG   (*PFNCHECKSUMOLDFORMAT)( const unsigned char * const, const ULONG );
 
 
+#ifdef ESE_COMPILER_MSVC
 //  ================================================================
 inline __m128i operator^( const __m128i dq0, const __m128i dq1 )
 //  ================================================================
@@ -44,7 +45,9 @@ inline __m128i operator^=( __m128i& dq0, const __m128i dq1 )
 {
     return dq0 = _mm_xor_si128( dq0, dq1 );
 }
+#endif  //  ESE_COMPILER_MSVC
 
+#ifdef ESE_COMPILER_MSVC
 inline __m256i operator^( const __m256i qq0, const __m256i qq1)
 {
     return _mm256_castpd_si256( _mm256_xor_pd( _mm256_castsi256_pd( qq0 ), _mm256_castsi256_pd( qq1 ) ) );
@@ -56,6 +59,7 @@ inline __m256i operator^=( __m256i& qq0, const __m256i qq1 )
 {
     return qq0 = _mm256_castpd_si256( _mm256_xor_pd( _mm256_castsi256_pd( qq0 ), _mm256_castsi256_pd( qq1 ) ) );
 }
+#endif  //  ESE_COMPILER_MSVC
 
 //  ================================================================
 inline LONG lParityMaskPopcnt( const LONG dw )
@@ -83,7 +87,7 @@ inline LONG lParityMaskAVX( const __m256i qq )
     const __m128i dq3 = _mm_shuffle_epi32( dq2, 0x4e);
     const __m128i dq4 = dq3 ^ dq2;  // reduce to 64-bits
 
-#if ( defined _M_IX86  )
+#if ( defined ESE_ARCH_X86  )
     // reduce to 32-bits
     const __m128i dq5 = _mm_shuffle_epi32( dq4, 0x1b );
     const __m128i dq6 = dq5 ^ dq4;

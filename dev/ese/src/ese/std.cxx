@@ -3,7 +3,7 @@
 
 #include "std.hxx"
 
-#ifndef _WIN32
+#ifndef ESE_OS_WINDOWS
 //  On Windows the engine's OS layer comes up via DllMain when libese.dll is
 //  loaded. Linux .so init runs through C++ static constructors instead;
 //  give libese.so a process-lifetime COSLayerPreInit so any binary that

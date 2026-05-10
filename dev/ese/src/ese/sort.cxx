@@ -1238,7 +1238,7 @@ INLINE INT ISORTICmpPspairPspair( const SCB * pscb, const SPAIR * pspair1, const
     Assert( cbKeyPrefix == 14 );
     Assert( OffsetOf( SPAIR, irec ) == 0 );
 
-#ifndef _WIN64
+#ifndef ESE_ARCH_64BIT
 
     //  bytes 15 - 12
     if ( *( (DWORD *) ( rgb1 + 12 ) ) < *( (DWORD *) ( rgb2 + 12 ) ) )

@@ -3848,11 +3848,11 @@ CDynamicHashTable( const NativeCounter rankDHTrwlBucket )
 {
     //  we should be on a 32-bit or 64-bit system
 
-#ifdef _WIN64
+#ifdef ESE_ARCH_64BIT
     DHTAssert( 8 == sizeof( NativeCounter ) );
-#else   //  _!WIN64
+#else   //  !ESE_ARCH_64BIT
     DHTAssert( 4 == sizeof( NativeCounter ) );
-#endif  //  _WIN64
+#endif  //  ESE_ARCH_64BIT
 
     m_semPolicy.Release();
 }

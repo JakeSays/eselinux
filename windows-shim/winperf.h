@@ -12,7 +12,7 @@
 // pins it to int32_t on non-MSVC.
 #pragma once
 
-#ifndef _MSC_VER
+#ifndef ESE_COMPILER_MSVC
 
 #include "windows.h"
 

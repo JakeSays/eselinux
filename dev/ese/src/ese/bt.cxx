@@ -5660,7 +5660,7 @@ HandleError:
 
 // Explicit instantiation definitions paired with `extern template` in bt.hxx
 // (non-MSVC arm).
-#ifndef _MSC_VER
+#ifndef ESE_COMPILER_MSVC
 template ERR ErrBTDelta<LONG>( FUCB *pfucb, INT cbOffset, const LONG delta, LONG *const pOldValue, DIRFLAG dirflag );
 template ERR ErrBTDelta<LONGLONG>( FUCB *pfucb, INT cbOffset, const LONGLONG delta, LONGLONG *const pOldValue, DIRFLAG dirflag );
 #endif

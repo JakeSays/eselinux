@@ -347,7 +347,7 @@ HRT HrtHRTCount()
     //  prevent hot update of the global
 
 
-#ifndef _WIN64
+#ifndef ESE_ARCH_64BIT
 
     //  given that we don't want to pay synchronization costs here, we will do
     //  a dirty compare-and-set, but for 32-bit processors, this may lead to
@@ -636,7 +636,7 @@ BOOL FOSTimePreinit()
 
     //  set the update rate for the hrt last given variable
 
-#ifdef _M_IX86
+#ifdef ESE_ARCH_X86
 
     g_dhrtLastGivenUpdTimeout = max( 1, DhrtHRTFromCmsec( 1 ) );
 
@@ -644,7 +644,7 @@ BOOL FOSTimePreinit()
 
     g_dhrtLastGivenUpdTimeout = (DWORD)min( g_dhrtLastGivenUpdTimeout, ( ~(DWORD)0 ) / 2 );
 
-#endif  //   _M_IX86
+#endif  //   ESE_ARCH_X86
 
     //  for this to hold we need to time term ... 
 

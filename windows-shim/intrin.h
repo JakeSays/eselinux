@@ -44,6 +44,6 @@ unsigned long long _byteswap_uint64(unsigned long long x);
 
 // __rdtsc lives in <x86intrin.h> on clang/GCC; pull it in so MSVC code that
 // just expects <intrin.h> to provide it Just Works.
-#if defined(__x86_64__) || defined(__i386__)
+#if defined(ESE_ARCH_AMD64) || defined(ESE_ARCH_X86)
 #include <x86intrin.h>
 #endif

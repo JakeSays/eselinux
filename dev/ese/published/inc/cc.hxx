@@ -5,8 +5,9 @@
 #ifndef _CC_HXX
 #define _CC_HXX 1
 
+#include "platform.h"  // ESE_OS_*, ESE_ARCH_*, ESE_COMPILER_*
 
-// This is the C Compiler abstraction header file / library that isolates C 
+// This is the C Compiler abstraction header file / library that isolates C
 // elements for common consumption across all of ESE dev and test code.
 
 // Some interesting defines we might try ...
@@ -284,14 +285,14 @@ typedef unsigned char       UCHAR, *PUCHAR;
 //  Pointer types
 //
 
-#if defined(_WIN64)
-    #ifdef _MSC_VER
+#if defined(ESE_ARCH_64BIT)
+    #ifdef ESE_COMPILER_MSVC
         typedef unsigned __int64    UNSIGNED_PTR;
         typedef __int64             SIGNED_PTR;
-    #else // !_MSC_VER
+    #else // !ESE_COMPILER_MSVC
         typedef unsigned long       UNSIGNED_PTR;
         typedef long                SIGNED_PTR;
-    #endif // _MSC_VER
+    #endif // ESE_COMPILER_MSVC
 #else
     typedef unsigned long           UNSIGNED_PTR;
     typedef long                    SIGNED_PTR;
@@ -303,7 +304,7 @@ typedef unsigned int        DWORD32;
 typedef unsigned int        ULONG32;
 typedef ULONGLONG           ULONG64;
 
-#ifndef _MSC_VER
+#ifndef ESE_COMPILER_MSVC
 typedef LONGLONG            INT64;
 typedef ULONGLONG           UINT64;
 typedef INT64*              PINT64;
@@ -315,14 +316,14 @@ typedef UINT64*             PUINT64;
 // On clang with -fms-extensions, __int64 is a builtin keyword (so that
 // `unsigned __int64` parses correctly), so the typedef would clash.
 // GCC without MS-extensions still needs the alias.
-#if !defined(_MSC_VER) && !defined(__clang__)
+#if !defined(ESE_COMPILER_MSVC) && !defined(ESE_COMPILER_CLANG)
     typedef long long           __int64;
 #endif
 
 // MSVC's <limits.h> exposes _I64_MAX / _UI64_MAX / _I32_MAX etc. as
 // fixed-width integer limits. Map to the C99 stdint equivalents on Linux
 // so engine call sites bind without #ifdef gates.
-#ifndef _MSC_VER
+#ifndef ESE_COMPILER_MSVC
     #include <stdint.h>
     #ifndef _I64_MAX
         #define _I64_MAX  INT64_MAX
@@ -344,8 +345,8 @@ typedef UINT64*             PUINT64;
     #endif
 #endif
 
-#if defined(_WIN64) || defined(__LP64__)
-    #ifdef _MSC_VER
+#if defined(ESE_ARCH_64BIT)
+    #ifdef ESE_COMPILER_MSVC
 
         typedef __int64 INT_PTR, *PINT_PTR;
         typedef unsigned __int64 UINT_PTR, *PUINT_PTR;
@@ -353,7 +354,7 @@ typedef UINT64*             PUINT64;
         typedef __int64 LONG_PTR, *PLONG_PTR;
         typedef unsigned __int64 ULONG_PTR, *PULONG_PTR;
 
-    #else // !_MSC_VER
+    #else // !ESE_COMPILER_MSVC
 
         typedef long long           INT_PTR, *PINT_PTR;
         typedef unsigned long long  UINT_PTR, *PUINT_PTR;
@@ -361,7 +362,7 @@ typedef UINT64*             PUINT64;
         typedef long long           LONG_PTR, *PLONG_PTR;
         typedef unsigned long long  ULONG_PTR, *PULONG_PTR;
 
-    #endif // _MSC_VER
+    #endif // ESE_COMPILER_MSVC
 #else
 
     typedef __w64 int INT_PTR, *PINT_PTR;
@@ -377,7 +378,7 @@ typedef ULONG_PTR SIZE_T, *PSIZE_T;
 
 // Windows SDK exposes these via <intsafe.h>; outside MSVC we don't drag that
 // header in, so define the size-of-pointer maxima here in terms of stdint.
-#ifndef _MSC_VER
+#ifndef ESE_COMPILER_MSVC
     #include <stdint.h>
     #ifndef UINT_PTR_MAX
         #define UINT_PTR_MAX  UINTPTR_MAX

@@ -15,7 +15,7 @@
 
 #include "os.hxx"
 
-#ifndef _MSC_VER
+#ifndef ESE_COMPILER_MSVC
 //  Heterogeneous min/max overloads for clang. Engine uses unqualified
 //  min(a,b)/max(a,b) with mismatched-but-related integer types; std::min
 //  rejects the type-deduction conflict, so provide the same fallback the

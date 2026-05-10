@@ -106,7 +106,7 @@ void InitIoreq( IOREQ * const pioreq, _OSFILE& _osf, const BOOL fWrite, const QW
     //  and alignment expectations.  Randomly assigning it to the address space will (probably) AV when
     //  it is deref'd, so that's nice.
     pioreq->pbData = (BYTE*)( rand () * 4096
-#ifdef _WIN64
+#ifdef ESE_ARCH_64BIT
                         | 0xC000420000000000
 #else
                         | 0xC0000000 /* high as we can go really go */

@@ -173,7 +173,7 @@ ERR ErrBTDelta(
 // Explicitly instantiate the only allowed legal instances. clang requires
 // the body to be visible to instantiate, so use `extern template` here and
 // emit the instantiation in the .cxx that defines the template body.
-#ifdef _MSC_VER
+#ifdef ESE_COMPILER_MSVC
 template ERR ErrBTDelta<LONG>( FUCB *pfucb, INT cbOffset, const LONG delta, LONG *const pOldValue, DIRFLAG dirflag );
 template ERR ErrBTDelta<LONGLONG>( FUCB *pfucb, INT cbOffset, const LONGLONG delta, LONGLONG *const pOldValue, DIRFLAG dirflag );
 #else

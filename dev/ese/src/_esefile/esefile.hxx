@@ -9,7 +9,7 @@
 // `new` to a MEM_CHECK-tracking macro that mangles `::new _Tp` inside
 // libc++'s <concepts>; including libc++ first means those headers are
 // already parsed and the macro never sees them.
-#ifndef _MSC_VER
+#ifndef ESE_COMPILER_MSVC
 #include <algorithm>
 #include <type_traits>
 #include <concepts>
@@ -31,7 +31,7 @@
 
 #include "checksum.hxx"
 
-#ifndef _MSC_VER
+#ifndef ESE_COMPILER_MSVC
 #include <algorithm>
 using std::min;
 using std::max;

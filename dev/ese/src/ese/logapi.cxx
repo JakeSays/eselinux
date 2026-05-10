@@ -2337,7 +2337,7 @@ ERR ErrLGDelta( const FUCB      *pfucb,
 
 // Explicit instantiation definitions paired with `extern template` in
 // logapi.hxx (non-MSVC arm).
-#ifndef _MSC_VER
+#ifndef ESE_COMPILER_MSVC
 template ERR ErrLGDelta<LONG>( const FUCB *pfucb, CSR *pcsr, const BOOKMARK& bm, INT cbOffset, LONG delta, RCEID rceid, DIRFLAG dirflag, LGPOS *plgpos, const BOOL fDirtyCSR );
 template ERR ErrLGDelta<LONGLONG>( const FUCB *pfucb, CSR *pcsr, const BOOKMARK& bm, INT cbOffset, LONGLONG delta, RCEID rceid, DIRFLAG dirflag, LGPOS *plgpos, const BOOL fDirtyCSR );
 #endif

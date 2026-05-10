@@ -181,7 +181,7 @@ typedef struct _SYSTEM_FILECACHE_INFORMATION {
     ULONG Flags;
 } SYSTEM_FILECACHE_INFORMATION, *PSYSTEM_FILECACHE_INFORMATION;
 
-#if defined(_WIN64)
+#if defined(ESE_ARCH_64BIT)
 typedef ULONG SYSINF_PAGE_COUNT;
 #else
 typedef SIZE_T SYSINF_PAGE_COUNT;
@@ -871,7 +871,7 @@ typedef struct _MEMORY_WORKING_SET_EX_BLOCK {
             ULONG_PTR Priority : 3;
             ULONG_PTR Reserved : 5;
 
-#if defined(_WIN64)
+#if defined(ESE_ARCH_64BIT)
             ULONG_PTR ReservedUlong : 32;
 #endif
     } DUMMYSTRUCTNAME;
@@ -883,7 +883,7 @@ typedef struct _MEMORY_WORKING_SET_EX_BLOCK {
             ULONG_PTR Location : 2;         // MEMORY_WORKING_SET_EX_LOCATION
             ULONG_PTR Reserved2 : 8;
 
-#if defined(_WIN64)
+#if defined(ESE_ARCH_64BIT)
             ULONG_PTR ReservedUlong : 32;
 #endif
     } Invalid;

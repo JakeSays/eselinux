@@ -3513,7 +3513,7 @@ TDelta DeltaVERGetDelta( const FUCB * pfucb, const BOOKMARK& bookmark, INT cbOff
 // Explicit instantiation definitions paired with the `extern template`
 // declarations in ver.hxx (non-MSVC arm). MSVC emits these instantiations
 // from the header itself.
-#ifndef _MSC_VER
+#ifndef ESE_COMPILER_MSVC
 template LONG DeltaVERGetDelta<LONG>( const FUCB * pfucb, const BOOKMARK& bookmark, INT cbOffset );
 template LONGLONG DeltaVERGetDelta<LONGLONG>( const FUCB * pfucb, const BOOKMARK& bookmark, INT cbOffset );
 #endif

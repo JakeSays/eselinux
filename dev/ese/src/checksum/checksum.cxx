@@ -131,7 +131,7 @@ ULONG ChecksumSelectOldFormat( const unsigned char * const pb, const ULONG cb )
 {
     PFNCHECKSUMOLDFORMAT pfn = ChecksumSelectOldFormat;
 
-#if (defined(_M_IX86) && defined(_CHPE_X86_ARM64_)) || (defined(_M_AMD64) && defined(_ARM64EC_))
+#if (defined(ESE_ARCH_X86) && defined(_CHPE_X86_ARM64_)) || (defined(ESE_ARCH_AMD64) && defined(_ARM64EC_))
     pfn = ChecksumOldFormatSlowly;
 #else
     if( FSSEInstructionsAvailable() )
@@ -267,7 +267,7 @@ XECHECKSUM ChecksumSelectNewFormat( const unsigned char * const pb, const ULONG 
 {
     PFNCHECKSUMNEWFORMAT pfn = ChecksumSelectNewFormat;
     // TODO: ARM64X: Can we let ARM64EC use SSE here?
-#if (defined (_M_AMD64) && !defined(_ARM64EC_)) || (defined(_M_IX86) && !defined(_CHPE_X86_ARM64_))
+#if (defined(ESE_ARCH_AMD64) && !defined(_ARM64EC_)) || (defined(ESE_ARCH_X86) && !defined(_CHPE_X86_ARM64_))
     if( FAVXEnabled() && FPopcntAvailable() )
     {
         pfn = ChecksumNewFormatAVX;

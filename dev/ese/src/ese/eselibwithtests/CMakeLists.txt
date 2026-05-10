@@ -59,6 +59,10 @@ set(ESE_TEST_SOURCES_PORTABLE
     ../cpage_test.cxx
     ../flushmap_test.cxx
     ../oslayer_iomgr_test.cxx
+    ../version_test.cxx
+    ../checksum_test.cxx
+    ../clogredomaps_test.cxx
+    ../log_test.cxx
 )
 
 # Engine-side glue for the Linux test runner. Lives inside eselibwithtests

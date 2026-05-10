@@ -8,7 +8,7 @@
 // header on non-MSVC; pull it in here so the OSPath-trap initialization
 // at the end of this TU compiles. libc++ is already in scope via osustd.hxx
 // so the windows.h shim's macro pollution can't reach the system headers.
-#ifndef _MSC_VER
+#ifndef ESE_COMPILER_MSVC
 #include <windows.h>
 #endif
 

@@ -214,7 +214,7 @@ BOOL FAVXEnabled()                  { return g_fAVXEnabled; }
 
 LOCAL VOID DetermineProcessorCapabilities()
 {
-#if defined( __x86_64__ ) || defined( __i386__ )
+#if defined( ESE_ARCH_AMD64 ) || defined( ESE_ARCH_X86 )
     // SSE/SSE2 are baseline on x86_64. Verify via cpuid for completeness.
     unsigned int eax = 0, ebx = 0, ecx = 0, edx = 0;
     if ( __get_cpuid( 1, &eax, &ebx, &ecx, &edx ) )

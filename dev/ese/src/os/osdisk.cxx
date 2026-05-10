@@ -1099,11 +1099,7 @@ VOID IOREQ::CompleteIO(
     m_crit.Leave();
 }
 
-// Branch on actual pointer size. _WIN64 / _WIN32 are MSVC-only; clang on
-// Linux defines neither, so the original `#ifdef _WIN64 ... #else 32-bit
-// asserts ...` branch incorrectly checks 32-bit struct sizes against the
-// 64-bit Linux build. Use a portable bitness check.
-#if defined(_WIN64) || (defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ == 8)
+#ifdef ESE_ARCH_64BIT
 C_ASSERT( sizeof(OVERLAPPED) == 32 );
 C_ASSERT( sizeof( CPool< IOREQ, IOREQ::OffsetOfAPIC >::CInvasiveContext ) == 16 );
 C_ASSERT( (OffsetOf( IOREQ, m_apic )%8) == 0 );     // check ic alignment, made more sense when was union on rgbAPIC
@@ -2586,7 +2582,7 @@ void COSDisk::SetSmartEseNoLoadFailed( _In_ const ULONG iStep, _In_ const DWORD 
 //  (Linux uses sysfs + sg_io for similar information). The function is
 //  also only called from a commented-out site in ErrInitDisk; on Linux
 //  we leave the m_osdi.* fields at their zero-initialized defaults.
-#ifdef _WIN32
+#ifdef ESE_OS_WINDOWS
 void COSDisk::LoadDiskInfo_( __in_z PCWSTR wszDiskPath, _In_ const DWORD dwDiskNumber )
 {
     BOOL fSuccess;
@@ -2973,7 +2969,7 @@ void COSDisk::LoadCachePerf_( HANDLE hDisk )
     //m_osdi.m_errorOssmptd = ErrorOSDiskIOsStorageQueryProp( hDisk, StorageDeviceMediumProductType, &m_osdi.m_ssmptd, sizeof(m_osdi.m_ssmptd) );
 }
 
-#else // !_WIN32
+#else // !ESE_OS_WINDOWS
 
 //  Linux stubs for the disk-info loaders. The non-test engine path on
 //  Linux doesn't currently call these (the only LoadDiskInfo_ caller in
@@ -2985,7 +2981,7 @@ void COSDisk::LoadCachePerf_( HANDLE /*hDisk*/ )
 {
 }
 
-#endif // _WIN32
+#endif // ESE_OS_WINDOWS
 
 //  Initialize the DISK.
 
@@ -3059,7 +3055,7 @@ ERR COSDisk::ErrInitDisk(   _In_    IFileSystemConfiguration* const pfsconfig,
     WCHAR wszDiskPath[IFileSystemAPI::cchPathMax];
     OSStrCbFormatW( wszDiskPath, sizeof( wszDiskPath ), L"\\\\.\\PhysicalDrive%u", dwDiskNumber );
 
-#ifdef _WIN32
+#ifdef ESE_OS_WINDOWS
     m_hDisk = CreateFileW(  wszDiskPath,
                             0,
                             FILE_SHARE_READ,
@@ -6413,7 +6409,7 @@ DWORD ErrorRFSIssueFailedIO()
 //  port routes file I/O through io_uring (osposix/iouring_posix.cxx) which
 //  uses its own SQE/CQE machinery; this function and its caller
 //  ErrorIOMgrIssueIO below are not part of the Linux I/O path.
-#ifdef _WIN32
+#ifdef ESE_OS_WINDOWS
 
 BOOL GetOverlappedResult_(  HANDLE          hFile,
                             LPOVERLAPPED    lpOverlapped,
@@ -6711,7 +6707,7 @@ DWORD ErrorIOMgrIssueIO(
     return error;
 }
 
-#else // !_WIN32
+#else // !ESE_OS_WINDOWS
 
 //  Linux stubs: callers route through the io_uring path in osposix instead.
 //  Returning ERROR_INVALID_FUNCTION (0x1) ensures any accidental Linux
@@ -6736,7 +6732,7 @@ DWORD ErrorIOMgrIssueIO(
     return ERROR_INVALID_FUNCTION;
 }
 
-#endif // _WIN32
+#endif // ESE_OS_WINDOWS
 
 
 //
@@ -7709,7 +7705,7 @@ INLINE VOID COSDisk::RefreshDiskPerformance()
 
 VOID COSDisk::QueryDiskPerformance()
 {
-#ifdef _WIN32
+#ifdef ESE_OS_WINDOWS
     DISK_PERFORMANCE diskPerformance;
     DWORD dwSize;
     if (    m_hDisk != INVALID_HANDLE_VALUE &&

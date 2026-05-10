@@ -6883,7 +6883,7 @@ Usage:
     return -1;
 }
 
-#ifndef _WIN32
+#ifndef ESE_OS_WINDOWS
 //  Linux entry point. Linux doesn't natively call wmain — translate the
 //  narrow argv (assumed UTF-8) to wchar_t buffers, then dispatch into the
 //  shared wmain. Engine wchar_t is 16-bit (-fshort-wchar).

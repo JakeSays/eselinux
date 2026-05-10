@@ -161,7 +161,7 @@ ERR ErrNDDelta(
 // See note in ver.hxx: MSVC instantiates here, clang requires `extern
 // template` here with the actual instantiation in the .cxx that defines the
 // body.
-#ifdef _MSC_VER
+#ifdef ESE_COMPILER_MSVC
 template ERR ErrNDDelta<LONG>( FUCB * const pfucb, CSR * const pcsr, const INT cbOffset, const LONG tDelta, LONG * const pOldValue, const DIRFLAG   dirflag, const RCEID rceid );
 template ERR ErrNDDelta<LONGLONG>( FUCB * const pfucb, CSR * const pcsr, const INT cbOffset, const LONGLONG tDelta, LONGLONG * const pOldValue, const DIRFLAG   dirflag, const RCEID rceid );
 #else

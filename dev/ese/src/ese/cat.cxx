@@ -922,7 +922,7 @@ HandleError:
 //
 //
 
-#if defined(_M_IX86)
+#if defined(ESE_ARCH_X86)
 #pragma optimize("", off)
 #endif
 
@@ -945,7 +945,7 @@ LOCAL ERR ErrCheckNormalizeSpaceHintCb(
     return JET_errSuccess;
 }
 
-#if defined(_M_IX86)
+#if defined(ESE_ARCH_X86)
 #pragma optimize("", on)
 #endif
 

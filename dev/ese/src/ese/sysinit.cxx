@@ -4,7 +4,7 @@
 #include "std.hxx"
 
 #include <ctype.h>
-#ifdef _WIN32
+#ifdef ESE_OS_WINDOWS
 #include <io.h>
 #else
 #include <unistd.h>

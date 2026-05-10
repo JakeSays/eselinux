@@ -45,7 +45,7 @@ inline unsigned long GetExceptionCode(void) { return 0; }
 // The filter expression is dropped — fine, since it's never evaluated.
 // __finally { cleanup } becomes a plain compound statement, so cleanup
 // runs unconditionally on the success path (its only path on Linux).
-#ifndef _MSC_VER
+#ifndef ESE_COMPILER_MSVC
 #define __try
 #define __except(filter) if (0)
 #define __finally

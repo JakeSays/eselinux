@@ -19793,15 +19793,13 @@ LOCAL JET_ERR JetDBUtilitiesEx( JET_DBUTIL_W *pdbutilW )
     // particular, we regularly use perf tests across versions in order to narrow
     // down regressions.
     
-#ifdef _WIN64
+#if defined(ESE_ARCH_64BIT) && defined(ESE_OS_WINDOWS)
     C_ASSERT( sizeof(JET_DBUTIL_W) == 136 );
-#elif defined(__LP64__)
-    // Linux LP64 — struct contains JET_API_PTR fields (8 bytes) + 32-bit int32_t fields.
-    // Size is whatever the compiler computes; we don't need cross-platform binary
-    // compatibility on the initial port.
-#else  //  !_WIN64
+#elif defined(ESE_ARCH_64BIT) && defined(ESE_OS_LINUX)
+    C_ASSERT( sizeof(JET_DBUTIL_W) == 124 );
+#else  //  !ESE_ARCH_64BIT
     C_ASSERT( sizeof(JET_DBUTIL_W) == 84 );
-#endif // !_WIN64
+#endif //  ESE_ARCH_64BIT
     
     JET_ERR         err             = JET_errSuccess;
     JET_INSTANCE    instance        = 0;

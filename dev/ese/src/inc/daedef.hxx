@@ -47,7 +47,7 @@
 //  global types and associated macros
 //
 
-#ifdef _WIN64
+#ifdef ESE_ARCH_64BIT
 #define FMTSZ3264 L"I64"
 #else
 #define FMTSZ3264 L"l"

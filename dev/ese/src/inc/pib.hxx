@@ -589,11 +589,11 @@ public:
 
 //  Be conscious of the size if you're changing it ...
 /*
-#ifdef _WIN64
+#ifdef ESE_ARCH_64BIT
 C_ASSERT( sizeof(PIB) == 548 );
-#else  //  !_WIN64
+#else  //  !ESE_ARCH_64BIT
 C_ASSERT( sizeof(PIB) == 440 );
-#endif  //  _WIN64
+#endif  //  ESE_ARCH_64BIT
 */
 
 INLINE SIZE_T OffsetOfTrxOldestILE()    { return OffsetOf( PIB, m_ileTrxOldest ); }

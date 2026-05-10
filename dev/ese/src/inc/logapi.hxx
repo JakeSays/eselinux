@@ -2724,7 +2724,7 @@ ERR ErrLGDelta( const FUCB      *pfucb,
 
 // Explicit instantiations: MSVC accepts here, clang requires `extern template`
 // here with the actual instantiation paired in the .cxx that defines the body.
-#ifdef _MSC_VER
+#ifdef ESE_COMPILER_MSVC
 template ERR ErrLGDelta<LONG>( const FUCB *pfucb, CSR *pcsr, const BOOKMARK& bm, INT cbOffset, LONG delta, RCEID rceid, DIRFLAG dirflag, LGPOS *plgpos, const BOOL fDirtyCSR );
 template ERR ErrLGDelta<LONGLONG>( const FUCB *pfucb, CSR *pcsr, const BOOKMARK& bm, INT cbOffset, LONGLONG delta, RCEID rceid, DIRFLAG dirflag, LGPOS *plgpos, const BOOL fDirtyCSR );
 #else
@@ -2991,7 +2991,7 @@ INLINE INT CmpLgpos( const LGPOS& lgpos1, const LGPOS& lgpos2 )
     BYTE    *rgb2   = (BYTE *) &lgpos2;
 
     //  perform comparison on LGPOS as if it were a 64 bit integer
-#ifndef _WIN64
+#ifndef ESE_ARCH_64BIT
     //  bytes 7 - 4
     if ( *( (DWORD*) ( rgb1 + 4 ) ) < *( (DWORD*) ( rgb2 + 4 ) ) )
         return -1;

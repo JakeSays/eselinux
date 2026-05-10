@@ -141,7 +141,7 @@ LOCAL VOID InitFailurePointsFromRegistry()
 {
     g_cFailurePoints = 0;
 
-#ifdef _WIN32
+#ifdef ESE_OS_WINDOWS
     NTOSFuncError( pfnRegOpenKeyExW, g_mwszzRegistryLibs, RegOpenKeyExW, oslfExpectedOnWin5x | oslfRequired );
     NTOSFuncError( pfnRegQueryValueExW, g_mwszzRegistryLibs, RegQueryValueExW, oslfExpectedOnWin5x | oslfRequired );
     NTOSFuncError( pfnRegCloseKey, g_mwszzRegistryLibs, RegCloseKey, oslfExpectedOnWin5x | oslfRequired );

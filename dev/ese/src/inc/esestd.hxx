@@ -34,7 +34,7 @@ typedef __nullterminated const wchar_t* PCWSTR;
 #include <memory>
 using namespace std;
 
-#ifndef _MSC_VER
+#ifndef ESE_COMPILER_MSVC
 #ifndef _ESE_HETEROGENEOUS_MINMAX_DEFINED
 #define _ESE_HETEROGENEOUS_MINMAX_DEFINED
 //  Engine call sites use unqualified `min(a,b)` / `max(a,b)` with arguments

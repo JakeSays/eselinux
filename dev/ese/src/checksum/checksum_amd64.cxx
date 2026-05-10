@@ -13,7 +13,7 @@
 #if 1
 
 #include <intrin.h>
-#if ( defined _M_AMD64 || defined _M_IX86 ) && !defined _ARM64EC_
+#if ( defined ESE_ARCH_AMD64 || defined ESE_ARCH_X86 ) && !defined _ARM64EC_
 #include <emmintrin.h>
 #endif
 
@@ -55,7 +55,7 @@ typedef ULONG   (*PFNCHECKSUMOLDFORMAT)( const unsigned char * const, const ULON
 inline void CachePrefetch( const void * const p )
 //  ================================================================
 {
-#ifdef _M_IX86 
+#ifdef ESE_ARCH_X86 
     _asm
     {
         mov eax,p
@@ -93,7 +93,7 @@ ULONG ChecksumOldFormatSSE( const unsigned char * const pb, const ULONG cb )
 
     while ( ( cbT -= cbStep ) >= 0 )
     {
-#if (defined _M_AMD64 || defined _M_IX86 ) && !defined _ARM64EC_
+#if (defined ESE_ARCH_AMD64 || defined ESE_ARCH_X86 ) && !defined _ARM64EC_
 #if 1
         _mm_prefetch ( (char *)(pdw + 16), _MM_HINT_NTA );
 #else
@@ -130,15 +130,13 @@ ULONG ChecksumOldFormatSSE2( const unsigned char * const pb, const ULONG cb )
     Unused( pfn );
 
 // Compile the SSE2 body for any compiler that targets x86 — clang/gcc on
-// Linux don't define _M_AMD64/_M_IX86 but the _mm_* intrinsics are
+// Linux don't define ESE_ARCH_AMD64/_M_IX86 but the _mm_* intrinsics are
 // available and ABI-compatible. Without this widened gate the function
 // would silently return the hardcoded sentinel below on Linux clang,
 // which is exactly what surfaced via the CFlushMap test suite (the
 // "computed" page checksum was constant and never matched the page's
 // actual contents).
-#if (defined _M_AMD64 || defined _M_IX86 ) && !defined _ARM64EC_
-    #define ESE_X86_SIMD_AVAILABLE 1
-#elif ( defined( __x86_64__ ) || defined( __i386__ ) ) && !defined( _ARM64EC_ )
+#if (defined ESE_ARCH_AMD64 || defined ESE_ARCH_X86 ) && !defined _ARM64EC_
     #define ESE_X86_SIMD_AVAILABLE 1
 #endif
 #ifdef ESE_X86_SIMD_AVAILABLE
@@ -177,7 +175,7 @@ ULONG ChecksumOldFormatSSE2( const unsigned char * const pb, const ULONG cb )
     // (m128i_i32[0..3]); clang/gcc model __m128i as a vector type with no
     // such accessor. Use _mm_extract_epi32 (SSE4.1) to read the lanes
     // when the compiler doesn't expose the named-member shape.
-#ifdef _MSC_VER
+#ifdef ESE_COMPILER_MSVC
     ulChecksum  ^=
           owChecksum.m128i_i32[0]
         ^ owChecksum.m128i_i32[1]
@@ -887,7 +885,7 @@ XECHECKSUM ChecksumNewFormatSSE( const unsigned char * const pb, const ULONG cb,
             pT1 = pdw[ i + 1 ];
 Start:
 
-#if (defined _M_AMD64 || defined _M_IX86 ) && !defined _ARM64EC_
+#if (defined ESE_ARCH_AMD64 || defined ESE_ARCH_X86 ) && !defined _ARM64EC_
 #if 1
             _mm_prefetch( ( char *)&( pdw[ i + 32 ] ), _MM_HINT_NTA );
 #else
@@ -1007,8 +1005,11 @@ enum ChecksumParityMaskFunc
     ParityMaskFuncPopcnt,
 };
 
-#if ( defined _M_AMD64 || defined _M_IX86 ) && !defined _CHPE_X86_ARM64_ && !defined _ARM64EC_
+#if ( defined ESE_ARCH_AMD64 || defined ESE_ARCH_X86 ) && !defined _CHPE_X86_ARM64_ && !defined _ARM64EC_
 
+//  On MSVC, __m128i is a struct so operator^ must be explicitly defined.
+//  On Clang/GCC, __m128i is a vector type and ^ is a built-in operator.
+#ifdef ESE_COMPILER_MSVC
 //  ================================================================
 inline __m128i operator^( const __m128i dq0, const __m128i dq1 )
 //  ================================================================
@@ -1022,6 +1023,7 @@ inline __m128i operator^=( __m128i& dq0, const __m128i dq1 )
 {
     return dq0 = _mm_xor_si128( dq0, dq1 );
 }
+#endif  //  ESE_COMPILER_MSVC
 
 //  ================================================================
 inline LONG lParityMask( const __m128i dq )
@@ -1051,7 +1053,7 @@ inline LONG lParityMaskPopcnt( const __m128i dq )
     const __m128i dq1 = _mm_shuffle_epi32( dq, 0x4e);
     const __m128i dq2 = dq ^ dq1;
 
-#if ( defined _M_IX86  )
+#if ( defined ESE_ARCH_X86  )
     // reduce to 32-bits
     const __m128i dq3 = _mm_shuffle_epi32( dq2, 0x1b );
     const __m128i dq4 = dq2 ^ dq3;

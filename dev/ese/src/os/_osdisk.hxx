@@ -410,7 +410,7 @@ typedef struct _IOREQCHUNK
 
     BYTE                    rgbReserved[32-sizeof(DWORD)-sizeof(DWORD)-sizeof(struct _IOREQCHUNK *)];
 
-#ifdef _MSC_VER
+#ifdef ESE_COMPILER_MSVC
     IOREQ                   rgioreq[];
 #else
     // clang rejects a C99 flexible array member when the element type has

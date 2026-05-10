@@ -267,7 +267,7 @@ public:
     CHAR    szMessage[ cchMax ];
     WCHAR   wszIssueSource[ cchMax ];
 
-#ifdef _WIN32
+#ifdef ESE_OS_WINDOWS
     // Filter function to catch JetTestEnforceSEHException — Win32 SEH only.
     // Linux equivalent (sigsetjmp/longjmp around enforce-failure) hasn't
     // been ported; tests that rely on catching enforce failures are

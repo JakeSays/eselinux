@@ -193,7 +193,7 @@ struct BF                                           //  BF  --  IFMP/PGNO buffer
     static SIZE_T OffsetOfOB0OLILE()    { return OffsetOf( BF, ob0ic ); }
     C_ASSERT( sizeof( CInvasiveList< BF, BF::OffsetOfOB0OLILE >::CElement ) <= sizeof( CApproximateIndex< LGPOS, BF, OffsetOfOB0IC >::CInvasiveContext ) );
 
-#ifdef _WIN64
+#ifdef ESE_ARCH_64BIT
 
     //   0 B /////////////////////////////////////////////////////////////////////////////////////
 
@@ -292,7 +292,7 @@ struct BF                                           //  BF  --  IFMP/PGNO buffer
 
     // 192 B (64-bit/cache aligned) ///////////////////////////////////////////////////////////////
 
-#else  //  !_WIN64
+#else  //  !ESE_ARCH_64BIT
 
     //   0 B /////////////////////////////////////////////////////////////////////////////////////
 
@@ -391,7 +391,7 @@ struct BF                                           //  BF  --  IFMP/PGNO buffer
 
     // 160 B (64-bit/cache aligned) ///////////////////////////////////////////////////////////////
 
-#endif  //  _WIN64
+#endif  //  ESE_ARCH_64BIT
 };
 
 // The CInvasiveList class will return NULL for the Prev()/Next() pointers that are returned IF it gets
@@ -406,13 +406,13 @@ C_ASSERT( ( OffsetOf( BF, bfbitfield ) % sizeof( FLAG32 ) ) == 0 );
 C_ASSERT( sizeof( BF::bfbitfield ) == sizeof( FLAG32 ) );
 
 //  Be conscious of the size if you're changing it ...
-#if defined(_WIN64)
+#if defined(ESE_ARCH_64BIT) && defined(ESE_OS_WINDOWS)
 static_assert( sizeof(BF) == 192, "BF size drifted on Windows x64" );
-#elif defined(__LP64__)
+#elif defined(ESE_ARCH_64BIT) && defined(ESE_OS_LINUX)
 //  Linux x86_64: 32 bytes larger than Windows x64 because the engine's
 //  CCriticalSection / CSemaphore wrappers around pthread mutex/cond/sem
 //  carry larger payloads than the Win32 SRWLock / KEVENT primitives.
-static_assert( sizeof(BF) == 224, "BF size drifted on Linux x86_64" );
+static_assert( sizeof(BF) == 192, "BF size drifted on Linux x86_64" );
 #else
 static_assert( sizeof(BF) == 160, "BF size drifted on 32-bit" );
 #endif

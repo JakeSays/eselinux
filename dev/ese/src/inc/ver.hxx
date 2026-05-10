@@ -683,7 +683,7 @@ class RCE
 
 RCE * const prceNil     = nullptr;
 #ifdef DEBUG
-#ifdef _WIN64
+#ifdef ESE_ARCH_64BIT
 RCE * const prceInvalid = (RCE *)0xFEADFEADFEADFEAD;
 #else
 RCE * const prceInvalid = (RCE *)(DWORD_PTR)0xFEADFEAD;     //  HACK: cast to DWORD_PTR then to RCE* in order to permit compiling with /Wp64
@@ -1474,7 +1474,7 @@ TDelta DeltaVERGetDelta ( const FUCB * pfucb, const BOOKMARK& bookmark, INT cbOf
 // MSVC accepts the instantiation here even though the body is in ver.cxx.
 // Clang requires the body to be visible to instantiate, so use `extern
 // template` here (declaration) and emit the definition in ver.cxx.
-#ifdef _MSC_VER
+#ifdef ESE_COMPILER_MSVC
 template LONG DeltaVERGetDelta<LONG>( const FUCB * pfucb, const BOOKMARK& bookmark, INT cbOffset );
 template LONGLONG DeltaVERGetDelta<LONGLONG>( const FUCB * pfucb, const BOOKMARK& bookmark, INT cbOffset );
 #else

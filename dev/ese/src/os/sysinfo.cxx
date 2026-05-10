@@ -543,7 +543,7 @@ BOOL FAVXEnabled()
 
 BOOL FDeterminePopcntCapabilities()
 {
-#if ( defined( _M_AMD64 ) && !defined( _ARM64EC_ )) || (defined( _M_IX86 ) && !defined( _CHPE_X86_ARM64_ ))
+#if ( defined( ESE_ARCH_AMD64 ) && !defined( _ARM64EC_ )) || (defined( ESE_ARCH_X86 ) && !defined( _CHPE_X86_ARM64_ ))
     INT cpuidInfo[4];
         __cpuid(cpuidInfo, 1);
         return !!( cpuidInfo[2] & (1 << 23) );  // check bit 23 of CX
@@ -555,7 +555,7 @@ BOOL FDeterminePopcntCapabilities()
 
 BOOL FDetermineAVXCapabilities()
 {
-#if ( defined( _M_AMD64 ) && !defined( _M_ARM64EC )) || (defined( _M_IX86 ) && !defined( _M_HYBRID ))
+#if ( defined( ESE_ARCH_AMD64 ) && !defined( _M_ARM64EC )) || (defined( ESE_ARCH_X86 ) && !defined( _M_HYBRID ))
     INT cpuidInfo[4];
         __cpuid(cpuidInfo, 1);
         bool fAvxEnabled = false;
@@ -580,7 +580,7 @@ BOOL FDetermineAVXCapabilities()
 LOCAL VOID DetermineProcessorCapabilities()
 {
     // TODO: ARM64X: Can we let ARM64EC use SSE here?
-#if ( defined( _M_AMD64 ) && !defined( _ARM64EC_ )) || (defined( _M_IX86 ) && !defined( _M_HYBRID ))
+#if ( defined( ESE_ARCH_AMD64 ) && !defined( _ARM64EC_ )) || (defined( ESE_ARCH_X86 ) && !defined( _M_HYBRID ))
     fSSEInstructionsAvailable     = IsProcessorFeaturePresent( PF_XMMI_INSTRUCTIONS_AVAILABLE );
     fSSE2InstructionsAvailable    = IsProcessorFeaturePresent( PF_XMMI64_INSTRUCTIONS_AVAILABLE );
 #else

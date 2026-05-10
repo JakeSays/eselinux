@@ -2896,7 +2896,7 @@ CSXWLatch::~CSXWLatch()
 // lands, gate the original Windows code so the static library still
 // builds — it is missing symbols (PvPageAlloc, kernel semaphores, ...),
 // which surface only when something tries to link against sync.lib.
-#ifdef _WIN32
+#ifdef ESE_OS_WINDOWS
 
 //  We need some lowish level NT-level primitive APIs/structs, so we need to include
 //  either nt.h,ntrtl.h,nturtl.h or winnt.h
@@ -3189,11 +3189,11 @@ BOOL FOSSyncIClsRegister( _CLS* pcls )
 
             const BOOL  fTLSFreed  = TlsFree( g_dwClsSyncIndex );
 
-#if !defined(_M_AMD64)
+#if !defined(ESE_ARCH_AMD64)
             OSSYNCAssert( fTLSFreed );     //  leak the TLS entries if we fail
-#else // !_M_AMD64
+#else // !ESE_ARCH_AMD64
             Unused( fTLSFreed );
-#endif // _M_AMD64
+#endif // ESE_ARCH_AMD64
 
             g_dwClsSyncIndex = dwClsInvalid;
         }
@@ -3282,11 +3282,11 @@ void OSSyncIClsUnregister( _CLS* pcls )
 
         const BOOL  fTLSFreed = TlsFree( g_dwClsSyncIndex );
 
-#if !defined(_M_AMD64)
+#if !defined(ESE_ARCH_AMD64)
         OSSYNCAssert( fTLSFreed );     //  leak the TLS entries if we fail
-#else // !_M_AMD64
+#else // !ESE_ARCH_AMD64
         Unused( fTLSFreed );
-#endif // _M_AMD64
+#endif // ESE_ARCH_AMD64
 
         g_dwClsSyncIndex = dwClsInvalid;
     }
@@ -3523,7 +3523,7 @@ void* OSSYNCAPI OSSyncGetProcessorLocalStorage( const size_t iProc )
 
 //  High Resolution Timer
 
-#if defined( _M_IX86 ) && defined( SYNC_USE_X86_ASM )
+#if defined( ESE_ARCH_X86 ) && defined( SYNC_USE_X86_ASM )
 
 //    QWORDX - used for 32 bit access to a 64 bit integer
 //    For intel pentium only
@@ -3545,16 +3545,16 @@ enum HRTType
     hrttUninit,
     hrttNone,
     hrttWin32,
-#if defined( _M_IX86 ) && defined( SYNC_USE_X86_ASM )
+#if defined( ESE_ARCH_X86 ) && defined( SYNC_USE_X86_ASM )
     hrttPentium,
-#endif  //  _M_IX86 && SYNC_USE_X86_ASM
+#endif  //  ESE_ARCH_X86 && SYNC_USE_X86_ASM
 } g_hrttSync;
 
 //    HRT Frequency
 
 QWORD qwSyncHRTFreq;
 
-#if defined( _M_IX86 ) && defined( SYNC_USE_X86_ASM )
+#if defined( ESE_ARCH_X86 ) && defined( SYNC_USE_X86_ASM )
 
 //    Pentium Time Stamp Counter Fetch
 
@@ -3631,7 +3631,7 @@ static void OSSyncHRTIInit()
         g_hrttSync = hrttNone;
     }
 
-#if defined( _M_IX86 ) && defined( SYNC_USE_X86_ASM )
+#if defined( ESE_ARCH_X86 ) && defined( SYNC_USE_X86_ASM )
 
     //  can we use the TSC?
 
@@ -3683,7 +3683,7 @@ static void OSSyncHRTIInit()
         g_hrttSync = hrttPentium;
     }
 
-#endif  //  _M_IX86 && SYNC_USE_X86_ASM
+#endif  //  ESE_ARCH_X86 && SYNC_USE_X86_ASM
 
 }
 
@@ -3720,7 +3720,7 @@ static QWORD OSSYNCAPI QwOSSyncIHRTCount()
             QueryPerformanceCounter( (LARGE_INTEGER*) &qw );
             break;
 
-#if defined( _M_IX86 ) && defined( SYNC_USE_X86_ASM )
+#if defined( ESE_ARCH_X86 ) && defined( SYNC_USE_X86_ASM )
 
         case hrttPentium:
         {
@@ -3734,7 +3734,7 @@ static QWORD OSSYNCAPI QwOSSyncIHRTCount()
         }
             break;
 
-#endif  //  _M_IX86 && SYNC_USE_X86_ASM
+#endif  //  ESE_ARCH_X86 && SYNC_USE_X86_ASM
 
         default:
             OSSYNCAssert( fFalse );
@@ -3783,7 +3783,7 @@ MemoryBlock         g_mbSentryFree;
 CRITICAL_SECTION    g_csESMemory;
 BOOL                g_fcsESMemoryInit;
 
-#if defined(_WIN64)
+#if defined(ESE_ARCH_64BIT)
 const LONG_PTR maskDeletedToken = (LONG_PTR)0x8000000000000000; //  most significant bit
 #else
 const LONG_PTR maskDeletedToken = (LONG_PTR)0x80000000; //  most significant bit
@@ -6467,5 +6467,5 @@ void OSSYNCAPI OSSyncTermForES()
 
 }; // namespace OSSYNC
 
-#endif // _WIN32
+#endif // ESE_OS_WINDOWS
 

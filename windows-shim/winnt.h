@@ -6,7 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "cc.hxx"  // for BYTE/WORD/DWORD/ULONG/ULONGLONG/LONG_PTR/...
+#include "cc.hxx"  // for BYTE/WORD/DWORD/ULONG/ULONGLONG/LONG_PTR/... (also pulls in platform.h)
 #include "guiddef.h"  // for GUID (used in FILE_ID_DESCRIPTOR's union)
 
 #ifdef __cplusplus

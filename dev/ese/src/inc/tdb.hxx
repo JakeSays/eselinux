@@ -481,7 +481,7 @@ class TDB
 
         CInitOnce< ERR, decltype( &ErrRECIInitAutoIncrement ), FUCB * const, QWORD >  m_AutoIncInitOnce;
 
-#ifdef _WIN64
+#ifdef ESE_ARCH_64BIT
         BYTE                m_bReserved2[8];     //  for alignment. fileopen.cxx: C_ASSERT( sizeof(TDB) % 16 == 0 );
 #else
         BYTE                m_bReserved2[4];     //  for alignment. fileopen.cxx: C_ASSERT( sizeof(TDB) % 16 == 0 );

@@ -120,7 +120,7 @@ inline JET_COLTYP DataBindingOf<UINT>::Coltyp() const { return JET_coltypUnsigne
 
 // On non-MSVC LONG/ULONG are typedef'd to int32_t/uint32_t (same as INT/UINT),
 // so these specializations would redefine DataBindingOf<INT/UINT>::Coltyp.
-#ifdef _MSC_VER
+#ifdef ESE_COMPILER_MSVC
 template<>
 inline JET_COLTYP DataBindingOf<LONG>::Coltyp() const { return JET_coltypLong; }
 

@@ -9,7 +9,7 @@
 // rely on the bare forms must be patched to use _In_ / _Out_ / _Inout_.
 #pragma once
 
-#ifndef _MSC_VER
+#ifndef ESE_COMPILER_MSVC
 
 #define __in_z
 #define __in_z_opt

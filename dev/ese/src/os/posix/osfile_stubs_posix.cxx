@@ -96,6 +96,52 @@ BOOL COSFile::FOSFileSyncComplete( const IOREQ * const pioreq )
              FOSFileIExtendingSyncIOREQ( pioreq ) );
 }
 
+//  COSFile IO completion callbacks — these are installed by the Win32 IO-issue
+//  path in osfile.cxx (ErrIOAsync, ErrIOWrite extending-write machinery).
+//  That path is not yet ported to Linux; COSFile itself lands in Phase 7.
+//  Providing no-op stubs satisfies the linker references from osdisk.cxx's
+//  DEBUG-mode Assert() checks (which take the address of these functions via
+//  PFN() casts). They will never be called on Linux.
+void COSFile::IOSyncComplete_(
+    const ERR               /*err*/,
+    COSFile* const          /*posf*/,
+    const FullTraceContext& /*tc*/,
+    OSFILEQOS               /*grbitQOS*/,
+    const QWORD             /*ibOffset*/,
+    const DWORD             /*cbData*/,
+    BYTE* const             /*pbData*/,
+    CIOComplete* const      /*piocomplete*/ )
+{
+}
+
+void COSFile::IOZeroingWriteComplete_(
+    const ERR                       /*err*/,
+    COSFile* const                  /*posf*/,
+    const FullTraceContext&         /*tc*/,
+    const OSFILEQOS                 /*grbitQOS*/,
+    const QWORD                     /*ibOffset*/,
+    const DWORD                     /*cbData*/,
+    BYTE* const                     /*pbData*/,
+    CExtendingWriteRequest* const   /*pewreq*/ )
+{
+}
+
+void COSFile::IOExtendingWriteComplete_(
+    const ERR                       /*err*/,
+    COSFile* const                  /*posf*/,
+    const FullTraceContext&         /*tc*/,
+    const OSFILEQOS                 /*grbitQOS*/,
+    const QWORD                     /*ibOffset*/,
+    const DWORD                     /*cbData*/,
+    BYTE* const                     /*pbData*/,
+    CExtendingWriteRequest* const   /*pewreq*/ )
+{
+}
+
+void COSFile::IOChangeFileSizeComplete_( CExtendingWriteRequest* const /*pewreq*/ )
+{
+}
+
 //  _OSFILE::Pfsconfig - trivial getter the IO scheduler (osdisk.cxx)
 //  uses to route per-file event reporting.
 IFileSystemConfiguration* const _OSFILE::Pfsconfig() const

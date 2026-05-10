@@ -1578,7 +1578,7 @@ HandleError:
 
 // Explicit instantiation definitions paired with `extern template` in dir.hxx
 // (non-MSVC arm).
-#ifndef _MSC_VER
+#ifndef ESE_COMPILER_MSVC
 template ERR ErrDIRDelta<LONG>( FUCB *pfucb, INT cbOffset, const LONG delta, LONG *const pOldValue, DIRFLAG dirflag );
 template ERR ErrDIRDelta<LONGLONG>( FUCB *pfucb, INT cbOffset, const LONGLONG delta, LONGLONG *const pOldValue, DIRFLAG dirflag );
 #endif
