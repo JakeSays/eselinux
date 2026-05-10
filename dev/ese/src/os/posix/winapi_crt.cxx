@@ -279,7 +279,6 @@ static void TranslateMsvcFormat( char* fmt )
         if ( p[0] == '%' && p[1] == 'I' && p[2] == '6' && p[3] == '4' )
         {
             p[1] = 'l'; p[2] = 'l'; p[3] = ' ';
-            // collapse the trailing space by shifting left
             memmove( p + 3, p + 4, strlen( p + 4 ) + 1 );
             p += 3;
             continue;
@@ -290,6 +289,32 @@ static void TranslateMsvcFormat( char* fmt )
             memmove( p + 1, p + 4, strlen( p + 4 ) + 1 );
             ++p;
             continue;
+        }
+        //  On Windows (LLP64) `long` is 32-bit, so %ld/%lx/%lu etc. target a
+        //  32-bit variable. On Linux (LP64) `long` is 64-bit; vsscanf would
+        //  write 8 bytes into a 4-byte ULONG/DWORD, corrupting the stack.
+        //  Strip a lone `l` modifier (not `ll`) so the conversion matches the
+        //  32-bit Windows semantics.
+        if ( p[0] == '%' )
+        {
+            //  Skip past flags, width, and precision to find the length modifier.
+            char* q = p + 1;
+            while ( *q && ( *q == '-' || *q == '+' || *q == ' ' || *q == '#' || *q == '0' ) )
+                ++q;
+            while ( *q && isdigit( (unsigned char)*q ) )
+                ++q;
+            if ( *q == '.' )
+            {
+                ++q;
+                while ( *q && isdigit( (unsigned char)*q ) )
+                    ++q;
+            }
+            if ( q[0] == 'l' && q[1] != 'l' )
+            {
+                memmove( q, q + 1, strlen( q + 1 ) + 1 );
+                p = q;
+                continue;
+            }
         }
         ++p;
     }
