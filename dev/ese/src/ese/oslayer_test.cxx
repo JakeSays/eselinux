@@ -465,7 +465,7 @@ JETUNITTEST( NORM, NormCompareAdvRandom )
     }
 }
 
-UtilSystemBetaConfig    g_rgbetaconfigs [];
+extern UtilSystemBetaConfig    g_rgbetaconfigs [];
 
 JETUNITTEST( SYSINFO, BetaFeaturesShouldHaveMatchingIndexAndFeatureIdValue )
 {
@@ -489,7 +489,7 @@ JETUNITTEST( SYSINFO, BetaFeaturesShouldHaveOneStandardMode )
 extern UtilSystemBetaSiteMode usbsmExFeatures;
 JETUNITTEST( SYSINFO, BetaFeaturesShouldNotReuseOtherFeaturesUsbsmExFeatEnum )
 {
-    UtilSystemBetaSiteMode rgusbsmExFeatureFlags[EseFeatureMax] = { 0 };
+    UtilSystemBetaSiteMode rgusbsmExFeatureFlags[EseFeatureMax] = {};
 
     for( ULONG featureid = 0; featureid < EseFeatureMax; featureid++ )
     {
