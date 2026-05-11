@@ -9,12 +9,16 @@
 
 #ifdef ESE_OS_WINDOWS
 #include <errhandlingapi.h>
+#else
+//  Pull in the windows-shim macros for wcscpy_s / strcpy_s used below
+//  (they expand to StringCbCopy* on Linux).  The engine's std.hxx doesn't
+//  include windows.h on Linux, so JetTestReportEnforceFail can't see the
+//  shim without an explicit include.
+#include <windows.h>
 #endif
 
 extern VOID( *g_pfnReportEnforceFailure )( const WCHAR* wszContext, const CHAR* szMessage, const WCHAR* wszIssueSource );
-#ifdef ESE_OS_WINDOWS
 void __stdcall JetTestReportEnforceFail( const WCHAR* wszContext, const CHAR* szMessage, const WCHAR* wszIssueSource );
-#endif
 thread_local JetTestEnforceSEHException* JetTestEnforceSEHException::s_pThreadExcep = NULL;
 
 //  ****************************************************************
@@ -161,12 +165,12 @@ INT JetUnitTest::RunTests( const char * const szTest, const IFMP ifmpTest )
         return 1;
     }
 
-#ifdef ESE_OS_WINDOWS
     // Activate custom enforce failure reporting for testing code enforces.
-    // The hook uses Win32 SEH (RaiseException) to make enforce failures
-    // catchable inside JETUNITTEST bodies. Not ported to Linux yet.
+    // On Windows the hook uses Win32 SEH (RaiseException); on Linux the
+    // hook injects a synthetic JETTEST_EXCEP_ENFORCE into the topmost
+    // _SehGuard frame via _SehRaiseException (winapi_seh.cxx).  Either
+    // way, JETUNITTEST bodies catch the failure with __try/__except.
     g_pfnReportEnforceFailure = &JetTestReportEnforceFail;
-#endif
 
     bool fDefaultRun = true;
     const char szWildCard[] = { JetUnitTest::chWildCard, '\0' };
@@ -499,7 +503,6 @@ void JetTestFixture::Fail_( const char * const szFile, const INT line, const cha
     m_presult->AddFailure( failure );
 }
 
-#ifdef ESE_OS_WINDOWS
 void __stdcall JetTestReportEnforceFail( const WCHAR* wszContext, const CHAR* szMessage, const WCHAR* wszIssueSource )
 {
     JetTestEnforceSEHException* pExcep = new JetTestEnforceSEHException();
@@ -508,9 +511,18 @@ void __stdcall JetTestReportEnforceFail( const WCHAR* wszContext, const CHAR* sz
     szMessage != NULL ? strcpy_s( pExcep->szMessage, szMessage ) : pExcep->szMessage[ 0 ] = '\0';
     wszIssueSource != NULL ? wcscpy_s( pExcep->wszIssueSource, wszIssueSource ) : pExcep->wszIssueSource[ 0 ] = '\0';
 
+#ifdef ESE_OS_WINDOWS
     // Raise a continuable exception.
     // Caller must destroy the heap-allocated exception object.
     RaiseException( JETTEST_EXCEP_ENFORCE, 0, 1, (ULONG_PTR*) &pExcep );
+#else
+    //  Linux: inject the exception into the topmost _SehGuard frame and
+    //  siglongjmp.  Behaviour matches the Win32 path — the JETUNITTEST
+    //  body's __except sees ExceptionCode == JETTEST_EXCEP_ENFORCE and
+    //  the same JetTestEnforceSEHException pointer.  If no frame is
+    //  active, _SehRaiseException aborts (uncaught enforce failure).
+    _SehRaiseException( JETTEST_EXCEP_ENFORCE, pExcep );
+#endif
 }
 
 
@@ -536,7 +548,6 @@ DWORD JetTestEnforceSEHException::Filter( _EXCEPTION_POINTERS* lpExcepPtrs )
         return EXCEPTION_CONTINUE_SEARCH;
     }
 }
-#endif // ESE_OS_WINDOWS
 
 //  ================================================================
 void JetTestEnforceSEHException::Cleanup()

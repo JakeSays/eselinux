@@ -972,7 +972,10 @@ wchar_t* _wfullpath( wchar_t* absPath, const wchar_t* relPath, size_t maxLen );
 //
 errno_t wcscpy_s( wchar_t* dst, size_t cchDst, const wchar_t* src );
 errno_t wcscat_s( wchar_t* dst, size_t cchDst, const wchar_t* src );
+errno_t strcpy_s( char* dst, size_t cchDst, const char* src );
+errno_t strcat_s( char* dst, size_t cchDst, const char* src );
 errno_t _wcsupr_s( wchar_t* str, size_t cchStr );
+
 
 //  Wide secure-CRT scanf. Engine wchar_t is 16-bit (-fshort-wchar) so glibc's
 //  swscanf (32-bit wchar_t) is unusable — we provide a custom impl that
@@ -983,6 +986,20 @@ int _snwscanf_s( const wchar_t* buffer, size_t cchCount, const wchar_t* fmt, ...
 
 #ifdef __cplusplus
 }  // extern "C"
+
+//  MSVC-style array-overload variants of the secure-CRT *_s family.
+//  The Microsoft secure-CRT provides 2-arg overloads that deduce the
+//  destination size from an array reference; engine code (and the test
+//  scaffolding in jettest.cxx) uses them interchangeably with the 3-arg
+//  forms.  Must live outside extern "C" — templates need C++ linkage.
+template < size_t N >
+inline errno_t wcscpy_s( wchar_t (&dst)[ N ], const wchar_t* src ) { return wcscpy_s( dst, N, src ); }
+template < size_t N >
+inline errno_t wcscat_s( wchar_t (&dst)[ N ], const wchar_t* src ) { return wcscat_s( dst, N, src ); }
+template < size_t N >
+inline errno_t strcpy_s( char (&dst)[ N ], const char* src )       { return strcpy_s( dst, N, src ); }
+template < size_t N >
+inline errno_t strcat_s( char (&dst)[ N ], const char* src )       { return strcat_s( dst, N, src ); }
 #endif
 
 //  Win32 NLS surface — provided by libnls (LGPL shared library at

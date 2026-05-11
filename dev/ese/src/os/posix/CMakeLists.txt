@@ -76,6 +76,7 @@ set(OSPOSIX_WINAPI_SOURCES
     winapi_nls.cxx
     winapi_process.cxx
     winapi_random.cxx
+    winapi_seh.cxx
     winapi_sync.cxx
     winapi_strsafe.cxx
     winapi_sysdirs.cxx

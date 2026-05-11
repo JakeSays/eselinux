@@ -240,6 +240,25 @@ extern "C" errno_t wcscat_s( wchar_t* dst, size_t cchDst, const wchar_t* src )
     return wcscpy_s( dst + lenDst, cchDst - lenDst, src );
 }
 
+extern "C" errno_t strcpy_s( char* dst, size_t cchDst, const char* src )
+{
+    if ( !dst || cchDst == 0 )                     return EINVAL;
+    if ( !src ) { dst[ 0 ] = '\0'; return EINVAL; }
+    size_t i = 0;
+    while ( src[ i ] && i + 1 < cchDst ) { dst[ i ] = src[ i ]; ++i; }
+    dst[ i ] = '\0';
+    return src[ i ] ? ERANGE : 0;
+}
+
+extern "C" errno_t strcat_s( char* dst, size_t cchDst, const char* src )
+{
+    if ( !dst || cchDst == 0 || !src ) return EINVAL;
+    size_t lenDst = 0;
+    while ( lenDst < cchDst && dst[ lenDst ] ) ++lenDst;
+    if ( lenDst == cchDst ) return EINVAL;
+    return strcpy_s( dst + lenDst, cchDst - lenDst, src );
+}
+
 extern "C" errno_t _wcsupr_s( wchar_t* str, size_t cchStr )
 {
     if ( !str || cchStr == 0 ) return EINVAL;

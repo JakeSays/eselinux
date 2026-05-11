@@ -65,6 +65,7 @@ set(ESE_TEST_SOURCES_PORTABLE
     ../fmp_test.cxx
     ../log_test.cxx
     ../logprereader_test.cxx
+    ../node_test.cxx
     ../oslayer_test.cxx
     ../osu_test.cxx
     daehelpers_test.cxx

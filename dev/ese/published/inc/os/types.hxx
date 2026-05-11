@@ -39,10 +39,23 @@
 
 
 //  Path Delimiter
+//
+//  On Windows this is the OS path separator and is also what __FILE__
+//  records in the macro.  On Linux both differ: paths use '/' and
+//  __FILE__ records the absolute source path (also '/' separated).
+//  Several assertions use SzSourceFileName / wcsrchr( ..., chPathDelimiter)
+//  to strip down to the bare filename, so the delimiter has to match the
+//  host's actual path separator for that to work.
 
+#ifdef ESE_OS_WINDOWS
 #define chPathDelimiter   '\\'
 #define wchPathDelimiter L'\\'
 #define wszPathDelimiter L"\\"
+#else
+#define chPathDelimiter   '/'
+#define wchPathDelimiter L'/'
+#define wszPathDelimiter L"/"
+#endif
 
 
 //  host endian-ness
