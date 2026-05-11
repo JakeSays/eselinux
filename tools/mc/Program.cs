@@ -20,6 +20,10 @@ internal static class Program
             var file = McParser.Parse(source, opts.Input);
             HeaderEmitter.Emit(file, opts);
             RcEmitter.EmitStub(file, opts);
+            if (opts.CTableDir is not null)
+            {
+                TableEmitter.Emit(file, opts);
+            }
 
             if (opts.Verbose)
             {
