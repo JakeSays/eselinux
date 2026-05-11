@@ -3,6 +3,11 @@
 
 #include "std.hxx"
 
+//  swprintf_s isn't in the engine's std.hxx include chain on Linux; pull
+//  it (via the windows-shim macro that expands to StringCbPrintfW) and
+//  the matching real symbol on Windows.
+#include <windows.h>
+
 #ifndef ENABLE_JET_UNIT_TEST
 #error This file should only be compiled with the unit tests!
 #endif // ENABLE_JET_UNIT_TEST

@@ -62,6 +62,7 @@ set(ESE_TEST_SOURCES_PORTABLE
     ../version_test.cxx
     ../checksum_test.cxx
     ../clogredomaps_test.cxx
+    ../fmp_test.cxx
     ../log_test.cxx
     ../logprereader_test.cxx
     ../oslayer_test.cxx

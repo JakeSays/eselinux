@@ -74,25 +74,39 @@ int RunTier1( const char* szPattern )
     }
     COSLayerPreInit::DisablePerfmon();
     COSLayerPreInit::DisableTracing();
-    //  Register the engine TLS size before ErrOSInit so that Ptls() is
-    //  usable in any code path the tests exercise (e.g. file I/O stats).
-    //  Normally ErrOSUSetOSLayerGlobals() does this during full JetInit;
-    //  the tier-1 runner bypasses that path, so we wire it up directly.
+    //  Register the engine TLS size up front so Ptls() is usable in
+    //  any code path the tests exercise.  ErrOSUSetOSLayerGlobals()
+    //  (invoked from ErrOSUInit below) also does this, but a few of
+    //  the early COSLayerPreInit hooks may already need the size.
     OSPrepreinitSetUserTLSSize( sizeof( TLS ) );
-    //  ErrOSInit brings up io_uring, the OS file layer, etc.  Tests
-    //  that exercise file I/O paths (CFlushMap.BasicPersistedFlushMap,
-    //  JETUNITTESTEX BF + CPAGE tests, ...) need this.  RunTests itself
-    //  inits the buffer manager on demand for any test whose
-    //  FNeedsBF() is true (see jettest.cxx).
-    const ERR errInit = ErrOSInit();
+    //  Perfmon isn't compiled into the Linux OS layer (osposix omits
+    //  PERFMON_SUPPORT).  The COSLayerPreInit::DisablePerfmon() shortcut
+    //  above sets the global flag but ErrOSUInit consults the JET system
+    //  parameter, which defaults to "enabled" — so we also have to set
+    //  the param explicitly or ErrOSUInit will call EnablePerfmon which
+    //  asserts in perfmon.cxx:31 with "No perfmon support enabled".
+    JET_ERR errParam = JetSetSystemParameterA( nullptr, 0, JET_paramDisablePerfmon, 1, nullptr );
+    if ( errParam < JET_errSuccess )
+    {
+        std::fprintf( stderr, "JetSetSystemParameter(DisablePerfmon) failed: %d\n", (int)errParam );
+        return -1;
+    }
+    //  Bring up the FULL OSU stack (vs the lower-level ErrOSInit we
+    //  used previously) so g_OSUInitControl's consumer count is bumped.
+    //  That matters for tier-1 tests that themselves call JetInit/JetInit2
+    //  (e.g. FMP.NewAndWriteLatch): their nested ErrOSUInit takes the
+    //  CInitTermLock early-return path instead of trying to re-SetParam
+    //  the already-frozen CResourceManager globals
+    //  (cresmgr.cxx:648 -> JET_errAlreadyInitialized via osu.cxx:473).
+    const ERR errInit = ErrOSUInit();
     if ( errInit < JET_errSuccess )
     {
-        std::fprintf( stderr, "ErrOSInit failed: %d\n", (int)errInit );
+        std::fprintf( stderr, "ErrOSUInit failed: %d\n", (int)errInit );
         return -1;
     }
     EnableEventLogging();
     const INT failures = JetUnitTest::RunTests( szPattern, ifmpNil );
-    OSTerm();
+    OSUTerm();
     return (int)failures;
 }
 
