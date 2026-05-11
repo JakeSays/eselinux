@@ -143,6 +143,10 @@ if (NOT WIN32)
     # third_party/libnls/ (built as part of the ESE build — see top-level
     # CMakeLists.txt's add_subdirectory).
     target_link_libraries(osposix PUBLIC nls::nls)
+
+    # libucl backs config_posix.cxx — reads /etc/ese.conf and
+    # <exe>.ese.conf at OS-layer init.  Vendored under third_party/.
+    target_link_libraries(osposix PRIVATE ucl)
 endif ()
 
 target_include_directories(osposix PRIVATE
