@@ -27,6 +27,10 @@
 #include <cstdio>
 #include <cstring>
 
+#include <errno.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 namespace
 {
 
@@ -134,6 +138,17 @@ int RunTier2( const char* szPattern, const char* szDbDir )
         szDir[ cchDir++ ] = '/';
     }
     szDir[ cchDir ] = '\0';
+
+    //  Create the directory if it doesn't already exist.  Tolerate EEXIST
+    //  (the user supplied a path that already has prior runner state).
+    //  Anything else — including a missing parent — is fatal here so the
+    //  user gets a clear errno rather than a downstream JET_errFileAccessDenied
+    //  from ErrOpenTempLogFile.
+    if ( mkdir( szDbDir, 0755 ) != 0 && errno != EEXIST )
+    {
+        std::fprintf( stderr, "mkdir(%s) failed: %s\n", szDbDir, std::strerror( errno ) );
+        return -1;
+    }
 
     JET_ERR err = JET_errSuccess;
     err = SetSysParamSz( &instance, JET_paramSystemPath, szDir, "SystemPath" );

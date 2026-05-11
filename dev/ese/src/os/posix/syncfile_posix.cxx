@@ -251,19 +251,12 @@ public:
                     const PfnIOHandoff  pfnIOHandoff    = nullptr,
                     const VOID *        /*pioreq*/      = nullptr ) override
     {
-        //  PfnIOHandoff fires synchronously at submission time — engine
-        //  uses it to mark the IO as "in-flight" before this returns.
-        if ( pfnIOHandoff )
-        {
-            FullTraceContext ftcHand;
-            ftcHand.etc = tc;
-            pfnIOHandoff( JET_errSuccess, this, ftcHand, grbitQOS,
-                          ibOffset, cbData, pbData, keyIOComplete, nullptr );
-        }
-
         if ( pfnIOComplete )
         {
             //  Async — heap-allocate IOContext; completion thread frees.
+            //  Allocate before the handoff so we can pass the ctx pointer
+            //  as the engine's per-IO token (BFISetIOContext expects a
+            //  non-null value here).
             osposix::IOContext* const ctx = new osposix::IOContext();
             ctx->op             = osposix::IOContext::Op::Read;
             ctx->fileFd         = m_fd;
@@ -275,6 +268,16 @@ public:
             ctx->pbData         = pbData;
             ctx->keyIOComplete  = keyIOComplete;
             ctx->pfnIOComplete  = pfnIOComplete;
+
+            //  PfnIOHandoff fires synchronously at submission time — engine
+            //  uses it to mark the IO as "in-flight" before submit returns.
+            if ( pfnIOHandoff )
+            {
+                FullTraceContext ftcHand;
+                ftcHand.etc = tc;
+                pfnIOHandoff( JET_errSuccess, this, ftcHand, grbitQOS,
+                              ibOffset, cbData, pbData, keyIOComplete, ctx );
+            }
             return osposix::ErrIOUringRead( m_fd, ctx );
         }
 
@@ -290,6 +293,14 @@ public:
         ctx.pbData         = pbData;
         ctx.keyIOComplete  = keyIOComplete;
         ctx.pfnIOComplete  = nullptr;
+
+        if ( pfnIOHandoff )
+        {
+            FullTraceContext ftcHand;
+            ftcHand.etc = tc;
+            pfnIOHandoff( JET_errSuccess, this, ftcHand, grbitQOS,
+                          ibOffset, cbData, pbData, keyIOComplete, &ctx );
+        }
         const ERR err = osposix::ErrIOUringRead( m_fd, &ctx );
         osposix::DestroyContextSyncWait( &ctx );
         return err;
@@ -304,16 +315,10 @@ public:
                     const DWORD_PTR     keyIOComplete   = 0,
                     const PfnIOHandoff  pfnIOHandoff    = nullptr ) override
     {
-        if ( pfnIOHandoff )
-        {
-            FullTraceContext ftcHand;
-            ftcHand.etc = tc;
-            pfnIOHandoff( JET_errSuccess, this, ftcHand, grbitQOS,
-                          ibOffset, cbData, pbData, keyIOComplete, nullptr );
-        }
-
         if ( pfnIOComplete )
         {
+            //  Allocate the heap IOContext first so we can hand it to the
+            //  engine as the per-IO token (BFISetIOContext requires non-null).
             osposix::IOContext* const ctx = new osposix::IOContext();
             ctx->op             = osposix::IOContext::Op::Write;
             ctx->fileFd         = m_fd;
@@ -325,6 +330,14 @@ public:
             ctx->pbData         = const_cast< BYTE* >( pbData );
             ctx->keyIOComplete  = keyIOComplete;
             ctx->pfnIOComplete  = pfnIOComplete;
+
+            if ( pfnIOHandoff )
+            {
+                FullTraceContext ftcHand;
+                ftcHand.etc = tc;
+                pfnIOHandoff( JET_errSuccess, this, ftcHand, grbitQOS,
+                              ibOffset, cbData, pbData, keyIOComplete, ctx );
+            }
             return osposix::ErrIOUringWrite( m_fd, ctx );
         }
 
@@ -339,6 +352,14 @@ public:
         ctx.pbData         = const_cast< BYTE* >( pbData );
         ctx.keyIOComplete  = keyIOComplete;
         ctx.pfnIOComplete  = nullptr;
+
+        if ( pfnIOHandoff )
+        {
+            FullTraceContext ftcHand;
+            ftcHand.etc = tc;
+            pfnIOHandoff( JET_errSuccess, this, ftcHand, grbitQOS,
+                          ibOffset, cbData, pbData, keyIOComplete, &ctx );
+        }
         const ERR err = osposix::ErrIOUringWrite( m_fd, &ctx );
         osposix::DestroyContextSyncWait( &ctx );
         return err;
@@ -395,9 +416,13 @@ public:
         m_pfpapi = pfpapi;
     }
 
-    VOID UpdateIFilePerfAPIEngineFileTypeId( _In_ const DWORD /*dwEngineFileType*/,
-                                              _In_ const QWORD /*qwEngineFileId*/ ) override
+    VOID UpdateIFilePerfAPIEngineFileTypeId( _In_ const DWORD dwEngineFileType,
+                                              _In_ const QWORD qwEngineFileId ) override
     {
+        if ( m_pfpapi != nullptr )
+        {
+            m_pfpapi->UpdateEngineFileTypeId( dwEngineFileType, qwEngineFileId );
+        }
     }
 
     ERR ErrNTFSAttributeListSize( QWORD* const pcbSize ) override
@@ -435,12 +460,12 @@ public:
 #ifdef DEBUG
     DWORD DwEngineFileType() const override
     {
-        return 0;
+        return m_pfpapi != nullptr ? m_pfpapi->DwEngineFileType() : 0;
     }
 
     QWORD QwEngineFileId() const override
     {
-        return 0;
+        return m_pfpapi != nullptr ? m_pfpapi->QwEngineFileId() : 0;
     }
 #endif
 

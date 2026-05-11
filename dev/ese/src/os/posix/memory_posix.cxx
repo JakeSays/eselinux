@@ -514,9 +514,47 @@ BOOL FOSMemoryPageResident( void* const pv, const size_t cb )
     return fTrue;
 }
 
-BOOL FOSMemoryPageAllocated( const void * const pv, const size_t /*cb*/ )
+BOOL FOSMemoryPageAllocated( const void * const pv, const size_t cb )
 {
-    return RegionLookup( pv ) != 0 ? fTrue : fFalse;
+    //  Windows uses VirtualQuery and asks "is this address allocated AND
+    //  committed AND not just reserved?"  We don't have a cheap equivalent
+    //  on Linux — VirtualQuery's three states map to mmap (allocated) /
+    //  PROT_READ|PROT_WRITE (committed) / PROT_NONE (reserved) on us, but
+    //  there's no syscall that reports the current PROT_* of an address.
+    //
+    //  Approximate with mincore: it returns success when *any* part of the
+    //  range is mapped (committed or just reserved); it returns -1/ENOMEM
+    //  only when the range is completely unmapped.  False positives for
+    //  reserved-only memory aren't a practical concern — the engine never
+    //  hands an uncommitted address to FOSMemoryPageAllocated callers.
+    //
+    //  RegionLookup short-circuits the common "exactly the base of a
+    //  PvOSMemoryPageAlloc'd region" case without a syscall.
+    if ( !pv )
+    {
+        return fFalse;
+    }
+    if ( RegionLookup( pv ) != 0 )
+    {
+        return fTrue;
+    }
+
+    const size_t cbPage = (size_t)g_dwPageCommitGran;
+    const uintptr_t uPv = (uintptr_t)pv;
+    const uintptr_t uPvAligned = uPv & ~(uintptr_t)( cbPage - 1 );
+    const size_t cbProbe = cb ? cb : 1;
+    const size_t cbAligned = ( ( uPv - uPvAligned ) + cbProbe + cbPage - 1 )
+                                & ~(uintptr_t)( cbPage - 1 );
+    unsigned char rgvec[ 1024 ];
+    const size_t cPage = cbAligned / cbPage;
+    if ( cPage > sizeof( rgvec ) )
+    {
+        //  Range too large for the on-stack residency vector — skip the
+        //  residency read and just trust mincore's mapped/unmapped result
+        //  on a single page at the start.
+        return mincore( (void*)uPvAligned, cbPage, rgvec ) == 0 ? fTrue : fFalse;
+    }
+    return mincore( (void*)uPvAligned, cbAligned, rgvec ) == 0 ? fTrue : fFalse;
 }
 
 BOOL FOSMemoryFileMapped( const void * const /*pv*/, const size_t /*cb*/ )
