@@ -7281,6 +7281,12 @@ VOID CPAGE::CorruptHdr( _In_ const ULONG ipgfld, const QWORD qwToAdd )
     case ipgfldCorruptItagMicFree:
         Assert( qwToAdd <= 0xFFFF ); // no point otherwise
         ppghdr->itagState = ppghdr->itagState + (USHORT) qwToAdd;
+        //  Refresh the cached itagMicFree / ctagReserved so subsequent
+        //  ITagMicFree_() / CTagReserved_() calls see the corrupted value.
+        //  Without this the fuzz tests (TestCorruptItagMicFreeFull*) think
+        //  they corrupted the page but every subsequent ErrCheckPage reads
+        //  the pre-corruption cached value and reports success.
+        InitItagState( ppghdr );
         break;
     default:
         AssertSz( fFalse, "NYI" );

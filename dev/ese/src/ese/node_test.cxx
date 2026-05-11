@@ -864,18 +864,23 @@ JETUNITTESTEX ( Node, TestCorruptItagMicFreeFullFuzzResilientCodePaths, JetSimpl
         {
             cGoodLarge++;
         }
-        cTagHasZeroCb += prtbuf.CContains( "page corruption (2): Non TAG-0 - TAG 7 has zero cb(cb = 0, ib = 0)" );
-        cTagArrTooLargeForRealData += prtbuf.CContains( "page corruption (2): itagMicFree / tag array too large for real data left over" );
-        cItagMicFreeTooLarge += prtbuf.CContains( "page corruption (2): itagMicFree too large" );
-        cSpaceMismatch += prtbuf.CContains( "page corruption (2): space mismatch (" );
+        //  Note: substring searches deliberately omit the prefix.  The
+        //  engine formats corruption details with `pgvr [%hs], page (%d): `
+        //  (cpage.cxx MakeCorruptionDetailsSz); earlier versions of this
+        //  test searched for an older "page corruption (N):" prefix that
+        //  never actually appears in prtbuf.
+        cTagHasZeroCb += prtbuf.CContains( "Non TAG-0 - TAG 7 has zero cb(cb = 0, ib = 0)" );
+        cTagArrTooLargeForRealData += prtbuf.CContains( "itagMicFree / tag array too large for real data left over" );
+        cItagMicFreeTooLarge += prtbuf.CContains( "itagMicFree too large" );
+        cSpaceMismatch += prtbuf.CContains( "space mismatch (" );
         if ( prtbuf.FContains( "Empty page without fPageEmpty or fPagePreInit" ) )
         {
             cZeroTagsWithoutEmptyPageFlag += prtbuf.CContains( "Empty page without fPageEmpty or fPagePreInit" );
         }
-        if ( !prtbuf.FContains( "page corruption (2): Non TAG-0 - TAG 7 has zero cb(cb = 0, ib = 0)" ) &&
-             !prtbuf.FContains( "page corruption (2): itagMicFree / tag array too large for real data left over" ) &&
-             !prtbuf.FContains( "page corruption (2): itagMicFree too large" ) &&
-             !prtbuf.FContains( "page corruption (2): space mismatch (" ) &&
+        if ( !prtbuf.FContains( "Non TAG-0 - TAG 7 has zero cb(cb = 0, ib = 0)" ) &&
+             !prtbuf.FContains( "itagMicFree / tag array too large for real data left over" ) &&
+             !prtbuf.FContains( "itagMicFree too large" ) &&
+             !prtbuf.FContains( "space mismatch (" ) &&
              !prtbuf.FContains( "Empty page without fPageEmpty or fPagePreInit" ) &&
              ( errSmall < JET_errSuccess || errLarge < JET_errSuccess ) )
         {
@@ -1135,9 +1140,12 @@ JETUNITTESTEX ( Node, TestCorruptTagCbFullFuzzResilientCodePaths, JetSimpleUnitT
 
             FNegTestUnset( fCorruptingPageLogically );
 
-            cSpaceMismatch += prtbuf.CContains( "page corruption (2): space mismatch (" );
+            //  Substring searches omit the "page corruption (N):" prefix
+            //  (see comment in TestCorruptItagMicFreeFullFuzzResilientCodePaths
+            //  — the engine actually emits "pgvr [%hs], page (%d): ").
+            cSpaceMismatch += prtbuf.CContains( "space mismatch (" );
             cTagEndsInFreeSpace += prtbuf.CContains( "ends in free space (cb =" );
-            const ULONG cT = prtbuf.CContains( "page corruption (2): Non TAG-0 - TAG" ) + prtbuf.CContains( "has zero cb(cb =" );
+            const ULONG cT = prtbuf.CContains( "Non TAG-0 - TAG" ) + prtbuf.CContains( "has zero cb(cb =" );
             cTagHasZeroCb += cT ? ( cT / 2 ) : 0;
             Assert( cT % 2 == 0 );
             cSuffixSizeLargerThanTagSize += prtbuf.CContains( "suffix size is larger than the actual tag size (suffix.Cb()" );
