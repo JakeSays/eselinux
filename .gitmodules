@@ -1,0 +1,3 @@
+[submodule "libnls"]
+	path = third_party/libnls
+	url = git@github.com:JakeSays/libnls

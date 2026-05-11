@@ -82,6 +82,13 @@ typedef LONG*               LPLONG;
 typedef BOOL*               LPBOOL;
 typedef BOOL*               PBOOL;
 
+//  Locale / language identifiers.  LCID is a packed (LANGID, SORTID)
+//  pair; LANGID a packed (PRIMARYLANGID, SUBLANGID) pair.  These are
+//  fundamental Win32 types — winnls.h references them but doesn't
+//  define them itself.
+typedef WORD                LANGID;
+typedef DWORD               LCID;
+
 //  64-bit integer unions
 //
 typedef union _LARGE_INTEGER {

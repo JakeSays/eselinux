@@ -109,3 +109,16 @@ BOOL IsDebuggerPresent( void )
 }
 
 }  // extern "C"
+
+//  WaitForDebugEventEx stub.  Engine's os/norm.cxx declares
+//  NTOSFuncPD( g_pfnWaitForDebugEventEx, WaitForDebugEventEx ) just to
+//  feature-detect Win10 via .ErrIsPresent() — the function itself is
+//  never invoked.  We provide a symbol that satisfies the link.  The
+//  upstream declaration in norm.cxx is plain C++ linkage (no extern
+//  "C"), so this definition is too — keep it outside the extern "C"
+//  block above.
+BOOL WaitForDebugEventEx( LPDEBUG_EVENT /* lpDebugEvent */, DWORD /* dwMilliseconds */ )
+{
+    SetLastError( ERROR_CALL_NOT_IMPLEMENTED );
+    return FALSE;
+}

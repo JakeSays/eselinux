@@ -362,27 +362,49 @@ public:
 
 #ifdef ENABLE_STATIC_COMPILED_LOAD_DEPENDENCIES
 
+//  Thin wrapper used by the static-load-deps form below.  Behaves like
+//  a function pointer (implicit conversion → callable + dereferenceable)
+//  while also exposing the small set of FunctionLoader<> members the
+//  engine queries on g_pfn objects: ErrIsPresent / FCtord / SzDllLoaded.
+//  Since the dependency is satisfied at link time, the answers are
+//  trivially "yes, loaded, no DLL name".
+template< typename Pfn >
+class FunctionLoaderStaticShim
+{
+public:
+    constexpr explicit FunctionLoaderStaticShim( Pfn pfn ) : m_pfn( pfn ) {}
+    constexpr operator Pfn() const { return m_pfn; }
+    //  ERR is a typedef defined further down the engine include chain
+    //  (esestd.hxx), so we return a raw 0 here — JET_errSuccess.  The
+    //  callers compare against JET_errSuccess and the implicit integer
+    //  conversion takes care of the rest.
+    int  ErrIsPresent() const { return 0; }
+    BOOL FCtord() const       { return fTrue; }
+    const CHAR* SzDllLoaded() const { return "(statically linked)"; }
+private:
+    Pfn m_pfn;
+};
 
 #define NTOSFuncStd( g_pfn, mszzDlls, func, oslf )  \
-                        decltype(&func) g_pfn = func;
+                        FunctionLoaderStaticShim< decltype(&func) > g_pfn( func );
 
 #define NTOSFuncPtr( g_pfn, mszzDlls, func, oslf )  \
-                        decltype(&func) g_pfn = func;
+                        FunctionLoaderStaticShim< decltype(&func) > g_pfn( func );
 
 #define NTOSFuncCount( g_pfn, mszzDlls, func, oslf )    \
-                        decltype(&func) g_pfn = func;
+                        FunctionLoaderStaticShim< decltype(&func) > g_pfn( func );
 
 #define NTOSFuncVoid( g_pfn, mszzDlls, func, oslf )     \
-                        decltype(&func) g_pfn = func;
+                        FunctionLoaderStaticShim< decltype(&func) > g_pfn( func );
 
 #define NTOSFuncNtStd( g_pfn, mszzDlls, func, oslf )    \
-                        decltype(&func) g_pfn = func;
+                        FunctionLoaderStaticShim< decltype(&func) > g_pfn( func );
 
 #define NTOSFuncError( g_pfn, mszzDlls, func, oslf )    \
-                        decltype(&func) g_pfn = func;
+                        FunctionLoaderStaticShim< decltype(&func) > g_pfn( func );
 
 #define NTOSFuncCustom( g_pfn, mszzDlls, func, errorthunk, oslf )   \
-                        decltype(&func) g_pfn = func;
+                        FunctionLoaderStaticShim< decltype(&func) > g_pfn( func );
 
 //  Preinit variants are second-stage assignments after a NTOSFuncPD-declared
 //  buffer is constructed. With static load dependencies the global is
@@ -391,12 +413,12 @@ public:
 #define NTOSFuncPtrPreinit( g_pfn, mszzDlls, func, oslf )       (void)0
 #define NTOSFuncErrorPreinit( g_pfn, mszzDlls, func, oslf )     (void)0
 
-//  NTOSFuncPD is "placement-deferred": a byte buffer + reference that gets
-//  filled in by NTOSFunc*Preinit. With static deps we make g_pfn a real
-//  function-pointer global directly. Engine code only ever calls through
-//  it, so the storage type doesn't matter to call sites.
+//  NTOSFuncPD is "placement-deferred" on Windows; on Linux with static
+//  deps we just declare the shim directly.  The symbol type changes
+//  from "function pointer global" to "shim object" but call sites work
+//  unchanged because the shim implicitly converts to the pointer.
 #define NTOSFuncPD( g_pfn, func )                       \
-                        decltype(&func) g_pfn = func;
+                        FunctionLoaderStaticShim< decltype(&func) > g_pfn( func );
 
 #else // !ENABLE_STATIC_COMPILED_LOAD_DEPENDENCIES
 

@@ -26,6 +26,7 @@ set(OSPOSIX_PORTED_SOURCES
     ${ESE_DEV}/src/os/math.cxx
     ${ESE_DEV}/src/os/hapublish.cxx
     ${ESE_DEV}/src/os/memfile.cxx
+    ${ESE_DEV}/src/os/norm.cxx
     ${ESE_DEV}/src/os/os.cxx
     ${ESE_DEV}/src/os/osblockcache.cxx
     ${ESE_DEV}/src/os/osdiag.cxx
@@ -49,7 +50,6 @@ set(OSPOSIX_WINAPI_SOURCES
     library_posix.cxx
     memory_posix.cxx
     memorynotification_posix.cxx
-    norm_posix.cxx
     oseventtrace_posix.cxx
     osfile_posix.cxx
     osfile_stubs_posix.cxx
@@ -134,13 +134,13 @@ if (NOT WIN32)
     pkg_check_modules(LIBURING REQUIRED IMPORTED_TARGET liburing)
     target_link_libraries(osposix PUBLIC PkgConfig::LIBURING)
 
-    # ICU for collation + Unicode case mapping (norm_posix.cxx). Replaces
-    # the Win32 NLS surface (LCMapStringEx, GetNLSVersionEx, ...) that the
-    # engine's secondary-index sort/compare path relies on. The on-disk
-    # sort-key bytes are ICU-flavoured rather than Windows-NLS-flavoured
-    # — that's by design (see project_port_format_compat memory).
-    pkg_check_modules(ICU REQUIRED IMPORTED_TARGET icu-uc icu-i18n)
-    target_link_libraries(osposix PUBLIC PkgConfig::ICU)
+    # libnls provides the Win32 NLS surface (LCMapStringEx, CompareStringEx,
+    # GetLocaleInfoEx, GetNLSVersionEx, LCIDToLocaleName, LocaleNameToLCID,
+    # GetStringTypeW, IsNLSDefinedString) that the unmodified upstream
+    # os/norm.cxx links against.  Vendored as a git submodule under
+    # third_party/libnls/ (built as part of the ESE build — see top-level
+    # CMakeLists.txt's add_subdirectory).
+    target_link_libraries(osposix PUBLIC nls::nls)
 endif ()
 
 target_include_directories(osposix PRIVATE

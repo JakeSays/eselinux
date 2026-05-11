@@ -3,8 +3,8 @@
 
 #include "osstd.hxx"
 
-#include < malloc.h >
-#include < locale.h >
+#include <malloc.h>
+#include <locale.h>
 
 LOCAL BOOL          g_fUnicodeSupport             = fFalse;
 

@@ -402,6 +402,38 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     )
 endif()
 
+# Vendored libucl, used by the Linux config layer (config_posix.cxx).
+# Windows builds use the registry-backed config.cxx and don't need it.
+if (NOT WIN32)
+    add_subdirectory(third_party/libucl-0.9.4)
+
+    # libnls — vendored as a git submodule under third_party/libnls/,
+    # built as part of the ESE build.  Provides the Win32 NLS surface
+    # that windows-shim/windows.h pulls in via <winnls.h>.  Every TU
+    # that includes the shim needs the header on its search path even
+    # if it doesn't link libnls, so we promote nls::nls's
+    # INTERFACE_INCLUDE_DIRECTORIES to project-wide.  Linking against
+    # nls::nls is still per-target (currently just osposix).
+    add_subdirectory(third_party/libnls)
+    get_target_property(NLS_INC_DIRS nls::nls INTERFACE_INCLUDE_DIRECTORIES)
+    include_directories(SYSTEM ${NLS_INC_DIRS})
+
+    # Debug builds: pin a $ORIGIN-relative RPATH so executables in
+    # <build>/bin/ find libnls.so (and libese.so) in <build>/lib/
+    # regardless of where the build tree lives.  We use the
+    # install-RPATH machinery (with BUILD_WITH_INSTALL_RPATH) rather
+    # than CMAKE_BUILD_RPATH_USE_ORIGIN because the latter has a
+    # CMake/Ninja interaction that strips the leading `/` and yields
+    # a broken RUNPATH like `p/ese/repo/out/debug/lib`.  Case-
+    # insensitive compare so the toggle catches `=debug` / `=DEBUG`.
+    string( TOLOWER "${CMAKE_BUILD_TYPE}" _ese_build_type_lower )
+    if ( _ese_build_type_lower STREQUAL "debug" )
+        set( CMAKE_INSTALL_RPATH         "\$ORIGIN/../lib;\$ORIGIN" )
+        set( CMAKE_BUILD_WITH_INSTALL_RPATH TRUE )
+        set( CMAKE_SKIP_BUILD_RPATH         FALSE )
+    endif ()
+endif ()
+
 # Finally, in this project, we configure and build these subdirectories:
 add_subdirectory(dev)
 

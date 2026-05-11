@@ -317,6 +317,18 @@ struct _CONTEXT;
                                           struct _CONTEXT*          pContextRecord,
                                           DWORD                     dwFlags );
 
+// DEBUG_EVENT / LPDEBUG_EVENT — referenced only by os/norm.cxx's
+// WaitForDebugEventEx feature-detection (the function is never invoked
+// for real on the Linux port; see winapi_debug.cxx).  Layout is unused
+// at runtime; just enough to make the prototype declaration parse.
+typedef struct _DEBUG_EVENT
+{
+    DWORD dwDebugEventCode;
+    DWORD dwProcessId;
+    DWORD dwThreadId;
+    BYTE  u[ 168 ];   /* opaque DEBUG_EVENT_UNION payload */
+} DEBUG_EVENT, *LPDEBUG_EVENT;
+
 BOOL DuplicateHandle( HANDLE hSourceProcessHandle, HANDLE hSourceHandle,
                       HANDLE hTargetProcessHandle, LPHANDLE lpTargetHandle,
                       DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwOptions );
@@ -490,17 +502,9 @@ HANDLE OpenFileById( HANDLE hVolumeHint, LPFILE_ID_DESCRIPTOR lpFileId, DWORD dw
                      DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes,
                      DWORD dwFlagsAndAttributes );
 
-//  Locale / string-mapping (winnls.h on Windows). Engine uses these to
-//  case-fold path keys and produce sort keys for indexes. Posix layer
-//  implements LCMapStringEx via ICU (libicuuc). LOCALE_NAME_INVARIANT is
-//  a literal empty wide string per Windows convention.
-//
-#ifndef LOCALE_NAME_MAX_LENGTH
-#define LOCALE_NAME_MAX_LENGTH      85
-#define LOCALE_NAME_INVARIANT       L""
-#define LOCALE_NAME_USER_DEFAULT    NULL
-#define LOCALE_NAME_SYSTEM_DEFAULT  L"!x-sys-default-locale"
-#endif
+//  LOCALE_NAME_* constants and the entire winnls.h surface now come
+//  from libnls's public header (included at the end of this file).
+//  The shim no longer defines them locally.
 
 //  Code-page identifiers (winnls.h on Windows). The engine uses CP_ACP
 //  (ANSI codepage of the OS) and CP_UTF8 for Ascii<->Unicode conversion;
@@ -542,80 +546,26 @@ int WideCharToMultiByte( UINT CodePage, DWORD dwFlags, LPCWSTR lpWideCharStr,
 //  diagnostic output, so the posix layer always formats with a fixed
 //  en-US-style pattern based on the flag.
 //
-typedef DWORD LCID;
-#ifndef LOCALE_USER_DEFAULT
-#define LOCALE_USER_DEFAULT     0x0400
-#define LOCALE_SYSTEM_DEFAULT   0x0800
-#define LOCALE_INVARIANT        0x007F
-#endif
-#ifndef DATE_SHORTDATE
-#define DATE_SHORTDATE          0x00000001
-#define DATE_LONGDATE           0x00000002
-#define DATE_USE_ALT_CALENDAR   0x00000004
-#define DATE_YEARMONTH          0x00000008
-#define DATE_LTRREADING         0x00000010
-#define DATE_RTLREADING         0x00000020
-#endif
-#ifndef TIME_NOMINUTESORSECONDS
-#define TIME_NOMINUTESORSECONDS 0x00000001
-#define TIME_NOSECONDS          0x00000002
-#define TIME_NOTIMEMARKER       0x00000004
-#define TIME_FORCE24HOURFORMAT  0x00000008
-#endif
-int GetDateFormatW( LCID Locale, DWORD dwFlags, const SYSTEMTIME* lpDate,
-                    LPCWSTR lpFormat, LPWSTR lpDateStr, int cchDate );
-int GetTimeFormatW( LCID Locale, DWORD dwFlags, const SYSTEMTIME* lpTime,
-                    LPCWSTR lpFormat, LPWSTR lpTimeStr, int cchTime );
-
-#ifndef LCMAP_LOWERCASE
-#define LCMAP_LOWERCASE             0x00000100
-#define LCMAP_UPPERCASE             0x00000200
-#define LCMAP_TITLECASE             0x00000300
-#define LCMAP_SORTKEY               0x00000400
-#define LCMAP_BYTEREV               0x00000800
-#define LCMAP_HIRAGANA              0x00100000
-#define LCMAP_KATAKANA              0x00200000
-#define LCMAP_HALFWIDTH             0x00400000
-#define LCMAP_FULLWIDTH             0x00800000
-#define LCMAP_LINGUISTIC_CASING     0x01000000
-#define LCMAP_SIMPLIFIED_CHINESE    0x02000000
-#define LCMAP_TRADITIONAL_CHINESE   0x04000000
-#endif
-
-#ifndef NORM_IGNORECASE
-#define NORM_IGNORECASE             0x00000001
-#define NORM_IGNORENONSPACE         0x00000002
-#define NORM_IGNORESYMBOLS          0x00000004
-#define NORM_IGNOREKANATYPE         0x00010000
-#define NORM_IGNOREWIDTH            0x00020000
-#define NORM_LINGUISTIC_CASING      0x08000000
-#endif
-
-typedef struct _NLSVERSIONINFO {
-    DWORD dwNLSVersionInfoSize;
-    DWORD dwNLSVersion;
-    DWORD dwDefinedVersion;
-} NLSVERSIONINFO, *LPNLSVERSIONINFO;
-
-int LCMapStringEx( LPCWSTR lpLocaleName, DWORD dwMapFlags, LPCWSTR lpSrcStr, int cchSrc,
-                   LPWSTR  lpDestStr, int cchDest, LPNLSVERSIONINFO lpVersionInformation,
-                   LPVOID lpReserved, DWORD_PTR lParam );
-int CompareStringEx( LPCWSTR lpLocaleName, DWORD dwCmpFlags, LPCWSTR lpString1, int cchCount1,
-                     LPCWSTR lpString2, int cchCount2, LPNLSVERSIONINFO lpVersionInformation,
-                     LPVOID lpReserved, LPARAM lParam );
-
-//  CompareString return values.
+//  LCMAP_*, NORM_*, NLSVERSIONINFO, CSTR_*, all the LCMapStringEx /
+//  CompareStringEx prototypes — every one of those is declared by
+//  libnls's <winnls.h>, included at the end of this file.  Date/time
+//  formatting (GetDateFormatW / GetTimeFormatW + the DATE_* / TIME_*
+//  flags) isn't in libnls's surface yet; ESE doesn't call them today,
+//  so leaving as a TODO.
 //
-#ifndef CSTR_LESS_THAN
-#define CSTR_LESS_THAN      1
-#define CSTR_EQUAL          2
-#define CSTR_GREATER_THAN   3
+//  The LCID aggregate constants below (LANG_USER_DEFAULT, LOCALE_NEUTRAL,
+//  ...) are MAKELCID compositions built from the LANG_* / SUBLANG_*
+//  pieces defined earlier in this shim — they're winnt.h-realm in
+//  Win32, not winnls.h, so libnls doesn't carry them.
+#ifndef LANG_USER_DEFAULT
+#define LANG_USER_DEFAULT          ( MAKELANGID( LANG_NEUTRAL, SUBLANG_DEFAULT ) )
+#define LANG_SYSTEM_DEFAULT        ( MAKELANGID( LANG_NEUTRAL, SUBLANG_SYS_DEFAULT ) )
 #endif
-
 #ifndef LOCALE_USER_DEFAULT
-#define LOCALE_USER_DEFAULT     0x0400
-#define LOCALE_SYSTEM_DEFAULT   0x0800
-#define LOCALE_INVARIANT        0x007f
+#define LOCALE_USER_DEFAULT        ( MAKELCID( LANG_USER_DEFAULT,   SORT_DEFAULT ) )
+#define LOCALE_SYSTEM_DEFAULT      ( MAKELCID( LANG_SYSTEM_DEFAULT, SORT_DEFAULT ) )
+#define LOCALE_NEUTRAL             ( MAKELCID( MAKELANGID( LANG_NEUTRAL,   SUBLANG_NEUTRAL ), SORT_DEFAULT ) )
+#define LOCALE_INVARIANT           ( MAKELCID( MAKELANGID( LANG_INVARIANT, SUBLANG_NEUTRAL ), SORT_DEFAULT ) )
 #endif
 
 //  DeviceIoControl. Used by the disk layer for ATA / NVMe pass-through;
@@ -753,7 +703,11 @@ void     CloseThreadpoolWait( PTP_WAIT pwa );
 #define MAKELANGID( p, s )      ( ( ( ( WORD )( s ) ) << 10 ) | ( WORD )( p ) )
 #define LANG_NEUTRAL            0x00
 #define LANG_INVARIANT          0x7f
+#define LANG_ENGLISH            0x09
 #define SUBLANG_NEUTRAL         0x00
+#define SUBLANG_DEFAULT         0x01
+#define SUBLANG_SYS_DEFAULT     0x02
+#define SUBLANG_ENGLISH_US      0x01
 #define SUBLANG_DEFAULT         0x01
 #define SORT_DEFAULT            0x0
 #define MAKELCID( lgid, srtid ) ( ( DWORD )( ( ( ( DWORD )( ( WORD )( srtid ) ) ) << 16 ) | ( ( DWORD )( ( WORD )( lgid ) ) ) ) )
@@ -1030,3 +984,9 @@ int _snwscanf_s( const wchar_t* buffer, size_t cchCount, const wchar_t* fmt, ...
 #ifdef __cplusplus
 }  // extern "C"
 #endif
+
+//  Win32 NLS surface — provided by libnls (LGPL shared library at
+//  /p/ese/nls/).  Engine code transitively pulls this in via
+//  windows.h, matching Win32 convention.  All prereqs the header
+//  needs live in libnls's vendored winnls.h itself.
+#include <winnls.h>
