@@ -606,6 +606,7 @@ JETUNITTESTEX ( Node, TestCorruptPrefixCbFullFuzzResilientCodePaths, JetSimpleUn
     ULONG cSuffixSizeLargerThanTagSize = 0;
     ULONG cDataSizeLargerThanTagSize = 0;
     ULONG cDataSizeIsZero = 0;
+    ULONG cBothPrefixSuffixZero = 0;
 
     for( ULONG i = 1; i <= (ULONG)0xFFFF; i++ )
     {
@@ -640,10 +641,11 @@ JETUNITTESTEX ( Node, TestCorruptPrefixCbFullFuzzResilientCodePaths, JetSimpleUn
             cSuffixSizeLargerThanTagSize += prtbuf.CContains( "suffix size is larger than the actual tag size (suffix.Cb()" );
             cDataSizeLargerThanTagSize += prtbuf.CContains( "data size is larger than actual tag size (data.Cb()" );
             cDataSizeIsZero += prtbuf.CContains( "data size is zero ... we don't have non-data nodes" );
+            cBothPrefixSuffixZero += prtbuf.CContains( "both prefix/suffix are zero length" );
 
             cChecks += 2; // for small & large page Extended / non-Basic checks only to measure success & failure rate.
 
-            if ( cChecks != ( cGoodSmall + cGoodLarge + cPrefixUsageIsLargerThanPrefixNode + cSuffixSizeLargerThanTagSize + cDataSizeLargerThanTagSize + cDataSizeIsZero ) )
+            if ( cChecks != ( cGoodSmall + cGoodLarge + cPrefixUsageIsLargerThanPrefixNode + cSuffixSizeLargerThanTagSize + cDataSizeLargerThanTagSize + cDataSizeIsZero + cBothPrefixSuffixZero ) )
             {
                 prtbuf.Print( *CPRINTFSTDOUT::PcprintfInstance() );
                 CHECK( fFalse ); // update the list of errors checked.
@@ -671,14 +673,14 @@ JETUNITTESTEX ( Node, TestCorruptPrefixCbFullFuzzResilientCodePaths, JetSimpleUn
     //  ... so the numbers should be pretty stable but may increase by a few over time, but should not jump 
     //  largely. If they jump largely it is likely someone broke the strictness of the checks.
     wprintf( L"\n   cChecks = %u ... cGoodSmall = %u (%1.3f%%), cGoodLarge = %u (%1.3f%%) ... %1.3f secs\n", cChecks, cGoodSmall, Pct( cChecks, cGoodSmall ), cGoodLarge, Pct( cChecks, cGoodLarge ), FsecsTestTime() );
-    wprintf( L"       Errors: %u ... %u ... %u ... %u --> %u \n", cPrefixUsageIsLargerThanPrefixNode, cSuffixSizeLargerThanTagSize, cDataSizeLargerThanTagSize, cDataSizeIsZero,
-                ( cGoodSmall + cGoodLarge + cPrefixUsageIsLargerThanPrefixNode + cSuffixSizeLargerThanTagSize + cDataSizeLargerThanTagSize + cDataSizeIsZero ) );
+    wprintf( L"       Errors: %u ... %u ... %u ... %u ... %u --> %u \n", cPrefixUsageIsLargerThanPrefixNode, cSuffixSizeLargerThanTagSize, cDataSizeLargerThanTagSize, cDataSizeIsZero, cBothPrefixSuffixZero,
+                ( cGoodSmall + cGoodLarge + cPrefixUsageIsLargerThanPrefixNode + cSuffixSizeLargerThanTagSize + cDataSizeLargerThanTagSize + cDataSizeIsZero + cBothPrefixSuffixZero ) );
     CHECK( cGoodSmall <= 162 ); // generally fine if validation shrinks this value, should not regress / grow check.
     CHECK( cGoodLarge <= 197 ); // generally fine if validation shrinks this value, should not regress / grow check.
 
-    // if these are offended, someone has made us stricter (that's good), but consider re-running this test infinitely 
+    // if these are offended, someone has made us stricter (that's good), but consider re-running this test infinitely
     // to find the new max values for above checks.
-    CHECK( cGoodSmall > 100 );  
+    CHECK( cGoodSmall > 100 );
     CHECK( cGoodSmall > 125 );
 
     // last modification is + 0x10000, which doesn't modify a USHORT, so should have min two successes.
@@ -692,7 +694,7 @@ JETUNITTESTEX ( Node, TestCorruptPrefixCbFullFuzzResilientCodePaths, JetSimpleUn
     //CHECK( cDataSizeLargerThanTagSize >= 1 );
     CHECK( cDataSizeIsZero > 2 );
 
-    CHECK( cChecks == ( cGoodSmall + cGoodLarge + cPrefixUsageIsLargerThanPrefixNode + cSuffixSizeLargerThanTagSize + cDataSizeLargerThanTagSize + cDataSizeIsZero ) );
+    CHECK( cChecks == ( cGoodSmall + cGoodLarge + cPrefixUsageIsLargerThanPrefixNode + cSuffixSizeLargerThanTagSize + cDataSizeLargerThanTagSize + cDataSizeIsZero + cBothPrefixSuffixZero ) );
 }
 
 JETUNITTESTEX ( Node, TestCorruptSuffixCbFullFuzzResilientCodePaths, JetSimpleUnitTest::dwDontRunByDefault )
@@ -712,6 +714,7 @@ JETUNITTESTEX ( Node, TestCorruptSuffixCbFullFuzzResilientCodePaths, JetSimpleUn
     ULONG cDataSizeLargerThanActualTagSize = 0;
     ULONG cPrefixUsageIsLargerThanPrefixNode = 0;
     ULONG cDataSizeIsZero = 0;
+    ULONG cBothPrefixSuffixZero = 0;
 
     for( ULONG i = 1; i <= (ULONG)0xFFFF; i++ )
     {
@@ -745,11 +748,13 @@ JETUNITTESTEX ( Node, TestCorruptSuffixCbFullFuzzResilientCodePaths, JetSimpleUn
             cDataSizeLargerThanActualTagSize += prtbuf.CContains( "data size is larger than actual tag size (data.Cb()" );
             cPrefixUsageIsLargerThanPrefixNode += prtbuf.CContains( "prefix usage is larger than prefix node (prefix.Cb()" );
             cDataSizeIsZero += prtbuf.CContains( "data size is zero ... we don't have non-data nodes" );
+            cBothPrefixSuffixZero += prtbuf.CContains( "both prefix/suffix are zero length" );
 
             if ( !prtbuf.FContains( "suffix size is larger than the actual tag size (suffix.Cb()" ) &&
                  !prtbuf.FContains( "data size is larger than actual tag size (data.Cb()" ) &&
                  !prtbuf.FContains( "prefix usage is larger than prefix node (prefix.Cb()" ) &&
                  !prtbuf.FContains( "data size is zero ... we don't have non-data nodes" ) &&
+                 !prtbuf.FContains( "both prefix/suffix are zero length" ) &&
                  ( errSmall < JET_errSuccess || errLarge < JET_errSuccess ) )
             {
                 prtbuf.Print( *CPRINTFSTDOUT::PcprintfInstance() );
@@ -780,7 +785,7 @@ JETUNITTESTEX ( Node, TestCorruptSuffixCbFullFuzzResilientCodePaths, JetSimpleUn
     //  ... so the numbers should be pretty stable but may increase by a few over time, but should not jump 
     //  largely. If they jump largely it is likely someone broke the strictness of the checks.
     wprintf( L"\n   cChecks = %u ... cGoodSmall = %u (%1.3f%%), cGoodLarge = %u (%1.3f%%) ... %1.3f secs\n", cChecks, cGoodSmall, Pct( cChecks, cGoodSmall ), cGoodLarge, Pct( cChecks, cGoodLarge ), FsecsTestTime() );
-    wprintf( L"       Errors: %d ... %d ... %d ... %d\n", cSuffixSizeLargerThanTagSize, cDataSizeLargerThanActualTagSize, cPrefixUsageIsLargerThanPrefixNode, cDataSizeIsZero );
+    wprintf( L"       Errors: %d ... %d ... %d ... %d ... %d\n", cSuffixSizeLargerThanTagSize, cDataSizeLargerThanActualTagSize, cPrefixUsageIsLargerThanPrefixNode, cDataSizeIsZero, cBothPrefixSuffixZero );
     CHECK( cGoodSmall <= 689 ); // generally fine if validation shrinks this value, should not regress / grow check.
     CHECK( cGoodLarge <= 566 ); // generally fine if validation shrinks this value, should not regress / grow check.
 
@@ -799,7 +804,7 @@ JETUNITTESTEX ( Node, TestCorruptSuffixCbFullFuzzResilientCodePaths, JetSimpleUn
     CHECK( cPrefixUsageIsLargerThanPrefixNode >= 250 );
     CHECK( cDataSizeIsZero > 10 ); // saw 92 - 100 ish
 
-    CHECK( cChecks == ( cGoodSmall + cGoodLarge + cSuffixSizeLargerThanTagSize + cDataSizeLargerThanActualTagSize + cPrefixUsageIsLargerThanPrefixNode + cDataSizeIsZero ) );
+    CHECK( cChecks == ( cGoodSmall + cGoodLarge + cSuffixSizeLargerThanTagSize + cDataSizeLargerThanActualTagSize + cPrefixUsageIsLargerThanPrefixNode + cDataSizeIsZero + cBothPrefixSuffixZero ) );
 }
 
 JETUNITTESTEX ( Node, TestCorruptItagMicFreeFullFuzzResilientCodePaths, JetSimpleUnitTest::dwDontRunByDefault )

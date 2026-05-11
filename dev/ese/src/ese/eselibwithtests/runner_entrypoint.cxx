@@ -91,6 +91,19 @@ int RunTier1( const char* szPattern )
         std::fprintf( stderr, "JetSetSystemParameter(DisablePerfmon) failed: %d\n", (int)errParam );
         return -1;
     }
+    //  The fuzz tests in node_test (TestCorrupt*FullFuzz*) deliberately
+    //  trigger engine AssertTracks on corrupted pages and rely on the
+    //  default Windows JET_paramAssertAction allowing them to continue.
+    //  The Linux default is JET_AssertFailFast which aborts the process
+    //  on the first internal assert.  Switch to SkipAll so engine asserts
+    //  are still recorded but don't terminate — the per-test CHECK chain
+    //  still detects real failures via JetUnitTestResult.
+    errParam = JetSetSystemParameterA( nullptr, 0, JET_paramAssertAction, JET_AssertSkipAll, nullptr );
+    if ( errParam < JET_errSuccess )
+    {
+        std::fprintf( stderr, "JetSetSystemParameter(AssertAction) failed: %d\n", (int)errParam );
+        return -1;
+    }
     //  Bring up the FULL OSU stack (vs the lower-level ErrOSInit we
     //  used previously) so g_OSUInitControl's consumer count is bumped.
     //  That matters for tier-1 tests that themselves call JetInit/JetInit2
