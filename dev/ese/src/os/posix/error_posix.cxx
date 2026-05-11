@@ -932,7 +932,7 @@ const DWORD maskRFSThreadCountdown  = 0x80000000;
 
 BOOL g_fDisableRFS      = fTrue;
 BOOL g_fKnownRFSLeak    = fFalse;
-BOOL g_fLogJETCall      = fTrue;//fFalse;
+BOOL g_fLogJETCall      = fFalse;
 BOOL g_fLogRFS          = fFalse;
 DWORD g_cRFSAlloc       = cRFSDisable;
 DWORD g_cRFSIO          = cRFSBreak;
