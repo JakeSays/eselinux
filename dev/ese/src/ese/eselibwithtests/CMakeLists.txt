@@ -63,6 +63,7 @@ set(ESE_TEST_SOURCES_PORTABLE
     ../checksum_test.cxx
     ../clogredomaps_test.cxx
     ../log_test.cxx
+    ../osu_test.cxx
     daehelpers_test.cxx
 )
 

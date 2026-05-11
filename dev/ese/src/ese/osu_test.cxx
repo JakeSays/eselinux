@@ -9,6 +9,15 @@
 
 #ifdef ENABLE_JET_UNIT_TEST
 
+#ifdef ESE_OS_WINDOWS
+
+//  Both tests below hard-code Windows path semantics — UNC (\\server\share),
+//  device namespace (\\?\C:\...), drive letters — that the Linux IFileSystemAPI
+//  doesn't recognize as anything special: FPathIsRelative only checks for a
+//  leading '/', and ErrUtilCreatePathIfNotExist will happily try to mkdir
+//  every component verbatim.  Re-enable on Linux only after porting (or
+//  replacing) the path-style discriminator.
+
 JETUNITTEST( OSU, InvalidDirectoryPaths )
 {
     IFileSystemAPI * pfsapi;
@@ -58,6 +67,8 @@ JETUNITTEST( OSU, RelativeFilePaths )
 
     delete pfsapi;
 }
+
+#endif // ESE_OS_WINDOWS
 
 
 JETUNITTEST( CLimitedEventSuppressor, CheckCanAllowFourNewEventContexts )
