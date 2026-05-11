@@ -9,19 +9,33 @@
 // engine includes so it doesn't have to pull esestd.hxx.
 //
 // Usage:
-//   EseLibWithTestsRunner                 # run all (matches '*')
-//   EseLibWithTestsRunner CFlushMap.*     # run a wildcard subset
-//   EseLibWithTestsRunner CPAGE.PgftGet*  # run a single suite
-//   EseLibWithTestsRunner -?              # print all registered tests
+//   EseLibWithTestsRunner                       # run tier-1 ('*')
+//   EseLibWithTestsRunner CFlushMap.*           # tier-1 subset
+//   EseLibWithTestsRunner -?                    # list registered tests
+//   EseLibWithTestsRunner -d <dir>              # tier-2: spin up JET, run '*'
+//   EseLibWithTestsRunner -d <dir> KVPStore.*   # tier-2 subset
 
 #include <cstdio>
+#include <cstring>
 
-extern "C" int RunJetUnitTestsForRunner( const char* szPattern );
+extern "C" int RunJetUnitTestsForRunner( const char* szPattern, const char* szDbDir );
 
 int main( int argc, char** argv )
 {
-    const char* szPattern = ( argc >= 2 ) ? argv[1] : "*";
-    const int failures = RunJetUnitTestsForRunner( szPattern );
+    const char* szPattern = "*";
+    const char* szDbDir = nullptr;
+    for ( int i = 1; i < argc; ++i )
+    {
+        if ( std::strcmp( argv[ i ], "-d" ) == 0 && i + 1 < argc )
+        {
+            szDbDir = argv[ ++i ];
+        }
+        else
+        {
+            szPattern = argv[ i ];
+        }
+    }
+    const int failures = RunJetUnitTestsForRunner( szPattern, szDbDir );
     std::fprintf( stderr, "\n=== %d failure(s) ===\n", failures );
     return failures == 0 ? 0 : 1;
 }

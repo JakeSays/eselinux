@@ -7135,7 +7135,7 @@ VOID LrToSz(
     LRTYP   lrtyp;
     CHAR    rgchBuf[cbLRBuf];
     const UINT iVerbosityLevel = ( plog != nullptr ) ? plog->IDumpVerbosityLevel() : LOG::ldvlMax;
-#ifndef DEBUGGER_EXTENSION
+#if !defined( DEBUGGER_EXTENSION ) && defined( ESE_OS_WINDOWS )
     Assert( plog != NULL );
 #endif
 

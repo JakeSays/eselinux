@@ -18,12 +18,22 @@ void __cdecl OSEventTrace_( const ULONG etguid,
 
 // Both the non-templated and templated overloads of FOSEventTraceEnabled
 // have inline bodies here (rather than in oseventtrace_posix.cxx as a
-// declaration-only with a separate definition). On the Linux build ETW
-// is disabled and both always return fFalse — see project_port_*
-// memory and the oseventtrace_posix.cxx header comment. The explicit
-// template instantiations in oseventtrace_posix.cxx still bind to this
-// generic body.
-INLINE BOOL FOSEventTraceEnabled() { return fFalse; }
+// declaration-only with a separate definition).
+//
+// The non-templated overload gates the OSEventTrace macro that the
+// generated ET* wrappers expand into.  On the Linux port we return
+// fTrue from it so OSEventTrace_ actually runs — the implementation in
+// oseventtrace_posix.cxx dispatches on etguid and is the bridge that
+// turns `ETEventLogInfo/Warn/Error` into stderr output (the EtEventLog*
+// "do something real" path).  All other ET* wrappers still no-op,
+// because OSEventTrace_ just compares the etguid and returns.
+//
+// The templated overload gates per-guid explicit trace blocks (e.g.
+// FOSEventTraceEnabled< _etguidCacheRequestPage >()).  Those stay off
+// — we don't have ETW or LTTng wired up, so per-event tracing has
+// nothing to do.  The explicit template instantiations in
+// oseventtrace_posix.cxx bind to this generic body.
+INLINE BOOL FOSEventTraceEnabled() { return fTrue; }
 
 template< OSEventTraceGUID etguid >
 INLINE BOOL FOSEventTraceEnabled() { return fFalse; }

@@ -4480,9 +4480,12 @@ JETUNITTEST( IO, ErrValidateHeaderForIncrementalReseed )
     CHECK( JET_errInvalidDatabaseVersion == ErrValidateHeaderForIncrementalReseed( &dbfilehdr ) );
     dbfilehdr.le_ulMagic = ulDAEMagic;
  
-    // if the update is 0 then the subtraction below will underflow
-    Assert( ulDAEVersionMax > 0 );
-    dbfilehdr.le_ulVersion = ulDAEVersionMax - 1;
+    //  Use a version below ulDAEVersionESE97 — guaranteed to fail the version
+    //  gate regardless of ulDAEVersionMax.  On Windows ulDAEVersionMax==0x620
+    //  so ulDAEVersionMax-1 happened to be below ESE97; on Linux
+    //  ulDAEVersionMax==0x10000 so that value is above ESE97 and would reach
+    //  FDBIsLVChunkSizeCompatible, which asserts ulDAEVersionMax==ulDaeVersion.
+    dbfilehdr.le_ulVersion = ulDAEVersionESE97 - 1;
     CHECK( JET_errInvalidDatabaseVersion == ErrValidateHeaderForIncrementalReseed( &dbfilehdr ) );
     dbfilehdr.le_ulVersion = ulDAEVersionMax;
 

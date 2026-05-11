@@ -25,12 +25,69 @@ ERR  ErrOSEventTraceInit()  { return JET_errSuccess; }
 
 
 ////////////////////////////////////////////////
-//  Trace recording — no-op
+//  Trace recording
+//
+//  We don't have ETW or LTTng wired up, so OSEventTrace_ is a no-op
+//  for every guid except the three EventLog ones — those carry the
+//  formatted message text emitted by OSEventReportEvent (event.cxx)
+//  via ETEventLogInfo/Warn/Error, and we route them to stderr so
+//  events are actually visible during runs.
+//
+//  Each EventLog ET* wrapper passes cData=1 and a single wchar_t*
+//  argument.  Engine wchar_t is 16-bit (-fshort-wchar); libc's "%ls"
+//  expects native 32-bit wchar_t, so we down-convert via
+//  WideCharToMultiByte (UTF-8) before writing.
 
-void __cdecl OSEventTrace_( const ULONG /* etguid */,
-                            const size_t /* cData */,
+namespace
+{
+
+void EmitEventLogLine( const char* szSev, const wchar_t* wsz )
+{
+    if ( wsz == nullptr )
+    {
+        return;
+    }
+    char nbuf[ 8192 ];
+    const int cbN = WideCharToMultiByte( CP_UTF8, 0, wsz, -1,
+                                         nbuf, (int)sizeof( nbuf ),
+                                         nullptr, nullptr );
+    if ( cbN <= 0 )
+    {
+        return;
+    }
+    //  cbN includes the trailing NUL; trim it from the write.
+    const size_t cb = (size_t)( cbN - 1 );
+    fprintf( stderr, "[ese %s] ", szSev );
+    fwrite( nbuf, 1, cb, stderr );
+    fputc( '\n', stderr );
+}
+
+}  // namespace
+
+void __cdecl OSEventTrace_( const ULONG etguid,
+                            const size_t cData,
                             ... )
 {
+    if ( etguid != _etguidEventLogInfo &&
+         etguid != _etguidEventLogWarn &&
+         etguid != _etguidEventLogError )
+    {
+        return;
+    }
+    if ( cData < 1 )
+    {
+        return;
+    }
+
+    va_list ap;
+    va_start( ap, cData );
+    const wchar_t* wsz = va_arg( ap, const wchar_t* );
+    va_end( ap );
+
+    const char* sev = ( etguid == _etguidEventLogError ) ? "ERROR"
+                    : ( etguid == _etguidEventLogWarn  ) ? "WARN"
+                    :                                       "INFO";
+    EmitEventLogLine( sev, wsz );
 }
 
 

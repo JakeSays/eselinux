@@ -182,13 +182,17 @@ JETUNITTEST( GenericVersions, GenericVersionsCheckMismatchPriorities )
 
 JETUNITTEST( EngineFormatVersionsTable, TestLookupOfDbMajors )  //  P2 Rule, exceptions made for QFEs
 {
-    DbVersion dbvTest1A = { 0x620, 30, 50 };
-    DbVersion dbvTest1B = { 0x620, 30, 30 };
-    DbVersion dbvTest1C = { 0x620, 30, 40 };
-    DbVersion dbvTest2A = { 0x620, 20, 50 };
-    DbVersion dbvTest2B = { 0x620, 20, 20 };
-    DbVersion dbvTest2C = { 0x620, 20, 10 };
-    DbVersion dbvTest2D = { 0x620, 20, 0 };
+    //  Use ulDAEVersionMax for the "platform major" so the test stays
+    //  valid across the Linux port's 0x10000-keyed format-versions table
+    //  and the Windows tree's 0x620-keyed one.  dbvTest3A/3B intentionally
+    //  pick majors that don't exist in either table.
+    DbVersion dbvTest1A = { ulDAEVersionMax, 30, 50 };
+    DbVersion dbvTest1B = { ulDAEVersionMax, 30, 30 };
+    DbVersion dbvTest1C = { ulDAEVersionMax, 30, 40 };
+    DbVersion dbvTest2A = { ulDAEVersionMax, 20, 50 };
+    DbVersion dbvTest2B = { ulDAEVersionMax, 20, 20 };
+    DbVersion dbvTest2C = { ulDAEVersionMax, 20, 10 };
+    DbVersion dbvTest2D = { ulDAEVersionMax, 20, 0 };
     DbVersion dbvTest3A = { 0x620, 100000000, 0 };
     DbVersion dbvTest3B = { 0x10000, 0, 0 };
 
