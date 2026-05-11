@@ -329,6 +329,32 @@ long long _wcstoi64(const wchar_t* wsz, wchar_t** pwszEnd, int radix)
            : static_cast<long long>(mag);
 }
 
+//  POSIX-named wide string-to-int family.  Linux libc ships these but
+//  operates on 32-bit native wchar_t; with -fshort-wchar our wchar_t is
+//  16-bit, so calling libc's wcstol on engine-owned strings reads off the
+//  end of every character and returns 0.  Provide our own that operate on
+//  the 16-bit storage by delegating to the _wcsto*64 implementations above.
+
+long wcstol(const wchar_t* wsz, wchar_t** pwszEnd, int radix)
+{
+    return static_cast<long>(_wcstoi64(wsz, pwszEnd, radix));
+}
+
+unsigned long wcstoul(const wchar_t* wsz, wchar_t** pwszEnd, int radix)
+{
+    return static_cast<unsigned long>(_wcstoui64(wsz, pwszEnd, radix));
+}
+
+long long wcstoll(const wchar_t* wsz, wchar_t** pwszEnd, int radix)
+{
+    return _wcstoi64(wsz, pwszEnd, radix);
+}
+
+unsigned long long wcstoull(const wchar_t* wsz, wchar_t** pwszEnd, int radix)
+{
+    return _wcstoui64(wsz, pwszEnd, radix);
+}
+
 // Narrow variants. Used by devlibtest's iterquery suite. Implementation
 // matches glibc's strtoull semantics for the radixes the engine cares
 // about (10, 16, 0=auto-detect via 0x prefix).
