@@ -8,9 +8,9 @@ covered.  Version-suffixed siblings (e.g. `JetCreateIndex2`,
 `JetCreateIndex3`, `JetCreateIndex4`) are tracked separately from their
 unversioned base.
 
-**Totals:** 212 base APIs declared, 77 covered (36%), 135 untested.
+**Totals:** 212 base APIs declared, 89 covered (42%), 123 untested.
 
-## Tested (77)
+## Tested (89)
 
 Core surface for every scenario the engine actually runs.  Includes
 DDL (table/column/index create/delete/rename, **JetDeleteTable**), DML
@@ -33,6 +33,15 @@ Engine hooks: **JetRegisterCallback**, **JetUnregisterCallback**,
 **JetIdle** (`JET_bitIdleWaitForAsyncActivity` /
 `JET_bitIdleAvailBuffersStatus`).
 
+Info surface: **JetGetDatabaseInfo**, **JetGetObjectInfo**,
+**JetGetIndexInfo**, **JetGetInstanceInfo**.
+
+Record-level: **JetRetrieveKey**, **JetGetLock**, **JetGetRecordSize**,
+**JetIndexRecordCount**.
+
+Session / cursor local storage: **JetSetSessionContext**,
+**JetResetSessionContext**, **JetSetLS**, **JetGetLS**.
+
 ## Genuine functional gaps (no version covered)
 
 The engine ships these and no test exercises any version.  Roughly
@@ -49,14 +58,11 @@ ordered by user-visible value.
   cross-index navigation
 
 ### DML
-- `JetRetrieveKey` — extract key bytes for the current row
 - `JetRetrieveTaggedColumnList` — tag enumeration on tagged columns
 - `JetRetrieveColumnByReference`, `JetRetrieveColumnFromRecordStream`,
   `JetPrereadColumnsByReference`, `JetStreamRecords` — column-stream
   surface
-- `JetGetLock` — explicit row lock
-- `JetGetRecordSize` / `JetGetRecordSize2` / `JetGetRecordSize3` —
-  record-size accounting
+- `JetGetRecordSize2` / `JetGetRecordSize3` — newer revs (base `JetGetRecordSize` covered)
 - `JetSetColumnDefaultValue` — change a column's default
 
 ### Pre-read surface
@@ -64,9 +70,7 @@ ordered by user-visible value.
   `JetPrereadTables`
 
 ### Sessions / context
-- `JetSetSessionContext`, `JetResetSessionContext`,
-  `JetSetSessionParameter`, `JetGetSessionParameter`
-- `JetSetLS`, `JetGetLS` — local-storage attach to cursors
+- `JetSetSessionParameter`, `JetGetSessionParameter`
 
 ### Database lifecycle
 - `JetResizeDatabase` — DB-size lifecycle (Grow/SetSize covered)
@@ -93,9 +97,10 @@ ordered by user-visible value.
 
 ### Page / index inspection
 - `JetGetPageInfo`, `JetGetPageInfo2`, `JetGetDatabasePages`
-- `JetGetDatabaseInfo`, `JetGetDatabaseFileInfo`, `JetGetObjectInfo`,
-  `JetGetIndexInfo`
-- `JetIndexRecordCount`, `JetIndexRecordCount2`
+- `JetGetDatabaseFileInfo` — additional info-query surface
+  (`JetGetDatabaseInfo` / `JetGetObjectInfo` / `JetGetIndexInfo` are
+  covered)
+- `JetIndexRecordCount2` — newer rev (base covered)
 - `JetOnlinePatchDatabasePage`, `JetPatchDatabasePages`
 
 ### Snapshot extensions
@@ -152,28 +157,30 @@ Low-priority; the underlying functionality is exercised.
 
 ## Suggested next priorities (high-value, low-cost scenarios)
 
-**Items 1–9 from the original list landed** (`JetDeleteTable`,
-`JetDupSession`/`JetDupCursor`, `JetEnumerateColumns`,
-`JetGetSessionInfo` / `JetGetCursorInfo` / `JetGetVersion` /
-`JetGetThreadStats`, `JetIntersectIndexes`, `JetGrowDatabase` /
-`JetSetDatabaseSize` / `JetSetMaxDatabaseSize` / `JetGetMaxDatabaseSize`,
-`JetRegisterCallback` / `JetUnregisterCallback`, `JetIdle`).  Next
-candidates from the remaining gap list:
+**Items 1–9 from round 1 and items 1–8 from round 2 landed.**  Round 2
+added `JetRetrieveKey`, `JetGetLock`, `JetGetRecordSize`,
+`JetGetDatabaseInfo`, `JetGetObjectInfo`, `JetGetIndexInfo`,
+`JetGetInstanceInfo`, `JetSetSessionContext` /
+`JetResetSessionContext`, `JetSetLS` / `JetGetLS`,
+`JetIndexRecordCount`.
 
-1. **`JetRetrieveKey`** — key bytes from the current row; pairs well
-   with `JetSeek` / `JetMakeKey` scenarios already in place.
-2. **`JetGetLock`** — explicit row write-lock; pairs naturally with
-   concurrency scenarios.
-3. **`JetGetRecordSize`** — record-size accounting, low-effort.
-4. **`JetGetDatabaseInfo` / `JetGetObjectInfo` / `JetGetIndexInfo`** —
-   the rest of the info-query surface (we already exercise
-   `JetGetTableInfo` / `JetGetTableColumnInfo` / `JetGetTableIndexInfo`).
-5. **`JetGetInstanceInfo`** — multi-instance enumeration.
-6. **`JetSetSessionContext` / `JetResetSessionContext`** — pair with
-   thread-context scenarios.
-7. **`JetSetLS` / `JetGetLS`** — cursor-local storage.
-8. **`JetIndexRecordCount`** — count via index; cheap scenario, useful
-   regression net for index walk paths.
+Round 3 candidates from the remaining gap list:
+
+1. **`JetGetCurrentIndex`** — companion to `JetSetCurrentIndex`
+   (covered); reports the active index name on a cursor.
+2. **`JetSetTableSequential` / `JetResetTableSequential`** — sequential
+   scan hint; trivial scenario, covers the prefetch path.
+3. **`JetSetCursorFilter`** — server-side row filter; pairs with
+   navigation scenarios.
+4. **`JetGetRecordPosition` / `JetGotoPosition`** — fraction-of-table
+   navigation.
+5. **`JetGetSecondaryIndexBookmark` / `JetGotoSecondaryIndexBookmark`** —
+   cross-index navigation.
+6. **`JetTruncateLog` / `JetTruncateLogInstance`** — log management.
+7. **`JetGetLogInfoInstance`** — log-file metadata; complements the
+   existing backup scenarios.
+8. **`JetGetAttachInfo`** — global form (the *Instance* variant is
+   covered by `BackupRestore.ExternalBackupExposesAttachInfo`).
 
 ## What's NOT in scope here
 
