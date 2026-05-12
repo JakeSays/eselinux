@@ -65,15 +65,20 @@ Sequence (matches the "tests over runtime" rule):
 3. Replace the stubs in `encrypt_posix.cxx`.
 4. Run tier-1 + tier-2 with an encrypted-database scenario.
 
-### 3. `osdisk` polish — latency tracking + PatrolDog wiring
+### 3. Unify the `ErrorIOMgrIssueIO` / `GetOverlappedResult_` paths
 
-The major `osdisk` work is done: upstream `osdisk.cxx` is now live, IOREQ pool reservations route through `ErrOSDiskIOREQReserve`, and `FOSDiskPreinit`/`OSDiskPostterm` initialize the disk layer.  What remains is finer-grained:
+`osdisk.cxx` had four `#ifdef ESE_OS_WINDOWS` gates.  Three were closed in the same pass that landed disk-info, queue-depth, and SMART shims:
 
-- **Per-IO latency recording.**  `IFilePerfAPI` is attached to each `CIoUringFile` but the latency stats path on completion isn't fully populated; the abnormal-latency event (`dtickOSFileAbnormalIOLatencyEvent`) doesn't fire.
-- **PatrolDog wiring.**  `PatrolDogSynchronizer` is present (and its unit tests pass), but no live in-flight IO currently registers with it.  Registering completions should immediately exercise the live watchdog path.
-- **Read combining / write coalescing.**  Upstream merges adjacent IOs at the disk layer; on Linux we currently don't.  Block cache + log writer call sites assume some amortization.  Measurable as a perf gap rather than a correctness one; defer until perf becomes the focus.
+- `LoadDiskInfo_` / `LoadCachePerf_` now compile on both platforms; the Linux dispatcher fills `STORAGE_DEVICE_DESCRIPTOR` (vendor/model/firmware/serial from `/sys/block/<dev>/device/{vendor,model,rev,firmware_rev,serial}`), `STORAGE_ADAPTER_DESCRIPTOR` (with NVMe vs SATA inferred from the disk name), and reports `ERROR_NOT_SUPPORTED` for `SMART_GET_VERSION` / `SMART_RCV_DRIVE_DATA` / `StorageDeviceCopyOffloadProperty` so the engine's degradation paths take over.
+- `ErrInitDisk` now opens `\\.\PhysicalDriveN` on Linux via the same shim path Windows uses.  The shim decodes N as a makedev-encoded `(major:minor)` (matching what `IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS` packs), resolves it through `/sys/dev/block/<major>:<minor>`, and fails the open when no real device backs the number — which preserves the engine's "couldn't determine disk identity, treat as HDD" path that unit tests with synthetic dwDiskNumber values rely on.
+- `QueryDiskPerformance` reads queue depth through `IOCTL_DISK_PERFORMANCE`, which the shim backs with `/proc/diskstats` (field 12, `in_flight`).
 
-Each item is small and self-contained — wire latency, wire PatrolDog, then revisit coalescing.  None block functional correctness today.
+The remaining gate (`osdisk.cxx:6390..6797`) wraps `GetOverlappedResult_` and the Windows `ErrorIOMgrIssueIO` body — the Win32 path uses `OVERLAPPED` + IOCP and waits via `GetOverlappedResult_`; the Linux path submits async IOs through io_uring (`OSPosixIouringSubmitIOREQ`) or runs sync IOs through pread/pwrite-backed `ReadFile`/`WriteFile`.  This is a genuine architectural divergence in IO submission, not a missing shim — keeping it as a gate is the right shape per the "last resort" exception in `~/.claude/projects/-p-ese-repo/memory/feedback_port_extend_shim_not_gate.md`.
+
+What's worth doing here:
+
+- **Mirror the Win32 pre/post amble onto the Linux body.**  The Windows path runs `RFSAlloc`, `ErrFaultInjection(17384/64738/42980)`, and `UtilThreadBeginLowIOPriority`/`UtilThreadEndLowIOPriority` around the submit; the Linux body skips them.  Lifting these into the Linux arm (or into a shared helper) would close the testable-behavior gap between the two arms while still allowing the submit step itself to diverge.
+- **Optional: extend `ReadFile`/`WriteFile` to honour an `OVERLAPPED.hEvent` async contract via io_uring.**  Then both arms could share most of the dispatch, and the gate would shrink to just the iomethod switch.  Bigger change; defer unless we end up wanting it for some other reason.
 
 ### 4. JET public API coverage inventory + ratcheting
 
