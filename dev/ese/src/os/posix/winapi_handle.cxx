@@ -92,6 +92,10 @@ void FreeKObject(KObject* k)
             close(k->mappingFd);
         }
     }
+    else if (k->kind == HandleKind::BlockDevice)
+    {
+        free(k->blockDiskName);
+    }
     pthread_cond_destroy(&k->cond);
     pthread_mutex_destroy(&k->lock);
     free(k);

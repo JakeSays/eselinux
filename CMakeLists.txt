@@ -208,6 +208,18 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     # the engine itself targets.
     add_compile_options(-fms-extensions -fms-compatibility -fms-compatibility-version=19.40 -fdeclspec)
 
+    # -fms-compatibility suppresses __GNUC__ / __GNUC_STDC_INLINE__, which
+    # glibc's sys/cdefs.h uses to gate `__extern_always_inline`.  Without
+    # one of those macros, optimized builds (`__OPTIMIZE__` set at -O2+)
+    # pull in glibc's fortify-flavoured inline declarations of memcpy /
+    # memchr / etc. that reference an undefined `__extern_always_inline`,
+    # blowing up string.h on the first include.  Predefining the GNU-STDC
+    # inline marker satisfies cdefs.h's gate so the macro gets defined,
+    # and disabling _FORTIFY_SOURCE keeps us off the bounds-checking
+    # wrappers we don't rely on.
+    add_compile_options(-D__GNUC_STDC_INLINE__=1)
+    add_compile_options(-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0)
+
     # Engine headers were authored against MSVC's lazy template parsing
     # (e.g. dht.hxx references Assert/AssertSz that consumers redefine).
     # -fdelayed-template-parsing defers definition-time name lookup in template

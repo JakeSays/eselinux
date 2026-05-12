@@ -21,6 +21,8 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -39,6 +41,7 @@ using osposix::WidePathToUtf8;
 
 namespace
 {
+constexpr int c_pathBuf = 4096;
 // FILETIME = 100-ns ticks since 1601-01-01 UTC; UNIX epoch offset.
 constexpr uint64_t c_filetimeUnixEpochOffset = 11644473600ULL;
 constexpr uint64_t c_filetimeIntervalsPerSec = 10000000ULL;
@@ -127,19 +130,180 @@ DWORD AttributesFromMode(mode_t m)
         attrs = FILE_ATTRIBUTE_NORMAL;
     return attrs;
 }
+
+//  Length-counted prefixes for Win32 device path detection.  Templated so
+//  sizeof(literal) gives us the compile-time length and we don't sprinkle
+//  raw character counts through the parser.  Templates can't have C linkage,
+//  so these live in the anonymous namespace above the extern "C" block.
+template <size_t N>
+constexpr size_t PrefixLen(const char (&)[N])
+{
+    return N - 1;  //  drop trailing NUL
 }
+
+template <size_t N>
+bool HasPrefixI(const char* path, const char (&prefix)[N])
+{
+    return strncasecmp(path, prefix, N - 1) == 0;
+}
+
+template <size_t N>
+bool HasPrefix(const char* path, const char (&prefix)[N])
+{
+    return strncmp(path, prefix, N - 1) == 0;
+}
+
+//  Detect engine-synthesized "block device" path syntax and route to the
+//  BlockDevice KObject builder so DeviceIoControl can answer storage queries
+//  via /sys/block.  No real fd is opened.
+//
+//   \\?\Volume{MAJ-MIN}\        -> filesystem with that (major:minor)
+//   \\?\Volume{MAJ-MIN}         -> same, no trailing slash (engine strips it)
+//   \\.\PHYSICALDRIVE{N}        -> whole-disk handle by index — synthesize
+//                                  with minor=N (engine uses this as an
+//                                  opaque identifier; we read sysfs by the
+//                                  associated name when we can find one)
+HANDLE OpenSyntheticBlockDevice(const char* path)
+{
+    unsigned int major = 0, minor = 0;
+    char diskName[64] = "";
+
+    //  Accept both Win32 (\\?\) and engine-normalized (//?/) forms.
+    static constexpr char c_volumePrefixWin[]   = "\\\\?\\Volume{";
+    static constexpr char c_volumePrefixUnix[]  = "//?/Volume{";
+    const char* volumeSuffix = nullptr;
+    if (HasPrefix(path, c_volumePrefixWin))
+        volumeSuffix = path + PrefixLen(c_volumePrefixWin);
+    else if (HasPrefix(path, c_volumePrefixUnix))
+        volumeSuffix = path + PrefixLen(c_volumePrefixUnix);
+
+    if (volumeSuffix)
+    {
+        if (sscanf(volumeSuffix, "%u-%u", &major, &minor) != 2)
+        {
+            SetLastError(ERROR_FILE_NOT_FOUND);
+            return INVALID_HANDLE_VALUE;
+        }
+        //  Walk /sys/dev/block/X:Y -> the kernel device name and parent
+        //  whole-disk (major:minor).  When the filesystem isn't a real
+        //  block device (ZFS, tmpfs, NFS, overlay, ...) this fails; we
+        //  surface that as ERROR_FILE_NOT_FOUND so the engine falls
+        //  through to its no-disk-info path rather than getting a
+        //  HANDLE whose IOCTLs return INVALID_FUNCTION.
+        char link[PATH_MAX];
+        snprintf(link, sizeof(link), "/sys/dev/block/%u:%u", major, minor);
+        char real[PATH_MAX];
+        if (realpath(link, real) == nullptr)
+        {
+            SetLastError(ERROR_FILE_NOT_FOUND);
+            return INVALID_HANDLE_VALUE;
+        }
+        //  Walk back to the disk basename: if a "partition" file exists in
+        //  the realpath dir, the entry is a partition node and the parent
+        //  dir is the whole disk.
+        char* slash = strrchr(real, '/');
+        const char* nm = slash ? slash + 1 : real;
+        char partFile[PATH_MAX];
+        snprintf(partFile, sizeof(partFile), "%s/partition", real);
+        struct stat st;
+        if (stat(partFile, &st) == 0 && slash)
+        {
+            *slash = '\0';
+            slash = strrchr(real, '/');
+            nm = slash ? slash + 1 : real;
+        }
+        const size_t cchNm = strlen(nm);
+        if (cchNm == 0 || cchNm + 1 > sizeof(diskName))
+        {
+            SetLastError(ERROR_FILE_NOT_FOUND);
+            return INVALID_HANDLE_VALUE;
+        }
+        memcpy(diskName, nm, cchNm + 1);
+
+        //  Parent disk's (major:minor) from /sys/block/<name>/dev.
+        unsigned int dMaj = major, dMin = minor;
+        char devFile[PATH_MAX];
+        snprintf(devFile, sizeof(devFile), "/sys/block/%s/dev", diskName);
+        const int devFd = open(devFile, O_RDONLY | O_CLOEXEC);
+        if (devFd >= 0)
+        {
+            char buf[32];
+            const ssize_t n = read(devFd, buf, sizeof(buf) - 1);
+            close(devFd);
+            if (n > 0)
+            {
+                buf[n] = '\0';
+                sscanf(buf, "%u:%u", &dMaj, &dMin);
+            }
+        }
+
+        KObject* const k = osposix::AllocBlockDeviceKObject(
+                                major, minor, dMaj, dMin, strdup(diskName));
+        if (!k)
+        {
+            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+            return INVALID_HANDLE_VALUE;
+        }
+        return osposix::KToHandle(k);
+    }
+
+    static constexpr char c_drivePrefixWin[]   = "\\\\.\\PHYSICALDRIVE";
+    static constexpr char c_drivePrefixUnix[]  = "//./PHYSICALDRIVE";
+    const char* driveSuffix = nullptr;
+    if (HasPrefixI(path, c_drivePrefixWin))
+        driveSuffix = path + PrefixLen(c_drivePrefixWin);
+    else if (HasPrefixI(path, c_drivePrefixUnix))
+        driveSuffix = path + PrefixLen(c_drivePrefixUnix);
+    if (driveSuffix)
+    {
+        //  Engine asks for a whole-disk handle by index.  We never
+        //  actually produced PHYSICALDRIVE-style names in our shim, so
+        //  this path is rarely hit; treat the suffix as the minor and
+        //  open a no-fd synthetic handle.  IOCTLs that need the real
+        //  disk identity will fail gracefully.
+        if (sscanf(driveSuffix, "%u", &minor) != 1)
+        {
+            SetLastError(ERROR_FILE_NOT_FOUND);
+            return INVALID_HANDLE_VALUE;
+        }
+        KObject* const k = osposix::AllocBlockDeviceKObject(0, minor, 0, minor, nullptr);
+        if (!k)
+        {
+            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+            return INVALID_HANDLE_VALUE;
+        }
+        return osposix::KToHandle(k);
+    }
+
+    return nullptr;  //  not a synthetic path; caller falls through to open()
+}
+
+} // anonymous namespace
 
 extern "C"
 {
+
 HANDLE CreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
     LPSECURITY_ATTRIBUTES /*lpSecurityAttributes*/, DWORD dwCreationDisposition,
     DWORD dwFlagsAndAttributes, HANDLE /*hTemplateFile*/)
 {
-    char path[4096];
+    char path[c_pathBuf];
     if (WidePathToUtf8(lpFileName, path, sizeof(path)) <= 0)
     {
         SetLastError(ERROR_FILE_NOT_FOUND);
         return INVALID_HANDLE_VALUE;
+    }
+
+    //  Synthetic Win32 device paths bypass the open() flow.  Engine
+    //  normalizes path delimiters to chPathDelimiter ('/' on Linux), so
+    //  the prefix arrives as either `\\?\` or `//?/`.
+    const bool fUnc = (path[0] == '\\' && path[1] == '\\')
+                   || (path[0] == '/'  && path[1] == '/');
+    if (fUnc)
+    {
+        const HANDLE h = OpenSyntheticBlockDevice(path);
+        if (h != nullptr)
+            return h;
     }
 
     const int oflags = OpenFlagsFromWin32(dwDesiredAccess, dwShareMode,

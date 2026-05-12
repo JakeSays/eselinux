@@ -24,6 +24,7 @@ enum class HandleKind : int
     FindFile,
     FindVolume,
     FileMapping,
+    BlockDevice,   // synthesized for \\?\Volume{...} and \\.\PHYSICALDRIVE{N}
 };
 
 struct KObject
@@ -75,10 +76,33 @@ struct KObject
     int       mappingFd;             // dup'd file fd; closed when the mapping handle is closed
     DWORD     mappingProtect;        // PAGE_READONLY / PAGE_READWRITE (translated to mmap PROT)
     QWORD     mappingMaxSize;        // max view size; 0 means "to end of file"
+
+    // ---- BlockDevice (CreateFileW on \\?\Volume{X-Y} or \\.\PHYSICALDRIVE{N}) ----
+    //
+    // Synthesized handle that carries the (major,minor) of the underlying
+    // filesystem or whole-disk device, plus the kernel device name (e.g.
+    // "sda1" or "sda" — no /dev/ prefix).  DeviceIoControl uses these to
+    // answer IOCTL_STORAGE_QUERY_PROPERTY / IOCTL_DISK_GET_CACHE_INFORMATION
+    // / IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS by reading /sys/block/<name>/...
+    // No real fd is held — the kernel-name suffices for sysfs lookups.
+    unsigned int blockMajor;
+    unsigned int blockMinor;
+    unsigned int blockDiskMajor;     // whole-disk parent — equals blockMajor/Minor if already a whole disk
+    unsigned int blockDiskMinor;
+    char*        blockDiskName;      // owned narrow UTF-8, no /dev/ prefix (e.g. "sda")
 };
 
 KObject* AllocKObject( HandleKind kind );
 void     FreeKObject( KObject* k );
+
+//  Block-device synthesis: see winapi_blockdev.cxx.
+bool     ResolveBlockDeviceForPath( const char* path,
+                                    unsigned int* pFsMajor, unsigned int* pFsMinor,
+                                    unsigned int* pDiskMajor, unsigned int* pDiskMinor,
+                                    char* diskName, size_t cchName );
+KObject* AllocBlockDeviceKObject( unsigned int fsMajor, unsigned int fsMinor,
+                                  unsigned int diskMajor, unsigned int diskMinor,
+                                  char* diskName );
 
 inline KObject* HandleToK( HANDLE h )
 {

@@ -77,6 +77,8 @@ set(OSPOSIX_WINAPI_SOURCES
     winapi_process.cxx
     winapi_random.cxx
     winapi_security.cxx
+    winapi_blockdev.cxx
+    winapi_blockdev_ioctl.cxx
     winapi_osfs_stubs.cxx
     winapi_seh.cxx
     winapi_sync.cxx

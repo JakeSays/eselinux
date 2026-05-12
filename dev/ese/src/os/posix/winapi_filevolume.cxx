@@ -108,13 +108,33 @@ BOOL GetVolumePathNameW(LPCWSTR lpszFileName, LPWSTR lpszVolumePathName, DWORD c
     return TRUE;
 }
 
-BOOL GetVolumeNameForVolumeMountPointW(LPCWSTR /*lpszVolumeMountPoint*/, LPWSTR lpszVolumeName,
+BOOL GetVolumeNameForVolumeMountPointW(LPCWSTR lpszVolumeMountPoint, LPWSTR lpszVolumeName,
     DWORD cchBufferLength)
 {
     if (!lpszVolumeName || cchBufferLength == 0)
         return FALSE;
-    // Synthesize a stable identifier; engine uses it for diagnostic
-    // logging only.
+    //  Encode the underlying filesystem's (major:minor) — derived from
+    //  stat() — into a synthetic GUID-shaped path that CreateFileW
+    //  recognizes and turns into a BlockDevice KObject for IOCTL queries.
+    char path[c_pathBuf];
+    unsigned int fsMaj = 0, fsMin = 0, dMaj = 0, dMin = 0;
+    char diskName[64] = "";
+    if (lpszVolumeMountPoint
+        && WidePathToUtf8(lpszVolumeMountPoint, path, sizeof(path)) > 0
+        && osposix::ResolveBlockDeviceForPath(path, &fsMaj, &fsMin, &dMaj, &dMin,
+                                              diskName, sizeof(diskName)))
+    {
+        char narrow[64];
+        snprintf(narrow, sizeof(narrow), "\\\\?\\Volume{%u-%u}\\", fsMaj, fsMin);
+        DWORD i = 0;
+        for (; narrow[i] && i + 1 < cchBufferLength; ++i)
+            lpszVolumeName[i] = (WCHAR) (unsigned char) narrow[i];
+        lpszVolumeName[i] = 0;
+        return TRUE;
+    }
+    //  Fallback when stat or /sys lookup fails (no backing device — tmpfs,
+    //  network mounts).  Engine treats the unresolved-path open as a
+    //  feature-unavailable error and continues.
     const WCHAR* const literal = L"\\\\?\\Volume{linux-root}\\";
     DWORD i = 0;
     while (literal[i] && i + 1 < cchBufferLength)

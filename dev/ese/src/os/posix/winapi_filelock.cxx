@@ -195,6 +195,13 @@ BOOL IoctlQueryAllocatedRanges(
 }
 } //  namespace
 
+//  Storage-property / disk-cache / volume-disk-extents IOCTLs live in
+//  winapi_blockdev_ioctl.cxx so the sysfs-walking lives next to its
+//  helpers.
+BOOL OSPosixHandleStorageIoctl(HANDLE hDevice, DWORD dwIoControlCode,
+    LPVOID lpInBuffer, DWORD nInBufferSize,
+    LPVOID lpOutBuffer, DWORD nOutBufferSize, LPDWORD lpBytesReturned);
+
 BOOL DeviceIoControl(HANDLE hDevice, DWORD dwIoControlCode, LPVOID lpInBuffer,
     DWORD nInBufferSize, LPVOID lpOutBuffer, DWORD nOutBufferSize,
     LPDWORD lpBytesReturned, LPOVERLAPPED /*lpOverlapped*/)
@@ -224,6 +231,12 @@ BOOL DeviceIoControl(HANDLE hDevice, DWORD dwIoControlCode, LPVOID lpInBuffer,
         case FSCTL_QUERY_ALLOCATED_RANGES:
             return IoctlQueryAllocatedRanges(k, lpInBuffer, nInBufferSize,
                 lpOutBuffer, nOutBufferSize, lpBytesReturned);
+
+        case IOCTL_STORAGE_QUERY_PROPERTY:
+        case IOCTL_DISK_GET_CACHE_INFORMATION:
+        case IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS:
+            return OSPosixHandleStorageIoctl(hDevice, dwIoControlCode,
+                lpInBuffer, nInBufferSize, lpOutBuffer, nOutBufferSize, lpBytesReturned);
     }
 
     SetLastError(ERROR_INVALID_FUNCTION);
