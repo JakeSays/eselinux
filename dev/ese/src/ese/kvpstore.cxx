@@ -1568,9 +1568,14 @@ ERR CKVPStore::ErrKVPAdjValue( __inout PIB * ppibProvided, const WCHAR * const w
     Call( err );
 
     //  apply the adjustment
+    //
+    //  Detect overflow without invoking signed-int UB: compare iValue against
+    //  the headroom in iAdjustment's direction.  The original `(iValue+iAdj) <
+    //  iValue` formulation relies on 2's-complement wraparound which clang -O3
+    //  is free to fold away.
 
-    if ( ( ( iAdjustment > 0 ) && ( ( iValue + iAdjustment ) < iValue ) ) ||    // inc and overflow
-         ( ( iAdjustment < 0 ) && ( ( iValue + iAdjustment ) > iValue ) ) ) // dec and overflow
+    if ( ( iAdjustment > 0 && iValue > INT_MAX - iAdjustment ) ||
+         ( iAdjustment < 0 && iValue < INT_MIN - iAdjustment ) )
     {
         Call( ErrERRCheck( JET_errOutOfAutoincrementValues ) );
     }
