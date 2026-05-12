@@ -328,6 +328,89 @@ typedef enum _STORAGE_BUS_TYPE {
     BusTypeNvme    = 0x11,
 } STORAGE_BUS_TYPE;
 
+//  IOCTL_DISK_PERFORMANCE output.  Engine only reads QueueDepth (the
+//  in-flight IO count); the rest are kept at zero on Linux.
+typedef struct _DISK_PERFORMANCE {
+    LARGE_INTEGER BytesRead;
+    LARGE_INTEGER BytesWritten;
+    LARGE_INTEGER ReadTime;
+    LARGE_INTEGER WriteTime;
+    LARGE_INTEGER IdleTime;
+    DWORD         ReadCount;
+    DWORD         WriteCount;
+    DWORD         QueueDepth;
+    DWORD         SplitCount;
+    LARGE_INTEGER QueryTime;
+    DWORD         StorageDeviceNumber;
+    WCHAR         StorageManagerName[ 8 ];
+} DISK_PERFORMANCE, *PDISK_PERFORMANCE;
+
+//  SMART (ATA self-monitoring) ioctl surface used by COSDisk::LoadDiskInfo_.
+//  The Linux shim returns ERROR_NOT_SUPPORTED for these: SMART access on
+//  Linux requires CAP_SYS_RAWIO and sg_io plumbing, and ESE treats missing
+//  SMART as a non-fatal degradation (the SetSmartEseNoLoadFailed path
+//  records the reason in the diagnostic strings).
+//  Stable distinct codes for the SMART dispatch.  The real Win32 numeric
+//  values for SMART_GET_VERSION collide with what this shim already uses
+//  for IOCTL_DISK_GET_CACHE_INFORMATION; we don't preserve the Win32
+//  numerics, so just pick non-overlapping values.
+#ifndef SMART_GET_VERSION
+#define SMART_GET_VERSION                       0x00074800u
+#define SMART_RCV_DRIVE_DATA                    0x0007C088u
+#define IDENTIFY_BUFFER_SIZE                    512
+#define ID_CMD                                  0xEC
+#define CAP_SMART_CMD                           0x04
+#endif
+
+//  Win32's ntdddisk.h wraps the SMART structs in pshpack1.h — sizes
+//  on Windows are 1-byte packed.  Engine `C_ASSERT`s depend on this
+//  (e.g., sizeof(SENDCMDOUTPARAMS) - 1 == 16).
+#pragma pack(push, 1)
+
+typedef struct _GETVERSIONINPARAMS {
+    BYTE    bVersion;
+    BYTE    bRevision;
+    BYTE    bReserved;
+    BYTE    bIDEDeviceMap;
+    DWORD   fCapabilities;
+    DWORD   dwReserved[ 4 ];
+} GETVERSIONINPARAMS, *PGETVERSIONINPARAMS, *LPGETVERSIONINPARAMS;
+
+typedef struct _IDEREGS {
+    BYTE    bFeaturesReg;
+    BYTE    bSectorCountReg;
+    BYTE    bSectorNumberReg;
+    BYTE    bCylLowReg;
+    BYTE    bCylHighReg;
+    BYTE    bDriveHeadReg;
+    BYTE    bCommandReg;
+    BYTE    bReserved;
+} IDEREGS, *PIDEREGS, *LPIDEREGS;
+
+typedef struct _SENDCMDINPARAMS {
+    DWORD   cBufferSize;
+    IDEREGS irDriveRegs;
+    BYTE    bDriveNumber;
+    BYTE    bReserved[ 3 ];
+    DWORD   dwReserved[ 4 ];
+    BYTE    bBuffer[ 1 ];
+} SENDCMDINPARAMS, *PSENDCMDINPARAMS, *LPSENDCMDINPARAMS;
+
+typedef struct _DRIVERSTATUS {
+    BYTE    bDriverError;
+    BYTE    bIDEError;
+    BYTE    bReserved[ 2 ];
+    DWORD   dwReserved[ 2 ];
+} DRIVERSTATUS, *PDRIVERSTATUS, *LPDRIVERSTATUS;
+
+typedef struct _SENDCMDOUTPARAMS {
+    DWORD           cBufferSize;
+    DRIVERSTATUS    DriverStatus;
+    BYTE            bBuffer[ 1 ];
+} SENDCMDOUTPARAMS, *PSENDCMDOUTPARAMS, *LPSENDCMDOUTPARAMS;
+
+#pragma pack(pop)
+
 #ifdef __cplusplus
 }
 #endif

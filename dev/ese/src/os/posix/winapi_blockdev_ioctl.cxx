@@ -214,6 +214,21 @@ BOOL FillDeviceDescriptor(const char* diskName,
     snprintf(path, sizeof(path), "/sys/block/%s/device/model", diskName);
     char model[64];
     const size_t cbModel = ReadSmallFile(path, model, sizeof(model));
+    //  SCSI/SATA expose firmware as .../device/rev; NVMe uses firmware_rev.
+    snprintf(path, sizeof(path), "/sys/block/%s/device/rev", diskName);
+    char firmware[64];
+    size_t cbFirmware = ReadSmallFile(path, firmware, sizeof(firmware));
+    if (cbFirmware == 0)
+    {
+        snprintf(path, sizeof(path), "/sys/block/%s/device/firmware_rev", diskName);
+        cbFirmware = ReadSmallFile(path, firmware, sizeof(firmware));
+    }
+    //  Serial varies by transport: NVMe at .../device/serial, SCSI at
+    //  .../device/vpd_pg80 (binary, root-only), SATA usually nowhere.
+    //  Best-effort: just try /sys/block/<name>/device/serial.
+    snprintf(path, sizeof(path), "/sys/block/%s/device/serial", diskName);
+    char serial[64];
+    const size_t cbSerial = ReadSmallFile(path, serial, sizeof(serial));
 
     //  Pack strings after the fixed-size header.  Win32 contract: each
     //  *Offset field is relative to the start of the descriptor.
@@ -234,8 +249,10 @@ BOOL FillDeviceDescriptor(const char* diskName,
         ib += (DWORD)(cb + 1);
         return true;
     };
-    if (!Pack(vendor, cbVendor, p->VendorIdOffset)
-        || !Pack(model,  cbModel,  p->ProductIdOffset))
+    if (!Pack(vendor,   cbVendor,   p->VendorIdOffset)
+        || !Pack(model, cbModel,    p->ProductIdOffset)
+        || !Pack(firmware, cbFirmware, p->ProductRevisionOffset)
+        || !Pack(serial, cbSerial,  p->SerialNumberOffset))
     {
         SetLastError(ERROR_INSUFFICIENT_BUFFER);
         return FALSE;
@@ -243,6 +260,78 @@ BOOL FillDeviceDescriptor(const char* diskName,
     p->RawPropertiesLength = ib - sizeof(STORAGE_DEVICE_DESCRIPTOR);
     if (pcbReturned)
         *pcbReturned = ib;
+    return TRUE;
+}
+
+BOOL FillAdapterDescriptor(const char* diskName, STORAGE_ADAPTER_DESCRIPTOR* p)
+{
+    memset(p, 0, sizeof(*p));
+    p->Version = sizeof(STORAGE_ADAPTER_DESCRIPTOR);
+    p->Size    = sizeof(STORAGE_ADAPTER_DESCRIPTOR);
+    //  Linux block layer doesn't gate per-adapter; report generous defaults
+    //  matching what a healthy SATA/NVMe controller advertises.
+    p->MaximumTransferLength = 0x00100000u;
+    p->MaximumPhysicalPages  = 256;
+    p->AlignmentMask         = 0;
+    p->AdapterUsesPio        = FALSE;
+    p->AdapterScansDown      = FALSE;
+    p->CommandQueueing       = TRUE;
+    p->AcceleratedTransfer   = TRUE;
+    p->BusType               = BusTypeUnknown;
+    if (diskName && *diskName)
+    {
+        //  NVMe disks live under /sys/block/nvmeXnY/...; everything else is
+        //  too transport-specific to detect from sysfs alone.
+        if (strncmp(diskName, "nvme", 4) == 0)
+            p->BusType = BusTypeNvme;
+        else
+            p->BusType = BusTypeSata;
+    }
+    return TRUE;
+}
+
+//  Read /proc/diskstats and return the in-flight IO count for the given
+//  (major:minor).  Returns 0 when the device isn't found.
+DWORD ReadDiskstatsInflight(unsigned int diskMajor, unsigned int diskMinor)
+{
+    FILE* const f = fopen("/proc/diskstats", "re");
+    if (!f)
+        return 0;
+    char line[512];
+    DWORD inflight = 0;
+    while (fgets(line, sizeof(line), f))
+    {
+        unsigned int maj = 0, minr = 0;
+        char name[64];
+        //  /proc/diskstats columns (kernel 4.18+): major minor name
+        //  rd_ios rd_merges rd_sectors rd_ticks wr_ios wr_merges wr_sectors
+        //  wr_ticks in_flight io_ticks time_in_queue ...
+        unsigned long long rdIos, rdMerges, rdSectors, rdTicks;
+        unsigned long long wrIos, wrMerges, wrSectors, wrTicks;
+        unsigned long long inFlight;
+        const int n = sscanf(line,
+                "%u %u %63s %llu %llu %llu %llu %llu %llu %llu %llu %llu",
+                &maj, &minr, name,
+                &rdIos, &rdMerges, &rdSectors, &rdTicks,
+                &wrIos, &wrMerges, &wrSectors, &wrTicks,
+                &inFlight);
+        if (n >= 12 && maj == diskMajor && minr == diskMinor)
+        {
+            inflight = (DWORD) inFlight;
+            break;
+        }
+    }
+    fclose(f);
+    return inflight;
+}
+
+BOOL FillDiskPerformance(unsigned int diskMajor, unsigned int diskMinor,
+                         DISK_PERFORMANCE* p)
+{
+    memset(p, 0, sizeof(*p));
+    p->QueueDepth = ReadDiskstatsInflight(diskMajor, diskMinor);
+    //  StorageDeviceNumber, StorageManagerName etc. left zero — engine reads
+    //  QueueDepth only.
     return TRUE;
 }
 
@@ -338,9 +427,60 @@ BOOL OSPosixHandleStorageIoctl(HANDLE hDevice, DWORD dwIoControlCode,
                     *lpBytesReturned = cbReturned;
                 return ok;
             }
+
+            case StorageAdapterProperty:
+                if (nOutBufferSize < sizeof(STORAGE_ADAPTER_DESCRIPTOR))
+                {
+                    SetLastError(ERROR_INSUFFICIENT_BUFFER);
+                    return FALSE;
+                }
+                FillAdapterDescriptor(diskName,
+                    reinterpret_cast<STORAGE_ADAPTER_DESCRIPTOR*>(lpOutBuffer));
+                if (lpBytesReturned)
+                    *lpBytesReturned = sizeof(STORAGE_ADAPTER_DESCRIPTOR);
+                return TRUE;
+
+            case StorageDeviceCopyOffloadProperty:
+                //  Linux has no token-based copy-offload abstraction (ODX is
+                //  a Win32/SCSI-XCOPY thing).  Report not-supported; engine's
+                //  m_errorOsdcod path handles the negative case.
+                SetLastError(ERROR_NOT_SUPPORTED);
+                return FALSE;
+
+            case StorageDeviceWriteCacheProperty:
+                //  IOCTL_DISK_GET_CACHE_INFORMATION already serves the
+                //  write-cache state below; the engine treats a failure here
+                //  as "use the IOCTL_DISK_GET_CACHE_INFORMATION answer."
+                SetLastError(ERROR_NOT_SUPPORTED);
+                return FALSE;
         }
         SetLastError(ERROR_INVALID_FUNCTION);
         return FALSE;
+    }
+
+    //  SMART_GET_VERSION / SMART_RCV_DRIVE_DATA require sg_io plumbing and
+    //  CAP_SYS_RAWIO on Linux.  Reporting not-supported lets the engine's
+    //  SetSmartEseNoLoadFailed path record the reason and continue without
+    //  ATA self-monitoring data.
+    if (dwIoControlCode == SMART_GET_VERSION
+        || dwIoControlCode == SMART_RCV_DRIVE_DATA)
+    {
+        SetLastError(ERROR_NOT_SUPPORTED);
+        return FALSE;
+    }
+
+    if (dwIoControlCode == IOCTL_DISK_PERFORMANCE)
+    {
+        if (nOutBufferSize < sizeof(DISK_PERFORMANCE))
+        {
+            SetLastError(ERROR_INSUFFICIENT_BUFFER);
+            return FALSE;
+        }
+        FillDiskPerformance(k->blockDiskMajor, k->blockDiskMinor,
+            reinterpret_cast<DISK_PERFORMANCE*>(lpOutBuffer));
+        if (lpBytesReturned)
+            *lpBytesReturned = sizeof(DISK_PERFORMANCE);
+        return TRUE;
     }
 
     if (dwIoControlCode == IOCTL_DISK_GET_CACHE_INFORMATION)

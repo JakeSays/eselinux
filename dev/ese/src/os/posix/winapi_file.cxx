@@ -27,6 +27,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/file.h>   // flock
+#include <sys/sysmacros.h>  // major/minor for PHYSICALDRIVE decode
 #include <sys/uio.h>
 #include <unistd.h>
 
@@ -256,19 +257,80 @@ HANDLE OpenSyntheticBlockDevice(const char* path)
         driveSuffix = path + PrefixLen(c_drivePrefixUnix);
     if (driveSuffix)
     {
-        //  Engine asks for a whole-disk handle by index.  We never
-        //  actually produced PHYSICALDRIVE-style names in our shim, so
-        //  this path is rarely hit; treat the suffix as the minor and
-        //  open a no-fd synthetic handle.  IOCTLs that need the real
-        //  disk identity will fail gracefully.
-        if (sscanf(driveSuffix, "%u", &minor) != 1)
+        //  Engine asks for a whole-disk handle by index.  The DiskNumber
+        //  the engine quotes here is what our IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS
+        //  shim packed via makedev(diskMajor, diskMinor) — see
+        //  winapi_blockdev_ioctl.cxx.  Decode it the same way so this
+        //  handle binds to the same disk identity the engine learned about.
+        unsigned int packed = 0;
+        if (sscanf(driveSuffix, "%u", &packed) != 1)
         {
             SetLastError(ERROR_FILE_NOT_FOUND);
             return INVALID_HANDLE_VALUE;
         }
-        KObject* const k = osposix::AllocBlockDeviceKObject(0, minor, 0, minor, nullptr);
+        const dev_t dev      = (dev_t) packed;
+        const unsigned int diskMajor = major(dev);
+        const unsigned int diskMinor = minor(dev);
+
+        //  Require a real /sys/dev/block backing — match Windows where
+        //  CreateFileW(L"\\.\PhysicalDriveN") fails for non-existent N.
+        //  Anonymous block devs (tmpfs/zfs/nfs) hit this branch too; engine
+        //  treats the open failure as "couldn't determine disk identity"
+        //  (FSeekPenalty defaults to HDD-flavoured).  Engine unit tests
+        //  that construct COSDisk objects with synthetic dwDiskNumber
+        //  values rely on this failure path.
+        char link[PATH_MAX];
+        snprintf(link, sizeof(link), "/sys/dev/block/%u:%u", diskMajor, diskMinor);
+        char real[PATH_MAX];
+        if (realpath(link, real) == nullptr)
+        {
+            SetLastError(ERROR_FILE_NOT_FOUND);
+            return INVALID_HANDLE_VALUE;
+        }
+
+        //  Walk back to the whole-disk name + canonical (major:minor).
+        char diskNameLocal[64] = "";
+        unsigned int dMaj = diskMajor;
+        unsigned int dMin = diskMinor;
+        {
+            char* slash = strrchr(real, '/');
+            const char* nm = slash ? slash + 1 : real;
+            char partFile[PATH_MAX];
+            snprintf(partFile, sizeof(partFile), "%s/partition", real);
+            struct stat st;
+            if (stat(partFile, &st) == 0 && slash)
+            {
+                *slash = '\0';
+                slash = strrchr(real, '/');
+                nm = slash ? slash + 1 : real;
+            }
+            const size_t cchNm = strlen(nm);
+            if (cchNm > 0 && cchNm + 1 <= sizeof(diskNameLocal))
+            {
+                memcpy(diskNameLocal, nm, cchNm + 1);
+                char devFile[PATH_MAX];
+                snprintf(devFile, sizeof(devFile), "/sys/block/%s/dev", diskNameLocal);
+                const int devFd = open(devFile, O_RDONLY | O_CLOEXEC);
+                if (devFd >= 0)
+                {
+                    char buf[32];
+                    const ssize_t n = read(devFd, buf, sizeof(buf) - 1);
+                    close(devFd);
+                    if (n > 0)
+                    {
+                        buf[n] = '\0';
+                        sscanf(buf, "%u:%u", &dMaj, &dMin);
+                    }
+                }
+            }
+        }
+
+        char* const ownedName = diskNameLocal[0] ? strdup(diskNameLocal) : nullptr;
+        KObject* const k = osposix::AllocBlockDeviceKObject(
+                                diskMajor, diskMinor, dMaj, dMin, ownedName);
         if (!k)
         {
+            free(ownedName);
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
             return INVALID_HANDLE_VALUE;
         }

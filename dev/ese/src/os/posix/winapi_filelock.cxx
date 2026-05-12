@@ -206,6 +206,11 @@ BOOL DeviceIoControl(HANDLE hDevice, DWORD dwIoControlCode, LPVOID lpInBuffer,
     DWORD nInBufferSize, LPVOID lpOutBuffer, DWORD nOutBufferSize,
     LPDWORD lpBytesReturned, LPOVERLAPPED /*lpOverlapped*/)
 {
+    if (hDevice == nullptr || hDevice == INVALID_HANDLE_VALUE)
+    {
+        SetLastError(ERROR_INVALID_HANDLE);
+        return FALSE;
+    }
     KObject* const k = HandleToK(hDevice);
     if (!k)
     {
@@ -234,7 +239,10 @@ BOOL DeviceIoControl(HANDLE hDevice, DWORD dwIoControlCode, LPVOID lpInBuffer,
 
         case IOCTL_STORAGE_QUERY_PROPERTY:
         case IOCTL_DISK_GET_CACHE_INFORMATION:
+        case IOCTL_DISK_PERFORMANCE:
         case IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS:
+        case SMART_GET_VERSION:
+        case SMART_RCV_DRIVE_DATA:
             return OSPosixHandleStorageIoctl(hDevice, dwIoControlCode,
                 lpInBuffer, nInBufferSize, lpOutBuffer, nOutBufferSize, lpBytesReturned);
     }

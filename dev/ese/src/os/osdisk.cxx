@@ -2577,12 +2577,13 @@ void COSDisk::SetSmartEseNoLoadFailed( _In_ const ULONG iStep, _In_ const DWORD 
 //  This function may fail, but will always initialize m_wszModelNumber/SerialNumber/FirmwareRev
 //
 //  Body is Win32-only: SMART_GET_VERSION / SMART_RCV_DRIVE_DATA /
-//  IOCTL_STORAGE_QUERY_PROPERTY / IOCTL_DISK_GET_CACHE_INFORMATION are
-//  Windows-specific storage ioctls with no portable Linux equivalent
-//  (Linux uses sysfs + sg_io for similar information). The function is
-//  also only called from a commented-out site in ErrInitDisk; on Linux
-//  we leave the m_osdi.* fields at their zero-initialized defaults.
-#ifdef ESE_OS_WINDOWS
+//  IOCTL_STORAGE_QUERY_PROPERTY / IOCTL_DISK_GET_CACHE_INFORMATION /
+//  SMART_GET_VERSION / SMART_RCV_DRIVE_DATA are all served by the Linux
+//  block-device shim (winapi_blockdev_ioctl.cxx).  Sysfs-backed properties
+//  return real values; SMART returns ERROR_NOT_SUPPORTED and the
+//  SetSmartEseNoLoadFailed path records the reason.  The call site in
+//  ErrInitDisk is commented out on both platforms (contention concerns),
+//  so this body is currently unexercised.
 void COSDisk::LoadDiskInfo_( __in_z PCWSTR wszDiskPath, _In_ const DWORD dwDiskNumber )
 {
     BOOL fSuccess;
@@ -2969,20 +2970,6 @@ void COSDisk::LoadCachePerf_( HANDLE hDisk )
     //m_osdi.m_errorOssmptd = ErrorOSDiskIOsStorageQueryProp( hDisk, StorageDeviceMediumProductType, &m_osdi.m_ssmptd, sizeof(m_osdi.m_ssmptd) );
 }
 
-#else // !ESE_OS_WINDOWS
-
-//  Linux stubs for the disk-info loaders. The non-test engine path on
-//  Linux doesn't currently call these (the only LoadDiskInfo_ caller in
-//  ErrInitDisk is commented out), so a no-op body is sufficient.
-void COSDisk::LoadDiskInfo_( __in_z PCWSTR /*wszDiskPath*/, _In_ const DWORD /*dwDiskNumber*/ )
-{
-}
-void COSDisk::LoadCachePerf_( HANDLE /*hDisk*/ )
-{
-}
-
-#endif // ESE_OS_WINDOWS
-
 //  Initialize the DISK.
 
 ERR COSDisk::ErrInitDisk(   _In_    IFileSystemConfiguration* const pfsconfig,
@@ -3055,7 +3042,6 @@ ERR COSDisk::ErrInitDisk(   _In_    IFileSystemConfiguration* const pfsconfig,
     WCHAR wszDiskPath[IFileSystemAPI::cchPathMax];
     OSStrCbFormatW( wszDiskPath, sizeof( wszDiskPath ), L"\\\\.\\PhysicalDrive%u", dwDiskNumber );
 
-#ifdef ESE_OS_WINDOWS
     m_hDisk = CreateFileW(  wszDiskPath,
                             0,
                             FILE_SHARE_READ,
@@ -3070,14 +3056,6 @@ ERR COSDisk::ErrInitDisk(   _In_    IFileSystemConfiguration* const pfsconfig,
         OSTrace( JET_tracetagFile, OSFormat( "\t m_osdi.m_osdspd = { Ver.Size=%d.%d, IncursSeekPenalty=%d };\n",
                     m_osdi.m_osdspd.Version, m_osdi.m_osdspd.Size, m_osdi.m_osdspd.IncursSeekPenalty ) );
     }
-#else
-    //  No \\.\PhysicalDriveN equivalent on Linux. Skip the disk open and
-    //  the seek-penalty query; m_hDisk stays at INVALID_HANDLE_VALUE so
-    //  downstream callers (LoadCachePerf_, QueryDiskPerformance) skip
-    //  their per-handle work.
-    m_hDisk = INVALID_HANDLE_VALUE;
-    m_osdi.m_errorOsdspd = ERROR_INVALID_FUNCTION;
-#endif
 
     //  Best effort (at least some of this will not work / load if not admin or system)
     //  Disabling because of contention seen in repl because of repeated calls
@@ -7780,16 +7758,12 @@ VOID COSDisk::RefreshDiskPerformance()
     }
 }
 
-// Queries the performance of the physical disk
-// Win32-only: IOCTL_DISK_PERFORMANCE returns DISK_PERFORMANCE struct
-// (queue depth, bytes read/written, etc.) per device. Linux exposes
-// similar info via /proc/diskstats but the engine only needs queue
-// depth here; leaving m_cioOsQueueDepth at its existing value is
-// acceptable for the v1 port.
+// Queries the performance of the physical disk via IOCTL_DISK_PERFORMANCE.
+// On Linux the shim backs this with /proc/diskstats; on Windows the kernel
+// fills DISK_PERFORMANCE directly.
 
 VOID COSDisk::QueryDiskPerformance()
 {
-#ifdef ESE_OS_WINDOWS
     DISK_PERFORMANCE diskPerformance;
     DWORD dwSize;
     if (    m_hDisk != INVALID_HANDLE_VALUE &&
@@ -7805,7 +7779,6 @@ VOID COSDisk::QueryDiskPerformance()
     {
         m_cioOsQueueDepth = diskPerformance.QueueDepth;
     }
-#endif
 
     m_tickPerformanceLastMeasured = TickOSTimeCurrent();
 }
