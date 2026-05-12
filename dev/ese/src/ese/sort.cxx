@@ -5,46 +5,46 @@
 
 //  SORT internal functions
 
-INLINE VOID SrecToKeydataflags( const SREC * psrec, FUCB * pfucb );
+VOID SrecToKeydataflags( const SREC * psrec, FUCB * pfucb );
 LOCAL LONG IspairSORTISeekByKey(
     const BYTE * const rgbRec,
     const SPAIR * const rgspair,
     const INT ispairMac,
     const KEY& keySeek,
     INT * const plastCompare);
-INLINE INT ISORTICmpKey( const SREC * psrec1, const SREC * psrec2 );
-INLINE INT ISORTICmpKeyData( const SREC * psrec1, const SREC * psrec2 );
-INLINE BOOL FSORTIDuplicate( SCB* const pscb, const SREC * psrec1, const SREC * psrec2 );
+INT ISORTICmpKey( const SREC * psrec1, const SREC * psrec2 );
+INT ISORTICmpKeyData( const SREC * psrec1, const SREC * psrec2 );
+BOOL FSORTIDuplicate( SCB* const pscb, const SREC * psrec1, const SREC * psrec2 );
 LOCAL LONG CspairSORTIUnique( SCB* pscb, BYTE * rgbRec, __inout_ecount(ispairMac) SPAIR * rgspair, const LONG ispairMac );
 LOCAL ERR ErrSORTIOutputRun( SCB * pscb );
-INLINE INT ISORTICmpPspairPspair( const SCB * pscb, const SPAIR * pspair1, const SPAIR * pspair2 );
+INT ISORTICmpPspairPspair( const SCB * pscb, const SPAIR * pspair1, const SPAIR * pspair2 );
 LOCAL INT ISORTICmp2PspairPspair( const SCB * pscb, const SPAIR * pspair1, const SPAIR * pspair2 );
-INLINE VOID SWAPPspair( SPAIR **ppspair1, SPAIR **ppspair2 );
-INLINE VOID SWAPSpair( SPAIR *pspair1, SPAIR *pspair2 );
-INLINE VOID SWAPPsrec( SREC **ppsrec1, SREC **ppsrec2 );
-INLINE VOID SWAPPmtnode( MTNODE **ppmtnode1, MTNODE **ppmtnode2 );
+VOID SWAPPspair( SPAIR **ppspair1, SPAIR **ppspair2 );
+VOID SWAPSpair( SPAIR *pspair1, SPAIR *pspair2 );
+VOID SWAPPsrec( SREC **ppsrec1, SREC **ppsrec2 );
+VOID SWAPPmtnode( MTNODE **ppmtnode1, MTNODE **ppmtnode2 );
 LOCAL VOID SORTIInsertionSort( SCB *pscb, SPAIR *pspairMinIn, SPAIR *pspairMaxIn );
 LOCAL VOID SORTIQuicksort( SCB * pscb, SPAIR *pspairMinIn, SPAIR *pspairMaxIn );
 LOCAL ERR ErrSORTIRunStart( SCB *pscb, QWORD cb, RUNINFO *pruninfo );
 LOCAL ERR ErrSORTIRunInsert( SCB *pscb, RUNINFO* pruninfo, SREC *psrec );
-INLINE VOID SORTIRunEnd( SCB * pscb, RUNINFO* pruninfo );
-INLINE VOID SORTIRunDelete( SCB * pscb, const RUNINFO * pruninfo );
+VOID SORTIRunEnd( SCB * pscb, RUNINFO* pruninfo );
+VOID SORTIRunDelete( SCB * pscb, const RUNINFO * pruninfo );
 LOCAL VOID  SORTIRunDeleteList( SCB *pscb, RUNLINK **pprunlink, LONG crun );
 LOCAL VOID  SORTIRunDeleteListMem( SCB *pscb, RUNLINK **pprunlink, LONG crun );
 LOCAL ERR ErrSORTIRunOpen( SCB *pscb, RUNINFO *pruninfo, RCB **pprcb );
 LOCAL ERR ErrSORTIRunNext( RCB * prcb, SREC **ppsrec );
 LOCAL VOID SORTIRunClose( RCB *prcb );
-INLINE ERR ErrSORTIRunReadPage( RCB *prcb, PGNO pgno, LONG ipbf );
+ERR ErrSORTIRunReadPage( RCB *prcb, PGNO pgno, LONG ipbf );
 LOCAL ERR ErrSORTIMergeToRun( SCB *pscb, RUNLINK *prunlinkSrc, RUNLINK **pprunlinkDest );
 LOCAL ERR ErrSORTIMergeStart( SCB *pscb, RUNLINK *prunlinkSrc );
 LOCAL ERR ErrSORTIMergeFirst( SCB *pscb, SREC **ppsrec );
 LOCAL ERR ErrSORTIMergeNext( SCB *pscb, SREC **ppsrec );
 LOCAL VOID SORTIMergeEnd( SCB *pscb );
 LOCAL ERR ErrSORTIMergeNextChamp( SCB *pscb, SREC **ppsrec );
-INLINE VOID SORTIOptTreeInit( SCB *pscb );
+VOID SORTIOptTreeInit( SCB *pscb );
 LOCAL ERR ErrSORTIOptTreeAddRun( SCB *pscb, RUNINFO *pruninfo );
 LOCAL ERR ErrSORTIOptTreeMerge( SCB *pscb );
-INLINE VOID SORTIOptTreeTerm( SCB *pscb );
+VOID SORTIOptTreeTerm( SCB *pscb );
 LOCAL ERR ErrSORTIOptTreeBuild( SCB *pscb, OTNODE **ppotnode );
 LOCAL ERR ErrSORTIOptTreeMergeDF( SCB *pscb, OTNODE *potnode, RUNLINK **pprunlink );
 LOCAL VOID SORTIOptTreeFree( SCB *pscb, OTNODE *potnode );
@@ -52,7 +52,7 @@ LOCAL VOID SORTIOptTreeFree( SCB *pscb, OTNODE *potnode );
 //----------------------------------------------------------
 //  put the current sort record into the FUCB
 //----------------------------------------------------------
-INLINE VOID SrecToKeydataflags( const SREC * psrec, FUCB * pfucb )
+VOID SrecToKeydataflags( const SREC * psrec, FUCB * pfucb )
 {
     pfucb->locLogical               = locOnCurBM;               //  CSR on record
     pfucb->kdfCurr.key.prefix.Nullify();
@@ -964,7 +964,7 @@ LOCAL LONG IspairSORTISeekByKey(
 
 //  compares two SRECs by key
 
-INLINE INT ISORTICmpKey( const SREC * psrec1, const SREC * psrec2 )
+INT ISORTICmpKey( const SREC * psrec1, const SREC * psrec2 )
 {
     const BYTE*     stKey1  = StSRECKeyPsrec( psrec1 );
     const USHORT    cbKey1  = *( UnalignedLittleEndian< USHORT > *)stKey1;
@@ -983,7 +983,7 @@ INLINE INT ISORTICmpKey( const SREC * psrec1, const SREC * psrec2 )
 
 //  compares two SRECs by key and data
 
-INLINE INT ISORTICmpKeyData( const SREC * psrec1, const SREC * psrec2 )
+INT ISORTICmpKeyData( const SREC * psrec1, const SREC * psrec2 )
 {
     //  compare the keys first, then the data if necessary
 
@@ -1007,7 +1007,7 @@ INLINE INT ISORTICmpKeyData( const SREC * psrec1, const SREC * psrec2 )
 //  returns fTrue if the two SRECs are considered duplicates according to the
 //  current flags in the SCB
 
-INLINE BOOL FSORTIDuplicate( SCB* const pscb, const SREC * psrec1, const SREC * psrec2 )
+BOOL FSORTIDuplicate( SCB* const pscb, const SREC * psrec1, const SREC * psrec2 )
 {
     if ( FSCBRemoveDuplicateKey( pscb ) )
     {
@@ -1223,7 +1223,7 @@ LOCAL INT IDBGICmp2PspairPspair( const SCB * pscb, const SPAIR * pspair1, const 
 //  Only the key prefixes are compared, unless there is a tie in which case we
 //  are forced to go to the full record at the cost of several wait states.
 //
-INLINE INT ISORTICmpPspairPspair( const SCB * pscb, const SPAIR * pspair1, const SPAIR * pspair2 )
+INT ISORTICmpPspairPspair( const SCB * pscb, const SPAIR * pspair1, const SPAIR * pspair2 )
 {
     const BYTE  *rgb1   = (BYTE *) pspair1;
     const BYTE  *rgb2   = (BYTE *) pspair2;
@@ -1345,7 +1345,7 @@ LOCAL INT ISORTICmp2PspairPspair( const SCB * pscb, const SPAIR * pspair1, const
 
 //  Swap functions
 
-INLINE VOID SWAPPspair( SPAIR **ppspair1, SPAIR **ppspair2 )
+VOID SWAPPspair( SPAIR **ppspair1, SPAIR **ppspair2 )
 {
     SPAIR *pspairT;
 
@@ -1357,7 +1357,7 @@ INLINE VOID SWAPPspair( SPAIR **ppspair1, SPAIR **ppspair2 )
 
 //  we do not use cache aligned memory for spairT (is this bad?)
 
-INLINE VOID SWAPSpair( SPAIR *pspair1, SPAIR *pspair2 )
+VOID SWAPSpair( SPAIR *pspair1, SPAIR *pspair2 )
 {
     SPAIR spairT;
 
@@ -1367,7 +1367,7 @@ INLINE VOID SWAPSpair( SPAIR *pspair1, SPAIR *pspair2 )
 }
 
 
-INLINE VOID SWAPPsrec( SREC **ppsrec1, SREC **ppsrec2 )
+VOID SWAPPsrec( SREC **ppsrec1, SREC **ppsrec2 )
 {
     SREC *psrecT;
 
@@ -1377,7 +1377,7 @@ INLINE VOID SWAPPsrec( SREC **ppsrec1, SREC **ppsrec2 )
 }
 
 
-INLINE VOID SWAPPmtnode( MTNODE **ppmtnode1, MTNODE **ppmtnode2 )
+VOID SWAPPmtnode( MTNODE **ppmtnode1, MTNODE **ppmtnode2 )
 {
     MTNODE *pmtnodeT;
 
@@ -1684,7 +1684,7 @@ LOCAL ERR ErrSORTIRunInsert( SCB *pscb, RUNINFO* pruninfo, SREC *psrec )
 
 //  ends current output run
 
-INLINE VOID SORTIRunEnd( SCB * pscb, RUNINFO* pruninfo )
+VOID SORTIRunEnd( SCB * pscb, RUNINFO* pruninfo )
 {
     //  unlatch page so it can be lazily-written to disk
 
@@ -1724,7 +1724,7 @@ INLINE VOID SORTIRunEnd( SCB * pscb, RUNINFO* pruninfo )
 //  Deletes a run from disk.  No error is returned because if delete fails,
 //  it is not fatal (only wasted space in the temporary database).
 
-INLINE VOID SORTIRunDelete( SCB * pscb, const RUNINFO * pruninfo )
+VOID SORTIRunDelete( SCB * pscb, const RUNINFO * pruninfo )
 {
     //  delete run
 
@@ -2107,7 +2107,7 @@ LOCAL VOID SORTIRunClose( RCB *prcb )
 
 //  get read access to a page in a run (buffer is pinned in memory)
 
-INLINE ERR ErrSORTIRunReadPage( RCB *prcb, PGNO pgno, LONG ipbf )
+ERR ErrSORTIRunReadPage( RCB *prcb, PGNO pgno, LONG ipbf )
 {
     ERR     err;
 
@@ -2417,7 +2417,7 @@ LOCAL ERR ErrSORTIMergeNextChamp( SCB *pscb, SREC **ppsrec )
 
 //  initializes optimized tree merge
 
-INLINE VOID SORTIOptTreeInit( SCB *pscb )
+VOID SORTIOptTreeInit( SCB *pscb )
 {
     //  initialize runlist
 
@@ -2504,7 +2504,7 @@ HandleError:
 
 //  free all optimized tree merge resources
 
-INLINE VOID SORTIOptTreeTerm( SCB *pscb )
+VOID SORTIOptTreeTerm( SCB *pscb )
 {
     //  delete all runlists
 

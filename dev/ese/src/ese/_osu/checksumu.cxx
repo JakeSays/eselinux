@@ -63,7 +63,7 @@ XECHECKSUM LongChecksumFromShortChecksum( const ULONG xorChecksum, const ULONG p
 
 
 //  ================================================================
-inline BOOL FGetBit( const void * const pv, const INT ibitOffset )
+BOOL FGetBit( const void * const pv, const INT ibitOffset )
 //  ================================================================
 {
     const unsigned char * const pb  = (unsigned char *)pv;
@@ -75,7 +75,7 @@ inline BOOL FGetBit( const void * const pv, const INT ibitOffset )
 }
 
 //  ================================================================
-inline void SetBit( void * const pv, const INT ibitOffset )
+void SetBit( void * const pv, const INT ibitOffset )
 //  ================================================================
 {
     unsigned char * const   pb      = (unsigned char *)pv;
@@ -87,7 +87,7 @@ inline void SetBit( void * const pv, const INT ibitOffset )
 }
 
 //  ================================================================
-inline void FlipBit( void * const pv, const INT ibitOffset )
+void FlipBit( void * const pv, const INT ibitOffset )
 //  ================================================================
 {
     unsigned char * const   pb      = (unsigned char *)pv;

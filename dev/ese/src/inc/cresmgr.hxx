@@ -56,8 +56,8 @@ public:
     enum { QUOTA_MAX = lMax };
 
 public:
-    INLINE          CQuota();
-    INLINE          ~CQuota();
+    CQuota();
+    ~CQuota();
 
             ERR     ErrSetQuota( const LONG cQuota );
             ERR     ErrEnableQuota( const BOOL fEnable );
@@ -68,8 +68,8 @@ public:
             ERR     ErrInit();
             VOID    Term();
 
-    INLINE  BOOL    FAcquire();
-    INLINE  VOID    Release();
+    BOOL    FAcquire();
+    VOID    Release();
 
 #ifdef DEBUGGER_EXTENSION
     VOID Dump( CPRINTF * pcprintf, DWORD_PTR dwOffset ) const;
@@ -99,8 +99,8 @@ class CResource
     CQuota              m_quota;
 
 public:
-    INLINE          CResource( INST * pinst = nullptr );
-    INLINE          ~CResource();
+    CResource( INST * pinst = nullptr );
+    ~CResource();
             ERR     ErrSetParam( JET_RESOPER resop, DWORD_PTR dwParam );
                 //  some of the parameter will be passed to the resource manager
             ERR     ErrGetParam( JET_RESOPER resop, DWORD_PTR * const pdwParam ) const;

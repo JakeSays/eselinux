@@ -1605,7 +1605,7 @@ inline BOOL FRFSThreadEnabled();    // from RFS2
 
 //-
 //  ================================================================
-INLINE TESTINJECTION* PinjectionFind_( const ULONG ulID )
+TESTINJECTION* PinjectionFind_( const ULONG ulID )
 //  ================================================================
 //
 //  Returns the test injection structure
@@ -1640,7 +1640,7 @@ INLINE TESTINJECTION* PinjectionFind_( const ULONG ulID )
 }
 
 //  ================================================================
-INLINE BOOL FTestInjection_( const ULONG ulID, JET_API_PTR* const ppv )
+BOOL FTestInjection_( const ULONG ulID, JET_API_PTR* const ppv )
 //  ================================================================
 //
 //  Returns whether or not to trigger test injection

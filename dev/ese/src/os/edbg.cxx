@@ -999,7 +999,7 @@ LOCAL_BROKEN BOOL FAddressFromGlobal( const char* const szGlobal, T** const ppt 
 
 //  ================================================================
 template< class T >
-INLINE BOOL FReadVariable( T* const rgtDebuggee, T* const rgt, const SIZE_T ct = 1 )
+BOOL FReadVariable( T* const rgtDebuggee, T* const rgt, const SIZE_T ct = 1 )
 //  ================================================================
 {
     AssertEDBGDebugger();
@@ -1031,7 +1031,7 @@ INLINE BOOL FReadVariable( T* const rgtDebuggee, T* const rgt, const SIZE_T ct =
 
 //  ================================================================
 template< class T >
-INLINE BOOL FReadVariable(const T* const rgtDebuggee, T* const rgt, const SIZE_T ct = 1 )
+BOOL FReadVariable(const T* const rgtDebuggee, T* const rgt, const SIZE_T ct = 1 )
 //  ================================================================
 {
     return FReadVariable( (T* const)rgtDebuggee, rgt, ct );
@@ -2723,7 +2723,7 @@ BOOL FAutoFmp( const CHAR * const szArg )
 
 
 template< class T >
-INLINE const CHAR * SzType( T** ppt )
+const CHAR * SzType( T** ppt )
 {
     #define TYPESZTYPE( t )    \
         else if constexpr( is_same<T, t>::value )                return #t;
@@ -18240,7 +18240,7 @@ VOID FMP::Dump( CPRINTF * pcprintf, DWORD_PTR dwOffset ) const
     (*pcprintf)( FORMAT_INT( FMP, this, m_cpgLeakEstimationCorrection, dwOffset ) );
 }
 
-INLINE ERR CHECKPOINT::Dump( CPRINTF* pcprintf, DWORD_PTR dwOffset ) const
+ERR CHECKPOINT::Dump( CPRINTF* pcprintf, DWORD_PTR dwOffset ) const
 {
 
     (*pcprintf)( FORMAT_UINT( CHECKPOINT, this, checkpoint.le_ulChecksum, dwOffset ) );

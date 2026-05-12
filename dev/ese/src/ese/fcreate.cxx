@@ -186,7 +186,7 @@ LOCAL BOOL FFILEIUnverColumnExists(
     return fFalse;
 }
 
-INLINE BOOL FFILEUnverColumnExists( FCB *pfcb, const CHAR *szColumnName )
+BOOL FFILEUnverColumnExists( FCB *pfcb, const CHAR *szColumnName )
 {
     pfcb->EnterDML();
 
@@ -217,7 +217,7 @@ INLINE BOOL FFILEUnverColumnExists( FCB *pfcb, const CHAR *szColumnName )
 }
 
 
-INLINE ERR ErrFILEInsertIntoUnverColumnList( FCB *pfcbTable, const CHAR *szColumnName )
+ERR ErrFILEInsertIntoUnverColumnList( FCB *pfcbTable, const CHAR *szColumnName )
 {
     ERR         err         = JET_errSuccess;
     const OBJID objidTable  = pfcbTable->ObjidFDP();
@@ -262,7 +262,7 @@ FindColumn:
     return err;
 }
 
-INLINE BOOL FFILEUnverIndexExists( FCB *pfcbTable, const CHAR *szIndexName )
+BOOL FFILEUnverIndexExists( FCB *pfcbTable, const CHAR *szIndexName )
 {
     TDB     *ptdb = pfcbTable->Ptdb();
     FCB     *pfcb;
@@ -290,7 +290,7 @@ INLINE BOOL FFILEUnverIndexExists( FCB *pfcbTable, const CHAR *szIndexName )
     return fExists;
 }
 
-INLINE ERR ErrFILEInsertIntoUnverIndexList( FCB *pfcbTable, const CHAR *szIndexName )
+ERR ErrFILEInsertIntoUnverIndexList( FCB *pfcbTable, const CHAR *szIndexName )
 {
     ERR         err         = JET_errSuccess;
     const OBJID objidTable  = pfcbTable->ObjidFDP();
@@ -532,7 +532,7 @@ ERR VTAPI ErrIsamCreateTable( JET_SESID vsesid, JET_DBID vdbid, JET_TABLECREATE5
 
 //  return fTrue if the column type specified has a fixed length
 //
-INLINE BOOL FCOLTYPFixedLength( JET_COLTYP coltyp )
+BOOL FCOLTYPFixedLength( JET_COLTYP coltyp )
 {
     switch( coltyp )
     {
@@ -3103,7 +3103,7 @@ ERR ErrFILEGetNextColumnid(
     return JET_errSuccess;
 }
 
-INLINE ERR ErrFILEIUpdateAutoInc( PIB *ppib, FUCB *pfucb )
+ERR ErrFILEIUpdateAutoInc( PIB *ppib, FUCB *pfucb )
 {
     ERR             err;
     QWORD           qwT             = 1;
@@ -4110,7 +4110,7 @@ LOCAL ERR ErrFILEIAddSecondaryIndexEntriesForPrimaryKey(
     return JET_errSuccess;
 }
 
-INLINE ERR ErrFILEIndexProgress( STATUSINFO * const pstatus )
+ERR ErrFILEIndexProgress( STATUSINFO * const pstatus )
 {
     JET_SNPROG  snprog;
 
@@ -4236,7 +4236,7 @@ ERR ErrFILEIndexBatchAddEntry(
 }
 
 
-INLINE ERR ErrFILEIAppendToIndex(
+ERR ErrFILEIAppendToIndex(
     FUCB        * const pfucbSort,
     FUCB        * const pfucbIndex,
     ULONG       *pcRecordsFoundInSort,
@@ -4328,7 +4328,7 @@ LOCAL VOID FILEIReportIndexCorrupt( FUCB * const pfucbIndex, CPRINTF * const pcp
 }
 
 
-INLINE ERR ErrFILEICheckIndex(
+ERR ErrFILEICheckIndex(
     FUCB    * const pfucbSort,
     FUCB    * const pfucbIndex,
     ULONG   *pcRecordsFoundInSort,
@@ -5080,7 +5080,7 @@ HandleError:
     return err;
 }
 
-INLINE VOID FILEIPossiblyWaitForDispatchedTasks( const CREATEINDEXCONTEXT * const pidxcontext, const ULONG iProc )
+VOID FILEIPossiblyWaitForDispatchedTasks( const CREATEINDEXCONTEXT * const pidxcontext, const ULONG iProc )
 {
     //  if we're latching too many pages, wait for some tasks to complete
     //

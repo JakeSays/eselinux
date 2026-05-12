@@ -2882,7 +2882,7 @@ LONG LTableClassNamesICFLPwszPpb( _In_ LONG icf, _Inout_opt_ void* const pvParam
 RUNINSTMODE g_runInstMode = runInstModeNoSet;
 
 // set running mode
-INLINE VOID RUNINSTSetMode( RUNINSTMODE newMode )
+VOID RUNINSTSetMode( RUNINSTMODE newMode )
 {
     // must be in critical section to set
     Assert ( g_critInst.FOwner() );
@@ -2907,7 +2907,7 @@ INLINE VOID RUNINSTSetMode( RUNINSTMODE newMode )
 }
 
 // set running mode to one instance
-INLINE VOID RUNINSTSetModeOneInst()
+VOID RUNINSTSetModeOneInst()
 {
     Assert ( runInstModeNoSet == g_runInstMode );
     RUNINSTSetMode(runInstModeOneInst);
@@ -2917,7 +2917,7 @@ INLINE VOID RUNINSTSetModeOneInst()
 }
 
 // set running mode to multi instance
-INLINE VOID RUNINSTSetModeMultiInst()
+VOID RUNINSTSetModeMultiInst()
 {
     Assert ( runInstModeNoSet == g_runInstMode );
     RUNINSTSetMode(runInstModeMultiInst);
@@ -2934,7 +2934,7 @@ INLINE VOID RUNINSTSetModeMultiInst()
 }
 
 // get running mode
-INLINE RUNINSTMODE RUNINSTGetMode()
+RUNINSTMODE RUNINSTGetMode()
 {
     // can be no set mode only if no instance is active
     Assert ( runInstModeNoSet != g_runInstMode || 0 == g_cpinstInit );
@@ -2993,7 +2993,7 @@ LOCAL ERR ErrRUNINSTCheckOneInstMode()
 }
 
 
-INLINE BOOL FINSTInvalid( const JET_INSTANCE instance )
+BOOL FINSTInvalid( const JET_INSTANCE instance )
 {
     return ( 0 == instance || (JET_INSTANCE)JET_instanceNil == instance );
 }
@@ -3790,7 +3790,7 @@ VOID FreePinst( INST *pinst )
     INST::LeaveCritInst();
 }
 
-INLINE VOID SetPinst( JET_INSTANCE *pinstance, JET_SESID sesid, INST **ppinst )
+VOID SetPinst( JET_INSTANCE *pinstance, JET_SESID sesid, INST **ppinst )
 {
     if ( !sesid || sesid == JET_sesidNil )
     {
@@ -3859,7 +3859,7 @@ LOCAL ERR ErrFindPinst( JET_INSTANCE jinst, INST **ppinst, INT *pipinst = nullpt
     return ErrERRCheck( JET_errInvalidParameter );
 }
 
-INLINE INST *PinstFromSesid( JET_SESID sesid )
+INST *PinstFromSesid( JET_SESID sesid )
 {
     AssertSzRTL( JET_SESID( ppibNil ) != sesid, "Invalid (NULL) Session ID parameter." );
     AssertSzRTL( JET_sesidNil != sesid, "Invalid (JET_sesidNil) Session ID parameter." );
@@ -4527,7 +4527,7 @@ ERR INST::ErrAPIEnterWithoutInit( const BOOL fAllowInitInProgress )
 }
 
 
-INLINE VOID INST::APILeave()
+VOID INST::APILeave()
 {
     const LONG  lOld    = AtomicExchangeAdd( &m_cSessionInJetAPI, -1 );
     Assert( lOld >= 1 );
@@ -4743,7 +4743,7 @@ VOID INST::INSTSystemTerm()
 #endif
 }
 
-INLINE BOOL INST::FComputeRBSOn() const
+BOOL INST::FComputeRBSOn() const
 {
     if ( !BoolParam( this, JET_paramEnableRBS ) )
     {
@@ -19619,7 +19619,7 @@ JET_ERR JET_API JetUpgradeDatabaseW(
     JET_TRY( opUpgradeDatabase, JetUpgradeDatabaseEx( sesid, wszDbFileName, grbit ) );
 }
 
-INLINE JET_ERR JetIUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
+JET_ERR JetIUtilities( JET_SESID sesid, JET_DBUTIL_W *pdbutil )
 {
     APICALL_SESID   apicall( opDBUtilities );
 
@@ -23055,7 +23055,7 @@ JET_ERR JET_API JetOSSnapshotAbort( _In_ const JET_OSSNAPID snapId, _In_ const J
     JET_TRY( opOSSnapshotAbort, JetOSSnapshotAbortEx( snapId, grbit ) );
 }
 
-INLINE JET_ERR JetOSSnapshotPrepareInstanceEx( _In_ JET_OSSNAPID snapId, _In_ const JET_INSTANCE instance, _In_ const JET_GRBIT grbit )
+JET_ERR JetOSSnapshotPrepareInstanceEx( _In_ JET_OSSNAPID snapId, _In_ const JET_INSTANCE instance, _In_ const JET_GRBIT grbit )
 {
     APICALL_INST    apicall( opOSSnapPrepareInstance );
 
@@ -23084,7 +23084,7 @@ JET_ERR JET_API JetOSSnapshotPrepareInstance( _In_ JET_OSSNAPID snapId, _In_ con
 
 
 
-INLINE JET_ERR JetOSSnapshotTruncateLogEx( _In_ const JET_OSSNAPID snapId, _In_ const JET_GRBIT grbit )
+JET_ERR JetOSSnapshotTruncateLogEx( _In_ const JET_OSSNAPID snapId, _In_ const JET_GRBIT grbit )
 {
     OSTrace(
         JET_tracetagAPI,
@@ -23101,7 +23101,7 @@ JET_ERR JET_API JetOSSnapshotTruncateLog( _In_ const JET_OSSNAPID snapId, _In_ c
     JET_TRY( opOSSnapshotTruncateLog, JetOSSnapshotTruncateLogEx( snapId, grbit ) );
 }
 
-INLINE JET_ERR JetOSSnapshotTruncateLogInstanceEx( _In_ const JET_OSSNAPID snapId, _In_ const JET_INSTANCE instance, _In_ const JET_GRBIT grbit )
+JET_ERR JetOSSnapshotTruncateLogInstanceEx( _In_ const JET_OSSNAPID snapId, _In_ const JET_INSTANCE instance, _In_ const JET_GRBIT grbit )
 {
     APICALL_INST    apicall( opOSSnapTruncateLogInstance );
 
@@ -23128,7 +23128,7 @@ JET_ERR JET_API JetOSSnapshotTruncateLogInstance( _In_ const JET_OSSNAPID snapId
     JET_TRY( opOSSnapTruncateLogInstance, JetOSSnapshotTruncateLogInstanceEx( snapId, instance, grbit ) );
 }
 
-INLINE JET_ERR JetOSSnapshotGetFreezeInfoEx(
+JET_ERR JetOSSnapshotGetFreezeInfoEx(
     _In_ const JET_OSSNAPID                                         snapId,
     _Out_ ULONG *                                           pcInstanceInfo,
     __deref_out_ecount( *pcInstanceInfo ) JET_INSTANCE_INFO_W **    paInstanceInfo,
@@ -23197,7 +23197,7 @@ JET_ERR JET_API JetOSSnapshotGetFreezeInfoW(
 }
 
 
-INLINE JET_ERR JetOSSnapshotEndEx( _In_ const JET_OSSNAPID snapId, _In_ const JET_GRBIT grbit )
+JET_ERR JetOSSnapshotEndEx( _In_ const JET_OSSNAPID snapId, _In_ const JET_GRBIT grbit )
 {
     OSTrace(
         JET_tracetagAPI,

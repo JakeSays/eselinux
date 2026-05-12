@@ -367,7 +367,7 @@ FMP::~FMP()
 /*              FMP Routines                                      */
 /******************************************************************/
 
-INLINE IFMP FMP::IfmpMinInUse()
+IFMP FMP::IfmpMinInUse()
 {
 #ifdef DEBUG
     if ( !( ( ( s_ifmpMinInUse == g_ifmpMax ) && ( s_ifmpMacInUse == 0 ) ) || FMP::FAllocatedFmp( s_ifmpMinInUse ) ) )
@@ -379,7 +379,7 @@ INLINE IFMP FMP::IfmpMinInUse()
 #endif
     return s_ifmpMinInUse;
 }
-INLINE IFMP FMP::IfmpMacInUse()
+IFMP FMP::IfmpMacInUse()
 {
 #ifdef DEBUG
     if ( !( ( ( s_ifmpMinInUse == g_ifmpMax ) && ( s_ifmpMacInUse == 0 ) ) || FMP::FAllocatedFmp( s_ifmpMinInUse ) ) )
@@ -1117,7 +1117,7 @@ IFMP FMP::s_ifmpMacCommitted = 0;
 // 
 // set fUseAny to treat all FMP entries in the same way
 // 
-INLINE BOOL IsFMPUsable( IFMP ifmp, BOOL fUseAny )
+BOOL IsFMPUsable( IFMP ifmp, BOOL fUseAny )
 {
     if ( ifmp < cfmpReserved )
     {

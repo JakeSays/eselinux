@@ -468,7 +468,7 @@ LONG LBTOpportuneReadsCEFLPv( LONG iInstance, VOID *pvBuf )
 
 //  Creates a standard TC scope for BT functions to use. Sets iors and TCE in the scope
 //  This function relies on being inlined and NRVO to avoid creating unwanted TraceContextScope copies
-INLINE PIBTraceContextScope TcBTICreateCtxScope( FUCB* pfucb, IOREASONSECONDARY iors )
+PIBTraceContextScope TcBTICreateCtxScope( FUCB* pfucb, IOREASONSECONDARY iors )
 {
     PIBTraceContextScope tcScope = pfucb->ppib->InitTraceContextScope();
     tcScope->nParentObjectClass = TceFromFUCB( pfucb );
@@ -7638,7 +7638,7 @@ HandleError:
 //
 
 
-INLINE ERR ErrBTICreateFCB(
+ERR ErrBTICreateFCB(
     PIB             *ppib,
     const IFMP      ifmp,
     const PGNO      pgnoFDP,
@@ -8115,7 +8115,7 @@ HandleError:
 //  performs single-page cleanup or multipage cleanup, if possible
 //  this is called from VER cleanup or other cleanup threads
 //
-INLINE ERR ErrBTIDelete( FUCB *pfucb, const BOOKMARK& bm )
+ERR ErrBTIDelete( FUCB *pfucb, const BOOKMARK& bm )
 {
     ERR     err;
 
@@ -8236,7 +8236,7 @@ HandleError:
 //  returns number of bytes to leave free in page
 //  to satisfied density constraint
 //
-INLINE INT CbBTIFreeDensity( const FUCB *pfucb )
+INT CbBTIFreeDensity( const FUCB *pfucb )
 {
     Assert( pfucb->u.pfcb != pfcbNil );
     return ( (INT) pfucb->u.pfcb->CbDensityFree() );
@@ -8332,7 +8332,7 @@ VOID BTIComputePrefix( FUCB         *pfucb,
 
 //  decides if a particular insert should be treated as an append
 //
-INLINE BOOL FBTIAppend( const FUCB *pfucb, CSR *pcsr, ULONG cbReq, const BOOL fUpdateUncFree )
+BOOL FBTIAppend( const FUCB *pfucb, CSR *pcsr, ULONG cbReq, const BOOL fUpdateUncFree )
 {
     //  cbReq includes line TAG overhead and must be compared against CbNDPageAvailMostNoInsert
     //
@@ -8357,7 +8357,7 @@ INLINE BOOL FBTIAppend( const FUCB *pfucb, CSR *pcsr, ULONG cbReq, const BOOL fU
 }
 
 
-INLINE BOOL FBTISplit( const FUCB *pfucb, CSR *pcsr, const ULONG cbReq, const BOOL fUpdateUncFree )
+BOOL FBTISplit( const FUCB *pfucb, CSR *pcsr, const ULONG cbReq, const BOOL fUpdateUncFree )
 {
     return !FNDFreePageSpace( pfucb, pcsr, cbReq, fUpdateUncFree );
 }
@@ -12561,7 +12561,7 @@ VOID BTISplitMoveNodes( FUCB            *pfucb,
 }
 
 
-INLINE VOID BTISplitBulkDelete( CSR * pcsr, INT clines )
+VOID BTISplitBulkDelete( CSR * pcsr, INT clines )
 {
     if ( !FBTIUpdatablePage( *pcsr ) )
     {
@@ -12622,7 +12622,7 @@ VOID BTISplitBulkCopy( FUCB *pfucb, SPLIT *psplit, INT ilineStart, INT clines )
 
 //  returns reference to rglineInfo corresponding to iline
 //
-INLINE const LINEINFO *PlineinfoFromIline( SPLIT *psplit, INT iline )
+const LINEINFO *PlineinfoFromIline( SPLIT *psplit, INT iline )
 {
     Assert( iline >= 0);
     Assert( iline < psplit->clines );
@@ -13213,7 +13213,7 @@ ERR ErrBTINewMergePath( MERGEPATH **ppmergePath )
 //  seeks to node for single page cleanup
 //  returns error if node is not found
 //
-INLINE ERR ErrBTISPCSeek( FUCB *pfucb, const BOOKMARK& bm )
+ERR ErrBTISPCSeek( FUCB *pfucb, const BOOKMARK& bm )
 {
     ERR     err;
 
@@ -14359,7 +14359,7 @@ ERR ErrBTINewMerge( MERGEPATH *pmergePath )
 }
 
 
-INLINE VOID BTIReleaseMergeLineinfo( MERGE *pmerge )
+VOID BTIReleaseMergeLineinfo( MERGE *pmerge )
 {
     if ( pmerge->rglineinfo != nullptr )
     {
@@ -15201,7 +15201,7 @@ BOOL FBTISPCCheckMergeable( FUCB *pfucb, CSR *pcsrDest, LINEINFO *rglineinfo )
 
 //  check if last node in internal page is null-keyed
 //
-INLINE BOOL FBTINullKeyedLastNode( FUCB *pfucb, MERGEPATH *pmergePath )
+BOOL FBTINullKeyedLastNode( FUCB *pfucb, MERGEPATH *pmergePath )
 {
     CSR     *pcsr = &pmergePath->csr;
 
@@ -17227,7 +17227,7 @@ LOCAL VOID BTIMergeMoveNodes( FUCB * const pfucb, MERGEPATH * const pmergePath )
 
 //  checks merge/empty page operation
 //
-INLINE VOID BTICheckMerge( FUCB *pfucb, MERGEPATH *pmergePathLeaf )
+VOID BTICheckMerge( FUCB *pfucb, MERGEPATH *pmergePathLeaf )
 {
 #ifdef DEBUG
     MERGEPATH   *pmergePath;

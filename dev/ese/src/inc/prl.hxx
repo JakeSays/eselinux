@@ -5,7 +5,7 @@
 namespace PagePatching
 //  ================================================================
 {
-    INLINE BOOL FIsPatchableError( const ERR err );
+    BOOL FIsPatchableError( const ERR err );
     void TryToRequestPatch( const IFMP ifmp, const PGNO pgno );
     void CancelPatchRequest( const IFMP ifmp, const PGNO pgno );
     bool FHasRequest( const IFMP ifmp, const PGNO pgno );

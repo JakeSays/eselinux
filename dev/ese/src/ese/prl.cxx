@@ -681,7 +681,7 @@ void PagePatching::RecalcPatchRequestListState()
 }
 
 //  ================================================================
-INLINE BOOL PagePatching::FIsPatchableError( const ERR err )
+BOOL PagePatching::FIsPatchableError( const ERR err )
 //  ================================================================
 // 
 // This determines the policy for correctable / patchable errors.

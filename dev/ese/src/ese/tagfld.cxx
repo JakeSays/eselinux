@@ -9,7 +9,7 @@ WORD TAGFLD::fExtendedInfo = 0x4000 ;
 WORD TAGFLD::maskIb = 0x1fff;
 
 
-INLINE VOID DeleteEntryAndData(
+VOID DeleteEntryAndData(
     BYTE        * const pbEntry,
     const ULONG cbEntry,
     BYTE        * const pbData,

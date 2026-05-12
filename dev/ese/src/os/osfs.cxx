@@ -3041,13 +3041,13 @@ CSXWLatch g_sxwlOSVolume( CLockBasicInfo( CSyncBasicInfo( "OS Volume SXWL" ), ra
 CInvasiveList< COSVolume, COSVolume::OffsetOfILE >  g_ilVolumeList;
 
 LOCAL OSDiskMappingMode g_diskMode = eOSDiskInvalidMode;
-INLINE OSDiskMappingMode GetDiskMappingMode()
+OSDiskMappingMode GetDiskMappingMode()
 {
 
     return g_diskMode;
 }
 
-INLINE void SetDiskMappingMode( const OSDiskMappingMode diskMode )
+void SetDiskMappingMode( const OSDiskMappingMode diskMode )
 {
     g_diskMode = diskMode;
 }
@@ -3641,7 +3641,7 @@ GetStateFolder(
 #endif
 
 template< typename Ret >
-INLINE Ret HandleFailedWithGLE()
+Ret HandleFailedWithGLE()
 {
     SetLastError( ErrorThunkNotSupported() );
     return Ret( INVALID_HANDLE_VALUE );

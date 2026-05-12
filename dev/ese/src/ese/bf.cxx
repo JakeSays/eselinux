@@ -5280,7 +5280,7 @@ void BFIBuildReferencedPageListForCrashDump( CReferencedPages * ptableReferenced
     (void) ptableReferencedPages->ErrCloneArray( arrayReferencedPages );
 }
 
-INLINE BOOL FBFIMismatchedVMPageInCrashDump(
+BOOL FBFIMismatchedVMPageInCrashDump(
     const BYTE * const  pbPage,
     const size_t        cbPage,
     const BYTE * const  pbVMPage,
@@ -6275,7 +6275,7 @@ void BFIFTLTerm()
 #define ENABLE_BFFTL_TRACING
 #endif
 
-INLINE void BFITraceResMgrInit(
+void BFITraceResMgrInit(
     const INT       K,
     const double    csecCorrelatedTouch,
     const double    csecTimeout,
@@ -6306,7 +6306,7 @@ INLINE void BFITraceResMgrInit(
         dblSpeedSizeTradeoff );
 }
 
-INLINE void BFITraceResMgrTerm()
+void BFITraceResMgrTerm()
 {
 #ifdef ENABLE_BFFTL_TRACING
     (void)ErrBFIFTLSysResMgrTerm();
@@ -6315,7 +6315,7 @@ INLINE void BFITraceResMgrTerm()
     ETResMgrTerm( TickOSTimeCurrent() );
 }
 
-INLINE void BFITraceCachePage(
+void BFITraceCachePage(
     const TICK                  tickCache,
     const PBF                   pbf,
     const BFLatchType           bflt,
@@ -6341,7 +6341,7 @@ INLINE void BFITraceCachePage(
         bClientType );
 }
 
-INLINE void BFITraceRequestPage(
+void BFITraceRequestPage(
     const TICK                  tickTouch,
     const PBF                   pbf,
     const ULONG                 pctPriority,
@@ -6390,7 +6390,7 @@ INLINE void BFITraceRequestPage(
     }
 }
 
-INLINE void BFITraceMarkPageAsSuperCold(
+void BFITraceMarkPageAsSuperCold(
     const IFMP  ifmp,
     const PGNO  pgno )
 {
@@ -6401,7 +6401,7 @@ INLINE void BFITraceMarkPageAsSuperCold(
     ETMarkPageAsSuperCold( TickOSTimeCurrent(), ifmp, pgno );
 }
 
-INLINE void BFITraceEvictPage(
+void BFITraceEvictPage(
     const IFMP  ifmp,
     const PGNO  pgno,
     const BOOL  fCurrentVersion,
@@ -6419,7 +6419,7 @@ INLINE void BFITraceEvictPage(
     ETCacheEvictPage( tickEvictPage, ifmp, pgno, fCurrentVersion, errBF, bfef, pctPriority );
 }
 
-INLINE void BFITraceDirtyPage(
+void BFITraceDirtyPage(
     const PBF               pbf,
     const BFDirtyFlags      bfdf,
     const TraceContext&     tc )
@@ -6511,7 +6511,7 @@ INLINE void BFITraceDirtyPage(
             tc.nParentObjectClass );
 }
 
-INLINE void BFITraceSetLgposModify(
+void BFITraceSetLgposModify(
     const PBF       pbf,
     const LGPOS&    lgposModify )
 {
@@ -6535,7 +6535,7 @@ INLINE void BFITraceSetLgposModify(
             lgposModify.qw );
 }
 
-INLINE void BFITraceWritePage(
+void BFITraceWritePage(
     const PBF               pbf,
     const FullTraceContext&     tc )
 {
@@ -6732,7 +6732,7 @@ QWORD BFIOB0Offset( const IFMP ifmp, const LGPOS* const plgpos )
 
 //  Gives the OB0 based uncertainty LGPOS.  Normally rounds down, but
 //  with fNextBucket will round up.
-INLINE LGPOS BFIOB0Lgpos( const IFMP ifmp, LGPOS lgpos, const BOOL fNextBucket )
+LGPOS BFIOB0Lgpos( const IFMP ifmp, LGPOS lgpos, const BOOL fNextBucket )
 {
     INST* const pinst   = PinstFromIfmp( ifmp );
     LOG* const  plog    = pinst->m_plog;
@@ -7080,7 +7080,7 @@ void BFICacheTerm()
     }
 }
 
-INLINE INT CbBFISize( ICBPage icb )
+INT CbBFISize( ICBPage icb )
 {
     return g_rgcbPageSize[icb];
 }
@@ -8450,7 +8450,7 @@ LONG LBFICachePinnedPercentage( void )
 
 //  NOTE: buffer size may be dehydrated and thus different than CbBFPageSize().
 
-INLINE LONG CbBFIBufferSize( const PBF pbf )
+LONG CbBFIBufferSize( const PBF pbf )
 {
     Assert( pbf->sxwl.FLatched() );
 
@@ -8459,7 +8459,7 @@ INLINE LONG CbBFIBufferSize( const PBF pbf )
 
 //  Returns the page size of the given latched page.
 
-INLINE LONG CbBFIPageSize( const PBF pbf )
+LONG CbBFIPageSize( const PBF pbf )
 {
     Assert( pbf->sxwl.FLatched() );
 
@@ -8470,7 +8470,7 @@ INLINE LONG CbBFIPageSize( const PBF pbf )
 
 //  returns fTrue if the specified page pointer is valid
 
-INLINE BOOL FBFICacheValidPv( const void* const pv )
+BOOL FBFICacheValidPv( const void* const pv )
 {
     if ( BoolParam( JET_paramEnableViewCache ) )
     {
@@ -8484,7 +8484,7 @@ INLINE BOOL FBFICacheValidPv( const void* const pv )
 
 //  returns fTrue if the specified BF pointer is valid
 
-INLINE BOOL FBFICacheValidPbf( const PBF pbf )
+BOOL FBFICacheValidPbf( const PBF pbf )
 {
     return IbfBFICachePbf( pbf ) != ibfNil;
 }
@@ -8493,7 +8493,7 @@ INLINE BOOL FBFICacheValidPbf( const PBF pbf )
 
 //  returns the PBF associated with the given IBF
 
-INLINE PBF PbfBFICacheIbf( const IBF ibf )
+PBF PbfBFICacheIbf( const IBF ibf )
 {
     return (    ibf == ibfNil ?
                     pbfNil :
@@ -8502,7 +8502,7 @@ INLINE PBF PbfBFICacheIbf( const IBF ibf )
 
 //  returns the page pointer associated with the given IPG
 
-INLINE void* PvBFICacheIpg( const IPG ipg )
+void* PvBFICacheIpg( const IPG ipg )
 {
     if ( BoolParam( JET_paramEnableViewCache ) )
     {
@@ -10078,7 +10078,7 @@ HandleError:
 
 // perhaps make global turn this on from registry?
 //#define BF_CC_SIM 1
-INLINE BOOL FBFIChance( INT pctChance )
+BOOL FBFIChance( INT pctChance )
 {
 #ifdef BF_CC_SIM
     return ( rand() % 100 ) < pctChance;
@@ -10089,7 +10089,7 @@ INLINE BOOL FBFIChance( INT pctChance )
 
 //  incures a random wait or task switch ...
 
-INLINE void BFISynchronicity( void )
+void BFISynchronicity( void )
 {
 #ifdef BF_CC_SIM
     if ( FBFIChance( 10 ) )
@@ -10360,7 +10360,7 @@ __int64             g_cbCacheBoosted = 0;
 
 // Determines the severity of current state of avail pool maintenance.
 
-INLINE ULONG UlBFIMaintScavengeAvailPoolSev( const BFScavengeStats& stats )
+ULONG UlBFIMaintScavengeAvailPoolSev( const BFScavengeStats& stats )
 {
     Assert( stats.cbfAvailPoolTarget >= stats.cbfAvailPoolLow );
     
@@ -10455,7 +10455,7 @@ JETUNITTEST( BF, BufferScavengingAvailPoolSev )
 
 // Determines the severity of current state of shrink.
 
-INLINE ULONG UlBFIMaintScavengeShrinkSev( const BFScavengeStats& stats )
+ULONG UlBFIMaintScavengeShrinkSev( const BFScavengeStats& stats )
 {
     // Shrink has just started, min severity.
     if ( stats.dtickShrinkDuration == 0 )
@@ -10710,7 +10710,7 @@ JETUNITTEST( BF, BufferScavengingShrinkSev )
 
 // Determines the QOS of the scavenge-related I/O based on the current progress of buffer scavenging.
 
-INLINE OSFILEQOS QosBFIMaintScavengePages( const ULONG_PTR ulIoPriority, const ULONG ulScavengeSev )
+OSFILEQOS QosBFIMaintScavengePages( const ULONG_PTR ulIoPriority, const ULONG ulScavengeSev )
 {
     OSFILEQOS qosIoOsPriority = qosIOOSNormalPriority;
     OSFILEQOS qosIoDispatch = qosIODispatchImmediate;
@@ -13910,7 +13910,7 @@ inline _Ret_range_( icbPageInvalid, icbPageBiggest ) ICBPage IcbBFIPageSize( _In
     return icbPageInvalid;
 }
 
-INLINE __int64 CbBFICacheUsed( const BOOL fFullyHydrated )
+__int64 CbBFICacheUsed( const BOOL fFullyHydrated )
 {
     __int64 cb = 0;
     INT icbPage = icbPageSmallest;
@@ -13937,7 +13937,7 @@ INLINE __int64 CbBFICacheUsed( const BOOL fFullyHydrated )
 
 //  Used cache (i.e., !Available).
 
-INLINE CBF CbfBFICacheUsed()
+CBF CbfBFICacheUsed()
 {
     CBF cbf = 0;
 
@@ -13967,7 +13967,7 @@ __int64 CbBFICacheBufferSize()
 //  Committed cache: used + available, not including quiesced buffers if decommited (i.e., if running with 2KB pages or
 //  with view-cache enabled, quiesced buffers will be counted in because they do not get decommitted).
 
-INLINE CBF CbfBFICacheCommitted()
+CBF CbfBFICacheCommitted()
 {
     const CBF cbfCommittedT = (CBF)g_cbfCommitted - (CBF)g_cbfNewlyCommitted;
 
@@ -14605,7 +14605,7 @@ TICK g_tickLastMaintCacheSizeRequestSuccess = 0;
 //
 //    o Schedules the idle cache stats task.
 
-INLINE ERR ErrBFIMaintCacheStatsRequest( const BFIMaintCacheStatsRequestType bfmcsrt )
+ERR ErrBFIMaintCacheStatsRequest( const BFIMaintCacheStatsRequestType bfmcsrt )
 {
     ERR err = JET_errSuccess;
     BOOL fReleaseSemaphore = fFalse;
@@ -14674,12 +14674,12 @@ HandleError:
 }
 
 
-INLINE BOOL FBFIMaintCacheStatsTryAcquire()
+BOOL FBFIMaintCacheStatsTryAcquire()
 {
     return g_semMaintCacheStatsRequest.FTryAcquire();
 }
 
-INLINE void BFIMaintCacheStatsRelease()
+void BFIMaintCacheStatsRelease()
 {
     Assert( g_semMaintCacheStatsRequest.CAvail() == 0 );
     g_semMaintCacheStatsRequest.Release();
@@ -14707,7 +14707,7 @@ TICK g_tickMaintCacheSizeRequestAsyncLastSuccess = 0;
 //      the asynchronous buffer quiescing task needs to go through the buffers to
 //      evict/flush them first.
 
-INLINE ERR ErrBFIMaintCacheSizeRequest( OnDebug( BOOL* const pfAcquiredSemaphoreCheck ) )
+ERR ErrBFIMaintCacheSizeRequest( OnDebug( BOOL* const pfAcquiredSemaphoreCheck ) )
 {
     ERR err = JET_errSuccess;
     BOOL fReleaseSemaphore = fFalse;
@@ -14999,7 +14999,7 @@ TICK g_tickMaintCacheSizeRescheduleLastAttempt = 0;
 TICK g_tickMaintCacheSizeRescheduleLastSuccess = 0;
 #endif // !RTM
 
-INLINE BOOL FBFIMaintCacheSizeAcquire()
+BOOL FBFIMaintCacheSizeAcquire()
 {
     AtomicIncrement( &g_cMaintCacheSizePending );
 
@@ -15014,7 +15014,7 @@ INLINE BOOL FBFIMaintCacheSizeAcquire()
     return fFalse;
 }
 
-INLINE ERR ErrBFIMaintCacheSizeReleaseAndRescheduleIfPending()
+ERR ErrBFIMaintCacheSizeReleaseAndRescheduleIfPending()
 {
     ERR err = JET_errSuccess;
 
@@ -15414,7 +15414,7 @@ void BFIMaintCacheResidencyTerm()
     Assert( !g_fUpdateStatisticsMayRequest );
 }
 
-INLINE void BFIMaintCacheResidencyRequest()
+void BFIMaintCacheResidencyRequest()
 {
     //  if view-cache is enabled, there isn't much point in collecting memory page residency
     //  information because clean pages are mapped and would show up as non-resident anyways.
@@ -15501,7 +15501,7 @@ void BFIMaintCacheResidencyITask( void*, void* )
     }
 }
 
-INLINE void BFIUpdateResidencyStatsAfterResidencyFlag( const BFResidenceState bfrsOld, const BFResidenceState bfrsNew )
+void BFIUpdateResidencyStatsAfterResidencyFlag( const BFResidenceState bfrsOld, const BFResidenceState bfrsNew )
 {
     //  Unexpected parameters.
 
@@ -15570,7 +15570,7 @@ INLINE void BFIUpdateResidencyStatsAfterResidencyFlag( const BFResidenceState bf
     }
 }
 
-INLINE BFResidenceState BfrsBFIUpdateResidentState( PBF const pbf, const BFResidenceState bfrsNew )
+BFResidenceState BfrsBFIUpdateResidentState( PBF const pbf, const BFResidenceState bfrsNew )
 {
     const BFResidenceState bfrsOld = (BFResidenceState)AtomicExchange( (LONG*)&pbf->bfrs, (LONG)bfrsNew );
 
@@ -15579,7 +15579,7 @@ INLINE BFResidenceState BfrsBFIUpdateResidentState( PBF const pbf, const BFResid
     return bfrsOld;
 }
 
-INLINE BFResidenceState BfrsBFIUpdateResidentState( PBF const pbf, const BFResidenceState bfrsNew, const BFResidenceState bfrsIfOld )
+BFResidenceState BfrsBFIUpdateResidentState( PBF const pbf, const BFResidenceState bfrsNew, const BFResidenceState bfrsIfOld )
 {
     const BFResidenceState bfrsOld = (BFResidenceState)AtomicCompareExchange( (LONG*)&pbf->bfrs, (LONG)bfrsIfOld, (LONG)bfrsNew );
 
@@ -15934,7 +15934,7 @@ HandleError:
 
 #ifdef DEBUG
 
-INLINE BOOL FBFILatchValidContext( const DWORD_PTR dwContext )
+BOOL FBFILatchValidContext( const DWORD_PTR dwContext )
 {
     //  if the least significant bit is set in the latch context then it
     //  contains a pointer to the BFHashedLatch that is latched
@@ -15968,7 +15968,7 @@ INLINE BOOL FBFILatchValidContext( const DWORD_PTR dwContext )
 
 #endif // DEBUG
 
-INLINE PBF PbfBFILatchContext( const DWORD_PTR dwContext )
+PBF PbfBFILatchContext( const DWORD_PTR dwContext )
 {
     //  if the least significant bit is set in the latch context then it
     //  contains a pointer to the BFHashedLatch that is latched
@@ -15987,7 +15987,7 @@ INLINE PBF PbfBFILatchContext( const DWORD_PTR dwContext )
     }
 }
 
-INLINE CSXWLatch* PsxwlBFILatchContext( const DWORD_PTR dwContext )
+CSXWLatch* PsxwlBFILatchContext( const DWORD_PTR dwContext )
 {
     //  if the least significant bit is set in the latch context then it
     //  contains a pointer to the BFHashedLatch that is latched
@@ -16416,7 +16416,7 @@ void BFIAssertNewlyAllocatedPage( const PBF pbfNew, const BOOL fAvailPoolAdd )
 
 }
 #else
-INLINE void BFIAssertNewlyAllocatedPage( const PBF pbfNew, const BOOL fAvailPoolAdd ) { return; }
+void BFIAssertNewlyAllocatedPage( const PBF pbfNew, const BOOL fAvailPoolAdd ) { return; }
 #endif
 
 
@@ -17263,7 +17263,7 @@ HandleError:
 
 //  Determine if this page needs to be refreshed
 
-INLINE BOOL FBFICacheViewFresh( const PBF pbf )
+BOOL FBFICacheViewFresh( const PBF pbf )
 {
     Assert( pbf->bfat == bfatViewMapped );
     return DtickDelta( pbf->tickViewLastRefreshed, TickOSTimeCurrent() ) < dtickMaintRefreshViewMappedThreshold;
@@ -18457,7 +18457,7 @@ HandleError:
     return err;
 }
 
-INLINE ERR ErrBFIValidatePage( const PBF pbf, const BFLatchType bflt, const CPageEvents cpe, const TraceContext& tc )
+ERR ErrBFIValidatePage( const PBF pbf, const BFLatchType bflt, const CPageEvents cpe, const TraceContext& tc )
 {
     //  we should only see bfltShared, bfltExclusive, and bfltWrite
 
@@ -18496,7 +18496,7 @@ INLINE ERR ErrBFIValidatePage( const PBF pbf, const BFLatchType bflt, const CPag
     return errBF;
 }
 
-INLINE BOOL FBFIDatabasePage( const PBF pbf )
+BOOL FBFIDatabasePage( const PBF pbf )
 {
     //  determines if the page contains
     //  unstructured data
@@ -22671,7 +22671,7 @@ bool FBFICompleteFlushPage( _Inout_ PBF pbf, _In_ const BFLatchType bflt, _In_ c
     return wrnBFPageFlushPending != pbf->err;
 }
 
-INLINE BOOL FBFIIsCleanEnoughForEvict( const PBF pbf )
+BOOL FBFIIsCleanEnoughForEvict( const PBF pbf )
 {
     return ( pbf->bfdf < bfdfDirty );
 }
@@ -26389,7 +26389,7 @@ BFSTAT BFLogHistogram::Read( void )
     return bfstatRet;
 }
 
-INLINE void BFIMarkAsSuperCold( PBF pbf, const BOOL fUser )
+void BFIMarkAsSuperCold( PBF pbf, const BOOL fUser )
 {   //  the caller needs X access to this bf so that we can set fNewlyEvicted safely.
 
     Assert( pbf->sxwl.FOwnExclusiveLatch()  ||
@@ -26428,7 +26428,7 @@ INLINE void BFIMarkAsSuperCold( PBF pbf, const BOOL fUser )
 
 C_ASSERT( sizeof(CPAGE::PGHDR) == 40 );
 
-INLINE void BFITouchResource(
+void BFITouchResource(
     _In_ const PBF                  pbf,
     _In_ const BFLatchType          bfltTraceOnly,
     _In_ const BFLatchFlags         bflfTraceOnly,

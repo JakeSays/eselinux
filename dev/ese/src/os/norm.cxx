@@ -771,7 +771,7 @@ VOID NORMPrint( const BYTE * const pb, const INT cb )
 // identify specific sort behavior, persist those to ensure identical
 // behavior in the future.
 
-INLINE INT CbNORMMapString_(
+INT CbNORMMapString_(
     _In_ const NORM_LOCALE_VER* const       pnlv,
     _In_reads_( cbColumn ) BYTE *           pbColumn,
     _In_ const INT                          cbColumn,

@@ -518,7 +518,7 @@ void LOG_READ_BUFFER::AssertInvalidLRCKRange(
 
 //  helper for writing to the log-patch text file in ErrLGCheckReadLastLogRecordFF
 
-INLINE BOOL FLGILogPatchDate( const WCHAR* wszPath, CPRINTFFILE **const ppcprintf )
+BOOL FLGILogPatchDate( const WCHAR* wszPath, CPRINTFFILE **const ppcprintf )
 {
     CPRINTFFILE *pcprintf = *ppcprintf;
     DATETIME    datetime;

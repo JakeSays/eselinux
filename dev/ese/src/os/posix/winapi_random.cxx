@@ -10,6 +10,10 @@
 
 #include "osstd.hxx"
 
+#include <errno.h>
+#include <sys/random.h>
+#include <unistd.h>
+
 // osstd.hxx already #defines rand→osposix_rand / srand→osposix_srand.
 // Drop those macros for this translation unit so we can name the
 // definitions without recursive expansion.
@@ -32,6 +36,26 @@ int osposix_rand( void )
 void osposix_srand( unsigned int seed )
 {
     t_seed = seed;
+}
+
+//  rand_s — MSVC secure-CRT cryptographically-strong random.  cc.hxx
+//  declares it `extern "C"` (no body), and the static-inline body in
+//  windows-shim/windows.h is only visible to TUs that include the shim
+//  AFTER cc.hxx.  In Release that visibility window can collapse, leaving
+//  libese.so with an undefined `rand_s` reference at link time.  Provide
+//  the strong out-of-line definition here so the shape is uniform across
+//  optimization levels.
+int rand_s( unsigned int* pui )
+{
+    if ( !pui )
+        return EINVAL;
+    ssize_t n;
+    do
+    {
+        n = getrandom( pui, sizeof( *pui ), 0 );
+    }
+    while ( n < 0 && errno == EINTR );
+    return ( n == (ssize_t) sizeof( *pui ) ) ? 0 : errno;
 }
 
 }  // extern "C"

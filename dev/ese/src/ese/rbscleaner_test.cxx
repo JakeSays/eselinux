@@ -114,7 +114,7 @@ RBSCleanerTestState::RBSCleanerTestState()
     m_cPassesFinished = 0;
 }
 
-INLINE VOID RBSCleanerTestState::CompletedPass()
+VOID RBSCleanerTestState::CompletedPass()
 {
     m_ftPrevPassCompletionTime = UtilGetCurrentFileTime();
     m_cPassesFinished++;

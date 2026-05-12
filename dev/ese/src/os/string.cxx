@@ -375,7 +375,7 @@ BOOL FOSSTRTrailingPathDelimiterW( _In_ PCWSTR const pwszPath )
     return fFalse;
 }
 
-INLINE LOCAL UINT UlCodePageFromOsstrConversion( const OSSTR_CONVERSION osstrConversion )
+LOCAL UINT UlCodePageFromOsstrConversion( const OSSTR_CONVERSION osstrConversion )
 {
     switch( osstrConversion )
     {

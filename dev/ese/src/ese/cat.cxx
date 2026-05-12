@@ -75,7 +75,7 @@ LOCAL INLINE BOOL FSortIDEquals(
 
 //  ================================================================
 //  ================================================================
-INLINE VOID WszCATFormatSortID(
+VOID WszCATFormatSortID(
     _In_ const SORTID & sortID,
     __out_ecount( cch ) WCHAR * wsz,
     _In_ INT cch )
@@ -447,7 +447,7 @@ Return Value:
 
 =================================================================*/
 
-INLINE ERR ErrCATICreateCatalogIndexes(
+ERR ErrCATICreateCatalogIndexes(
     PIB         *ppib,
     const IFMP  ifmp,
     OBJID       *pobjidNameIndex,
@@ -518,7 +518,7 @@ HandleError:
 
 
 // Returns the FID of a column in a catalog table.
-INLINE FID ColumnidCATColumn( const CHAR *szColumnName )
+FID ColumnidCATColumn( const CHAR *szColumnName )
 {
     COLUMNID    columnid    = 0;
     UINT        i;
@@ -2348,7 +2348,7 @@ Return Value:
 
 =================================================================*/
 
-INLINE ERR ErrCATIInsert(
+ERR ErrCATIInsert(
     PIB         *ppib,
     FUCB        *pfucbCatalog,
     DATA        rgdata[],
@@ -5318,7 +5318,7 @@ HandleError:
 /*  construct the catalog TDB using the static data structures
 /*  defined in _cat.c.
 /**/
-INLINE ERR ErrCATIInitCatalogTDB( INST *pinst, IFMP ifmp, TDB **pptdbNew )
+ERR ErrCATIInitCatalogTDB( INST *pinst, IFMP ifmp, TDB **pptdbNew )
 {
     ERR                 err;
     UINT                i;
@@ -6358,7 +6358,7 @@ LOCAL VOID CATPatchFixedOffsets(
 }
 
 
-INLINE VOID CATSetDeletedColumns( TDB *ptdb )
+VOID CATSetDeletedColumns( TDB *ptdb )
 {
     FIELD *             pfield      = ptdb->PfieldsInitial();
     const ULONG         cfields     = ptdb->CInitialColumns();
@@ -6786,7 +6786,7 @@ HandleError:
 
 /*  construct a table TDB from the column info in the catalog
 /**/
-INLINE ERR ErrCATIInitTDB(
+ERR ErrCATIInitTDB(
     PIB                     *ppib,
     FUCB                    *pfucbCatalog,
     const OBJID             objidTable,
@@ -16092,7 +16092,7 @@ ERR ErrCATIPopulateMSLocales( _In_ PIB * const ppib, const IFMP ifmp );
 
 //  Determines whether or not a given key-value pair represents the consistency marker.
 
-INLINE BOOL FCATIIsMSLocalesConsistencyMarker( const WCHAR * const wszMSLocalesKey, const INT cMSLocalesValue )
+BOOL FCATIIsMSLocalesConsistencyMarker( const WCHAR * const wszMSLocalesKey, const INT cMSLocalesValue )
 {
     if ( ( wszMSLocalesKey != nullptr ) &&
             ( LOSStrCompareW( wszMSLocalesKey, g_wszMSLocalesConsistencyMarkerKey ) == 0 )&&
@@ -16998,7 +16998,7 @@ JETUNITTEST( CATMSysLocales, TestCLocaleNameInfoArrayWillWorkAsRequiredForMSysLo
 
 #endif // ENABLE_JET_UNIT_TEST
 
-INLINE ERR ErrCATIParseLocaleNameInfo(
+ERR ErrCATIParseLocaleNameInfo(
     _In_ const PCWSTR wszLocaleEntryKey,
     __out_ecount(NORM_LOCALE_NAME_MAX_LENGTH) WCHAR * wszLocaleName,
     _Out_ QWORD * pqwSortedVersion,

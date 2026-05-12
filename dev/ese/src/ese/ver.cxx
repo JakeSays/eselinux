@@ -222,7 +222,7 @@ VER::~VER()
 //-
 
 //  ================================================================
-INLINE size_t VER::CbBUFree( const BUCKET * pbucket )
+size_t VER::CbBUFree( const BUCKET * pbucket )
 //  ================================================================
 //
 //-
@@ -234,7 +234,7 @@ INLINE size_t VER::CbBUFree( const BUCKET * pbucket )
 
 
 //  ================================================================
-INLINE BOOL VER::FVERICleanDiscardDeletes()
+BOOL VER::FVERICleanDiscardDeletes()
 //  ================================================================
 //
 //  If the version store is really full we will simply discard the
@@ -512,7 +512,7 @@ VOID VER::VERIReportVersionStoreOOM( PIB * ppibTrxOldest, BOOL fMaxTrxSize, cons
 
 
 //  ================================================================
-INLINE ERR VER::ErrVERIBUAllocBucket( const INT cbRCE, const UINT uiHash )
+ERR VER::ErrVERIBUAllocBucket( const INT cbRCE, const UINT uiHash )
 //  ================================================================
 //
 //  Inserts a bucket to the top of the bucket chain, so that new RCEs
@@ -643,7 +643,7 @@ INLINE ERR VER::ErrVERIBUAllocBucket( const INT cbRCE, const UINT uiHash )
 
 
 //  ================================================================
-INLINE BUCKET *VER::PbucketVERIGetOldest( )
+BUCKET *VER::PbucketVERIGetOldest( )
 //  ================================================================
 //
 //  find the oldest bucket in the bucket chain
@@ -714,7 +714,7 @@ BUCKET *VER::PbucketVERIFreeAndGetNextOldestBucket( BUCKET * pbucket )
 
 
 //  ================================================================
-INLINE CReaderWriterLock& VER::RwlRCEChain( UINT ui )
+CReaderWriterLock& VER::RwlRCEChain( UINT ui )
 //  ================================================================
 {
     Assert( m_frceHashTableInited );
@@ -722,21 +722,21 @@ INLINE CReaderWriterLock& VER::RwlRCEChain( UINT ui )
     return m_rgrceheadHashTable[ ui ].rwl;
 }
 
-INLINE RCE *VER::GetChain( UINT ui ) const
+RCE *VER::GetChain( UINT ui ) const
 {
     Assert( m_frceHashTableInited );
     Assert( ui < m_crceheadHashTable );
     return m_rgrceheadHashTable[ ui ].prceChain;
 }
 
-INLINE RCE **VER::PGetChain( UINT ui )
+RCE **VER::PGetChain( UINT ui )
 {
     Assert( m_frceHashTableInited );
     Assert( ui < m_crceheadHashTable );
     return &m_rgrceheadHashTable[ ui ].prceChain;
 }
 
-INLINE VOID VER::SetChain( UINT ui, RCE *prce )
+VOID VER::SetChain( UINT ui, RCE *prce )
 {
     Assert( m_frceHashTableInited );
     Assert( ui < m_crceheadHashTable );
@@ -1120,7 +1120,7 @@ ERR VER::ErrInternalCheck()
 
 
 //  ================================================================
-INLINE RCE::RCE(
+RCE::RCE(
             FCB *       pfcb,
             FUCB *      pfucb,
             UPDATEID    updateid,
@@ -1173,7 +1173,7 @@ INLINE RCE::RCE(
 
 
 //  ================================================================
-INLINE BYTE * RCE::PbBookmark()
+BYTE * RCE::PbBookmark()
 //  ================================================================
 {
     Assert( FAssertRwlHash_() );
@@ -1182,7 +1182,7 @@ INLINE BYTE * RCE::PbBookmark()
 
 
 //  ================================================================
-INLINE RCE *&RCE::PrceHashOverflow()
+RCE *&RCE::PrceHashOverflow()
 //  ================================================================
 {
     Assert( FAssertRwlHash_() );
@@ -1191,7 +1191,7 @@ INLINE RCE *&RCE::PrceHashOverflow()
 
 
 //  ================================================================
-INLINE VOID RCE::SetPrceHashOverflow( RCE * prce )
+VOID RCE::SetPrceHashOverflow( RCE * prce )
 //  ================================================================
 {
     Assert( FAssertRwlHashAsWriter_() );
@@ -1200,7 +1200,7 @@ INLINE VOID RCE::SetPrceHashOverflow( RCE * prce )
 
 
 //  ================================================================
-INLINE VOID RCE::SetPrceNextOfNode( RCE * prce )
+VOID RCE::SetPrceNextOfNode( RCE * prce )
 //  ================================================================
 {
     Assert( FAssertRwlHashAsWriter_() );
@@ -1211,7 +1211,7 @@ INLINE VOID RCE::SetPrceNextOfNode( RCE * prce )
 
 
 //  ================================================================
-INLINE VOID RCE::SetPrcePrevOfNode( RCE * prce )
+VOID RCE::SetPrcePrevOfNode( RCE * prce )
 //  ================================================================
 {
     Assert( FAssertRwlHashAsWriter_() );
@@ -1222,7 +1222,7 @@ INLINE VOID RCE::SetPrcePrevOfNode( RCE * prce )
 
 
 //  ================================================================
-INLINE VOID RCE::FlagRolledBack()
+VOID RCE::FlagRolledBack()
 //  ================================================================
 {
     Assert( FAssertRwlPIB_() );
@@ -1231,7 +1231,7 @@ INLINE VOID RCE::FlagRolledBack()
 
 
 //  ================================================================
-INLINE VOID RCE::FlagMoved()
+VOID RCE::FlagMoved()
 //  ================================================================
 {
     m_fMoved = fTrue;
@@ -1239,7 +1239,7 @@ INLINE VOID RCE::FlagMoved()
 
 
 //  ================================================================
-INLINE VOID RCE::SetPrcePrevOfSession( RCE * prce )
+VOID RCE::SetPrcePrevOfSession( RCE * prce )
 //  ================================================================
 {
     m_prcePrevOfSession = prce;
@@ -1247,7 +1247,7 @@ INLINE VOID RCE::SetPrcePrevOfSession( RCE * prce )
 
 
 //  ================================================================
-INLINE VOID RCE::SetPrceNextOfSession( RCE * prce )
+VOID RCE::SetPrceNextOfSession( RCE * prce )
 //  ================================================================
 {
     m_prceNextOfSession = prce;
@@ -1255,7 +1255,7 @@ INLINE VOID RCE::SetPrceNextOfSession( RCE * prce )
 
 
 //  ================================================================
-INLINE VOID RCE::SetLevel( LEVEL level )
+VOID RCE::SetLevel( LEVEL level )
 //  ================================================================
 {
     Assert( FAssertRwlPIB_() || PinstFromIfmp( m_ifmp )->m_plog->FRecovering() );
@@ -1265,7 +1265,7 @@ INLINE VOID RCE::SetLevel( LEVEL level )
 
 
 //  ================================================================
-INLINE VOID RCE::SetTrxCommitted( const TRX trx )
+VOID RCE::SetTrxCommitted( const TRX trx )
 //  ================================================================
 {
     Assert( !FOperInHashTable() || FAssertRwlHashAsWriter_() );
@@ -1291,7 +1291,7 @@ INLINE VOID RCE::SetTrxCommitted( const TRX trx )
 
 
 //  ================================================================
-INLINE VOID RCE::NullifyOper()
+VOID RCE::NullifyOper()
 //  ================================================================
 //
 //  This is the end of the RCEs lifetime. It must have been removed
@@ -1318,7 +1318,7 @@ INLINE VOID RCE::NullifyOper()
 
 
 //  ================================================================
-INLINE VOID RCE::NullifyOperForMove()
+VOID RCE::NullifyOperForMove()
 //  ================================================================
 //
 //  RCE has been copied elsewhere -- nullify this copy
@@ -1607,7 +1607,7 @@ BOOL FVERActive( const FUCB * pfucb, const BOOKMARK& bm, const TRX trxSession )
 
 
 //  ================================================================
-INLINE BOOL FVERIAddUndoInfo( const RCE * const prce )
+BOOL FVERIAddUndoInfo( const RCE * const prce )
 //  ================================================================
 //
 //  Do we need to create a deferred before image for this RCE?
@@ -2058,7 +2058,7 @@ LOCAL VOID VERIDeleteRCEFromHash( RCE * const prce )
 
 
 //  ================================================================
-INLINE VOID VERIInsertRCEIntoSessionList( PIB * const ppib, RCE * const prce )
+VOID VERIInsertRCEIntoSessionList( PIB * const ppib, RCE * const prce )
 //  ================================================================
 //
 //  Inserts the RCE into the session list of the pib provided. During ordinary
@@ -2155,7 +2155,7 @@ RceidCmp( rceid, prcePrev->Rceid() ) < 0 ) );
 
 
 //  ================================================================
-INLINE VOID VERIInsertRCEIntoSessionList( PIB * const ppib, RCE * const prce, RCE * const prceParent )
+VOID VERIInsertRCEIntoSessionList( PIB * const ppib, RCE * const prce, RCE * const prceParent )
 //  ================================================================
 //
 //  Inserts the RCE after the given parent RCE in the session list.
@@ -2497,7 +2497,7 @@ LOCAL VOID VERINullifyCommittedRCE( RCE * const prce )
 
 
 //  ================================================================
-INLINE VOID VERINullifyRCE( RCE *prce )
+VOID VERINullifyRCE( RCE *prce )
 //  ================================================================
 {
     if ( prce->FFullyCommitted() )
@@ -3567,7 +3567,7 @@ BOOL FVERDeltaActiveNotByMe( const FUCB * pfucb, const BOOKMARK& bookmark, INT c
 
 
 //  ================================================================
-INLINE BOOL FVERIGetReplaceInRangeByUs(
+BOOL FVERIGetReplaceInRangeByUs(
     const PIB       *ppib,
     const RCE       *prceLastBeforeEndOfRange,
     const RCEID     rceidFirst,
@@ -4328,7 +4328,7 @@ BOOL FVERWriteConflict(
 
 
 //  ================================================================
-INLINE ERR VER::ErrVERModifyCommitted(
+ERR VER::ErrVERModifyCommitted(
     FCB             *pfcb,
     const BOOKMARK& bookmark,
     const OPER      oper,
@@ -5218,7 +5218,7 @@ BOOL FPIBSessionRCEClean( PIB *ppib )
 
 
 //  ================================================================
-INLINE VOID VERIUnlinkDefunctSecondaryIndex(
+VOID VERIUnlinkDefunctSecondaryIndex(
     PIB * const ppib,
     FCB * const pfcb )
 //  ================================================================
@@ -5287,7 +5287,7 @@ INLINE VOID VERIUnlinkDefunctSecondaryIndex(
 
 
 //  ================================================================
-INLINE VOID VERIUnlinkDefunctLV(
+VOID VERIUnlinkDefunctLV(
     PIB * const ppib,
     FCB * const pfcb )
 //  ================================================================
@@ -5453,12 +5453,12 @@ LOCAL VOID VERIRemoveCallback( const RCE * const prce )
 }
 
 
-INLINE VOID VER::IncrementCAsyncCleanupDispatched()
+VOID VER::IncrementCAsyncCleanupDispatched()
 {
     PERFOpt( cVERAsyncCleanupDispatched.Inc( m_pinst ) );
 }
 
-INLINE VOID VER::IncrementCSyncCleanupDispatched()
+VOID VER::IncrementCSyncCleanupDispatched()
 {
     PERFOpt( cVERSyncCleanupDispatched.Inc( m_pinst ) );
 }
@@ -6481,7 +6481,7 @@ RCE * PIB::PrceOldest()
     return prcePrev;
 }
 
-INLINE VOID VERICommitOneRCEToLevel0( PIB * const ppib, RCE * const prce )
+VOID VERICommitOneRCEToLevel0( PIB * const ppib, RCE * const prce )
 {
     Assert( !prce->FFullyCommitted() );
 
@@ -7451,7 +7451,7 @@ HandleError:
 
 
 //  ================================================================
-INLINE VOID VERINullifyForUndoCreateTable( PIB * const ppib, FCB * const pfcb )
+VOID VERINullifyForUndoCreateTable( PIB * const ppib, FCB * const pfcb )
 //  ================================================================
 //
 //  This is used to nullify all RCEs on table FCB because CreateTable
@@ -7506,7 +7506,7 @@ INLINE VOID VERINullifyForUndoCreateTable( PIB * const ppib, FCB * const pfcb )
 }
 
 //  ================================================================
-INLINE VOID VERICleanupForUndoCreateTable( RCE * const prceCreateTable )
+VOID VERICleanupForUndoCreateTable( RCE * const prceCreateTable )
 //  ================================================================
 //
 //  This is used to cleanup RCEs and deferred-closed cursors
@@ -8118,7 +8118,7 @@ LOCAL VOID VERIUndoDeleteIndex( const RCE * const prce )
 
 
 //  ================================================================
-INLINE VOID VERIUndoAllocExt( const RCE * const prce )
+VOID VERIUndoAllocExt( const RCE * const prce )
 //  ================================================================
 {
     Assert( prce->CbData() == sizeof(VEREXT) );
@@ -8133,7 +8133,7 @@ INLINE VOID VERIUndoAllocExt( const RCE * const prce )
 
 
 //  ================================================================
-INLINE VOID VERIUndoRegisterCallback( const RCE * const prce )
+VOID VERIUndoRegisterCallback( const RCE * const prce )
 //  ================================================================
 //
 //  Remove the callback from the list
@@ -8168,7 +8168,7 @@ VOID VERIUndoUnregisterCallback( const RCE * const prce )
 
 
 //  ================================================================
-INLINE VOID VERIUndoNonLoggedOper( PIB *ppib, RCE * const prce, RCE **pprceNextToUndo )
+VOID VERIUndoNonLoggedOper( PIB *ppib, RCE * const prce, RCE **pprceNextToUndo )
 //  ================================================================
 {
     Assert( *pprceNextToUndo == prce->PrcePrevOfSession() );

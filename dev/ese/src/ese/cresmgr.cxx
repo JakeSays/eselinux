@@ -1423,7 +1423,7 @@ VOID *CResourceManager::PvRFOLAlloc_( CResourceChunkInfo * const pRCI )
 
 
 //======================================
-INLINE VOID *CResourceManager::PvNewAlloc_( CResourceChunkInfo * const pRCI )
+VOID *CResourceManager::PvNewAlloc_( CResourceChunkInfo * const pRCI )
 //  tries to allocate an new (unused) object from the chunk
 //
 //  return null if it fails
@@ -1722,20 +1722,20 @@ End:
 }
 
 //======================================
-INLINE ULONG_PTR CResourceManager::CbAllocated() const
+ULONG_PTR CResourceManager::CbAllocated() const
 {
     return m_cbChunkSize * ( m_cAllocatedRCI - m_cFreeRCI );
 }
 
 //======================================
-INLINE ULONG_PTR CResourceManager::CbUsed() const
+ULONG_PTR CResourceManager::CbUsed() const
 {
     const ULONG_PTR cbAlignedObject = AlignUpMask( m_cbObjectSize, m_cbObjectAlign );
     return cbAlignedObject * m_cUsedObjects;
 }
 
 //======================================
-INLINE ULONG_PTR CResourceManager::CbQuota() const
+ULONG_PTR CResourceManager::CbQuota() const
 {
     return m_cAllocatedRCIMax * m_cbChunkSize;
 }
@@ -2693,7 +2693,7 @@ static const JetTestCaller<CResourceTestFixtureNoLookaside> crtf6("CResource.Mul
 //======================================
 //  class CRMContainer
 
-INLINE CRMContainer::CRMContainer( JET_RESID resid ) :
+CRMContainer::CRMContainer( JET_RESID resid ) :
         m_pNext( nullptr ),
         m_RM( resid )
     {}
@@ -2768,7 +2768,7 @@ VOID CRMContainer::Delete( JET_RESID resid )
 }
 
 //======================================
-INLINE VOID CRMContainer::CalcAllocatedObjects( JET_RESID resid, void* pvBuf )
+VOID CRMContainer::CalcAllocatedObjects( JET_RESID resid, void* pvBuf )
 {
     if ( !fOSRMPreinitPostTerm )
     {
@@ -2795,7 +2795,7 @@ HandleError:
 }
 
 //======================================
-INLINE VOID CRMContainer::CalcUsedObjects( JET_RESID resid, void* pvBuf )
+VOID CRMContainer::CalcUsedObjects( JET_RESID resid, void* pvBuf )
 {
     if ( !fOSRMPreinitPostTerm )
     {
@@ -2822,7 +2822,7 @@ INLINE VOID CRMContainer::CalcUsedObjects( JET_RESID resid, void* pvBuf )
 }
 
 //======================================
-INLINE VOID CRMContainer::CalcQuotaObjects( JET_RESID resid, void* pvBuf )
+VOID CRMContainer::CalcQuotaObjects( JET_RESID resid, void* pvBuf )
 {
     if ( !fOSRMPreinitPostTerm )
     {

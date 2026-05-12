@@ -1583,7 +1583,7 @@ COSMemoryMap    osmmOSUFile;
 #endif
 
 
-INLINE ERR ErrUtilIApplyLogExtendPattern(
+ERR ErrUtilIApplyLogExtendPattern(
     IFileSystemAPI* const pfsapi,
     IFileAPI *const pfapi,
     const QWORD qwSize,

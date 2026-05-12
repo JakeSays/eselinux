@@ -183,21 +183,14 @@ VOID CalculateCurrentProcessIsPackaged()
 {
 }
 
-//  SetDiskMappingMode / GetDiskMappingMode are declared INLINE in _osfs.hxx
-//  and defined inline in osfs.cxx.  Clang at -O0 may not emit those inline
-//  bodies, so the engine's COSDisk init path takes their addresses but the
-//  symbols never land in libese.so.  Provide non-inline strong definitions
-//  with the same C++ linkage so the linker resolves them.
-static OSDiskMappingMode g_diskMappingModeOverride = eOSDiskInvalidMode;
-
-__attribute__((used))
-void SetDiskMappingMode(const OSDiskMappingMode diskMode)
-{
-    g_diskMappingModeOverride = diskMode;
-}
-
-__attribute__((used))
-OSDiskMappingMode GetDiskMappingMode()
-{
-    return g_diskMappingModeOverride;
-}
+//  SetDiskMappingMode / GetDiskMappingMode used to live here as a strong
+//  override because the upstream INLINE definitions in osfs.cxx didn't
+//  always emit out-of-line bodies (cross-TU callers in osdisk.cxx then
+//  failed to link at -O0).  That override caused a Release-mode bug:
+//  -O3 inlined the upstream INLINE bodies into in-TU osfs.cxx callers,
+//  so they used osfs.cxx's g_diskMode, while cross-TU callers from
+//  osdisk.cxx hit this override and wrote a separate variable — leaving
+//  ErrOSVolumeConnect's switch with eOSDiskInvalidMode and surfacing as
+//  JET_errInternalError at log-file creation.  Fix: dropped INLINE from
+//  osfs.cxx so the body is always emitted out-of-line; removed this
+//  override.

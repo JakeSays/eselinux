@@ -791,7 +791,7 @@ void CFlushMap::TermFlushMap_()
     }
 }
 
-INLINE ERR CFlushMap::ErrGetDescriptorFromFmPgno_( const FMPGNO fmpgno, FlushMapPageDescriptor** const ppfmd )
+ERR CFlushMap::ErrGetDescriptorFromFmPgno_( const FMPGNO fmpgno, FlushMapPageDescriptor** const ppfmd )
 {
     ERR err = JET_errSuccess;
     FlushMapPageDescriptor* pfmd = nullptr;
@@ -837,7 +837,7 @@ HandleError:
     return err;
 }
 
-INLINE ERR CFlushMap::ErrGetDescriptorFromPgno_(
+ERR CFlushMap::ErrGetDescriptorFromPgno_(
     const PGNO pgno,
     FlushMapPageDescriptor** const ppfmd )
 {
@@ -2354,13 +2354,13 @@ HandleError:
     return err;
 }
 
-INLINE USHORT CFlushMap::IbitGetBitInPage_( const PGNO pgno, const size_t cbHeader, const DWORD cbitPerState )
+USHORT CFlushMap::IbitGetBitInPage_( const PGNO pgno, const size_t cbHeader, const DWORD cbitPerState )
 {
     Assert( ( cbitPerState > 0 ) && ( cbitPerState <= 8 ) );
     return (USHORT)( 8 * cbHeader + ( pgno % m_cDbPagesPerFlushMapPage ) * cbitPerState );
 }
 
-INLINE INT CFlushMap::IGetStateFromBitmap_(
+INT CFlushMap::IGetStateFromBitmap_(
     BYTE* const pbBitmap, const size_t cbBitmap,
     const PGNO pgno,
     const size_t cbHeader, const DWORD cbitPerState, const BYTE mask )
@@ -2383,7 +2383,7 @@ INLINE INT CFlushMap::IGetStateFromBitmap_(
     return state;
 }
 
-INLINE void CFlushMap::SetStateOnBitmap_(
+void CFlushMap::SetStateOnBitmap_(
     BYTE* const pbBitmap, const size_t cbBitmap,
     const PGNO pgno, const INT state,
     const size_t cbHeader, const DWORD cbitPerState, const BYTE mask )
@@ -3210,7 +3210,7 @@ HandleError:
     return err;
 }
 
-INLINE FMPGNO CFlushMap::FmpgnoGetFmPgnoFromDbPgno( _In_ const PGNO pgno )
+FMPGNO CFlushMap::FmpgnoGetFmPgnoFromDbPgno( _In_ const PGNO pgno )
 {
     Assert( pgno <= pgnoSysMax );
 

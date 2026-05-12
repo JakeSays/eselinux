@@ -7,7 +7,7 @@
 //
 LOCAL ERR ErrDIRICheckIndexRange( FUCB *pfucb, const KEY& key );
 LOCAL ERR ErrDIRIIRefresh( FUCB * const pfucb );
-INLINE ERR ErrDIRIRefresh( FUCB * const pfucb )
+ERR ErrDIRIRefresh( FUCB * const pfucb )
 {
     return ( locDeferMoveFirst != pfucb->locLogical ?
                 JET_errSuccess :

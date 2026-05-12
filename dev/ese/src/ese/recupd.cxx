@@ -13,7 +13,7 @@ enum RECOPER
     recoperPopulate
 };
 
-INLINE PCSTR SzRecoper( RECOPER recoper )
+PCSTR SzRecoper( RECOPER recoper )
 {
     LPSTR szReturn;
 
@@ -116,7 +116,7 @@ LONG LRECFalseTupleIndexColumnUpdatesCEFLPv( LONG iInstance, VOID* pvBuf )
 #endif // PERFMON_SUPPORT
 
 
-INLINE ERR ErrRECIRetrieveKeyForEnumeration(
+ERR ErrRECIRetrieveKeyForEnumeration(
     FUCB * const        pfucb,
     const FCB * const   pfcbIdx,
     KEY * const         pkey,
@@ -1181,7 +1181,7 @@ LOCAL BOOL FRECIAnySparseIndexColumnSet(
 }
 
 
-INLINE BOOL FRECIPossiblyUpdateSparseIndex(
+BOOL FRECIPossiblyUpdateSparseIndex(
     const IDB * const       pidb,
     const FUCB * const      pfucbTable )
 {

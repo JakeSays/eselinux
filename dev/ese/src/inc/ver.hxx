@@ -199,7 +199,7 @@ OLD v1 or OLD v2 or DBM comes along and frees it.
 
 class INST;
 class VER;
-INLINE VER *PverFromIfmp( IFMP ifmp );
+VER *PverFromIfmp( IFMP ifmp );
 
 //  ****************************************************************
 //  MACROS
@@ -1667,11 +1667,11 @@ private:
     //  BUCKET LAYER
 
 
-    INLINE size_t CbBUFree( const BUCKET * pbucket );
-    INLINE BOOL FVERICleanWithoutIO();
-    INLINE BOOL FVERICleanDiscardDeletes();
-    INLINE ERR ErrVERIBUAllocBucket( const INT cbRCE, const UINT uiHash );
-    INLINE BUCKET *PbucketVERIGetOldest( );
+    size_t CbBUFree( const BUCKET * pbucket );
+    BOOL FVERICleanWithoutIO();
+    BOOL FVERICleanDiscardDeletes();
+    ERR ErrVERIBUAllocBucket( const INT cbRCE, const UINT uiHash );
+    BUCKET *PbucketVERIGetOldest( );
     BUCKET *PbucketVERIFreeAndGetNextOldestBucket( BUCKET * pbucket );
 
     ERR ErrVERIAllocateRCE( INT cbRCE, RCE ** pprce, const UINT uiHash );
@@ -1756,10 +1756,10 @@ public:
 
     // RCEHEAD functions
     //
-    INLINE CReaderWriterLock& RwlRCEChain( UINT ui );
-    INLINE RCE *GetChain( UINT ui ) const;
-    INLINE RCE **PGetChain( UINT ui );
-    INLINE VOID SetChain( UINT ui, RCE * );
+    CReaderWriterLock& RwlRCEChain( UINT ui );
+    RCE *GetChain( UINT ui ) const;
+    RCE **PGetChain( UINT ui );
+    VOID SetChain( UINT ui, RCE * );
 
 #ifdef RTM
 #else

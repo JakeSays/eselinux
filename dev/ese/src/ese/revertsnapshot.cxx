@@ -4973,7 +4973,7 @@ VOID CRBSDatabaseRevertContext::ResetRootPageRecords()
 
 // Comparer to allow sorting of pages in our array to try and get sequential writes.
 //
-INLINE INT __cdecl CRBSDatabaseRevertContext::ICRBSDatabaseRevertContextCmpPgRec( const CPagePointer* ppg1, const CPagePointer* ppg2 )
+INT __cdecl CRBSDatabaseRevertContext::ICRBSDatabaseRevertContextCmpPgRec( const CPagePointer* ppg1, const CPagePointer* ppg2 )
 {
     Assert( ppg1 );
     Assert( ppg2 );
@@ -4987,7 +4987,7 @@ INLINE INT __cdecl CRBSDatabaseRevertContext::ICRBSDatabaseRevertContextCmpPgRec
 // Equals method to say if both page are the same or not. We will use a different method than ICRBSDatabaseRevertContextCmpPgRec since we want the assert
 // of pgno not equal while sorting.
 //
-INLINE INT __cdecl CRBSDatabaseRevertContext::ICRBSDatabaseRevertContextPgEquals( const CPagePointer* ppg1, const CPagePointer* ppg2 )
+INT __cdecl CRBSDatabaseRevertContext::ICRBSDatabaseRevertContextPgEquals( const CPagePointer* ppg1, const CPagePointer* ppg2 )
 {
     Assert( ppg1 );
     Assert( ppg2 );

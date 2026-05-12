@@ -623,8 +623,8 @@ enum OSDiskMappingMode {
 };
 
 
-INLINE OSDiskMappingMode GetDiskMappingMode();
-INLINE extern void SetDiskMappingMode( const OSDiskMappingMode diskMode );
+OSDiskMappingMode GetDiskMappingMode();
+extern void SetDiskMappingMode( const OSDiskMappingMode diskMode );
 
 
 //  FileModeFlags translation

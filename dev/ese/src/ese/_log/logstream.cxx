@@ -3237,7 +3237,7 @@ ERR LOG_STREAM::ErrLGIWriteSectorData(
 }
 
 
-INLINE IOREASONPRIMARY IorpLogRead( LOG * plog )
+IOREASONPRIMARY IorpLogRead( LOG * plog )
 {
     if ( !plog->FRecovering() )
     {

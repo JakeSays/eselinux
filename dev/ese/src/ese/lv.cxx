@@ -198,7 +198,7 @@ ERR ErrRECICreateLvRootAndChunks(
 
 
 //  retrieve versioned LV refcount
-INLINE ULONG UlLVIVersionedRefcount( FUCB *pfucbLV )
+ULONG UlLVIVersionedRefcount( FUCB *pfucbLV )
 {
     LVROOT              *plvrootVersioned;
     LONG                lCompensating;
@@ -226,7 +226,7 @@ INLINE ULONG UlLVIVersionedRefcount( FUCB *pfucbLV )
 
 
 //  ================================================================
-INLINE VOID AssertLVRootNode( FUCB *pfucbLV, const LvId lid )
+VOID AssertLVRootNode( FUCB *pfucbLV, const LvId lid )
 //  ================================================================
 //
 //  This checks that the FUCB is currently referencing a valid LVROOT node
@@ -254,7 +254,7 @@ INLINE VOID AssertLVRootNode( FUCB *pfucbLV, const LvId lid )
 
 
 //  verify lid/offset of an LVKEY node
-INLINE VOID AssertLVDataNode(
+VOID AssertLVDataNode(
     FUCB        *pfucbLV,
     const LvId  lid,
     const ULONG ulOffset )
@@ -513,7 +513,7 @@ HandleError:
 
 
 //  ================================================================
-INLINE ERR ErrFILEIInitLVRoot( FUCB *pfucb, const PGNO pgnoLV, FUCB **ppfucbLV )
+ERR ErrFILEIInitLVRoot( FUCB *pfucb, const PGNO pgnoLV, FUCB **ppfucbLV )
 //  ================================================================
 {
     ERR             err;
@@ -847,7 +847,7 @@ ERR ErrDIROpenLongRoot( FUCB * pfucb )
     return err;
 }
 
-INLINE VOID DIRCloseLongRoot( FUCB * pfucb )
+VOID DIRCloseLongRoot( FUCB * pfucb )
 {
     Assert( pfucbNil != pfucb );
     Assert( pfcbNil != pfucb->u.pfcb );
@@ -1272,7 +1272,7 @@ ERR ErrDIRDownLVRoot(
 }
 
 //  ================================================================
-INLINE ERR ErrRECISetLid(
+ERR ErrRECISetLid(
     FUCB            *pfucb,
     const COLUMNID  columnid,
     const ULONG     itagSequence,
@@ -1991,7 +1991,7 @@ VOID LVTerm( INST * pinst )
 
 
 // WARNING: See "LV grbit matrix" before making any modifications here.
-INLINE ERR ErrLVOpFromGrbit(
+ERR ErrLVOpFromGrbit(
     const JET_GRBIT grbit,
     const ULONG     cbData,
     const BOOL      fNewInstance,
@@ -3051,7 +3051,7 @@ HandleError:
     return err;
 }
 
-INLINE ERR ErrLVAppendChunks(
+ERR ErrLVAppendChunks(
     FUCB                *pfucbLV,
     LvId                lid,
     ULONG               ulSize,
@@ -3352,7 +3352,7 @@ LOCAL ERR ErrLVTruncate(
 }
 
 
-INLINE ERR ErrLVOverwriteRange(
+ERR ErrLVOverwriteRange(
     FUCB                *pfucbLV,
     LvId                lid,
     const ULONG         ulLVSize,

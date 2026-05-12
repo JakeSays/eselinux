@@ -299,14 +299,14 @@ void CPRINTF::SetThreadPrintfPrefix( _In_ const _TCHAR * szPrefix )
 }
 
 //  ================================================================
-INLINE void CPRINTFTLSPREFIX::Indent()
+void CPRINTFTLSPREFIX::Indent()
 //  ================================================================
 {
 }
 
 
 //  ================================================================
-INLINE void CPRINTFTLSPREFIX::Unindent()
+void CPRINTFTLSPREFIX::Unindent()
 //  ================================================================
 {
 }

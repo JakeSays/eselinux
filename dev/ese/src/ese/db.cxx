@@ -3212,7 +3212,7 @@ HandleError:    //  error case only
     return err;
 }
 
-INLINE ERR ErrDBDeleteUnicodeIndexes( PIB *ppib, const IFMP ifmp )
+ERR ErrDBDeleteUnicodeIndexes( PIB *ppib, const IFMP ifmp )
 {
     ERR         err = JET_errSuccess;
     IFMP        ifmpT = 0;
@@ -3260,7 +3260,7 @@ HandleError:
     return err;
 }
 
-INLINE ERR ErrDBUpgradeForLocalisation( PIB *ppib, const IFMP ifmp, const JET_GRBIT grbit )
+ERR ErrDBUpgradeForLocalisation( PIB *ppib, const IFMP ifmp, const JET_GRBIT grbit )
 {
     ERR         err;
     INST        * const pinst = PinstFromPpib( ppib );

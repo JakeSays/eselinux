@@ -12,7 +12,7 @@ const MEMPOOL::ITAG MEMPOOL::itagTagArray       = 0;        // itag 0 is reserve
 const MEMPOOL::ITAG MEMPOOL::itagFirstUsable    = 1;        // First itag available for users
 
 
-INLINE BOOL MEMPOOL::FResizeBuf( ULONG cbNewBufSize )
+BOOL MEMPOOL::FResizeBuf( ULONG cbNewBufSize )
 {
     BYTE        *pbuf;
 
@@ -36,13 +36,13 @@ INLINE BOOL MEMPOOL::FResizeBuf( ULONG cbNewBufSize )
 }
 
 
-INLINE BOOL MEMPOOL::FGrowBuf( ULONG cbNeeded )
+BOOL MEMPOOL::FGrowBuf( ULONG cbNeeded )
 {
     return FResizeBuf( CbBufSize() + cbNeeded + cbChunkSize );
 }
 
 
-INLINE ERR MEMPOOL::ErrGrowEntry( ITAG itag, ULONG cbNew )
+ERR MEMPOOL::ErrGrowEntry( ITAG itag, ULONG cbNew )
 {
     MEMPOOLTAG  *rgbTags = (MEMPOOLTAG *)Pbuf();
     ITAG        itagCurrent;
@@ -110,7 +110,7 @@ INLINE ERR MEMPOOL::ErrGrowEntry( ITAG itag, ULONG cbNew )
 }
 
 
-INLINE VOID MEMPOOL::ShrinkEntry( ITAG itag, ULONG cbNew )
+VOID MEMPOOL::ShrinkEntry( ITAG itag, ULONG cbNew )
 {
     BYTE        *pbuf = Pbuf();
     MEMPOOLTAG  *rgbTags = (MEMPOOLTAG *)pbuf;

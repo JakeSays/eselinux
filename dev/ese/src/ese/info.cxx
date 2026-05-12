@@ -1292,7 +1292,7 @@ ERR VTAPI ErrIsamSetTableInfo(
 }
 
 // Helper routine used by ErrIsamGetTableInfo
-INLINE LOCAL VOID INFOGetTableName(
+LOCAL VOID INFOGetTableName(
     FUCB *pfucb,
     CHAR *szTableName,
     ULONG cbTableName
@@ -1306,7 +1306,7 @@ INLINE LOCAL VOID INFOGetTableName(
 }
 
 // Helper routine used by ErrIsamGetTableInfo
-INLINE LOCAL ERR ErrINFOGetLVSpaceUsage(
+LOCAL ERR ErrINFOGetLVSpaceUsage(
     FUCB *pfucb,
     ULONG fSPExtent,
     void *pvResult,
@@ -3413,14 +3413,14 @@ LOCAL ERR ErrINFOICopyAsciiName(
     return err;
 }
 
-INLINE VOID INFOISetKeySegmentDescendingFlag(
+VOID INFOISetKeySegmentDescendingFlag(
     _In_ WCHAR * const      pwch,
     const BOOL          fDescending )
 {
     Assert( NULL != pwch );
     *pwch = ( fDescending ? L'-' : L'+' );
 }
-INLINE VOID INFOISetKeySegmentDescendingFlag(
+VOID INFOISetKeySegmentDescendingFlag(
     _In_ CHAR * const       pch,
     const BOOL          fDescending )
 {

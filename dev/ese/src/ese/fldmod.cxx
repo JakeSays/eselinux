@@ -2588,7 +2588,7 @@ ERR ErrRECISetFixedColumnInLoadedDataBuffer(
 }
 
 
-INLINE ULONG CbBurstVarDefaults( TDB *ptdb, FUCB *pfucb, FID fidVarLastInRec, FID fidSet, FID *pfidLastDefault )
+ULONG CbBurstVarDefaults( TDB *ptdb, FUCB *pfucb, FID fidVarLastInRec, FID fidSet, FID *pfidLastDefault )
 {
     ULONG               cbBurstDefaults     = 0;
     const REC * const   precDefault         = ( nullptr != ptdb->PdataDefaultRecord() ?

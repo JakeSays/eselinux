@@ -646,7 +646,7 @@ ERR COSFile::ErrPath( _Out_bytecap_c_(cbOSFSAPI_MAX_PATHW) WCHAR* const wszAbsPa
 }
 
 template< typename Ret, typename Arg1, typename Arg2 >
-INLINE Ret CbFailedWithGLE( Arg1, Arg2 )
+Ret CbFailedWithGLE( Arg1, Arg2 )
 {
     SetLastError( ErrorThunkNotSupported() );
     return Ret( INVALID_FILE_SIZE );
@@ -2175,7 +2175,7 @@ BOOL COSFile::FOSFileSyncComplete( const IOREQ * const pioreq )
 
 
 
-INLINE void OSDiskIIOREQFree( IOREQ* pioreq );
+void OSDiskIIOREQFree( IOREQ* pioreq );
 void IOMgrCompleteOp( __inout IOREQ * const pioreq );
 VOID IOMgrIssueSyncIO( IOREQ * pioreqSingle );
 

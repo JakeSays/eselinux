@@ -184,7 +184,7 @@ LONG LFCBAttachedRCECEFLPv( LONG iInstance, void* pvBuf )
 // you don't use the negation operator on those routines; always use the positive
 // routine.
 // 
-INLINE VOID FCB::Lock_( FCB::LOCK_TYPE lt)
+VOID FCB::Lock_( FCB::LOCK_TYPE lt)
 {
     CSXWLatch::ERR errSXWLatch;
 
@@ -230,7 +230,7 @@ INLINE VOID FCB::Lock_( FCB::LOCK_TYPE lt)
     Assert( IsLocked_( lt ) );
 }
 
-INLINE BOOL FCB::FLockTry_( FCB::LOCK_TYPE lt)
+BOOL FCB::FLockTry_( FCB::LOCK_TYPE lt)
 {
     CSXWLatch::ERR errSXWLatch;
     BOOL fRetval;
@@ -280,7 +280,7 @@ INLINE BOOL FCB::FLockTry_( FCB::LOCK_TYPE lt)
     return fRetval;
 }
 
-INLINE VOID FCB::Unlock_( FCB::LOCK_TYPE lt)
+VOID FCB::Unlock_( FCB::LOCK_TYPE lt)
 {
     if ( !FNeedLock_() )
     {
@@ -313,7 +313,7 @@ INLINE VOID FCB::Unlock_( FCB::LOCK_TYPE lt)
 
 
 #ifdef DEBUG
-INLINE BOOL FCB::IsLocked_(  FCB::LOCK_TYPE lt )
+BOOL FCB::IsLocked_(  FCB::LOCK_TYPE lt )
 {
     BOOL fLockedWrite;
     BOOL fLockedShared;;
@@ -348,7 +348,7 @@ INLINE BOOL FCB::IsLocked_(  FCB::LOCK_TYPE lt )
     return fLocked;
 }
 
-INLINE BOOL FCB::IsUnlocked_( FCB::LOCK_TYPE lt )
+BOOL FCB::IsUnlocked_( FCB::LOCK_TYPE lt )
 {
     BOOL fLockedWrite;
     BOOL fLockedShared;;
@@ -384,7 +384,7 @@ INLINE BOOL FCB::IsUnlocked_( FCB::LOCK_TYPE lt )
 }
 #endif
 
-INLINE VOID FCB::LockDowngradeWriteToShared_()
+VOID FCB::LockDowngradeWriteToShared_()
 {
     if ( !FNeedLock_() )
     {
@@ -419,7 +419,7 @@ FUCB* FCB::Pfucb()
 //  We kind of cheat.  We always return fTrue.  We expect to be called inside
 //  an Assert(), but we assert on everything here, so we don't actually need
 //  to return fFalse.  You get a more specific assert that way.
-INLINE BOOL FCB::FCBCheckAvailList_( const BOOL fShouldBeInList, const BOOL fPurging )
+BOOL FCB::FCBCheckAvailList_( const BOOL fShouldBeInList, const BOOL fPurging )
 {
     INST *pinst = PinstFromIfmp( Ifmp() );
 
@@ -1719,7 +1719,7 @@ BOOL FCB::FCheckFreeAndPurge_(
 
 //  remove all RCEs and close all cursors on this FCB
 
-INLINE VOID FCB::CloseAllCursorsOnFCB_( const BOOL fTerminating )
+VOID FCB::CloseAllCursorsOnFCB_( const BOOL fTerminating )
 {
     if ( fTerminating )
     {
@@ -2297,7 +2297,7 @@ VOID FCB::Purge( const BOOL fLockList, const BOOL fTerminating )
 
 //  returns fTrue when this FCB has temporary callbacks
 
-INLINE BOOL FCB::FHasCallbacks_( INST *pinst )
+BOOL FCB::FHasCallbacks_( INST *pinst )
 {
     if ( pinst->FRecovering() || BoolParam( pinst, JET_paramDisableCallbacks ) )
     {
@@ -2323,7 +2323,7 @@ INLINE BOOL FCB::FHasCallbacks_( INST *pinst )
 
 //  returns fTrue when this FCB has at least one outstanding version
 
-INLINE BOOL FCB::FOutstandingVersions_()
+BOOL FCB::FOutstandingVersions_()
 {
     //  if we're checking the RCE list with the intent to free the FCB, we must grab
     //  the critical section first, otherwise we can get into the state where version
@@ -3309,7 +3309,7 @@ VOID FCB::DecrementRefCountAndUnlink_( FUCB *pfucb, const BOOL fLockList, const 
 //      table/database, remove the FCB from the AvailList.
 //
 
-INLINE ERR FCB::ErrIncrementRefCountAndLink_( FUCB *pfucb, const BOOL fOwnWriteLock )
+ERR FCB::ErrIncrementRefCountAndLink_( FUCB *pfucb, const BOOL fOwnWriteLock )
 {
     INST *pinst = PinstFromIfmp( Ifmp() );
 

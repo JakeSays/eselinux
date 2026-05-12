@@ -2391,7 +2391,7 @@ HandleError:
 }
 
 
-INLINE VOID RECIForceTaggedColumnsAsDerived(
+VOID RECIForceTaggedColumnsAsDerived(
     const TDB           * const ptdb,
     DATA&               dataDefault )
 {

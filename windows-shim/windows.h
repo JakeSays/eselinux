@@ -833,22 +833,17 @@ BOOL   GetConsoleScreenBufferInfo( HANDLE hConsoleOutput, PCONSOLE_SCREEN_BUFFER
 }  // extern "C"
 #endif
 
-//  errno_t / rand_s — MSVC secure CRT idioms used in the engine. The
-//  posix layer maps rand_s to getrandom() so callers see the same return
-//  contract (0 == success, non-zero == errno).
-//
+//  errno_t — MSVC secure-CRT scalar typedef.
 #ifndef _ERRNO_T_DEFINED
 #define _ERRNO_T_DEFINED
 typedef int errno_t;
 #endif
 
-static inline errno_t rand_s( unsigned int* pui )
-{
-    if ( !pui )
-        return EINVAL;
-    ssize_t n = getrandom( pui, sizeof( *pui ), 0 );
-    return ( n == (ssize_t)sizeof( *pui ) ) ? 0 : errno;
-}
+//  rand_s is declared `extern "C"` in cc.hxx and gets a strong body
+//  in dev/ese/src/os/posix/winapi_random.cxx.  No inline definition
+//  here because cc.hxx's extern declaration would otherwise win over
+//  the static-inline body in TUs that include cc.hxx first, producing
+//  an undefined-symbol link error at -O3.
 
 //  Secure-CRT printf family. MSVC's `_s` variants take a buffer-size arg
 //  followed by a count arg; we map them onto POSIX swprintf/vswprintf/

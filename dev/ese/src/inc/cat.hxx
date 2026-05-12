@@ -1447,7 +1447,7 @@ ERR ErrCATISeekTableType(
 //  maximum size of a SORTID string representation for printing to the screen/
 #define PERSISTED_SORTID_MAX_LENGTH 37
 
-INLINE VOID WszCATFormatSortID(
+VOID WszCATFormatSortID(
     _In_ const SORTID & sortID,
     __out_ecount( cch ) WCHAR * wsz,
     _In_ INT cch );

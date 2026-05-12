@@ -86,7 +86,7 @@ ERR ErrOSDiskIIOThreadInit( void );
 
 //  returns the integer result of subtracting iFile1/ibOffset1 from iFile2/ibOffset2
 
-INLINE __int64 CmpOSDiskIFileIbIFileIb( QWORD iFile1, QWORD ibOffset1, QWORD iFile2, QWORD ibOffset2 )
+__int64 CmpOSDiskIFileIbIFileIb( QWORD iFile1, QWORD ibOffset1, QWORD iFile2, QWORD ibOffset2 )
 {
     if ( iFile1 - iFile2 )
     {
@@ -114,7 +114,7 @@ CCriticalSection g_critIOREQPool( CLockBasicInfo( CSyncBasicInfo( "IOREQ Pool" )
 IOREQCHUNK *    g_pioreqchunkRoot;
 DWORD           g_cbIoreqChunk;
 
-INLINE DWORD CioreqPerChunk( DWORD cbChunk )
+DWORD CioreqPerChunk( DWORD cbChunk )
 {
     return ( ( cbChunk - sizeof(IOREQCHUNK) ) / sizeof(IOREQ) );
 }
@@ -220,7 +220,7 @@ volatile DWORD  g_cioreqrespoolleak = 0;
 
 //  frees an IOREQ
 
-INLINE void OSDiskIIOREQFree( IOREQ* pioreq )
+void OSDiskIIOREQFree( IOREQ* pioreq )
 {
 
     Assert( NULL == pioreq->pioreqIorunNext );  // should already be de-linked ...
@@ -252,7 +252,7 @@ INLINE void OSDiskIIOREQFree( IOREQ* pioreq )
 //  attemps to create a new IOREQ and, if successful, frees it to the IOREQ
 //  pool
 
-INLINE ERR ErrOSDiskIIOREQCreate()
+ERR ErrOSDiskIIOREQCreate()
 {
     ERR     err             = JET_errSuccess;
     HANDLE  hEvent          = NULL;
@@ -305,7 +305,7 @@ HandleError:
 //  allocates an IOREQ, waiting for a free IOREQ if necessary
 //
 LOCAL ERR ErrOSDiskIOREQReserveAndLeak();
-INLINE IOREQ* PioreqOSDiskIIOREQAlloc( BOOL fUsePreReservedIOREQs, BOOL * pfUsedTLSSlot )
+IOREQ* PioreqOSDiskIIOREQAlloc( BOOL fUsePreReservedIOREQs, BOOL * pfUsedTLSSlot )
 {
     IOREQ *     pioreq;
 
@@ -507,7 +507,7 @@ VOID OSDiskIOREQUnreserve()
 
 //  frees an IOREQ to the IOREQ cache
 
-INLINE void OSDiskIIOREQFreeToCache( IOREQ* pioreq )
+void OSDiskIIOREQFreeToCache( IOREQ* pioreq )
 {
     //  purge any IOREQs currently in the TLS cache
 
@@ -527,7 +527,7 @@ INLINE void OSDiskIIOREQFreeToCache( IOREQ* pioreq )
 
 //  allocates an IOREQ from the IOREQ cache, returning NULL if empty
 
-INLINE IOREQ* PioreqOSDiskIIOREQAllocFromCache()
+IOREQ* PioreqOSDiskIIOREQAllocFromCache()
 {
     //  get IOREQ from cache, if any
 
@@ -1785,7 +1785,7 @@ enum OSDiskIReportHungIOFailureItem {
 };
 
 #if defined( USE_HAPUBLISH_API )
-INLINE HaDbFailureTag OSDiskIHaTagOfFailureItemEnum( const OSDiskIReportHungIOFailureItem failureItem )
+HaDbFailureTag OSDiskIHaTagOfFailureItemEnum( const OSDiskIReportHungIOFailureItem failureItem )
 {
     switch ( failureItem )
     {
@@ -3434,7 +3434,7 @@ void COSDisk::IOQueue::IOHeapA::_HeapATerm()
 
 //  returns fTrue if the I/O Heap A is empty
 
-INLINE BOOL COSDisk::IOQueue::IOHeapA::FHeapAEmpty() const
+BOOL COSDisk::IOQueue::IOHeapA::FHeapAEmpty() const
 {
     Assert( m_pcrit->FOwner() );
     return !ipioreqIOAHeapMac;
@@ -3442,14 +3442,14 @@ INLINE BOOL COSDisk::IOQueue::IOHeapA::FHeapAEmpty() const
 
 //  returns the count of IOREQs in the I/O Heap A
 
-INLINE LONG COSDisk::IOQueue::IOHeapA::CioreqHeapA() const
+LONG COSDisk::IOQueue::IOHeapA::CioreqHeapA() const
 {
     return ipioreqIOAHeapMac;
 }
 
 //  returns IOREQ at the top of the I/O Heap A, or NULL if empty
 
-INLINE IOREQ* COSDisk::IOQueue::IOHeapA::PioreqHeapATop()
+IOREQ* COSDisk::IOQueue::IOHeapA::PioreqHeapATop()
 {
     Assert( m_pcrit->FOwner() );
     Assert( !FHeapAEmpty() );
@@ -3458,7 +3458,7 @@ INLINE IOREQ* COSDisk::IOQueue::IOHeapA::PioreqHeapATop()
 
 //  adds a IOREQ to the I/O Heap A
 
-INLINE void COSDisk::IOQueue::IOHeapA::HeapAAdd( IOREQ* pioreq )
+void COSDisk::IOQueue::IOHeapA::HeapAAdd( IOREQ* pioreq )
 {
     //  critical section
 
@@ -3487,7 +3487,7 @@ INLINE void COSDisk::IOQueue::IOHeapA::HeapAAdd( IOREQ* pioreq )
 
 //  removes a IOREQ from the I/O Heap A
 
-INLINE void COSDisk::IOQueue::IOHeapA::HeapARemove( IOREQ* pioreq )
+void COSDisk::IOQueue::IOHeapA::HeapARemove( IOREQ* pioreq )
 {
     //  critical section
 
@@ -3591,7 +3591,7 @@ void COSDisk::IOQueue::IOHeapA::HeapAIUpdate( IOREQ* pioreq )
 
 //  returns fTrue if the first IOREQ is smaller than the second IOREQ
 
-INLINE BOOL COSDisk::IOQueue::IOHeapA::FHeapAISmaller( IOREQ* pioreq1, IOREQ* pioreq2 ) const
+BOOL COSDisk::IOQueue::IOHeapA::FHeapAISmaller( IOREQ* pioreq1, IOREQ* pioreq2 ) const
 {
     return CmpOSDiskIFileIbIFileIb(   pioreq1->p_osf->iFile,
                                         pioreq1->ibOffset,
@@ -3601,26 +3601,26 @@ INLINE BOOL COSDisk::IOQueue::IOHeapA::FHeapAISmaller( IOREQ* pioreq1, IOREQ* pi
 
 //  returns the index to the parent of the given child
 
-INLINE LONG COSDisk::IOQueue::IOHeapA::IpioreqHeapAIParent( LONG ipioreq ) const
+LONG COSDisk::IOQueue::IOHeapA::IpioreqHeapAIParent( LONG ipioreq ) const
 {
     return ( ipioreq - 1 ) / 2;
 }
 
 //  returns the index to the left child of the given parent
 
-INLINE LONG COSDisk::IOQueue::IOHeapA::IpioreqHeapAILeftChild( LONG ipioreq ) const
+LONG COSDisk::IOQueue::IOHeapA::IpioreqHeapAILeftChild( LONG ipioreq ) const
 {
     return 2 * ipioreq + 1;
 }
 
 //  returns the index to the right child of the given parent
 
-INLINE LONG COSDisk::IOQueue::IOHeapA::IpioreqHeapAIRightChild( LONG ipioreq ) const
+LONG COSDisk::IOQueue::IOHeapA::IpioreqHeapAIRightChild( LONG ipioreq ) const
 {
     return 2 * ipioreq + 2;
 }
 
-INLINE BOOL COSDisk::IOQueue::IOHeapA::FHeapAFrom( const IOREQ * pioreq ) const
+BOOL COSDisk::IOQueue::IOHeapA::FHeapAFrom( const IOREQ * pioreq ) const
 {
     return pioreq->ipioreqHeap < ipioreqIOAHeapMac;
 }
@@ -3660,7 +3660,7 @@ void COSDisk::IOQueue::IOHeapB::_HeapBTerm()
 
 //  returns fTrue if the I/O Heap B is empty
 
-INLINE BOOL COSDisk::IOQueue::IOHeapB::FHeapBEmpty() const
+BOOL COSDisk::IOQueue::IOHeapB::FHeapBEmpty() const
 {
     Assert( m_pcrit->FOwner() );
     return ipioreqIOBHeapMic == ipioreqIOBHeapMax;
@@ -3668,14 +3668,14 @@ INLINE BOOL COSDisk::IOQueue::IOHeapB::FHeapBEmpty() const
 
 //  returns the count of IOREQs in the I/O Heap B
 
-INLINE LONG COSDisk::IOQueue::IOHeapB::CioreqHeapB() const
+LONG COSDisk::IOQueue::IOHeapB::CioreqHeapB() const
 {
     return LONG( ipioreqIOBHeapMax - ipioreqIOBHeapMic );
 }
 
 //  returns IOREQ at the top of the I/O Heap B, or NULL if empty
 
-INLINE IOREQ* COSDisk::IOQueue::IOHeapB::PioreqHeapBTop()
+IOREQ* COSDisk::IOQueue::IOHeapB::PioreqHeapBTop()
 {
     Assert( m_pcrit->FOwner() );
     Assert( !FHeapBEmpty() );
@@ -3684,7 +3684,7 @@ INLINE IOREQ* COSDisk::IOQueue::IOHeapB::PioreqHeapBTop()
 
 //  adds a IOREQ to the I/O Heap B
 
-INLINE void COSDisk::IOQueue::IOHeapB::HeapBAdd( IOREQ* pioreq )
+void COSDisk::IOQueue::IOHeapB::HeapBAdd( IOREQ* pioreq )
 {
     //  critical section
 
@@ -3714,7 +3714,7 @@ INLINE void COSDisk::IOQueue::IOHeapB::HeapBAdd( IOREQ* pioreq )
 
 //  removes a IOREQ from the I/O Heap B
 
-INLINE void COSDisk::IOQueue::IOHeapB::HeapBRemove( IOREQ* pioreq )
+void COSDisk::IOQueue::IOHeapB::HeapBRemove( IOREQ* pioreq )
 {
     //  critical section
 
@@ -3751,7 +3751,7 @@ INLINE void COSDisk::IOQueue::IOHeapB::HeapBRemove( IOREQ* pioreq )
 
 //  returns fTrue if the first IOREQ is smaller than the second IOREQ
 
-INLINE BOOL COSDisk::IOQueue::IOHeapB::FHeapBISmaller( IOREQ* pioreq1, IOREQ* pioreq2 ) const
+BOOL COSDisk::IOQueue::IOHeapB::FHeapBISmaller( IOREQ* pioreq1, IOREQ* pioreq2 ) const
 {
     return CmpOSDiskIFileIbIFileIb(   pioreq1->p_osf->iFile,
                                         pioreq1->ibOffset,
@@ -3761,21 +3761,21 @@ INLINE BOOL COSDisk::IOQueue::IOHeapB::FHeapBISmaller( IOREQ* pioreq1, IOREQ* pi
 
 //  returns the index to the parent of the given child
 
-INLINE LONG COSDisk::IOQueue::IOHeapB::IpioreqHeapBIParent( LONG ipioreq ) const
+LONG COSDisk::IOQueue::IOHeapB::IpioreqHeapBIParent( LONG ipioreq ) const
 {
     return ipioreqIOBHeapMax - 1 - ( ipioreqIOBHeapMax - 1 - ipioreq - 1 ) / 2;
 }
 
 //  returns the index to the left child of the given parent
 
-INLINE LONG COSDisk::IOQueue::IOHeapB::IpioreqHeapBILeftChild( LONG ipioreq ) const
+LONG COSDisk::IOQueue::IOHeapB::IpioreqHeapBILeftChild( LONG ipioreq ) const
 {
     return ipioreqIOBHeapMax - 1 - ( 2 * ( ipioreqIOBHeapMax - 1 - ipioreq ) + 1 );
 }
 
 //  returns the index to the right child of the given parent
 
-INLINE LONG COSDisk::IOQueue::IOHeapB::IpioreqHeapBIRightChild( LONG ipioreq ) const
+LONG COSDisk::IOQueue::IOHeapB::IpioreqHeapBIRightChild( LONG ipioreq ) const
 {
     return ipioreqIOBHeapMax - 1 - ( 2 * ( ipioreqIOBHeapMax - 1 - ipioreq ) + 2 );
 }
@@ -4267,7 +4267,7 @@ HandleError:
 
 //  returns fTrue if the I/O Heap is empty
 
-INLINE BOOL COSDisk::IOQueue::FIOHeapEmpty()
+BOOL COSDisk::IOQueue::FIOHeapEmpty()
 {
     Assert( m_pcritIoQueue->FOwner() );
     return m_pIOHeapA->FHeapAEmpty() && m_pIOHeapB->FHeapBEmpty();
@@ -4275,7 +4275,7 @@ INLINE BOOL COSDisk::IOQueue::FIOHeapEmpty()
 
 //  returns the count of IOREQs enqueued in the I/O Heap
 
-INLINE LONG COSDisk::IOQueue::CioreqIOHeap() const
+LONG COSDisk::IOQueue::CioreqIOHeap() const
 {
     Assert( m_pIOHeapA );
     Assert( m_pIOHeapB );
@@ -4284,7 +4284,7 @@ INLINE LONG COSDisk::IOQueue::CioreqIOHeap() const
 
 //  returns the count of IOREQs enqueued in the VIP List
 
-INLINE LONG COSDisk::IOQueue::CioVIPList() const
+LONG COSDisk::IOQueue::CioVIPList() const
 {
     #ifdef DEBUG
     if ( !m_pcritIoQueue->FNotOwner() )
@@ -4298,14 +4298,14 @@ INLINE LONG COSDisk::IOQueue::CioVIPList() const
 
 //  returns the count of IOREQs enqueued in the I/O "Slace" Read Queue
 
-INLINE LONG COSDisk::IOQueue::CioMetedReadQueue() const
+LONG COSDisk::IOQueue::CioMetedReadQueue() const
 {
     return m_qMetedAsyncReadIo.CioEnqueued();
 }
 
 //  returns IOREQ at the top of the I/O Heap, or NULL if empty
 
-INLINE IOREQ* COSDisk::IOQueue::PioreqIOHeapTop()
+IOREQ* COSDisk::IOQueue::PioreqIOHeapTop()
 {
     //  critical section
 
@@ -4370,7 +4370,7 @@ INLINE IOREQ* COSDisk::IOQueue::PioreqIOHeapTop()
 
 //  adds a IOREQ to the I/O Heap
 
-INLINE void COSDisk::IOQueue::IOHeapAdd( IOREQ* pioreq, _Out_ OSDiskIoQueueManagement * const pdioqmTypeTracking )
+void COSDisk::IOQueue::IOHeapAdd( IOREQ* pioreq, _Out_ OSDiskIoQueueManagement * const pdioqmTypeTracking )
 {
 
     //  critical section
@@ -4409,7 +4409,7 @@ INLINE void COSDisk::IOQueue::IOHeapAdd( IOREQ* pioreq, _Out_ OSDiskIoQueueManag
 
 //  removes a IOREQ from the I/O Heap
 
-INLINE void COSDisk::IOQueue::IOHeapRemove( IOREQ* pioreq, _Out_ OSDiskIoQueueManagement * const pdioqmTypeTracking )
+void COSDisk::IOQueue::IOHeapRemove( IOREQ* pioreq, _Out_ OSDiskIoQueueManagement * const pdioqmTypeTracking )
 {
     //  critical section
 
@@ -4457,7 +4457,7 @@ CTaskManager*       g_postaskmgrFile;
     
 //  registers the given file for use with the I/O thread
 
-INLINE ERR ErrOSDiskIIOThreadRegisterFile( const P_OSFILE p_osf )
+ERR ErrOSDiskIIOThreadRegisterFile( const P_OSFILE p_osf )
 {
     ERR err;
 
@@ -4478,7 +4478,7 @@ HandleError:
 
 //  returns fTrue if the specified _OSFILE can use SGIO
 
-INLINE BOOL FOSDiskIFileSGIOCapable( const _OSFILE * const p_osf )
+BOOL FOSDiskIFileSGIOCapable( const _OSFILE * const p_osf )
 {
     return  p_osf->fRegistered &&                                                   //  Completion ports enabled for this file
             p_osf->iomethodMost >= IOREQ::iomethodScatterGather;                    //  SGIO enabled for this file
@@ -4486,7 +4486,7 @@ INLINE BOOL FOSDiskIFileSGIOCapable( const _OSFILE * const p_osf )
 
 //  returns fTrue if the specified IOREQ data can be processed using SGIO
 
-INLINE BOOL FOSDiskIDataSGIOCapable( _In_ const BYTE * pbData, _In_ const DWORD cbData )
+BOOL FOSDiskIDataSGIOCapable( _In_ const BYTE * pbData, _In_ const DWORD cbData )
 {
     return  cbData % OSMemoryPageCommitGranularity() == 0 &&                //  data is vmem page sized
             DWORD_PTR( pbData ) % OSMemoryPageCommitGranularity() == 0;     //  data is vmem page aligned
@@ -4494,13 +4494,13 @@ INLINE BOOL FOSDiskIDataSGIOCapable( _In_ const BYTE * pbData, _In_ const DWORD 
 
 //  returns the start and stop offsets of an IO run / chain of IOREQs ...
 
-INLINE void OSDiskIGetRunBound(
+void OSDiskIGetRunBound(
     const IOREQ *   pioreqRun,
     _Out_ QWORD *   pibOffsetStart,
     _Out_ QWORD *   pibOffsetEnd,
     bool            fAlwaysIncreasing = true );
 
-INLINE void OSDiskIGetRunBound(
+void OSDiskIGetRunBound(
     const IOREQ *   pioreqRun,
     _Out_ QWORD *   pibOffsetStart,
     _Out_ QWORD *   pibOffsetEnd,
@@ -4545,7 +4545,7 @@ INLINE void OSDiskIGetRunBound(
     }
 }
 
-INLINE bool FOSDiskIOverlappingRuns( const QWORD ibOffsetStartRun1, const QWORD ibOffsetEndRun1, const QWORD ibOffsetStartRun2, const QWORD ibOffsetEndRun2, bool * pfContiguous )
+bool FOSDiskIOverlappingRuns( const QWORD ibOffsetStartRun1, const QWORD ibOffsetEndRun1, const QWORD ibOffsetStartRun2, const QWORD ibOffsetEndRun2, bool * pfContiguous )
 {
     if ( ibOffsetStartRun1 < ibOffsetStartRun2 )
     {
@@ -4569,7 +4569,7 @@ INLINE bool FOSDiskIOverlappingRuns( const QWORD ibOffsetStartRun1, const QWORD 
     }
 }
 
-INLINE bool FOSDiskIOverlappingRuns( const QWORD ibOffsetStartRun1, const QWORD ibOffsetEndRun1, const IOREQ * pioreqRun2 )
+bool FOSDiskIOverlappingRuns( const QWORD ibOffsetStartRun1, const QWORD ibOffsetEndRun1, const IOREQ * pioreqRun2 )
 {
     Expected( pioreqRun2->pioreqIorunNext == NULL ); // check this will be retail fast.
 
@@ -4584,8 +4584,8 @@ INLINE bool FOSDiskIOverlappingRuns( const QWORD ibOffsetStartRun1, const QWORD 
 
 //  returns true if the extends described by the two IO runs overlap ... generally this should not happen.
 
-INLINE bool FOSDiskIOverlappingRuns( const IOREQ * pioreqRun1, const IOREQ * pioreqRun2, bool * pfContiguous = NULL );
-INLINE bool FOSDiskIOverlappingRuns( const IOREQ * pioreqRun1, const IOREQ * pioreqRun2, bool * pfContiguous )
+bool FOSDiskIOverlappingRuns( const IOREQ * pioreqRun1, const IOREQ * pioreqRun2, bool * pfContiguous = NULL );
+bool FOSDiskIOverlappingRuns( const IOREQ * pioreqRun1, const IOREQ * pioreqRun2, bool * pfContiguous )
 {
     QWORD ibOffsetStartRun1, ibOffsetEndRun1;
     QWORD ibOffsetStartRun2, ibOffsetEndRun2;
@@ -4599,7 +4599,7 @@ INLINE bool FOSDiskIOverlappingRuns( const IOREQ * pioreqRun1, const IOREQ * pio
 
 //  returns true if the second IO run can be appended to the first IO run without offending our max IO limits.
 
-INLINE bool FOSDiskICanAppendRun(
+bool FOSDiskICanAppendRun(
     _In_ const _OSFILE *    p_osf,
     _In_ const BOOL         fWrite,
     _In_ const BOOL         fOverrideIOMax,
@@ -4650,7 +4650,7 @@ bool FOSDiskIMergeRuns( COSDisk::IORun * const piorunBase, COSDisk::IORun * cons
 //  returns true if the specified new blocks geometries (ibOffsetCombine / cbDataCombine) can be
 //  combined with the piorun without offending our max IO limits.
 
-INLINE bool FOSDiskICanAddToRun(
+bool FOSDiskICanAddToRun(
     __inout COSDisk::IORun * const  piorun,
     _In_ const _OSFILE *            p_osf,
     _In_ const BOOL                 fWrite,
@@ -4727,7 +4727,7 @@ INLINE bool FOSDiskICanAddToRun(
 
 //  simplified version of previous function for dealing w/ IOREQs
 
-INLINE bool FOSDiskICanAddToRun(
+bool FOSDiskICanAddToRun(
     __inout COSDisk::IORun * const  piorun,
     _In_ const IOREQ *              pioreq
     )
@@ -7665,12 +7665,12 @@ BOOL COSDisk::FQueueCompleteIOREQ(
     return fFreedIoQuota;
 }
 
-INLINE LONG COSDisk::CioDispatched() const
+LONG COSDisk::CioDispatched() const
 {
     return m_cioDispatching;
 }
 
-INLINE LONG COSDisk::CioUrgentEnqueued() const
+LONG COSDisk::CioUrgentEnqueued() const
 {
     return m_pIOQueue->CioreqIOHeap() + m_pIOQueue->CioVIPList() + m_pIOQueue->CioWriteQueue();
 }
@@ -7690,7 +7690,7 @@ void FlightConcurrentMetedOps( INT cioOpsMax, INT cioLowThreshold, TICK dtickSta
     }
 }
     
-INLINE LONG COSDisk::CioAllowedMetedOps( _In_ const LONG cioWaitingQ ) const
+LONG COSDisk::CioAllowedMetedOps( _In_ const LONG cioWaitingQ ) const
 {
     Assert( FIOThread() ); // "locking" for m_cioAsyncReadDispatching (ALSO FIOThread() set in COSDisk::Dump() debugger extension briefly).
 
@@ -7704,7 +7704,7 @@ INLINE LONG COSDisk::CioAllowedMetedOps( _In_ const LONG cioWaitingQ ) const
                 1 : g_cioConcurrentMetedOpsMax );
 }
 
-INLINE LONG COSDisk::CioReadyMetedEnqueued() const
+LONG COSDisk::CioReadyMetedEnqueued() const
 {
     Assert( FIOThread() ); // "locking" for m_cioAsyncReadDispatching
 
@@ -7715,13 +7715,13 @@ INLINE LONG COSDisk::CioReadyMetedEnqueued() const
     return min( cioWaitingQ, cioOpenSlots );
 }
 
-INLINE LONG COSDisk::CioAllEnqueued() const
+LONG COSDisk::CioAllEnqueued() const
 {
     return m_pIOQueue->CioreqIOHeap() + m_pIOQueue->CioVIPList() + m_pIOQueue->CioMetedReadQueue() + m_pIOQueue->CioWriteQueue();
 }
 
 #ifdef DEBUG
-INLINE LONG COSDisk::CioOutstanding() const
+LONG COSDisk::CioOutstanding() const
 {
     //  This is an all up accounting for background "forms" of outstanding IO against 
     //  the disk, today this includes:
@@ -7772,7 +7772,7 @@ void COSDisk::TrackOsFfbComplete( const IOFLUSHREASON iofr, const DWORD error, c
 
 // Refreshes the physical disk performance information if necessary
 
-INLINE VOID COSDisk::RefreshDiskPerformance()
+VOID COSDisk::RefreshDiskPerformance()
 {
     if ( TickOSTimeCurrent() - m_tickPerformanceLastMeasured >= s_dtickPerformancePeriod )
     {
@@ -7812,7 +7812,7 @@ VOID COSDisk::QueryDiskPerformance()
 
 // Returns the actual physical / OS-level disk queue depth (not internal OSDisk level)
 
-INLINE DWORD COSDisk::CioOsQueueDepth()
+DWORD COSDisk::CioOsQueueDepth()
 {
     RefreshDiskPerformance();
 
@@ -7871,14 +7871,14 @@ void COSDisk::IORun::PrepareForIssue(
 
 //  Determines if this I/O hit a temporary resource issue that may cleanup later
 
-INLINE bool FIOTemporaryResourceIssue( ERR errIO )
+bool FIOTemporaryResourceIssue( ERR errIO )
 {
     return errIO == JET_errOutOfMemory;
 }
 
 //  Determines if this I/O method does not work on this file
 
-INLINE bool FIOMethodTooComplex(
+bool FIOMethodTooComplex(
     _In_ const IOREQ::IOMETHOD      iomethodCurrentFile,
     _In_ const IOREQ::IOMETHOD      iomethodIO,
     _In_ const ERR                  errIO )

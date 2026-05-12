@@ -970,7 +970,7 @@ HandleError:
 
 
 //  ================================================================
-INLINE VOID OLDDB_STATUS::Reset( INST * const pinst )
+VOID OLDDB_STATUS::Reset( INST * const pinst )
 //  ================================================================
 {
     Assert( pinst->m_critOLD.FOwner() );
@@ -1454,7 +1454,7 @@ VOID OLD2TermInst( INST *pinst )
 }
 
 
-INLINE BOOL FOLDContinue( const IFMP ifmp )
+BOOL FOLDContinue( const IFMP ifmp )
 {
     const INST * const          pinst       = PinstFromIfmp( ifmp );
     const DBID                  dbid        = g_rgfmp[ifmp].Dbid();
@@ -1467,7 +1467,7 @@ INLINE BOOL FOLDContinue( const IFMP ifmp )
         && !pinst->m_fStopJetService );
 }
 
-INLINE BOOL FOLDContinueTree( const FUCB * pfucb )
+BOOL FOLDContinueTree( const FUCB * pfucb )
 {
     return ( !pfucb->u.pfcb->FDeletePending() && FOLDContinue( pfucb->ifmp ) );
 }

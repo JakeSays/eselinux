@@ -16,9 +16,9 @@
 
 //  manipulate bits on the page
 
-inline BOOL FGetBit( const void * const pv, const INT ibitOffset );
-inline void SetBit( void * const pv, const INT ibitOffset );
-inline void FlipBit( void * const pv, const INT ibitOffset );
+BOOL FGetBit( const void * const pv, const INT ibitOffset );
+void SetBit( void * const pv, const INT ibitOffset );
+void FlipBit( void * const pv, const INT ibitOffset );
 
 //  get and set the new checksum format flag
 

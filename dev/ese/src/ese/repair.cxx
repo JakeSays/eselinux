@@ -1156,14 +1156,14 @@ const CHAR * const rgszLargeTables[] =
 const INT cszLargeTables = sizeof( rgszLargeTables ) / sizeof( rgszLargeTables[0] );
 
 //  To take advantage of sequential NT I/O round up sequential prereads to this many pages (64K)
-INLINE INT CpgMinRepairSequentialPreread( ULONG cbPageSize )
+INT CpgMinRepairSequentialPreread( ULONG cbPageSize )
 {
     return ( 64 * 1024 ) / cbPageSize;
 }
 
 const OBJID objidInvalid = 0x7ffffffe;
 
-INLINE TraceContextScope TcRepair()
+TraceContextScope TcRepair()
 {
     TraceContextScope tc( iortRepair );
     tc->nParentObjectClass = tceNone;

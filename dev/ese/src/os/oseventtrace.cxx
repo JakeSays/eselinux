@@ -205,7 +205,7 @@ ERR ErrOSEventTraceInit()
 }
 
 
-INLINE BOOL FOSEventTraceEnabled()
+BOOL FOSEventTraceEnabled()
 {
 #ifdef ESENT
     return !g_fDisableTracingForced && Microsoft_Windows_ESE_Context.IsEnabled == EVENT_CONTROL_CODE_ENABLE_PROVIDER;
@@ -215,7 +215,7 @@ INLINE BOOL FOSEventTraceEnabled()
 }
 
 template< OSEventTraceGUID etguid >
-INLINE BOOL FOSEventTraceEnabled()
+BOOL FOSEventTraceEnabled()
 {
     if ( g_fDisableTracingForced )
     {

@@ -312,7 +312,7 @@ VOID FUCBResetIndexRange( FUCB *pfucb )
 }
 
 
-INLINE INT CmpPartialKeyKey( const KEY& key1, const KEY& key2 )
+INT CmpPartialKeyKey( const KEY& key1, const KEY& key2 )
 {
     INT     cmp;
 

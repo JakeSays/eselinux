@@ -1193,7 +1193,7 @@ VOID CPageValidationLogEvent::ReportLostFlush_(
 //  Return the cb of a TAG, masking out the flags stored in the high
 //  order bits.
 //
-INLINE USHORT CPAGE::TAG::Cb( _In_ const BOOL fSmallFormat ) const
+USHORT CPAGE::TAG::Cb( _In_ const BOOL fSmallFormat ) const
 {
     if ( fSmallFormat )
     {
@@ -1209,7 +1209,7 @@ INLINE USHORT CPAGE::TAG::Cb( _In_ const BOOL fSmallFormat ) const
 //  Return the ib of a TAG, masking out the flags stored in the high
 //  order bits.
 //
-INLINE USHORT CPAGE::TAG::Ib( _In_ const BOOL fSmallFormat ) const
+USHORT CPAGE::TAG::Ib( _In_ const BOOL fSmallFormat ) const
 {
     if ( fSmallFormat )
     {
@@ -1225,7 +1225,7 @@ INLINE USHORT CPAGE::TAG::Ib( _In_ const BOOL fSmallFormat ) const
 //  Gets the flags stored in a TAG. They are extracted and put in the
 //  lower bits of a USHORT
 //
-INLINE USHORT CPAGE::TAG::FFlags( _In_ const CPAGE * const pPage, _In_ const BOOL fSmallFormat ) const
+USHORT CPAGE::TAG::FFlags( _In_ const CPAGE * const pPage, _In_ const BOOL fSmallFormat ) const
 {
     Assert( fSmallFormat == pPage->FSmallPageFormat() );
 
@@ -1253,7 +1253,7 @@ INLINE USHORT CPAGE::TAG::FFlags( _In_ const CPAGE * const pPage, _In_ const BOO
 //
 //  This sets the ib in a tag. The flags are left unchanged
 //
-INLINE VOID CPAGE::TAG::SetIb( _In_ CPAGE * const pPage, _In_ USHORT ib )
+VOID CPAGE::TAG::SetIb( _In_ CPAGE * const pPage, _In_ USHORT ib )
 {
     const BOOL fSmallFormat = pPage->FSmallPageFormat();
 
@@ -1287,7 +1287,7 @@ INLINE VOID CPAGE::TAG::SetIb( _In_ CPAGE * const pPage, _In_ USHORT ib )
 //
 //  Sets the cb in a tag. The flags are left unchanged
 //
-INLINE VOID CPAGE::TAG::SetCb( _In_ CPAGE * const pPage, _In_ USHORT cb )
+VOID CPAGE::TAG::SetCb( _In_ CPAGE * const pPage, _In_ USHORT cb )
 {
     const BOOL fSmallFormat = pPage->FSmallPageFormat();
 
@@ -1322,7 +1322,7 @@ INLINE VOID CPAGE::TAG::SetCb( _In_ CPAGE * const pPage, _In_ USHORT cb )
 //
 //  Sets the flags in a TAG. The cb and ib are not changed.
 //
-INLINE VOID CPAGE::TAG::SetFlags( _In_ CPAGE * const pPage, _In_ USHORT fFlags )
+VOID CPAGE::TAG::SetFlags( _In_ CPAGE * const pPage, _In_ USHORT fFlags )
 {
     Assert( 0 == ( fFlags & ~0x7 ) );   // only 3 valid flags
 
@@ -1398,7 +1398,7 @@ DWORD_PTR*      CPAGE::rgdwHintCache            = nullptr;
 
 
 //  ================================================================
-INLINE ULONG CPAGE::CbPage() const
+ULONG CPAGE::CbPage() const
 //  ================================================================
 {
 //  try this ... for now this should work same as CbPage() as there is no differences yet
@@ -1407,7 +1407,7 @@ INLINE ULONG CPAGE::CbPage() const
 }
 
 //  ================================================================
-INLINE ULONG CPAGE::CbBuffer() const
+ULONG CPAGE::CbBuffer() const
 //  ================================================================
 {
     return m_platchManager->CbBuffer( m_bfl );
@@ -1419,7 +1419,7 @@ INLINE ULONG CPAGE::CbBuffer() const
 
 //  ================================================================
 template< PageNodeBoundsChecking pgnbc >
-INLINE VOID CPAGE::GetPtr_( INT itag, LINE * pline, _Out_opt_ ERR * perrNoEnforce ) const
+VOID CPAGE::GetPtr_( INT itag, LINE * pline, _Out_opt_ ERR * perrNoEnforce ) const
 //  ================================================================
 //
 //  Returns a pointer to the line on the page. Calling a method that
@@ -1628,7 +1628,7 @@ INLINE VOID CPAGE::GetPtr_( INT itag, LINE * pline, _Out_opt_ ERR * perrNoEnforc
 
 
 //  ================================================================
-INLINE INT CPAGE::CbDataTotal_( const DATA * rgdata, INT cdata ) const
+INT CPAGE::CbDataTotal_( const DATA * rgdata, INT cdata ) const
 //  ================================================================
 //
 //  Returns the total size of all elements in a DATA array
@@ -1649,7 +1649,7 @@ INLINE INT CPAGE::CbDataTotal_( const DATA * rgdata, INT cdata ) const
 
 
 //  ================================================================
-INLINE USHORT CPAGE::CbAdjustForPage() const
+USHORT CPAGE::CbAdjustForPage() const
 //  ================================================================
 //
 //  returns count of bytes that are "missing" from the buffer to be
@@ -1689,7 +1689,7 @@ INT CPAGE::CbPageData() const
 }
 
 //  ================================================================
-INLINE INT CPAGE::CbContiguousBufferFree_( ) const
+INT CPAGE::CbContiguousBufferFree_( ) const
 //  ================================================================
 //
 //  Returns the number of bytes available at the end of the last line
@@ -1705,7 +1705,7 @@ INLINE INT CPAGE::CbContiguousBufferFree_( ) const
 }
 
 //  ================================================================
-INLINE INT CPAGE::CbContiguousFree_( ) const
+INT CPAGE::CbContiguousFree_( ) const
 //  ================================================================
 //
 //  Returns the number of bytes available at the end of the last line
@@ -1718,7 +1718,7 @@ INLINE INT CPAGE::CbContiguousFree_( ) const
 }
 
 //  ================================================================
-INLINE USHORT CPAGE::CbFree_ ( ) const
+USHORT CPAGE::CbFree_ ( ) const
 //  ================================================================
 {
     return ((PGHDR*)m_bfl.pv)->cbFree;
@@ -1735,7 +1735,7 @@ USHORT CPAGE::CbPageFree ( ) const
 
 
 //  ================================================================
-INLINE VOID CPAGE::FreeSpace_( _In_ const INT cb )
+VOID CPAGE::FreeSpace_( _In_ const INT cb )
 //  ================================================================
 //
 //  Creates the amount of contigous free space passed to it,
@@ -1756,7 +1756,7 @@ INLINE VOID CPAGE::FreeSpace_( _In_ const INT cb )
 
 
 //  ================================================================
-INLINE VOID CPAGE::CopyData_( TAG * ptag, const DATA * rgdata, INT cdata )
+VOID CPAGE::CopyData_( TAG * ptag, const DATA * rgdata, INT cdata )
 //  ================================================================
 //
 //  Copies the data array into the page location pointed to by the TAG
@@ -1794,7 +1794,7 @@ INLINE VOID CPAGE::CopyData_( TAG * ptag, const DATA * rgdata, INT cdata )
 
 
 //  ================================================================
-INLINE CPAGE::TAG * CPAGE::PtagFromItag_( INT itag ) const
+CPAGE::TAG * CPAGE::PtagFromItag_( INT itag ) const
 //  ================================================================
 //
 //  Turn an itag into a pointer to a tag.
@@ -1833,7 +1833,7 @@ INLINE CPAGE::TAG * CPAGE::PtagFromItag_( INT itag ) const
 
 #ifdef DEBUG
 //  ================================================================
-INLINE CPAGE::TAG * CPAGE::PtagFromRgbCbItag_( BYTE *rgbPage, INT cbPage, INT itag ) const
+CPAGE::TAG * CPAGE::PtagFromRgbCbItag_( BYTE *rgbPage, INT cbPage, INT itag ) const
 //  ================================================================
 //
 //  Turn an rgbPage, cbPage and itag into a pointer to a tag.
@@ -1928,7 +1928,7 @@ INLINE CPAGE::TAG * CPAGE::PtagFromRgbCbItag_( BYTE *rgbPage, INT cbPage, INT it
 
 
 //  ================================================================
-INLINE ULONG CPAGE::CbTagArray_() const
+ULONG CPAGE::CbTagArray_() const
 //  ================================================================
 {
     return ITagMicFree_() * sizeof( TAG );
@@ -1936,7 +1936,7 @@ INLINE ULONG CPAGE::CbTagArray_() const
 
 
 //  ================================================================
-INLINE BYTE * CPAGE::PbFromIb_( USHORT ib ) const
+BYTE * CPAGE::PbFromIb_( USHORT ib ) const
 //  ================================================================
 //
 //  Turns an index into the data array on the page into a pointer
@@ -5515,7 +5515,7 @@ VOID CPAGE::Delete_( INT itag )
 
 
 //  ================================================================
-INLINE VOID CPAGE::ReorganizeData_( __in_range( reorgOther, reorgMax - 1 ) const CPAGEREORG reorgReason )
+VOID CPAGE::ReorganizeData_( __in_range( reorgOther, reorgMax - 1 ) const CPAGEREORG reorgReason )
 //  ================================================================
 //
 //  Compact the data on the page to be contigous on the lower end of
@@ -6021,7 +6021,7 @@ VOID CPAGE::RehydratePage()
 
 
 //  ================================================================
-INLINE VOID CPAGE::ZeroOutGaps_( const CHAR chZero )
+VOID CPAGE::ZeroOutGaps_( const CHAR chZero )
 //  ================================================================
 //
 //  Code has been cut-and-pasted from ReorganizeData_() above, then
@@ -6118,7 +6118,7 @@ INLINE VOID CPAGE::ZeroOutGaps_( const CHAR chZero )
 }
 
 //  ================================================================
-INLINE BOOL CPAGE::FRuntimeScrubbingEnabled_ ( ) const
+BOOL CPAGE::FRuntimeScrubbingEnabled_ ( ) const
 //  ================================================================
 {
 #ifdef ENABLE_JET_UNIT_TEST

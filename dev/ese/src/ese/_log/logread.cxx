@@ -665,12 +665,12 @@ VOID LogPrereaderBase::LGPDBDisable( const DBID dbid )
     Assert( !FLGPDBEnabled( dbid ) );
 }
 
-INLINE BOOL LogPrereaderBase::FLGPEnabled() const
+BOOL LogPrereaderBase::FLGPEnabled() const
 {
     return m_rgArrayPagerefs != nullptr;
 }
 
-INLINE BOOL LogPrereaderBase::FLGPDBEnabled( const DBID dbid ) const
+BOOL LogPrereaderBase::FLGPDBEnabled( const DBID dbid ) const
 {
     if ( !FLGPEnabled() )
     {
@@ -858,14 +858,14 @@ HandleError:
     return err;
 }
 
-INLINE size_t LogPrereaderBase::CpgLGPIGetArrayPgnosSize( const DBID dbid ) const
+size_t LogPrereaderBase::CpgLGPIGetArrayPgnosSize( const DBID dbid ) const
 {
     Assert( FLGPEnabled() );
 
     return m_rgArrayPagerefs[ dbid ].Size();
 }
 
-INLINE size_t LogPrereaderBase::IpgLGPGetSorted( const DBID dbid, const PGNO pgno ) const
+size_t LogPrereaderBase::IpgLGPGetSorted( const DBID dbid, const PGNO pgno ) const
 {
     Assert( FLGPDBEnabled( dbid ) );
 
@@ -937,7 +937,7 @@ VOID LogPrereaderBase::LGPIGetEntry(
     *piorf = pageref.iorf;
 }
 
-INLINE INT __cdecl LogPrereaderBase::ILGPICmpPagerefs(  const LogPrereaderBase::PageRef*    ppageref1,
+INT __cdecl LogPrereaderBase::ILGPICmpPagerefs(  const LogPrereaderBase::PageRef*    ppageref1,
                                                         const LogPrereaderBase::PageRef*    ppageref2 )
 {
     const PGNO pgno1 = ppageref1->pgno;
@@ -3580,7 +3580,7 @@ VOID AssertLRSizesConsistent()
 
 //  Implementation of LogPrereader.
 
-INLINE ERR LogPrereader::ErrLGPIPrereadPage( __in_range( dbidUserLeast, dbidMax - 1 ) const DBID dbid, const PGNO pgno, const BFPreReadFlags bfprf )
+ERR LogPrereader::ErrLGPIPrereadPage( __in_range( dbidUserLeast, dbidMax - 1 ) const DBID dbid, const PGNO pgno, const BFPreReadFlags bfprf )
 {
     Assert( FLGPDBEnabled( dbid ) );
     Assert( dbid >= dbidUserLeast && dbid < dbidMax );

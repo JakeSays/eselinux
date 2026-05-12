@@ -415,16 +415,16 @@ class CFlushMap
         CFMPG CfmpgGetRequiredFmDataPageCount_( const PGNO pgnoReq );
         CFMPG CfmpgGetPreferredFmDataPageCount_( const PGNO pgnoReq );
         QWORD CbGetRequiredFmFileSize_( const CFMPG cfmpgDataNeeded );
-        INLINE void SetFmPageDirty_( FlushMapPageDescriptor* const pfmd );
-        INLINE void ResetFmPageDirty_( FlushMapPageDescriptor* const pfmd );
+        void SetFmPageDirty_( FlushMapPageDescriptor* const pfmd );
+        void ResetFmPageDirty_( FlushMapPageDescriptor* const pfmd );
 
         // Attach/term.
         ERR ErrAttachFlushMap_();
         void TermFlushMap_();
 
         // Descriptor and page initialization.
-        INLINE ERR ErrGetDescriptorFromFmPgno_( const FMPGNO fmpgno, FlushMapPageDescriptor** const ppfmd );
-        INLINE ERR ErrGetDescriptorFromPgno_( const PGNO pgno, FlushMapPageDescriptor** const ppfmd );
+        ERR ErrGetDescriptorFromFmPgno_( const FMPGNO fmpgno, FlushMapPageDescriptor** const ppfmd );
+        ERR ErrGetDescriptorFromPgno_( const PGNO pgno, FlushMapPageDescriptor** const ppfmd );
         ERR ErrAllocateDescriptorsCapacity_( const CFMPG cfmdNeeded );
         ERR ErrAllocateFmDataPageCapacity_( const CFMPG cfmpgNeeded );
         ERR ErrAllocateFmPage_( FlushMapPageDescriptor* const pfmd );
@@ -495,7 +495,7 @@ class CFlushMap
 
         // Flush state manipulation.
         ERR ErrSetRangePgnoFlushType_( const PGNO pgnoFirst, const CPG cpg, const CPAGE::PageFlushType pgft, const DBTIME dbtime, const BOOL fWait );
-        INLINE USHORT IbitGetBitInPage_( const PGNO pgno, const size_t cbHeader, const DWORD cbitPerState );
+        USHORT IbitGetBitInPage_( const PGNO pgno, const size_t cbHeader, const DWORD cbitPerState );
         INLINE INT IGetStateFromBitmap_(
             BYTE* const pbBitmap, const size_t cbBitmap,
             const PGNO pgno,
@@ -607,7 +607,7 @@ class CFlushMap
         ERR ErrSetFlushMapCapacity( _In_ const PGNO pgnoReq );
 
         // Gets the flush map page number that holds the state for a given database page.
-        INLINE FMPGNO FmpgnoGetFmPgnoFromDbPgno( _In_ const PGNO pgno );
+        FMPGNO FmpgnoGetFmPgnoFromDbPgno( _In_ const PGNO pgno );
 
         // DB header flushes must call these to synchronize signatures.
         static void EnterDbHeaderFlush( _In_ CFlushMap* const pfm, _Out_ SIGNATURE* const psignDbHdrFlush, _Out_ SIGNATURE* const psignFlushMapHdrFlush );

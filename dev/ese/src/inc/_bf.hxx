@@ -620,7 +620,7 @@ INLINE void BFITraceResMgrInit(
     const double    dblHashUniformity,
     const double    dblSpeedSizeTradeoff );
 
-INLINE void BFITraceResMgrTerm();
+void BFITraceResMgrTerm();
 
 INLINE void BFITraceCachePage(
     const TICK                  tickCache,
@@ -673,7 +673,7 @@ DECLARE_APPROXIMATE_INDEX( QWORD, BF, BF::OffsetOfOB0IC, BFOB0 );
 typedef CInvasiveList< BF, BF::OffsetOfOB0OLILE > BFOB0OverflowList;
 
 QWORD BFIOB0Offset( const IFMP ifmp, const LGPOS* const plgpos );
-INLINE LGPOS BFIOB0Lgpos( const IFMP ifmp, LGPOS lgpos, const BOOL fNextBucket = fFalse );
+LGPOS BFIOB0Lgpos( const IFMP ifmp, LGPOS lgpos, const BOOL fNextBucket = fFalse );
 
 
 //
@@ -902,10 +902,10 @@ void BFICacheINotifyCacheSizeChanges(
     const LONG_PTR cbfCacheSizeFinal );
 ERR ErrBFICacheUpdateStatistics();
 
-INLINE BOOL FBFICacheValidPv( const void* const pv );
-INLINE BOOL FBFICacheValidPbf( const PBF pbf );
-INLINE PBF PbfBFICacheIbf( const IBF ibf );
-INLINE void* PvBFICacheIpg( const IPG ipg );
+BOOL FBFICacheValidPv( const void* const pv );
+BOOL FBFICacheValidPbf( const PBF pbf );
+PBF PbfBFICacheIbf( const IBF ibf );
+void* PvBFICacheIpg( const IPG ipg );
 IBF IbfBFICachePbf( const PBF pbf );
 IPG IpgBFICachePv( const void* const pv );
 
@@ -1067,8 +1067,8 @@ ERR ErrBFIMaintScheduleTask(    POSTIMERTASK        postt,
 
     //  Concurrency simulation
 
-INLINE BOOL FBFIChance( INT pctChance );
-INLINE void BFISynchronicity( void );
+BOOL FBFIChance( INT pctChance );
+void BFISynchronicity( void );
 
     //  Scavenging
 
@@ -1257,12 +1257,12 @@ extern LONG             g_cMaintCacheSizePending;
 void BFIMaintLowMemoryCallback( DWORD_PTR pvUnused );
 void BFIMaintIdleCacheStatsITask( VOID * pvGroupContext, VOID * );
 void BFIMaintCacheStatsITask( VOID *, VOID * pvContext );
-INLINE ERR ErrBFIMaintCacheStatsRequest( const BFIMaintCacheStatsRequestType bfmcsrt );
-INLINE BOOL FBFIMaintCacheStatsTryAcquire();
-INLINE void BFIMaintCacheStatsRelease();
+ERR ErrBFIMaintCacheStatsRequest( const BFIMaintCacheStatsRequestType bfmcsrt );
+BOOL FBFIMaintCacheStatsTryAcquire();
+void BFIMaintCacheStatsRelease();
 
-INLINE CBF CbfBFICacheUsed();
-INLINE CBF CbfBFICacheCommitted();
+CBF CbfBFICacheUsed();
+CBF CbfBFICacheCommitted();
 __int64 CbBFICacheSizeUsedDehydrated();
 __int64 CbBFICacheISizeUsedHydrated();
 __int64 CbBFICacheIMemoryReserved();
@@ -1271,15 +1271,15 @@ __int64 CbBFIAveResourceSize();
 LONG_PTR CbfBFICredit();
 LONG_PTR CbfBFIAveCredit();
 __int64 CbBFICacheBufferSize();
-INLINE INT CbBFISize( ICBPage icb );
+INT CbBFISize( ICBPage icb );
 extern const LONG g_rgcbPageSize[icbPageMax];
 
 extern POSTIMERTASK     g_posttBFIMaintCacheSizeITask;
-INLINE ERR ErrBFIMaintCacheSizeRequest( OnDebug( BOOL* const pfAcquiredSemaphoreCheck = NULL ) );
+ERR ErrBFIMaintCacheSizeRequest( OnDebug( BOOL* const pfAcquiredSemaphoreCheck = NULL ) );
 void BFIMaintCacheSizeITask( void*, void* );
 void BFIMaintCacheSizeIShrink();
-INLINE BOOL FBFIMaintCacheSizeAcquire();
-INLINE ERR ErrBFIMaintCacheSizeReleaseAndRescheduleIfPending();
+BOOL FBFIMaintCacheSizeAcquire();
+ERR ErrBFIMaintCacheSizeReleaseAndRescheduleIfPending();
 TICK DtickBFIMaintCacheSizeDuration();
 
     //  Buffer Size and Management
@@ -1321,10 +1321,10 @@ extern POSTIMERTASK     g_posttBFIMaintCacheResidencyITask;
 
 void BFIMaintCacheResidencyInit();
 void BFIMaintCacheResidencyTerm();
-INLINE void BFIMaintCacheResidencyRequest();
+void BFIMaintCacheResidencyRequest();
 void BFIMaintCacheResidencyITask( void*, void* );
-INLINE BFResidenceState BfrsBFIUpdateResidentState( PBF const pbf, const BFResidenceState bfrsNew );
-INLINE BFResidenceState BfrsBFIUpdateResidentState( PBF const pbf, const BFResidenceState bfrsNew, const BFResidenceState bfrsIfOld );
+BFResidenceState BfrsBFIUpdateResidentState( PBF const pbf, const BFResidenceState bfrsNew );
+BFResidenceState BfrsBFIUpdateResidentState( PBF const pbf, const BFResidenceState bfrsNew, const BFResidenceState bfrsIfOld );
 
     //  Cache telemetry
 
@@ -1338,9 +1338,9 @@ void BFIMaintTelemetryITask( VOID *, VOID * pvContext );
 
     //  Hashed Latch
 
-INLINE BOOL FBFILatchValidContext( const DWORD_PTR dwContext );
-INLINE PBF PbfBFILatchContext( const DWORD_PTR dwContext );
-INLINE CSXWLatch* PsxwlBFILatchContext( const DWORD_PTR dwContext );
+BOOL FBFILatchValidContext( const DWORD_PTR dwContext );
+PBF PbfBFILatchContext( const DWORD_PTR dwContext );
+CSXWLatch* PsxwlBFILatchContext( const DWORD_PTR dwContext );
 void BFILatchNominate( const PBF pbf );
 BOOL FBFILatchDemote( const PBF pbf );
 
@@ -1367,7 +1367,7 @@ ERR ErrBFICachePage(    PBF* const ppbf,
                         const BFLatchFlags bflfTraceOnly,
                         BOOL* const pfRepeatedRead );
 
-INLINE BOOL FBFICacheViewFresh( const PBF pbf );
+BOOL FBFICacheViewFresh( const PBF pbf );
 
 void BFIOpportunisticallyFlushPage( PBF pbf, IOREASONPRIMARY iorp );
 
@@ -1394,7 +1394,7 @@ ERR ErrBFIVersionCopyPage( PBF pbfOrigOld, PBF* ppbfNewCurr, const BOOL fWait, _
 void BFICleanVersion( PBF pbf, BOOL fTearDownFMP );
 
 ERR ErrBFIPrereadPage( IFMP ifmp, PGNO pgno, const BFPreReadFlags bfprf, const BFPriority bfpri, const TraceContext& tc );
-INLINE void BFIMarkAsSuperCold( PBF pbf, const BOOL fUser );
+void BFIMarkAsSuperCold( PBF pbf, const BOOL fUser );
 INLINE void BFITouchResource(
     _In_ const PBF                  pbf,
     _In_ const BFLatchType          bfltTraceOnly,
@@ -1403,7 +1403,7 @@ INLINE void BFITouchResource(
     _In_ const ULONG_PTR            pctCachePriority,
     _In_ const TraceContext&        tc );
 
-INLINE BOOL FBFIDatabasePage( const PBF pbf );
+BOOL FBFIDatabasePage( const PBF pbf );
 LOCAL BOOL FBFIBufferIsZeroed( const PBF pbf );
 
 typedef INT CPageEvents;
@@ -1411,7 +1411,7 @@ CPageEvents CpeBFICPageEventsFromBflf(const BFLatchFlags bflf);
 
 void BFITrackCacheMissLatency( const PBF pbf, HRT hrtStart, const BFTraceCacheMissReason bftcmr, const OSFILEQOS qosIoPriorities, const TraceContext& tc, ERR errValidate );
 
-INLINE ERR ErrBFIValidatePage( const PBF pbf, const BFLatchType bflt, const CPageEvents cpe, const TraceContext& tc );
+ERR ErrBFIValidatePage( const PBF pbf, const BFLatchType bflt, const CPageEvents cpe, const TraceContext& tc );
 ERR ErrBFIValidatePageSlowly( PBF pbf, const BFLatchType bflt, const CPageEvents cpe, const TraceContext& tc );
 void BFIPatchRequestIORange( PBF pbf, const CPageEvents cpe, const TraceContext& tc );
 #define BFIValidatePagePgno( pbf )      BFIValidatePagePgno_( pbf, __FUNCTION__ )
@@ -1466,7 +1466,7 @@ ERR ErrBFIFlushPage(    __inout const PBF       pbf,
                         __out_opt BOOL * const  pfPermanentErr  = nullptr );
 bool FBFICompleteFlushPage( _Inout_ PBF pbf, _In_ const BFLatchType bflt, _In_ const BOOL fUnencumberedPath = fFalse, _In_ const BOOL fCompleteRemapReVerify = fTrue, _In_ const BOOL fAllowTearDownClean = fFalse );
 
-INLINE BOOL FBFIIsCleanEnoughForEvict( const PBF pbf );
+BOOL FBFIIsCleanEnoughForEvict( const PBF pbf );
 void BFIFlagDependenciesImpeding( PBF pbf );
 ERR ErrBFIEvictRemoveCleanVersions( PBF pbf );
 ERR ErrBFIEvictPage( PBF pbf, BFLRUK::CLock* plockLRUK, const BFEvictFlags bfefDangerousOptions );
@@ -1640,7 +1640,7 @@ ERR ErrBFIWriteSignalIError( ULONG_PTR pSignalNext ); // for edbg.cxx
 ERR ErrBFIWriteSignalState( const PBF pbf );
 void BFIFlushComplete( _Inout_ const PBF pbf, _In_ const BFLatchType bfltHave, _In_ const BOOL fUnencumberedPath, _In_ const BOOL fCompleteRemapReVerify, _In_ const BOOL fAllowTearDownClean );
 
-INLINE BOOL FBFIOpportuneWrite( PBF pbf );
+BOOL FBFIOpportuneWrite( PBF pbf );
 
     //  Time Dependencies
 

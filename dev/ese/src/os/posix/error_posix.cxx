@@ -809,7 +809,7 @@ VOID RFSUnsuppressFaultInjection( const ULONG ulID )
 
 inline BOOL FRFSThreadEnabled();
 
-INLINE TESTINJECTION* PinjectionFind_( const ULONG ulID )
+TESTINJECTION* PinjectionFind_( const ULONG ulID )
 {
     if ( 0 == g_cTestInjections )
     {
@@ -829,7 +829,7 @@ INLINE TESTINJECTION* PinjectionFind_( const ULONG ulID )
     return nullptr;
 }
 
-INLINE BOOL FTestInjection_( const ULONG ulID, JET_API_PTR* const ppv )
+BOOL FTestInjection_( const ULONG ulID, JET_API_PTR* const ppv )
 {
     TESTINJECTION * const pinjection = PinjectionFind_( ulID );
     if ( pinjection )

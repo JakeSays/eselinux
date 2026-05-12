@@ -77,12 +77,12 @@ class CLookaside
 #endif // RM_STATISTICS
 
 public:
-    INLINE          CLookaside();
+    CLookaside();
                     ~CLookaside();
             ERR     ErrInit();
             ERR     ErrSetSize( INT cSize );
-    INLINE  BOOL    FInit() const;
-    INLINE  INT     CSize() const;
+    BOOL    FInit() const;
+    INT     CSize() const;
             VOID    Term();
             VOID    *PvGet( DWORD_PTR dwHint );
                     //  looks for the object in the area provided by the hint
@@ -110,7 +110,7 @@ public:
     CResourceFreeObjectList * volatile m_pRFOLNext;
 
 public:
-    INLINE          CResourceFreeObjectList();
+    CResourceFreeObjectList();
 
     INLINE static   VOID    RFOLAddObject(
 #ifdef RM_DEFERRED_FREE
@@ -130,7 +130,7 @@ public:
             CResourceFreeObjectList * volatile *ppRFOL
 #endif // !RM_DEFERRED_FREE
             );
-    INLINE static   VOID    RFOLLoopCheck( CResourceFreeObjectList * volatile *ppRFOL );
+    static   VOID    RFOLLoopCheck( CResourceFreeObjectList * volatile *ppRFOL );
 
 private:
     //  Forbidden constructors
@@ -168,7 +168,7 @@ public:
                             //  them separated for the sake of easier debugging
 
 public:
-    INLINE      CResourceChunkInfo( CResourceManager *pRMOwner );
+    CResourceChunkInfo( CResourceManager *pRMOwner );
 
 private:
     //  Forbidden constructors
@@ -199,7 +199,7 @@ public:
 #endif // MEM_CHECK
 
 public:
-    INLINE          CResourceSection();
+    CResourceSection();
 
 private:
     //  Forbidden constructors
@@ -342,9 +342,9 @@ public:
     VOID Dump( CPRINTF * pcprintf, DWORD_PTR dwOffset ) const;
 #endif // DEBUGGER_EXTENSION
 
-    INLINE ULONG_PTR CbAllocated() const;
-    INLINE ULONG_PTR CbUsed() const;
-    INLINE ULONG_PTR CbQuota() const;
+    ULONG_PTR CbAllocated() const;
+    ULONG_PTR CbUsed() const;
+    ULONG_PTR CbQuota() const;
 
 private:
     //  Forbidden constructors
@@ -392,15 +392,15 @@ private:
     static CCriticalSection s_critAddDelete;
 
 public:
-    INLINE      CRMContainer( JET_RESID resid );
+    CRMContainer( JET_RESID resid );
 
     static CResourceManager *PRMFind( JET_RESID resid );
     static BOOL FAdd( JET_RESID resid );
     static VOID Delete( JET_RESID resid );
 
-    INLINE static VOID CalcAllocatedObjects( JET_RESID resid, void* pvBuf );
-    INLINE static VOID CalcUsedObjects( JET_RESID resid, void* pvBuf );
-    INLINE static VOID CalcQuotaObjects( JET_RESID resid, void* pvBuf );
+    static VOID CalcAllocatedObjects( JET_RESID resid, void* pvBuf );
+    static VOID CalcUsedObjects( JET_RESID resid, void* pvBuf );
+    static VOID CalcQuotaObjects( JET_RESID resid, void* pvBuf );
 
 #ifdef DEBUGGER_EXTENSION
     static CResourceManager *EDBGPRMFind( JET_RESID resid );

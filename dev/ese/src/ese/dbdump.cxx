@@ -77,7 +77,7 @@ VOID DUMPPrintSig( const SIGNATURE * const psig )
     DUMPPrintF( "%s\n", rgSig );
 }
 
-INLINE LOCAL VOID DUMPPrintBkinfo( BKINFO *pbkinfo, DBFILEHDR::BKINFOTYPE bkinfoType = DBFILEHDR::backupNormal)
+LOCAL VOID DUMPPrintBkinfo( BKINFO *pbkinfo, DBFILEHDR::BKINFOTYPE bkinfoType = DBFILEHDR::backupNormal)
 {
     LONG    genLow, genHigh;
     LGPOS   lgpos;

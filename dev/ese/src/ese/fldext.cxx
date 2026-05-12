@@ -4,7 +4,7 @@
 #include "std.hxx"
 
 
-INLINE ERR ErrRECIGetRecord(
+ERR ErrRECIGetRecord(
     FUCB    *pfucb,
     DATA    **ppdataRec,
     BOOL    fUseCopyBuffer )
@@ -617,7 +617,7 @@ ERR ErrRECIRetrieveTaggedColumn(
                 grbit | ( fUseDerivedBit ? grbitRetrieveColumnUseDerivedBit : 0  ) );
 }
 
-INLINE ULONG UlRECICountTaggedColumnInstances(
+ULONG UlRECICountTaggedColumnInstances(
     FCB             * pfcb,
     const COLUMNID  columnid,
     const DATA&     dataRec )
@@ -1446,7 +1446,7 @@ HandleError:
 
 
 //  ================================================================
-INLINE ERR ErrRECAdjustEscrowedColumn(
+ERR ErrRECAdjustEscrowedColumn(
     FUCB *          pfucb,
     const COLUMNID  columnid,
     const FIELD&    fieldFixed,
@@ -1561,7 +1561,7 @@ HandleError:
 //  This routine only operates on a copy buffer.  Errors are returned if the copy buffer is not set,
 //  or if the given column instance is already separated from the intrinsic record.
 //
-INLINE ERR ErrRECIGetIntrinsicAvail(
+ERR ErrRECIGetIntrinsicAvail(
     FUCB                *pfucb,
     JET_COLUMNID        columnid,
     JET_RETINFO         *pretinfo,
@@ -2293,7 +2293,7 @@ HandleError:
 }
 
 
-INLINE VOID RECICountColumn(
+VOID RECICountColumn(
     FCB             *pfcb,
     const COLUMNID  columnid,
     const DATA&     dataRec,
@@ -3029,7 +3029,7 @@ HandleError:
 }
 
 
-INLINE VOID RECIAddTaggedColumnListEntry(
+VOID RECIAddTaggedColumnListEntry(
     TAGCOLINFO                  * const ptagcolinfo,
     const TAGFIELDS_ITERATOR    * const piterator,
     const TDB                   * const ptdb,

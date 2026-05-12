@@ -142,7 +142,7 @@ INLINE QWORD CmsecHRTFromHrtStart( const HRT hrtStart )
 
 //  returns the high resolution timer value in units of microseconds, given the frequency
 
-INLINE QWORD CusecHRTFromDhrt( const HRT dhrt, const HRT hrtFreq = HrtHRTFreq() );
+QWORD CusecHRTFromDhrt( const HRT dhrt, const HRT hrtFreq = HrtHRTFreq() );
 INLINE QWORD CusecHRTFromDhrt( const HRT dhrt, const HRT hrtFreq )
 {
     if ( dhrt < ( ~(QWORD)0 ) / ( 1000 * 1000 ) )

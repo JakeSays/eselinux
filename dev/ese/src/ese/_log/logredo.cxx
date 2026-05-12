@@ -250,7 +250,7 @@ LOCAL ERR ErrReplacePageImageHeaderTrailer(
 
 //  checks if page needs a redo of operation
 //
-INLINE BOOL FLGINeedRedo( const CSR& csr, const DBTIME dbtime )
+BOOL FLGINeedRedo( const CSR& csr, const DBTIME dbtime )
 {
     if ( pagetrimTrimmed == csr.PagetrimState() )
     {
@@ -333,7 +333,7 @@ LOCAL ERR ErrLGRIReportDbtimeMismatch(
 //  perr contains an error if there is a dbtime-too-(new|old) error.
 //  If the page is trimmed (according to csr), then returns fFalse (and perr = JET_errSuccess).
 //
-INLINE BOOL FLGNeedRedoCheckDbtimeBefore(
+BOOL FLGNeedRedoCheckDbtimeBefore(
     const IFMP      ifmp,
     const CSR&      csr,
     const DBTIME    dbtimeAfter,
@@ -443,7 +443,7 @@ INLINE BOOL FLGNeedRedoCheckDbtimeBefore(
 
 //  checks if page needs a redo of operation
 //
-INLINE BOOL FLGNeedRedoPage( const CSR& csr, const DBTIME dbtime )
+BOOL FLGNeedRedoPage( const CSR& csr, const DBTIME dbtime )
 {
     return FLGINeedRedo( csr, dbtime );
 }
@@ -451,7 +451,7 @@ INLINE BOOL FLGNeedRedoPage( const CSR& csr, const DBTIME dbtime )
 #ifdef DEBUG
 //  checks if page needs a redo of operation
 //
-INLINE BOOL FAssertLGNeedRedo( const IFMP ifmp, const CSR& csr, const DBTIME dbtime, const DBTIME dbtimeBefore )
+BOOL FAssertLGNeedRedo( const IFMP ifmp, const CSR& csr, const DBTIME dbtime, const DBTIME dbtimeBefore )
 {
     ERR         err;
     const BOOL  fRedoNeeded = FLGNeedRedoCheckDbtimeBefore( ifmp, csr, dbtime, dbtimeBefore, &err );
@@ -596,7 +596,7 @@ VOID LGIReportBadRevertedPage( const INST* pinst, const IFMP ifmp, const PGNO pg
 //  errSkipLogRedoOperation: the page is not latched, and the Pagetrim State is pagetrimTrimmed unless
 //                          fSkipRecoveryOnDbtimeRevert is set and dbtime of page is dbtimeRevert in which case we won't set it to pagetrimTrimmed.
 //
-INLINE ERR LOG::ErrLGIAccessPage(
+ERR LOG::ErrLGIAccessPage(
     PIB             *ppib,
     CSR             *pcsr,
     const IFMP      ifmp,
@@ -2929,7 +2929,7 @@ ERR LOG::ErrLGRICheckRedoConditionInTrx(
 
 //  sets dbtime on write-latched pages
 //
-INLINE VOID LGRIRedoDirtyAndSetDbtime( CSR *pcsr, DBTIME dbtime )
+VOID LGRIRedoDirtyAndSetDbtime( CSR *pcsr, DBTIME dbtime )
 {
     if ( latchWrite == pcsr->Latch() )
     {

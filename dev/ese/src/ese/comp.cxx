@@ -211,7 +211,7 @@ struct COMPACTINFO
 //  Giving compact / offline defrag access to this private function, as it's good testing.
 CPG CpgDBDatabaseMinMin();
 
-INLINE ERR ErrCMPOpenDB(
+ERR ErrCMPOpenDB(
     COMPACTINFO     *pcompactinfo,
     const WCHAR     *wszDatabaseSrc,
     IFileSystemAPI  *pfsapiDest,
@@ -1597,7 +1597,7 @@ HandleError:
 }
 
 
-INLINE ERR ErrCMPCopyTables( COMPACTINFO *pcompactinfo )
+ERR ErrCMPCopyTables( COMPACTINFO *pcompactinfo )
 {
     ERR     err;
     FUCB    *pfucbCatalog   = pfucbNil;
@@ -1638,7 +1638,7 @@ HandleError:
 }
 
 
-INLINE ERR ErrCMPCloseDB( COMPACTINFO *pcompactinfo, ERR err )
+ERR ErrCMPCloseDB( COMPACTINFO *pcompactinfo, ERR err )
 {
     ERR     errCloseSrc;
     ERR     errCloseDest;

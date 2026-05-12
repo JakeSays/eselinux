@@ -2590,7 +2590,7 @@ ERR CFastTraceLog::ErrFTLFlushBuffer( __inout void * const pvFlushBufferContext,
     return pftl->ErrFTLIFlushBuffer( rgbBuffer, cbBuffer, pftl->m_fTerminating );
 }
 
-INLINE FTLTDESC CFastTraceLog::FtltdescFTLIGetDescriptor( _In_ const FTLTID ftltid ) const
+FTLTDESC CFastTraceLog::FtltdescFTLIGetDescriptor( _In_ const FTLTID ftltid ) const
 {
     Assert( FFTLValidFTLTID( ftltid ) );
 

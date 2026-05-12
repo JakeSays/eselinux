@@ -168,7 +168,7 @@ ERR ErrLGIMacroEnd( PIB *ppib, DBTIME dbtime, LRTYP lrtyp, const IFMP ifmp, cons
 
 LOCAL ERR ErrLGIDeferBeginTransaction( PIB *ppib );
 
-INLINE ERR ErrLGDeferBeginTransaction( PIB *ppib )
+ERR ErrLGDeferBeginTransaction( PIB *ppib )
 {
     Assert( ppib->Level() > 0 );
     const ERR   err     = ( 0 != ppib->clevelsDeferBegin ?
@@ -184,7 +184,7 @@ INLINE ERR ErrLGDeferBeginTransaction( PIB *ppib )
 
 //  WARNING: If fVersion bit needs to be set, ensure it's set before
 //  calling this function, as it will be reset if necessary.
-INLINE VOID LGISetTrx( PIB *ppib, LRPAGE_ *plrpage, const VERPROXY * const pverproxy = nullptr )
+VOID LGISetTrx( PIB *ppib, LRPAGE_ *plrpage, const VERPROXY * const pverproxy = nullptr )
 {
     Assert( ppibNil != ppib );
     
@@ -220,7 +220,7 @@ INLINE VOID LGISetTrx( PIB *ppib, LRPAGE_ *plrpage, const VERPROXY * const pverp
     }
 }
 
-INLINE ERR ErrLGSetDbtimeBeforeAndDirty(
+ERR ErrLGSetDbtimeBeforeAndDirty(
     INST                                * const pinst,
     CSR                                 * const pcsr,
     UnalignedLittleEndian< DBTIME >     * ple_dbtimeBefore,

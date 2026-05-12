@@ -804,7 +804,7 @@ class CPAGE
         VOID    CoordinateDBTime_( const DBTIME dbtime );
         VOID    CopyData_       ( TAG * ptag, const DATA * rgdata, INT cdata );
         VOID    ZeroOutGaps_    ( const CHAR chZero );
-        INLINE BOOL FRuntimeScrubbingEnabled_ ( ) const;
+        BOOL FRuntimeScrubbingEnabled_ ( ) const;
 
 #ifdef ENABLE_JET_UNIT_TEST
         VOID    SetRuntimeScrubbingEnabled_( const BOOL fEnabled );
@@ -816,7 +816,7 @@ class CPAGE
         TAG *   PtagFromItag_   ( INT itag ) const;
     private:
 #ifdef DEBUG
-        INLINE CPAGE::TAG * CPAGE::PtagFromRgbCbItag_( BYTE *rgbPage, INT cbPage, INT itag ) const;
+        CPAGE::TAG * CPAGE::PtagFromRgbCbItag_( BYTE *rgbPage, INT cbPage, INT itag ) const;
 #endif
         ULONG   CbTagArray_     ( ) const;
         ULONG_PTR PbDataStart_  ( _In_ const BOOL fSmallPageCached ) const;
@@ -873,7 +873,7 @@ class CPAGE
         //  provide a CPAGE::CbPageFree() to account for the true page's free size.
 
     public:
-        INLINE ULONG CbPage             ( ) const;
+        ULONG CbPage             ( ) const;
 #if !defined(DEBUG) && !defined(ENABLE_JET_UNIT_TEST)
     private:
 #endif
@@ -881,7 +881,7 @@ class CPAGE
         
     private:
 
-        INLINE USHORT CbAdjustForPage   ( ) const;
+        USHORT CbAdjustForPage   ( ) const;
 
         INT     CbContiguousBufferFree_ ( ) const;
         INT     CbContiguousFree_       ( ) const;
@@ -954,12 +954,12 @@ class CPAGE
 
                 static VOID ErrTest( _In_ VOID * const pvBuffer, ULONG cbPageSize );
 
-                INLINE USHORT Cb( _In_ const BOOL fSmallFormat ) const;
-                INLINE USHORT Ib( _In_ const BOOL fSmallFormat ) const;
-                INLINE USHORT FFlags( _In_ const CPAGE * const pPage, _In_ const BOOL fSmallFormat ) const;
-                INLINE VOID SetIb( _In_ CPAGE * const pPage, _In_ USHORT ib );
-                INLINE VOID SetCb( _In_ CPAGE * const pPage, _In_ USHORT cb );
-                INLINE VOID SetFlags( _In_ CPAGE * const pPage, _In_ USHORT fFlags );
+                USHORT Cb( _In_ const BOOL fSmallFormat ) const;
+                USHORT Ib( _In_ const BOOL fSmallFormat ) const;
+                USHORT FFlags( _In_ const CPAGE * const pPage, _In_ const BOOL fSmallFormat ) const;
+                VOID SetIb( _In_ CPAGE * const pPage, _In_ USHORT ib );
+                VOID SetCb( _In_ CPAGE * const pPage, _In_ USHORT cb );
+                VOID SetFlags( _In_ CPAGE * const pPage, _In_ USHORT fFlags );
 
             private:
                 LittleEndian<volatile USHORT>   cb_;

@@ -406,7 +406,7 @@ LOCAL VOID SPIValidateCpgOwnedAndAvail(
 #define SPIValidateCpgOwnedAndAvail( X )
 #endif
 
-INLINE VOID AssertSPIWrappedLatches( FUCB *pfucb, CSR *pcsr = pcsrNil )
+VOID AssertSPIWrappedLatches( FUCB *pfucb, CSR *pcsr = pcsrNil )
 {
 #ifdef DEBUG
     // Single routine to verify the required latching before any update to a space tree.
@@ -981,7 +981,7 @@ VOID SPTerm()
 
 
 #ifdef DEBUG
-INLINE VOID AssertSPIPfucbOnRoot( const FUCB * const pfucb )
+VOID AssertSPIPfucbOnRoot( const FUCB * const pfucb )
 {
     Assert( pfucb->pcsrRoot != pcsrNil );
     Assert( pfucb->pcsrRoot->Pgno() == PgnoFDP( pfucb ) );
@@ -999,7 +999,7 @@ INLINE VOID AssertSPIPfucbOnRoot( const FUCB * const pfucb )
     }
 }
 
-INLINE VOID AssertSPIPfucbNullOrUnlatched( const FUCB * const pfucb )
+VOID AssertSPIPfucbNullOrUnlatched( const FUCB * const pfucb )
 {
     if ( pfucb == pfucbNil )
     {
@@ -1017,7 +1017,7 @@ INLINE VOID AssertSPIPfucbNullOrUnlatched( const FUCB * const pfucb )
     }
 }
 
-INLINE VOID AssertSPIPfucbOnSpaceTreeRoot( FUCB *pfucb, CSR *pcsr )
+VOID AssertSPIPfucbOnSpaceTreeRoot( FUCB *pfucb, CSR *pcsr )
 {
     Assert( FFUCBSpace( pfucb ) );
     Assert( pcsr->FLatched() );
@@ -1031,12 +1031,12 @@ INLINE VOID AssertSPIPfucbOnSpaceTreeRoot( FUCB *pfucb, CSR *pcsr )
 #define AssertSPIPfucbOnSpaceTreeRoot( X, Y )
 #endif
 
-INLINE BOOL FSPValidPGNO( _In_ const PGNO pgno )
+BOOL FSPValidPGNO( _In_ const PGNO pgno )
 {
     return pgnoNull < pgno && pgnoSysMax > pgno;
 }
 
-INLINE BOOL FSPValidAllocPGNO( _In_ const PGNO pgno )
+BOOL FSPValidAllocPGNO( _In_ const PGNO pgno )
 {
     //  All valid pgnos we can allocate are higher than the first 3 bootstrap
     //  FDP pages (pgnoSystemRoot, 2 /* pgno DB OE "FDP" */, 3 /* pgno
@@ -2169,7 +2169,7 @@ HandleError:
     return err;
 }
 
-INLINE BOOL FSPIIsSmall( const FCB * const pfcb )
+BOOL FSPIIsSmall( const FCB * const pfcb )
 {
     #ifdef DEBUG
     Assert( pfcb->FSpaceInitialized() );
@@ -2552,7 +2552,7 @@ ERR ErrSPDeferredInitFCB( _Inout_ FUCB * const pfucb )
     return JET_errSuccess;
 }
 
-INLINE const SPACE_HEADER * PsphSPIRootPage( FUCB* pfucb )
+const SPACE_HEADER * PsphSPIRootPage( FUCB* pfucb )
 {
     const SPACE_HEADER  *psph;
 
@@ -2579,7 +2579,7 @@ BOOL FSPIsRootSpaceTree( const FUCB * const pfucb )
     return ( ObjidFDP( pfucb ) == objidSystemRoot && FFUCBSpace( pfucb ) );
 }
 
-INLINE SPLIT_BUFFER *PspbufSPISpaceTreeRootPage( FUCB *pfucb, CSR *pcsr )
+SPLIT_BUFFER *PspbufSPISpaceTreeRootPage( FUCB *pfucb, CSR *pcsr )
 {
     SPLIT_BUFFER    *pspbuf;
 
@@ -2592,7 +2592,7 @@ INLINE SPLIT_BUFFER *PspbufSPISpaceTreeRootPage( FUCB *pfucb, CSR *pcsr )
     return pspbuf;
 }
 
-INLINE VOID SPITraceSplitBufferMsg( const FUCB * const pfucb, const CHAR * const szMsg )
+VOID SPITraceSplitBufferMsg( const FUCB * const pfucb, const CHAR * const szMsg )
 {
     OSTraceFMP(
         pfucb->ifmp,
@@ -2679,7 +2679,7 @@ LOCAL ERR ErrSPIFixSpaceTreeRootPage( FUCB *pfucb, SPLIT_BUFFER **ppspbuf )
     return err;
 }
 
-INLINE ERR ErrSPIGetSPBuf( FUCB *pfucb, SPLIT_BUFFER **ppspbuf )
+ERR ErrSPIGetSPBuf( FUCB *pfucb, SPLIT_BUFFER **ppspbuf )
 {
     ERR err;
 
@@ -2772,7 +2772,7 @@ HandleError:
 }
 
 
-INLINE VOID SPIDirtyAndSetMaxDbtime( CSR *pcsr1, CSR *pcsr2, CSR *pcsr3 )
+VOID SPIDirtyAndSetMaxDbtime( CSR *pcsr1, CSR *pcsr2, CSR *pcsr3 )
 {
 #ifdef DEBUG
     Assert( pcsr1->Latch() == latchWrite );
@@ -2842,7 +2842,7 @@ INLINE VOID SPIDirtyAndSetMaxDbtime( CSR *pcsr1, CSR *pcsr2, CSR *pcsr3 )
 }
 
 
-INLINE VOID SPIInitSplitBuffer( FUCB *pfucb, CSR *pcsr )
+VOID SPIInitSplitBuffer( FUCB *pfucb, CSR *pcsr )
 {
     //  copy dummy split buffer into external header
     //
@@ -3171,7 +3171,7 @@ HandleError:
 //  Also initializes external space trees appropriately.
 //  This operation is logged as an aggregate.
 //
-INLINE ERR ErrSPICreateMultiple(
+ERR ErrSPICreateMultiple(
     FUCB        *pfucb,
     const PGNO  pgnoParent,
     const PGNO  pgnoFDP,
@@ -3733,7 +3733,7 @@ LOCAL VOID SPIConvertUpdateAE(
 
 //  update FDP page for convert
 //
-INLINE VOID SPIConvertUpdateFDP( FUCB *pfucb, CSR *pcsrRoot, SPACE_HEADER *psph )
+VOID SPIConvertUpdateFDP( FUCB *pfucb, CSR *pcsrRoot, SPACE_HEADER *psph )
 {
     if ( FBTIUpdatablePage( *pcsrRoot ) )
     {
@@ -4025,7 +4025,7 @@ HandleError:
 }
 
 
-INLINE BOOL FSPIAllocateAllAvail(
+BOOL FSPIAllocateAllAvail(
     const CSPExtentInfo *   pcspaei,
     const CPG               cpgReq,
     const LONG              lPageFragment,
@@ -10495,20 +10495,20 @@ class OWNEXT_LIST
         OWNEXT_LIST     *m_pOEListNext;
 };
 
-INLINE OWNEXT_LIST::OWNEXT_LIST( OWNEXT_LIST **ppOEListHead )
+OWNEXT_LIST::OWNEXT_LIST( OWNEXT_LIST **ppOEListHead )
 {
     m_centries = 0;
     m_pOEListNext = *ppOEListHead;
     *ppOEListHead = this;
 }
 
-INLINE ULONG OWNEXT_LIST::CEntries() const
+ULONG OWNEXT_LIST::CEntries() const
 {
     Assert( m_centries <= cOEListEntriesMax );
     return m_centries;
 }
 
-INLINE VOID OWNEXT_LIST::AddExtentInfoEntry(
+VOID OWNEXT_LIST::AddExtentInfoEntry(
     const PGNO  pgnoLast,
     const CPG   cpgSize )
 {
@@ -10518,7 +10518,7 @@ INLINE VOID OWNEXT_LIST::AddExtentInfoEntry(
     m_centries++;
 }
 
-INLINE ERR ErrSPIFreeOwnedExtentsInList(
+ERR ErrSPIFreeOwnedExtentsInList(
     FUCB*               pfucbParent,
     const FCB* const    pfcb,
     EXTENTINFO*         rgextinfo,
@@ -11068,7 +11068,7 @@ HandleError:
     return err;
 }
 
-INLINE ERR ErrSPIAddExtent(
+ERR ErrSPIAddExtent(
     __inout FUCB *pfucb,
     _In_ const CSPExtentNodeKDF * const pcspextnode )
 {
@@ -11481,7 +11481,7 @@ HandleError:
 }
 
 
-INLINE ERR ErrSPICheckSmallFDP( FUCB *pfucb, BOOL *pfSmallFDP )
+ERR ErrSPICheckSmallFDP( FUCB *pfucb, BOOL *pfSmallFDP )
 {
     ERR     err;
     FUCB    *pfucbOE    = pfucbNil;
@@ -14547,7 +14547,7 @@ HandleError:
 //  Check that the buffer passed to ErrSPGetInfo() is big enough to accommodate
 //  the information requested.
 //
-INLINE ERR ErrSPCheckInfoBuf( const ULONG cbBufSize, const ULONG fSPExtents )
+ERR ErrSPCheckInfoBuf( const ULONG cbBufSize, const ULONG fSPExtents )
 {
     ULONG   cbUnchecked     = cbBufSize;
 

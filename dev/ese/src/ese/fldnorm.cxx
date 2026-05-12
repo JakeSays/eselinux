@@ -445,7 +445,7 @@ LOCAL VOID FLDNormalizeBinarySegment(
 }
 
 
-INLINE VOID FLDNormalizeFixedSegment(
+VOID FLDNormalizeFixedSegment(
     const BYTE          *pbField,
     const ULONG         cbField,
     BYTE                *rgbSeg,
@@ -702,7 +702,7 @@ INLINE VOID FLDNormalizeFixedSegment(
 }
 
 
-INLINE VOID FLDNormalizeNullSegment(
+VOID FLDNormalizeNullSegment(
     BYTE                *rgbSeg,
     const JET_COLTYP    coltyp,
     const BOOL          fZeroLength,
@@ -1938,7 +1938,7 @@ HandleError:
 }
 
 
-INLINE VOID FLDISetFullColumnLimit(
+VOID FLDISetFullColumnLimit(
     DATA        * const plineNorm,
     const ULONG cbAvailWithSuffix,
     const BOOL  fNeedSentinel )
@@ -1958,7 +1958,7 @@ INLINE VOID FLDISetFullColumnLimit(
     }
 }
 
-INLINE VOID FLDISetPartialColumnLimitOnTextColumn(
+VOID FLDISetPartialColumnLimitOnTextColumn(
     DATA            *plineNorm,
     const ULONG     cbAvailWithSuffix,
     const BOOL      fDescending,
@@ -2094,7 +2094,7 @@ JETUNITTEST( NORM, PartialLimitTest )
 }
 
 //  try to set partial column limit, but set full column limit if can't
-INLINE VOID FLDITrySetPartialColumnLimitOnBinaryColumn(
+VOID FLDITrySetPartialColumnLimitOnBinaryColumn(
     DATA            * const plineNorm,
     const ULONG     cbAvailWithSuffix,
     const ULONG     ibBinaryColumnDelimiter,

@@ -1868,7 +1868,7 @@ struct MAI
     const CHAR* szFile;
 };
 
-INLINE INT ImaiHashPv( void* const pv )
+INT ImaiHashPv( void* const pv )
 {
     return (INT)(( DWORD_PTR( pv ) / sizeof( INT ) ) % g_cmai);
 }
@@ -2224,7 +2224,7 @@ NextMAI:
 
 //  calculate the address of the aligned block and store its offset (for free)
 
-INLINE void* PvOSMemoryHeapIAlign( void* const pv, const size_t cbAlign )
+void* PvOSMemoryHeapIAlign( void* const pv, const size_t cbAlign )
 {
 
     //  round up to the nearest cache line
@@ -2251,7 +2251,7 @@ INLINE void* PvOSMemoryHeapIAlign( void* const pv, const size_t cbAlign )
 
 //  retrieve the offset of the real block being freed
 
-INLINE void* PvOSMemoryHeapIUnalign( void* const pv )
+void* PvOSMemoryHeapIUnalign( void* const pv )
 {
 
     //  read the offset of the real block

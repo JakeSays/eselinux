@@ -967,9 +967,9 @@ class COSDisk : public CZeroInit
                 void ExtractOp( _In_ const COSDisk * const posd, _Inout_ COSDisk::QueueOp * pqop );
                 ERR ErrRemoveDeferredIoOp( _In_ const IOREQ * const pioreqFind, _Out_ IOREQ ** ppioreqHead );
 
-                INLINE LONG CioreqIOHeap() const;
-                INLINE LONG CioVIPList() const;
-                INLINE LONG CioMetedReadQueue() const;
+                LONG CioreqIOHeap() const;
+                LONG CioVIPList() const;
+                LONG CioMetedReadQueue() const;
                 INLINE LONG CioWriteQueue() const          { return m_qWriteIo.CioEnqueued(); }
 
             private:
@@ -1105,10 +1105,10 @@ class COSDisk : public CZeroInit
 
             private:
 
-                INLINE void IOHeapAdd( IOREQ* pioreq, _Out_ OSDiskIoQueueManagement * const pdioqmTypeTracking );
-                INLINE void IOHeapRemove( IOREQ* pioreq, _Out_ OSDiskIoQueueManagement * const pdioqmTypeTracking );
-                INLINE BOOL FIOHeapEmpty();
-                INLINE IOREQ* PioreqIOHeapTop();
+                void IOHeapAdd( IOREQ* pioreq, _Out_ OSDiskIoQueueManagement * const pdioqmTypeTracking );
+                void IOHeapRemove( IOREQ* pioreq, _Out_ OSDiskIoQueueManagement * const pdioqmTypeTracking );
+                BOOL FIOHeapEmpty();
+                IOREQ* PioreqIOHeapTop();
 
 
             //////////////
@@ -1192,7 +1192,7 @@ class COSDisk : public CZeroInit
 
         // Returns the actual physical disk queue depth
 
-        INLINE DWORD CioOsQueueDepth();
+        DWORD CioOsQueueDepth();
 
     private:
 
@@ -1208,7 +1208,7 @@ class COSDisk : public CZeroInit
 
         // Refreshes the physical disk performance information if necessary
 
-        INLINE VOID RefreshDiskPerformance();
+        VOID RefreshDiskPerformance();
 
         // Queries the performance of the physical disk
 

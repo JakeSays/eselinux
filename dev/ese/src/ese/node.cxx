@@ -68,29 +68,29 @@ LOCAL_BROKEN INT CdataNDIKeydataflagsToDataflags (
     DATA                * const rgdata,
     INT                 * const pfFlags,
     LE_KEYLEN           * const ple_keylen );
-INLINE VOID NDISetCompressed            ( KEYDATAFLAGS& kdf );
-INLINE VOID NDIResetCompressed          ( KEYDATAFLAGS& kdf );
-INLINE VOID NDISetFlag                  ( CSR * pcsr, INT fFlag );
-INLINE VOID NDIResetFlag                ( CSR * pcsr, INT fFlag );
+VOID NDISetCompressed            ( KEYDATAFLAGS& kdf );
+VOID NDIResetCompressed          ( KEYDATAFLAGS& kdf );
+VOID NDISetFlag                  ( CSR * pcsr, INT fFlag );
+VOID NDIResetFlag                ( CSR * pcsr, INT fFlag );
 
-INLINE VOID NDIGetBookmark              ( const CPAGE& cpage, INT iline, BOOKMARK * pbookmark, const BOOL fUnique );
-INLINE ERR ErrNDISeekInternalPage       ( const FUCB * pfucb, CSR * pcsr, const BOOKMARK& bm );
-INLINE ERR ErrNDISeekLeafPage           ( const FUCB * pfucb, CSR * pcsr, const BOOKMARK& bm );
+VOID NDIGetBookmark              ( const CPAGE& cpage, INT iline, BOOKMARK * pbookmark, const BOOL fUnique );
+ERR ErrNDISeekInternalPage       ( const FUCB * pfucb, CSR * pcsr, const BOOKMARK& bm );
+ERR ErrNDISeekLeafPage           ( const FUCB * pfucb, CSR * pcsr, const BOOKMARK& bm );
 
 #ifdef DEBUG
-INLINE VOID NDIAssertCurrency           ( const CSR * pcsr );
-INLINE VOID NDIAssertCurrency           ( const FUCB * pfucb, const CSR * pcsr );
-INLINE VOID NDIAssertCurrencyExists     ( const FUCB * pfucb, const CSR * pcsr );
-INLINE VOID NDIAssertCurrencyExists     ( const CSR * pcsr );
+VOID NDIAssertCurrency           ( const CSR * pcsr );
+VOID NDIAssertCurrency           ( const FUCB * pfucb, const CSR * pcsr );
+VOID NDIAssertCurrencyExists     ( const FUCB * pfucb, const CSR * pcsr );
+VOID NDIAssertCurrencyExists     ( const CSR * pcsr );
 
 LOCAL_BROKEN INT IlineNDISeekGEQDebug           ( const CPAGE& cpage, const BOOKMARK& bm, const BOOL fUnique, INT * plastCompare );
 LOCAL_BROKEN INT IlineNDISeekGEQInternalDebug   ( const CPAGE& cpage, const BOOKMARK& bm, INT * plastCompare );
 
 #else
-INLINE VOID NDIAssertCurrency           ( const CSR * pcsr ) {}
-INLINE VOID NDIAssertCurrency           ( const FUCB * pfucb, const CSR * pcsr ) {}
-INLINE VOID NDIAssertCurrencyExists     ( const FUCB * pfucb, const CSR * pcsr ) {}
-INLINE VOID NDIAssertCurrencyExists     ( const CSR * pcsr ) {}
+VOID NDIAssertCurrency           ( const CSR * pcsr ) {}
+VOID NDIAssertCurrency           ( const FUCB * pfucb, const CSR * pcsr ) {}
+VOID NDIAssertCurrencyExists     ( const FUCB * pfucb, const CSR * pcsr ) {}
+VOID NDIAssertCurrencyExists     ( const CSR * pcsr ) {}
 #endif  //  DEBUG
 
 
@@ -518,7 +518,7 @@ ERR ErrNDIGetKeydataflags( const CPAGE& cpage, INT iline, KEYDATAFLAGS * pkdf )
 
 
 //  ================================================================
-INLINE VOID NDIGetBookmark( const CPAGE& cpage, INT iline, BOOKMARK * pbookmark, const BOOL fUnique )
+VOID NDIGetBookmark( const CPAGE& cpage, INT iline, BOOKMARK * pbookmark, const BOOL fUnique )
 //  ================================================================
 //
 //  returns the correct bookmark for the node. this depends on wether the index is
@@ -536,7 +536,7 @@ INLINE VOID NDIGetBookmark( const CPAGE& cpage, INT iline, BOOKMARK * pbookmark,
 
 
 //  ================================================================
-INLINE VOID NDISetCompressed( KEYDATAFLAGS& kdf )
+VOID NDISetCompressed( KEYDATAFLAGS& kdf )
 //  ================================================================
 {
     kdf.fFlags |= fNDCompressed;
@@ -547,7 +547,7 @@ INLINE VOID NDISetCompressed( KEYDATAFLAGS& kdf )
 
 
 //  ================================================================
-INLINE VOID NDIResetCompressed( KEYDATAFLAGS& kdf )
+VOID NDIResetCompressed( KEYDATAFLAGS& kdf )
 //  ================================================================
 {
     kdf.fFlags &= ~fNDCompressed;
@@ -558,7 +558,7 @@ INLINE VOID NDIResetCompressed( KEYDATAFLAGS& kdf )
 
 
 //  ================================================================
-INLINE VOID NDISetFlag( CSR * pcsr, INT fFlag )
+VOID NDISetFlag( CSR * pcsr, INT fFlag )
 //  ================================================================
 {
     KEYDATAFLAGS kdf;
@@ -573,7 +573,7 @@ INLINE VOID NDISetFlag( CSR * pcsr, INT fFlag )
 
 
 //  ================================================================
-INLINE VOID NDIResetFlag( CSR * pcsr, INT fFlag )
+VOID NDIResetFlag( CSR * pcsr, INT fFlag )
 //  ================================================================
 {
     Assert( pcsr );
@@ -910,7 +910,7 @@ LOCAL_BROKEN INT IlineNDISeekGEQInternalDebug(
 
 
 //  ================================================================
-INLINE ERR ErrNDISeekInternalPage( const FUCB *pfucb, CSR * pcsr, const BOOKMARK& bm )
+ERR ErrNDISeekInternalPage( const FUCB *pfucb, CSR * pcsr, const BOOKMARK& bm )
 //  ================================================================
 //
 //  Seek on an internal page never returns wrnNDFoundLess
@@ -959,7 +959,7 @@ INLINE ERR ErrNDISeekInternalPage( const FUCB *pfucb, CSR * pcsr, const BOOKMARK
 
 
 //  ================================================================
-INLINE ERR ErrNDISeekLeafPage( const FUCB * pfucb, CSR * pcsr, const BOOKMARK& bm )
+ERR ErrNDISeekLeafPage( const FUCB * pfucb, CSR * pcsr, const BOOKMARK& bm )
 //  ================================================================
 //
 //  Seek on leaf page returns wrnNDFoundGreater/Less/Equal
@@ -1540,7 +1540,7 @@ HandleError:
 }
 
 
-INLINE ERR ErrNDILogReplace(
+ERR ErrNDILogReplace(
     FUCB    * const pfucb,
     CSR     * const pcsr,
     const DATA&     data,
@@ -3082,7 +3082,7 @@ INT CbNDUncommittedFree( const FUCB * const pfucb, const CSR * const pcsr )
 #ifdef DEBUG
 
 //  ================================================================
-INLINE VOID NDIAssertCurrency( const CSR * pcsr )
+VOID NDIAssertCurrency( const CSR * pcsr )
 //  ================================================================
 {
     ASSERT_VALID( pcsr );
@@ -3091,7 +3091,7 @@ INLINE VOID NDIAssertCurrency( const CSR * pcsr )
 
 
 //  ================================================================
-INLINE VOID NDIAssertCurrency( const FUCB * pfucb, const CSR * pcsr )
+VOID NDIAssertCurrency( const FUCB * pfucb, const CSR * pcsr )
 //  ================================================================
 {
     ASSERT_VALID( pfucb );
@@ -3100,7 +3100,7 @@ INLINE VOID NDIAssertCurrency( const FUCB * pfucb, const CSR * pcsr )
 
 
 //  ================================================================
-INLINE VOID NDIAssertCurrencyExists( const FUCB * pfucb, const CSR * pcsr )
+VOID NDIAssertCurrencyExists( const FUCB * pfucb, const CSR * pcsr )
 //  ================================================================
 {
     ASSERT_VALID( pfucb );
@@ -3109,7 +3109,7 @@ INLINE VOID NDIAssertCurrencyExists( const FUCB * pfucb, const CSR * pcsr )
 
 
 //  ================================================================
-INLINE VOID NDIAssertCurrencyExists( const CSR * pcsr )
+VOID NDIAssertCurrencyExists( const CSR * pcsr )
 //  ================================================================
 {
     NDIAssertCurrency( pcsr );

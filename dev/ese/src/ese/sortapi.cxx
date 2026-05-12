@@ -9,30 +9,30 @@ const INT fCOLSDELETEDNone      = 0;        //  Flags to determine if any column
 const INT fCOLSDELETEDFixedVar  = (1<<0);
 const INT fCOLSDELETEDTagged    = (1<<1);
 
-INLINE BOOL FCOLSDELETEDNone( const INT fColumnsDeleted )
+BOOL FCOLSDELETEDNone( const INT fColumnsDeleted )
 {
     return ( fColumnsDeleted == fCOLSDELETEDNone );
 }
-INLINE BOOL FCOLSDELETEDFixedVar( const INT fColumnsDeleted )
+BOOL FCOLSDELETEDFixedVar( const INT fColumnsDeleted )
 {
     return ( fColumnsDeleted & fCOLSDELETEDFixedVar );
 }
-INLINE BOOL FCOLSDELETEDTagged( const INT fColumnsDeleted )
+BOOL FCOLSDELETEDTagged( const INT fColumnsDeleted )
 {
     return ( fColumnsDeleted & fCOLSDELETEDTagged );
 }
 
-INLINE VOID FCOLSDELETEDSetNone( INT& fColumnsDeleted )
+VOID FCOLSDELETEDSetNone( INT& fColumnsDeleted )
 {
     fColumnsDeleted = fCOLSDELETEDNone;
     Assert( FCOLSDELETEDNone( fColumnsDeleted ) );
 }
-INLINE VOID FCOLSDELETEDSetFixedVar( INT& fColumnsDeleted )
+VOID FCOLSDELETEDSetFixedVar( INT& fColumnsDeleted )
 {
     fColumnsDeleted |= fCOLSDELETEDFixedVar;
     Assert( FCOLSDELETEDFixedVar( fColumnsDeleted ) );
 }
-INLINE VOID FCOLSDELETEDSetTagged( INT& fColumnsDeleted )
+VOID FCOLSDELETEDSetTagged( INT& fColumnsDeleted )
 {
     fColumnsDeleted |= fCOLSDELETEDTagged;
     Assert( FCOLSDELETEDTagged( fColumnsDeleted ) );
@@ -955,7 +955,7 @@ ERR VTAPI ErrIsamSortGetTableInfo(
 
 
 // Advances the copy progress meter.
-INLINE ERR ErrSORTCopyProgress(
+ERR ErrSORTCopyProgress(
     STATUSINFO  * pstatus,
     const ULONG cPagesTraversed )
 {
@@ -1013,7 +1013,7 @@ ERR ErrSORTIncrementLVRefcountDest(
 // over to the destination record.  The only thing left to do is rescan the tagged
 // portion of the record looking for separated long values.  If we find any,
 // copy them over and update the record's LID accordingly.
-INLINE ERR ErrSORTUpdateSeparatedLVs(
+ERR ErrSORTUpdateSeparatedLVs(
     FUCB                * pfucbSrc,
     FUCB                * pfucbDest,
     JET_COLUMNID        * mpcolumnidcolumnidTagged,
@@ -1027,7 +1027,7 @@ INLINE ERR ErrSORTUpdateSeparatedLVs(
                         pstatus );
 }
 
-INLINE ERR ErrSORTCopyTaggedColumns(
+ERR ErrSORTCopyTaggedColumns(
     FUCB                * pfucbSrc,
     FUCB                * pfucbDest,
     BYTE                * pbRecBuf,
@@ -1058,7 +1058,7 @@ INLINE ERR ErrSORTCopyTaggedColumns(
 
 
 // Returns a count of the bytes copied.
-INLINE SIZE_T CbSORTCopyFixedVarColumns(
+SIZE_T CbSORTCopyFixedVarColumns(
     TDB             *ptdbSrc,
     TDB             *ptdbDest,
     CPCOL           *rgcpcol,           // Only used for DEBUG
@@ -1374,7 +1374,7 @@ INLINE SIZE_T CbSORTCopyFixedVarColumns(
 }
 
 
-INLINE VOID SORTCheckVarTaggedCols( const REC *prec, const ULONG cbRec, const TDB *ptdb )
+VOID SORTCheckVarTaggedCols( const REC *prec, const ULONG cbRec, const TDB *ptdb )
 {
 #if 0   //  enable only to fix corruption
     const BYTE          *pbRecMax           = (BYTE *)prec + cbRec;
@@ -1704,7 +1704,7 @@ HandleError:
 
 
 // Verify integrity of columnid maps.
-INLINE VOID SORTAssertColumnidMaps(
+VOID SORTAssertColumnidMaps(
     TDB             *ptdb,
     CPCOL           *rgcpcol,
     ULONG           ccpcolMax,
@@ -2310,7 +2310,7 @@ HandleError:
 
 
 //  UNDONE:  use GetTempFileName()
-INLINE ULONG ulSORTTempNameGen( VOID )
+ULONG ulSORTTempNameGen( VOID )
 {
     static ULONG ulTempNum = 0;
     return ulTempNum++;
