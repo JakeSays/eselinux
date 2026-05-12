@@ -1128,7 +1128,7 @@ class CPAGE
     private:
         INLINE static USHORT ITagMicFree( const PGHDR* ppghdr )         { return ( ppghdr->itagState & PGHDR::ITAG_MIC_FREE_MASK ); }
     public:
-        INLINE static USHORT CTagReserved( const PGHDR* ppghdr )        { return ( ppghdr->itagState >> PGHDR::SHF_CTAG_RESERVED ); }
+        INLINE static USHORT CTagReserved( const PGHDR* ppghdr )        { return ( ( ppghdr->itagState & PGHDR::CTAG_RESERVED_MASK ) >> PGHDR::SHF_CTAG_RESERVED ); }
 
 };  //  class CPAGE
 
@@ -1579,8 +1579,8 @@ INLINE INT CPAGE::CTagReserved_() const
     // For those pages, a cpage used to have one fixed reserved tag backing the external header.
 
     PGHDR* ppghdr = (PGHDR*) m_bfl.pv;
-    Assert( ( ppghdr->itagState >> PGHDR::SHF_CTAG_RESERVED ) == m_ctagReserved ||
-            ( ppghdr->itagState >> PGHDR::SHF_CTAG_RESERVED ) == 0 ||
+    Assert( ( ( ppghdr->itagState & PGHDR::CTAG_RESERVED_MASK ) >> PGHDR::SHF_CTAG_RESERVED ) == m_ctagReserved ||
+            ( ( ppghdr->itagState & PGHDR::CTAG_RESERVED_MASK ) >> PGHDR::SHF_CTAG_RESERVED ) == 0 ||
             FNegTest( fCorruptingPageLogically ) );
 
     Assert( m_ctagReserved >= 1 || FPreInitPage() );
@@ -1593,7 +1593,7 @@ INLINE void CPAGE::SetITagMicFree_( INT itagMicFree )
 {
     PGHDR* ppghdr = (PGHDR*) m_bfl.pv;
     Assert( ( ppghdr->itagState & PGHDR::ITAG_MIC_FREE_MASK ) == m_itagMicFree );
-    Assert( ( ppghdr->itagState >> PGHDR::SHF_CTAG_RESERVED ) == m_ctagReserved || ( ppghdr->itagState >> PGHDR::SHF_CTAG_RESERVED ) == 0 );
+    Assert( ( ( ppghdr->itagState & PGHDR::CTAG_RESERVED_MASK ) >> PGHDR::SHF_CTAG_RESERVED ) == m_ctagReserved || ( ( ppghdr->itagState & PGHDR::CTAG_RESERVED_MASK ) >> PGHDR::SHF_CTAG_RESERVED ) == 0 );
 
     SetITagState_( itagMicFree, m_ctagReserved );
 }
@@ -1603,7 +1603,7 @@ INLINE void CPAGE::SetCTagReserved_( INT ctagReserved )
 //  ================================================================
 {
     PGHDR* ppghdr = (PGHDR*) m_bfl.pv;
-    Assert( ( ppghdr->itagState >> PGHDR::SHF_CTAG_RESERVED ) == m_ctagReserved || ( ppghdr->itagState >> PGHDR::SHF_CTAG_RESERVED ) == 0 );
+    Assert( ( ( ppghdr->itagState & PGHDR::CTAG_RESERVED_MASK ) >> PGHDR::SHF_CTAG_RESERVED ) == m_ctagReserved || ( ( ppghdr->itagState & PGHDR::CTAG_RESERVED_MASK ) >> PGHDR::SHF_CTAG_RESERVED ) == 0 );
     Assert( ( ppghdr->itagState & PGHDR::ITAG_MIC_FREE_MASK ) == m_itagMicFree );
 
     SetITagState_( m_itagMicFree, ctagReserved );
@@ -1621,7 +1621,7 @@ INLINE void CPAGE::SetITagState_( INT itagMicFree, INT ctagReserved )
     m_ctagReserved = (USHORT) ctagReserved;
 
     bool fResvTagFormatEnabled = FResvTagFormatEnabled();
-    if ( fResvTagFormatEnabled || ( ppghdr->itagState >> PGHDR::SHF_CTAG_RESERVED ) > 0 )
+    if ( fResvTagFormatEnabled || ( ( ppghdr->itagState & PGHDR::CTAG_RESERVED_MASK ) >> PGHDR::SHF_CTAG_RESERVED ) > 0 )
     {
         Assert( m_ifmp == ifmpNil || fResvTagFormatEnabled );   // UA_TODO: can this trigger if a build is rolled back?
         ppghdr->itagState = USHORT( ( ctagReserved << PGHDR::SHF_CTAG_RESERVED ) | itagMicFree );
