@@ -1,6 +1,6 @@
 # ESE Linux port — roadmap
 
-Last refreshed: 2026-05-12 (commit `31a90b1`).
+Last refreshed: 2026-05-12 (commit `04bd25e`).
 
 The aim of the port is a working Linux ESE: `libese.so` plus consuming applications that can create, open, write, read, and close JET databases through the same JET API surface Windows ESE exports.  Reading Windows-produced `.edb`/`.log` files is **not** in scope for the initial release (see `~/.claude/projects/-p-ese-repo/memory/project_port_scope.md`); the on-disk format is allowed to diverge between platforms.
 
@@ -8,14 +8,15 @@ The aim of the port is a working Linux ESE: `libese.so` plus consuming applicati
 
 Build & link surface — solid.
 - Clang 22 toolchain at `/apps/clang-22.1.3`, libc++/libc++abi/libunwind statically linked, `-std=c++20 -fshort-wchar -fvisibility=hidden`.
-- `libese.so` and 11 consumer binaries (devlibtest exes, `eseutil`, `BookStoreSample`, `EseLibWithTestsRunner`, `nls_smoke`) all build clean.  Zero compiler warnings.
-- Third-party deps wired: io_uring, libnls (vendored submodule under `third_party/libnls/`), libucl (vendored under `third_party/libucl-0.9.4/`).
-- Build mode: DEBUG only.  No Release configuration exercised.
+- `libese.so` and 12 consumer binaries (`BookStoreSample`, `CcLayerUnit`, `COLLECTIONUnit`, `ERRVALIDATOR`, `EseLibWithTestsRunner`, `ese-tests`, `eseutil`, `IterQueryUnit`, `nls_smoke`, `RESMGRUNIT`, `STATUNIT`, `SYNCUNIT`) build clean in both Debug and Release.  Zero compiler warnings.
+- Third-party deps wired: io_uring, libnls (vendored submodule under `third_party/libnls/`), libucl (vendored under `third_party/libucl-0.9.4/`), zstd 1.5.7 (vendored under `third_party/zstd-1.5.7/`).
+- Build modes: Debug at `build/`, Release at `build-release/`.  Both pass the suite.
 
 Test surface — extensive and green.
-- `EseLibWithTestsRunner` tier-1 (no `-d`, runs JETUNITTEST): 575 default-on + 18 opt-in, all passing.
-- `EseLibWithTestsRunner` tier-2 (`-d <dir>`, runs JETUNITTESTDB against a real JET database): 35/35.
-- `devlibtest` (7 binaries): ~59M assertions across the OS, sync, resmgr, and collection layers.  All passing.
+- `EseLibWithTestsRunner` tier-1 (no `-d`, runs JETUNITTEST): default-on suite passes cleanly with 35 opt-in tests skipped.  Release matches Debug.
+- `EseLibWithTestsRunner` tier-2 (`-d <dir>`, runs JETUNITTESTDB against a real JET database): 32 tests pass; 776 opt-in tests skipped.
+- `devlibtest` (7 binaries: `CcLayerUnit`, `COLLECTIONUnit`, `ERRVALIDATOR`, `IterQueryUnit`, `RESMGRUNIT`, `STATUNIT`, `SYNCUNIT`): tens of millions of assertions across the OS, sync, resmgr, and collection layers.  All passing.  `RESMGRUNIT` alone runs 2.1M tests; `SYNCUNIT` 2.5M.
+- `ese-tests` (new — public-JET-API integration scenarios at `integration-tests/`): 125 scenarios across DDL, DML, navigation, transactions, long values, multi-values, escrow, temporary tables, sessions, backup/restore, recovery (including SIGKILL crash), snapshots, maintenance (compact), schema, limits, errors, scale, and concurrency.  Passes in Debug (23s) and Release (15s).
 - All 7 originally-Windows-only test files (`daehelpers_test`, `osu_test`, `oslayer_test`, `logprereader_test`, `fmp_test`, `node_test`, `rbscleaner_test`) compile and pass on Linux.
 
 Major plumbing pieces in place.
@@ -23,31 +24,24 @@ Major plumbing pieces in place.
 - Win32 NLS surface served by `libnls` (LGPL, vendored).  Replaces ICU.  Byte-compatible with Win32 (Wine-derived implementation against the same `.nls` data tables), keeping the door open for future on-disk format compat.
 - Config layer (`config_posix.cxx`) reads `/etc/ese.conf` + `<exe>.ese.conf` via libucl — the registry-equivalent on Linux.
 - `FormatMessageW` works against an mc-generated message table (`tools/mc/` C# native-AOT generator produces `jetmsgex_table.cxx`).
-- io_uring backs the synchronous file API via `CIoUringFile` in `syncfile_posix.cxx`.
+- File I/O: upstream `osfile.cxx` + `osfs.cxx` + `osdisk.cxx` now drive the live path.  The earlier parallel posix shims (`osdisk_posix.cxx`, `syncfile_posix.cxx`, the posix-specific `osfile`/`osfs` rewrites) have been retired.  `CIoUringFile` lives under the upstream `IFileAPI`, and IOREQ pool submissions route through io_uring (or the fall-back ReadFile/WriteFile path on filesystems without async support).
+- Block-device identity wired against `/sys/block/<dev>/queue/rotational` + storage IOCTLs through `winapi_blockdev.cxx` and `winapi_blockdev_ioctl.cxx`, with a fallback for filesystems whose backing device isn't visible under `/sys`.
+- Compression: Rtl* family backed by zstd 1.5.7 via `winapi_compression.cxx`.  Smoke test covers the journal compression round trip.
+- Consumer entry points: `JetPlatformInitialize` / `JetPlatformTerminate` were added so `libese.so` consumers (eseutil, BookStoreSample, third-party callers) get the OS layer pre-init done for them.
 
 Known gaps that block "real users."
-- **`eseutil` startup regression** — running it gets `"Out of memory error during OS Layer pre-init."` (`COSLayerPreInit::FInitd()` returns false).  Was working at the 2026-05-07 milestone; some commit between then and now broke whatever startup chain it relies on (likely the static-ctor `g_oslayerLibeseInit` in libese.so/std.cxx).  `BookStoreSample` regressed in the same family: `Assert(g_cbUserTLSSize > 0)` at `thread.cxx:344`.  `EseLibWithTestsRunner` sidesteps both by explicitly calling `OSPrepreinitSetUserTLSSize(sizeof(TLS))` + `ErrOSUInit()` from its tier-1 entry point.
-- **No end-to-end demonstration.**  We have framework-driven tests but no example program that does `JetCreateInstance → JetInit → JetCreateDatabase → JetOpenTable → insert rows → close → exit cleanly`.
-- **`osdisk` layer is a thin stub** — see priority #3 below.
-- **Stubs still in place** for: Rtl compression (`STATUS_NOT_IMPLEMENTED`, see `~/.claude/projects/-p-ese-repo/memory/project_port_compression_todo.md`); encryption (libsodium chosen, not wired); a handful of `winapi_*.cxx` functions nothing has exercised yet.
-- **DEBUG-only.**  `NDEBUG` paths in the engine are untested.
+- **No end-to-end smoke binary that doubles as a regression net.**  `BookStoreSample` boots the engine but exits with sample-level `-1047`; we have framework-driven coverage in `ese-tests` and `EseLibWithTestsRunner` but no standalone `samples/jet_smoke.cxx`-style program that proves a clean `CreateInstance → Init → CreateDatabase → insert → reopen → verify → Term` round trip and fails loud in CI when the libese.so init chain breaks again.
+- **Encryption is stubbed.**  `dev/ese/src/os/posix/encrypt_posix.cxx` returns `JET_errFeatureNotAvailable` for `ErrOSEncryptWithAes256`/`ErrOSDecryptWithAes256`/`ErrOSCreateAes256Key`; CRC32C and size-math kept portable.  Engine works for any consumer that doesn't enable encryption at rest.
+- **Some `winapi_*.cxx` functions remain unexercised** — surface that compiles and links but no test or live code path touches yet.  Not a gating problem; flagged for the eventual API-coverage audit (priority #4 below).
 - **ETW is no-op stubs.**  Eventual target is LTTng UST; not started.
 - **Event log is `DISABLE_EVENT_LOG`.**  Currently the `_etguidEventLogInfo/Warn/Error` path routes to stderr for visibility; syslog/journald is the eventual real backend.
+- **Release isn't the default.**  Both build modes work, but the project layout still leans on `build/` being the canonical Debug tree.  Promoting Release to default is a config tweak, not new code.
 
 ## Priority list
 
-### 1. Fix the `eseutil` + `BookStoreSample` regression
+### 1. End-to-end "minimum viable database" smoke binary
 
-Any libese.so consumer that does the conventional thing (`COSLayerPreInit oslayer;` on the stack at the top of `main`, expect `g_oslayerLibeseInit` to have pre-inited the OS layer) hits this wall right now.  This is the most immediate blocker for "demonstrate a real consumer of the engine."
-
-- Run `eseutil` under gdb, set a breakpoint at `COSLayerPreInit::FInitd`, walk back to see what state isn't getting set up.
-- Most likely culprit: a change to `g_oslayerLibeseInit` ctor ordering, or an init path that previously fell through to a sensible default but now needs an explicit `OSPrepreinitSetUserTLSSize` call.
-- Once the static-init chain is fixed, both eseutil and BookStoreSample should come back without per-binary changes.
-- Add a CMake-level smoke step that runs `eseutil` with no args and checks the exit; that catches future regressions in this layer.
-
-### 2. End-to-end "minimum viable database" smoke
-
-A small program — could be a new test binary, or a revival of `BookStoreSample`, or a fresh `samples/jet_smoke.cxx` — that demonstrates the whole JET round-trip:
+A small standalone program — `samples/jet_smoke.cxx` is the natural home, or a revived/repurposed `BookStoreSample` — that demonstrates the whole JET round trip:
 
 ```
 JetCreateInstance(...) → JetSetSystemParameter(SystemPath/TempPath/LogFilePath)
@@ -58,62 +52,47 @@ JetCreateInstance(...) → JetSetSystemParameter(SystemPath/TempPath/LogFilePath
 → reopen, verify rows survived restart, close.
 ```
 
-This is the demo that proves Linux ESE works — not as a test framework but as a database engine.  Should be invokable from `EseLibWithTestsRunner -d <dir>` (tier-2 already proves JetInit/JetTerm work) and also as a standalone exe.  The standalone version doubles as a regression net for #1 — if anything in the startup chain breaks again, the smoke fails loud.
+The point is a binary anyone can run by hand to see Linux ESE work — without `EseLibWithTestsRunner`'s tier-1/tier-2 init shims and without the `ese-tests` framework's per-scenario harness.  Both of those tools mask init bugs that real consumers would hit.  The standalone smoke should also be wired into CMake so a future regression in the libese.so init chain trips the build, not a downstream user.
 
-### 3. Complete `osdisk.cxx` implementation
+### 2. Encryption: libsodium-backed AES-256
 
-Currently `dev/ese/src/os/posix/osdisk_posix.cxx` is a 241-line shim against the upstream 9670-line `dev/ese/src/os/osdisk.cxx`.  What we have:
+The last meaningful runtime stub.  Replace `JET_errFeatureNotAvailable` in `encrypt_posix.cxx` with libsodium-backed AES-256.  Since on-disk format compat isn't required, AES-256-GCM (libsodium's high-level `crypto_aead_aes256gcm_*` API) is fine if CBC bit-compat with Windows turns out to be friction; CBC is the default for compat-friendliness but we're not chasing it.
 
-- QoS ↔ urgent-level math helpers (verbatim from upstream — pure bit twiddling)
-- `OSFileIIOReportError` for emitting JET events on failed IOs
-- `CioDefaultUrgentOutstandingIOMax`, `CioBackgroundIOLow`, `FlightConcurrentMetedOps` — engine-facing knobs
-- No-op `ErrOSDiskIOREQReserve` / `OSDiskIOREQUnreserve`
-- Empty `FOSDiskPreinit` / `OSDiskPostterm`
+Sequence (matches the "tests over runtime" rule):
 
-What we don't have:
+1. Unit test the new encrypt path under `dev/ese/src/_devlibtest/` — round-trip a known plaintext, verify failure modes match `JET_err*`.
+2. Wire libsodium into the CMake graph (pkg-config probe, fall back to vendored if not available).
+3. Replace the stubs in `encrypt_posix.cxx`.
+4. Run tier-1 + tier-2 with an encrypted-database scenario.
 
-- **No IOREQ pool.**  Upstream maintains a pool of in-flight IO request descriptors so callers can guarantee a slot is available before issuing.  Our `syncfile_posix.cxx` allocates an `osposix::IOContext` per IO instead, so there's no global ceiling and no reserve-then-issue ordering.
-- **No `COSDisk` class.**  Upstream models each physical disk with its own queue + scheduler that:
-  - Tracks outstanding IO depth per disk
-  - Dispatches IOs in QoS order (urgent → background) rather than submission order
-  - Implements the "smooth ramp" of urgent-level → max-outstanding-IO using the helpers we already kept
-  - Distinguishes metered ops (rate-limited) from regular and urgent ops
-  - Applies backpressure (delays / serializes) when the queue is deep
-- **No IO completion thread / dispatcher.**  Upstream has a dedicated thread that drains IOCP completions and routes them to caller-supplied handoff/complete callbacks.  Our `iouring_posix.cxx` does completions inline; we'd need to integrate disk-level queueing on top of that.
-- **No disk identification.**  Upstream maps file handles to physical disks (rotating vs SSD detection, per-disk queue selection).  Linux exposes the same data via `/sys/block/<dev>/queue/rotational` (already noted in `syncfile_posix.cxx`); we'd need to plumb it.
-- **No read combining / write coalescing.**  Upstream merges adjacent IOs.  Engine call sites (block cache, log writer) expect this to amortize syscall + iouring submission overhead.
-- **No latency tracking / abnormal-latency event emission.**  Upstream's `IFilePerfAPI` records per-IO latency and emits events at the 60s threshold (`dtickOSFileAbnormalIOLatencyEvent` is defined but the recording path is partial).
-- **`PatrolDogSynchronizer`** — upstream provides a watchdog that detects when an IO has been outstanding too long.  Already there in source (it's in `osdisk.cxx` and the `PatrolDogSynchronizer.*` tests pass), but the disk-side hook to actually invoke it on stuck IOs isn't wired.
+### 3. `osdisk` polish — latency tracking + PatrolDog wiring
 
-For tier-1/tier-2 unit tests this doesn't matter — they hit `CIoUringFile` directly and the absence of queueing isn't visible.  For real-world workloads it matters a lot: every IO from every fiber races into io_uring with no ordering, no rate-limit, no priority.  ESE's checkpoint logic, log writer, and block cache eviction strategy all assume the engine can express priorities and the OS layer will honor them.
+The major `osdisk` work is done: upstream `osdisk.cxx` is now live, IOREQ pool reservations route through `ErrOSDiskIOREQReserve`, and `FOSDiskPreinit`/`OSDiskPostterm` initialize the disk layer.  What remains is finer-grained:
 
-Roughly, the work is:
+- **Per-IO latency recording.**  `IFilePerfAPI` is attached to each `CIoUringFile` but the latency stats path on completion isn't fully populated; the abnormal-latency event (`dtickOSFileAbnormalIOLatencyEvent`) doesn't fire.
+- **PatrolDog wiring.**  `PatrolDogSynchronizer` is present (and its unit tests pass), but no live in-flight IO currently registers with it.  Registering completions should immediately exercise the live watchdog path.
+- **Read combining / write coalescing.**  Upstream merges adjacent IOs at the disk layer; on Linux we currently don't.  Block cache + log writer call sites assume some amortization.  Measurable as a perf gap rather than a correctness one; defer until perf becomes the focus.
 
-1. **IOREQ-equivalent pool.**  Either repurpose the upstream `IOREQ` struct against io_uring, or build a parallel `LinuxIOREQ` with the fields engine code reads.
-2. **`COSDisk`** equivalent with QoS-ordered submission.  Probably one COSDisk per minor-device (extracted via `stat()` + `/sys/dev/block/<major>:<minor>/queue/rotational`).  Internal queue is a small priority structure (urgency buckets, FIFO within bucket).  Drain into io_uring at the configured concurrency.
-3. **IO completion handoff** — `CIoUringFile`'s submit calls give the IOContext to COSDisk; on io_uring completion, COSDisk routes to the per-IO completion handler.
-4. **Latency recording** in the `IFilePerfAPI` already attached to each `CIoUringFile`.  Update `m_pfpapi`'s latency stats on completion; emit the abnormal-latency event when threshold is crossed.
-5. **PatrolDog wiring** — register each in-flight IO with the PatrolDogSynchronizer; the existing watchdog tests (`PatrolDogSynchronizer.*` in `oslayer_test.cxx`) should immediately start exercising the live path.
+Each item is small and self-contained — wire latency, wire PatrolDog, then revisit coalescing.  None block functional correctness today.
 
-Estimated scope: probably 1500–2500 LOC in `osdisk_posix.cxx` (vs the upstream's 9670, much of which is IOCP-specific orchestration we don't need).  Should land behind a feature flag at first so we can A/B against the current direct-submit path on the test suite before flipping over.
+### 4. JET public API coverage inventory + ratcheting
 
-### 4. Release build configuration
+`ese-tests` is at 125 scenarios but coverage isn't measured against the full `JetXxx` surface.  Worth doing once:
 
-Currently CMake's build type is implicitly DEBUG everywhere.  `NDEBUG` paths in the engine — including some `Enforce`/`Expected` macros, perf-critical inlines, and CRT assertions — are entirely untested on Linux.
+- Enumerate every `JetXxx` exported function from `dev/ese/src/inc/jet.h`.
+- Grade each as: exercised by `ese-tests`, exercised by tier-1/2 only, not exercised, or known-broken.
+- File gaps as scenarios in `ese-tests`.
+- Promote any scenario that uncovers a real engine bug to a permanent regression (the Phase 6 Compact/OverwriteLV/Restore fixes were exactly this pattern).
 
-- Add a `Release` config (`CMAKE_BUILD_TYPE=Release`) with `-O2 -DNDEBUG`.  Make it pass the test suite.
-- Run the perf tests (`CPAGE.*Perf`, `CHECKSUM.Perf`) in Release and capture numbers.  Compare to DEBUG baseline (already gathered as of commit `31a90b1`).
-- Run devlibtest in Release.  Both modes should pass.
-- Once Release works, default the build to Release unless `-DCMAKE_BUILD_TYPE=Debug` is passed.
+This is also where to fold in the "untouched winapi_*.cxx functions" audit — anything the engine never calls is dead surface we can either delete or stub down.
 
-### 5. libsodium-backed encryption + zstd-backed compression
+### 5. Default to Release, capture Release perf baseline
 
-Two pre-decided tech choices that are still stubs:
+Both build modes work.  What's left is cosmetic + measurement:
 
-- `dev/ese/src/os/posix/winapi_compression.cxx` returns `STATUS_NOT_IMPLEMENTED` for the `Rtl*` family.  Engine call sites in `_journalentry.hxx` fall back to uncompressed.  Replace with zstd (`libzstd` via pkg-config).  See `~/.claude/projects/-p-ese-repo/memory/project_port_compression_todo.md` for the integration sketch.
-- Encryption (AES-256-CBC) is currently stubbed in `encrypt_posix.cxx`.  Wire libsodium.  Since on-disk format compat isn't required, AES-256-GCM (libsodium's high-level API) is an acceptable alternative if CBC bit-compat with Windows turns out to be friction.
-
-Bring each up behind a small unit test in the relevant test file before touching the live engine path — per the "tests over runtime" feedback the user has established.
+- Default CMake to `Release` unless `-DCMAKE_BUILD_TYPE=Debug` is explicitly passed.
+- Run perf-flagged tests (`CPAGE.ReplacePerf`, `CHECKSUM.Perf`, the iouring micro-bench) in Release and pin the numbers somewhere durable.  These were captured for Debug at `31a90b1`; Release deltas haven't been written down.
+- Add a Release smoke target to whatever CMake-level smoke (#1) ends up looking like.
 
 ### 6. ETW → LTTng UST
 
@@ -121,11 +100,7 @@ Currently every ETW emitter is a no-op stub.  The `_etguidEventLog*` family is s
 
 ### 7. Real event-log backend (syslog/journald)
 
-`DISABLE_EVENT_LOG` is defined; events go nowhere (except the stderr-routing case above).  The existing `OSEventReportEvent` chokepoint is the natural place to plug in syslog (`syslog(3)`) or systemd-journal (`sd_journal_send`).  Defer until #1 and #2 are done — there's no point logging events if the engine isn't running real workloads yet.
-
-### 8. JET public API coverage inventory
-
-Not actually a port-completion item, but worth doing once: enumerate every `JetXxx` exported function and grade what's exercised by tests vs untested vs known-broken.  Gives us a coverage baseline we don't currently have.
+`DISABLE_EVENT_LOG` is defined; events go nowhere (except the stderr-routing case above).  The existing `OSEventReportEvent` chokepoint is the natural place to plug in syslog (`syslog(3)`) or systemd-journal (`sd_journal_send`).  Defer until #1 lands — there's no point logging events if no real binary is yet a real consumer.
 
 ## Things explicitly out of scope (still)
 
@@ -137,3 +112,9 @@ Not actually a port-completion item, but worth doing once: enumerate every `JetX
 ## What's in `bugs/`
 
 - `bugs/cpage-ctagreserved-missing-mask.md` — upstream bug found while bringing up the `node_test.cxx` fuzz suites.  `PGHDR::itagState`'s "high bit reserved for future use" wasn't actually being masked at read sites; fixed in `c00f86b` + `5ccc4b1`.  Open question for Microsoft when filed upstream.
+
+Three Phase-4-deferred TODOs were resolved in Phase 6 (`04bd25e`) by tracing engine internals; the contracts they exposed are now documented in scenario comments rather than as bug files, since they're correct-behavior gotchas rather than engine defects:
+
+- `JetCompactA` requires the source DB to be **attached** before the call (engine path: `comp.cxx:214` `ErrCMPOpenDB` → `ErrDBOpenDatabase`).
+- `JetSetColumn` with `JET_bitSetOverwriteLV` needs `JET_SETINFO.itagSequence = 1` so the engine targets the existing LV (engine: `lv.cxx:2501` `fNewInstance = (0 == itagSequence)`).
+- `JetRestoreInstanceA` takes the handle by value, leaves the instance uninitialised on exit, and (with `szDest = nullptr`) restores to the database's **original** path — caller must `JetCreateInstance2A` first, set params, `JetRestoreInstanceA(handle, src, dest, nullptr)`, then `JetInit`.
