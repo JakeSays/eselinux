@@ -3626,11 +3626,15 @@ VOID RBSCleaner::ComputeFirstValidRBSGen()
     WCHAR       wszRBSAbsFilePath[ IFileSystemAPI::cchPathMax ];
     LONG        lRBSGenMax;
     LONG        lRBSGenMin;
-    LOGTIME     tmPrevRBSCreate;
+    //  Must zero-init: the for-loop below reads tmPrevRBSCreate.FIsSet() on the
+    //  first iteration and gates SetFirstValidGen() on it.  Stack garbage with
+    //  fTimeIsUTC set (or any nonzero byte) makes FIsSet() return true and the
+    //  cleaner marks every snapshot before lRBSGenMax-1 as invalid.
+    LOGTIME     tmPrevRBSCreate = { 0 };
     RBSFILEHDR  rbsfilehdr;
     ERR         err = JET_errSuccess;
 
-    // First valid gen has already been computed. 
+    // First valid gen has already been computed.
     if ( m_fValidRBSGenSet )
     {
         return;
