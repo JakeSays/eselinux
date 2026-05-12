@@ -88,6 +88,7 @@ set(OSPOSIX_WINAPI_SOURCES
     winapi_tls.cxx
     winapi_werapi.cxx
     iouring_posix.cxx
+    winapi_iouring_glue.cxx
 )
 
 add_library(osposix STATIC

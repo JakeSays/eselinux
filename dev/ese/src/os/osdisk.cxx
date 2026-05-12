@@ -6717,13 +6717,27 @@ BOOL GetOverlappedResult_( HANDLE, LPOVERLAPPED, LPDWORD, BOOL )
     SetLastError( ERROR_INVALID_FUNCTION );
     return FALSE;
 }
-//  Linux: drive every IOREQ method through synchronous pread/pwrite via the
-//  windows-shim ReadFile/WriteFile.  iomethodSemiSync (the engine's
-//  default for foreground reads/writes) hands us OVERLAPPED with the
-//  offset; we don't issue truly async I/O here because the engine treats
-//  the result as "completed inline" anyway — the IO thread for real
-//  background I/O calls this same function with iomethodAsync and reaps
-//  CompleteIO from the io_uring completion thread separately.
+//  Async IOREQ submission glue — implemented in
+//  dev/ese/src/os/posix/winapi_iouring_glue.cxx.  Submits the run through
+//  io_uring; the completion thread eventually calls
+//  OSDiskIIOThreadCompleteWithErr.  Returns ERROR_SUCCESS if the SQE was
+//  queued (engine treats this as IO pending), or a Win32 error code on
+//  failure (engine retries / surfaces the error).
+extern "C" DWORD OSPosixIouringSubmitIOREQ(
+    HANDLE                      hFile,
+    IOREQ*                      pioreq,
+    bool                        fWrite,
+    void*                       pvBuffer,
+    DWORD                       cbData,
+    QWORD                       ibOffset,
+    FILE_SEGMENT_ELEMENT const* rgfse,
+    DWORD                       cfse );
+
+//  Linux: drive synchronous IOREQ methods (iomethodSync, iomethodSemiSync)
+//  through ReadFile/WriteFile -> pread/pwrite, signalling immediate
+//  completion to the caller.  Async methods (iomethodAsync,
+//  iomethodScatterGather) submit through io_uring and wait for the
+//  completion thread to invoke OSDiskIIOThreadCompleteWithErr.
 DWORD ErrorIOMgrIssueIO(
     _In_ COSDisk::IORun*                    piorun,
     _In_ const IOREQ::IOMETHOD              iomethod,
@@ -6755,47 +6769,46 @@ DWORD ErrorIOMgrIssueIO(
         *ppioreqHead = pioreqHead;
     }
 
+    const QWORD ibOffset =
+            ( (QWORD) pioreqHead->ovlp.OffsetHigh << 32 ) | pioreqHead->ovlp.Offset;
+
+    if ( iomethod == IOREQ::iomethodAsync || iomethod == IOREQ::iomethodScatterGather )
+    {
+        //  Async path: submit to io_uring and return immediately with
+        //  *pfIOCompleted = FALSE.  The completion thread reaps the CQE
+        //  and calls OSDiskIIOThreadCompleteWithErr.
+        const DWORD error = OSPosixIouringSubmitIOREQ(
+                                pioreqHead->p_osf->hFile,
+                                pioreqHead,
+                                !!pioreqHead->fWrite,
+                                (void*) pioreqHead->pbData,
+                                cbRun,
+                                ibOffset,
+                                iomethod == IOREQ::iomethodScatterGather ? rgfse : nullptr,
+                                iomethod == IOREQ::iomethodScatterGather ? cfse  : 0 );
+        if ( error != ERROR_SUCCESS )
+        {
+            return error;
+        }
+        //  *pfIOCompleted stays FALSE — IO is pending.
+        return ERROR_SUCCESS;
+    }
+
+    //  Sync / SemiSync path: do the IO inline through the windows-shim
+    //  ReadFile/WriteFile (which wrap pread/pwrite) so the caller gets
+    //  immediate-completion semantics.
     OVERLAPPED ovlpLocal;
     memset( &ovlpLocal, 0, sizeof( ovlpLocal ) );
     ovlpLocal.Offset     = pioreqHead->ovlp.Offset;
     ovlpLocal.OffsetHigh = pioreqHead->ovlp.OffsetHigh;
 
-    BOOL fSucceeded = FALSE;
-
-    if ( iomethod == IOREQ::iomethodScatterGather && cfse > 0 && rgfse != nullptr )
-    {
-        fSucceeded = pioreqHead->fWrite
-            ? WriteFileGather( pioreqHead->p_osf->hFile, rgfse, cbRun, nullptr, &ovlpLocal )
-            : ReadFileScatter( pioreqHead->p_osf->hFile, rgfse, cbRun, nullptr, &ovlpLocal );
-        if ( fSucceeded )
-        {
-            *pcbTransfer = cbRun;
-        }
-    }
-    else
-    {
-        fSucceeded = pioreqHead->fWrite
-            ? WriteFile( pioreqHead->p_osf->hFile, pioreqHead->pbData, cbRun, pcbTransfer, &ovlpLocal )
-            : ReadFile( pioreqHead->p_osf->hFile, (LPVOID)pioreqHead->pbData, cbRun, pcbTransfer, &ovlpLocal );
-    }
+    const BOOL fSucceeded = pioreqHead->fWrite
+        ? WriteFile( pioreqHead->p_osf->hFile, pioreqHead->pbData, cbRun, pcbTransfer, &ovlpLocal )
+        : ReadFile( pioreqHead->p_osf->hFile, (LPVOID) pioreqHead->pbData, cbRun, pcbTransfer, &ovlpLocal );
 
     if ( fSucceeded )
     {
-        if ( iomethod == IOREQ::iomethodSync || iomethod == IOREQ::iomethodSemiSync )
-        {
-            //  Sync/SemiSync: signal immediate completion; caller
-            //  takes the "completed inline" branch in FIOMgrHandleIOResult.
-            *pfIOCompleted = TRUE;
-        }
-        else
-        {
-            //  Async / Scatter-Gather: the engine expects a deferred
-            //  completion via OSDiskIIOThreadCompleteWithErr.  We just
-            //  did the I/O inline, so post the completion now — the
-            //  caller's *pfIOCompleted stays FALSE and the assertion at
-            //  osdisk.cxx:7881 only fires for true sync paths.
-            OSDiskIIOThreadCompleteWithErr( ERROR_SUCCESS, *pcbTransfer, pioreqHead );
-        }
+        *pfIOCompleted = TRUE;
         return ERROR_SUCCESS;
     }
 

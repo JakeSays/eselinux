@@ -26,6 +26,7 @@
 
 #include "osstd.hxx"
 #include "iouring_posix.hxx"
+#include "_ostls.hxx"
 
 //  windows-shim/specstrings.h #defines __reserved → empty as a SAL
 //  annotation. liburing.h transitively pulls <linux/fscrypt.h>, which
@@ -58,6 +59,26 @@ namespace
 
     void DispatchCompletion( IOContext* ctx, int cqeRes )
     {
+        if ( ctx->pioreq )
+        {
+            //  IOREQ-pool async path: hand the result to osdisk.cxx's
+            //  completion machinery and free the context (and any iovec
+            //  buffer we allocated for scatter/gather).  Engine asserts
+            //  inside the IOREQ state-machine that fIOThread is set on
+            //  the thread invoking CompleteIO — mirror what
+            //  OSDiskIIOThreadIComplete does on Windows.
+            const DWORD cbTransferred = cqeRes < 0 ? 0 : (DWORD) cqeRes;
+            const DWORD winError      = cqeRes < 0 ? (DWORD) ERROR_IO_DEVICE : ERROR_SUCCESS;
+            if ( Postls() )
+                Postls()->fIOThread = fTrue;
+            OSDiskIIOThreadCompleteWithErr( winError, cbTransferred, ctx->pioreq );
+            if ( Postls() )
+                Postls()->fIOThread = fFalse;
+            free( ctx->iov );
+            delete ctx;
+            return;
+        }
+
         ERR err = JET_errSuccess;
         if ( cqeRes < 0 )
         {
@@ -74,8 +95,7 @@ namespace
 
         if ( ctx->pfnIOComplete )
         {
-            //  Async path: completion thread invokes the callback and
-            //  releases the context.
+            //  Generic IFileAPI async callback path.
             FullTraceContext ftc;
             ftc.etc = ctx->tc;
             ctx->pfnIOComplete( err, ctx->fapi, ftc, ctx->qos,
@@ -305,6 +325,49 @@ ERR ErrIOUringFsync( int fd )
     pthread_mutex_destroy( &ctx.lock );
     pthread_cond_destroy( &ctx.cond );
     return err;
+}
+
+ERR ErrIOUringSubmitIOREQ( IOContext* ctx )
+{
+    const ERR errInit = ErrIOUringInit();
+    if ( errInit < JET_errSuccess )
+    {
+        return errInit;
+    }
+    pthread_mutex_lock( &g_ring.submitMutex );
+    io_uring_sqe* sqe = io_uring_get_sqe( &g_ring.ring );
+    if ( !sqe )
+    {
+        pthread_mutex_unlock( &g_ring.submitMutex );
+        return ErrERRCheck( JET_errOutOfMemory );
+    }
+    if ( ctx->iov && ctx->iovCount > 0 )
+    {
+        if ( ctx->op == IOContext::Op::Write )
+        {
+            io_uring_prep_writev( sqe, ctx->fileFd, ctx->iov, ctx->iovCount, ctx->ibOffset );
+        }
+        else
+        {
+            io_uring_prep_readv( sqe, ctx->fileFd, ctx->iov, ctx->iovCount, ctx->ibOffset );
+        }
+    }
+    else if ( ctx->op == IOContext::Op::Write )
+    {
+        io_uring_prep_write( sqe, ctx->fileFd, ctx->pbData, ctx->cbData, ctx->ibOffset );
+    }
+    else
+    {
+        io_uring_prep_read( sqe, ctx->fileFd, ctx->pbData, ctx->cbData, ctx->ibOffset );
+    }
+    io_uring_sqe_set_data( sqe, ctx );
+    const int rc = io_uring_submit( &g_ring.ring );
+    pthread_mutex_unlock( &g_ring.submitMutex );
+    if ( rc < 0 )
+    {
+        return ErrERRCheck( JET_errDiskIO );
+    }
+    return JET_errSuccess;
 }
 
 void DestroyContextSyncWait( IOContext* ctx )

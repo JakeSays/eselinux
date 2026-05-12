@@ -10,6 +10,9 @@
 
 #include <pthread.h>
 
+class IOREQ;
+struct iovec;
+
 namespace osposix
 {
 
@@ -22,9 +25,11 @@ struct IOContext
         Fsync,
     };
 
-    //  Engine-supplied callback context. The PfnIOComplete callback (if
-    //  non-null) is invoked by the completion thread after the io_uring
-    //  CQE arrives.
+    //  Completion routing — exactly one of these is set:
+    //    pioreq != null            -> osdisk.cxx IOREQ pool path; CQE
+    //                                 dispatches to OSDiskIIOThreadCompleteWithErr.
+    //    pfnIOComplete != null     -> generic async IFileAPI callback.
+    //    both null                 -> sync wait via the cond below.
     Op                  op;
     int                 fileFd;
     IFileAPI*           fapi;
@@ -35,8 +40,15 @@ struct IOContext
     BYTE*               pbData;
     DWORD_PTR           keyIOComplete;
     IFileAPI::PfnIOComplete pfnIOComplete;
+    IOREQ*              pioreq;
 
-    //  Sync-wait support — only initialized when pfnIOComplete == null.
+    //  Vector buffer — only set for scatter/gather submissions.  Submitter
+    //  owns the storage; completion thread frees it when freeing IOContext.
+    iovec*              iov;
+    int                 iovCount;
+
+    //  Sync-wait support — only initialized when pfnIOComplete == null
+    //  AND pioreq == null.
     //  The completion thread signals cond; the submitter pthread_cond_waits.
     pthread_mutex_t     lock;
     pthread_cond_t      cond;
@@ -50,6 +62,12 @@ void IOUringTerm();
 ERR  ErrIOUringRead(  int fd, IOContext* ctx );
 ERR  ErrIOUringWrite( int fd, IOContext* ctx );
 ERR  ErrIOUringFsync( int fd );
+
+//  IOREQ-pool async submission entry.  ctx->pioreq must be set; ctx is
+//  heap-allocated by the caller and freed by the completion thread.
+//  For vector (scatter/gather) submissions, set ctx->iov + ctx->iovCount;
+//  pbData/cbData are ignored.
+ERR  ErrIOUringSubmitIOREQ( IOContext* ctx );
 
 void DestroyContextSyncWait( IOContext* ctx );
 
