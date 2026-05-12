@@ -105,7 +105,12 @@ void InitIoreq( IOREQ * const pioreq, _OSFILE& _osf, const BOOL fWrite, const QW
     //  The pointer doesn't matter as we don't deref it or do IO with it, but we do test it for non-null
     //  and alignment expectations.  Randomly assigning it to the address space will (probably) AV when
     //  it is deref'd, so that's nice.
-    pioreq->pbData = (BYTE*)( rand () * 4096
+    //
+    //  Cast rand() to ULONGLONG before multiplying.  On Windows RAND_MAX is 0x7FFF so rand()*4096 fits
+    //  in 32 bits, but on Linux glibc RAND_MAX is 0x7FFFFFFF and rand()*4096 overflows signed-int —
+    //  clang -O3 takes the UB and yields a negative int that sign-extends to a top-of-address-space
+    //  pointer (e.g. 0xffffffffffffe000), causing FCheckOffsetInChainOrGap's `ulpLow + cbData` to wrap.
+    pioreq->pbData = (BYTE*)( (ULONGLONG)rand () * 4096
 #ifdef ESE_ARCH_64BIT
                         | 0xC000420000000000
 #else
