@@ -240,3 +240,53 @@ EseIntegrationScenario(Transaction, TransactionAutoRollbackOnScopeExit)
     RequireJetError(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0),
                     JET_errNoCurrentRecord);
 }
+
+EseIntegrationScenario(Transaction, GetLockWriteOnCurrentRowSucceeds)
+{
+    TemporaryDirectory directory(
+        "Transaction.GetLockWriteOnCurrentRowSucceeds");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Tx.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Value", JET_coltypLong,
+                                    JET_bitColumnNotNULL);
+
+    {
+        EseTransaction transaction(session);
+        InsertSingleFixedColumnRow<int32_t>(table, columnId, 1);
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    // JetGetLock must run inside a transaction — the lock scope is
+    // the transaction itself.  Acquiring a write lock from the same
+    // session that's the sole writer always succeeds.
+    EseTransaction transaction(session);
+    CheckJet(JetGetLock(session.Handle(), table.Id(), JET_bitWriteLock));
+    transaction.Commit();
+}
+
+EseIntegrationScenario(Transaction, GetLockOutsideTransactionReturnsNotInTransaction)
+{
+    TemporaryDirectory directory(
+        "Transaction.GetLockOutsideTransactionReturnsNotInTransaction");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Tx.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Value", JET_coltypLong,
+                                    JET_bitColumnNotNULL);
+
+    {
+        EseTransaction transaction(session);
+        InsertSingleFixedColumnRow<int32_t>(table, columnId, 1);
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    // No transaction open — engine requires one.
+    RequireJetError(JetGetLock(session.Handle(), table.Id(), JET_bitWriteLock),
+                    JET_errNotInTransaction);
+}

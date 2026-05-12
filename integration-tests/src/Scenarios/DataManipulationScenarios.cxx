@@ -569,3 +569,45 @@ EseIntegrationScenario(DataManipulation, RegisterCallbackFiresOnInsert)
     Require(counters.beforeInsert == baseline.beforeInsert);
     Require(counters.afterInsert == baseline.afterInsert);
 }
+
+EseIntegrationScenario(DataManipulation, GetRecordSizeReportsNonZeroData)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.GetRecordSizeReportsNonZeroData");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "Rows");
+
+    auto idColumnId = table.AddColumn("Id", JET_coltypLong,
+                                      JET_bitColumnNotNULL);
+    auto blobColumnId = table.AddColumn("Body", JET_coltypLongBinary);
+
+    static constexpr std::string_view BlobPayload =
+        "the quick brown fox jumps over the lazy dog";
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepInsert));
+        const int32_t idValue = 1;
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), idColumnId,
+                              &idValue, sizeof(idValue), 0, nullptr));
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), blobColumnId,
+                              BlobPayload.data(),
+                              static_cast<uint32_t>(BlobPayload.size()),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), table.Id(), nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    JET_RECSIZE recsize = {};
+    CheckJet(JetGetRecordSize(session.Handle(), table.Id(),
+                              &recsize, 0));
+    // The blob is too small to overflow into the long-value tree
+    // (LV threshold is 8 KB by default).  cbData covers the inline
+    // record bytes, including the Id column and the inline blob.
+    Require(recsize.cbData >= BlobPayload.size());
+    Require(recsize.cNonTaggedColumns + recsize.cTaggedColumns >= 2);
+}

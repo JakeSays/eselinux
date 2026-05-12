@@ -9,6 +9,8 @@
 #include "Framework/TemporaryDirectory.hxx"
 
 #include <filesystem>
+#include <string>
+#include <string_view>
 
 using namespace ese::tests;
 
@@ -98,4 +100,39 @@ EseIntegrationScenario(Database, SetMaxDatabaseSizeIsReadableViaGetMax)
     CheckJet(JetGetMaxDatabaseSize(session.Handle(), database.Id(),
                                    &observedCap, 0));
     Require(observedCap == CapPages);
+}
+
+EseIntegrationScenario(Database, GetDatabaseInfoReportsFilenameAndSize)
+{
+    TemporaryDirectory directory(
+        "Database.GetDatabaseInfoReportsFilenameAndSize");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Info.mdb");
+
+    // JET_DbInfoFilename returns the absolute path as ASCII (we call
+    // the A variant explicitly through the macro alias).
+    char filenameBuffer[1024] = {};
+    CheckJet(JetGetDatabaseInfoA(session.Handle(), database.Id(),
+                                 filenameBuffer, sizeof(filenameBuffer),
+                                 JET_DbInfoFilename));
+    Require(filenameBuffer[0] != '\0');
+    // The reported filename must end with the database name we created.
+    const std::string_view reportedPath{filenameBuffer};
+    Require(reportedPath.ends_with("Info.mdb"));
+
+    // JET_DbInfoFilesize: 64-bit byte count of the database file.
+    uint64_t fileSize = 0;
+    CheckJet(JetGetDatabaseInfoA(session.Handle(), database.Id(),
+                                 &fileSize, sizeof(fileSize),
+                                 JET_DbInfoFilesize));
+    Require(fileSize > 0);
+
+    // JET_DbInfoPageSize: page size in bytes; the engine pins this
+    // to 4 KB by default in this repo (see JET_paramDatabasePageSize).
+    uint32_t pageSize = 0;
+    CheckJet(JetGetDatabaseInfoA(session.Handle(), database.Id(),
+                                 &pageSize, sizeof(pageSize),
+                                 JET_DbInfoPageSize));
+    Require(pageSize == 4096);
 }

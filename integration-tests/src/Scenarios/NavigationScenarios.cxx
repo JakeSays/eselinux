@@ -533,3 +533,133 @@ EseIntegrationScenario(Navigation, IntersectIndexesReturnsRowsMatchingBothRanges
     CheckJet(JetCloseTable(session.Handle(), bySize));
     CheckJet(JetCloseTable(session.Handle(), byColor));
 }
+
+EseIntegrationScenario(Navigation, RetrieveKeyReturnsIndexKeyBytes)
+{
+    TemporaryDirectory directory("Navigation.RetrieveKeyReturnsIndexKeyBytes");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Indexed");
+
+    auto columnId = table.AddColumn("Key", JET_coltypLong,
+                                    JET_bitColumnNotNULL);
+
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Key\0\0", 6);
+    table.CreateIndex("PrimaryByKey", PrimaryKey, JET_bitIndexPrimary);
+
+    {
+        EseTransaction transaction(session);
+        for (int32_t value : { 11, 22, 33 })
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, value);
+        }
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    // JetRetrieveKey emits the on-disk key bytes for the current
+    // record under the current index.  For a single-column ascending
+    // Long primary key the engine prefixes a fixed byte (0x7f) then
+    // emits the big-endian, sign-flipped 4-byte payload.  We don't
+    // pin the exact encoding — just that the key is well-formed and
+    // the same byte-pattern round-trips through JetMakeKey + JetSeek.
+    uint8_t keyBuffer[64] = {};
+    uint32_t cbActual = 0;
+    CheckJet(JetRetrieveKey(session.Handle(), table.Id(),
+                            keyBuffer, sizeof(keyBuffer),
+                            &cbActual, 0));
+    Require(cbActual > 0);
+
+    // Re-issue the captured key bytes as a normalized key — the
+    // engine should seek back to the same row.  JET_bitNormalizedKey
+    // tells JetMakeKey that the input is already a normalized key.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveLast, 0));
+    CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                        keyBuffer, cbActual,
+                        JET_bitNewKey | JET_bitNormalizedKey));
+    CheckJet(JetSeek(session.Handle(), table.Id(), JET_bitSeekEQ));
+
+    int32_t resolvedKey = 0;
+    uint32_t cbValue = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), columnId,
+                               &resolvedKey, sizeof(resolvedKey),
+                               &cbValue, 0, nullptr));
+    Require(resolvedKey == 11);  // first row's key
+}
+
+EseIntegrationScenario(Navigation, RetrieveKeyReportsBufferTruncation)
+{
+    TemporaryDirectory directory(
+        "Navigation.RetrieveKeyReportsBufferTruncation");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Indexed");
+
+    auto columnId = table.AddColumn("Key", JET_coltypLong,
+                                    JET_bitColumnNotNULL);
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Key\0\0", 6);
+    table.CreateIndex("PrimaryByKey", PrimaryKey, JET_bitIndexPrimary);
+    {
+        EseTransaction transaction(session);
+        InsertSingleFixedColumnRow<int32_t>(table, columnId, 42);
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    // Pass an undersized buffer — the engine reports the full key
+    // size via pcbActual and the call returns JET_wrnBufferTruncated.
+    uint8_t tinyBuffer[2] = {};
+    uint32_t cbActual = 0;
+    const auto err = JetRetrieveKey(session.Handle(), table.Id(),
+                                    tinyBuffer, sizeof(tinyBuffer),
+                                    &cbActual, 0);
+    Require(err == JET_wrnBufferTruncated);
+    Require(cbActual > sizeof(tinyBuffer));
+}
+
+EseIntegrationScenario(Navigation, IndexRecordCountReportsRowCount)
+{
+    TemporaryDirectory directory("Navigation.IndexRecordCountReportsRowCount");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Rows");
+
+    auto columnId = table.AddColumn("Key", JET_coltypLong,
+                                    JET_bitColumnNotNULL);
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Key\0\0", 6);
+    table.CreateIndex("PrimaryByKey", PrimaryKey, JET_bitIndexPrimary);
+
+    constexpr int RowCount = 50;
+    {
+        EseTransaction transaction(session);
+        for (int32_t v = 0; v < RowCount; ++v)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, v);
+        }
+        transaction.Commit();
+    }
+
+    // crecMax caps the walk at that many records; passing 0 means
+    // "no cap" (engine convention).  Empty index ranges return 0;
+    // with all rows in range and no cap, we get the full count.
+    uint32_t indexed = 0;
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    CheckJet(JetIndexRecordCount(session.Handle(), table.Id(),
+                                 &indexed, /*crecMax*/ 0));
+    Require(indexed == RowCount);
+
+    // crecMax bounds the count; the engine stops at the cap.
+    uint32_t bounded = 0;
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    CheckJet(JetIndexRecordCount(session.Handle(), table.Id(),
+                                 &bounded, /*crecMax*/ 10));
+    Require(bounded == 10);
+}

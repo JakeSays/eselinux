@@ -259,3 +259,90 @@ EseIntegrationScenario(Session, ClosingOneDupCursorLeavesOthersUsable)
 
     CheckJet(JetCloseTable(session.Handle(), dupB));
 }
+
+EseIntegrationScenario(Session, SetAndResetSessionContextRoundTrip)
+{
+    TemporaryDirectory directory(
+        "Session.SetAndResetSessionContextRoundTrip");
+    EseInstance instance(directory);
+    EseSession session(instance);
+
+    // SetSessionContext pins a JET_API_PTR-sized cookie to the
+    // current thread so the engine can route subsequent calls
+    // through the same session reliably.  The pair forms a
+    // "borrow / return" handoff; double-set without reset surfaces
+    // as JET_errSessionContextAlreadySet.
+    CheckJet(JetSetSessionContext(session.Handle(),
+                                  static_cast<JET_API_PTR>(0xC0FFEE)));
+    RequireJetError(JetSetSessionContext(session.Handle(),
+                                         static_cast<JET_API_PTR>(0xBADC0DE)),
+                    JET_errSessionContextAlreadySet);
+    CheckJet(JetResetSessionContext(session.Handle()));
+
+    // A fresh set after reset must succeed; same for the reset.
+    CheckJet(JetSetSessionContext(session.Handle(),
+                                  static_cast<JET_API_PTR>(0xFEEDFACE)));
+    CheckJet(JetResetSessionContext(session.Handle()));
+}
+
+namespace
+{
+
+// Free-LS callback for the Set/Get LS scenario.  The engine invokes
+// this once per cursor/table when the LS would otherwise leak.
+JET_ERR JET_API FreeLSCallback(JET_SESID    /*sesid*/,
+                               JET_DBID     /*dbid*/,
+                               JET_TABLEID  /*tableid*/,
+                               JET_CBTYP    /*cbtyp*/,
+                               void*        /*pvArg1*/,
+                               void*        /*pvArg2*/,
+                               void*        /*pvContext*/,
+                               JET_API_PTR  /*ulUnused*/)
+{
+    // We use integer sentinel values for LS — nothing to free.
+    return JET_errSuccess;
+}
+
+} // namespace
+
+EseIntegrationScenario(Session, SetAndGetCursorLocalStorageRoundTrip)
+{
+    TemporaryDirectory directory(
+        "Session.SetAndGetCursorLocalStorageRoundTrip");
+    // JetSetLS / JetGetLS require JET_paramRuntimeCallback set on the
+    // instance before JetInit — without it the engine returns
+    // JET_errLSCallbackNotSpecified.
+    EseInstance instance(directory, "ese-tests", FreeLSCallback);
+    EseSession session(instance);
+    EseDatabase database(session, "Session.mdb");
+    EseTable table(database, "Rows");
+
+    // Engine reports "no LS attached" via JET_errLSNotSet, not by
+    // writing JET_LSNil into pls.
+    JET_LS lsBaseline = 0;
+    RequireJetError(JetGetLS(session.Handle(), table.Id(),
+                             &lsBaseline, JET_bitLSCursor),
+                    JET_errLSNotSet);
+
+    // Attach a sentinel value to the cursor's local storage.
+    constexpr JET_LS Sentinel = static_cast<JET_LS>(0xDEADBEEF);
+    CheckJet(JetSetLS(session.Handle(), table.Id(),
+                      Sentinel, JET_bitLSCursor));
+
+    JET_LS lsObserved = 0;
+    CheckJet(JetGetLS(session.Handle(), table.Id(),
+                      &lsObserved, JET_bitLSCursor));
+    Require(lsObserved == Sentinel);
+
+    // JET_bitLSReset on Get returns the prior value and clears it.
+    JET_LS lsResetRead = 0;
+    CheckJet(JetGetLS(session.Handle(), table.Id(),
+                      &lsResetRead, JET_bitLSCursor | JET_bitLSReset));
+    Require(lsResetRead == Sentinel);
+
+    // Subsequent Get without Reset surfaces LSNotSet again.
+    JET_LS lsAfterReset = 0;
+    RequireJetError(JetGetLS(session.Handle(), table.Id(),
+                             &lsAfterReset, JET_bitLSCursor),
+                    JET_errLSNotSet);
+}

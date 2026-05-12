@@ -11,6 +11,7 @@
 #include "Framework/TemporaryDirectory.hxx"
 
 #include <cstring>
+#include <string_view>
 
 using namespace ese::tests;
 
@@ -407,4 +408,57 @@ EseIntegrationScenario(Schema, DeleteTableFreesTheNameForReuse)
                                                 JET_coltypLongText);
     Require(columnId != 0);
     Require(replacement.Id() != JET_tableidNil);
+}
+
+EseIntegrationScenario(Schema, GetObjectInfoReportsTableType)
+{
+    TemporaryDirectory directory("Schema.GetObjectInfoReportsTableType");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Schema.mdb");
+    EseTable table(database, "Inspectable");
+    table.AddColumn("Value", JET_coltypLong);
+
+    // JetGetObjectInfo with JET_ObjInfo + JET_OBJECTINFO struct
+    // queries metadata for a single named object.
+    JET_OBJECTINFO info = {};
+    info.cbStruct = sizeof(info);
+    CheckJet(JetGetObjectInfoA(session.Handle(), database.Id(),
+                               JET_objtypTable,
+                               /*szContainerName*/ nullptr,
+                               "Inspectable",
+                               &info, sizeof(info), JET_ObjInfo));
+    Require(info.objtyp == JET_objtypTable);
+    // grbit must include either updatable or bookmark — basic
+    // metadata bits the engine always populates for user tables.
+    Require((info.grbit & (JET_bitTableInfoUpdatable | JET_bitTableInfoBookmark))
+            != 0);
+}
+
+EseIntegrationScenario(Schema, GetIndexInfoReturnsIndexCount)
+{
+    TemporaryDirectory directory("Schema.GetIndexInfoReturnsIndexCount");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Schema.mdb");
+    EseTable table(database, "Indexed");
+
+    table.AddColumn("PrimaryKey",   JET_coltypLong, JET_bitColumnNotNULL);
+    table.AddColumn("SecondaryKey", JET_coltypLong);
+
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+PrimaryKey\0\0", 13);
+    static constexpr std::string_view SecondaryKey =
+        std::string_view("+SecondaryKey\0\0", 15);
+    table.CreateIndex("Primary",   PrimaryKey,   JET_bitIndexPrimary);
+    table.CreateIndex("Secondary", SecondaryKey);
+
+    // JET_IdxInfoCount returns the total number of indexes on the
+    // named table (primary + each secondary).  We created two.
+    uint32_t indexCount = 0;
+    CheckJet(JetGetIndexInfoA(session.Handle(), database.Id(),
+                              "Indexed", /*szIndexName*/ nullptr,
+                              &indexCount, sizeof(indexCount),
+                              JET_IdxInfoCount));
+    Require(indexCount == 2);
 }
