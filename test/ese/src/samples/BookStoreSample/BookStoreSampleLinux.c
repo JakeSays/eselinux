@@ -1185,6 +1185,10 @@ int main(int argc, char ** argv)
     //  INITIALIZATION
     //
 
+    //  Linux libese.so requires a one-shot platform initialization before
+    //  any other Jet API; Windows folds the same plumbing into DllMain.
+    Call( JetPlatformInitialize() );
+
     //  some system parameters must be set prior to calling JetInit
     //
     Call( JetSetSystemParameter( &instance, 0, JET_paramSystemPath, 0, "./" ) );

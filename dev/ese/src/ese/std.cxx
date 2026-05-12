@@ -4,14 +4,18 @@
 #include "std.hxx"
 
 #ifndef ESE_OS_WINDOWS
-//  On Windows the engine's OS layer comes up via DllMain when libese.dll is
-//  loaded. Linux .so init runs through C++ static constructors instead;
-//  give libese.so a process-lifetime COSLayerPreInit so any binary that
-//  links against it (BookStoreSample, future Jet API consumers) gets the
-//  OS layer pre-initialized before main() runs. eseutil still creates its
-//  own COSLayerPreInit in wmain — that one becomes a no-op because the
-//  ctor checks g_fDllUp.
+//  On Windows, libese.dll's DllMain runs FOSPreinit() (the OS-layer
+//  per-process preinit) on DLL_PROCESS_ATTACH and flips g_fDllUp = true.
+//  Linux .so init has no DllMain equivalent, so we mirror that single
+//  responsibility with a static-ctor: construct a COSLayerPreInit at
+//  namespace scope so its ctor calls FOSPreinit() at .so-load time.
+//
+//  Anything else (ErrOSInit, ErrOSUInit, perfmon/tracing flags, JET param
+//  defaults, ...) is the consumer's job — eseutil, BookStoreSample, the
+//  test runner, etc. — exactly as on Windows.
 namespace {
+
 COSLayerPreInit g_oslayerLibeseInit;
-}
+
+}  //  namespace
 #endif

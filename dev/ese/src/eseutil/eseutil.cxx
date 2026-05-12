@@ -5470,10 +5470,21 @@ INT __cdecl wmain( INT argc, __in_ecount(argc) LPWSTR argv[] )
 
     //  configure OS layer
 
+#ifdef ESE_OS_WINDOWS
     COSLayerPreInit::DisablePerfmon();  //  for now we will avoid dealing with perfmon, note ese[nt].dll will still use perfmon, just not eseutil.exe
     COSLayerPreInit::DisableTracing();  //  for now we will avoid dealing with tracing, note ese[nt].dll will still use tracing, just not eseutil.exe
 
     Call( (JET_ERR)ErrOSInit() );
+#else
+    //  Linux: JetPlatformInitialize bundles the OS-layer plumbing libese.so
+    //  consumers need before any other Jet API — TLS size registration,
+    //  perfmon/tracing disable, JET_paramDisablePerfmon, and ErrOSUInit in
+    //  the correct order (param defaults set BEFORE the resource managers
+    //  freeze).  Without it, JetTestHook → ErrOSUInit (e.g. from
+    //  PushEseutilArgTrace below in DEBUG) asserts at cresmgr.cxx:648
+    //  with JET_errAlreadyInitialized.
+    Call( JetPlatformInitialize() );
+#endif
 
     //  must be after init so that Time Inj has a chance to adjust the ticks
     //  we're using

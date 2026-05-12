@@ -460,7 +460,14 @@ COSLayerPreInit::COSLayerPreInit() :
 
 BOOL COSLayerPreInit::FInitd()
 {
-    return m_fInitedSuccessfully;
+    //  Two paths get here with the OS layer correctly up:
+    //   * This instance ran FOSPreinit itself          (m_fInitedSuccessfully == true)
+    //   * Someone else already did so before this ctor (m_fInitedSuccessfully == false,
+    //     but g_fDllUp is true — see ctor early-return)
+    //  Either way the caller's "is the OS layer ready" question is answered yes.
+    //  The destructor still keys off m_fInitedSuccessfully so it only tears down
+    //  what this instance brought up.
+    return m_fInitedSuccessfully || g_fDllUp;
 }
 
 COSLayerPreInit::~COSLayerPreInit()

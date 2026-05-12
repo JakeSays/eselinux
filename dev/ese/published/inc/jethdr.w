@@ -11886,6 +11886,21 @@ JET_ERR JET_API JetConsumeLogData(
     _In_    uint32_t       cbLogData,
     _In_    JET_GRBIT           grbits );
 
+#ifndef _WIN32
+//  Linux clients (eseutil, BookStoreSample, custom apps) must call
+//  JetPlatformInitialize() once per process before any other Jet API.
+//  It does the work Windows hides inside libese.dll's DllMain plus the
+//  Linux-specific bits: registers the user TLS size, suppresses the
+//  perfmon path (not compiled into osposix), and bumps OSU's init
+//  counter so the resource managers freeze with the right param
+//  defaults.  Idempotent — extra calls return JET_errSuccess.
+//
+//  Pair with JetPlatformTerminate() at process shutdown when you want
+//  deterministic teardown; otherwise the .so destructor handles it.
+JET_ERR JET_API JetPlatformInitialize( void );
+JET_ERR JET_API JetPlatformTerminate( void );
+#endif /* !_WIN32 */
+
 #endif /* WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP) */
 #pragma endregion
 

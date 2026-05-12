@@ -23421,6 +23421,83 @@ HandleError:
     return err;
 }
 
+#ifndef ESE_OS_WINDOWS
+//  Tracks whether JetPlatformInitialize has run successfully so the matching
+//  Terminate is idempotent across the explicit-call and atexit paths.
+static BOOL g_fJetPlatformInitialized = fFalse;
+
+extern "C" void JetPlatformAtexit_( void )
+{
+    ( void )JetPlatformTerminate();
+}
+
+//  Linux entry point: clients call this once before any other Jet API.
+//  Windows hides the equivalent inside libese.dll's DllMain (FOSPreinit
+//  via the CRT) plus the engine's own init paths (perfmon defaults via
+//  perfmon.cxx compile-time config, TLS size via the DllMain hook under
+//  OS_LAYER_VIOLATIONS).  None of that lands automatically on Linux:
+//
+//    * FOSPreinit fires at .so load via std.cxx's COSLayerPreInit ctor,
+//      so that's already done by the time this runs.
+//    * OSPrepreinitSetUserTLSSize has to be called before any Jet API
+//      that touches Ptls() — JetSetSystemParameter does.
+//    * JET_paramDisablePerfmon defaults to fFalse on builds with
+//      PERFMON_SUPPORT, but Linux's osposix doesn't actually compile a
+//      perfmon backend, so EnablePerfmon asserts.  Set the param
+//      explicitly so ErrOSUSetOSULayerGlobals takes the disable arm.
+//    * ErrOSUInit (rather than ErrOSInit) is what bumps g_OSUInitControl
+//      and runs ErrOSUSetGlobals.  Hitting the latter after ErrOSInit
+//      has already frozen the resource managers asserts at cresmgr.cxx
+//      (SetParam returns JET_errAlreadyInitialized).  ErrOSUInit calls
+//      ErrOSInit internally in the right order.
+//
+//  Idempotent: subsequent calls return JET_errSuccess.  An atexit hook
+//  registered on the first successful call drives JetPlatformTerminate
+//  so the OSU layer's CInitTermLock doesn't enforce-fail in its dtor
+//  when callers exit without an explicit Terminate.
+JET_ERR JET_API JetPlatformInitialize( void )
+{
+    ERR err = JET_errSuccess;
+
+    if ( g_fJetPlatformInitialized )
+    {
+        return JET_errSuccess;
+    }
+
+    OSPrepreinitSetUserTLSSize( sizeof( TLS ) );
+
+    COSLayerPreInit::DisablePerfmon();
+    COSLayerPreInit::DisableTracing();
+
+    Call( ErrSetSystemParameter( pinstNil, JET_sesidNil, JET_paramDisablePerfmon, fTrue, nullptr ) );
+
+    Call( ErrOSUInit() );
+
+    g_fJetPlatformInitialized = fTrue;
+
+    //  Drive teardown in reverse construction order: atexit handlers run
+    //  before C++ static destructors of objects whose construction completed
+    //  prior to registration, so libese.so's g_oslayerLibeseInit (FOSPreinit)
+    //  still runs OSPostterm last.
+    ( void )atexit( JetPlatformAtexit_ );
+
+HandleError:
+    return err;
+}
+
+JET_ERR JET_API JetPlatformTerminate( void )
+{
+    if ( !g_fJetPlatformInitialized )
+    {
+        return JET_errSuccess;
+    }
+    g_fJetPlatformInitialized = fFalse;
+
+    OSUTerm();
+    return JET_errSuccess;
+}
+#endif  //  !ESE_OS_WINDOWS
+
 JET_ERR JET_API JetTestHook(
     _In_        const TESTHOOK_OP   opcode,
     __inout_opt void * const        pv )
