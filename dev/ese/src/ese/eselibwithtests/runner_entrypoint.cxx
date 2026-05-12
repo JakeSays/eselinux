@@ -220,6 +220,16 @@ int RunTier2( const char* szPattern, const char* szDbDir )
         std::fprintf( stderr, "JetSetSystemParameter(DisablePerfmon) failed: %d\n", (int)err );
         return -1;
     }
+    //  Tier-1 sets AssertSkipAll for the same reason — FireWalls fire on
+    //  recoverable engine quirks (e.g. ZFS reports 128K block size, engine
+    //  clamps to 4K and continues), and Debug's AssertFailFast would
+    //  otherwise abort the runner before any test ran.
+    err = JetSetSystemParameterA( &instance, 0, JET_paramAssertAction, JET_AssertSkipAll, nullptr );
+    if ( err < JET_errSuccess )
+    {
+        std::fprintf( stderr, "JetSetSystemParameter(AssertAction) failed: %d\n", (int)err );
+        return -1;
+    }
     //  Pin info events and full event-log level on, applied to every
     //  JET instance created in this process.
     EnableEventLogging();
