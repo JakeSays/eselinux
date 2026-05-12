@@ -141,12 +141,69 @@ EseIntegrationScenario(LongValue, AppendExtendsExistingValue)
                         SecondChunk.size()) == 0);
 }
 
-// TODO Phase 5: JET_bitSetOverwriteLV requires the LV to be stored as
-// discrete on-disk chunks; the engine inlines small LVs (< some
-// threshold), so a 4 KB-of-zeros insert isn't actually chunked and
-// JetSetColumn(...SetOverwriteLV...) returns JET_errColumnNoChunk.
-// Bring this back once we understand the threshold / can force the
-// engine onto the chunked path.
+EseIntegrationScenario(LongValue, OverwritePortionPreservesSurroundingBytes)
+{
+    TemporaryDirectory directory(
+        "LongValue.OverwritePortionPreservesSurroundingBytes");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "LongValue.mdb");
+    EseTable table(database, "Overwrite");
+
+    auto bodyColumnId = table.AddColumn("Body", JET_coltypLongBinary);
+
+    static constexpr int OriginalBytes = 4'096;
+    std::vector<uint8_t> writtenBytes(OriginalBytes, 0x00);
+
+    {
+        EseTransaction transaction(session);
+        InsertSingleVariableColumnRow(table, bodyColumnId,
+                                      writtenBytes.data(),
+                                      static_cast<uint32_t>(writtenBytes.size()));
+        transaction.Commit();
+    }
+
+    // Overwrite a 256-byte window at offset 1024 with 0xFF bytes.  The
+    // engine routes JetSetColumn through ErrLVOpFromGrbit; that helper
+    // gates JET_bitSetOverwriteLV on `fNewInstance`, which it derives
+    // from `0 == itagSequence` (lv.cxx around line 2501).  Leaving
+    // JET_SETINFO.itagSequence at its default 0 means the engine
+    // thinks the LV is being created fresh and refuses the overwrite
+    // with JET_errColumnNoChunk.  itagSequence = 1 says "modify the
+    // existing LV instance" — that's the path that actually overwrites.
+    static constexpr uint32_t OverwriteOffset = 1024;
+    static constexpr uint32_t OverwriteBytes = 256;
+    const std::vector<uint8_t> patch(OverwriteBytes, 0xFF);
+
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepReplace));
+
+        JET_SETINFO setInformation = {};
+        setInformation.cbStruct = sizeof(setInformation);
+        setInformation.ibLongValue = OverwriteOffset;
+        setInformation.itagSequence = 1;
+
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), bodyColumnId,
+                              patch.data(), OverwriteBytes,
+                              JET_bitSetOverwriteLV, &setInformation));
+        CheckJet(JetUpdate(session.Handle(), table.Id(), nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    auto combined = RetrieveVariableColumnFromCurrentRecord(table,
+                                                            bodyColumnId,
+                                                            OriginalBytes);
+    Require(combined.size() == OriginalBytes);
+    for (uint32_t byteIndex = 0; byteIndex < OriginalBytes; ++byteIndex)
+    {
+        const bool isInPatch = byteIndex >= OverwriteOffset &&
+                               byteIndex < OverwriteOffset + OverwriteBytes;
+        Require(combined[byteIndex] == (isInPatch ? 0xFF : 0x00));
+    }
+}
 
 EseIntegrationScenario(LongValue, ChunkedRetrieveReadsByOffset)
 {

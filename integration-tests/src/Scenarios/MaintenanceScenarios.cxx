@@ -102,9 +102,82 @@ EseIntegrationScenario(Maintenance, OnlineDefragmentRunsToCompletion)
                             JET_bitDefragmentBatchStop));
 }
 
-// TODO Phase 5: JetCompactA round-trip.  Detaching the source via
-// EseDatabase's dtor + re-attaching in a fresh session reports
-// JET_errDatabaseNotFound from JetCompactA, suggesting the engine
-// still considers the source "claimed" until JetTerm.  Worth
-// investigating with a per-scenario JetTerm cycle (likely via
-// CrashHelper) when we revisit Compact in Phase 5.
+EseIntegrationScenario(Maintenance, CompactProducesCopyWithSameData)
+{
+    TemporaryDirectory directory("Maintenance.CompactProducesCopyWithSameData");
+
+    static constexpr int RowCount = 500;
+    const auto sourceDatabasePath = directory.Path() / "Source.mdb";
+    const auto destinationDatabasePath = directory.Path() / "Compacted.mdb";
+
+    // Build the source database, then JetTerm so JetCompact sees a
+    // detached database file in a known state.
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+        EseDatabase database(session, "Source.mdb");
+        EseTable table(database, "Rows");
+
+        auto columnId = table.AddColumn("Value", JET_coltypLong, JET_bitColumnNotNULL);
+
+        EseTransaction transaction(session);
+        for (int rowIndex = 0; rowIndex < RowCount; ++rowIndex)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, rowIndex);
+        }
+        transaction.Commit();
+    }
+
+    // Compact pass: ErrCMPOpenDB (comp.cxx around line 214) calls
+    // ErrDBOpenDatabase, which requires the source to already be
+    // *attached* — JetCompactA without a prior attach surfaces as
+    // JET_errDatabaseNotFound.  Attach read-only first.
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+
+        CheckJet(JetAttachDatabaseA(session.Handle(),
+                                    sourceDatabasePath.string().c_str(),
+                                    JET_bitDbReadOnly));
+
+        CheckJet(JetCompactA(session.Handle(),
+                             sourceDatabasePath.string().c_str(),
+                             destinationDatabasePath.string().c_str(),
+                             nullptr, nullptr, 0));
+
+        CheckJet(JetDetachDatabaseA(session.Handle(),
+                                    sourceDatabasePath.string().c_str()));
+    }
+
+    // Third instance: attach the compacted copy and walk every row.
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+        CheckJet(JetAttachDatabaseA(session.Handle(),
+                                    destinationDatabasePath.string().c_str(),
+                                    0));
+        JET_DBID compactedDbid = JET_dbidNil;
+        CheckJet(JetOpenDatabaseA(session.Handle(),
+                                  destinationDatabasePath.string().c_str(),
+                                  nullptr, &compactedDbid, 0));
+
+        JET_TABLEID compactedTableId = JET_tableidNil;
+        CheckJet(JetOpenTableA(session.Handle(), compactedDbid, "Rows",
+                               nullptr, 0, 0, &compactedTableId));
+
+        int observed = 0;
+        CheckJet(JetMove(session.Handle(), compactedTableId, JET_MoveFirst, 0));
+        do
+        {
+            ++observed;
+        }
+        while (JetMove(session.Handle(), compactedTableId, JET_MoveNext, 0)
+               != JET_errNoCurrentRecord);
+        Require(observed == RowCount);
+
+        CheckJet(JetCloseTable(session.Handle(), compactedTableId));
+        CheckJet(JetCloseDatabase(session.Handle(), compactedDbid, 0));
+        CheckJet(JetDetachDatabaseA(session.Handle(),
+                                    destinationDatabasePath.string().c_str()));
+    }
+}

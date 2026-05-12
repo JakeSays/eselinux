@@ -121,6 +121,93 @@ struct CommittedRowsRegistrar
 };
 [[maybe_unused]] static CommittedRowsRegistrar _committedRowsRegistrar;
 
+constexpr const char* ChildEntryUncommittedRows =
+    "Recovery.UncommittedRowsDiscardedAfterSigkill";
+
+// Child for the uncommitted-rows scenario.  Opens an instance, inserts
+// 5 rows inside a transaction that is *never* committed, signals
+// ready, then waits to be killed.  Recovery on the parent side must
+// discard the uncommitted work.
+void RunUncommittedRowsChild(const std::filesystem::path& directory)
+{
+    JET_INSTANCE instanceHandle = JET_instanceNil;
+    auto pathWithSeparator = directory.string();
+    if (!pathWithSeparator.empty() && pathWithSeparator.back() != '/')
+    {
+        pathWithSeparator.push_back('/');
+    }
+
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramSystemPath, 0,
+                                    pathWithSeparator.c_str()));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramTempPath, 0,
+                                    pathWithSeparator.c_str()));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramLogFilePath, 0,
+                                    pathWithSeparator.c_str()));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramBaseName, 0, "edb"));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramEventSource, 0,
+                                    "ese-tests-child"));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramCircularLog, 1, nullptr));
+
+    CheckJet(JetInit(&instanceHandle));
+
+    JET_SESID sessionId = JET_sesidNil;
+    CheckJet(JetBeginSessionA(instanceHandle, &sessionId, nullptr, nullptr));
+
+    const auto databasePath = directory / "Discardable.mdb";
+    JET_DBID databaseId = JET_dbidNil;
+    CheckJet(JetCreateDatabaseA(sessionId, databasePath.string().c_str(),
+                                nullptr, &databaseId,
+                                JET_bitDbOverwriteExisting));
+
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetCreateTableA(sessionId, databaseId, "Pending", 16, 80, &tableId));
+
+    JET_COLUMNDEF columnDefinition = {};
+    columnDefinition.cbStruct = sizeof(columnDefinition);
+    columnDefinition.coltyp = JET_coltypLong;
+    columnDefinition.grbit = JET_bitColumnNotNULL;
+    JET_COLUMNID columnId = 0;
+    CheckJet(JetAddColumnA(sessionId, tableId, "Value",
+                           &columnDefinition, nullptr, 0, &columnId));
+
+    // We need at least one committed transaction so the database is
+    // recoverable into a sane state; create + add column are DDL
+    // operations that are auto-committed.  The pending rows we add
+    // below stay in the version store and must NOT survive the SIGKILL.
+    CheckJet(JetBeginTransaction(sessionId));
+    for (int rowIndex = 0; rowIndex < 5; ++rowIndex)
+    {
+        const int32_t value = 555 + rowIndex;
+        CheckJet(JetPrepareUpdate(sessionId, tableId, JET_prepInsert));
+        CheckJet(JetSetColumn(sessionId, tableId, columnId,
+                              &value, sizeof(value), 0, nullptr));
+        CheckJet(JetUpdate(sessionId, tableId, nullptr, 0, nullptr));
+    }
+    // Deliberately do NOT commit.  Signal ready and wait for SIGKILL.
+
+    ChildProcess::SignalReady(directory);
+
+    while (true)
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(60));
+    }
+}
+
+struct UncommittedRowsRegistrar
+{
+    UncommittedRowsRegistrar()
+    {
+        RegisterChildEntry(ChildEntryUncommittedRows, &RunUncommittedRowsChild);
+    }
+};
+[[maybe_unused]] static UncommittedRowsRegistrar _uncommittedRowsRegistrar;
+
 }  // namespace
 
 EseIntegrationScenario(Recovery, CommittedRowsSurviveSigkill)
@@ -176,6 +263,42 @@ EseIntegrationScenario(Recovery, CommittedRowsSurviveSigkill)
     while (JetMove(session.Handle(), recoveredTableId, JET_MoveNext, 0)
            != JET_errNoCurrentRecord);
     Require(observed == 5);
+
+    CheckJet(JetCloseTable(session.Handle(), recoveredTableId));
+}
+
+EseIntegrationScenario(Recovery, UncommittedRowsDiscardedAfterSigkill)
+{
+    TemporaryDirectory directory("Recovery.UncommittedRowsDiscardedAfterSigkill");
+
+    {
+        ChildProcess child(ChildEntryUncommittedRows, directory.Path());
+        child.WaitUntilReady(std::chrono::seconds(20));
+        child.Kill();
+        child.WaitForExit();
+    }
+
+    // Reopen on the same directory.  The child created the table and
+    // column inside auto-committed DDL transactions (those survive),
+    // but the five rows were never committed and must be absent.
+    EseInstance recoveredInstance(directory);
+    EseSession session(recoveredInstance);
+
+    const auto databasePath = directory.Path() / "Discardable.mdb";
+    CheckJet(JetAttachDatabaseA(session.Handle(),
+                                databasePath.string().c_str(),
+                                0));
+    JET_DBID recoveredDbid = JET_dbidNil;
+    CheckJet(JetOpenDatabaseA(session.Handle(),
+                              databasePath.string().c_str(),
+                              nullptr, &recoveredDbid, 0));
+
+    JET_TABLEID recoveredTableId = JET_tableidNil;
+    CheckJet(JetOpenTableA(session.Handle(), recoveredDbid, "Pending",
+                           nullptr, 0, 0, &recoveredTableId));
+
+    RequireJetError(JetMove(session.Handle(), recoveredTableId, JET_MoveFirst, 0),
+                    JET_errNoCurrentRecord);
 
     CheckJet(JetCloseTable(session.Handle(), recoveredTableId));
 }
