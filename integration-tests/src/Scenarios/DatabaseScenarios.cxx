@@ -22,3 +22,80 @@ EseIntegrationScenario(Database, CreateAndClose)
     Require(database.Id() != JET_dbidNil);
     Require(std::filesystem::exists(database.Path()));
 }
+
+EseIntegrationScenario(Database, GrowDatabaseExtendsFileBySpecifiedPages)
+{
+    TemporaryDirectory directory(
+        "Database.GrowDatabaseExtendsFileBySpecifiedPages");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Grow.mdb");
+
+    constexpr uint32_t TargetPages = 256;
+    uint32_t pagesReal = 0;
+    CheckJet(JetGrowDatabase(session.Handle(), database.Id(),
+                             TargetPages, &pagesReal));
+    // JetGrowDatabase only extends — never shrinks — so the reported
+    // size is at least the requested size.
+    Require(pagesReal >= TargetPages);
+
+    // Same call with a smaller target is a no-op and returns the
+    // current larger size.
+    uint32_t pagesAfterNoOp = 0;
+    CheckJet(JetGrowDatabase(session.Handle(), database.Id(),
+                             16, &pagesAfterNoOp));
+    Require(pagesAfterNoOp == pagesReal);
+}
+
+EseIntegrationScenario(Database, SetDatabaseSizeMatchesGrowSemantics)
+{
+    TemporaryDirectory directory(
+        "Database.SetDatabaseSizeMatchesGrowSemantics");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Sized.mdb");
+
+    const auto databasePath = database.Path().string();
+    constexpr uint32_t TargetPages = 200;
+
+    uint32_t pagesReal = 0;
+    // JetSetDatabaseSize requires the DB be detached (the call needs
+    // exclusive access to the file).  Close + detach, set, then reattach.
+    CheckJet(JetCloseDatabase(session.Handle(), database.Id(), 0));
+    CheckJet(JetDetachDatabaseA(session.Handle(), databasePath.c_str()));
+    CheckJet(JetSetDatabaseSizeA(session.Handle(), databasePath.c_str(),
+                                 TargetPages, &pagesReal));
+    Require(pagesReal >= TargetPages);
+
+    // Re-attach to confirm the file is still usable.
+    CheckJet(JetAttachDatabaseA(session.Handle(), databasePath.c_str(), 0));
+    JET_DBID reattachedDbid = JET_dbidNil;
+    CheckJet(JetOpenDatabaseA(session.Handle(), databasePath.c_str(),
+                              nullptr, &reattachedDbid, 0));
+    Require(reattachedDbid != JET_dbidNil);
+    CheckJet(JetCloseDatabase(session.Handle(), reattachedDbid, 0));
+    CheckJet(JetDetachDatabaseA(session.Handle(), databasePath.c_str()));
+    // EseDatabase destructor will try to close the original dbid handle
+    // we already closed; the framework swallows the JET_errInvalidDatabaseId
+    // gracefully or its destructor is a no-op.  Either way the scenario
+    // verified the API surface.
+    database.Release();
+}
+
+EseIntegrationScenario(Database, SetMaxDatabaseSizeIsReadableViaGetMax)
+{
+    TemporaryDirectory directory(
+        "Database.SetMaxDatabaseSizeIsReadableViaGetMax");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Capped.mdb");
+
+    constexpr uint32_t CapPages = 1024;
+    CheckJet(JetSetMaxDatabaseSize(session.Handle(), database.Id(),
+                                   CapPages, 0));
+
+    uint32_t observedCap = 0;
+    CheckJet(JetGetMaxDatabaseSize(session.Handle(), database.Id(),
+                                   &observedCap, 0));
+    Require(observedCap == CapPages);
+}

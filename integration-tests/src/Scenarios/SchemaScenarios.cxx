@@ -349,3 +349,62 @@ EseIntegrationScenario(Schema, GetTableInfoReportsCreationStats)
                               JET_TblInfo));
     Require(objectInfo.objtyp == JET_objtypTable);
 }
+
+EseIntegrationScenario(Schema, DeleteTableRemovesTheTable)
+{
+    TemporaryDirectory directory("Schema.DeleteTableRemovesTheTable");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Schema.mdb");
+
+    {
+        EseTable doomed(database, "Doomed");
+        doomed.AddColumn("Value", JET_coltypLong);
+        // EseTable closes its cursor at scope exit; JetDeleteTable
+        // requires no open cursors on the target table.
+    }
+
+    CheckJet(JetDeleteTableA(session.Handle(), database.Id(), "Doomed"));
+
+    // Subsequent open must surface ObjectNotFound — the table is gone.
+    JET_TABLEID tableId = JET_tableidNil;
+    RequireJetError(JetOpenTableA(session.Handle(), database.Id(),
+                                  "Doomed", nullptr, 0, 0, &tableId),
+                    JET_errObjectNotFound);
+}
+
+EseIntegrationScenario(Schema, DeleteTableOfUnknownTableReturnsObjectNotFound)
+{
+    TemporaryDirectory directory(
+        "Schema.DeleteTableOfUnknownTableReturnsObjectNotFound");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Schema.mdb");
+
+    RequireJetError(JetDeleteTableA(session.Handle(),
+                                    database.Id(),
+                                    "NeverExisted"),
+                    JET_errObjectNotFound);
+}
+
+EseIntegrationScenario(Schema, DeleteTableFreesTheNameForReuse)
+{
+    TemporaryDirectory directory("Schema.DeleteTableFreesTheNameForReuse");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Schema.mdb");
+
+    {
+        EseTable original(database, "Reused");
+        original.AddColumn("Value", JET_coltypLong);
+    }
+    CheckJet(JetDeleteTableA(session.Handle(), database.Id(), "Reused"));
+
+    // After delete the name is free; recreating with a different schema
+    // must succeed and report a fresh tableid.
+    EseTable replacement(database, "Reused");
+    const auto columnId = replacement.AddColumn("Different",
+                                                JET_coltypLongText);
+    Require(columnId != 0);
+    Require(replacement.Id() != JET_tableidNil);
+}

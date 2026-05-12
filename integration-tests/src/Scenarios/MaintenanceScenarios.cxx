@@ -181,3 +181,48 @@ EseIntegrationScenario(Maintenance, CompactProducesCopyWithSameData)
                                     destinationDatabasePath.string().c_str()));
     }
 }
+
+EseIntegrationScenario(Maintenance, IdleWaitForAsyncActivitySucceeds)
+{
+    TemporaryDirectory directory(
+        "Maintenance.IdleWaitForAsyncActivitySucceeds");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Maint.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Value", JET_coltypLong,
+                                    JET_bitColumnNotNULL);
+    {
+        EseTransaction transaction(session);
+        for (int i = 0; i < 10; ++i)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, i);
+        }
+        transaction.Commit();
+    }
+
+    // JET_bitIdleWaitForAsyncActivity quiesces background async work.
+    // Engine returns JET_errSuccess when the queue is drained, or
+    // JET_wrnRemainingVersions when version-store buckets are still
+    // pending.  Either outcome means the call exercised the path.
+    const auto err = JetIdle(session.Handle(),
+                             JET_bitIdleWaitForAsyncActivity);
+    Require(err == JET_errSuccess || err == JET_wrnRemainingVersions);
+}
+
+EseIntegrationScenario(Maintenance, IdleAvailBuffersStatusReportsState)
+{
+    TemporaryDirectory directory(
+        "Maintenance.IdleAvailBuffersStatusReportsState");
+    EseInstance instance(directory);
+    EseSession session(instance);
+
+    // JET_bitIdleAvailBuffersStatus reports whether the cache has
+    // dropped below the JET_paramStartFlushThreshold.  On an empty
+    // instance the call returns JET_errSuccess (cache plentiful);
+    // accepting JET_wrnIdleFull as the alternative success-with-
+    // warning code keeps the test robust against cache pressure
+    // introduced by sibling scenarios.
+    const auto err = JetIdle(session.Handle(), JET_bitIdleAvailBuffersStatus);
+    Require(err == JET_errSuccess || err == JET_wrnIdleFull);
+}

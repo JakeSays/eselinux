@@ -398,3 +398,138 @@ EseIntegrationScenario(Navigation, MoveBeyondLastReturnsNoCurrentRecord)
     RequireJetError(JetMove(session.Handle(), table.Id(), JET_MoveNext, 0),
                     JET_errNoCurrentRecord);
 }
+
+EseIntegrationScenario(Navigation, IntersectIndexesReturnsRowsMatchingBothRanges)
+{
+    TemporaryDirectory directory(
+        "Navigation.IntersectIndexesReturnsRowsMatchingBothRanges");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Items");
+
+    const auto colorColumnId = table.AddColumn("Color", JET_coltypLong,
+                                               JET_bitColumnNotNULL);
+    const auto sizeColumnId  = table.AddColumn("Size",  JET_coltypLong,
+                                               JET_bitColumnNotNULL);
+
+    // Two single-column secondary indexes — the inputs to the intersect.
+    static constexpr std::string_view ColorKey =
+        std::string_view("+Color\0\0", 8);
+    static constexpr std::string_view SizeKey =
+        std::string_view("+Size\0\0", 7);
+    table.CreateIndex("ByColor", ColorKey);
+    table.CreateIndex("BySize",  SizeKey);
+
+    // Eight rows: Color in {1, 2}, Size in {10, 20, 30, 40}.  The
+    // (Color=1, Size=20) intersection has exactly one row; same for
+    // (Color=2, Size=30), (Color=1, Size=40), etc.
+    {
+        EseTransaction transaction(session);
+        const int32_t colors[] = { 1, 1, 1, 1, 2, 2, 2, 2 };
+        const int32_t sizes[]  = { 10, 20, 30, 40, 10, 20, 30, 40 };
+        for (size_t i = 0; i < sizeof(colors) / sizeof(colors[0]); ++i)
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(), colorColumnId,
+                                  &colors[i], sizeof(colors[i]),
+                                  0, nullptr));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(), sizeColumnId,
+                                  &sizes[i], sizeof(sizes[i]),
+                                  0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(), nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+
+    // Cursor A on ByColor, ranged to Color == 1.
+    JET_TABLEID byColor = JET_tableidNil;
+    CheckJet(JetOpenTableA(session.Handle(), database.Id(), "Items",
+                           nullptr, 0, 0, &byColor));
+    CheckJet(JetSetCurrentIndexA(session.Handle(), byColor, "ByColor"));
+    {
+        const int32_t target = 1;
+        CheckJet(JetMakeKey(session.Handle(), byColor,
+                            &target, sizeof(target), JET_bitNewKey));
+        CheckJet(JetSeek(session.Handle(), byColor, JET_bitSeekGE));
+        CheckJet(JetMakeKey(session.Handle(), byColor,
+                            &target, sizeof(target),
+                            JET_bitNewKey | JET_bitFullColumnEndLimit));
+        CheckJet(JetSetIndexRange(session.Handle(), byColor,
+                                  JET_bitRangeInclusive |
+                                  JET_bitRangeUpperLimit));
+    }
+
+    // Cursor B on BySize, ranged to Size in [20, 30] (inclusive).
+    JET_TABLEID bySize = JET_tableidNil;
+    CheckJet(JetOpenTableA(session.Handle(), database.Id(), "Items",
+                           nullptr, 0, 0, &bySize));
+    CheckJet(JetSetCurrentIndexA(session.Handle(), bySize, "BySize"));
+    {
+        const int32_t lower = 20;
+        CheckJet(JetMakeKey(session.Handle(), bySize,
+                            &lower, sizeof(lower), JET_bitNewKey));
+        CheckJet(JetSeek(session.Handle(), bySize, JET_bitSeekGE));
+        const int32_t upper = 30;
+        CheckJet(JetMakeKey(session.Handle(), bySize,
+                            &upper, sizeof(upper),
+                            JET_bitNewKey | JET_bitFullColumnEndLimit));
+        CheckJet(JetSetIndexRange(session.Handle(), bySize,
+                                  JET_bitRangeInclusive |
+                                  JET_bitRangeUpperLimit));
+    }
+
+    JET_INDEXRANGE indexRanges[2] = {};
+    indexRanges[0].cbStruct = sizeof(indexRanges[0]);
+    indexRanges[0].tableid  = byColor;
+    indexRanges[0].grbit    = JET_bitRecordInIndex;
+    indexRanges[1].cbStruct = sizeof(indexRanges[1]);
+    indexRanges[1].tableid  = bySize;
+    indexRanges[1].grbit    = JET_bitRecordInIndex;
+
+    JET_RECORDLIST recordList = {};
+    recordList.cbStruct = sizeof(recordList);
+    CheckJet(JetIntersectIndexes(session.Handle(),
+                                 indexRanges, 2,
+                                 &recordList, 0));
+
+    // Intersection: Color==1 AND Size in [20,30] → 2 rows.
+    Require(recordList.cRecord == 2);
+    Require(recordList.tableid != JET_tableidNil);
+    Require(recordList.columnidBookmark != 0);
+
+    // Walk the temp table to confirm each bookmark resolves on the
+    // base table and the resolved row's columns satisfy both ranges.
+    CheckJet(JetMove(session.Handle(), recordList.tableid, JET_MoveFirst, 0));
+    int observed = 0;
+    do
+    {
+        uint8_t bookmark[256] = {};
+        uint32_t cbBookmark = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(),
+                                   recordList.tableid,
+                                   recordList.columnidBookmark,
+                                   bookmark, sizeof(bookmark),
+                                   &cbBookmark, 0, nullptr));
+        CheckJet(JetGotoBookmark(session.Handle(), byColor,
+                                 bookmark, cbBookmark));
+        int32_t color = 0;
+        int32_t size  = 0;
+        uint32_t cbActual = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), byColor, colorColumnId,
+                                   &color, sizeof(color), &cbActual, 0, nullptr));
+        CheckJet(JetRetrieveColumn(session.Handle(), byColor, sizeColumnId,
+                                   &size, sizeof(size), &cbActual, 0, nullptr));
+        Require(color == 1);
+        Require(size == 20 || size == 30);
+        ++observed;
+    }
+    while (JetMove(session.Handle(), recordList.tableid, JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+    Require(observed == 2);
+
+    CheckJet(JetCloseTable(session.Handle(), recordList.tableid));
+    CheckJet(JetCloseTable(session.Handle(), bySize));
+    CheckJet(JetCloseTable(session.Handle(), byColor));
+}
