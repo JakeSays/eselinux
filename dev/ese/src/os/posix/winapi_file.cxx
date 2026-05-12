@@ -184,61 +184,61 @@ HANDLE OpenSyntheticBlockDevice(const char* path)
             SetLastError(ERROR_FILE_NOT_FOUND);
             return INVALID_HANDLE_VALUE;
         }
-        //  Walk /sys/dev/block/X:Y -> the kernel device name and parent
-        //  whole-disk (major:minor).  When the filesystem isn't a real
-        //  block device (ZFS, tmpfs, NFS, overlay, ...) this fails; we
-        //  surface that as ERROR_FILE_NOT_FOUND so the engine falls
-        //  through to its no-disk-info path rather than getting a
-        //  HANDLE whose IOCTLs return INVALID_FUNCTION.
+        //  Walk /sys/dev/block/X:Y -> kernel device name + whole-disk parent
+        //  (major:minor).  Best-effort: filesystems with no /sys/dev/block
+        //  entry (ZFS pools, tmpfs, NFS, overlay, fuse, anything backed by
+        //  an "anonymous" major=0 super_block) still produce a working
+        //  HANDLE — the (major:minor) is unique per filesystem instance,
+        //  which is what the engine's COSDisk grouping actually needs.
+        //  IOCTLs that require real hardware info fall through to defaults
+        //  inside the IOCTL dispatcher when blockDiskName is empty.
+        unsigned int dMaj = major;
+        unsigned int dMin = minor;
         char link[PATH_MAX];
         snprintf(link, sizeof(link), "/sys/dev/block/%u:%u", major, minor);
         char real[PATH_MAX];
-        if (realpath(link, real) == nullptr)
+        if (realpath(link, real) != nullptr)
         {
-            SetLastError(ERROR_FILE_NOT_FOUND);
-            return INVALID_HANDLE_VALUE;
-        }
-        //  Walk back to the disk basename: if a "partition" file exists in
-        //  the realpath dir, the entry is a partition node and the parent
-        //  dir is the whole disk.
-        char* slash = strrchr(real, '/');
-        const char* nm = slash ? slash + 1 : real;
-        char partFile[PATH_MAX];
-        snprintf(partFile, sizeof(partFile), "%s/partition", real);
-        struct stat st;
-        if (stat(partFile, &st) == 0 && slash)
-        {
-            *slash = '\0';
-            slash = strrchr(real, '/');
-            nm = slash ? slash + 1 : real;
-        }
-        const size_t cchNm = strlen(nm);
-        if (cchNm == 0 || cchNm + 1 > sizeof(diskName))
-        {
-            SetLastError(ERROR_FILE_NOT_FOUND);
-            return INVALID_HANDLE_VALUE;
-        }
-        memcpy(diskName, nm, cchNm + 1);
-
-        //  Parent disk's (major:minor) from /sys/block/<name>/dev.
-        unsigned int dMaj = major, dMin = minor;
-        char devFile[PATH_MAX];
-        snprintf(devFile, sizeof(devFile), "/sys/block/%s/dev", diskName);
-        const int devFd = open(devFile, O_RDONLY | O_CLOEXEC);
-        if (devFd >= 0)
-        {
-            char buf[32];
-            const ssize_t n = read(devFd, buf, sizeof(buf) - 1);
-            close(devFd);
-            if (n > 0)
+            //  Walk back to the disk basename: if a "partition" file exists
+            //  in the realpath dir, the entry is a partition node and the
+            //  parent dir is the whole disk.
+            char* slash = strrchr(real, '/');
+            const char* nm = slash ? slash + 1 : real;
+            char partFile[PATH_MAX];
+            snprintf(partFile, sizeof(partFile), "%s/partition", real);
+            struct stat st;
+            if (stat(partFile, &st) == 0 && slash)
             {
-                buf[n] = '\0';
-                sscanf(buf, "%u:%u", &dMaj, &dMin);
+                *slash = '\0';
+                slash = strrchr(real, '/');
+                nm = slash ? slash + 1 : real;
+            }
+            const size_t cchNm = strlen(nm);
+            if (cchNm > 0 && cchNm + 1 <= sizeof(diskName))
+            {
+                memcpy(diskName, nm, cchNm + 1);
+
+                //  Parent disk's (major:minor) from /sys/block/<name>/dev.
+                char devFile[PATH_MAX];
+                snprintf(devFile, sizeof(devFile), "/sys/block/%s/dev", diskName);
+                const int devFd = open(devFile, O_RDONLY | O_CLOEXEC);
+                if (devFd >= 0)
+                {
+                    char buf[32];
+                    const ssize_t n = read(devFd, buf, sizeof(buf) - 1);
+                    close(devFd);
+                    if (n > 0)
+                    {
+                        buf[n] = '\0';
+                        sscanf(buf, "%u:%u", &dMaj, &dMin);
+                    }
+                }
             }
         }
 
+        char* const ownedName = diskName[0] ? strdup(diskName) : nullptr;
         KObject* const k = osposix::AllocBlockDeviceKObject(
-                                major, minor, dMaj, dMin, strdup(diskName));
+                                major, minor, dMaj, dMin, ownedName);
         if (!k)
         {
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);

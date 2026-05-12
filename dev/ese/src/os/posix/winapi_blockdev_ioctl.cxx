@@ -112,22 +112,37 @@ bool DiskNameForHandle(KObject* k, char* nameOut, size_t cchNameOut,
     return false;
 }
 
+//  When `diskName` is empty (filesystems backed by an anonymous block dev:
+//  ZFS dataset, tmpfs, NFS, fuse, overlay, etc.) sysfs has no hardware
+//  info to report and these helpers fall back to conservative defaults:
+//  4096/4096 sector sizes, no seek penalty (assume SSD-class behaviour
+//  since flash is the common case for non-block-backed mounts), no TRIM.
+
+constexpr DWORD c_defaultLogicalSectorBytes  = 512;
+constexpr DWORD c_defaultPhysicalSectorBytes = 4096;
+
 BOOL FillSectorAlignmentDescriptor(const char* diskName,
                                    STORAGE_ACCESS_ALIGNMENT_DESCRIPTOR* p)
 {
     memset(p, 0, sizeof(*p));
     p->Version = sizeof(STORAGE_ACCESS_ALIGNMENT_DESCRIPTOR);
     p->Size    = sizeof(STORAGE_ACCESS_ALIGNMENT_DESCRIPTOR);
-
-    char path[256];
-    snprintf(path, sizeof(path), "/sys/block/%s/queue/logical_block_size", diskName);
-    p->BytesPerLogicalSector = (DWORD) ReadSysfsULong(path, 512);
-    snprintf(path, sizeof(path), "/sys/block/%s/queue/physical_block_size", diskName);
-    p->BytesPerPhysicalSector = (DWORD) ReadSysfsULong(path, 4096);
-    snprintf(path, sizeof(path), "/sys/block/%s/queue/io_min", diskName);
-    p->BytesPerCacheLine = (DWORD) ReadSysfsULong(path, p->BytesPerPhysicalSector);
-    p->BytesOffsetForCacheAlignment   = 0;
-    p->BytesOffsetForSectorAlignment  = 0;
+    if (diskName && *diskName)
+    {
+        char path[256];
+        snprintf(path, sizeof(path), "/sys/block/%s/queue/logical_block_size", diskName);
+        p->BytesPerLogicalSector = (DWORD) ReadSysfsULong(path, c_defaultLogicalSectorBytes);
+        snprintf(path, sizeof(path), "/sys/block/%s/queue/physical_block_size", diskName);
+        p->BytesPerPhysicalSector = (DWORD) ReadSysfsULong(path, c_defaultPhysicalSectorBytes);
+        snprintf(path, sizeof(path), "/sys/block/%s/queue/io_min", diskName);
+        p->BytesPerCacheLine = (DWORD) ReadSysfsULong(path, p->BytesPerPhysicalSector);
+    }
+    else
+    {
+        p->BytesPerLogicalSector  = c_defaultPhysicalSectorBytes;
+        p->BytesPerPhysicalSector = c_defaultPhysicalSectorBytes;
+        p->BytesPerCacheLine      = c_defaultPhysicalSectorBytes;
+    }
     return TRUE;
 }
 
@@ -136,9 +151,19 @@ BOOL FillSeekPenaltyDescriptor(const char* diskName, DEVICE_SEEK_PENALTY_DESCRIP
     memset(p, 0, sizeof(*p));
     p->Version = sizeof(DEVICE_SEEK_PENALTY_DESCRIPTOR);
     p->Size    = sizeof(DEVICE_SEEK_PENALTY_DESCRIPTOR);
-    char path[256];
-    snprintf(path, sizeof(path), "/sys/block/%s/queue/rotational", diskName);
-    p->IncursSeekPenalty = ReadSysfsULong(path, 1) != 0;
+    if (diskName && *diskName)
+    {
+        char path[256];
+        snprintf(path, sizeof(path), "/sys/block/%s/queue/rotational", diskName);
+        p->IncursSeekPenalty = ReadSysfsULong(path, 1) != 0;
+    }
+    else
+    {
+        //  Virtual filesystems (ZFS/tmpfs/etc.) have no rotational seek;
+        //  ZFS in particular caches in ARC and writes async — the engine's
+        //  SSD-flavoured codepaths are a better fit than the HDD ones.
+        p->IncursSeekPenalty = FALSE;
+    }
     return TRUE;
 }
 
@@ -147,9 +172,18 @@ BOOL FillTrimDescriptor(const char* diskName, DEVICE_TRIM_DESCRIPTOR* p)
     memset(p, 0, sizeof(*p));
     p->Version = sizeof(DEVICE_TRIM_DESCRIPTOR);
     p->Size    = sizeof(DEVICE_TRIM_DESCRIPTOR);
-    char path[256];
-    snprintf(path, sizeof(path), "/sys/block/%s/queue/discard_max_bytes", diskName);
-    p->TrimEnabled = ReadSysfsULong(path, 0) > 0;
+    if (diskName && *diskName)
+    {
+        char path[256];
+        snprintf(path, sizeof(path), "/sys/block/%s/queue/discard_max_bytes", diskName);
+        p->TrimEnabled = ReadSysfsULong(path, 0) > 0;
+    }
+    else
+    {
+        //  No hardware TRIM concept for ZFS/tmpfs; engine treats absent
+        //  TRIM as "punch-hole via fallocate" which we already shim.
+        p->TrimEnabled = FALSE;
+    }
     return TRUE;
 }
 
@@ -232,10 +266,15 @@ BOOL OSPosixHandleStorageIoctl(HANDLE hDevice, DWORD dwIoControlCode,
         return FALSE;
     }
 
-    char diskName[64];
+    //  fHaveDisk == false just means "no sysfs backing for hardware
+    //  queries" — ZFS, tmpfs, NFS, fuse, overlay all land here.  The
+    //  IOCTL helpers below substitute sensible defaults; the engine's
+    //  COSDisk grouping still works because (diskMajor:diskMinor)
+    //  uniquely identifies the filesystem.
+    char diskName[64] = "";
     unsigned int diskMajor = 0, diskMinor = 0;
-    const bool fHaveDisk = DiskNameForHandle(k, diskName, sizeof(diskName),
-                                             &diskMajor, &diskMinor);
+    (void) DiskNameForHandle(k, diskName, sizeof(diskName),
+                             &diskMajor, &diskMinor);
 
     if (dwIoControlCode == IOCTL_STORAGE_QUERY_PROPERTY)
     {
@@ -249,11 +288,6 @@ BOOL OSPosixHandleStorageIoctl(HANDLE hDevice, DWORD dwIoControlCode,
         if (q->QueryType != PropertyStandardQuery && q->QueryType != PropertyExistsQuery)
         {
             SetLastError(ERROR_INVALID_PARAMETER);
-            return FALSE;
-        }
-        if (!fHaveDisk)
-        {
-            SetLastError(ERROR_INVALID_FUNCTION);
             return FALSE;
         }
         switch (q->PropertyId)
@@ -316,19 +350,20 @@ BOOL OSPosixHandleStorageIoctl(HANDLE hDevice, DWORD dwIoControlCode,
             SetLastError(ERROR_INSUFFICIENT_BUFFER);
             return FALSE;
         }
-        if (!fHaveDisk)
-        {
-            SetLastError(ERROR_INVALID_FUNCTION);
-            return FALSE;
-        }
         DISK_CACHE_INFORMATION* const p =
                 reinterpret_cast<DISK_CACHE_INFORMATION*>(lpOutBuffer);
         memset(p, 0, sizeof(*p));
-        char path[256];
-        snprintf(path, sizeof(path), "/sys/block/%s/queue/write_cache", diskName);
-        char buf[32];
-        ReadSmallFile(path, buf, sizeof(buf));
-        p->WriteCacheEnabled = (strncmp(buf, "write back", 10) == 0);
+        static constexpr char c_writeBack[] = "write back";
+        bool fWriteCacheBack = true;    //  default: assume write-back (matches Linux block-layer default)
+        if (diskName[0])
+        {
+            char path[256];
+            snprintf(path, sizeof(path), "/sys/block/%s/queue/write_cache", diskName);
+            char buf[32];
+            ReadSmallFile(path, buf, sizeof(buf));
+            fWriteCacheBack = (strncmp(buf, c_writeBack, sizeof(c_writeBack) - 1) == 0);
+        }
+        p->WriteCacheEnabled = fWriteCacheBack;
         p->ReadCacheEnabled  = TRUE;    //  Linux page cache always on
         p->ParametersSavable = FALSE;
         p->ReadRetentionPriority  = KeepReadData;
