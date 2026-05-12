@@ -456,3 +456,8 @@ endif ()
 add_subdirectory(dev)
 
 add_subdirectory(test)
+
+option(IntegrationTestsEnabled "Build the public-API integration test suite" ON)
+if (NOT WIN32 AND IntegrationTestsEnabled)
+    add_subdirectory(integration-tests)
+endif ()
