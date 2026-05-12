@@ -2,9 +2,11 @@
 # Licensed under the MIT License.
 
 # ese-tests — public-API integration test suite.  Consumes libese.so
-# strictly through the published JET API surface (dev/ese/published/inc/
-# jet.h + esent.h + the windows-shim type aliases).  Nothing under
-# dev/ese/src/{inc,os,ese}/ is on the include path.
+# strictly through the repo-root jetapi.h header, which is pinned at
+# JET_VERSION 0x0A01 and depends only on <stdint.h> (+ <uchar.h> in C).
+# Nothing under dev/ese/src/, dev/ese/published/, or windows-shim/ is
+# on the include path — the test target sees the engine as a black box
+# behind libese.so + the standalone JET API surface.
 
 find_package(Threads REQUIRED)
 
@@ -56,13 +58,11 @@ set_target_properties(ese-tests PROPERTIES
 #  out as exceptions, and we use std::exception_ptr in ThreadGroup.
 target_compile_options(ese-tests PRIVATE -fexceptions -frtti)
 
-#  Public API only — windows-shim provides the Win32 type aliases
-#  (HANDLE, LONG, WCHAR, …) the same way BookStoreSample consumes them.
-#  Anything under dev/ese/src/ is deliberately omitted.
+#  Public API only — jetapi.h is the standalone header and the only
+#  ESE-side include path.  No windows-shim, no published/inc, no
+#  generated build-tree headers — those are engine-internal.
 target_include_directories(ese-tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/windows-shim
-    ${ESE_DEV}/published/inc
-    ${INC_OUTPUT_DIRECTORY}            # generated headers (eseex_x.h, jetmsgex.h)
+    ${CMAKE_SOURCE_DIR}
     src
 )
 

@@ -6,7 +6,7 @@
 #include "Framework/Check.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
-#include <jet.h>
+#include <jetapi.h>
 
 #include <string>
 #include <vector>

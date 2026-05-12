@@ -13,7 +13,7 @@
 #include "Framework/EseSession.hxx"
 #include "Framework/EseTable.hxx"
 
-#include <jet.h>
+#include <jetapi.h>
 
 #include <cstdint>
 #include <cstring>

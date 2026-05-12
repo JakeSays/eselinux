@@ -19,7 +19,7 @@
 #include "Framework/ScenarioRegistry.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
-#include <jet.h>
+#include <jetapi.h>
 
 #include <chrono>
 #include <cstdio>

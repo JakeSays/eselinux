@@ -8,7 +8,7 @@
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
-#include <jet.h>
+#include <jetapi.h>
 
 using namespace ese::tests;
 
