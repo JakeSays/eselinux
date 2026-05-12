@@ -3,6 +3,8 @@
 
 #include "Framework/Scenario.hxx"
 
+using namespace ese::tests;
+
 //  TODO Phase 4: SIGKILL-the-child-mid-transaction recovery scenarios.
 //  The CrashHelper child-process scaffold is already in place; this
 //  category will start using it in Phase 4.

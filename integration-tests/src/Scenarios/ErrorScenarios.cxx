@@ -9,14 +9,16 @@
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
+using namespace ese::tests;
+
 EseIntegrationScenario(Error, RetrievingUnknownColumnReturnsColumnNotFound)
 {
-    ese::tests::TemporaryDirectory directory(
+    TemporaryDirectory directory(
         "Error.RetrievingUnknownColumnReturnsColumnNotFound");
-    ese::tests::EseInstance instance(directory);
-    ese::tests::EseSession  session(instance);
-    ese::tests::EseDatabase database(session, "Error.mdb");
-    ese::tests::EseTable    table(database, "Empty");
+    EseInstance instance(directory);
+    EseSession  session(instance);
+    EseDatabase database(session, "Error.mdb");
+    EseTable    table(database, "Empty");
 
     JET_COLUMNDEF columnDefinition = {};
     columnDefinition.cbStruct      = sizeof(columnDefinition);

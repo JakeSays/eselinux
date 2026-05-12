@@ -10,13 +10,15 @@
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
+using namespace ese::tests;
+
 EseIntegrationScenario(Escrow, IncrementOnce)
 {
-    ese::tests::TemporaryDirectory directory("Escrow.IncrementOnce");
-    ese::tests::EseInstance        instance(directory);
-    ese::tests::EseSession         session(instance);
-    ese::tests::EseDatabase        database(session, "Escrow.mdb");
-    ese::tests::EseTable           table(database, "Counter");
+    TemporaryDirectory directory("Escrow.IncrementOnce");
+    EseInstance        instance(directory);
+    EseSession         session(instance);
+    EseDatabase        database(session, "Escrow.mdb");
+    EseTable           table(database, "Counter");
 
     const int initialValue = 0;
 
@@ -34,14 +36,14 @@ EseIntegrationScenario(Escrow, IncrementOnce)
                            sizeof(initialValue),
                            &columnId));
 
-    ese::tests::EseTransaction transaction(session);
+    EseTransaction transaction(session);
     CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepInsert));
     CheckJet(JetUpdate(session.Handle(), table.Id(), nullptr, 0, nullptr));
     transaction.Commit();
 
     CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
 
-    ese::tests::EseTransaction updateTransaction(session);
+    EseTransaction updateTransaction(session);
     const int delta         = 1;
     int       previousValue = -1;
     uint32_t  actualSize    = 0;

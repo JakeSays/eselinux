@@ -10,13 +10,15 @@
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
+using namespace ese::tests;
+
 EseIntegrationScenario(MultiValue, TwoItagsRoundTrip)
 {
-    ese::tests::TemporaryDirectory directory("MultiValue.TwoItagsRoundTrip");
-    ese::tests::EseInstance        instance(directory);
-    ese::tests::EseSession         session(instance);
-    ese::tests::EseDatabase        database(session, "MultiValue.mdb");
-    ese::tests::EseTable           table(database, "Tagged");
+    TemporaryDirectory directory("MultiValue.TwoItagsRoundTrip");
+    EseInstance        instance(directory);
+    EseSession         session(instance);
+    EseDatabase        database(session, "MultiValue.mdb");
+    EseTable           table(database, "Tagged");
 
     JET_COLUMNDEF columnDefinition = {};
     columnDefinition.cbStruct      = sizeof(columnDefinition);
@@ -32,7 +34,7 @@ EseIntegrationScenario(MultiValue, TwoItagsRoundTrip)
                            0,
                            &columnId));
 
-    ese::tests::EseTransaction transaction(session);
+    EseTransaction transaction(session);
     CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepInsert));
 
     const int firstValue  = 101;

@@ -9,13 +9,15 @@
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
+using namespace ese::tests;
+
 EseIntegrationScenario(Maintenance, ComputeStatsOnEmptyTable)
 {
-    ese::tests::TemporaryDirectory directory("Maintenance.ComputeStatsOnEmptyTable");
-    ese::tests::EseInstance        instance(directory);
-    ese::tests::EseSession         session(instance);
-    ese::tests::EseDatabase        database(session, "Maintenance.mdb");
-    ese::tests::EseTable           table(database, "Empty");
+    TemporaryDirectory directory("Maintenance.ComputeStatsOnEmptyTable");
+    EseInstance        instance(directory);
+    EseSession         session(instance);
+    EseDatabase        database(session, "Maintenance.mdb");
+    EseTable           table(database, "Empty");
 
     CheckJet(JetComputeStats(session.Handle(), table.Id()));
 }

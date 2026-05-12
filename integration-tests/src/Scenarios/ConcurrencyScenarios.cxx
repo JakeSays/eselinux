@@ -7,6 +7,8 @@
 
 #include <atomic>
 
+using namespace ese::tests;
+
 EseIntegrationScenario(Concurrency, ThreadGroupLaunchAndJoin)
 {
     //  Smoke-test the ThreadGroup framework piece without engaging the
@@ -14,7 +16,7 @@ EseIntegrationScenario(Concurrency, ThreadGroupLaunchAndJoin)
     static constexpr int WorkerCount = 8;
     std::atomic<int>     totalTicks  = 0;
 
-    ese::tests::ThreadGroup threadGroup;
+    ThreadGroup threadGroup;
     threadGroup.Launch(WorkerCount, [&totalTicks](int /*threadIndex*/)
     {
         for (int tick = 0; tick < 100; ++tick)

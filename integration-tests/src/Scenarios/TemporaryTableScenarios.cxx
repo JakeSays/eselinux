@@ -7,11 +7,13 @@
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
+using namespace ese::tests;
+
 EseIntegrationScenario(TemporaryTable, OpenSortedTempTable)
 {
-    ese::tests::TemporaryDirectory directory("TemporaryTable.OpenSortedTempTable");
-    ese::tests::EseInstance        instance(directory);
-    ese::tests::EseSession         session(instance);
+    TemporaryDirectory directory("TemporaryTable.OpenSortedTempTable");
+    EseInstance        instance(directory);
+    EseSession         session(instance);
 
     JET_COLUMNDEF columnDefinitions[1] = { {} };
     columnDefinitions[0].cbStruct      = sizeof(columnDefinitions[0]);

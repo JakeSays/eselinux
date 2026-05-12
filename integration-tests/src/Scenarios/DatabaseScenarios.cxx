@@ -10,12 +10,14 @@
 
 #include <filesystem>
 
+using namespace ese::tests;
+
 EseIntegrationScenario(Database, CreateAndClose)
 {
-    ese::tests::TemporaryDirectory directory("Database.CreateAndClose");
-    ese::tests::EseInstance        instance(directory);
-    ese::tests::EseSession         session(instance);
-    ese::tests::EseDatabase        database(session, "Smoke.mdb");
+    TemporaryDirectory directory("Database.CreateAndClose");
+    EseInstance        instance(directory);
+    EseSession         session(instance);
+    EseDatabase        database(session, "Smoke.mdb");
 
     Require(database.Id() != JET_dbidNil);
     Require(std::filesystem::exists(database.Path()));

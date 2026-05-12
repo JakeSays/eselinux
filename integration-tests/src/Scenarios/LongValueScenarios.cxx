@@ -12,13 +12,15 @@
 
 #include <cstring>
 
+using namespace ese::tests;
+
 EseIntegrationScenario(LongValue, ShortLongTextRoundTrip)
 {
-    ese::tests::TemporaryDirectory directory("LongValue.ShortLongTextRoundTrip");
-    ese::tests::EseInstance        instance(directory);
-    ese::tests::EseSession         session(instance);
-    ese::tests::EseDatabase        database(session, "LongValue.mdb");
-    ese::tests::EseTable           table(database, "Documents");
+    TemporaryDirectory directory("LongValue.ShortLongTextRoundTrip");
+    EseInstance        instance(directory);
+    EseSession         session(instance);
+    EseDatabase        database(session, "LongValue.mdb");
+    EseTable           table(database, "Documents");
 
     JET_COLUMNDEF columnDefinition = {};
     columnDefinition.cbStruct      = sizeof(columnDefinition);
@@ -37,7 +39,7 @@ EseIntegrationScenario(LongValue, ShortLongTextRoundTrip)
     static constexpr const char* WrittenValue = "Hello, ESE long value.";
     const auto writtenLength = static_cast<uint32_t>(std::strlen(WrittenValue));
 
-    ese::tests::EseTransaction transaction(session);
+    EseTransaction transaction(session);
     CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepInsert));
     CheckJet(JetSetColumn(session.Handle(),
                           table.Id(),

@@ -7,10 +7,12 @@
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
+using namespace ese::tests;
+
 EseIntegrationScenario(Session, OpenAndClose)
 {
-    ese::tests::TemporaryDirectory directory("Session.OpenAndClose");
-    ese::tests::EseInstance        instance(directory);
-    ese::tests::EseSession         session(instance);
+    TemporaryDirectory directory("Session.OpenAndClose");
+    EseInstance        instance(directory);
+    EseSession         session(instance);
     Require(session.Handle() != JET_sesidNil);
 }

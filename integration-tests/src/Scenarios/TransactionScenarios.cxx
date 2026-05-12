@@ -9,13 +9,15 @@
 #include "Framework/EseTransaction.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
+using namespace ese::tests;
+
 EseIntegrationScenario(Transaction, BeginAndCommit)
 {
-    ese::tests::TemporaryDirectory directory("Transaction.BeginAndCommit");
-    ese::tests::EseInstance        instance(directory);
-    ese::tests::EseSession         session(instance);
-    ese::tests::EseDatabase        database(session, "Transaction.mdb");
+    TemporaryDirectory directory("Transaction.BeginAndCommit");
+    EseInstance        instance(directory);
+    EseSession         session(instance);
+    EseDatabase        database(session, "Transaction.mdb");
 
-    ese::tests::EseTransaction transaction(session);
+    EseTransaction transaction(session);
     transaction.Commit();
 }
