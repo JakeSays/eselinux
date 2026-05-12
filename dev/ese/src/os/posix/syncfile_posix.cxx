@@ -225,20 +225,33 @@ public:
         return JET_errSuccess;
     }
 
-    ERR ErrReserveIOREQ( const QWORD     /*ibOffset*/,
-                         const DWORD     /*cbData*/,
-                         const OSFILEQOS /*grbitQOS*/,
+    ERR ErrReserveIOREQ( const QWORD     ibOffset,
+                         const DWORD     cbData,
+                         const OSFILEQOS grbitQOS,
                          VOID **         ppioreq ) override
     {
-        if ( ppioreq )
+        //  TODO: route through the engine's IOREQ pool in osdisk.cxx — see
+        //  the COSDisk / OSDiskIIOREQAlloc path.  Today we just heap-alloc
+        //  the same IOContext ErrIORead would have allocated, front-loaded
+        //  so the engine has a non-null token for bf.cxx:24414's assert.
+        if ( !ppioreq )
         {
-            *ppioreq = nullptr;
+            return ErrERRCheck( JET_errInvalidParameter );
         }
+        osposix::IOContext* const ctx = new osposix::IOContext();
+        ctx->op         = osposix::IOContext::Op::Read;
+        ctx->fileFd     = m_fd;
+        ctx->fapi       = this;
+        ctx->qos        = grbitQOS;
+        ctx->ibOffset   = ibOffset;
+        ctx->cbData     = cbData;
+        *ppioreq = ctx;
         return JET_errSuccess;
     }
 
-    VOID ReleaseUnusedIOREQ( VOID * /*pioreq*/ ) override
+    VOID ReleaseUnusedIOREQ( VOID * pioreq ) override
     {
+        delete static_cast< osposix::IOContext* >( pioreq );
     }
 
     ERR ErrIORead(  const TraceContext& tc,
@@ -249,15 +262,17 @@ public:
                     const PfnIOComplete pfnIOComplete   = nullptr,
                     const DWORD_PTR     keyIOComplete   = 0,
                     const PfnIOHandoff  pfnIOHandoff    = nullptr,
-                    const VOID *        /*pioreq*/      = nullptr ) override
+                    const VOID *        pioreq          = nullptr ) override
     {
         if ( pfnIOComplete )
         {
-            //  Async — heap-allocate IOContext; completion thread frees.
-            //  Allocate before the handoff so we can pass the ctx pointer
-            //  as the engine's per-IO token (BFISetIOContext expects a
-            //  non-null value here).
-            osposix::IOContext* const ctx = new osposix::IOContext();
+            //  Async — take ownership of the engine's pre-reserved IOREQ
+            //  if one was supplied (see ErrReserveIOREQ); otherwise heap-
+            //  allocate a fresh IOContext.  Either way the completion
+            //  thread is responsible for freeing it.
+            osposix::IOContext* const ctx = pioreq
+                ? static_cast< osposix::IOContext* >( const_cast< VOID* >( pioreq ) )
+                : new osposix::IOContext();
             ctx->op             = osposix::IOContext::Op::Read;
             ctx->fileFd         = m_fd;
             ctx->fapi           = this;
