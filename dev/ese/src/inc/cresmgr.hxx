@@ -214,57 +214,21 @@ INLINE BOOL CQuota::FAcquire()
     //
     OSSYNC_FOREVER
     {
-        //  get the current available quota
-        //
-        const LONG cQuotaFree           = m_cQuotaFree;
+        const LONG cQuotaFree = m_cQuotaFree;
 
-        //  this function has no effect on 0x80000000, so this MUST be an illegal
-        //  value!
+        //  quota exhausted — fail without touching the counter
         //
-        Assert( cQuotaFree != 0x80000000 );
-
-        //  munge end value such that the transaction will only work if we are in
-        //  mode 0 and we have at least one available count (we do this to save a
-        //  branch)
-        //
-        const LONG cQuotaFreeAI         = ( cQuotaFree - 1 ) & 0x7FFFFFFF;
-
-        //  compute start value relative to munged end value
-        //
-        const LONG cQuotaFreeBIExpected = cQuotaFreeAI + 1;
-
-        //  validate transaction
-        //
-        Assert( cQuotaFree <= 0 || ( cQuotaFreeBIExpected > 0 && cQuotaFreeAI >= 0 && cQuotaFreeAI == cQuotaFree - 1 ) );
-
-        //  attempt the transaction
-        //
-        const LONG cQuotaFreeBI = AtomicCompareExchange( (LONG *)&m_cQuotaFree, cQuotaFreeBIExpected, cQuotaFreeAI );
-
-        //  the transaction succeeded
-        //
-        if ( cQuotaFreeBI == cQuotaFreeBIExpected )
+        if ( cQuotaFree <= 0 )
         {
-            return fTrue;
+            return fFalse;
         }
 
-        //  the transaction failed
+        //  try to claim one unit; on collision the cmpxchg returns a stale
+        //  value and we retry
         //
-        else
+        if ( AtomicCompareExchange( (LONG *)&m_cQuotaFree, cQuotaFree, cQuotaFree - 1 ) == cQuotaFree )
         {
-            //  the transaction failed because of a collision with another context
-            //
-            if ( cQuotaFreeBIExpected > 0 )
-            {
-                continue;
-            }
-
-            //  the transaction failed because there are no available counts
-            //
-            else
-            {
-                return fFalse;
-            }
+            return fTrue;
         }
     }
 }
