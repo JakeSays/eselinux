@@ -69,6 +69,7 @@ set(ESE_TEST_SOURCES_PORTABLE
     ../oslayer_test.cxx
     ../osu_test.cxx
     ../rbscleaner_test.cxx
+    ../blockcache_journal_compression_test.cxx
     daehelpers_test.cxx
 )
 
