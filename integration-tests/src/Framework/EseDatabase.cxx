@@ -46,6 +46,11 @@ EseDatabase::EseDatabase(EseSession& session,
 
 EseDatabase::~EseDatabase()
 {
+    // Released wrappers leave both id and path cleared; nothing to do.
+    if (_id == JET_dbidNil && _path.empty())
+    {
+        return;
+    }
     if (_id != JET_dbidNil)
     {
         (void)JetCloseDatabase(_session.Handle(), _id, 0);

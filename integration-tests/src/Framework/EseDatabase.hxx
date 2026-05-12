@@ -50,6 +50,17 @@ public:
         return _path;
     }
 
+    // Detach the underlying JET handle from this wrapper.  After this
+    // call the destructor becomes a no-op; the caller has assumed
+    // ownership of the database file (e.g., to call
+    // JetSetDatabaseSize, which needs exclusive access to a detached
+    // database).
+    void Release()
+    {
+        _id = JET_dbidNil;
+        _path.clear();
+    }
+
 private:
     EseSession& _session;
     std::filesystem::path _path;
