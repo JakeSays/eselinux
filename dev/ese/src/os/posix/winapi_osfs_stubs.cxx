@@ -96,25 +96,32 @@ NTSTATUS NtQueryVolumeInformationFile(HANDLE FileHandle,
         if (fstat(k->fileFd, &st) < 0)
             return STATUS_ACCESS_DENIED;
 
-        unsigned int logical = 512;
+        //  ESE requires sector sizes to be powers of 2 and >= 512.  ioctl
+        //  for block devices reports honest hardware values; st_blksize for
+        //  regular files / directories on networked or automount filesystems
+        //  can return ridiculous numbers (2560, 3584, etc. — the kernel's
+        //  preferred-IO hint).  Clamp anything non-power-of-2 to 4096.
+        auto IsPow2 = [](unsigned int v) -> bool
+        {
+            return v != 0 && (v & (v - 1)) == 0;
+        };
+        unsigned int logical = 4096;
         unsigned int physical = 4096;
         if (S_ISBLK(st.st_mode))
         {
             int logicalT = 0;
             int physicalT = 0;
-            if (ioctl(k->fileFd, BLKSSZGET, &logicalT) == 0 && logicalT > 0)
+            if (ioctl(k->fileFd, BLKSSZGET, &logicalT) == 0 && logicalT >= 512 && IsPow2((unsigned int) logicalT))
                 logical = (unsigned int) logicalT;
-            if (ioctl(k->fileFd, BLKPBSZGET, &physicalT) == 0 && physicalT > 0)
+            if (ioctl(k->fileFd, BLKPBSZGET, &physicalT) == 0 && physicalT >= 512 && IsPow2((unsigned int) physicalT))
                 physical = (unsigned int) physicalT;
         }
-        else
+        else if (st.st_blksize >= 512 && IsPow2((unsigned int) st.st_blksize))
         {
-            //  Regular file: use the filesystem's preferred IO block size as
-            //  a coarse stand-in.  ext4/xfs/btrfs return 4096 here on every
-            //  realistic configuration.
-            if (st.st_blksize > 0)
-                physical = (unsigned int) st.st_blksize;
-            logical = (logical < physical) ? logical : physical;
+            //  Regular file on a well-behaved filesystem (ext4/xfs/btrfs):
+            //  honour st_blksize.  Otherwise stick with the 4096 default.
+            physical = (unsigned int) st.st_blksize;
+            logical = physical;
         }
 
         FILE_FS_SECTOR_SIZE_INFORMATION* const pInfo =
@@ -174,4 +181,23 @@ BOOL GetStateFolder(HSTATE /*hState*/, STATE_PERSIST_ATTRIB /*persistAttrib*/,
 //  to fFalse, so this just returns without touching it.
 VOID CalculateCurrentProcessIsPackaged()
 {
+}
+
+//  SetDiskMappingMode / GetDiskMappingMode are declared INLINE in _osfs.hxx
+//  and defined inline in osfs.cxx.  Clang at -O0 may not emit those inline
+//  bodies, so the engine's COSDisk init path takes their addresses but the
+//  symbols never land in libese.so.  Provide non-inline strong definitions
+//  with the same C++ linkage so the linker resolves them.
+static OSDiskMappingMode g_diskMappingModeOverride = eOSDiskInvalidMode;
+
+__attribute__((used))
+void SetDiskMappingMode(const OSDiskMappingMode diskMode)
+{
+    g_diskMappingModeOverride = diskMode;
+}
+
+__attribute__((used))
+OSDiskMappingMode GetDiskMappingMode()
+{
+    return g_diskMappingModeOverride;
 }
