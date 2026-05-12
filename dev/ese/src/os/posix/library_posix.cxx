@@ -13,54 +13,53 @@
 
 extern volatile BOOL g_fDllUp;
 
-namespace {
-
-inline void* HmoduleToPv( HMODULE h ) { return (void*)h; }
-inline HMODULE PvToHmodule( void* p ) { return (HMODULE)p; }
-
+namespace
+{
+inline void* HmoduleToPv(HMODULE h) { return (void*) h; }
+inline HMODULE PvToHmodule(void* p) { return (HMODULE) p; }
 } // anonymous
 
-BOOL FUtilLoadLibrary( const WCHAR* wszLibrary, LIBRARY* plibrary, const BOOL /* fPermitDialog */ )
+BOOL FUtilLoadLibrary(const WCHAR* wszLibrary, LIBRARY* plibrary, const BOOL /* fPermitDialog */)
 {
     *plibrary = 0;
 
-    if ( wszLibrary == nullptr )
+    if (wszLibrary == nullptr)
     {
         return fFalse;
     }
 
-    char szLibrary[ 1024 ];
+    char szLibrary[1024];
     size_t i = 0;
-    for ( ; wszLibrary[i] != L'\0' && i + 1 < sizeof( szLibrary ); ++i )
+    for (; wszLibrary[i] != L'\0' && i + 1 < sizeof(szLibrary); ++i)
     {
-        szLibrary[i] = (char)( wszLibrary[i] & 0xFF );
+        szLibrary[i] = (char) (wszLibrary[i] & 0xFF);
     }
     szLibrary[i] = '\0';
 
-    void* p = dlopen( szLibrary, RTLD_NOW | RTLD_LOCAL );
-    if ( p == nullptr )
+    void* p = dlopen(szLibrary, RTLD_NOW | RTLD_LOCAL);
+    if (p == nullptr)
     {
         return fFalse;
     }
 
-    *plibrary = (LIBRARY)p;
+    *plibrary = (LIBRARY) p;
     return fTrue;
 }
 
-PFN PfnUtilGetProcAddress( LIBRARY library, const char* szFunction )
+PFN PfnUtilGetProcAddress(LIBRARY library, const char* szFunction)
 {
-    if ( !library || !szFunction )
+    if (!library || !szFunction)
     {
         return nullptr;
     }
-    return (PFN)dlsym( (void*)library, szFunction );
+    return (PFN) dlsym((void*) library, szFunction);
 }
 
-void UtilFreeLibrary( LIBRARY library )
+void UtilFreeLibrary(LIBRARY library)
 {
-    if ( library )
+    if (library)
     {
-        dlclose( (void*)library );
+        dlclose((void*) library);
     }
 }
 
@@ -78,26 +77,26 @@ DWORD ErrorThunkNotSupported()
 
 #ifdef DEBUG
 
-VOID OSLibraryValidateLoaderPolicy( const WCHAR * const /* mwszzDlls */, OSLoadFlags /* oslf */ )
+VOID OSLibraryValidateLoaderPolicy(const WCHAR* const /* mwszzDlls */, OSLoadFlags /* oslf */)
 {
 }
 
-VOID OSLibraryTrackingLoad( const WCHAR * const /* mwszzDlls */ )
+VOID OSLibraryTrackingLoad(const WCHAR* const /* mwszzDlls */)
 {
 }
 
-VOID OSLibraryTrackingFree( const WCHAR * const /* mwszzDlls */ )
+VOID OSLibraryTrackingFree(const WCHAR* const /* mwszzDlls */)
 {
 }
 
 #endif // DEBUG
 
 ERR ErrMultiLoadPfn(
-    const WCHAR * const /* mwszzDlls */,
-    const BOOL          /* fNonSystemDll */,
-    const CHAR * const  szFunction,
-    SHORT * const       pichDll,
-    void ** const       ppfn )
+    const WCHAR* const /* mwszzDlls */,
+    const BOOL /* fNonSystemDll */,
+    const CHAR* const szFunction,
+    SHORT* const pichDll,
+    void** const ppfn)
 {
     // Linux has no Windows system DLLs to LoadLibrary, but the windows-shim
     // implements many of the API entry points the engine expects (Create-
@@ -105,39 +104,48 @@ ERR ErrMultiLoadPfn(
     // own process image via dlsym(RTLD_DEFAULT, ...). Anything not shimmed
     // returns JET_errUnloadableOSFunctionality, which the engine's
     // FunctionLoader fall-back paths handle.
-    if ( pichDll )
+    if (pichDll)
     {
         *pichDll = -1;
     }
-    if ( ppfn )
+    if (ppfn)
     {
         *ppfn = nullptr;
     }
-    if ( !szFunction || !*szFunction )
+    if (!szFunction || !*szFunction)
     {
         return JET_errUnloadableOSFunctionality;
     }
-    void* const sym = dlsym( RTLD_DEFAULT, szFunction );
-    if ( sym )
+    void* const sym = dlsym(RTLD_DEFAULT, szFunction);
+    if (sym)
     {
-        if ( ppfn )    *ppfn    = sym;
-        if ( pichDll ) *pichDll = 0;
+        if (ppfn)
+            *ppfn = sym;
+        if (pichDll)
+            *pichDll = 0;
         return JET_errSuccess;
     }
     extern ERR g_errTrap;
-    if ( g_fDllUp )
+    if (g_fDllUp)
     {
-        return ErrERRCheck_( JET_errUnloadableOSFunctionality, __FILE__, __LINE__ );
+        return ErrERRCheck_(JET_errUnloadableOSFunctionality, __FILE__, __LINE__);
     }
-    Assert( g_errTrap != JET_errUnloadableOSFunctionality );
+    Assert(g_errTrap != JET_errUnloadableOSFunctionality);
     return JET_errUnloadableOSFunctionality;
 }
 
-VOID FreeLoadedModule( const WCHAR * const /* wszDll */ )
+VOID FreeLoadedModule(const WCHAR* const /* wszDll */)
 {
 }
 
-void OSLibraryPostterm()       {}
-BOOL FOSLibraryPreinit()       { return fTrue; }
-void OSLibraryTerm()           {}
-ERR  ErrOSLibraryInit()        { return JET_errSuccess; }
+void OSLibraryPostterm()
+{
+}
+
+BOOL FOSLibraryPreinit() { return fTrue; }
+
+void OSLibraryTerm()
+{
+}
+
+ERR ErrOSLibraryInit() { return JET_errSuccess; }

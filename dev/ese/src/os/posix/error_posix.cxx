@@ -18,17 +18,17 @@
 
 //  global state for exceptions/asserts
 
-CRITICAL_SECTION    g_csError;
-BOOL                g_fCritSecErrorInit = fFalse;
+CRITICAL_SECTION g_csError;
+BOOL g_fCritSecErrorInit = fFalse;
 
-DWORD               g_tidAssertFired = 0x0;
-CErrFrameSimple     g_cerrDoubleAssert;         // protected by g_csError
+DWORD g_tidAssertFired = 0x0;
+CErrFrameSimple g_cerrDoubleAssert; // protected by g_csError
 
 //  these should only be accessed while g_csError is held
 #ifdef DEBUG
-WCHAR               g_wszAssertTextFull[1024];
+WCHAR g_wszAssertTextFull[1024];
 #endif
-DWORD               g_fSkipAssert = fFalse;
+DWORD g_fSkipAssert = fFalse;
 
 
 //  The published header declares this `__forceinline`; on clang that maps
@@ -37,15 +37,19 @@ DWORD               g_fSkipAssert = fFalse;
 //  external call. Force emission of an out-of-line body here with `used` +
 //  `noinline`, which overrides the header's `always_inline` hint.
 __attribute__((used, noinline))
-CErrFrameSimple * PefLastThrow()
+CErrFrameSimple* PefLastThrow()
 {
-    return Postls() ? ( &(Postls()->m_efLastErr) ) : nullptr;
+    return Postls()
+           ? (&(Postls()->m_efLastErr))
+           : nullptr;
 }
 
 ULONG UlLineLastCall()
 {
 #ifdef DEBUG
-    return Postls() ? Postls()->ulLineLastCall : 0;
+    return Postls()
+           ? Postls()->ulLineLastCall
+           : 0;
 #else
     return 0;
 #endif
@@ -56,9 +60,9 @@ ULONG UlLineLastCall()
 //  Stubs for Windows-only error/diagnostic surfaces
 // ============================================================================================================
 
-INT UtilMessageBoxW( _In_ const WCHAR * const /* wszText */,
-                     _In_ const WCHAR * const /* wszCaption */,
-                     _In_ const UINT /* uType */ )
+INT UtilMessageBoxW(_In_ const WCHAR* const /* wszText */,
+    _In_ const WCHAR* const /* wszCaption */,
+    _In_ const UINT /* uType */)
 {
     //  no GUI on the Linux build; behave like MB_ABORTRETRYIGNORE returning 0 so
     //  callers fall through to non-interactive paths (terminate, break, etc.).
@@ -85,7 +89,7 @@ void UserDebugBreakPoint()
     __builtin_trap();
 }
 
-VOID OSErrorRegisterForWer( VOID * /* pv */, DWORD /* cb */ )
+VOID OSErrorRegisterForWer(VOID* /* pv */, DWORD /* cb */)
 {
     //  no WER on Linux; the engine treats this as best-effort
 }
@@ -102,7 +106,7 @@ static void RaiseFailFastException()
 
 LOCAL void RaiseFailFastExceptionCheckingSkipAssert()
 {
-    if ( g_fSkipAssert )
+    if (g_fSkipAssert)
     {
         g_fSkipAssert = fFalse;
         return;
@@ -112,22 +116,22 @@ LOCAL void RaiseFailFastExceptionCheckingSkipAssert()
 
 
 #if defined( DEBUG ) || defined( MEM_CHECK ) || defined( ENABLE_EXCEPTIONS )
-const WCHAR wszAssertFile[]     = L"assert.txt";
-const WCHAR wszAssertCaption[]  = L"JET Assertion Failure";
+const WCHAR wszAssertFile[] = L"assert.txt";
+const WCHAR wszAssertCaption[] = L"JET Assertion Failure";
 #endif
 
 UINT g_wAssertAction = JET_AssertFailFast;
 UINT g_wExceptionAction = JET_ExceptionFailFast;
 BOOL g_fSkipFailFast = fFalse;
 
-UINT COSLayerPreInit::SetAssertAction( UINT wAssertAction )
+UINT COSLayerPreInit::SetAssertAction(UINT wAssertAction)
 {
     UINT wOriginalValue = g_wAssertAction;
     g_wAssertAction = wAssertAction;
     return wOriginalValue;
 }
 
-UINT COSLayerPreInit::SetExceptionAction( const UINT wExceptionAction )
+UINT COSLayerPreInit::SetExceptionAction(const UINT wExceptionAction)
 {
     const UINT wOriginalValue = g_wExceptionAction;
     g_wExceptionAction = wExceptionAction;
@@ -144,52 +148,56 @@ INT g_fNoWriteAssertEvent = 0;
 #define CCH_MAX_SHORT_FILENAME  (30)
 #define CCH_32_BIT_MAX          (11)
 static const ULONG g_cchIssueSourceMax = 40 +
-                                          CCH_MAX_SHORT_FILENAME * 2 +
-                                          CCH_32_BIT_MAX * 12;
+    CCH_MAX_SHORT_FILENAME * 2 +
+    CCH_32_BIT_MAX * 12;
 
-VOID ERRFormatIssueSource( __out_bcount( cbIssueSource ) WCHAR * wszIssueSource,
-                           _In_ const ULONG cbIssueSource,
-                           const DWORD dwSavedGLE,
-                           _In_ PCSTR szFilename,
-                           _In_ const LONG lLine )
+VOID ERRFormatIssueSource(__out_bcount(cbIssueSource) WCHAR* wszIssueSource,
+    _In_ const ULONG cbIssueSource,
+    const DWORD dwSavedGLE,
+    _In_ PCSTR szFilename,
+    _In_ const LONG lLine)
 {
-    const CHAR * szFilenameSourcePre  = "";
-    const CHAR * szFilenameSource     = SzSourceFileName( szFilename );
+    const CHAR* szFilenameSourcePre = "";
+    const CHAR* szFilenameSource = SzSourceFileName(szFilename);
 
-    const CHAR * szFilenameLastErrPre = "";
-    const CHAR * szFilenameLastErr    = "";
-    if ( FOSLayerUp() && PefLastThrow() )
+    const CHAR* szFilenameLastErrPre = "";
+    const CHAR* szFilenameLastErr = "";
+    if (FOSLayerUp() && PefLastThrow())
     {
-        szFilenameLastErr = SzSourceFileName( PefLastThrow()->SzFile() );
+        szFilenameLastErr = SzSourceFileName(PefLastThrow()->SzFile());
     }
-    const ERR errLast      = PefLastThrow() ? PefLastThrow()->Err()    : 0;
-    const ULONG lErrLastLine = PefLastThrow() ? PefLastThrow()->UlLine() : 0;
+    const ERR errLast = PefLastThrow()
+                        ? PefLastThrow()->Err()
+                        : 0;
+    const ULONG lErrLastLine = PefLastThrow()
+                               ? PefLastThrow()->UlLine()
+                               : 0;
 
-    const CHAR * const szDotDotDot = "...";
+    const CHAR* const szDotDotDot = "...";
 
-    if ( strlen( szFilenameSource ) > CCH_MAX_SHORT_FILENAME )
+    if (strlen(szFilenameSource) > CCH_MAX_SHORT_FILENAME)
     {
-        const ULONG cch = strlen( szFilenameSource );
-        szFilenameSource    = &( szFilenameSource[cch - CCH_MAX_SHORT_FILENAME + strlen(szDotDotDot)] );
+        const ULONG cch = strlen(szFilenameSource);
+        szFilenameSource = &(szFilenameSource[cch - CCH_MAX_SHORT_FILENAME + strlen(szDotDotDot)]);
         szFilenameSourcePre = szDotDotDot;
     }
 
-    if ( strlen( szFilenameLastErr ) > CCH_MAX_SHORT_FILENAME )
+    if (strlen(szFilenameLastErr) > CCH_MAX_SHORT_FILENAME)
     {
-        const ULONG cch = strlen( szFilenameLastErr );
-        szFilenameLastErr    = &( szFilenameLastErr[cch - CCH_MAX_SHORT_FILENAME + strlen(szDotDotDot)] );
+        const ULONG cch = strlen(szFilenameLastErr);
+        szFilenameLastErr = &(szFilenameLastErr[cch - CCH_MAX_SHORT_FILENAME + strlen(szDotDotDot)]);
         szFilenameLastErrPre = szDotDotDot;
     }
 
-    OSStrCbFormatW( wszIssueSource, cbIssueSource,
-                    L"PV: %u.%u.%u.%u SV: %u.%u.%u.%u GLE: %u ERR: %d(%hs%hs:%u): %hs%hs(%u)",
-                    DwUtilImageVersionMajor(), DwUtilImageVersionMinor(),
-                    DwUtilImageBuildNumberMajor(), DwUtilImageBuildNumberMinor(),
-                    DwUtilSystemVersionMajor(), DwUtilSystemVersionMinor(),
-                    DwUtilSystemBuildNumber(), DwUtilSystemServicePackNumber(),
-                    dwSavedGLE,
-                    errLast, szFilenameLastErrPre, szFilenameLastErr, lErrLastLine,
-                    szFilenameSourcePre, szFilenameSource, lLine );
+    OSStrCbFormatW(wszIssueSource, cbIssueSource,
+        L"PV: %u.%u.%u.%u SV: %u.%u.%u.%u GLE: %u ERR: %d(%hs%hs:%u): %hs%hs(%u)",
+        DwUtilImageVersionMajor(), DwUtilImageVersionMinor(),
+        DwUtilImageBuildNumberMajor(), DwUtilImageBuildNumberMinor(),
+        DwUtilSystemVersionMajor(), DwUtilSystemVersionMinor(),
+        DwUtilSystemBuildNumber(), DwUtilSystemServicePackNumber(),
+        dwSavedGLE,
+        errLast, szFilenameLastErrPre, szFilenameLastErr, lErrLastLine,
+        szFilenameSourcePre, szFilenameSource, lLine);
 }
 
 
@@ -201,42 +209,44 @@ VOID ERRFormatIssueSource( __out_bcount( cbIssueSource ) WCHAR * wszIssueSource,
 
 LOCAL DWORD g_pidAssert;
 LOCAL DWORD g_tidAssert;
-LOCAL const CHAR * g_szFilenameAssert;
+LOCAL const CHAR* g_szFilenameAssert;
 LOCAL LONG g_lLineAssert;
 
 LOCAL DWORD g_fDebuggerPrint = fTrue;
 
-void OSDebugPrint( const WCHAR * const wszOutput )
+void OSDebugPrint(const WCHAR* const wszOutput)
 {
     //  Linux equivalent: write the (UTF-16 short-wchar) text to stderr by
     //  narrowing best-effort. Used purely diagnostically.
-    if ( g_fDebuggerPrint && wszOutput )
+    if (g_fDebuggerPrint && wszOutput)
     {
-        for ( const WCHAR* p = wszOutput; *p; p++ )
+        for (const WCHAR* p = wszOutput; *p; p++)
         {
-            unsigned char ch = (unsigned char)( *p & 0xFF );
-            fputc( ch >= 0x20 || ch == '\r' || ch == '\n' || ch == '\t' ? ch : '?', stderr );
+            unsigned char ch = (unsigned char) (*p & 0xFF);
+            fputc(ch >= 0x20 || ch == '\r' || ch == '\n' || ch == '\t'
+                  ? ch
+                  : '?', stderr);
         }
     }
 }
 
-void HandleNestedAssert( WCHAR const * szMessageFormat, char const * szFilename, LONG lLine )
+void HandleNestedAssert(WCHAR const* szMessageFormat, char const* szFilename, LONG lLine)
 {
-    OSDebugPrint( L"\n\nDOUBLE ASSERT: " );
-    OSDebugPrint( szMessageFormat );
-    OSDebugPrint( L"\nSee g_cerrDoubleAssert for file/line info.\n" );
-    g_cerrDoubleAssert.Set( szFilename, lLine, -1 );
+    OSDebugPrint(L"\n\nDOUBLE ASSERT: ");
+    OSDebugPrint(szMessageFormat);
+    OSDebugPrint(L"\nSee g_cerrDoubleAssert for file/line info.\n");
+    g_cerrDoubleAssert.Set(szFilename, lLine, -1);
     KernelDebugBreakPoint();
 }
 
-void __stdcall AssertFail( PCSTR szMessageFormat, PCSTR szFilename, LONG lLine, ... )
+void __stdcall AssertFail(PCSTR szMessageFormat, PCSTR szFilename, LONG lLine, ...)
 {
     va_list args;
-    va_start( args, lLine );
+    va_start(args, lLine);
 
-    if ( g_wAssertAction == JET_AssertSkipAll )
+    if (g_wAssertAction == JET_AssertSkipAll)
     {
-        va_end( args );
+        va_end(args);
         return;
     }
 
@@ -245,20 +255,20 @@ void __stdcall AssertFail( PCSTR szMessageFormat, PCSTR szFilename, LONG lLine, 
 
     DWORD dwSavedGLE = GetLastError();
 
-    EnterCriticalSection( &g_csError );
+    EnterCriticalSection(&g_csError);
 
-    if ( g_tidAssertFired == DwUtilThreadId() )
+    if (g_tidAssertFired == DwUtilThreadId())
     {
-        SetLastError( dwSavedGLE );
-        WCHAR wszMessageFormat[ _MAX_PATH ];
-        (void)ErrOSSTRAsciiToUnicode( szMessageFormat,
-                                      wszMessageFormat,
-                                      _countof( wszMessageFormat ) );
-        HandleNestedAssert( wszMessageFormat, szFilename, lLine );
+        SetLastError(dwSavedGLE);
+        WCHAR wszMessageFormat[_MAX_PATH];
+        (void) ErrOSSTRAsciiToUnicode(szMessageFormat,
+            wszMessageFormat,
+            _countof(wszMessageFormat));
+        HandleNestedAssert(wszMessageFormat, szFilename, lLine);
 
-        LeaveCriticalSection( &g_csError );
-        SetLastError( dwSavedGLE );
-        va_end( args );
+        LeaveCriticalSection(&g_csError);
+        SetLastError(dwSavedGLE);
+        va_end(args);
         return;
     }
 
@@ -267,184 +277,184 @@ void __stdcall AssertFail( PCSTR szMessageFormat, PCSTR szFilename, LONG lLine, 
     g_szFilenameAssert = szFilename;
     g_lLineAssert = lLine;
 
-    szFilename = SzSourceFileName( szFilename );
+    szFilename = SzSourceFileName(szFilename);
 
     INT offset = 0;
-    OSStrCbFormatA( szAssertText + offset,
-                    sizeof( szAssertText ) - offset * sizeof( szAssertText[0] ),
-                    "Assertion Failure: " );
-    offset = strlen( szAssertText );
+    OSStrCbFormatA(szAssertText + offset,
+        sizeof(szAssertText) - offset * sizeof(szAssertText[0]),
+        "Assertion Failure: ");
+    offset = strlen(szAssertText);
 
-    OSStrCbVFormatA( szAssertText + offset,
-                     sizeof( szAssertText ) - offset,
-                     szMessageFormat,
-                     args );
-    const CHAR * const szAssertMessage = szAssertText + offset;
+    OSStrCbVFormatA(szAssertText + offset,
+        sizeof(szAssertText) - offset,
+        szMessageFormat,
+        args);
+    const CHAR* const szAssertMessage = szAssertText + offset;
 
-    WCHAR wszIssueSource[ g_cchIssueSourceMax ] = L"FORMAT STRING FAIL";
-    C_ASSERT( _countof( wszIssueSource ) < 260 );
-    if ( FOSDllUp() )
+    WCHAR wszIssueSource[g_cchIssueSourceMax] = L"FORMAT STRING FAIL";
+    C_ASSERT(_countof( wszIssueSource ) < 260);
+    if (FOSDllUp())
     {
-        ERRFormatIssueSource( wszIssueSource, sizeof( wszIssueSource ), dwSavedGLE, szFilename, lLine );
+        ERRFormatIssueSource(wszIssueSource, sizeof(wszIssueSource), dwSavedGLE, szFilename, lLine);
     }
 
     offset = 0;
-    OSStrCbFormatA( szAssertAddlInfo + offset,
-                    sizeof( szAssertAddlInfo ) - offset,
-                    "PID: %d (0x%x), TID: 0x%x \r\n\r\n",
-                    DwUtilProcessId(),
-                    DwUtilProcessId(),
-                    DwUtilThreadId() );
-    offset = strlen( szAssertText );
+    OSStrCbFormatA(szAssertAddlInfo + offset,
+        sizeof(szAssertAddlInfo) - offset,
+        "PID: %d (0x%x), TID: 0x%x \r\n\r\n",
+        DwUtilProcessId(),
+        DwUtilProcessId(),
+        DwUtilThreadId());
+    offset = strlen(szAssertText);
 
-    OSStrCbFormatA( szAssertAddlInfo + offset,
-                    sizeof( szAssertAddlInfo ) - offset,
-                    "\r\nComplete information can be found in:  %ws\r\n",
-                    wszAssertFile );
-    offset = strlen( szAssertText );
+    OSStrCbFormatA(szAssertAddlInfo + offset,
+        sizeof(szAssertAddlInfo) - offset,
+        "\r\nComplete information can be found in:  %ws\r\n",
+        wszAssertFile);
+    offset = strlen(szAssertText);
 
-    OSStrCbFormatW( g_wszAssertTextFull, sizeof( g_wszAssertTextFull ),
-                    L"%hs\r\n%ws\r\n%hs",
-                    szAssertText,
-                    wszIssueSource,
-                    szAssertAddlInfo );
+    OSStrCbFormatW(g_wszAssertTextFull, sizeof(g_wszAssertTextFull),
+        L"%hs\r\n%ws\r\n%hs",
+        szAssertText,
+        wszIssueSource,
+        szAssertAddlInfo);
 
-    OSTrace( JET_tracetagAsserts,
-             OSFormat( "%hs\r\n%ws\r\n%hs", szAssertText, wszIssueSource, szAssertAddlInfo ) );
+    OSTrace(JET_tracetagAsserts,
+        OSFormat( "%hs\r\n%ws\r\n%hs", szAssertText, wszIssueSource, szAssertAddlInfo ));
 
-    if ( !g_fNoWriteAssertEvent && FOSDllUp() )
+    if (!g_fNoWriteAssertEvent && FOSDllUp())
     {
-        const WCHAR * rgszT[] = { g_wszAssertTextFull };
-        UtilReportEvent( eventError, GENERAL_CATEGORY, PLAIN_TEXT_ID, 1, rgszT );
+        const WCHAR* rgszT[] = {g_wszAssertTextFull};
+        UtilReportEvent(eventError, GENERAL_CATEGORY, PLAIN_TEXT_ID, 1, rgszT);
     }
 
-    OSDiagTrackAssertFail( szAssertMessage, wszIssueSource );
+    OSDiagTrackAssertFail(szAssertMessage, wszIssueSource);
 
     {
-    CPRINTFFILE cprintffileAssertTxt( wszAssertFile );
-    cprintffileAssertTxt( "%ws", g_wszAssertTextFull );
+        CPRINTFFILE cprintffileAssertTxt(wszAssertFile);
+        cprintffileAssertTxt("%ws", g_wszAssertTextFull);
     }
 
-    OSDebugPrint( g_wszAssertTextFull );
+    OSDebugPrint(g_wszAssertTextFull);
 
     UINT wAssertAction = g_wAssertAction;
 
-    if ( wAssertAction == JET_AssertExit )
+    if (wAssertAction == JET_AssertExit)
     {
-        _exit( ~0 );
+        _exit(~0);
     }
-    else if ( wAssertAction == JET_AssertBreak )
+    else if (wAssertAction == JET_AssertBreak)
     {
-        OSDebugPrint( L"\nTo continue, press 'g'.\n\n" );
-        SetLastError( dwSavedGLE );
+        OSDebugPrint(L"\nTo continue, press 'g'.\n\n");
+        SetLastError(dwSavedGLE);
         KernelDebugBreakPoint();
     }
-    else if ( wAssertAction == JET_AssertStop )
+    else if (wAssertAction == JET_AssertStop)
     {
-        for ( ; !g_fSkipAssert; )
+        for (; !g_fSkipAssert;)
         {
-            Sleep( 100 );
+            Sleep(100);
         }
         g_fSkipAssert = fFalse;
     }
-    else if ( wAssertAction == JET_AssertCrash )
+    else if (wAssertAction == JET_AssertCrash)
     {
         RaiseFailFastExceptionCheckingSkipAssert();
     }
-    else if ( JET_AssertFailFast == wAssertAction )
+    else if (JET_AssertFailFast == wAssertAction)
     {
-        if ( !g_fSkipFailFast )
+        if (!g_fSkipFailFast)
         {
             RaiseFailFastException();
         }
     }
-    else if ( wAssertAction == JET_AssertMsgBox ||
-              wAssertAction == JET_AssertSkippableMsgBox )
+    else if (wAssertAction == JET_AssertMsgBox ||
+        wAssertAction == JET_AssertSkippableMsgBox)
     {
         //  no message box on Linux; treat as JET_AssertBreak
-        SetLastError( dwSavedGLE );
+        SetLastError(dwSavedGLE);
         UserDebugBreakPoint();
     }
-    else if ( wAssertAction == JET_AssertSkipAll )
+    else if (wAssertAction == JET_AssertSkipAll)
     {
         // Do nothing.
     }
 
     g_tidAssertFired = 0x0;
-    LeaveCriticalSection( &g_csError );
+    LeaveCriticalSection(&g_csError);
 
-    va_end( args );
+    va_end(args);
 
-    SetLastError( dwSavedGLE );
+    SetLastError(dwSavedGLE);
 }
 
 
-void AssertErr( const ERR err, PCSTR szFileName, const LONG lLine )
+void AssertErr(const ERR err, PCSTR szFileName, const LONG lLine)
 {
     DWORD dwSavedGLE = GetLastError();
 
-    if ( JET_errSuccess == err )
+    if (JET_errSuccess == err)
     {
-        FireWallAt( "UnexpectedAssertErrOnSuccess", szFileName, lLine );
+        FireWallAt("UnexpectedAssertErrOnSuccess", szFileName, lLine);
     }
     else
     {
-        FireWallAt( OSFormat( "AssertErr:%d", err ), szFileName, lLine );
+        FireWallAt(OSFormat( "AssertErr:%d", err ), szFileName, lLine);
     }
 
-    SetLastError( dwSavedGLE );
+    SetLastError(dwSavedGLE);
 }
 
 #else  //  !DEBUG
 
-extern ULONG_PTR UlParam( const INST* const pinst, const ULONG paramid );
+extern ULONG_PTR UlParam(const INST* const pinst, const ULONG paramid);
 
-void __stdcall AssertFail( PCSTR szMessageFormat, PCSTR szFilename, LONG lLine, ... )
+void __stdcall AssertFail(PCSTR szMessageFormat, PCSTR szFilename, LONG lLine, ...)
 {
     DWORD dwSavedGLE = GetLastError();
 
-    CHAR szAssertText[ 500 ] = "VA FORMAT STRING FAIL";
+    CHAR szAssertText[500] = "VA FORMAT STRING FAIL";
 
     va_list args;
-    va_start( args, lLine );
+    va_start(args, lLine);
 
-    if ( szMessageFormat )
+    if (szMessageFormat)
     {
-        OSStrCbVFormatA( szAssertText, sizeof( szAssertText ), szMessageFormat, args );
+        OSStrCbVFormatA(szAssertText, sizeof(szAssertText), szMessageFormat, args);
     }
 
-    WCHAR wszIssueSource[ g_cchIssueSourceMax ] = L"FORMAT STRING FAIL";
-    C_ASSERT( _countof( wszIssueSource ) < 260 );
+    WCHAR wszIssueSource[g_cchIssueSourceMax] = L"FORMAT STRING FAIL";
+    C_ASSERT(_countof( wszIssueSource ) < 260);
 
-    if ( FOSDllUp() )
+    if (FOSDllUp())
     {
-        ERRFormatIssueSource( wszIssueSource, sizeof( wszIssueSource ), dwSavedGLE, szFilename, lLine );
+        ERRFormatIssueSource(wszIssueSource, sizeof(wszIssueSource), dwSavedGLE, szFilename, lLine);
     }
 
-    if ( !g_fNoWriteAssertEvent && FOSDllUp() )
+    if (!g_fNoWriteAssertEvent && FOSDllUp())
     {
-        WCHAR wszMessage[ _countof( szAssertText ) ] = L"FORMAT STRING FAIL";
-        OSStrCbFormatW( wszMessage, sizeof( wszMessage ), L"%hs", szAssertText );
+        WCHAR wszMessage[_countof(szAssertText)] = L"FORMAT STRING FAIL";
+        OSStrCbFormatW(wszMessage, sizeof(wszMessage), L"%hs", szAssertText);
 
-        const WCHAR * rgszT[] = { wszIssueSource, WszUtilImageBuildClass(), wszMessage };
+        const WCHAR* rgszT[] = {wszIssueSource, WszUtilImageBuildClass(), wszMessage};
 
-        UtilReportEvent( eventInformation, GENERAL_CATEGORY, INTERNAL_TRACE_ID,
-                         _countof( rgszT ), rgszT );
+        UtilReportEvent(eventInformation, GENERAL_CATEGORY, INTERNAL_TRACE_ID,
+            _countof(rgszT), rgszT);
     }
 
-    OSDiagTrackAssertFail( szAssertText, wszIssueSource );
+    OSDiagTrackAssertFail(szAssertText, wszIssueSource);
 
-    if ( FUtilSystemBetaFeatureEnabled_( nullptr, nullptr,
-                                         (UtilSystemBetaSiteMode)UlParam( nullptr, JET_paramStageFlighting ),
-                                         EseTestFeatures, L"EseFeatureTestOnly" ) )
+    if (FUtilSystemBetaFeatureEnabled_(nullptr, nullptr,
+        (UtilSystemBetaSiteMode) UlParam(nullptr, JET_paramStageFlighting),
+        EseTestFeatures, L"EseFeatureTestOnly"))
     {
-        EnterCriticalSection( &g_csError );
+        EnterCriticalSection(&g_csError);
         g_tidAssertFired = DwUtilThreadId();
 
-        switch ( g_wAssertAction )
+        switch (g_wAssertAction)
         {
             case JET_AssertExit:
-                _exit( ~0 );
+                _exit(~0);
                 break;
 
             case JET_AssertFailFast:
@@ -454,14 +464,14 @@ void __stdcall AssertFail( PCSTR szMessageFormat, PCSTR szFilename, LONG lLine, 
             case JET_AssertBreak:
             case JET_AssertMsgBox:
             case JET_AssertSkippableMsgBox:
-                SetLastError( dwSavedGLE );
+                SetLastError(dwSavedGLE);
                 UserDebugBreakPoint();
                 break;
 
             case JET_AssertStop:
-                for ( ; !g_fSkipAssert ; )
+                for (; !g_fSkipAssert;)
                 {
-                    Sleep( 100 );
+                    Sleep(100);
                 }
                 g_fSkipAssert = fFalse;
                 break;
@@ -475,11 +485,11 @@ void __stdcall AssertFail( PCSTR szMessageFormat, PCSTR szFilename, LONG lLine, 
         }
 
         g_tidAssertFired = 0x0;
-        LeaveCriticalSection( &g_csError );
+        LeaveCriticalSection(&g_csError);
     }
 
-    va_end( args );
-    SetLastError( dwSavedGLE );
+    va_end(args);
+    SetLastError(dwSavedGLE);
 }
 
 #endif  //  DEBUG
@@ -489,64 +499,68 @@ void __stdcall AssertFail( PCSTR szMessageFormat, PCSTR szFilename, LONG lLine, 
 //  Enforces
 // ============================================================================================================
 
-VOID DefaultReportEnforceFailure( const WCHAR* wszContext, const CHAR* szMessage, const WCHAR* wszIssueSource )
+VOID DefaultReportEnforceFailure(const WCHAR* wszContext, const CHAR* szMessage, const WCHAR* wszIssueSource)
 {
-    WCHAR wszMessage[ 1024 + 1 ] = L"FORMAT STRING FAIL";
-    OSStrCbFormatW( wszMessage, sizeof( wszMessage ), L"%hs", szMessage ? szMessage : "" );
-    const WCHAR * rgwszT[] = { wszIssueSource, WszUtilImageBuildClass(), wszMessage };
+    WCHAR wszMessage[1024 + 1] = L"FORMAT STRING FAIL";
+    OSStrCbFormatW(wszMessage, sizeof(wszMessage), L"%hs", szMessage
+                                                           ? szMessage
+                                                           : "");
+    const WCHAR* rgwszT[] = {wszIssueSource, WszUtilImageBuildClass(), wszMessage};
 
-    UtilReportEvent( eventError, GENERAL_CATEGORY, ENFORCE_FAIL,
-                     _countof( rgwszT ), rgwszT );
+    UtilReportEvent(eventError, GENERAL_CATEGORY, ENFORCE_FAIL,
+        _countof(rgwszT), rgwszT);
 
-    OSDiagTrackEnforceFail( wszContext, szMessage, wszIssueSource );
+    OSDiagTrackEnforceFail(wszContext, szMessage, wszIssueSource);
 }
 
 BOOL g_fOverrideEnforceFailure = fFalse;
-VOID (*g_pfnReportEnforceFailure)( const WCHAR* wszContext, const CHAR* szMessage, const WCHAR* wszIssueSource ) = DefaultReportEnforceFailure;
+VOID (*g_pfnReportEnforceFailure)(const WCHAR* wszContext, const CHAR* szMessage, const WCHAR* wszIssueSource) =
+    DefaultReportEnforceFailure;
 
-void (__stdcall *g_pfnEnforceContextFail)( const WCHAR* wszContext, const CHAR* szMessage, const CHAR* szFilename, LONG lLine ) = EnforceContextFail;
+void (__stdcall *g_pfnEnforceContextFail)(const WCHAR* wszContext, const CHAR* szMessage, const CHAR* szFilename,
+    LONG lLine) = EnforceContextFail;
 
-void __stdcall EnforceFail( const CHAR* szMessage, const CHAR* szFilename, LONG lLine )
+void __stdcall EnforceFail(const CHAR* szMessage, const CHAR* szFilename, LONG lLine)
 {
-    if ( g_pfnEnforceContextFail != nullptr )
+    if (g_pfnEnforceContextFail != nullptr)
     {
-        g_pfnEnforceContextFail( nullptr, szMessage, szFilename, lLine );
+        g_pfnEnforceContextFail(nullptr, szMessage, szFilename, lLine);
     }
 }
 
-void __stdcall EnforceContextFail( const WCHAR* wszContext, const CHAR* szMessage, const CHAR* szFilename, LONG lLine )
+void __stdcall EnforceContextFail(const WCHAR* wszContext, const CHAR* szMessage, const CHAR* szFilename, LONG lLine)
 {
     DWORD dwSavedGLE = GetLastError();
 
-    EnterCriticalSection( &g_csError );
+    EnterCriticalSection(&g_csError);
 
     g_fNoWriteAssertEvent = 1;
 
-    if ( g_pfnReportEnforceFailure != nullptr )
+    if (g_pfnReportEnforceFailure != nullptr)
     {
-        WCHAR wszIssueSource[ g_cchIssueSourceMax ] = L"FORMAT STRING FAIL";
-        C_ASSERT( _countof( wszIssueSource ) < 260 );
+        WCHAR wszIssueSource[g_cchIssueSourceMax] = L"FORMAT STRING FAIL";
+        C_ASSERT(_countof( wszIssueSource ) < 260);
 
-        ERRFormatIssueSource( wszIssueSource, sizeof( wszIssueSource ), dwSavedGLE, szFilename, lLine );
+        ERRFormatIssueSource(wszIssueSource, sizeof(wszIssueSource), dwSavedGLE, szFilename, lLine);
 
-        g_pfnReportEnforceFailure( wszContext, szMessage, wszIssueSource );
+        g_pfnReportEnforceFailure(wszContext, szMessage, wszIssueSource);
     }
 
-    SetLastError( dwSavedGLE );
+    SetLastError(dwSavedGLE);
 
-    AssertTrackAt( fFalse, szMessage, szFilename, lLine );
+    AssertTrackAt(fFalse, szMessage, szFilename, lLine);
 
-    if ( !g_fOverrideEnforceFailure )
+    if (!g_fOverrideEnforceFailure)
     {
         RaiseFailFastException();
 
         //  unreachable: belt-and-suspenders process kill
-        _exit( ~0 );
+        _exit(~0);
     }
 
-    LeaveCriticalSection( &g_csError );
+    LeaveCriticalSection(&g_csError);
 
-    SetLastError( dwSavedGLE );
+    SetLastError(dwSavedGLE);
 }
 
 
@@ -558,7 +572,7 @@ void __stdcall EnforceContextFail( const WCHAR* wszContext, const CHAR* szMessag
 //  if(1)/if(0) so _ExceptionFail / ExceptionDialog never get reached.
 //  ExceptionId() is still referenced by signature; provide a stub.
 
-const DWORD ExceptionId( EXCEPTION /* exception */ )
+const DWORD ExceptionId(EXCEPTION /* exception */)
 {
     return 0;
 }
@@ -570,7 +584,7 @@ const DWORD ExceptionId( EXCEPTION /* exception */ )
 
 ERR g_errTrap = JET_errSuccess;
 
-ERR ErrERRSetErrTrap( const ERR errSet )
+ERR ErrERRSetErrTrap(const ERR errSet)
 {
     const ERR errRet = g_errTrap;
     g_errTrap = errSet;
@@ -579,63 +593,63 @@ ERR ErrERRSetErrTrap( const ERR errSet )
 
 #ifdef DEBUG
 
-ERR ErrERRCheck_( const ERR err, const CHAR* szFile, const LONG lLine )
+ERR ErrERRCheck_(const ERR err, const CHAR* szFile, const LONG lLine)
 {
     DWORD dwSavedGLE = GetLastError();
 
-    AssertSz( ( ( err > -65536 && err < JET_errClientSpaceEnd ) ||
-                ( err > JET_errClientSpaceBegin && err < (- JET_errClientSpaceBegin ) ) ||
-                ( err > (- JET_errClientSpaceEnd ) && err < 65536 ) ),
-              "Error value out of bounds." );
+    AssertSz(( ( err > -65536 && err < JET_errClientSpaceEnd ) ||
+            ( err > JET_errClientSpaceBegin && err < (- JET_errClientSpaceBegin ) ) ||
+            ( err > (- JET_errClientSpaceEnd ) && err < 65536 ) ),
+        "Error value out of bounds.");
 
-    if ( FOSRefTraceErrors() )
+    if (FOSRefTraceErrors())
     {
-        OSTraceWriteRefLog( ostrlSystemFixed, sysosrtlErrorThrow, (void*)(INT_PTR)err );
+        OSTraceWriteRefLog(ostrlSystemFixed, sysosrtlErrorThrow, (void*) (INT_PTR) err);
     }
 
-    while ( g_tidAssertFired )
+    while (g_tidAssertFired)
     {
-        if ( g_tidAssertFired == DwUtilThreadId() )
+        if (g_tidAssertFired == DwUtilThreadId())
         {
             return err;
         }
-        UtilSleep( 1000 );
+        UtilSleep(1000);
     }
 
-    if ( err == g_errTrap )
+    if (err == g_errTrap)
     {
-        FireWallAt( OSFormat( "ErrTrap:%d", g_errTrap ), szFile, lLine );
+        FireWallAt(OSFormat( "ErrTrap:%d", g_errTrap ), szFile, lLine);
     }
 
-    OSTrace( JET_tracetagErrors,
-             OSFormat( "Error %d (0x%x) returned from %s@%d", err, err, szFile, lLine ) );
+    OSTrace(JET_tracetagErrors,
+        OSFormat( "Error %d (0x%x) returned from %s@%d", err, err, szFile, lLine ));
 
-    switch ( err )
+    switch (err)
     {
         case JET_errSuccess:
-            AssertSz( fFalse, "Shouldn't call ErrERRCheck() with JET_errSuccess." );
+            AssertSz(fFalse, "Shouldn't call ErrERRCheck() with JET_errSuccess.");
             break;
 
         case JET_errDerivedColumnCorruption:
-            AssertSz( fFalse, "Corruption detected in column space of derived columns." );
+            AssertSz(fFalse, "Corruption detected in column space of derived columns.");
             break;
 
         default:
             break;
     }
 
-    PefLastThrow()->Set( szFile, lLine, err );
+    PefLastThrow()->Set(szFile, lLine, err);
 
-    SetLastError( dwSavedGLE );
+    SetLastError(dwSavedGLE);
 
     return err;
 }
 
-void ERRSetLastCall( _In_ const CHAR* szFile, _In_ const LONG lLine, _In_ const ERR err )
+void ERRSetLastCall(_In_ const CHAR* szFile, _In_ const LONG lLine, _In_ const ERR err)
 {
     Postls()->ulLineLastCall = lLine;
     Postls()->szFileLastCall = szFile;
-    Postls()->errLastCall    = err;
+    Postls()->errLastCall = err;
 }
 
 #endif  //  DEBUG
@@ -647,7 +661,7 @@ void ERRSetLastCall( _In_ const CHAR* szFile, _In_ const LONG lLine, _In_ const 
 
 #ifdef DEBUG
 
-BOOL FOSSetCleanupState( const BOOL fInCleanupState )
+BOOL FOSSetCleanupState(const BOOL fInCleanupState)
 {
     const BOOL fInCleanupStateSaved = Postls()->fCleanupState;
     Postls()->fCleanupState = fInCleanupState;
@@ -670,80 +684,81 @@ inline BOOL FOSGetCleanupState()
 
 #include "_testinjection.hxx"
 
-TESTINJECTION       g_rgTestInjections[g_cTestInjectionsMax];
-LOCAL INT           g_cTestInjections;
+TESTINJECTION g_rgTestInjections[g_cTestInjectionsMax];
+LOCAL INT g_cTestInjections;
 
-ULONG               g_ulIDTrap = 0;
+ULONG g_ulIDTrap = 0;
 
-LOCAL CRITICAL_SECTION  g_csTestInjections;
-LOCAL BOOL              g_fcsTestInjectionsInit;
+LOCAL CRITICAL_SECTION g_csTestInjections;
+LOCAL BOOL g_fcsTestInjectionsInit;
 
-ERR ErrEnableTestInjection( const ULONG ulID, const ULONG_PTR pv, const INT type, const ULONG ulProbability, const DWORD grbit )
+ERR ErrEnableTestInjection(const ULONG ulID, const ULONG_PTR pv, const INT type, const ULONG ulProbability,
+    const DWORD grbit)
 {
     ERR err = JET_errSuccess;
     const JET_API_PTR pvT = pv;
-    const JET_TESTINJECTIONTYPE typeT = (JET_TESTINJECTIONTYPE)type;
-    TESTINJECTION injectionNew( ulID, pvT, ulProbability, grbit );
+    const JET_TESTINJECTIONTYPE typeT = (JET_TESTINJECTIONTYPE) type;
+    TESTINJECTION injectionNew(ulID, pvT, ulProbability, grbit);
 
-    Assert( g_fcsTestInjectionsInit );
-    EnterCriticalSection( &g_csTestInjections );
+    Assert(g_fcsTestInjectionsInit);
+    EnterCriticalSection(&g_csTestInjections);
 
-    const BOOL fCleanup = ( grbit & JET_bitInjectionProbabilityCleanup ) != 0;
+    const BOOL fCleanup = (grbit & JET_bitInjectionProbabilityCleanup) != 0;
 
-    if (    ( ulID == ulIDInvalid ) ||
-            ( ( typeT < JET_TestInjectMin || typeT >= JET_TestInjectMax ) && !fCleanup ) )
+    if ((ulID == ulIDInvalid) ||
+        ((typeT < JET_TestInjectMin || typeT >= JET_TestInjectMax) && !fCleanup))
     {
-        Call( ErrERRCheck( JET_errInvalidParameter ) );
+        Call(ErrERRCheck( JET_errInvalidParameter ));
     }
 
-    if (    ( grbit == JET_bitNil ) ||
-            ( ( grbit & JET_bitInjectionProbabilityPct ) && ( grbit & JET_bitInjectionProbabilityCount ) ) ||
-            ( !( grbit & JET_bitInjectionProbabilityCount ) &&
-                ( ( grbit & JET_bitInjectionProbabilityPermanent ) || ( grbit & JET_bitInjectionProbabilityFailUntil ) ) ) ||
-            ( ( grbit & JET_bitInjectionProbabilityPermanent ) && ( grbit & JET_bitInjectionProbabilityFailUntil ) ) ||
-            ( fCleanup && ( grbit != JET_bitInjectionProbabilityCleanup ) ) )
+    if ((grbit == JET_bitNil) ||
+        ((grbit & JET_bitInjectionProbabilityPct) && (grbit & JET_bitInjectionProbabilityCount)) ||
+        (!(grbit & JET_bitInjectionProbabilityCount) &&
+            ((grbit & JET_bitInjectionProbabilityPermanent) || (grbit & JET_bitInjectionProbabilityFailUntil))) ||
+        ((grbit & JET_bitInjectionProbabilityPermanent) && (grbit & JET_bitInjectionProbabilityFailUntil)) ||
+        (fCleanup && (grbit != JET_bitInjectionProbabilityCleanup)))
     {
-        Call( ErrERRCheck( JET_errInvalidParameter ) );
+        Call(ErrERRCheck( JET_errInvalidParameter ));
     }
 
-    switch ( typeT )
+    switch (typeT)
     {
-            default:
-                Call( ErrERRCheck( JET_errTestInjectionNotSupported ) );
+        default:
+            Call(ErrERRCheck( JET_errTestInjectionNotSupported ));
 
 #ifdef  FAULT_INJECTION
-            case JET_TestInjectFault:
+        case JET_TestInjectFault:
 #endif
 
 #ifdef  CONFIGOVERRIDE_INJECTION
-            case JET_TestInjectConfigOverride:
+        case JET_TestInjectConfigOverride:
 #endif
 
 #ifdef  HANG_INJECTION
-            case JET_TestInjectHang:
+        case JET_TestInjectHang:
 #endif
 
             break;
     }
 
-    if ( g_cTestInjections >= _countof( g_rgTestInjections ) )
+    if (g_cTestInjections >= _countof(g_rgTestInjections))
     {
-        Call( ErrERRCheck( JET_errTooManyTestInjections ) );
+        Call(ErrERRCheck( JET_errTooManyTestInjections ));
     }
 
-    TESTINJECTION* const pinjection = find( g_rgTestInjections,
-                                            g_rgTestInjections + g_cTestInjections,
-                                            injectionNew );
+    TESTINJECTION* const pinjection = find(g_rgTestInjections,
+        g_rgTestInjections + g_cTestInjections,
+        injectionNew);
 
-    const BOOL fNewInjection = ( pinjection == g_rgTestInjections + g_cTestInjections );
+    const BOOL fNewInjection = (pinjection == g_rgTestInjections + g_cTestInjections);
 
-    if ( fCleanup && fNewInjection )
+    if (fCleanup && fNewInjection)
     {
         // no-op
     }
     else
     {
-        if ( fCleanup && !fNewInjection )
+        if (fCleanup && !fNewInjection)
         {
             pinjection->TraceStats();
             injectionNew.Disable();
@@ -751,96 +766,96 @@ ERR ErrEnableTestInjection( const ULONG ulID, const ULONG_PTR pv, const INT type
 
         *pinjection = injectionNew;
 
-        if ( fNewInjection )
+        if (fNewInjection)
         {
             ++g_cTestInjections;
-            Assert( g_cTestInjections <= _countof( g_rgTestInjections ) );
+            Assert(g_cTestInjections <= _countof( g_rgTestInjections ));
         }
     }
 
 HandleError:
-    LeaveCriticalSection( &g_csTestInjections );
+    LeaveCriticalSection(&g_csTestInjections);
 
     return err;
 }
 
-VOID RFSSuppressFaultInjection( const ULONG ulID )
+VOID RFSSuppressFaultInjection(const ULONG ulID)
 {
-    TESTINJECTION injectionTarget( ulID, 0, 0, 0 );
+    TESTINJECTION injectionTarget(ulID, 0, 0, 0);
 
-    Assert( g_fcsTestInjectionsInit );
-    EnterCriticalSection( &g_csTestInjections );
+    Assert(g_fcsTestInjectionsInit);
+    EnterCriticalSection(&g_csTestInjections);
 
-    Assert( ulID != ulIDInvalid );
+    Assert(ulID != ulIDInvalid);
 
-    TESTINJECTION* const pinjection = find( g_rgTestInjections,
-                                            g_rgTestInjections + g_cTestInjections,
-                                            injectionTarget );
+    TESTINJECTION* const pinjection = find(g_rgTestInjections,
+        g_rgTestInjections + g_cTestInjections,
+        injectionTarget);
 
-    if ( pinjection && pinjection->Id() == ulID )
+    if (pinjection && pinjection->Id() == ulID)
     {
         pinjection->Suppress();
     }
 
-    LeaveCriticalSection( &g_csTestInjections );
+    LeaveCriticalSection(&g_csTestInjections);
 }
 
-VOID RFSUnsuppressFaultInjection( const ULONG ulID )
+VOID RFSUnsuppressFaultInjection(const ULONG ulID)
 {
-    TESTINJECTION injectionTarget( ulID, 0, 0, 0 );
+    TESTINJECTION injectionTarget(ulID, 0, 0, 0);
 
-    Assert( g_fcsTestInjectionsInit );
-    EnterCriticalSection( &g_csTestInjections );
+    Assert(g_fcsTestInjectionsInit);
+    EnterCriticalSection(&g_csTestInjections);
 
-    Assert( ulID != ulIDInvalid );
+    Assert(ulID != ulIDInvalid);
 
-    TESTINJECTION* const pinjection = find( g_rgTestInjections,
-                                            g_rgTestInjections + g_cTestInjections,
-                                            injectionTarget );
+    TESTINJECTION* const pinjection = find(g_rgTestInjections,
+        g_rgTestInjections + g_cTestInjections,
+        injectionTarget);
 
-    if ( pinjection && pinjection->Id() == ulID )
+    if (pinjection && pinjection->Id() == ulID)
     {
         pinjection->Unsuppress();
     }
 
-    LeaveCriticalSection( &g_csTestInjections );
+    LeaveCriticalSection(&g_csTestInjections);
 }
 
 
 inline BOOL FRFSThreadEnabled();
 
-TESTINJECTION* PinjectionFind_( const ULONG ulID )
+TESTINJECTION* PinjectionFind_(const ULONG ulID)
 {
-    if ( 0 == g_cTestInjections )
+    if (0 == g_cTestInjections)
     {
         return nullptr;
     }
 
-    TESTINJECTION injectionSearch( ulID, 0, 0, 0x0 );
+    TESTINJECTION injectionSearch(ulID, 0, 0, 0x0);
 
     TESTINJECTION* pinjection;
     const TESTINJECTION* const pinjectionTail = g_rgTestInjections + g_cTestInjections;
-    if ( ( pinjection = find( g_rgTestInjections, (TESTINJECTION*)pinjectionTail, injectionSearch ) ) != pinjectionTail )
+    if ((pinjection = find(g_rgTestInjections, (TESTINJECTION*) pinjectionTail, injectionSearch)) != pinjectionTail)
     {
-        Assert( pinjection->Id() == ulID );
+        Assert(pinjection->Id() == ulID);
         return pinjection;
     }
 
     return nullptr;
 }
 
-BOOL FTestInjection_( const ULONG ulID, JET_API_PTR* const ppv )
+BOOL FTestInjection_(const ULONG ulID, JET_API_PTR* const ppv)
 {
-    TESTINJECTION * const pinjection = PinjectionFind_( ulID );
-    if ( pinjection )
+    TESTINJECTION* const pinjection = PinjectionFind_(ulID);
+    if (pinjection)
     {
-        if ( pinjection->FProbable() )
+        if (pinjection->FProbable())
         {
             *ppv = pinjection->Pv();
 
-            if ( g_ulIDTrap == pinjection->Id() || g_ulIDTrap == ulIDInvalid )
+            if (g_ulIDTrap == pinjection->Id() || g_ulIDTrap == ulIDInvalid)
             {
-                AssertSz( fFalse, "Test Injection Trap" );
+                AssertSz(fFalse, "Test Injection Trap");
             }
 
             return fTrue;
@@ -850,10 +865,10 @@ BOOL FTestInjection_( const ULONG ulID, JET_API_PTR* const ppv )
     return fFalse;
 }
 
-QWORD ChitsFaultInj( const ULONG ulID )
+QWORD ChitsFaultInj(const ULONG ulID)
 {
-    TESTINJECTION * const pinjection = PinjectionFind_( ulID );
-    if ( pinjection )
+    TESTINJECTION* const pinjection = PinjectionFind_(ulID);
+    if (pinjection)
     {
         return pinjection->Chits();
     }
@@ -863,9 +878,9 @@ QWORD ChitsFaultInj( const ULONG ulID )
 
 #else   //  !TEST_INJECTION
 
-ERR ErrEnableTestInjection( const ULONG, const ULONG_PTR, const INT, const ULONG, const DWORD )
+ERR ErrEnableTestInjection(const ULONG, const ULONG_PTR, const INT, const ULONG, const DWORD)
 {
-    return ErrERRCheck( JET_errTestInjectionNotSupported );
+    return ErrERRCheck(JET_errTestInjectionNotSupported);
 }
 
 #endif  //  TEST_INJECTION
@@ -873,13 +888,15 @@ ERR ErrEnableTestInjection( const ULONG, const ULONG_PTR, const INT, const ULONG
 
 #ifdef FAULT_INJECTION
 
-ERR ErrFaultInjection_( const ULONG ulID, const CHAR * const szFile, const LONG lLine )
+ERR ErrFaultInjection_(const ULONG ulID, const CHAR* const szFile, const LONG lLine)
 {
     JET_API_PTR pv;
 
-    if ( FTestInjection_( ulID, &pv ) )
+    if (FTestInjection_(ulID, &pv))
     {
-        return ( pv && ulID != 63560 ) ? ErrERRCheck_( (ERR)pv, szFile, lLine ) : (ERR)pv;
+        return (pv && ulID != 63560)
+               ? ErrERRCheck_((ERR) pv, szFile, lLine)
+               : (ERR) pv;
     }
 
     return JET_errSuccess;
@@ -889,11 +906,11 @@ ERR ErrFaultInjection_( const ULONG ulID, const CHAR * const szFile, const LONG 
 
 #ifdef CONFIGOVERRIDE_INJECTION
 
-JET_API_PTR UlConfigOverrideInjection_( const ULONG ulID, const JET_API_PTR ulDefault )
+JET_API_PTR UlConfigOverrideInjection_(const ULONG ulID, const JET_API_PTR ulDefault)
 {
     JET_API_PTR pv;
 
-    if ( FTestInjection_( ulID, &pv ) )
+    if (FTestInjection_(ulID, &pv))
     {
         return pv;
     }
@@ -906,15 +923,15 @@ JET_API_PTR UlConfigOverrideInjection_( const ULONG ulID, const JET_API_PTR ulDe
 
 #ifdef HANG_INJECTION
 
-void HangInjection_( const ULONG ulID )
+void HangInjection_(const ULONG ulID)
 {
     JET_API_PTR pv;
 
-    if ( FTestInjection_( ulID, &pv ) )
+    if (FTestInjection_(ulID, &pv))
     {
-        if ( bitHangInjectSleep & pv )
+        if (bitHangInjectSleep & pv)
         {
-            UtilSleep( ~mskHangInjectOptions & pv );
+            UtilSleep(~mskHangInjectOptions & pv);
         }
     }
 }
@@ -926,20 +943,20 @@ void HangInjection_( const ULONG ulID )
 //  RFS2
 // ============================================================================================================
 
-const DWORD cRFSDisable             = (DWORD)-1;
-const DWORD cRFSBreak               = (DWORD)-2;
-const DWORD maskRFSThreadCountdown  = 0x80000000;
+const DWORD cRFSDisable = (DWORD) -1;
+const DWORD cRFSBreak = (DWORD) -2;
+const DWORD maskRFSThreadCountdown = 0x80000000;
 
-BOOL g_fDisableRFS      = fTrue;
-BOOL g_fKnownRFSLeak    = fFalse;
-BOOL g_fLogJETCall      = fFalse;
-BOOL g_fLogRFS          = fFalse;
-DWORD g_cRFSAlloc       = cRFSDisable;
-DWORD g_cRFSIO          = cRFSBreak;
+BOOL g_fDisableRFS = fTrue;
+BOOL g_fKnownRFSLeak = fFalse;
+BOOL g_fLogJETCall = fFalse;
+BOOL g_fLogRFS = fFalse;
+DWORD g_cRFSAlloc = cRFSDisable;
+DWORD g_cRFSIO = cRFSBreak;
 
 void EnableDisableRFS()
 {
-    if ( cRFSDisable == g_cRFSIO && cRFSDisable == g_cRFSAlloc )
+    if (cRFSDisable == g_cRFSIO && cRFSDisable == g_cRFSAlloc)
     {
         g_fDisableRFS = fTrue;
     }
@@ -949,13 +966,13 @@ void EnableDisableRFS()
     }
 }
 
-void COSLayerPreInit::SetRFSAlloc( ULONG cRFSAlloc )
+void COSLayerPreInit::SetRFSAlloc(ULONG cRFSAlloc)
 {
     g_cRFSAlloc = cRFSAlloc;
     EnableDisableRFS();
 }
 
-void COSLayerPreInit::SetRFSIO( ULONG cRFSIO )
+void COSLayerPreInit::SetRFSIO(ULONG cRFSIO)
 {
     g_cRFSIO = cRFSIO;
     EnableDisableRFS();
@@ -965,82 +982,86 @@ void COSLayerPreInit::SetRFSIO( ULONG cRFSIO )
 
 inline BOOL FRFSThreadEnabled()
 {
-    return ( ( Postls()->cRFSCountdown & maskRFSThreadCountdown ) == 0 );
+    return ((Postls()->cRFSCountdown & maskRFSThreadCountdown) == 0);
 }
 
 inline LONG CRFSThreadCountdown()
 {
-    return ( Postls()->cRFSCountdown & ~maskRFSThreadCountdown );
+    return (Postls()->cRFSCountdown & ~maskRFSThreadCountdown);
 }
 
 inline void RFSThreadDecrementCountdown()
 {
-    Assert( !FRFSThreadEnabled() );
-    Postls()->cRFSCountdown = ( ( CRFSThreadCountdown() - 1 ) | maskRFSThreadCountdown );
+    Assert(!FRFSThreadEnabled());
+    Postls()->cRFSCountdown = ((CRFSThreadCountdown() - 1) | maskRFSThreadCountdown);
 }
 
-inline void RFSDecrementCount( LONG* const plTarget )
+inline void RFSDecrementCount(LONG* const plTarget)
 {
     volatile LONG lTarget = *plTarget;
-    Assert( lTarget >= 0 );
+    Assert(lTarget >= 0);
     OSSYNC_FOREVER
     {
-        if ( ( lTarget <= 0 ) || ( AtomicCompareExchange( plTarget, lTarget, lTarget - 1 ) == lTarget ) )
+        if ((lTarget <= 0) || (AtomicCompareExchange(plTarget, lTarget, lTarget - 1) == lTarget))
         {
             break;
         }
         lTarget = *plTarget;
     }
-    Assert( lTarget >= 0 );
+    Assert(lTarget >= 0);
 }
 
-inline BOOL UtilRFSLog( const WCHAR* const wszType, const BOOL fPermitted )
+inline BOOL UtilRFSLog(const WCHAR* const wszType, const BOOL fPermitted)
 {
-    const WCHAR * rgszT[1];
+    const WCHAR* rgszT[1];
 
-    if ( !fPermitted )
+    if (!fPermitted)
     {
         g_fLogJETCall = fTrue;
     }
 
-    if ( !g_fLogRFS && fPermitted )
+    if (!g_fLogRFS && fPermitted)
     {
         return fPermitted;
     }
 
     rgszT[0] = wszType;
 
-    UtilReportEvent( fPermitted ? eventInformation : eventWarning,
-                     RFS2_CATEGORY,
-                     fPermitted ? RFS2_PERMITTED_ID : RFS2_DENIED_ID,
-                     1,
-                     rgszT );
+    UtilReportEvent(fPermitted
+                    ? eventInformation
+                    : eventWarning,
+        RFS2_CATEGORY,
+        fPermitted
+        ? RFS2_PERMITTED_ID
+        : RFS2_DENIED_ID,
+        1,
+        rgszT);
 
     return fPermitted;
 }
 
-BOOL UtilRFSAlloc( const WCHAR* const wszType, const INT Type )
+BOOL UtilRFSAlloc(const WCHAR* const wszType, const INT Type)
 {
-    if ( FOSGetCleanupState() && Type == UnknownAllocResource )
+    if (FOSGetCleanupState() && Type == UnknownAllocResource)
     {
-        AssertSz( fFalse, "Cleanup codepaths should not allocate resources." );
+        AssertSz(fFalse, "Cleanup codepaths should not allocate resources.");
     }
 
-    if ( g_fDisableRFS )
+    if (g_fDisableRFS)
     {
-        return UtilRFSLog( wszType, fTrue );
+        return UtilRFSLog(wszType, fTrue);
     }
 
-    if ( ( ( cRFSBreak == g_cRFSAlloc && Type == 0 ) ||
-           ( cRFSBreak == g_cRFSIO    && Type == 1 ) ) &&
-         !g_fDisableRFS )
+    if (((cRFSBreak == g_cRFSAlloc && Type == 0) ||
+            (cRFSBreak == g_cRFSIO && Type == 1)) &&
+        !g_fDisableRFS)
     {
         UserDebugBreakPoint();
     }
 
     DWORD* pcRFSGlobal = &g_cRFSAlloc;
 
-    switch ( Type )
+    switch (Type)
     {
         case 0:
             pcRFSGlobal = &g_cRFSAlloc;
@@ -1049,67 +1070,67 @@ BOOL UtilRFSAlloc( const WCHAR* const wszType, const INT Type )
             pcRFSGlobal = &g_cRFSIO;
             break;
         default:
-            AssertSz( fFalse, "Unknown RFS type %u.", Type );
+            AssertSz(fFalse, "Unknown RFS type %u.", Type);
             break;
     }
 
-    if ( ( *pcRFSGlobal == cRFSDisable ) || g_fDisableRFS )
+    if ((*pcRFSGlobal == cRFSDisable) || g_fDisableRFS)
     {
-        return UtilRFSLog( wszType, fTrue );
+        return UtilRFSLog(wszType, fTrue);
     }
-    if ( *pcRFSGlobal == 0 )
+    if (*pcRFSGlobal == 0)
     {
         const BOOL fRFSThreadEnabled = FRFSThreadEnabled();
         const LONG cRFSThreadCountdown = CRFSThreadCountdown();
-        if ( !fRFSThreadEnabled && ( cRFSThreadCountdown > 0 ) )
+        if (!fRFSThreadEnabled && (cRFSThreadCountdown > 0))
         {
             RFSThreadDecrementCountdown();
         }
-        if ( fRFSThreadEnabled || ( cRFSThreadCountdown > 0 ) )
+        if (fRFSThreadEnabled || (cRFSThreadCountdown > 0))
         {
-            return UtilRFSLog( wszType, fFalse );
+            return UtilRFSLog(wszType, fFalse);
         }
         else
         {
-            return UtilRFSLog( wszType, fTrue );
+            return UtilRFSLog(wszType, fTrue);
         }
     }
     else
     {
-        RFSDecrementCount( (LONG*)pcRFSGlobal );
-        return UtilRFSLog( wszType, fTrue );
+        RFSDecrementCount((LONG*) pcRFSGlobal);
+        return UtilRFSLog(wszType, fTrue);
     }
 }
 
-BOOL FRFSFailureDetected( const UINT Type )
+BOOL FRFSFailureDetected(const UINT Type)
 {
-    if ( g_fDisableRFS )
+    if (g_fDisableRFS)
     {
         return fFalse;
     }
-    if ( 0 == Type )
+    if (0 == Type)
     {
-        return ( 0 == g_cRFSAlloc );
+        return (0 == g_cRFSAlloc);
     }
-    else if ( 1 == Type )
+    else if (1 == Type)
     {
-        return ( 0 == g_cRFSIO );
+        return (0 == g_cRFSIO);
     }
-    AssertSz( fFalse, "Unknown RFS type %u.", Type );
+    AssertSz(fFalse, "Unknown RFS type %u.", Type);
     return fFalse;
 }
 
 BOOL FRFSAnyFailureDetected()
 {
-    for ( UINT type = 0; type < RFSTypeMax; type++ )
+    for (UINT type = 0; type < RFSTypeMax; type++)
     {
-        if ( FRFSFailureDetected( type ) )
+        if (FRFSFailureDetected(type))
         {
             return fTrue;
         }
     }
 
-    if ( FNegTest( fDiskIOError ) || FNegTest( fOutOfMemory ) )
+    if (FNegTest(fDiskIOError) || FNegTest(fOutOfMemory))
     {
         return fTrue;
     }
@@ -1127,92 +1148,92 @@ BOOL FRFSKnownResourceLeak()
     return g_fKnownRFSLeak;
 }
 
-LONG RFSThreadDisable( const LONG cRFSCountdown )
+LONG RFSThreadDisable(const LONG cRFSCountdown)
 {
     const LONG cRFSCountdownOld = Postls()->cRFSCountdown;
-    Postls()->cRFSCountdown = ( cRFSCountdown | maskRFSThreadCountdown );
+    Postls()->cRFSCountdown = (cRFSCountdown | maskRFSThreadCountdown);
     return cRFSCountdownOld;
 }
 
-void RFSThreadReEnable( const LONG cRFSCountdownOld )
+void RFSThreadReEnable(const LONG cRFSCountdownOld)
 {
-    Assert( !FRFSThreadEnabled() );
+    Assert(!FRFSThreadEnabled());
     Postls()->cRFSCountdown = cRFSCountdownOld;
 }
 
-void UtilRFSLogJETCall( const CHAR* const szFunc, const ERR err, const CHAR* const szFile, const unsigned Line )
+void UtilRFSLogJETCall(const CHAR* const szFunc, const ERR err, const CHAR* const szFile, const unsigned Line)
 {
     WCHAR rgrgchT[2][16];
-    WCHAR szFileName[ 260 ];
-    WCHAR szFuncName[ 64 ];
-    const WCHAR * rgszT[4];
+    WCHAR szFileName[260];
+    WCHAR szFuncName[64];
+    const WCHAR* rgszT[4];
     ERR errTemp;
 
-    if ( err >= 0 || !g_fLogJETCall )
+    if (err >= 0 || !g_fLogJETCall)
     {
         return;
     }
 
-    errTemp = ErrOSStrCbFormatW( szFuncName, sizeof( szFuncName ), L"%hs", szFunc );
-    Assert( JET_errSuccess <= errTemp || JET_errBufferTooSmall == errTemp );
+    errTemp = ErrOSStrCbFormatW(szFuncName, sizeof(szFuncName), L"%hs", szFunc);
+    Assert(JET_errSuccess <= errTemp || JET_errBufferTooSmall == errTemp);
 
     rgszT[0] = szFuncName;
 
-    OSStrCbFormatW( rgrgchT[0], sizeof( rgrgchT[0] ), L"%d", err );
+    OSStrCbFormatW(rgrgchT[0], sizeof(rgrgchT[0]), L"%d", err);
     rgszT[1] = rgrgchT[0];
 
-    OSStrCbFormatW( szFileName, sizeof( szFileName ), L"%hs", szFile );
+    OSStrCbFormatW(szFileName, sizeof(szFileName), L"%hs", szFile);
     rgszT[2] = szFileName;
 
-    OSStrCbFormatW( rgrgchT[1], sizeof( rgrgchT[1] ), L"%d", Line );
+    OSStrCbFormatW(rgrgchT[1], sizeof(rgrgchT[1]), L"%d", Line);
     rgszT[3] = rgrgchT[1];
 
-    UtilReportEvent( eventInformation, RFS2_CATEGORY, RFS2_JET_CALL_ID, 4, rgszT );
+    UtilReportEvent(eventInformation, RFS2_CATEGORY, RFS2_JET_CALL_ID, 4, rgszT);
 }
 
-void UtilRFSLogJETErr( const ERR err, const CHAR* const szLabel, const CHAR* const szFile, const unsigned Line )
+void UtilRFSLogJETErr(const ERR err, const CHAR* const szLabel, const CHAR* const szFile, const unsigned Line)
 {
     WCHAR rgrgchT[2][16];
-    WCHAR szFileName[ 260 ];
-    WCHAR szLabelName[ 64 ];
-    const WCHAR * rgszT[4];
+    WCHAR szFileName[260];
+    WCHAR szLabelName[64];
+    const WCHAR* rgszT[4];
 
-    if ( !g_fLogJETCall )
+    if (!g_fLogJETCall)
     {
         return;
     }
 
-    OSStrCbFormatW( rgrgchT[0], sizeof( rgrgchT[0] ), L"%d", err );
+    OSStrCbFormatW(rgrgchT[0], sizeof(rgrgchT[0]), L"%d", err);
     rgszT[0] = rgrgchT[0];
 
-    OSStrCbFormatW( szLabelName, sizeof( szLabelName ), L"%hs", szLabel );
+    OSStrCbFormatW(szLabelName, sizeof(szLabelName), L"%hs", szLabel);
     rgszT[1] = szLabelName;
 
-    OSStrCbFormatW( szFileName, sizeof( szFileName ), L"%hs", szFile );
+    OSStrCbFormatW(szFileName, sizeof(szFileName), L"%hs", szFile);
     rgszT[2] = szFileName;
 
-    OSStrCbFormatW( rgrgchT[1], sizeof( rgrgchT[1] ), L"%d", Line );
+    OSStrCbFormatW(rgrgchT[1], sizeof(rgrgchT[1]), L"%d", Line);
     rgszT[3] = rgrgchT[1];
 
-    UtilReportEvent( eventInformation, PERFORMANCE_CATEGORY, RFS2_JET_ERROR_ID, 4, rgszT );
+    UtilReportEvent(eventInformation, PERFORMANCE_CATEGORY, RFS2_JET_ERROR_ID, 4, rgszT);
 }
 
-BOOL RFSError::Check( ERR err, ... ) const
+BOOL RFSError::Check(ERR err, ...) const
 {
     va_list arg_ptr;
-    va_start( arg_ptr, err );
+    va_start(arg_ptr, err);
 
-    for ( ; err != 0; err = va_arg( arg_ptr, ERR ) )
+    for (; err != 0; err = va_arg(arg_ptr, ERR))
     {
-        Assert( err > -9000 && err < 9000 );
-        if ( m_err == err )
+        Assert(err > -9000 && err < 9000);
+        if (m_err == err)
         {
             break;
         }
     }
 
-    va_end( arg_ptr );
-    return ( err != 0 );
+    va_end(arg_ptr);
+    return (err != 0);
 }
 
 #else   // !RFS2
@@ -1232,37 +1253,37 @@ inline BOOL FRFSThreadEnabled()
 void OSErrorPostterm()
 {
 #ifdef TEST_INJECTION
-    if ( g_fcsTestInjectionsInit )
+    if (g_fcsTestInjectionsInit)
     {
-        DeleteCriticalSection( &g_csTestInjections );
+        DeleteCriticalSection(&g_csTestInjections);
         g_fcsTestInjectionsInit = fFalse;
     }
-    for ( TESTINJECTION* pinjection = g_rgTestInjections;
-          pinjection < ( g_rgTestInjections + g_cTestInjections );
-          pinjection++ )
+    for (TESTINJECTION* pinjection = g_rgTestInjections;
+         pinjection < (g_rgTestInjections + g_cTestInjections);
+         pinjection++)
     {
         pinjection->TraceStats();
     }
     g_cTestInjections = 0;
 #endif
 
-    if ( g_fCritSecErrorInit )
+    if (g_fCritSecErrorInit)
     {
-        DeleteCriticalSection( &g_csError );
+        DeleteCriticalSection(&g_csError);
         g_fCritSecErrorInit = fFalse;
     }
 }
 
 BOOL FOSErrorPreinit()
 {
-    if ( !InitializeCriticalSectionAndSpinCount( &g_csError, 0 ) )
+    if (!InitializeCriticalSectionAndSpinCount(&g_csError, 0))
     {
         goto HandleError;
     }
     g_fCritSecErrorInit = fTrue;
 
 #ifdef TEST_INJECTION
-    if ( !InitializeCriticalSectionAndSpinCount( &g_csTestInjections, 0 ) )
+    if (!InitializeCriticalSectionAndSpinCount(&g_csTestInjections, 0))
     {
         goto HandleError;
     }
@@ -1296,7 +1317,7 @@ DWORD g_grbitNegativeTesting = 0x0;
 //  Repair / Integrity Utility
 // ============================================================================================================
 
-BOOL FUtilRepairIntegrityMsgBox( const WCHAR * const /* wszMsg */ )
+BOOL FUtilRepairIntegrityMsgBox(const WCHAR* const /* wszMsg */)
 {
     //  no GUI on Linux; default to "Cancel" (i.e. do not run the destructive
     //  recovery operation without explicit confirmation).
@@ -1308,30 +1329,30 @@ BOOL FUtilRepairIntegrityMsgBox( const WCHAR * const /* wszMsg */ )
 //  Win32 -> JET error mapping
 // ============================================================================================================
 
-ERR ErrOSErrFromWin32Err( _In_ DWORD dwWinError, _In_ ERR errDefault )
+ERR ErrOSErrFromWin32Err(_In_ DWORD dwWinError, _In_ ERR errDefault)
 {
-    switch ( dwWinError )
+    switch (dwWinError)
     {
         case NO_ERROR:
             return JET_errSuccess;
 
         case ERROR_DISK_FULL:
-            return ErrERRCheck( JET_errDiskFull );
+            return ErrERRCheck(JET_errDiskFull);
 
         case ERROR_HANDLE_EOF:
         case ERROR_VC_DISCONNECTED:
         case ERROR_IO_DEVICE:
         case ERROR_DEVICE_NOT_CONNECTED:
-            return ErrERRCheck( JET_errDiskIO );
+            return ErrERRCheck(JET_errDiskIO);
 
         case ERROR_FILE_CORRUPT:
         case ERROR_DISK_CORRUPT:
-            return ErrERRCheck( JET_errFileSystemCorruption );
+            return ErrERRCheck(JET_errFileSystemCorruption);
 
         case ERROR_NOT_READY:
         case ERROR_NO_MORE_FILES:
         case ERROR_FILE_NOT_FOUND:
-            return ErrERRCheck( JET_errFileNotFound );
+            return ErrERRCheck(JET_errFileNotFound);
 
         case ERROR_PATH_NOT_FOUND:
         case ERROR_DIRECTORY:
@@ -1339,34 +1360,34 @@ ERR ErrOSErrFromWin32Err( _In_ DWORD dwWinError, _In_ ERR errDefault )
         case ERROR_BAD_NETPATH:
         case ERROR_BAD_PATHNAME:
         case ERROR_INVALID_NAME:
-            return ErrERRCheck( JET_errInvalidPath );
+            return ErrERRCheck(JET_errInvalidPath);
 
         case ERROR_ACCESS_DENIED:
         case ERROR_SHARING_VIOLATION:
         case ERROR_LOCK_VIOLATION:
         case ERROR_WRITE_PROTECT:
-            return ErrERRCheck( JET_errFileAccessDenied );
+            return ErrERRCheck(JET_errFileAccessDenied);
 
         case ERROR_TOO_MANY_OPEN_FILES:
-            return ErrERRCheck( JET_errOutOfFileHandles );
+            return ErrERRCheck(JET_errOutOfFileHandles);
 
         case ERROR_NO_SYSTEM_RESOURCES:
         case ERROR_NOT_ENOUGH_MEMORY:
         case ERROR_WORKING_SET_QUOTA:
-            return ErrERRCheck( JET_errOutOfMemory );
+            return ErrERRCheck(JET_errOutOfMemory);
 
         case ERROR_ALREADY_EXISTS:
         case ERROR_FILE_EXISTS:
-            return ErrERRCheck( JET_errFileAlreadyExists );
+            return ErrERRCheck(JET_errFileAlreadyExists);
 
         default:
-            return ErrERRCheck( errDefault );
+            return ErrERRCheck(errDefault);
     }
 }
 
-ERR ErrOSErrFromWin32Err( _In_ DWORD dwWinError )
+ERR ErrOSErrFromWin32Err(_In_ DWORD dwWinError)
 {
-    return ErrOSErrFromWin32Err( dwWinError, JET_errInternalError );
+    return ErrOSErrFromWin32Err(dwWinError, JET_errInternalError);
 }
 
 
@@ -1374,36 +1395,36 @@ ERR ErrOSErrFromWin32Err( _In_ DWORD dwWinError )
 //  Source-file basename helper
 // ============================================================================================================
 
-const CHAR * g_szBadSourceFileName = "#BadFileName#";
+const CHAR* g_szBadSourceFileName = "#BadFileName#";
 
-const CHAR * SzSourceFileName( const CHAR * szFilePath )
+const CHAR* SzSourceFileName(const CHAR* szFilePath)
 {
-    if ( nullptr == szFilePath || szFilePath[0] == '\0' )
+    if (nullptr == szFilePath || szFilePath[0] == '\0')
     {
         return "";
     }
-    if ( nullptr == strrchr( szFilePath, chPathDelimiter ) )
+    if (nullptr == strrchr(szFilePath, chPathDelimiter))
     {
         return szFilePath;
     }
-    if ( strrchr( szFilePath, chPathDelimiter ) + sizeof( CHAR ) >= szFilePath + strlen( szFilePath ) )
+    if (strrchr(szFilePath, chPathDelimiter) + sizeof(CHAR) >= szFilePath + strlen(szFilePath))
     {
-        ExpectedSz( fFalse, "Source Code Path with delimiter at very end of string." );
+        ExpectedSz(fFalse, "Source Code Path with delimiter at very end of string.");
         return g_szBadSourceFileName;
     }
 
-    return strrchr( szFilePath, chPathDelimiter ) + sizeof( CHAR );
+    return strrchr(szFilePath, chPathDelimiter) + sizeof(CHAR);
 }
 
-VOID OSErrorPrintLastError( const WCHAR * const szMessage )
+VOID OSErrorPrintLastError(const WCHAR* const szMessage)
 {
     const DWORD dwGLE = GetLastError();
-    if ( szMessage )
+    if (szMessage)
     {
-        for ( const WCHAR* p = szMessage; *p; p++ )
+        for (const WCHAR* p = szMessage; *p; p++)
         {
-            fputc( (unsigned char)( *p & 0xFF ), stderr );
+            fputc((unsigned char) (*p & 0xFF), stderr);
         }
     }
-    fprintf( stderr, " (%u)\n", dwGLE );
+    fprintf(stderr, " (%u)\n", dwGLE);
 }

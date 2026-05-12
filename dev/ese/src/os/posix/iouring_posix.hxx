@@ -15,7 +15,6 @@ struct iovec;
 
 namespace osposix
 {
-
 struct IOContext
 {
     enum class Op
@@ -30,45 +29,47 @@ struct IOContext
     //                                 dispatches to OSDiskIIOThreadCompleteWithErr.
     //    pfnIOComplete != null     -> generic async IFileAPI callback.
     //    both null                 -> sync wait via the cond below.
-    Op                  op;
-    int                 fileFd;
-    IFileAPI*           fapi;
-    TraceContext        tc;
-    OSFILEQOS           qos;
-    QWORD               ibOffset;
-    DWORD               cbData;
-    BYTE*               pbData;
-    DWORD_PTR           keyIOComplete;
+    Op op;
+    int fileFd;
+    IFileAPI* fapi;
+    TraceContext tc;
+    OSFILEQOS qos;
+    QWORD ibOffset;
+    DWORD cbData;
+    BYTE* pbData;
+    DWORD_PTR keyIOComplete;
     IFileAPI::PfnIOComplete pfnIOComplete;
-    IOREQ*              pioreq;
+    IOREQ* pioreq;
 
     //  Vector buffer — only set for scatter/gather submissions.  Submitter
     //  owns the storage; completion thread frees it when freeing IOContext.
-    iovec*              iov;
-    int                 iovCount;
+    iovec* iov;
+    int iovCount;
 
     //  Sync-wait support — only initialized when pfnIOComplete == null
     //  AND pioreq == null.
     //  The completion thread signals cond; the submitter pthread_cond_waits.
-    pthread_mutex_t     lock;
-    pthread_cond_t      cond;
-    bool                done;
-    int                 res;        //  JET_err set by completion thread
+    pthread_mutex_t lock;
+    pthread_cond_t cond;
+    bool done;
+    int res; //  JET_err set by completion thread
 };
 
-ERR  ErrIOUringInit();
+ERR ErrIOUringInit();
+
 void IOUringTerm();
 
-ERR  ErrIOUringRead(  int fd, IOContext* ctx );
-ERR  ErrIOUringWrite( int fd, IOContext* ctx );
-ERR  ErrIOUringFsync( int fd );
+ERR ErrIOUringRead(int fd, IOContext* ctx);
+
+ERR ErrIOUringWrite(int fd, IOContext* ctx);
+
+ERR ErrIOUringFsync(int fd);
 
 //  IOREQ-pool async submission entry.  ctx->pioreq must be set; ctx is
 //  heap-allocated by the caller and freed by the completion thread.
 //  For vector (scatter/gather) submissions, set ctx->iov + ctx->iovCount;
 //  pbData/cbData are ignored.
-ERR  ErrIOUringSubmitIOREQ( IOContext* ctx );
+ERR ErrIOUringSubmitIOREQ(IOContext* ctx);
 
-void DestroyContextSyncWait( IOContext* ctx );
-
-}  // namespace osposix
+void DestroyContextSyncWait(IOContext* ctx);
+} // namespace osposix

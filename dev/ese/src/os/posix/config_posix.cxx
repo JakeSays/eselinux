@@ -49,126 +49,127 @@
 
 namespace
 {
-
 //  Loaded once on first access; treated as read-only afterwards.
-ucl_object_t*  g_pucMerged   = nullptr;
+ucl_object_t* g_pucMerged = nullptr;
 pthread_once_t g_uclLoadOnce = PTHREAD_ONCE_INIT;
 
-void LoadOneFile( const char* szPath, ucl_object_t* dst )
+void LoadOneFile(const char* szPath, ucl_object_t* dst)
 {
-    if ( access( szPath, R_OK ) != 0 )
+    if (access(szPath, R_OK) != 0)
     {
         return;
     }
-    ucl_parser* parser = ucl_parser_new( UCL_PARSER_DEFAULT );
-    if ( parser == nullptr )
+    ucl_parser* parser = ucl_parser_new(UCL_PARSER_DEFAULT);
+    if (parser == nullptr)
     {
         return;
     }
-    if ( ucl_parser_add_file( parser, szPath ) )
+    if (ucl_parser_add_file(parser, szPath))
     {
-        ucl_object_t* obj = ucl_parser_get_object( parser );
-        if ( obj != nullptr )
+        ucl_object_t* obj = ucl_parser_get_object(parser);
+        if (obj != nullptr)
         {
-            (void)ucl_object_merge( dst, obj, false );
-            ucl_object_unref( obj );
+            (void) ucl_object_merge(dst, obj, false);
+            ucl_object_unref(obj);
         }
     }
     else
     {
-        const char* err = ucl_parser_get_error( parser );
-        fprintf( stderr, "ese: failed to parse %s: %s\n",
-                 szPath, err != nullptr ? err : "(unknown)" );
+        const char* err = ucl_parser_get_error(parser);
+        fprintf(stderr, "ese: failed to parse %s: %s\n",
+            szPath, err != nullptr
+                    ? err
+                    : "(unknown)");
     }
-    ucl_parser_free( parser );
+    ucl_parser_free(parser);
 }
 
 void LoadConfigImpl()
 {
-    g_pucMerged = ucl_object_typed_new( UCL_OBJECT );
-    if ( g_pucMerged == nullptr )
+    g_pucMerged = ucl_object_typed_new(UCL_OBJECT);
+    if (g_pucMerged == nullptr)
     {
         return;
     }
 
     //  Layer 1: /etc/ese.conf (system-wide).
-    LoadOneFile( "/etc/ese.conf", g_pucMerged );
+    LoadOneFile("/etc/ese.conf", g_pucMerged);
 
     //  Layer 2: <exe>.ese.conf (per-binary).
     //  /proc/self/exe is the real executable, immune to argv[0] tampering.
-    char exePath[ PATH_MAX ];
-    const ssize_t n = readlink( "/proc/self/exe", exePath, sizeof( exePath ) - 1 );
-    if ( n > 0 && n < (ssize_t)( sizeof( exePath ) - sizeof( ".ese.conf" ) ) )
+    char exePath[PATH_MAX];
+    const ssize_t n = readlink("/proc/self/exe", exePath, sizeof(exePath) - 1);
+    if (n > 0 && n < (ssize_t) (sizeof(exePath) - sizeof(".ese.conf")))
     {
-        exePath[ n ] = '\0';
-        char cfgPath[ PATH_MAX + 16 ];
-        snprintf( cfgPath, sizeof( cfgPath ), "%s.ese.conf", exePath );
-        LoadOneFile( cfgPath, g_pucMerged );
+        exePath[n] = '\0';
+        char cfgPath[PATH_MAX + 16];
+        snprintf(cfgPath, sizeof(cfgPath), "%s.ese.conf", exePath);
+        LoadOneFile(cfgPath, g_pucMerged);
     }
 }
 
 const ucl_object_t* EnsureLoaded()
 {
-    pthread_once( &g_uclLoadOnce, LoadConfigImpl );
+    pthread_once(&g_uclLoadOnce, LoadConfigImpl);
     return g_pucMerged;
 }
 
 //  Copy a WCHAR* (16-bit) ASCII string into a narrow buffer, truncating
 //  on overflow.  Returns false if the source contained any non-ASCII
 //  codepoint — config key names are programmer-defined and stay ASCII.
-bool WideToNarrowAsciiBounded( const WCHAR* wsz, char* dst, size_t cbDst )
+bool WideToNarrowAsciiBounded(const WCHAR* wsz, char* dst, size_t cbDst)
 {
-    if ( dst == nullptr || cbDst == 0 )
+    if (dst == nullptr || cbDst == 0)
     {
         return false;
     }
     size_t i = 0;
-    while ( wsz[ i ] != L'\0' && i + 1 < cbDst )
+    while (wsz[i] != L'\0' && i + 1 < cbDst)
     {
-        const unsigned int c = static_cast<unsigned int>( wsz[ i ] );
-        if ( c > 0x7f )
+        const unsigned int c = static_cast<unsigned int>(wsz[i]);
+        if (c > 0x7f)
         {
-            dst[ 0 ] = '\0';
+            dst[0] = '\0';
             return false;
         }
-        dst[ i ] = static_cast<char>( c );
+        dst[i] = static_cast<char>(c);
         ++i;
     }
-    if ( wsz[ i ] != L'\0' )
+    if (wsz[i] != L'\0')
     {
-        dst[ 0 ] = '\0';
+        dst[0] = '\0';
         return false;
     }
-    dst[ i ] = '\0';
+    dst[i] = '\0';
     return true;
 }
 
 //  Walk wszPath (using '/' or '\' as separators, registry-style) from
 //  `root` and return the nested ucl object, or NULL if any segment is
 //  missing.  An empty path returns `root`.
-const ucl_object_t* WalkPath( const ucl_object_t* root, const WCHAR* wszPath )
+const ucl_object_t* WalkPath(const ucl_object_t* root, const WCHAR* wszPath)
 {
-    if ( root == nullptr || wszPath == nullptr )
+    if (root == nullptr || wszPath == nullptr)
     {
         return nullptr;
     }
-    char narrow[ 512 ];
-    if ( !WideToNarrowAsciiBounded( wszPath, narrow, sizeof( narrow ) ) )
+    char narrow[512];
+    if (!WideToNarrowAsciiBounded(wszPath, narrow, sizeof(narrow)))
     {
         return nullptr;
     }
-    if ( narrow[ 0 ] == '\0' )
+    if (narrow[0] == '\0')
     {
         return root;
     }
 
     const ucl_object_t* cur = root;
     char* save = nullptr;
-    for ( char* tok = strtok_r( narrow, "\\/", &save );
-          tok != nullptr && cur != nullptr;
-          tok = strtok_r( nullptr, "\\/", &save ) )
+    for (char* tok = strtok_r(narrow, "\\/", &save);
+         tok != nullptr && cur != nullptr;
+         tok = strtok_r(nullptr, "\\/", &save))
     {
-        cur = ucl_object_lookup( cur, tok );
+        cur = ucl_object_lookup(cur, tok);
     }
     return cur;
 }
@@ -176,78 +177,84 @@ const ucl_object_t* WalkPath( const ucl_object_t* root, const WCHAR* wszPath )
 //  Map ConfigStoreSubPath enum → the subkey name we use in the .conf
 //  schema.  Matches the strings Windows' config.cxx uses for the
 //  registry subkeys (m_wszSubValuePath assignments around line 455).
-const char* SubpathName( ConfigStoreSubPath cssp )
+const char* SubpathName(ConfigStoreSubPath cssp)
 {
-    switch ( cssp )
+    switch (cssp)
     {
-        case csspTop:               return "";
-        case csspSysParamDefault:   return "SysParamDefault";
-        case csspSysParamOverride:  return "SysParamOverride";
-        case csspDiag:              return "Diag";
-        default:                    return nullptr;
+        case csspTop:
+            return "";
+        case csspSysParamDefault:
+            return "SysParamDefault";
+        case csspSysParamOverride:
+            return "SysParamOverride";
+        case csspDiag:
+            return "Diag";
+        default:
+            return nullptr;
     }
 }
 
-const ucl_object_t* SubpathObject( const ucl_object_t* root, ConfigStoreSubPath cssp )
+const ucl_object_t* SubpathObject(const ucl_object_t* root, ConfigStoreSubPath cssp)
 {
-    const char* sub = SubpathName( cssp );
-    if ( sub == nullptr )
+    const char* sub = SubpathName(cssp);
+    if (sub == nullptr)
     {
         return nullptr;
     }
-    if ( sub[ 0 ] == '\0' )
+    if (sub[0] == '\0')
     {
         return root;
     }
-    return ucl_object_lookup( root, sub );
+    return ucl_object_lookup(root, sub);
 }
 
 //  Pull a numeric ucl value into a 64-bit unsigned slot.  Accepts
 //  integers, booleans, and numeric strings (decimal or 0x-prefixed
 //  hex).  Returns errNotFound when the value is missing,
 //  JET_errInvalidParameter if it's present but doesn't parse.
-ERR ReadUcl64( const ucl_object_t* sub, const char* szName, QWORD* pqw )
+ERR ReadUcl64(const ucl_object_t* sub, const char* szName, QWORD* pqw)
 {
-    if ( sub == nullptr || szName == nullptr || pqw == nullptr )
+    if (sub == nullptr || szName == nullptr || pqw == nullptr)
     {
-        return ErrERRCheck( errNotFound );
+        return ErrERRCheck(errNotFound);
     }
-    const ucl_object_t* val = ucl_object_lookup( sub, szName );
-    if ( val == nullptr )
+    const ucl_object_t* val = ucl_object_lookup(sub, szName);
+    if (val == nullptr)
     {
-        return ErrERRCheck( errNotFound );
+        return ErrERRCheck(errNotFound);
     }
     int64_t i64 = 0;
-    if ( ucl_object_toint_safe( val, &i64 ) )
+    if (ucl_object_toint_safe(val, &i64))
     {
-        *pqw = (QWORD)i64;
+        *pqw = (QWORD) i64;
         return JET_errSuccess;
     }
     bool b = false;
-    if ( ucl_object_toboolean_safe( val, &b ) )
+    if (ucl_object_toboolean_safe(val, &b))
     {
-        *pqw = b ? 1 : 0;
+        *pqw = b
+               ? 1
+               : 0;
         return JET_errSuccess;
     }
-    const char* sz = ucl_object_tostring_forced( val );
-    if ( sz != nullptr )
+    const char* sz = ucl_object_tostring_forced(val);
+    if (sz != nullptr)
     {
         errno = 0;
         char* end = nullptr;
         const unsigned long long parsed =
-            ( sz[ 0 ] == '0' && ( sz[ 1 ] == 'x' || sz[ 1 ] == 'X' ) )
-                ? strtoull( sz, &end, 16 )
-                : strtoull( sz, &end, 10 );
-        if ( errno == 0 && end != sz && *end == '\0' )
+            (sz[0] == '0' && (sz[1] == 'x' || sz[1] == 'X'))
+            ? strtoull(sz, &end, 16)
+            : strtoull(sz, &end, 10);
+        if (errno == 0 && end != sz && *end == '\0')
         {
-            *pqw = (QWORD)parsed;
+            *pqw = (QWORD) parsed;
             return JET_errSuccess;
         }
     }
-    return ErrERRCheck( JET_errInvalidParameter );
+    return ErrERRCheck(JET_errInvalidParameter);
 }
-
-}  // namespace
+} // namespace
 
 //  Real CConfigStore type — the public header forward-declares it; we
 //  fill it with a pointer to the parsed UCL object for the root path
@@ -259,215 +266,226 @@ public:
 };
 
 
-const BOOL FOSConfigGet_( __in_z const WCHAR * const wszPath,
-                          __in_z const WCHAR * const wszName,
-                          __out_bcount_z(cbBuf) WCHAR * const wszBuf,
-                          const LONG cbBuf )
+const BOOL FOSConfigGet_(__in_z const WCHAR* const wszPath,
+    __in_z const WCHAR* const wszName,
+    __out_bcount_z(cbBuf) WCHAR* const wszBuf,
+    const LONG cbBuf)
 {
-    if ( wszBuf == nullptr || cbBuf < (LONG)sizeof( WCHAR ) )
+    if (wszBuf == nullptr || cbBuf < (LONG) sizeof(WCHAR))
     {
         return fFalse;
     }
-    wszBuf[ 0 ] = L'\0';
+    wszBuf[0] = L'\0';
 
     const ucl_object_t* root = EnsureLoaded();
-    if ( root == nullptr )
+    if (root == nullptr)
     {
         return fFalse;
     }
 
-    const ucl_object_t* parent = WalkPath( root, wszPath );
-    if ( parent == nullptr )
+    const ucl_object_t* parent = WalkPath(root, wszPath);
+    if (parent == nullptr)
     {
         return fFalse;
     }
 
-    char narrowName[ 512 ];
-    if ( !WideToNarrowAsciiBounded( wszName, narrowName, sizeof( narrowName ) ) )
+    char narrowName[512];
+    if (!WideToNarrowAsciiBounded(wszName, narrowName, sizeof(narrowName)))
     {
         return fFalse;
     }
-    const ucl_object_t* val = ucl_object_lookup( parent, narrowName );
-    if ( val == nullptr )
-    {
-        return fFalse;
-    }
-
-    const char* sz = ( ucl_object_type( val ) == UCL_STRING )
-                   ? ucl_object_tostring( val )
-                   : ucl_object_tostring_forced( val );
-    if ( sz == nullptr )
+    const ucl_object_t* val = ucl_object_lookup(parent, narrowName);
+    if (val == nullptr)
     {
         return fFalse;
     }
 
-    const LONG cchBuf = cbBuf / (LONG)sizeof( WCHAR );
+    const char* sz = (ucl_object_type(val) == UCL_STRING)
+                     ? ucl_object_tostring(val)
+                     : ucl_object_tostring_forced(val);
+    if (sz == nullptr)
+    {
+        return fFalse;
+    }
+
+    const LONG cchBuf = cbBuf / (LONG) sizeof(WCHAR);
     LONG j = 0;
-    for ( ; sz[ j ] != '\0' && j + 1 < cchBuf; ++j )
+    for (; sz[j] != '\0' && j + 1 < cchBuf; ++j)
     {
-        wszBuf[ j ] = (WCHAR)(unsigned char)sz[ j ];
+        wszBuf[j] = (WCHAR) (unsigned char) sz[j];
     }
-    wszBuf[ j ] = L'\0';
+    wszBuf[j] = L'\0';
     return fTrue;
 }
 
 
-ERR ErrOSConfigStoreInit( _In_z_ const WCHAR * const wszPath,
-                          _Outptr_ CConfigStore ** ppcs )
+ERR ErrOSConfigStoreInit(_In_z_ const WCHAR* const wszPath,
+    _Outptr_ CConfigStore** ppcs)
 {
-    if ( ppcs == nullptr )
+    if (ppcs == nullptr)
     {
-        return ErrERRCheck( JET_errInvalidParameter );
+        return ErrERRCheck(JET_errInvalidParameter);
     }
     *ppcs = nullptr;
 
     const ucl_object_t* root = EnsureLoaded();
-    if ( root == nullptr )
+    if (root == nullptr)
     {
-        return ErrERRCheck( JET_errFeatureNotAvailable );
+        return ErrERRCheck(JET_errFeatureNotAvailable);
     }
 
-    const ucl_object_t* storeRoot = WalkPath( root, wszPath );
-    if ( storeRoot == nullptr )
+    const ucl_object_t* storeRoot = WalkPath(root, wszPath);
+    if (storeRoot == nullptr)
     {
-        return ErrERRCheck( JET_errFileNotFound );
+        return ErrERRCheck(JET_errFileNotFound);
     }
 
     CConfigStore* pcs = new CConfigStore();
-    if ( pcs == nullptr )
+    if (pcs == nullptr)
     {
-        return ErrERRCheck( JET_errOutOfMemory );
+        return ErrERRCheck(JET_errOutOfMemory);
     }
     pcs->m_root = storeRoot;
     *ppcs = pcs;
     return JET_errSuccess;
 }
 
-void OSConfigStoreTerm( _In_ CConfigStore * pcs )
+void OSConfigStoreTerm(_In_ CConfigStore* pcs)
 {
     delete pcs;
 }
 
 
-BOOL FConfigValuePresent( _In_ CConfigStore * const pcs,
-                          ConfigStoreSubPath cssp,
-                          _In_z_ const WCHAR * const wszValueName )
+BOOL FConfigValuePresent(_In_ CConfigStore* const pcs,
+    ConfigStoreSubPath cssp,
+    _In_z_ const WCHAR* const wszValueName)
 {
-    if ( pcs == nullptr )
+    if (pcs == nullptr)
     {
         return fFalse;
     }
-    const ucl_object_t* sub = SubpathObject( pcs->m_root, cssp );
-    if ( sub == nullptr )
+    const ucl_object_t* sub = SubpathObject(pcs->m_root, cssp);
+    if (sub == nullptr)
     {
         return fFalse;
     }
-    char name[ 512 ];
-    if ( !WideToNarrowAsciiBounded( wszValueName, name, sizeof( name ) ) )
+    char name[512];
+    if (!WideToNarrowAsciiBounded(wszValueName, name, sizeof(name)))
     {
         return fFalse;
     }
-    return ucl_object_lookup( sub, name ) != nullptr ? fTrue : fFalse;
+    return ucl_object_lookup(sub, name) != nullptr
+           ? fTrue
+           : fFalse;
 }
 
-BOOL FConfigValuePresent( _In_ CConfigStore * const pcs,
-                          ConfigStoreSubPath cssp,
-                          _In_z_ const CHAR * const szValueName )
+BOOL FConfigValuePresent(_In_ CConfigStore* const pcs,
+    ConfigStoreSubPath cssp,
+    _In_z_ const CHAR* const szValueName)
 {
-    if ( pcs == nullptr || szValueName == nullptr )
+    if (pcs == nullptr || szValueName == nullptr)
     {
         return fFalse;
     }
-    const ucl_object_t* sub = SubpathObject( pcs->m_root, cssp );
-    if ( sub == nullptr )
+    const ucl_object_t* sub = SubpathObject(pcs->m_root, cssp);
+    if (sub == nullptr)
     {
         return fFalse;
     }
-    return ucl_object_lookup( sub, szValueName ) != nullptr ? fTrue : fFalse;
+    return ucl_object_lookup(sub, szValueName) != nullptr
+           ? fTrue
+           : fFalse;
 }
 
 
-ERR ErrConfigReadValue( _In_ CConfigStore * const pcs,
-                        ConfigStoreSubPath cssp,
-                        _In_z_ const WCHAR * const wszValueName,
-                        _Out_ QWORD * pqwValue )
+ERR ErrConfigReadValue(_In_ CConfigStore* const pcs,
+    ConfigStoreSubPath cssp,
+    _In_z_ const WCHAR* const wszValueName,
+    _Out_ QWORD* pqwValue)
 {
-    if ( pcs == nullptr || pqwValue == nullptr )
+    if (pcs == nullptr || pqwValue == nullptr)
     {
-        return ErrERRCheck( errNotFound );
+        return ErrERRCheck(errNotFound);
     }
-    const ucl_object_t* sub = SubpathObject( pcs->m_root, cssp );
-    if ( sub == nullptr )
+    const ucl_object_t* sub = SubpathObject(pcs->m_root, cssp);
+    if (sub == nullptr)
     {
-        return ErrERRCheck( errNotFound );
+        return ErrERRCheck(errNotFound);
     }
-    char name[ 512 ];
-    if ( !WideToNarrowAsciiBounded( wszValueName, name, sizeof( name ) ) )
+    char name[512];
+    if (!WideToNarrowAsciiBounded(wszValueName, name, sizeof(name)))
     {
-        return ErrERRCheck( errNotFound );
+        return ErrERRCheck(errNotFound);
     }
-    return ReadUcl64( sub, name, pqwValue );
+    return ReadUcl64(sub, name, pqwValue);
 }
 
-ERR ErrConfigReadValue( _In_ CConfigStore * const pcs,
-                        ConfigStoreSubPath cssp,
-                        _In_z_ const WCHAR * const wszValueName,
-                        _Out_ ULONG * pulValue )
+ERR ErrConfigReadValue(_In_ CConfigStore* const pcs,
+    ConfigStoreSubPath cssp,
+    _In_z_ const WCHAR* const wszValueName,
+    _Out_ ULONG* pulValue)
 {
-    if ( pulValue == nullptr )
+    if (pulValue == nullptr)
     {
-        return ErrERRCheck( errNotFound );
+        return ErrERRCheck(errNotFound);
     }
     QWORD qw = 0;
-    const ERR err = ErrConfigReadValue( pcs, cssp, wszValueName, &qw );
-    if ( err < JET_errSuccess )
+    const ERR err = ErrConfigReadValue(pcs, cssp, wszValueName, &qw);
+    if (err < JET_errSuccess)
     {
         return err;
     }
-    *pulValue = (ULONG)qw;
+    *pulValue = (ULONG) qw;
     return JET_errSuccess;
 }
 
-ERR ErrConfigReadValue( _In_ CConfigStore * const pcs,
-                        ConfigStoreSubPath cssp,
-                        _In_z_ const CHAR * const szValueName,
-                        _Out_ QWORD * pqwValue )
+ERR ErrConfigReadValue(_In_ CConfigStore* const pcs,
+    ConfigStoreSubPath cssp,
+    _In_z_ const CHAR* const szValueName,
+    _Out_ QWORD* pqwValue)
 {
-    if ( pcs == nullptr || pqwValue == nullptr || szValueName == nullptr )
+    if (pcs == nullptr || pqwValue == nullptr || szValueName == nullptr)
     {
-        return ErrERRCheck( errNotFound );
+        return ErrERRCheck(errNotFound);
     }
-    const ucl_object_t* sub = SubpathObject( pcs->m_root, cssp );
-    if ( sub == nullptr )
+    const ucl_object_t* sub = SubpathObject(pcs->m_root, cssp);
+    if (sub == nullptr)
     {
-        return ErrERRCheck( errNotFound );
+        return ErrERRCheck(errNotFound);
     }
-    return ReadUcl64( sub, szValueName, pqwValue );
+    return ReadUcl64(sub, szValueName, pqwValue);
 }
 
-ERR ErrConfigReadValue( _In_ CConfigStore * const pcs,
-                        ConfigStoreSubPath cssp,
-                        _In_z_ const CHAR * const szValueName,
-                        _Out_ ULONG * pulValue )
+ERR ErrConfigReadValue(_In_ CConfigStore* const pcs,
+    ConfigStoreSubPath cssp,
+    _In_z_ const CHAR* const szValueName,
+    _Out_ ULONG* pulValue)
 {
-    if ( pulValue == nullptr )
+    if (pulValue == nullptr)
     {
-        return ErrERRCheck( errNotFound );
+        return ErrERRCheck(errNotFound);
     }
     QWORD qw = 0;
-    const ERR err = ErrConfigReadValue( pcs, cssp, szValueName, &qw );
-    if ( err < JET_errSuccess )
+    const ERR err = ErrConfigReadValue(pcs, cssp, szValueName, &qw);
+    if (err < JET_errSuccess)
     {
         return err;
     }
-    *pulValue = (ULONG)qw;
+    *pulValue = (ULONG) qw;
     return JET_errSuccess;
 }
 
 
 //  Lifecycle
 
-void OSConfigPostterm()    {}
-BOOL FOSConfigPreinit()    { return fTrue; }
-void OSConfigTerm()        {}
-ERR  ErrOSConfigInit()     { return JET_errSuccess; }
+void OSConfigPostterm()
+{
+}
+
+BOOL FOSConfigPreinit() { return fTrue; }
+
+void OSConfigTerm()
+{
+}
+
+ERR ErrOSConfigInit() { return JET_errSuccess; }

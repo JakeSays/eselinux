@@ -18,10 +18,17 @@
 ////////////////////////////////////////////////
 //  Lifecycle
 
-void OSEventTracePostterm() {}
+void OSEventTracePostterm()
+{
+}
+
 BOOL FOSEventTracePreinit() { return fTrue; }
-void OSEventTraceTerm()     {}
-ERR  ErrOSEventTraceInit()  { return JET_errSuccess; }
+
+void OSEventTraceTerm()
+{
+}
+
+ERR ErrOSEventTraceInit() { return JET_errSuccess; }
 
 
 ////////////////////////////////////////////////
@@ -40,54 +47,54 @@ ERR  ErrOSEventTraceInit()  { return JET_errSuccess; }
 
 namespace
 {
-
-void EmitEventLogLine( const char* szSev, const wchar_t* wsz )
+void EmitEventLogLine(const char* szSev, const wchar_t* wsz)
 {
-    if ( wsz == nullptr )
+    if (wsz == nullptr)
     {
         return;
     }
-    char nbuf[ 8192 ];
-    const int cbN = WideCharToMultiByte( CP_UTF8, 0, wsz, -1,
-                                         nbuf, (int)sizeof( nbuf ),
-                                         nullptr, nullptr );
-    if ( cbN <= 0 )
+    char nbuf[8192];
+    const int cbN = WideCharToMultiByte(CP_UTF8, 0, wsz, -1,
+        nbuf, (int) sizeof(nbuf),
+        nullptr, nullptr);
+    if (cbN <= 0)
     {
         return;
     }
     //  cbN includes the trailing NUL; trim it from the write.
-    const size_t cb = (size_t)( cbN - 1 );
-    fprintf( stderr, "[ese %s] ", szSev );
-    fwrite( nbuf, 1, cb, stderr );
-    fputc( '\n', stderr );
+    const size_t cb = (size_t) (cbN - 1);
+    fprintf(stderr, "[ese %s] ", szSev);
+    fwrite(nbuf, 1, cb, stderr);
+    fputc('\n', stderr);
 }
+} // namespace
 
-}  // namespace
-
-void __cdecl OSEventTrace_( const ULONG etguid,
-                            const size_t cData,
-                            ... )
+void __cdecl OSEventTrace_(const ULONG etguid,
+    const size_t cData,
+    ...)
 {
-    if ( etguid != _etguidEventLogInfo &&
-         etguid != _etguidEventLogWarn &&
-         etguid != _etguidEventLogError )
+    if (etguid != _etguidEventLogInfo &&
+        etguid != _etguidEventLogWarn &&
+        etguid != _etguidEventLogError)
     {
         return;
     }
-    if ( cData < 1 )
+    if (cData < 1)
     {
         return;
     }
 
     va_list ap;
-    va_start( ap, cData );
-    const wchar_t* wsz = va_arg( ap, const wchar_t* );
-    va_end( ap );
+    va_start(ap, cData);
+    const wchar_t* wsz = va_arg(ap, const wchar_t*);
+    va_end(ap);
 
-    const char* sev = ( etguid == _etguidEventLogError ) ? "ERROR"
-                    : ( etguid == _etguidEventLogWarn  ) ? "WARN"
-                    :                                       "INFO";
-    EmitEventLogLine( sev, wsz );
+    const char* sev = (etguid == _etguidEventLogError)
+                      ? "ERROR"
+                      : (etguid == _etguidEventLogWarn)
+                        ? "WARN"
+                        : "INFO";
+    EmitEventLogLine(sev, wsz);
 }
 
 
@@ -105,20 +112,32 @@ void __cdecl OSEventTrace_( const ULONG etguid,
 //  there, so the engine links for code paths that use the templated
 //  form (e.g. `FOSEventTraceEnabled< _etguidCacheRequestPage >()`).
 
-template BOOL FOSEventTraceEnabled< _etguidCacheRequestPage >();
-template BOOL FOSEventTraceEnabled< _etguidCacheMemoryUsage >();
-template BOOL FOSEventTraceEnabled< _etguidInstStationId >();
-template BOOL FOSEventTraceEnabled< _etguidDiskStationId >();
-template BOOL FOSEventTraceEnabled< _etguidFileStationId >();
-template BOOL FOSEventTraceEnabled< _etguidSysStationId >();
-template BOOL FOSEventTraceEnabled< _etguidIsamDbfilehdrInfo >();
-template BOOL FOSEventTraceEnabled< _etguidFmpStationId >();
+template BOOL FOSEventTraceEnabled<_etguidCacheRequestPage>();
+
+template BOOL FOSEventTraceEnabled<_etguidCacheMemoryUsage>();
+
+template BOOL FOSEventTraceEnabled<_etguidInstStationId>();
+
+template BOOL FOSEventTraceEnabled<_etguidDiskStationId>();
+
+template BOOL FOSEventTraceEnabled<_etguidFileStationId>();
+
+template BOOL FOSEventTraceEnabled<_etguidSysStationId>();
+
+template BOOL FOSEventTraceEnabled<_etguidIsamDbfilehdrInfo>();
+
+template BOOL FOSEventTraceEnabled<_etguidFmpStationId>();
 
 //  FAnnounceTime is INLINE in the header — only the explicit template
 //  instantiations are needed here.
-template BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidInstStationId >( const TraceStationIdentificationReason );
-template BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidDiskStationId >( const TraceStationIdentificationReason );
-template BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidFileStationId >( const TraceStationIdentificationReason );
-template BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidSysStationId >( const TraceStationIdentificationReason );
-template BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidIsamDbfilehdrInfo >( const TraceStationIdentificationReason );
-template BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidFmpStationId >( const TraceStationIdentificationReason );
+template BOOL COSEventTraceIdCheck::FAnnounceTime<_etguidInstStationId>(const TraceStationIdentificationReason);
+
+template BOOL COSEventTraceIdCheck::FAnnounceTime<_etguidDiskStationId>(const TraceStationIdentificationReason);
+
+template BOOL COSEventTraceIdCheck::FAnnounceTime<_etguidFileStationId>(const TraceStationIdentificationReason);
+
+template BOOL COSEventTraceIdCheck::FAnnounceTime<_etguidSysStationId>(const TraceStationIdentificationReason);
+
+template BOOL COSEventTraceIdCheck::FAnnounceTime<_etguidIsamDbfilehdrInfo>(const TraceStationIdentificationReason);
+
+template BOOL COSEventTraceIdCheck::FAnnounceTime<_etguidFmpStationId>(const TraceStationIdentificationReason);
