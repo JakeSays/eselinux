@@ -23,6 +23,7 @@ enum class HandleKind : int
     File,
     FindFile,
     FindVolume,
+    FileMapping,
 };
 
 struct KObject
@@ -69,6 +70,11 @@ struct KObject
     char*     findBaseDir;           // owned narrow UTF-8 directory the wildcard resolved to
     char*     findPattern;           // owned narrow UTF-8 pattern (basename of path); null = "*"
     int       findVolumeIndex;       // FindNextVolumeW iteration cursor
+
+    // ---- FileMapping (CreateFileMappingW result) ----
+    int       mappingFd;             // dup'd file fd; closed when the mapping handle is closed
+    DWORD     mappingProtect;        // PAGE_READONLY / PAGE_READWRITE (translated to mmap PROT)
+    QWORD     mappingMaxSize;        // max view size; 0 means "to end of file"
 };
 
 KObject* AllocKObject( HandleKind kind );

@@ -30,14 +30,17 @@
 //
 // Engine call sites only consume dwPageSize / dwNumberOfProcessors.
 
-extern "C" void GetSystemInfo( LPSYSTEM_INFO si )
+extern "C" void GetSystemInfo(LPSYSTEM_INFO si)
 {
-    if ( !si ) return;
-    memset( si, 0, sizeof( *si ) );
-    si->dwPageSize             = (DWORD)sysconf( _SC_PAGESIZE );
+    if (!si)
+        return;
+    memset(si, 0, sizeof(*si));
+    si->dwPageSize = (DWORD) sysconf(_SC_PAGESIZE);
     si->dwAllocationGranularity = si->dwPageSize;
-    long n = sysconf( _SC_NPROCESSORS_ONLN );
-    si->dwNumberOfProcessors   = ( n > 0 ) ? (DWORD)n : 1;
+    long n = sysconf(_SC_NPROCESSORS_ONLN);
+    si->dwNumberOfProcessors = (n > 0)
+                               ? (DWORD) n
+                               : 1;
 }
 
 
@@ -52,118 +55,143 @@ extern "C" void GetSystemInfo( LPSYSTEM_INFO si )
 
 namespace
 {
-    bool WideToUtf8( const wchar_t* src, char* out, size_t cbOut )
+bool WideToUtf8(const wchar_t* src, char* out, size_t cbOut)
+{
+    if (!src || !out || cbOut == 0)
+        return false;
+    size_t i = 0;
+    for (const wchar_t* p = src; *p; ++p)
     {
-        if ( !src || !out || cbOut == 0 ) return false;
-        size_t i = 0;
-        for ( const wchar_t* p = src; *p; ++p )
+        wchar_t w = *p;
+        if (w < 0x80)
         {
-            wchar_t w = *p;
-            if ( w < 0x80 )
-            {
-                if ( i + 1 >= cbOut ) return false;
-                out[ i++ ] = (char)w;
-            }
-            else if ( w < 0x800 )
-            {
-                if ( i + 2 >= cbOut ) return false;
-                out[ i++ ] = (char)( 0xC0 | ( w >> 6 ) );
-                out[ i++ ] = (char)( 0x80 | ( w & 0x3F ) );
-            }
-            else
-            {
-                if ( i + 3 >= cbOut ) return false;
-                out[ i++ ] = (char)( 0xE0 | ( w >> 12 ) );
-                out[ i++ ] = (char)( 0x80 | ( ( w >> 6 ) & 0x3F ) );
-                out[ i++ ] = (char)( 0x80 | ( w & 0x3F ) );
-            }
+            if (i + 1 >= cbOut)
+                return false;
+            out[i++] = (char) w;
         }
-        out[ i ] = '\0';
-        return true;
+        else if (w < 0x800)
+        {
+            if (i + 2 >= cbOut)
+                return false;
+            out[i++] = (char) (0xC0 | (w >> 6));
+            out[i++] = (char) (0x80 | (w & 0x3F));
+        }
+        else
+        {
+            if (i + 3 >= cbOut)
+                return false;
+            out[i++] = (char) (0xE0 | (w >> 12));
+            out[i++] = (char) (0x80 | ((w >> 6) & 0x3F));
+            out[i++] = (char) (0x80 | (w & 0x3F));
+        }
     }
+    out[i] = '\0';
+    return true;
+}
 }
 
 extern "C" BOOL CopyFileExW(
-    const wchar_t*     lpExistingFileName,
-    const wchar_t*     lpNewFileName,
+    const wchar_t* lpExistingFileName,
+    const wchar_t* lpNewFileName,
     LPPROGRESS_ROUTINE lpProgressRoutine,
-    LPVOID             lpData,
-    LPBOOL             pbCancel,
-    DWORD              dwCopyFlags )
+    LPVOID lpData,
+    LPBOOL pbCancel,
+    DWORD dwCopyFlags)
 {
-    char szSrc[ PATH_MAX ];
-    char szDst[ PATH_MAX ];
-    if ( !WideToUtf8( lpExistingFileName, szSrc, sizeof( szSrc ) ) ) return FALSE;
-    if ( !WideToUtf8( lpNewFileName,      szDst, sizeof( szDst ) ) ) return FALSE;
+    char szSrc[PATH_MAX];
+    char szDst[PATH_MAX];
+    if (!WideToUtf8(lpExistingFileName, szSrc, sizeof(szSrc)))
+        return FALSE;
+    if (!WideToUtf8(lpNewFileName, szDst, sizeof(szDst)))
+        return FALSE;
 
     int oflags = O_WRONLY | O_CREAT | O_TRUNC;
-    if ( dwCopyFlags & COPY_FILE_FAIL_IF_EXISTS ) oflags |= O_EXCL;
+    if (dwCopyFlags & COPY_FILE_FAIL_IF_EXISTS)
+        oflags |= O_EXCL;
 
-    int fdSrc = open( szSrc, O_RDONLY );
-    if ( fdSrc < 0 ) return FALSE;
+    int fdSrc = open(szSrc, O_RDONLY);
+    if (fdSrc < 0)
+        return FALSE;
 
     struct stat st;
-    if ( fstat( fdSrc, &st ) != 0 ) { close( fdSrc ); return FALSE; }
-
-    int fdDst = open( szDst, oflags, st.st_mode & 0777 );
-    if ( fdDst < 0 ) { close( fdSrc ); return FALSE; }
-
-    LARGE_INTEGER liTotal;       liTotal.QuadPart       = st.st_size;
-    LARGE_INTEGER liStreamSize;  liStreamSize.QuadPart  = st.st_size;
-    LARGE_INTEGER liTransferred; liTransferred.QuadPart = 0;
-
-    if ( lpProgressRoutine )
+    if (fstat(fdSrc, &st) != 0)
     {
-        DWORD r = lpProgressRoutine( liTotal, liTransferred, liStreamSize, liTransferred,
-                                     1, CALLBACK_STREAM_SWITCH, (HANDLE)(intptr_t)fdSrc,
-                                     (HANDLE)(intptr_t)fdDst, lpData );
-        if ( r == PROGRESS_CANCEL || r == PROGRESS_STOP )
+        close(fdSrc);
+        return FALSE;
+    }
+
+    int fdDst = open(szDst, oflags, st.st_mode & 0777);
+    if (fdDst < 0)
+    {
+        close(fdSrc);
+        return FALSE;
+    }
+
+    LARGE_INTEGER liTotal;
+    liTotal.QuadPart = st.st_size;
+    LARGE_INTEGER liStreamSize;
+    liStreamSize.QuadPart = st.st_size;
+    LARGE_INTEGER liTransferred;
+    liTransferred.QuadPart = 0;
+
+    if (lpProgressRoutine)
+    {
+        DWORD r = lpProgressRoutine(liTotal, liTransferred, liStreamSize, liTransferred,
+            1, CALLBACK_STREAM_SWITCH, (HANDLE) (intptr_t) fdSrc,
+            (HANDLE) (intptr_t) fdDst, lpData);
+        if (r == PROGRESS_CANCEL || r == PROGRESS_STOP)
         {
-            close( fdSrc );
-            close( fdDst );
-            unlink( szDst );
+            close(fdSrc);
+            close(fdDst);
+            unlink(szDst);
             return FALSE;
         }
     }
 
     off_t off = 0;
-    while ( off < st.st_size )
+    while (off < st.st_size)
     {
-        if ( pbCancel && *pbCancel )
+        if (pbCancel && *pbCancel)
         {
-            close( fdSrc );
-            close( fdDst );
-            unlink( szDst );
+            close(fdSrc);
+            close(fdDst);
+            unlink(szDst);
             return FALSE;
         }
 
-        size_t  cbChunk = (size_t)( st.st_size - off );
-        if ( cbChunk > ( 1u << 20 ) ) cbChunk = ( 1u << 20 );
-        ssize_t n = sendfile( fdDst, fdSrc, &off, cbChunk );
-        if ( n < 0 )
+        size_t cbChunk = (size_t) (st.st_size - off);
+        if (cbChunk > (1u << 20))
+            cbChunk = (1u << 20);
+        ssize_t n = sendfile(fdDst, fdSrc, &off, cbChunk);
+        if (n < 0)
         {
-            if ( errno == EINTR ) continue;
-            close( fdSrc ); close( fdDst ); unlink( szDst );
+            if (errno == EINTR)
+                continue;
+            close(fdSrc);
+            close(fdDst);
+            unlink(szDst);
             return FALSE;
         }
 
         liTransferred.QuadPart = off;
 
-        if ( lpProgressRoutine )
+        if (lpProgressRoutine)
         {
-            DWORD r = lpProgressRoutine( liTotal, liTransferred, liStreamSize, liTransferred,
-                                         1, CALLBACK_CHUNK_FINISHED, (HANDLE)(intptr_t)fdSrc,
-                                         (HANDLE)(intptr_t)fdDst, lpData );
-            if ( r == PROGRESS_CANCEL || r == PROGRESS_STOP )
+            DWORD r = lpProgressRoutine(liTotal, liTransferred, liStreamSize, liTransferred,
+                1, CALLBACK_CHUNK_FINISHED, (HANDLE) (intptr_t) fdSrc,
+                (HANDLE) (intptr_t) fdDst, lpData);
+            if (r == PROGRESS_CANCEL || r == PROGRESS_STOP)
             {
-                close( fdSrc ); close( fdDst ); unlink( szDst );
+                close(fdSrc);
+                close(fdDst);
+                unlink(szDst);
                 return FALSE;
             }
         }
     }
 
-    close( fdSrc );
-    close( fdDst );
+    close(fdSrc);
+    close(fdDst);
     return TRUE;
 }
 
@@ -176,100 +204,173 @@ extern "C" BOOL CopyFileExW(
 // before they're created. Implementation: if the path is already absolute,
 // just copy it; otherwise prepend cwd.
 
-extern "C" wchar_t* _wfullpath( wchar_t* absPath, const wchar_t* relPath, size_t cchMax )
+extern "C" wchar_t* _wfullpath(wchar_t* absPath, const wchar_t* relPath, size_t cchMax)
 {
-    if ( !relPath || cchMax == 0 ) return nullptr;
+    if (!relPath || cchMax == 0)
+        return nullptr;
 
-    static thread_local wchar_t s_buf[ PATH_MAX ];
-    wchar_t* dst = absPath ? absPath : s_buf;
-    size_t   cap = absPath ? cchMax  : ( sizeof( s_buf ) / sizeof( s_buf[ 0 ] ) );
+    static thread_local wchar_t s_buf[PATH_MAX];
+    wchar_t* dst = absPath
+                   ? absPath
+                   : s_buf;
+    size_t cap = absPath
+                 ? cchMax
+                 : (sizeof(s_buf) / sizeof(s_buf[0]));
 
-    auto AppendNarrow = [&]( const char* sz, size_t& i ) -> bool
+    auto AppendNarrow = [&](const char* sz, size_t& i) -> bool
     {
-        for ( ; *sz; ++sz )
+        for (; *sz; ++sz)
         {
-            if ( i + 1 >= cap ) return false;
-            dst[ i++ ] = (wchar_t)(unsigned char)*sz;
+            if (i + 1 >= cap)
+                return false;
+            dst[i++] = (wchar_t) (unsigned char) *sz;
         }
         return true;
     };
 
-    auto AppendWide = [&]( const wchar_t* w, size_t& i ) -> bool
+    auto AppendWide = [&](const wchar_t* w, size_t& i) -> bool
     {
-        for ( ; *w; ++w )
+        for (; *w; ++w)
         {
-            if ( i + 1 >= cap ) return false;
-            dst[ i++ ] = *w;
+            if (i + 1 >= cap)
+                return false;
+            dst[i++] = *w;
         }
         return true;
     };
 
     size_t i = 0;
-    if ( relPath[ 0 ] != L'/' )
+    if (relPath[0] != L'/')
     {
-        char szCwd[ PATH_MAX ];
-        if ( !getcwd( szCwd, sizeof( szCwd ) ) ) return nullptr;
-        if ( !AppendNarrow( szCwd, i ) ) return nullptr;
-        if ( i + 1 >= cap ) return nullptr;
-        dst[ i++ ] = L'/';
+        char szCwd[PATH_MAX];
+        if (!getcwd(szCwd, sizeof(szCwd)))
+            return nullptr;
+        if (!AppendNarrow(szCwd, i))
+            return nullptr;
+        if (i + 1 >= cap)
+            return nullptr;
+        dst[i++] = L'/';
     }
-    if ( !AppendWide( relPath, i ) ) return nullptr;
-    dst[ i ] = L'\0';
+    if (!AppendWide(relPath, i))
+        return nullptr;
+    dst[i] = L'\0';
     return dst;
 }
 
 
 // ---- wcscpy_s / wcscat_s --------------------------------------------------
 
-extern "C" errno_t wcscpy_s( wchar_t* dst, size_t cchDst, const wchar_t* src )
+extern "C" errno_t wcscpy_s(wchar_t* dst, size_t cchDst, const wchar_t* src)
 {
-    if ( !dst || cchDst == 0 )                     return EINVAL;
-    if ( !src ) { dst[ 0 ] = L'\0'; return EINVAL; }
-    size_t i = 0;
-    while ( src[ i ] && i + 1 < cchDst ) { dst[ i ] = src[ i ]; ++i; }
-    dst[ i ] = L'\0';
-    return src[ i ] ? ERANGE : 0;
-}
-
-extern "C" errno_t wcscat_s( wchar_t* dst, size_t cchDst, const wchar_t* src )
-{
-    if ( !dst || cchDst == 0 || !src ) return EINVAL;
-    size_t lenDst = 0;
-    while ( lenDst < cchDst && dst[ lenDst ] ) ++lenDst;
-    if ( lenDst == cchDst ) return EINVAL;  // unterminated
-    return wcscpy_s( dst + lenDst, cchDst - lenDst, src );
-}
-
-extern "C" errno_t strcpy_s( char* dst, size_t cchDst, const char* src )
-{
-    if ( !dst || cchDst == 0 )                     return EINVAL;
-    if ( !src ) { dst[ 0 ] = '\0'; return EINVAL; }
-    size_t i = 0;
-    while ( src[ i ] && i + 1 < cchDst ) { dst[ i ] = src[ i ]; ++i; }
-    dst[ i ] = '\0';
-    return src[ i ] ? ERANGE : 0;
-}
-
-extern "C" errno_t strcat_s( char* dst, size_t cchDst, const char* src )
-{
-    if ( !dst || cchDst == 0 || !src ) return EINVAL;
-    size_t lenDst = 0;
-    while ( lenDst < cchDst && dst[ lenDst ] ) ++lenDst;
-    if ( lenDst == cchDst ) return EINVAL;
-    return strcpy_s( dst + lenDst, cchDst - lenDst, src );
-}
-
-extern "C" errno_t _wcsupr_s( wchar_t* str, size_t cchStr )
-{
-    if ( !str || cchStr == 0 ) return EINVAL;
-    size_t i = 0;
-    while ( i < cchStr && str[ i ] )
+    if (!dst || cchDst == 0)
+        return EINVAL;
+    if (!src)
     {
-        wchar_t c = str[ i ];
-        if ( c >= L'a' && c <= L'z' ) str[ i ] = (wchar_t)( c - L'a' + L'A' );
+        dst[0] = L'\0';
+        return EINVAL;
+    }
+    size_t i = 0;
+    while (src[i] && i + 1 < cchDst)
+    {
+        dst[i] = src[i];
         ++i;
     }
-    return ( i == cchStr ) ? EINVAL : 0;
+    dst[i] = L'\0';
+    return src[i]
+           ? ERANGE
+           : 0;
+}
+
+extern "C" errno_t wcscat_s(wchar_t* dst, size_t cchDst, const wchar_t* src)
+{
+    if (!dst || cchDst == 0 || !src)
+        return EINVAL;
+    size_t lenDst = 0;
+    while (lenDst < cchDst && dst[lenDst])
+        ++lenDst;
+    if (lenDst == cchDst)
+        return EINVAL; // unterminated
+    return wcscpy_s(dst + lenDst, cchDst - lenDst, src);
+}
+
+extern "C" errno_t strcpy_s(char* dst, size_t cchDst, const char* src)
+{
+    if (!dst || cchDst == 0)
+        return EINVAL;
+    if (!src)
+    {
+        dst[0] = '\0';
+        return EINVAL;
+    }
+    size_t i = 0;
+    while (src[i] && i + 1 < cchDst)
+    {
+        dst[i] = src[i];
+        ++i;
+    }
+    dst[i] = '\0';
+    return src[i]
+           ? ERANGE
+           : 0;
+}
+
+extern "C" errno_t strcat_s(char* dst, size_t cchDst, const char* src)
+{
+    if (!dst || cchDst == 0 || !src)
+        return EINVAL;
+    size_t lenDst = 0;
+    while (lenDst < cchDst && dst[lenDst])
+        ++lenDst;
+    if (lenDst == cchDst)
+        return EINVAL;
+    return strcpy_s(dst + lenDst, cchDst - lenDst, src);
+}
+
+extern "C" errno_t memmove_s(void* dst, size_t cbDst, const void* src, size_t cb)
+{
+    if (!dst || (cb && !src))
+        return EINVAL;
+    if (cb > cbDst)
+        return ERANGE;
+    memmove(dst, src, cb);
+    return 0;
+}
+
+extern "C" errno_t memcpy_s(void* dst, size_t cbDst, const void* src, size_t cb)
+{
+    if (!dst || (cb && !src))
+        return EINVAL;
+    if (cb > cbDst)
+        return ERANGE;
+    memcpy(dst, src, cb);
+    return 0;
+}
+
+extern "C" errno_t wmemmove_s(wchar_t* dst, size_t cchDst, const wchar_t* src, size_t cch)
+{
+    return memmove_s(dst, cchDst * sizeof(wchar_t), src, cch * sizeof(wchar_t));
+}
+
+extern "C" errno_t wmemcpy_s(wchar_t* dst, size_t cchDst, const wchar_t* src, size_t cch)
+{
+    return memcpy_s(dst, cchDst * sizeof(wchar_t), src, cch * sizeof(wchar_t));
+}
+
+extern "C" errno_t _wcsupr_s(wchar_t* str, size_t cchStr)
+{
+    if (!str || cchStr == 0)
+        return EINVAL;
+    size_t i = 0;
+    while (i < cchStr && str[i])
+    {
+        wchar_t c = str[i];
+        if (c >= L'a' && c <= L'z')
+            str[i] = (wchar_t) (c - L'a' + L'A');
+        ++i;
+    }
+    return (i == cchStr)
+           ? EINVAL
+           : 0;
 }
 
 
@@ -282,69 +383,104 @@ extern "C" errno_t _wcsupr_s( wchar_t* str, size_t cchStr )
 
 namespace
 {
-    bool ScanInt64( const wchar_t*& p, long long& out, bool unsignedOnly )
+bool ScanInt64(const wchar_t*& p, long long& out, bool unsignedOnly)
+{
+    while (*p == L' ' || *p == L'\t')
+        ++p;
+    bool neg = false;
+    if (!unsignedOnly && (*p == L'-' || *p == L'+'))
     {
-        while ( *p == L' ' || *p == L'\t' ) ++p;
-        bool neg = false;
-        if ( !unsignedOnly && ( *p == L'-' || *p == L'+' ) ) { neg = ( *p == L'-' ); ++p; }
-        if ( *p < L'0' || *p > L'9' ) return false;
-        long long v = 0;
-        while ( *p >= L'0' && *p <= L'9' ) { v = v * 10 + ( *p - L'0' ); ++p; }
-        out = neg ? -v : v;
-        return true;
+        neg = (*p == L'-');
+        ++p;
     }
+    if (*p < L'0' || *p > L'9')
+        return false;
+    long long v = 0;
+    while (*p >= L'0' && *p <= L'9')
+    {
+        v = v * 10 + (*p - L'0');
+        ++p;
+    }
+    out = neg
+          ? -v
+          : v;
+    return true;
+}
 }
 
-extern "C" int _snwscanf_s( const wchar_t* buf, size_t /*cchCount*/, const wchar_t* fmt, ... )
+extern "C" int _snwscanf_s(const wchar_t* buf, size_t /*cchCount*/, const wchar_t* fmt, ...)
 {
     va_list args;
-    va_start( args, fmt );
-    int          cAssigned = 0;
+    va_start(args, fmt);
+    int cAssigned = 0;
     const wchar_t* p = buf;
     const wchar_t* f = fmt;
 
-    while ( *f )
+    while (*f)
     {
-        if ( *f == L' ' || *f == L'\t' )
+        if (*f == L' ' || *f == L'\t')
         {
-            while ( *p == L' ' || *p == L'\t' ) ++p;
+            while (*p == L' ' || *p == L'\t')
+                ++p;
             ++f;
             continue;
         }
-        if ( *f != L'%' )
+        if (*f != L'%')
         {
-            if ( *p != *f ) break;
-            ++p; ++f;
+            if (*p != *f)
+                break;
+            ++p;
+            ++f;
             continue;
         }
 
-        ++f;  // skip '%'
+        ++f; // skip '%'
         bool isLong = false;
-        bool isLL   = false;
-        if ( f[ 0 ] == L'I' && f[ 1 ] == L'6' && f[ 2 ] == L'4' ) { isLL = true; f += 3; }
-        else if ( *f == L'l' ) { ++f; if ( *f == L'l' ) { isLL = true; ++f; } else isLong = true; }
+        bool isLL = false;
+        if (f[0] == L'I' && f[1] == L'6' && f[2] == L'4')
+        {
+            isLL = true;
+            f += 3;
+        }
+        else
+            if (*f == L'l')
+            {
+                ++f;
+                if (*f == L'l')
+                {
+                    isLL = true;
+                    ++f;
+                }
+                else
+                    isLong = true;
+            }
 
         wchar_t conv = *f++;
-        switch ( conv )
+        switch (conv)
         {
             case L'd':
             case L'u':
             {
                 long long v = 0;
-                if ( !ScanInt64( p, v, conv == L'u' ) ) goto done;
-                if ( isLL )    *va_arg( args, long long* )    = v;
-                else if ( isLong ) *va_arg( args, long* )      = (long)v;
-                else              *va_arg( args, int* )        = (int)v;
+                if (!ScanInt64(p, v, conv == L'u'))
+                    goto done;
+                if (isLL)
+                    *va_arg(args, long long*) = v;
+                else if (isLong)
+                    *va_arg(args, long*) = (long) v;
+                else
+                    *va_arg(args, int*) = (int) v;
                 ++cAssigned;
                 break;
             }
             case L'c':
             {
-                if ( *p == L'\0' ) goto done;
-                *va_arg( args, wchar_t* ) = *p++;
+                if (*p == L'\0')
+                    goto done;
+                *va_arg(args, wchar_t*) = *p++;
                 // Caller passes a buffer-size arg under -D_CRT_SECURE_CPP_OVERLOAD;
                 // _snwscanf_s consumes it but we ignore it.
-                (void)va_arg( args, size_t );
+                (void) va_arg(args, size_t);
                 ++cAssigned;
                 break;
             }
@@ -354,6 +490,6 @@ extern "C" int _snwscanf_s( const wchar_t* buf, size_t /*cchCount*/, const wchar
     }
 
 done:
-    va_end( args );
+    va_end(args);
     return cAssigned;
 }

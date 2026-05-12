@@ -126,32 +126,43 @@ namespace
 
 }  // namespace
 
+namespace
+{
+    pthread_once_t g_iouringOnce = PTHREAD_ONCE_INIT;
+    ERR            g_iouringInitErr = JET_errSuccess;
+
+    void IOUringInitOnce()
+    {
+        pthread_mutex_init( &g_ring.submitMutex, nullptr );
+        g_ring.shuttingDown.store( false, std::memory_order_release );
+
+        const int rc = io_uring_queue_init( c_ringDepth, &g_ring.ring, 0 );
+        if ( rc < 0 )
+        {
+            pthread_mutex_destroy( &g_ring.submitMutex );
+            g_iouringInitErr = ErrERRCheck( JET_errOutOfMemory );
+            return;
+        }
+
+        if ( pthread_create( &g_ring.completionThread, nullptr, CompletionLoop, nullptr ) != 0 )
+        {
+            io_uring_queue_exit( &g_ring.ring );
+            pthread_mutex_destroy( &g_ring.submitMutex );
+            g_iouringInitErr = ErrERRCheck( JET_errOutOfMemory );
+            return;
+        }
+
+        g_ring.inited = true;
+    }
+}
+
+//  Lazy bring-up — first call to any submission entry point fires the
+//  init once.  Keeps the io_uring lifecycle off the OS-layer init hook
+//  list so we don't need upstream osfile.cxx changes to drive it.
 ERR ErrIOUringInit()
 {
-    if ( g_ring.inited )
-    {
-        return JET_errSuccess;
-    }
-
-    pthread_mutex_init( &g_ring.submitMutex, nullptr );
-    g_ring.shuttingDown.store( false, std::memory_order_release );
-
-    const int rc = io_uring_queue_init( c_ringDepth, &g_ring.ring, 0 );
-    if ( rc < 0 )
-    {
-        pthread_mutex_destroy( &g_ring.submitMutex );
-        return ErrERRCheck( JET_errOutOfMemory );
-    }
-
-    if ( pthread_create( &g_ring.completionThread, nullptr, CompletionLoop, nullptr ) != 0 )
-    {
-        io_uring_queue_exit( &g_ring.ring );
-        pthread_mutex_destroy( &g_ring.submitMutex );
-        return ErrERRCheck( JET_errOutOfMemory );
-    }
-
-    g_ring.inited = true;
-    return JET_errSuccess;
+    pthread_once( &g_iouringOnce, IOUringInitOnce );
+    return g_iouringInitErr;
 }
 
 void IOUringTerm()
@@ -236,6 +247,11 @@ namespace
 
 ERR ErrIOUringRead( int fd, IOContext* ctx )
 {
+    const ERR errInit = ErrIOUringInit();
+    if ( errInit < JET_errSuccess )
+    {
+        return errInit;
+    }
     if ( !ctx->pfnIOComplete )
     {
         InitContextSyncWait( ctx );
@@ -250,6 +266,11 @@ ERR ErrIOUringRead( int fd, IOContext* ctx )
 
 ERR ErrIOUringWrite( int fd, IOContext* ctx )
 {
+    const ERR errInit = ErrIOUringInit();
+    if ( errInit < JET_errSuccess )
+    {
+        return errInit;
+    }
     if ( !ctx->pfnIOComplete )
     {
         InitContextSyncWait( ctx );
@@ -264,6 +285,11 @@ ERR ErrIOUringWrite( int fd, IOContext* ctx )
 
 ERR ErrIOUringFsync( int fd )
 {
+    const ERR errInit = ErrIOUringInit();
+    if ( errInit < JET_errSuccess )
+    {
+        return errInit;
+    }
     //  Synchronous fsync via the ring keeps every IO path going
     //  through one syscall surface (helpful for tracing / future
     //  io_uring_register_files).

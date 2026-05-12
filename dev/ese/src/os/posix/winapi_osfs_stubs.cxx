@@ -1,0 +1,177 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+//
+// Stubs for upstream osfs.cxx forward-declared APIs that live behind
+// Win10+ / Win8+ feature loaders.  Each function is declared locally
+// inside osfs.cxx without extern "C", so the engine's
+// NTOSFuncStd / FunctionLoaderStaticShim takes the C++-mangled symbol.
+// We mirror the same local type declarations here so the stubs we emit
+// have matching mangled names.
+//
+// Engine call sites all guard on ErrIsPresent() / NT_SUCCESS() and fall
+// back to the Win5x / non-packaged path on failure — which is exactly
+// what these stubs report.
+
+#include "osstd.hxx"
+#include "winapi_kobject.hxx"
+#include <ntstatus.h>
+
+//  windows-shim/specstrings.h #defines __reserved → empty as a SAL annotation.
+//  <linux/fs.h> transitively pulls fscrypt.h, which has a struct field
+//  literally named __reserved.  Drop the macro just before the kernel headers.
+#undef __reserved
+
+#include <errno.h>
+#include <linux/fs.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+
+using osposix::HandleKind;
+using osposix::HandleToK;
+using osposix::KObject;
+
+//  Mirror osfs.cxx's NtQueryVolumeInformationFile forward declaration.
+
+typedef LONG NTSTATUS;
+
+typedef enum _FSINFOCLASS {
+    FileFsVolumeInformation       = 1,
+    FileFsLabelInformation,
+    FileFsSizeInformation,
+    FileFsDeviceInformation,
+    FileFsAttributeInformation,
+    FileFsControlInformation,
+    FileFsFullSizeInformation,
+    FileFsObjectIdInformation,
+    FileFsDriverPathInformation,
+    FileFsVolumeFlagsInformation,
+    FileFsSectorSizeInformation,
+    FileFsMaximumInformation
+} FS_INFORMATION_CLASS, *PFS_INFORMATION_CLASS;
+
+typedef struct _IO_STATUS_BLOCK {
+    union {
+        NTSTATUS Status;
+        PVOID Pointer;
+    } DUMMYUNIONNAME;
+    ULONG_PTR Information;
+} IO_STATUS_BLOCK, *PIO_STATUS_BLOCK;
+
+//  Engine queries FileFsSectorSizeInformation to drive sector-aligned IO
+//  sizing.  Linux exposes the same data via ioctl(BLKSSZGET/BLKPBSZGET)
+//  on the underlying block device; for regular files we fall back to
+//  st_blksize.
+
+typedef struct _FILE_FS_SECTOR_SIZE_INFORMATION {
+    ULONG LogicalBytesPerSector;
+    ULONG PhysicalBytesPerSectorForAtomicity;
+    ULONG PhysicalBytesPerSectorForPerformance;
+    ULONG FileSystemEffectivePhysicalBytesPerSectorForAtomicity;
+    ULONG Flags;
+    ULONG ByteOffsetForSectorAlignment;
+    ULONG ByteOffsetForPartitionAlignment;
+} FILE_FS_SECTOR_SIZE_INFORMATION, *PFILE_FS_SECTOR_SIZE_INFORMATION;
+
+NTSTATUS NtQueryVolumeInformationFile(HANDLE FileHandle,
+    PIO_STATUS_BLOCK IoStatusBlock,
+    PVOID FsInformation,
+    ULONG Length,
+    FS_INFORMATION_CLASS FsInformationClass)
+{
+    if (IoStatusBlock)
+    {
+        IoStatusBlock->DUMMYUNIONNAME.Status = 0;
+        IoStatusBlock->Information = 0;
+    }
+    KObject* const k = HandleToK(FileHandle);
+    if (!k || k->kind != HandleKind::File || k->fileFd < 0 || !FsInformation)
+        return STATUS_INVALID_HANDLE;
+
+    if (FsInformationClass == FileFsSectorSizeInformation)
+    {
+        if (Length < sizeof(FILE_FS_SECTOR_SIZE_INFORMATION))
+            return STATUS_BUFFER_TOO_SMALL;
+
+        struct stat st;
+        if (fstat(k->fileFd, &st) < 0)
+            return STATUS_ACCESS_DENIED;
+
+        unsigned int logical = 512;
+        unsigned int physical = 4096;
+        if (S_ISBLK(st.st_mode))
+        {
+            int logicalT = 0;
+            int physicalT = 0;
+            if (ioctl(k->fileFd, BLKSSZGET, &logicalT) == 0 && logicalT > 0)
+                logical = (unsigned int) logicalT;
+            if (ioctl(k->fileFd, BLKPBSZGET, &physicalT) == 0 && physicalT > 0)
+                physical = (unsigned int) physicalT;
+        }
+        else
+        {
+            //  Regular file: use the filesystem's preferred IO block size as
+            //  a coarse stand-in.  ext4/xfs/btrfs return 4096 here on every
+            //  realistic configuration.
+            if (st.st_blksize > 0)
+                physical = (unsigned int) st.st_blksize;
+            logical = (logical < physical) ? logical : physical;
+        }
+
+        FILE_FS_SECTOR_SIZE_INFORMATION* const pInfo =
+            (FILE_FS_SECTOR_SIZE_INFORMATION*) FsInformation;
+        memset(pInfo, 0, sizeof(*pInfo));
+        pInfo->LogicalBytesPerSector = logical;
+        pInfo->PhysicalBytesPerSectorForAtomicity = physical;
+        pInfo->PhysicalBytesPerSectorForPerformance = physical;
+        pInfo->FileSystemEffectivePhysicalBytesPerSectorForAtomicity = physical;
+        pInfo->ByteOffsetForSectorAlignment = 0;
+        pInfo->ByteOffsetForPartitionAlignment = 0;
+        if (IoStatusBlock)
+            IoStatusBlock->Information = sizeof(*pInfo);
+        return STATUS_SUCCESS;
+    }
+    return STATUS_NOT_IMPLEMENTED;
+}
+
+//  Win8+ AppModel state API.  Linux is never "packaged"; engine takes
+//  the non-packaged path so these don't actually get called, but the
+//  linker still resolves their addresses through the FunctionLoader
+//  template.
+
+typedef void* HSTATE;
+
+typedef enum tag_STATE_PERSIST_ATTRIB {
+    STATE_PERSIST_UNDEFINED = 0,
+    STATE_PERSIST_LOCAL,
+    STATE_PERSIST_ROAMING,
+    STATE_PERSIST_TEMP,
+    STATE_PERSIST_LAST
+} STATE_PERSIST_ATTRIB;
+
+HSTATE OpenState()
+{
+    return nullptr;
+}
+
+BOOL CloseState(HSTATE /*hState*/)
+{
+    return TRUE;
+}
+
+BOOL GetStateFolder(HSTATE /*hState*/, STATE_PERSIST_ATTRIB /*persistAttrib*/,
+    LPWSTR pPath, UINT32* pPathCch)
+{
+    if (pPathCch)
+        *pPathCch = 0;
+    if (pPath && pPathCch && *pPathCch > 0)
+        pPath[0] = L'\0';
+    SetLastError(ERROR_NOT_SUPPORTED);
+    return FALSE;
+}
+
+//  Engine packaged-process probe.  Linux never claims packaged status;
+//  the variable g_fProcessIsPackaged lives in osfs.cxx and is initialised
+//  to fFalse, so this just returns without touching it.
+VOID CalculateCurrentProcessIsPackaged()
+{
+}

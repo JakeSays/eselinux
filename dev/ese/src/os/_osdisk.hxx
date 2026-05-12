@@ -202,7 +202,7 @@ class IOREQ : MemCopyable<IOREQ>
 
         FLAG32                  m_fCanCombineIO:1;          //  can be combined with TLS IO run / on front end
 
-        static const INT        cRetriesMax = 0x7ffe;       //  leave extra 1 off (instead of 0x7fff), just because
+        static constexpr INT    cRetriesMax = 0x7ffe;       //  leave extra 1 off (instead of 0x7fff), just because
         INT                     m_cRetries:15;              //  number of times OOM or other error has caused a retry (maxes out at 0x3ffe/cRetriesMax)
         INT                     m_reserved1:7;              //  unused
 

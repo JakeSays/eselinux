@@ -188,6 +188,15 @@
 
 #define _Out_cap_post_count_(x, y)
 #define _Out_writes_(x)
+
+#define _Success_(x)
+#define _On_failure_(x)
+#define _Always_(x)
+#define _Result_nullonfailure_
+#define _Result_zeroonfailure_
+#define _Pre_satisfies_(x)
+#define _Post_satisfies_(x)
+#define _Notliteral_
 #endif // !_In_
 
 #endif // !_MSC_VER

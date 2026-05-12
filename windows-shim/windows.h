@@ -392,7 +392,59 @@ BOOL   ReadFileScatter( HANDLE hFile, FILE_SEGMENT_ELEMENT aSegmentArray[],
 BOOL   WriteFileGather( HANDLE hFile, FILE_SEGMENT_ELEMENT aSegmentArray[],
                         DWORD nNumberOfBytesToWrite, LPDWORD lpReserved, LPOVERLAPPED lpOverlapped );
 BOOL   FlushFileBuffers( HANDLE hFile );
+BOOL   GetOverlappedResult( HANDLE hFile, LPOVERLAPPED lpOverlapped,
+                            LPDWORD lpNumberOfBytesTransferred, BOOL bWait );
 BOOL   GetFileSizeEx( HANDLE hFile, PLARGE_INTEGER lpFileSize );
+DWORD  GetCompressedFileSizeW( LPCWSTR lpFileName, LPDWORD lpFileSizeHigh );
+
+//  Page-protection / memory-mapping flags consumed by CreateFileMappingW and
+//  MapViewOfFile{Ex}.  Linux backing uses mmap() PROT_*/MAP_*; the shim
+//  translates internally.
+#ifndef PAGE_READONLY
+#define PAGE_NOACCESS            0x01u
+#define PAGE_READONLY            0x02u
+#define PAGE_READWRITE           0x04u
+#define PAGE_WRITECOPY           0x08u
+#define PAGE_EXECUTE             0x10u
+#define PAGE_EXECUTE_READ        0x20u
+#define PAGE_EXECUTE_READWRITE   0x40u
+#define PAGE_EXECUTE_WRITECOPY   0x80u
+#define PAGE_GUARD               0x100u
+#define PAGE_NOCACHE             0x200u
+#define PAGE_WRITECOMBINE        0x400u
+#define PAGE_REVERT_TO_FILE_MAP  0x80000000u
+#endif
+
+#ifndef SEC_COMMIT
+#define SEC_COMMIT               0x8000000u
+#define SEC_RESERVE              0x4000000u
+#define SEC_NOCACHE              0x10000000u
+#define SEC_WRITECOMBINE         0x40000000u
+#define SEC_LARGE_PAGES          0x80000000u
+#endif
+
+#ifndef FILE_MAP_READ
+#define FILE_MAP_COPY            0x00000001u
+#define FILE_MAP_WRITE           0x00000002u
+#define FILE_MAP_READ            0x00000004u
+#define FILE_MAP_ALL_ACCESS      0x000F001Fu
+#define FILE_MAP_EXECUTE         0x00000020u
+#endif
+
+BOOL   VirtualProtect( LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect,
+                       PDWORD lpflOldProtect );
+
+HANDLE CreateFileMappingW( HANDLE hFile, LPSECURITY_ATTRIBUTES lpAttributes,
+                           DWORD flProtect, DWORD dwMaximumSizeHigh, DWORD dwMaximumSizeLow,
+                           LPCWSTR lpName );
+LPVOID MapViewOfFile( HANDLE hFileMappingObject, DWORD dwDesiredAccess,
+                      DWORD dwFileOffsetHigh, DWORD dwFileOffsetLow,
+                      SIZE_T dwNumberOfBytesToMap );
+LPVOID MapViewOfFileEx( HANDLE hFileMappingObject, DWORD dwDesiredAccess,
+                        DWORD dwFileOffsetHigh, DWORD dwFileOffsetLow,
+                        SIZE_T dwNumberOfBytesToMap, LPVOID lpBaseAddress );
+BOOL   UnmapViewOfFile( LPCVOID lpBaseAddress );
+BOOL   FlushViewOfFile( LPCVOID lpBaseAddress, SIZE_T dwNumberOfBytesToFlush );
 BOOL   SetFilePointerEx( HANDLE hFile, LARGE_INTEGER liDistanceToMove,
                          PLARGE_INTEGER lpNewFilePointer, DWORD dwMoveMethod );
 BOOL   SetEndOfFile( HANDLE hFile );
@@ -402,6 +454,33 @@ BOOL   GetFileInformationByHandleEx( HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS Fil
 BOOL   SetFileInformationByHandle(   HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInformationClass,
                                      LPVOID lpFileInformation, DWORD dwBufferSize );
 BOOL   DeleteFileW( LPCWSTR lpFileName );
+
+//  GetFileAttributesExW — single-shot stat-by-path.  Linux backing: stat()
+//  + AttributesFromMode + size translation.
+typedef enum _GET_FILEEX_INFO_LEVELS {
+    GetFileExInfoStandard,
+    GetFileExMaxInfoLevel
+} GET_FILEEX_INFO_LEVELS;
+
+typedef struct _WIN32_FILE_ATTRIBUTE_DATA {
+    DWORD    dwFileAttributes;
+    FILETIME ftCreationTime;
+    FILETIME ftLastAccessTime;
+    FILETIME ftLastWriteTime;
+    DWORD    nFileSizeHigh;
+    DWORD    nFileSizeLow;
+} WIN32_FILE_ATTRIBUTE_DATA, *LPWIN32_FILE_ATTRIBUTE_DATA;
+
+BOOL   GetFileAttributesExW( LPCWSTR lpFileName, GET_FILEEX_INFO_LEVELS fInfoLevelId,
+                             LPVOID lpFileInformation );
+
+//  Win32 process-token / privilege APIs.  All three fail with
+//  ERROR_NOT_SUPPORTED on Linux — see winnt.h SE_* comment.
+BOOL   OpenProcessToken( HANDLE ProcessHandle, DWORD DesiredAccess, PHANDLE TokenHandle );
+BOOL   AdjustTokenPrivileges( HANDLE TokenHandle, BOOL DisableAllPrivileges,
+                              PTOKEN_PRIVILEGES NewState, DWORD BufferLength,
+                              PTOKEN_PRIVILEGES PreviousState, PDWORD ReturnLength );
+BOOL   LookupPrivilegeValueW( LPCWSTR lpSystemName, LPCWSTR lpName, PLUID lpLuid );
 BOOL   MoveFileW(   LPCWSTR lpExistingFileName, LPCWSTR lpNewFileName );
 BOOL   MoveFileExW( LPCWSTR lpExistingFileName, LPCWSTR lpNewFileName, DWORD dwFlags );
 BOOL   CopyFileW(   LPCWSTR lpExistingFileName, LPCWSTR lpNewFileName, BOOL bFailIfExists );
@@ -916,8 +995,15 @@ void GetSystemInfo( LPSYSTEM_INFO lpSystemInfo );
 #endif
 
 #ifndef COPY_FILE_FAIL_IF_EXISTS
-#define COPY_FILE_FAIL_IF_EXISTS    0x00000001
-#define COPY_FILE_RESTARTABLE       0x00000002
+#define COPY_FILE_FAIL_IF_EXISTS                0x00000001
+#define COPY_FILE_RESTARTABLE                   0x00000002
+#define COPY_FILE_OPEN_SOURCE_FOR_WRITE         0x00000004
+#define COPY_FILE_ALLOW_DECRYPTED_DESTINATION   0x00000008
+#define COPY_FILE_COPY_SYMLINK                  0x00000800
+#define COPY_FILE_NO_BUFFERING                  0x00001000
+#define COPY_FILE_REQUEST_SECURITY_PRIVILEGES   0x00002000
+#define COPY_FILE_RESUME_FROM_PAUSE             0x00004000
+#define COPY_FILE_NO_OFFLOAD                    0x00040000
 #endif
 
 typedef DWORD ( __stdcall *LPPROGRESS_ROUTINE )(
@@ -974,6 +1060,10 @@ errno_t wcscpy_s( wchar_t* dst, size_t cchDst, const wchar_t* src );
 errno_t wcscat_s( wchar_t* dst, size_t cchDst, const wchar_t* src );
 errno_t strcpy_s( char* dst, size_t cchDst, const char* src );
 errno_t strcat_s( char* dst, size_t cchDst, const char* src );
+errno_t wmemmove_s( wchar_t* dst, size_t cchDst, const wchar_t* src, size_t cch );
+errno_t wmemcpy_s( wchar_t* dst, size_t cchDst, const wchar_t* src, size_t cch );
+errno_t memmove_s( void* dst, size_t cbDst, const void* src, size_t cb );
+errno_t memcpy_s( void* dst, size_t cbDst, const void* src, size_t cb );
 errno_t _wcsupr_s( wchar_t* str, size_t cchStr );
 
 

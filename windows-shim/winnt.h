@@ -222,6 +222,92 @@ typedef PVOID PSECURITY_DESCRIPTOR;
 #ifndef NTSYSAPI
 #define NTSYSAPI
 #endif
+#ifndef NTSYSCALLAPI
+#define NTSYSCALLAPI
+#endif
+#ifndef __kernel_entry
+#define __kernel_entry
+#endif
+
+//  Win32 security / privilege names.  On Linux there's no token-based
+//  privilege model — these are declared so engine code compiles, but
+//  the LookupPrivilegeValueW / AdjustTokenPrivileges shims all fail
+//  with ERROR_NOT_SUPPORTED.  Engine call sites treat the failure as
+//  "feature unavailable" and fall through to the non-privileged path
+//  (e.g., SetFileValidData -> ftruncate-and-zero-fill instead of
+//  zero-cost extend).
+#ifndef SE_MANAGE_VOLUME_NAME
+#define SE_MANAGE_VOLUME_NAME                   "SeManageVolumePrivilege"
+#define SE_BACKUP_NAME                          "SeBackupPrivilege"
+#define SE_RESTORE_NAME                         "SeRestorePrivilege"
+#define SE_DEBUG_NAME                           "SeDebugPrivilege"
+#define SE_LOCK_MEMORY_NAME                     "SeLockMemoryPrivilege"
+#define SE_INCREASE_QUOTA_NAME                  "SeIncreaseQuotaPrivilege"
+#define SE_TCB_NAME                             "SeTcbPrivilege"
+#define SE_SECURITY_NAME                        "SeSecurityPrivilege"
+#define SE_TAKE_OWNERSHIP_NAME                  "SeTakeOwnershipPrivilege"
+#define SE_LOAD_DRIVER_NAME                     "SeLoadDriverPrivilege"
+#define SE_SYSTEM_PROFILE_NAME                  "SeSystemProfilePrivilege"
+#define SE_SYSTEMTIME_NAME                      "SeSystemtimePrivilege"
+#define SE_PROF_SINGLE_PROCESS_NAME             "SeProfileSingleProcessPrivilege"
+#define SE_INC_BASE_PRIORITY_NAME               "SeIncreaseBasePriorityPrivilege"
+#define SE_CREATE_PAGEFILE_NAME                 "SeCreatePagefilePrivilege"
+#define SE_SHUTDOWN_NAME                        "SeShutdownPrivilege"
+#define SE_AUDIT_NAME                           "SeAuditPrivilege"
+#define SE_CHANGE_NOTIFY_NAME                   "SeChangeNotifyPrivilege"
+#define SE_REMOTE_SHUTDOWN_NAME                 "SeRemoteShutdownPrivilege"
+#define SE_UNDOCK_NAME                          "SeUndockPrivilege"
+#endif
+
+#ifndef SE_PRIVILEGE_ENABLED
+#define SE_PRIVILEGE_ENABLED                    0x00000002u
+#define SE_PRIVILEGE_ENABLED_BY_DEFAULT         0x00000001u
+#define SE_PRIVILEGE_USED_FOR_ACCESS            0x80000000u
+#endif
+
+#ifndef TOKEN_QUERY
+#define TOKEN_ASSIGN_PRIMARY                    0x0001u
+#define TOKEN_DUPLICATE                         0x0002u
+#define TOKEN_IMPERSONATE                       0x0004u
+#define TOKEN_QUERY                             0x0008u
+#define TOKEN_QUERY_SOURCE                      0x0010u
+#define TOKEN_ADJUST_PRIVILEGES                 0x0020u
+#define TOKEN_ADJUST_GROUPS                     0x0040u
+#define TOKEN_ADJUST_DEFAULT                    0x0080u
+#define TOKEN_ADJUST_SESSIONID                  0x0100u
+#endif
+
+//  UINT8/16/32 + pointer aliases — Win32 has them in basetsd.h.  The
+//  64-bit (UINT64/INT64/PUINT64/PINT64) twins are defined in cc.hxx
+//  matching `unsigned long long` / `long long` so they avoid the
+//  uint64_t-vs-unsigned-long-long type clash on x86_64 LP64.
+typedef uint8_t  UINT8;
+typedef uint16_t UINT16;
+typedef uint32_t UINT32;
+typedef int8_t   INT8;
+typedef int16_t  INT16;
+typedef int32_t  INT32;
+typedef UINT8*   PUINT8;
+typedef UINT16*  PUINT16;
+typedef UINT32*  PUINT32;
+typedef INT8*    PINT8;
+typedef INT16*   PINT16;
+typedef INT32*   PINT32;
+
+typedef struct _LUID {
+    DWORD LowPart;
+    LONG  HighPart;
+} LUID, *PLUID;
+
+typedef struct _LUID_AND_ATTRIBUTES {
+    LUID  Luid;
+    DWORD Attributes;
+} LUID_AND_ATTRIBUTES, *PLUID_AND_ATTRIBUTES;
+
+typedef struct _TOKEN_PRIVILEGES {
+    DWORD               PrivilegeCount;
+    LUID_AND_ATTRIBUTES Privileges[ 1 ];
+} TOKEN_PRIVILEGES, *PTOKEN_PRIVILEGES;
 #ifndef WINOLEAPI
 #define WINOLEAPI
 #endif
@@ -454,6 +540,49 @@ typedef enum _FILE_INFO_BY_HANDLE_CLASS {
     FileIdExtdDirectoryRestartInfo  = 20,
     MaximumFileInfoByHandleClass
 } FILE_INFO_BY_HANDLE_CLASS, *PFILE_INFO_BY_HANDLE_CLASS;
+
+//  FILE_RENAME_INFO is the payload for SetFileInformationByHandle with
+//  FileRenameInfo.  Win32 declares the FileName trailing array as
+//  WCHAR FileName[1]; engine code reserves the additional bytes via the
+//  sizeof + path-length computation, then writes through pRenameInfo->FileName.
+typedef struct _FILE_RENAME_INFO {
+    union {
+        BOOLEAN ReplaceIfExists;
+        DWORD   Flags;
+    };
+    HANDLE      RootDirectory;
+    DWORD       FileNameLength;
+    WCHAR       FileName[ 1 ];
+} FILE_RENAME_INFO, *PFILE_RENAME_INFO;
+
+typedef struct _FILE_END_OF_FILE_INFO {
+    LARGE_INTEGER EndOfFile;
+} FILE_END_OF_FILE_INFO, *PFILE_END_OF_FILE_INFO;
+
+typedef struct _FILE_BASIC_INFO {
+    LARGE_INTEGER CreationTime;
+    LARGE_INTEGER LastAccessTime;
+    LARGE_INTEGER LastWriteTime;
+    LARGE_INTEGER ChangeTime;
+    DWORD         FileAttributes;
+} FILE_BASIC_INFO, *PFILE_BASIC_INFO;
+
+typedef struct _FILE_STANDARD_INFO {
+    LARGE_INTEGER AllocationSize;
+    LARGE_INTEGER EndOfFile;
+    DWORD         NumberOfLinks;
+    BOOLEAN       DeletePending;
+    BOOLEAN       Directory;
+} FILE_STANDARD_INFO, *PFILE_STANDARD_INFO;
+
+typedef struct _FILE_ALLOCATION_INFO {
+    LARGE_INTEGER AllocationSize;
+} FILE_ALLOCATION_INFO, *PFILE_ALLOCATION_INFO;
+
+typedef struct _FILE_DISPOSITION_INFO {
+    BOOLEAN DeleteFile;
+} FILE_DISPOSITION_INFO, *PFILE_DISPOSITION_INFO;
+
 #endif
 
 //  GetDriveType return values (fileapi.h on Windows). The Linux port maps
