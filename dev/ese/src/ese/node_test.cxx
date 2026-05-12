@@ -145,7 +145,11 @@ JETUNITTEST ( Node, TestTestPageAvsAboveAndBelow )
 {
     CreateSmallLargePage;
     
-    ULONG cAccum = 0;
+    //  cAccum must be volatile so the SEH-trip loads inside __try aren't elided
+    //  by clang -O3 (the writes have no later consumer; the optimizer would
+    //  otherwise DCE the entire body, and SIGSEGV — which the shim relies on
+    //  to set _seh.faulted — never fires).
+    volatile ULONG cAccum = 0;
 
     BOOL fExcepted = fFalse;
 
