@@ -23471,6 +23471,17 @@ JET_ERR JET_API JetPlatformInitialize( void )
 
     Call( ErrSetSystemParameter( pinstNil, JET_sesidNil, JET_paramDisablePerfmon, fTrue, nullptr ) );
 
+    //  Match the engine's own Tier-1 unit-test runner default: AssertSkipAll
+    //  so internal FireWalls / Debug-only consistency checks don't terminate
+    //  public-API callers.  Public consumers can't override AssertAction
+    //  before ErrOSUInit runs — JetSetSystemParameter on this param needs
+    //  TLS up, but TLS only comes up inside JetPlatformInitialize.  Set the
+    //  param here so ErrOSUInit's COSLayerPreInit::SetAssertAction picks it
+    //  up.  Callers wanting strict FailFast asserts can change it after the
+    //  platform is initialized; the change won't update g_wAssertAction
+    //  retroactively, but it documents intent in the param table.
+    Call( ErrSetSystemParameter( pinstNil, JET_sesidNil, JET_paramAssertAction, JET_AssertSkipAll, nullptr ) );
+
     Call( ErrOSUInit() );
 
     g_fJetPlatformInitialized = fTrue;
