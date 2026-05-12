@@ -11,7 +11,7 @@ namespace
 
 ScaleProfile _activeProfile = {};
 
-}  //  namespace
+} // namespace
 
 const ScaleProfile& ActiveScaleProfile()
 {
@@ -65,4 +65,4 @@ int LongValueBytes()
     return _activeProfile.SmallLongValueBytes;
 }
 
-}  //  namespace ese::tests
+} // namespace ese::tests

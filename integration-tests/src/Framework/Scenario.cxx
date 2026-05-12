@@ -70,4 +70,4 @@ std::string Scenario::FullName() const
     return std::format("{}.{}", ToString(_category), _name);
 }
 
-}  //  namespace ese::tests
+} // namespace ese::tests

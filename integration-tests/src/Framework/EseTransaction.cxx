@@ -10,7 +10,7 @@ namespace ese::tests
 {
 
 EseTransaction::EseTransaction(EseSession& session,
-                               JET_GRBIT   beginFlags)
+                               JET_GRBIT beginFlags)
     : _session(session)
 {
     CheckJet(JetBeginTransaction2(_session.Handle(), beginFlags));
@@ -21,9 +21,9 @@ EseTransaction::~EseTransaction()
 {
     if (_active)
     {
-        //  Best-effort rollback in the dtor — if the scenario didn't
-        //  commit, that's intentional or a leaked transaction; either
-        //  way we want the engine state clean for the next scenario.
+        // Best-effort rollback in the dtor — if the scenario didn't
+        // commit, that's intentional or a leaked transaction; either
+        // way we want the engine state clean for the next scenario.
         (void)JetRollback(_session.Handle(), 0);
         _active = false;
     }
@@ -49,4 +49,4 @@ void EseTransaction::Rollback()
     _active = false;
 }
 
-}  //  namespace ese::tests
+} // namespace ese::tests

@@ -15,9 +15,9 @@ using namespace ese::tests;
 EseIntegrationScenario(Database, CreateAndClose)
 {
     TemporaryDirectory directory("Database.CreateAndClose");
-    EseInstance        instance(directory);
-    EseSession         session(instance);
-    EseDatabase        database(session, "Smoke.mdb");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Smoke.mdb");
 
     Require(database.Id() != JET_dbidNil);
     Require(std::filesystem::exists(database.Path()));

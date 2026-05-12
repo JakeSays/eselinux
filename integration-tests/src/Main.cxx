@@ -1,16 +1,16 @@
 // Copyright (c) Jake Helfert
 // Licensed under the MIT License.
 //
-//  ese-tests entry point.  Two modes:
+// ese-tests entry point. Two modes:
 //
-//   1. Normal scenario runner.  Walks ScenarioRegistry, filters by
-//      --filter glob, runs the survivors, prints pass/fail summary.
+// 1. Normal scenario runner. Walks ScenarioRegistry, filters by
+// --filter glob, runs the survivors, prints pass/fail summary.
 //
-//   2. --child-entry <name> --child-directory <path>.  Used by
-//      ChildProcess fork+exec; looks up the named entry in
-//      CrashHelper's registry and invokes it.  The child is expected
-//      to be SIGKILL'd by the parent at some point, so we don't aim
-//      for clean shutdown.
+// 2. --child-entry <name> --child-directory <path>. Used by
+// ChildProcess fork+exec; looks up the named entry in
+// CrashHelper's registry and invokes it. The child is expected
+// to be SIGKILL'd by the parent at some point, so we don't aim
+// for clean shutdown.
 
 #include "Framework/Check.hxx"
 #include "Framework/CrashHelper.hxx"
@@ -36,14 +36,14 @@ namespace
 
 struct CommandLineOptions
 {
-    std::string                     FilterPattern;
-    ese::tests::ScaleProfileSize    ScaleSize       = ese::tests::ScaleProfileSize::Small;
-    bool                            ListOnly        = false;
-    bool                            Verbose         = false;
-    bool                            KeepTemporary   = false;
-    bool                            ChildMode       = false;
-    std::string                     ChildEntryName;
-    std::string                     ChildDirectory;
+    std::string FilterPattern;
+    ese::tests::ScaleProfileSize ScaleSize = ese::tests::ScaleProfileSize::Small;
+    bool ListOnly = false;
+    bool Verbose = false;
+    bool KeepTemporary = false;
+    bool ChildMode = false;
+    std::string ChildEntryName;
+    std::string ChildDirectory;
 };
 
 void PrintUsage(std::string_view programName)
@@ -51,17 +51,17 @@ void PrintUsage(std::string_view programName)
     std::cout << "Usage: " << programName << " [options]\n"
               << "\n"
               << "Options:\n"
-              << "  --filter <pattern>         Run only scenarios whose FullName matches <pattern>.\n"
-              << "                             Glob: '*' and '?' supported.  Default: '*'\n"
-              << "  --scale Small|Medium|Large Workload size profile.  Default: Small.\n"
-              << "  --list                     Print every registered scenario and exit.\n"
-              << "  --verbose                  Print per-scenario start lines and failure detail.\n"
-              << "  --keep-temp                Don't delete scenario temp directories on exit.\n"
-              << "  --help, -h                 Show this message.\n"
+              << " --filter <pattern> Run only scenarios whose FullName matches <pattern>.\n"
+              << " Glob: '*' and '?' supported. Default: '*'\n"
+              << " --scale Small|Medium|Large Workload size profile. Default: Small.\n"
+              << " --list Print every registered scenario and exit.\n"
+              << " --verbose Print per-scenario start lines and failure detail.\n"
+              << " --keep-temp Don't delete scenario temp directories on exit.\n"
+              << " --help, -h Show this message.\n"
               << "\n"
               << "Child-entry mode (used internally for crash-recovery scenarios):\n"
-              << "  --child-entry <name>       Run the named child-entry callback and exit.\n"
-              << "  --child-directory <path>   Scratch directory the child should use.\n";
+              << " --child-entry <name> Run the named child-entry callback and exit.\n"
+              << " --child-directory <path> Scratch directory the child should use.\n";
 }
 
 bool ParseCommandLine(int argc, char** argv, CommandLineOptions& options)
@@ -133,7 +133,7 @@ bool ParseCommandLine(int argc, char** argv, CommandLineOptions& options)
             {
                 return false;
             }
-            options.ChildMode      = true;
+            options.ChildMode = true;
             options.ChildEntryName = value;
         }
         else if (argument == "--child-directory")
@@ -219,11 +219,11 @@ int RunScenarios(const CommandLineOptions& options)
         const auto fullName = scenario->FullName();
         if (options.Verbose)
         {
-            std::cout << "[ RUN  ] " << fullName << "\n";
+            std::cout << "[ RUN ] " << fullName << "\n";
         }
 
         const auto scenarioStart = std::chrono::steady_clock::now();
-        bool       passed        = false;
+        bool passed = false;
         std::string failureMessage;
 
         try
@@ -261,7 +261,7 @@ int RunScenarios(const CommandLineOptions& options)
             std::cout << std::format("[ FAIL ] {} ({} ms)\n",
                                      fullName,
                                      scenarioDuration.count())
-                      << "         " << failureMessage << "\n";
+                      << " " << failureMessage << "\n";
         }
     }
 
@@ -278,9 +278,9 @@ int RunScenarios(const CommandLineOptions& options)
     return failedCount == 0 ? 0 : 1;
 }
 
-//  RAII wrapper around JetPlatformInitialize / JetPlatformTerminate.
-//  Linux libese.so requires this one-shot platform init before any other
-//  Jet API; Windows folds the same plumbing into DllMain.
+// RAII wrapper around JetPlatformInitialize / JetPlatformTerminate.
+// Linux libese.so requires this one-shot platform init before any other
+// Jet API; Windows folds the same plumbing into DllMain.
 class PlatformInitializer
 {
 public:
@@ -295,12 +295,12 @@ public:
             std::exit(2);
         }
 
-        //  Process-global engine settings — must be in place before any
-        //  scenario triggers internal OS-layer init.  AssertAction in
-        //  particular must be SkipAll, otherwise FireWall paths in the
-        //  log layer abort the runner on ZFS-class filesystems that
-        //  report > 4 KB sector size.  DisablePerfmon matches the
-        //  perfmon-off configuration libese.so is built with.
+        // Process-global engine settings — must be in place before any
+        // scenario triggers internal OS-layer init. AssertAction in
+        // particular must be SkipAll, otherwise FireWall paths in the
+        // log layer abort the runner on ZFS-class filesystems that
+        // report > 4 KB sector size. DisablePerfmon matches the
+        // perfmon-off configuration libese.so is built with.
         auto assertActionErrorCode = JetSetSystemParameterA(nullptr,
                                                             JET_sesidNil,
                                                             JET_paramAssertAction,
@@ -329,11 +329,11 @@ public:
         (void)JetPlatformTerminate();
     }
 
-    PlatformInitializer(const PlatformInitializer&)            = delete;
+    PlatformInitializer(const PlatformInitializer&) = delete;
     PlatformInitializer& operator=(const PlatformInitializer&) = delete;
 };
 
-}  //  namespace
+} // namespace
 
 int main(int argc, char** argv)
 {

@@ -12,7 +12,7 @@ using namespace ese::tests;
 EseIntegrationScenario(Session, OpenAndClose)
 {
     TemporaryDirectory directory("Session.OpenAndClose");
-    EseInstance        instance(directory);
-    EseSession         session(instance);
+    EseInstance instance(directory);
+    EseSession session(instance);
     Require(session.Handle() != JET_sesidNil);
 }

@@ -14,10 +14,10 @@ using namespace ese::tests;
 EseIntegrationScenario(Maintenance, ComputeStatsOnEmptyTable)
 {
     TemporaryDirectory directory("Maintenance.ComputeStatsOnEmptyTable");
-    EseInstance        instance(directory);
-    EseSession         session(instance);
-    EseDatabase        database(session, "Maintenance.mdb");
-    EseTable           table(database, "Empty");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Maintenance.mdb");
+    EseTable table(database, "Empty");
 
     CheckJet(JetComputeStats(session.Handle(), table.Id()));
 }

@@ -62,4 +62,4 @@ void ThreadGroup::Join()
     }
 }
 
-}  //  namespace ese::tests
+} // namespace ese::tests

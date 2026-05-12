@@ -17,8 +17,8 @@ namespace ese::tests
 namespace
 {
 
-//  Set a string-valued system parameter and check the result.  Wraps
-//  JetSetSystemParameterA so the call site stays terse.
+// Set a string-valued system parameter and check the result. Wraps
+// JetSetSystemParameterA so the call site stays terse.
 void SetStringParameter(JET_INSTANCE instance,
                         unsigned long parameterId,
                         const std::string& value)
@@ -41,14 +41,14 @@ void SetIntegerParameter(JET_INSTANCE instance,
                                     nullptr));
 }
 
-}  //  namespace
+} // namespace
 
 EseInstance::EseInstance(const TemporaryDirectory& directory,
-                         std::string_view          instanceName)
+                         std::string_view instanceName)
     : _directory(directory.Path())
 {
-    //  Path strings need a trailing slash so JET concatenates filenames
-    //  correctly.  Build them once and reuse for the three path params.
+    // Path strings need a trailing slash so JET concatenates filenames
+    // correctly. Build them once and reuse for the three path params.
     auto pathWithSeparator = _directory.string();
     if (!pathWithSeparator.empty() && pathWithSeparator.back() != '/')
     {
@@ -57,20 +57,20 @@ EseInstance::EseInstance(const TemporaryDirectory& directory,
 
     const std::string instanceNameOwned(instanceName);
 
-    //  BookStoreSample / Tier-2-runner pattern: set per-instance params
-    //  against _handle (still JET_instanceNil at this point) and let
-    //  JetInit allocate the real instance using those param values.
-    //  Setting params against a pre-allocated handle (the
-    //  JetCreateInstance2 pattern) doesn't reliably propagate
-    //  AssertAction into the OS-layer init that JetInit triggers.
+    // BookStoreSample / Tier-2-runner pattern: set per-instance params
+    // against _handle (still JET_instanceNil at this point) and let
+    // JetInit allocate the real instance using those param values.
+    // Setting params against a pre-allocated handle (the
+    // JetCreateInstance2 pattern) doesn't reliably propagate
+    // AssertAction into the OS-layer init that JetInit triggers.
     SetStringParameter(_handle, JET_paramSystemPath, pathWithSeparator);
     SetStringParameter(_handle, JET_paramTempPath, pathWithSeparator);
     SetStringParameter(_handle, JET_paramLogFilePath, pathWithSeparator);
     SetStringParameter(_handle, JET_paramBaseName, "edb");
     SetStringParameter(_handle, JET_paramEventSource, instanceNameOwned);
 
-    //  CircularLog keeps the log directory bounded — every scenario is
-    //  a one-shot process and we don't care about replay past it.
+    // CircularLog keeps the log directory bounded — every scenario is
+    // a one-shot process and we don't care about replay past it.
     SetIntegerParameter(_handle, JET_paramCircularLog, 1);
 
     CheckJet(JetInit(&_handle));
@@ -80,11 +80,11 @@ EseInstance::~EseInstance()
 {
     if (_handle != JET_instanceNil)
     {
-        //  JetTerm errors during teardown are not actionable — the
-        //  scenario already passed or failed by this point.  Swallow.
+        // JetTerm errors during teardown are not actionable — the
+        // scenario already passed or failed by this point. Swallow.
         (void)JetTerm2(_handle, JET_bitTermComplete);
         _handle = JET_instanceNil;
     }
 }
 
-}  //  namespace ese::tests
+} // namespace ese::tests

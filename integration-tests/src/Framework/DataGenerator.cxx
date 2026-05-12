@@ -65,9 +65,9 @@ int64_t DataGenerator::NextSignedLongLong()
 
 float DataGenerator::NextSingle()
 {
-    //  Reinterpret a random bit pattern as float, but keep it finite —
-    //  scenarios that compare via memcmp don't care about NaN payloads.
-    const uint32_t bits = NextDoubleWord() & 0x7F7FFFFFu;  //  clear sign-of-exponent overflow
+    // Reinterpret a random bit pattern as float, but keep it finite —
+    // scenarios that compare via memcmp don't care about NaN payloads.
+    const uint32_t bits = NextDoubleWord() & 0x7F7FFFFFu; // clear sign-of-exponent overflow
     float result;
     std::memcpy(&result, &bits, sizeof(result));
     return result;
@@ -83,11 +83,11 @@ double DataGenerator::NextDouble()
 
 std::string DataGenerator::NextAsciiString(int length)
 {
-    //  Printable ASCII (32..126) — chosen so debug dumps of failing rows
-    //  read as readable text rather than control codes.
+    // Printable ASCII (32..126) — chosen so debug dumps of failing rows
+    // read as readable text rather than control codes.
     static constexpr char PrintableMin = 32;
     static constexpr char PrintableMax = 126;
-    static constexpr int  PrintableSpan = PrintableMax - PrintableMin + 1;
+    static constexpr int PrintableSpan = PrintableMax - PrintableMin + 1;
 
     std::string result;
     result.resize(static_cast<std::string::size_type>(length));
@@ -100,10 +100,10 @@ std::string DataGenerator::NextAsciiString(int length)
 
 std::wstring DataGenerator::NextUnicodeString(int length)
 {
-    //  Basic Multilingual Plane minus surrogates and control characters.
+    // Basic Multilingual Plane minus surrogates and control characters.
     static constexpr wchar_t PrintableMin = 0x0020;
     static constexpr wchar_t PrintableMax = 0xD7FF;
-    static constexpr int     PrintableSpan = PrintableMax - PrintableMin + 1;
+    static constexpr int PrintableSpan = PrintableMax - PrintableMin + 1;
 
     std::wstring result;
     result.resize(static_cast<std::wstring::size_type>(length));
@@ -124,4 +124,4 @@ std::vector<uint8_t> DataGenerator::NextBinaryBlob(int length)
     return blob;
 }
 
-}  //  namespace ese::tests
+} // namespace ese::tests

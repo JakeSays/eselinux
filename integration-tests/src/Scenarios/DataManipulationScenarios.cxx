@@ -18,10 +18,10 @@ using namespace ese::tests;
 EseIntegrationScenario(DataManipulation, InsertAndReadBackOneRow)
 {
     TemporaryDirectory directory("DataManipulation.InsertAndReadBackOneRow");
-    EseInstance        instance(directory);
-    EseSession         session(instance);
-    EseDatabase        database(session, "Data.mdb");
-    EseTable           table(database, "OneRow");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "OneRow");
 
     auto columnId = table.AddColumn("Value", JET_coltypLong, JET_bitColumnNotNULL);
 
@@ -39,10 +39,10 @@ EseIntegrationScenario(DataManipulation, InsertAndReadBackOneRow)
 EseIntegrationScenario(DataManipulation, InsertMultipleRowsRoundTrip)
 {
     TemporaryDirectory directory("DataManipulation.InsertMultipleRowsRoundTrip");
-    EseInstance        instance(directory);
-    EseSession         session(instance);
-    EseDatabase        database(session, "Data.mdb");
-    EseTable           table(database, "Sequence");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "Sequence");
 
     auto columnId = table.AddColumn("Sequence", JET_coltypLong, JET_bitColumnNotNULL);
 
@@ -73,10 +73,10 @@ EseIntegrationScenario(DataManipulation, InsertMultipleRowsRoundTrip)
 EseIntegrationScenario(DataManipulation, ReplaceUpdatesValueInPlace)
 {
     TemporaryDirectory directory("DataManipulation.ReplaceUpdatesValueInPlace");
-    EseInstance        instance(directory);
-    EseSession         session(instance);
-    EseDatabase        database(session, "Data.mdb");
-    EseTable           table(database, "Mutable");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "Mutable");
 
     auto columnId = table.AddColumn("Value", JET_coltypLong, JET_bitColumnNotNULL);
 
@@ -111,10 +111,10 @@ EseIntegrationScenario(DataManipulation, ReplaceUpdatesValueInPlace)
 EseIntegrationScenario(DataManipulation, DeleteRemovesCurrentRecord)
 {
     TemporaryDirectory directory("DataManipulation.DeleteRemovesCurrentRecord");
-    EseInstance        instance(directory);
-    EseSession         session(instance);
-    EseDatabase        database(session, "Data.mdb");
-    EseTable           table(database, "Deletable");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "Deletable");
 
     auto columnId = table.AddColumn("Value", JET_coltypLong, JET_bitColumnNotNULL);
 
@@ -138,7 +138,7 @@ EseIntegrationScenario(DataManipulation, DeleteRemovesCurrentRecord)
         RetrieveFixedColumnFromCurrentRecord<int32_t>(table, columnId);
     Require(survivor == 11);
 
-    //  Only one record should remain.
+    // Only one record should remain.
     RequireJetError(JetMove(session.Handle(), table.Id(), JET_MoveNext, 0),
                     JET_errNoCurrentRecord);
 }
@@ -148,9 +148,9 @@ EseIntegrationScenario(DataManipulation, CancelPreparedInsertLeavesNoRecord)
     TemporaryDirectory directory(
         "DataManipulation.CancelPreparedInsertLeavesNoRecord");
     EseInstance instance(directory);
-    EseSession  session(instance);
+    EseSession session(instance);
     EseDatabase database(session, "Data.mdb");
-    EseTable    table(database, "Empty");
+    EseTable table(database, "Empty");
 
     auto columnId = table.AddColumn("Value", JET_coltypLong, JET_bitColumnNotNULL);
 
@@ -165,12 +165,12 @@ EseIntegrationScenario(DataManipulation, CancelPreparedInsertLeavesNoRecord)
                               sizeof(unwantedValue),
                               0,
                               nullptr));
-        //  Cancel — no JetUpdate call.
+        // Cancel — no JetUpdate call.
         CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepCancel));
         transaction.Commit();
     }
 
-    //  Table must be empty.
+    // Table must be empty.
     RequireJetError(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0),
                     JET_errNoCurrentRecord);
 }
@@ -180,28 +180,28 @@ EseIntegrationScenario(DataManipulation, SetColumnsBatchRoundTrip)
     TemporaryDirectory directory(
         "DataManipulation.SetColumnsBatchRoundTrip");
     EseInstance instance(directory);
-    EseSession  session(instance);
+    EseSession session(instance);
     EseDatabase database(session, "Data.mdb");
-    EseTable    table(database, "WideRow");
+    EseTable table(database, "WideRow");
 
-    const auto firstId   = table.AddColumn("First",   JET_coltypLong);
-    const auto secondId  = table.AddColumn("Second",  JET_coltypLong);
-    const auto thirdId   = table.AddColumn("Third",   JET_coltypLong);
+    const auto firstId = table.AddColumn("First", JET_coltypLong);
+    const auto secondId = table.AddColumn("Second", JET_coltypLong);
+    const auto thirdId = table.AddColumn("Third", JET_coltypLong);
 
-    const int32_t firstValue  = 100;
+    const int32_t firstValue = 100;
     const int32_t secondValue = 200;
-    const int32_t thirdValue  = 300;
+    const int32_t thirdValue = 300;
 
     JET_SETCOLUMN setColumns[3] = { {}, {}, {} };
     setColumns[0].columnid = firstId;
-    setColumns[0].pvData   = &firstValue;
-    setColumns[0].cbData   = sizeof(firstValue);
+    setColumns[0].pvData = &firstValue;
+    setColumns[0].cbData = sizeof(firstValue);
     setColumns[1].columnid = secondId;
-    setColumns[1].pvData   = &secondValue;
-    setColumns[1].cbData   = sizeof(secondValue);
+    setColumns[1].pvData = &secondValue;
+    setColumns[1].cbData = sizeof(secondValue);
     setColumns[2].columnid = thirdId;
-    setColumns[2].pvData   = &thirdValue;
-    setColumns[2].cbData   = sizeof(thirdValue);
+    setColumns[2].pvData = &thirdValue;
+    setColumns[2].cbData = sizeof(thirdValue);
 
     {
         EseTransaction transaction(session);
@@ -213,28 +213,28 @@ EseIntegrationScenario(DataManipulation, SetColumnsBatchRoundTrip)
 
     CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
 
-    int32_t readFirst  = 0;
+    int32_t readFirst = 0;
     int32_t readSecond = 0;
-    int32_t readThird  = 0;
+    int32_t readThird = 0;
     JET_RETRIEVECOLUMN retrieveColumns[3] = { {}, {}, {} };
-    retrieveColumns[0].columnid     = firstId;
-    retrieveColumns[0].pvData       = &readFirst;
-    retrieveColumns[0].cbData       = sizeof(readFirst);
+    retrieveColumns[0].columnid = firstId;
+    retrieveColumns[0].pvData = &readFirst;
+    retrieveColumns[0].cbData = sizeof(readFirst);
     retrieveColumns[0].itagSequence = 1;
-    retrieveColumns[1].columnid     = secondId;
-    retrieveColumns[1].pvData       = &readSecond;
-    retrieveColumns[1].cbData       = sizeof(readSecond);
+    retrieveColumns[1].columnid = secondId;
+    retrieveColumns[1].pvData = &readSecond;
+    retrieveColumns[1].cbData = sizeof(readSecond);
     retrieveColumns[1].itagSequence = 1;
-    retrieveColumns[2].columnid     = thirdId;
-    retrieveColumns[2].pvData       = &readThird;
-    retrieveColumns[2].cbData       = sizeof(readThird);
+    retrieveColumns[2].columnid = thirdId;
+    retrieveColumns[2].pvData = &readThird;
+    retrieveColumns[2].cbData = sizeof(readThird);
     retrieveColumns[2].itagSequence = 1;
 
     CheckJet(JetRetrieveColumns(session.Handle(), table.Id(), retrieveColumns, 3));
 
-    Require(readFirst  == firstValue);
+    Require(readFirst == firstValue);
     Require(readSecond == secondValue);
-    Require(readThird  == thirdValue);
+    Require(readThird == thirdValue);
 }
 
 EseIntegrationScenario(DataManipulation, RetrievingNullColumnReturnsColumnNullWarning)
@@ -242,16 +242,16 @@ EseIntegrationScenario(DataManipulation, RetrievingNullColumnReturnsColumnNullWa
     TemporaryDirectory directory(
         "DataManipulation.RetrievingNullColumnReturnsColumnNullWarning");
     EseInstance instance(directory);
-    EseSession  session(instance);
+    EseSession session(instance);
     EseDatabase database(session, "Data.mdb");
-    EseTable    table(database, "WithNull");
+    EseTable table(database, "WithNull");
 
     auto identityColumnId = table.AddColumn("Identity",
                                             JET_coltypLong,
                                             JET_bitColumnAutoincrement);
     auto nullableColumnId = table.AddColumn("Nullable", JET_coltypLong);
 
-    //  Insert a row that doesn't touch the nullable column.
+    // Insert a row that doesn't touch the nullable column.
     {
         EseTransaction transaction(session);
         CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepInsert));
@@ -261,7 +261,7 @@ EseIntegrationScenario(DataManipulation, RetrievingNullColumnReturnsColumnNullWa
 
     CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
 
-    int32_t  scratch  = 0;
+    int32_t scratch = 0;
     uint32_t actualSize = 0;
     auto warningOrError = JetRetrieveColumn(session.Handle(),
                                             table.Id(),
@@ -272,9 +272,9 @@ EseIntegrationScenario(DataManipulation, RetrievingNullColumnReturnsColumnNullWa
                                             0,
                                             nullptr);
     Require(warningOrError == JET_wrnColumnNull);
-    Require(actualSize     == 0);
+    Require(actualSize == 0);
 
-    //  The identity column is still readable on the same record.
+    // The identity column is still readable on the same record.
     auto identity =
         RetrieveFixedColumnFromCurrentRecord<int32_t>(table, identityColumnId);
     Require(identity > 0);
@@ -285,9 +285,9 @@ EseIntegrationScenario(DataManipulation, RollbackHidesUncommittedRow)
     TemporaryDirectory directory(
         "DataManipulation.RollbackHidesUncommittedRow");
     EseInstance instance(directory);
-    EseSession  session(instance);
+    EseSession session(instance);
     EseDatabase database(session, "Data.mdb");
-    EseTable    table(database, "Rollback");
+    EseTable table(database, "Rollback");
 
     auto columnId = table.AddColumn("Value", JET_coltypLong, JET_bitColumnNotNULL);
 

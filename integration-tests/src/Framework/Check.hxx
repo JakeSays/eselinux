@@ -1,15 +1,15 @@
 // Copyright (c) Jake Helfert
 // Licensed under the MIT License.
 //
-//  Assertion + JET-error-translation helpers.
+// Assertion + JET-error-translation helpers.
 //
-//  CheckJet(expr)       — calls a JET API; if err < 0, throws ScenarioFailure
-//                         carrying the err name and call site.  Warnings
-//                         (err > 0) are logged but allowed.
-//  Require(condition)   — asserts a C++ predicate; throws on failure.
-//  RequireJetError(expr, expectedErr)
-//                       — asserts the JET call returned exactly the named
-//                         error.  Used by the Error matrix scenarios.
+// CheckJet(expr) — calls a JET API; if err < 0, throws ScenarioFailure
+// carrying the err name and call site. Warnings
+// (err > 0) are logged but allowed.
+// Require(condition) — asserts a C++ predicate; throws on failure.
+// RequireJetError(expr, expectedErr)
+// — asserts the JET call returned exactly the named
+// error. Used by the Error matrix scenarios.
 
 #pragma once
 
@@ -32,11 +32,11 @@ public:
     }
 };
 
-//  Return the canonical name of a JET_ERR (e.g. "JET_errRecordNotFound").
-//  Falls back to "JET_err<N>" for codes we don't have a name for.
+// Return the canonical name of a JET_ERR (e.g. "JET_errRecordNotFound").
+// Falls back to "JET_err<N>" for codes we don't have a name for.
 std::string JetErrorName(JET_ERR errorCode);
 
-//  Implementation helpers used by the macros below.
+// Implementation helpers used by the macros below.
 namespace internal
 {
 
@@ -52,45 +52,45 @@ void RaiseJetErrorMismatch(JET_ERR actualErrorCode,
                            std::string_view expressionText,
                            std::source_location location);
 
-}  //  namespace internal
+} // namespace internal
 
-}  //  namespace ese::tests
+} // namespace ese::tests
 
-//  Macros — these are macros (rather than functions) so the expression
-//  text and source_location capture the actual call site, not the
-//  helper's body.
+// Macros — these are macros (rather than functions) so the expression
+// text and source_location capture the actual call site, not the
+// helper's body.
 
-#define CheckJet(expression)                                                   \
-    do                                                                         \
-    {                                                                          \
-        const JET_ERR _checkJetErrorCode = (expression);                       \
-        if (_checkJetErrorCode < JET_errSuccess)                               \
-        {                                                                      \
-            ::ese::tests::internal::RaiseJetFailure(_checkJetErrorCode,        \
-                                                   #expression,                \
+#define CheckJet(expression) \
+    do \
+    { \
+        const JET_ERR _checkJetErrorCode = (expression); \
+        if (_checkJetErrorCode < JET_errSuccess) \
+        { \
+            ::ese::tests::internal::RaiseJetFailure(_checkJetErrorCode, \
+                                                   #expression, \
                                                    std::source_location::current()); \
-        }                                                                      \
+        } \
     } while (0)
 
-#define Require(condition)                                                     \
-    do                                                                         \
-    {                                                                          \
-        if (!(condition))                                                      \
-        {                                                                      \
-            ::ese::tests::internal::RaiseRequireFailure(#condition,            \
+#define Require(condition) \
+    do \
+    { \
+        if (!(condition)) \
+        { \
+            ::ese::tests::internal::RaiseRequireFailure(#condition, \
                                                        std::source_location::current()); \
-        }                                                                      \
+        } \
     } while (0)
 
-#define RequireJetError(expression, expectedErrorCode)                         \
-    do                                                                         \
-    {                                                                          \
-        const JET_ERR _checkJetErrorCode = (expression);                       \
-        if (_checkJetErrorCode != (expectedErrorCode))                         \
-        {                                                                      \
-            ::ese::tests::internal::RaiseJetErrorMismatch(_checkJetErrorCode,  \
-                                                         (expectedErrorCode),  \
-                                                         #expression,          \
+#define RequireJetError(expression, expectedErrorCode) \
+    do \
+    { \
+        const JET_ERR _checkJetErrorCode = (expression); \
+        if (_checkJetErrorCode != (expectedErrorCode)) \
+        { \
+            ::ese::tests::internal::RaiseJetErrorMismatch(_checkJetErrorCode, \
+                                                         (expectedErrorCode), \
+                                                         #expression, \
                                                          std::source_location::current()); \
-        }                                                                      \
+        } \
     } while (0)

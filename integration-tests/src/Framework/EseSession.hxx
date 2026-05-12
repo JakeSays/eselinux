@@ -1,8 +1,8 @@
 // Copyright (c) Jake Helfert
 // Licensed under the MIT License.
 //
-//  EseSession — RAII over JetBeginSession → JetEndSession.  A session
-//  is the unit of transaction scope; one session per thread.
+// EseSession — RAII over JetBeginSession → JetEndSession. A session
+// is the unit of transaction scope; one session per thread.
 
 #pragma once
 
@@ -19,7 +19,7 @@ public:
     explicit EseSession(EseInstance& instance);
     ~EseSession();
 
-    EseSession(const EseSession&)            = delete;
+    EseSession(const EseSession&) = delete;
     EseSession& operator=(const EseSession&) = delete;
 
     JET_SESID Handle() const
@@ -34,7 +34,7 @@ public:
 
 private:
     EseInstance& _instance;
-    JET_SESID    _handle = JET_sesidNil;
+    JET_SESID _handle = JET_sesidNil;
 };
 
-}  //  namespace ese::tests
+} // namespace ese::tests

@@ -20,9 +20,9 @@ using namespace ese::tests;
 namespace
 {
 
-//  Populate the table with `rowCount` autoincrement rows under a
-//  primary index over a new Identity column.  Returns the
-//  JET_COLUMNID of that column so scenarios can retrieve it later.
+// Populate the table with `rowCount` autoincrement rows under a
+// primary index over a new Identity column. Returns the
+// JET_COLUMNID of that column so scenarios can retrieve it later.
 JET_COLUMNID PopulateAutoIncrementTable(EseTable& table, int rowCount)
 {
     const auto identityColumnId =
@@ -50,14 +50,14 @@ JET_COLUMNID PopulateAutoIncrementTable(EseTable& table, int rowCount)
     return identityColumnId;
 }
 
-}  //  namespace
+} // namespace
 
 EseIntegrationScenario(Navigation, MoveFirstNextLast)
 {
     TemporaryDirectory directory("Navigation.MoveFirstNextLast");
-    EseInstance        instance(directory);
-    EseSession         session(instance);
-    EseDatabase        database(session, "Navigation.mdb");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
 
     EseTable table(database, "Rows");
     auto identityColumnId = PopulateAutoIncrementTable(table, 3);
@@ -78,7 +78,7 @@ EseIntegrationScenario(Navigation, MovePreviousFromLastSeesEveryRow)
     TemporaryDirectory directory(
         "Navigation.MovePreviousFromLastSeesEveryRow");
     EseInstance instance(directory);
-    EseSession  session(instance);
+    EseSession session(instance);
     EseDatabase database(session, "Navigation.mdb");
 
     EseTable table(database, "Rows");
@@ -87,7 +87,7 @@ EseIntegrationScenario(Navigation, MovePreviousFromLastSeesEveryRow)
     CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveLast, 0));
     int observedRows = 0;
     int32_t previous = 0;
-    bool    first    = true;
+    bool first = true;
     while (true)
     {
         auto current =
@@ -95,10 +95,10 @@ EseIntegrationScenario(Navigation, MovePreviousFromLastSeesEveryRow)
                                                                       identityColumnId);
         if (!first)
         {
-            //  Walking backward — current must be strictly less than previous.
+            // Walking backward — current must be strictly less than previous.
             Require(current < previous);
         }
-        first    = false;
+        first = false;
         previous = current;
         ++observedRows;
         const auto moveResult = JetMove(session.Handle(),
@@ -119,20 +119,20 @@ EseIntegrationScenario(Navigation, MakeKeyAndSeekEqualHitsExpectedRow)
     TemporaryDirectory directory(
         "Navigation.MakeKeyAndSeekEqualHitsExpectedRow");
     EseInstance instance(directory);
-    EseSession  session(instance);
+    EseSession session(instance);
     EseDatabase database(session, "Navigation.mdb");
 
     EseTable table(database, "Rows");
     auto identityColumnId = PopulateAutoIncrementTable(table, 10);
 
-    //  Find the autoincrement value of the third row by walking from first.
+    // Find the autoincrement value of the third row by walking from first.
     CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
     CheckJet(JetMove(session.Handle(), table.Id(), 2, 0));
     auto targetKey =
         RetrieveFixedColumnFromCurrentRecord<int32_t>(table,
                                                                   identityColumnId);
 
-    //  Reset to first, then seek directly to that key.
+    // Reset to first, then seek directly to that key.
     CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
     CheckJet(JetMakeKey(session.Handle(),
                         table.Id(),
@@ -152,14 +152,14 @@ EseIntegrationScenario(Navigation, SeekGreaterOrEqualLandsOnFirstMatch)
     TemporaryDirectory directory(
         "Navigation.SeekGreaterOrEqualLandsOnFirstMatch");
     EseInstance instance(directory);
-    EseSession  session(instance);
+    EseSession session(instance);
     EseDatabase database(session, "Navigation.mdb");
 
     EseTable table(database, "Rows");
     auto identityColumnId = PopulateAutoIncrementTable(table, 6);
 
-    //  Find the smallest identity value via MoveFirst, then seek with a
-    //  probe key one below it.  GE should land on the smallest row.
+    // Find the smallest identity value via MoveFirst, then seek with a
+    // probe key one below it. GE should land on the smallest row.
     CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
     auto smallestKey =
         RetrieveFixedColumnFromCurrentRecord<int32_t>(table,
@@ -185,14 +185,14 @@ EseIntegrationScenario(Navigation, SeekEqualReturnsRecordNotFoundWhenMissing)
     TemporaryDirectory directory(
         "Navigation.SeekEqualReturnsRecordNotFoundWhenMissing");
     EseInstance instance(directory);
-    EseSession  session(instance);
+    EseSession session(instance);
     EseDatabase database(session, "Navigation.mdb");
 
     EseTable table(database, "Rows");
     auto identityColumnId = PopulateAutoIncrementTable(table, 3);
 
-    //  Probe a key that's certain to be absent — well above the last
-    //  autoincrement value.
+    // Probe a key that's certain to be absent — well above the last
+    // autoincrement value.
     int32_t absentKey = 0x7FFFFFFE;
     CheckJet(JetMakeKey(session.Handle(),
                         table.Id(),
@@ -208,20 +208,20 @@ EseIntegrationScenario(Navigation, GetBookmarkAndGotoBookmarkRoundTrip)
     TemporaryDirectory directory(
         "Navigation.GetBookmarkAndGotoBookmarkRoundTrip");
     EseInstance instance(directory);
-    EseSession  session(instance);
+    EseSession session(instance);
     EseDatabase database(session, "Navigation.mdb");
 
     EseTable table(database, "Rows");
     auto identityColumnId = PopulateAutoIncrementTable(table, 5);
 
     CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
-    CheckJet(JetMove(session.Handle(), table.Id(), 2, 0));   //  third row
+    CheckJet(JetMove(session.Handle(), table.Id(), 2, 0)); // third row
 
     auto expectedKey =
         RetrieveFixedColumnFromCurrentRecord<int32_t>(table,
                                                                   identityColumnId);
 
-    uint8_t  bookmarkBuffer[256] = {};
+    uint8_t bookmarkBuffer[256] = {};
     uint32_t bookmarkActualBytes = 0;
     CheckJet(JetGetBookmark(session.Handle(),
                             table.Id(),
@@ -229,7 +229,7 @@ EseIntegrationScenario(Navigation, GetBookmarkAndGotoBookmarkRoundTrip)
                             sizeof(bookmarkBuffer),
                             &bookmarkActualBytes));
 
-    //  Reposition somewhere else, then go back via the bookmark.
+    // Reposition somewhere else, then go back via the bookmark.
     CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
     CheckJet(JetGotoBookmark(session.Handle(),
                              table.Id(),
@@ -247,7 +247,7 @@ EseIntegrationScenario(Navigation, MoveByCountAdvancesCorrectNumberOfRows)
     TemporaryDirectory directory(
         "Navigation.MoveByCountAdvancesCorrectNumberOfRows");
     EseInstance instance(directory);
-    EseSession  session(instance);
+    EseSession session(instance);
     EseDatabase database(session, "Navigation.mdb");
 
     EseTable table(database, "Rows");
@@ -258,7 +258,7 @@ EseIntegrationScenario(Navigation, MoveByCountAdvancesCorrectNumberOfRows)
         RetrieveFixedColumnFromCurrentRecord<int32_t>(table,
                                                                   identityColumnId);
 
-    CheckJet(JetMove(session.Handle(), table.Id(), 5, 0));    //  advance 5 rows
+    CheckJet(JetMove(session.Handle(), table.Id(), 5, 0)); // advance 5 rows
 
     auto skipKey =
         RetrieveFixedColumnFromCurrentRecord<int32_t>(table,
@@ -271,14 +271,14 @@ EseIntegrationScenario(Navigation, SetCurrentIndexSwitchesActiveIndex)
     TemporaryDirectory directory(
         "Navigation.SetCurrentIndexSwitchesActiveIndex");
     EseInstance instance(directory);
-    EseSession  session(instance);
+    EseSession session(instance);
     EseDatabase database(session, "Navigation.mdb");
-    EseTable    table(database, "Sorted");
+    EseTable table(database, "Sorted");
 
     auto identityColumnId = table.AddColumn("Identity",
                                             JET_coltypLong,
                                             JET_bitColumnAutoincrement | JET_bitColumnNotNULL);
-    auto rankColumnId     = table.AddColumn("Rank",
+    auto rankColumnId = table.AddColumn("Rank",
                                             JET_coltypLong,
                                             JET_bitColumnNotNULL);
 
@@ -299,7 +299,7 @@ EseIntegrationScenario(Navigation, SetCurrentIndexSwitchesActiveIndex)
         EseTransaction transaction(session);
         for (int rowIndex = 0; rowIndex < RowCount; ++rowIndex)
         {
-            const int32_t rankValue = RowCount - rowIndex;    //  insert in descending rank
+            const int32_t rankValue = RowCount - rowIndex; // insert in descending rank
             CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepInsert));
             CheckJet(JetSetColumn(session.Handle(),
                                   table.Id(),
@@ -313,11 +313,11 @@ EseIntegrationScenario(Navigation, SetCurrentIndexSwitchesActiveIndex)
         transaction.Commit();
     }
 
-    //  ByRank should now walk in ascending rank order.
+    // ByRank should now walk in ascending rank order.
     CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(), "ByRank"));
     CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
     int32_t previous = 0;
-    bool    first    = true;
+    bool first = true;
     for (int rowIndex = 0; rowIndex < RowCount; ++rowIndex)
     {
         auto rank =
@@ -326,7 +326,7 @@ EseIntegrationScenario(Navigation, SetCurrentIndexSwitchesActiveIndex)
         {
             Require(rank > previous);
         }
-        first    = false;
+        first = false;
         previous = rank;
         if (rowIndex + 1 < RowCount)
         {
@@ -340,7 +340,7 @@ EseIntegrationScenario(Navigation, SetIndexRangeStopsWhereExpected)
     TemporaryDirectory directory(
         "Navigation.SetIndexRangeStopsWhereExpected");
     EseInstance instance(directory);
-    EseSession  session(instance);
+    EseSession session(instance);
     EseDatabase database(session, "Navigation.mdb");
 
     EseTable table(database, "Rows");
@@ -351,7 +351,7 @@ EseIntegrationScenario(Navigation, SetIndexRangeStopsWhereExpected)
         RetrieveFixedColumnFromCurrentRecord<int32_t>(table,
                                                                   identityColumnId);
 
-    //  Cap the cursor's walk at firstKey + 2 inclusive.
+    // Cap the cursor's walk at firstKey + 2 inclusive.
     int32_t upperBound = firstKey + 2;
     CheckJet(JetMakeKey(session.Handle(),
                         table.Id(),
@@ -380,7 +380,7 @@ EseIntegrationScenario(Navigation, SetIndexRangeStopsWhereExpected)
         }
         CheckJet(moveResult);
     }
-    Require(observedRows == 3);    //  firstKey, +1, +2
+    Require(observedRows == 3); // firstKey, +1, +2
 }
 
 EseIntegrationScenario(Navigation, MoveBeyondLastReturnsNoCurrentRecord)
@@ -388,7 +388,7 @@ EseIntegrationScenario(Navigation, MoveBeyondLastReturnsNoCurrentRecord)
     TemporaryDirectory directory(
         "Navigation.MoveBeyondLastReturnsNoCurrentRecord");
     EseInstance instance(directory);
-    EseSession  session(instance);
+    EseSession session(instance);
     EseDatabase database(session, "Navigation.mdb");
 
     EseTable table(database, "Rows");

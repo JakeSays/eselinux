@@ -5,9 +5,9 @@
 
 using namespace ese::tests;
 
-//  TODO Phase 4: RBS create / revert / cleanup via JetOSSnapshotPrepare
-//  and friends.  Phase 1 placeholder.
+// TODO Phase 4: RBS create / revert / cleanup via JetOSSnapshotPrepare
+// and friends. Phase 1 placeholder.
 EseIntegrationScenario(Snapshot, PlaceholderUntilPhase4)
 {
-    //  Intentionally empty.
+    // Intentionally empty.
 }

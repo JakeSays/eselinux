@@ -16,12 +16,12 @@ EseIntegrationScenario(Error, RetrievingUnknownColumnReturnsColumnNotFound)
     TemporaryDirectory directory(
         "Error.RetrievingUnknownColumnReturnsColumnNotFound");
     EseInstance instance(directory);
-    EseSession  session(instance);
+    EseSession session(instance);
     EseDatabase database(session, "Error.mdb");
-    EseTable    table(database, "Empty");
+    EseTable table(database, "Empty");
 
     JET_COLUMNDEF columnDefinition = {};
-    columnDefinition.cbStruct      = sizeof(columnDefinition);
+    columnDefinition.cbStruct = sizeof(columnDefinition);
     RequireJetError(JetGetColumnInfoA(session.Handle(),
                                       database.Id(),
                                       "Empty",

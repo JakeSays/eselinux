@@ -37,7 +37,7 @@ std::unordered_map<std::string, ChildEntryPoint>& ChildEntryTable()
     return table;
 }
 
-//  Path to /proc/self/exe — the binary we're going to fork+exec.
+// Path to /proc/self/exe — the binary we're going to fork+exec.
 std::string ResolveSelfExecutablePath()
 {
     char executablePathBuffer[4096] = { 0 };
@@ -52,7 +52,7 @@ std::string ResolveSelfExecutablePath()
     return std::string(executablePathBuffer);
 }
 
-}  //  namespace
+} // namespace
 
 void RegisterChildEntry(std::string name, ChildEntryPoint entry)
 {
@@ -76,15 +76,15 @@ void ChildProcess::SignalReady(const std::filesystem::path& directory)
     sentinelFile << "ready" << std::endl;
 }
 
-ChildProcess::ChildProcess(std::string_view             entryName,
+ChildProcess::ChildProcess(std::string_view entryName,
                            const std::filesystem::path& directory)
     : _directory(directory)
 {
-    const auto entryNameOwned   = std::string(entryName);
-    const auto directoryString  = directory.string();
-    const auto executablePath   = ResolveSelfExecutablePath();
+    const auto entryNameOwned = std::string(entryName);
+    const auto directoryString = directory.string();
+    const auto executablePath = ResolveSelfExecutablePath();
 
-    //  Build argv for execve.  All arguments must outlive the call.
+    // Build argv for execve. All arguments must outlive the call.
     std::vector<std::string> argumentStorage;
     argumentStorage.push_back(executablePath);
     argumentStorage.push_back("--child-entry");
@@ -108,10 +108,10 @@ ChildProcess::ChildProcess(std::string_view             entryName,
 
     if (childPid == 0)
     {
-        //  In the child.  Replace ourselves with a fresh ese-tests
-        //  invocation in child-entry mode.  No return on success.
+        // In the child. Replace ourselves with a fresh ese-tests
+        // invocation in child-entry mode. No return on success.
         execve(executablePath.c_str(), argumentPointers.data(), environ);
-        //  If execve returns the child is dead anyway — print and exit.
+        // If execve returns the child is dead anyway — print and exit.
         std::string failureMessage = std::format("execve({}) failed: {}\n",
                                                  executablePath,
                                                  std::strerror(errno));
@@ -126,7 +126,7 @@ ChildProcess::~ChildProcess()
 {
     if (_pid > 0 && !_reaped)
     {
-        //  Last-resort cleanup so we never leave a child zombie.
+        // Last-resort cleanup so we never leave a child zombie.
         ::kill(_pid, SIGKILL);
         int status = 0;
         (void)waitpid(_pid, &status, 0);
@@ -135,9 +135,9 @@ ChildProcess::~ChildProcess()
 
 void ChildProcess::WaitUntilReady(std::chrono::milliseconds timeout)
 {
-    const auto deadline       = std::chrono::steady_clock::now() + timeout;
-    const auto sentinelPath   = _directory / ReadySentinelFileName;
-    const auto pollInterval   = std::chrono::milliseconds(10);
+    const auto deadline = std::chrono::steady_clock::now() + timeout;
+    const auto sentinelPath = _directory / ReadySentinelFileName;
+    const auto pollInterval = std::chrono::milliseconds(10);
 
     while (std::chrono::steady_clock::now() < deadline)
     {
@@ -146,7 +146,7 @@ void ChildProcess::WaitUntilReady(std::chrono::milliseconds timeout)
         {
             return;
         }
-        //  Detect early child death so we don't spin until the timeout.
+        // Detect early child death so we don't spin until the timeout.
         int status = 0;
         const auto result = waitpid(_pid, &status, WNOHANG);
         if (result == _pid)
@@ -189,4 +189,4 @@ int ChildProcess::WaitForExit()
     return status;
 }
 
-}  //  namespace ese::tests
+} // namespace ese::tests

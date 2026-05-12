@@ -1,11 +1,11 @@
 // Copyright (c) Jake Helfert
 // Licensed under the MIT License.
 //
-//  Row-level convenience wrappers that bundle the JetPrepareUpdate /
-//  JetSetColumn / JetUpdate sequence for the common case of "insert a
-//  row whose only payload is a single fixed-size column".  Scenarios
-//  that need the full DDL/DML surface go straight to the JET APIs;
-//  these helpers exist to keep coltyp-round-trip tests terse.
+// Row-level convenience wrappers that bundle the JetPrepareUpdate /
+// JetSetColumn / JetUpdate sequence for the common case of "insert a
+// row whose only payload is a single fixed-size column". Scenarios
+// that need the full DDL/DML surface go straight to the JET APIs;
+// these helpers exist to keep coltyp-round-trip tests terse.
 
 #pragma once
 
@@ -22,12 +22,12 @@
 namespace ese::tests
 {
 
-//  Insert a row containing one fixed-size column set to `value`.
-//  No transaction is opened — caller wraps with EseTransaction.
+// Insert a row containing one fixed-size column set to `value`.
+// No transaction is opened — caller wraps with EseTransaction.
 template <typename ValueType>
-void InsertSingleFixedColumnRow(EseTable&    table,
+void InsertSingleFixedColumnRow(EseTable& table,
                                 JET_COLUMNID columnId,
-                                ValueType    value)
+                                ValueType value)
 {
     auto sessionHandle = table.Database().Session().Handle();
     CheckJet(JetPrepareUpdate(sessionHandle, table.Id(), JET_prepInsert));
@@ -41,12 +41,12 @@ void InsertSingleFixedColumnRow(EseTable&    table,
     CheckJet(JetUpdate(sessionHandle, table.Id(), nullptr, 0, nullptr));
 }
 
-//  Insert a row containing one variable-size column set to the bytes in
-//  `payload`.
-inline void InsertSingleVariableColumnRow(EseTable&             table,
-                                          JET_COLUMNID          columnId,
-                                          const void*           payload,
-                                          uint32_t              payloadBytes)
+// Insert a row containing one variable-size column set to the bytes in
+// `payload`.
+inline void InsertSingleVariableColumnRow(EseTable& table,
+                                          JET_COLUMNID columnId,
+                                          const void* payload,
+                                          uint32_t payloadBytes)
 {
     auto sessionHandle = table.Database().Session().Handle();
     CheckJet(JetPrepareUpdate(sessionHandle, table.Id(), JET_prepInsert));
@@ -60,14 +60,14 @@ inline void InsertSingleVariableColumnRow(EseTable&             table,
     CheckJet(JetUpdate(sessionHandle, table.Id(), nullptr, 0, nullptr));
 }
 
-//  Retrieve a fixed-size column from the current record.  Returns the
-//  value; throws if the column comes back NULL or the wrong size.
+// Retrieve a fixed-size column from the current record. Returns the
+// value; throws if the column comes back NULL or the wrong size.
 template <typename ValueType>
-ValueType RetrieveFixedColumnFromCurrentRecord(EseTable&    table,
+ValueType RetrieveFixedColumnFromCurrentRecord(EseTable& table,
                                                JET_COLUMNID columnId)
 {
     ValueType result = {};
-    uint32_t  actualBytes = 0;
+    uint32_t actualBytes = 0;
     CheckJet(JetRetrieveColumn(table.Database().Session().Handle(),
                                table.Id(),
                                columnId,
@@ -80,13 +80,13 @@ ValueType RetrieveFixedColumnFromCurrentRecord(EseTable&    table,
     return result;
 }
 
-//  Retrieve a variable-size column into a freshly-allocated vector.
-inline std::vector<uint8_t> RetrieveVariableColumnFromCurrentRecord(EseTable&    table,
+// Retrieve a variable-size column into a freshly-allocated vector.
+inline std::vector<uint8_t> RetrieveVariableColumnFromCurrentRecord(EseTable& table,
                                                                     JET_COLUMNID columnId,
-                                                                    uint32_t     maximumBytes)
+                                                                    uint32_t maximumBytes)
 {
     std::vector<uint8_t> buffer(maximumBytes);
-    uint32_t             actualBytes = 0;
+    uint32_t actualBytes = 0;
     CheckJet(JetRetrieveColumn(table.Database().Session().Handle(),
                                table.Id(),
                                columnId,
@@ -99,4 +99,4 @@ inline std::vector<uint8_t> RetrieveVariableColumnFromCurrentRecord(EseTable&   
     return buffer;
 }
 
-}  //  namespace ese::tests
+} // namespace ese::tests

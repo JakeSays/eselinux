@@ -5,9 +5,9 @@
 
 using namespace ese::tests;
 
-//  TODO Phase 5: boundary-condition matrix — max columns, max indexes,
-//  max key length, max table count, page sizes.  Phase 1 placeholder.
+// TODO Phase 5: boundary-condition matrix — max columns, max indexes,
+// max key length, max table count, page sizes. Phase 1 placeholder.
 EseIntegrationScenario(Limit, PlaceholderUntilPhase5)
 {
-    //  Intentionally empty.
+    // Intentionally empty.
 }

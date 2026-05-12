@@ -15,9 +15,9 @@ namespace ese::tests
 namespace
 {
 
-//  Tiny glob matcher: `*` matches zero or more of any character,
-//  `?` matches exactly one.  Sufficient for `--filter Schema.*` or
-//  `--filter *Backup*`.
+// Tiny glob matcher: `*` matches zero or more of any character,
+// `?` matches exactly one. Sufficient for `--filter Schema.*` or
+// `--filter *Backup*`.
 bool MatchesGlob(std::string_view pattern, std::string_view text)
 {
     if (pattern.empty())
@@ -25,11 +25,11 @@ bool MatchesGlob(std::string_view pattern, std::string_view text)
         return true;
     }
 
-    //  Iterative backtracking — small inputs, no recursion concern.
-    size_t patternIndex      = 0;
-    size_t textIndex         = 0;
-    size_t starPatternIndex  = std::string_view::npos;
-    size_t starTextIndex     = 0;
+    // Iterative backtracking — small inputs, no recursion concern.
+    size_t patternIndex = 0;
+    size_t textIndex = 0;
+    size_t starPatternIndex = std::string_view::npos;
+    size_t starTextIndex = 0;
 
     while (textIndex < text.size())
     {
@@ -42,7 +42,7 @@ bool MatchesGlob(std::string_view pattern, std::string_view text)
         else if (patternIndex < pattern.size() && pattern[patternIndex] == '*')
         {
             starPatternIndex = patternIndex;
-            starTextIndex    = textIndex;
+            starTextIndex = textIndex;
             ++patternIndex;
         }
         else if (starPatternIndex != std::string_view::npos)
@@ -64,13 +64,13 @@ bool MatchesGlob(std::string_view pattern, std::string_view text)
     return patternIndex == pattern.size();
 }
 
-}  //  namespace
+} // namespace
 
 ScenarioRegistry& ScenarioRegistry::Instance()
 {
-    //  Meyers singleton — guaranteed initialised on first use, which is
-    //  before any Scenario ctor runs because the function-local static
-    //  is constructed on demand from Register().
+    // Meyers singleton — guaranteed initialised on first use, which is
+    // before any Scenario ctor runs because the function-local static
+    // is constructed on demand from Register().
     static ScenarioRegistry instance;
     return instance;
 }
@@ -109,4 +109,4 @@ std::vector<Scenario*> ScenarioRegistry::Filtered(std::string_view pattern) cons
     return matching;
 }
 
-}  //  namespace ese::tests
+} // namespace ese::tests

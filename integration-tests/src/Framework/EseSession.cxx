@@ -27,4 +27,4 @@ EseSession::~EseSession()
     }
 }
 
-}  //  namespace ese::tests
+} // namespace ese::tests

@@ -11,10 +11,10 @@ using namespace ese::tests;
 
 EseIntegrationScenario(Concurrency, ThreadGroupLaunchAndJoin)
 {
-    //  Smoke-test the ThreadGroup framework piece without engaging the
-    //  engine — Phase 5 will fold this into multi-session scenarios.
+    // Smoke-test the ThreadGroup framework piece without engaging the
+    // engine — Phase 5 will fold this into multi-session scenarios.
     static constexpr int WorkerCount = 8;
-    std::atomic<int>     totalTicks  = 0;
+    std::atomic<int> totalTicks = 0;
 
     ThreadGroup threadGroup;
     threadGroup.Launch(WorkerCount, [&totalTicks](int /*threadIndex*/)

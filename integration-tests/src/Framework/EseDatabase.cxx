@@ -10,9 +10,9 @@
 namespace ese::tests
 {
 
-EseDatabase::EseDatabase(EseSession&      session,
+EseDatabase::EseDatabase(EseSession& session,
                          std::string_view filename,
-                         EseDatabaseMode  mode)
+                         EseDatabaseMode mode)
     : _session(session),
       _path(session.Instance().Directory() / std::string(filename))
 {
@@ -51,9 +51,9 @@ EseDatabase::~EseDatabase()
         (void)JetCloseDatabase(_session.Handle(), _id, 0);
         _id = JET_dbidNil;
     }
-    //  Detach if we still own the attachment.  JetCreateDatabase keeps
-    //  the database attached after the close, so detach in both modes.
+    // Detach if we still own the attachment. JetCreateDatabase keeps
+    // the database attached after the close, so detach in both modes.
     (void)JetDetachDatabaseA(_session.Handle(), _path.string().c_str());
 }
 
-}  //  namespace ese::tests
+} // namespace ese::tests
