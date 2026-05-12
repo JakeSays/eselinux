@@ -475,8 +475,8 @@ BOOL GetFileInformationByHandleEx(HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS /*File
     return FALSE;
 }
 
-BOOL SetFileInformationByHandle(HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS /*FileInformationClass*/,
-    LPVOID /*lpFileInformation*/, DWORD /*dwBufferSize*/)
+BOOL SetFileInformationByHandle(HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInformationClass,
+    LPVOID lpFileInformation, DWORD dwBufferSize)
 {
     KObject* const k = HandleToK(hFile);
     if (!k || k->kind != HandleKind::File)
@@ -484,6 +484,110 @@ BOOL SetFileInformationByHandle(HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS /*FileIn
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
     }
+
+    switch (FileInformationClass)
+    {
+        case FileEndOfFileInfo:
+        {
+            if (dwBufferSize < sizeof(FILE_END_OF_FILE_INFO) || !lpFileInformation)
+            {
+                SetLastError(ERROR_INVALID_PARAMETER);
+                return FALSE;
+            }
+            const FILE_END_OF_FILE_INFO* const pInfo = (const FILE_END_OF_FILE_INFO*) lpFileInformation;
+            if (ftruncate(k->fileFd, (off_t) pInfo->EndOfFile.QuadPart) < 0)
+            {
+                SetLastError(errno == ENOSPC ? ERROR_DISK_FULL : ERROR_INVALID_PARAMETER);
+                return FALSE;
+            }
+            return TRUE;
+        }
+
+        case FileRenameInfo:
+        {
+            if (dwBufferSize < sizeof(FILE_RENAME_INFO) || !lpFileInformation || !k->fileOpenedPath)
+            {
+                SetLastError(ERROR_INVALID_PARAMETER);
+                return FALSE;
+            }
+            const FILE_RENAME_INFO* const pInfo = (const FILE_RENAME_INFO*) lpFileInformation;
+            char dest[c_pathBuf];
+            //  FileName is WCHAR[]; convert via the path utility.  Engine
+            //  passes FileNameLength in characters, not bytes.
+            //  Use a tmp buffer so we can null-terminate properly.
+            WCHAR wszDest[c_pathBuf];
+            DWORD i = 0;
+            for (; i < pInfo->FileNameLength && i + 1 < c_pathBuf; ++i)
+                wszDest[i] = pInfo->FileName[i];
+            wszDest[i] = L'\0';
+            if (WidePathToUtf8(wszDest, dest, sizeof(dest)) <= 0)
+            {
+                SetLastError(ERROR_INVALID_PARAMETER);
+                return FALSE;
+            }
+            //  If !ReplaceIfExists, fail explicitly when dest exists — POSIX
+            //  rename(2) silently replaces.
+            if (!pInfo->ReplaceIfExists)
+            {
+                struct stat st;
+                if (stat(dest, &st) == 0)
+                {
+                    SetLastError(ERROR_ALREADY_EXISTS);
+                    return FALSE;
+                }
+            }
+            if (k->fileOpenedPath && rename(k->fileOpenedPath, dest) < 0)
+            {
+                SetLastError(errno == ENOENT ? ERROR_FILE_NOT_FOUND : ERROR_INVALID_PARAMETER);
+                return FALSE;
+            }
+            //  Track the new path so subsequent renames work.
+            char* const newPath = strdup(dest);
+            if (newPath)
+            {
+                free(k->fileOpenedPath);
+                k->fileOpenedPath = newPath;
+            }
+            return TRUE;
+        }
+
+        case FileAllocationInfo:
+        {
+            if (dwBufferSize < sizeof(FILE_ALLOCATION_INFO) || !lpFileInformation)
+            {
+                SetLastError(ERROR_INVALID_PARAMETER);
+                return FALSE;
+            }
+            const FILE_ALLOCATION_INFO* const pInfo = (const FILE_ALLOCATION_INFO*) lpFileInformation;
+            //  Win32 FileAllocationInfo reserves disk blocks; closest Linux
+            //  equivalent is fallocate (without KEEP_SIZE) which extends
+            //  logical size too.  Treat as best-effort.
+            if (fallocate(k->fileFd, 0, 0, (off_t) pInfo->AllocationSize.QuadPart) < 0 && errno != EOPNOTSUPP)
+            {
+                SetLastError(errno == ENOSPC ? ERROR_DISK_FULL : ERROR_INVALID_PARAMETER);
+                return FALSE;
+            }
+            return TRUE;
+        }
+
+        case FileDispositionInfo:
+        {
+            if (dwBufferSize < sizeof(FILE_DISPOSITION_INFO) || !lpFileInformation)
+            {
+                SetLastError(ERROR_INVALID_PARAMETER);
+                return FALSE;
+            }
+            const FILE_DISPOSITION_INFO* const pInfo = (const FILE_DISPOSITION_INFO*) lpFileInformation;
+            if (pInfo->DeleteFile && k->fileOpenedPath)
+            {
+                //  Mark delete-on-close — actual unlink happens in FreeKObject.
+                free(k->fileDeleteOnClosePath);
+                k->fileDeleteOnClosePath = strdup(k->fileOpenedPath);
+            }
+            return TRUE;
+        }
+    }
+
     SetLastError(ERROR_INVALID_PARAMETER);
     return FALSE;
 }

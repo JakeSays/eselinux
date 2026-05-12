@@ -1308,6 +1308,7 @@ BOOL COSFileSystem::FPathIsRelative(
         return fFalse;
     }
 
+#ifdef ESE_OS_WINDOWS
     if ( iswalpha( wszPath[ 0 ] ) && L':' == wszPath[ 1 ] && L'\\' == wszPath[ 2 ] )
     {
         // It's of the form 'd:\'
@@ -1320,6 +1321,14 @@ BOOL COSFileSystem::FPathIsRelative(
         // -UNC-style paths are absolute. (Includes the \\?\ style of paths.)
         return fFalse;
     }
+#else
+    //  POSIX: an absolute path starts with chPathDelimiter ('/').  No
+    //  drive-letter or UNC concepts; the check is unambiguous.
+    if ( wszPath[ 0 ] == chPathDelimiter )
+    {
+        return fFalse;
+    }
+#endif
 
     return fTrue;
 }

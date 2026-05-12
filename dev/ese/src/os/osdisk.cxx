@@ -6717,11 +6717,18 @@ BOOL GetOverlappedResult_( HANDLE, LPOVERLAPPED, LPDWORD, BOOL )
     SetLastError( ERROR_INVALID_FUNCTION );
     return FALSE;
 }
+//  Linux: drive every IOREQ method through synchronous pread/pwrite via the
+//  windows-shim ReadFile/WriteFile.  iomethodSemiSync (the engine's
+//  default for foreground reads/writes) hands us OVERLAPPED with the
+//  offset; we don't issue truly async I/O here because the engine treats
+//  the result as "completed inline" anyway — the IO thread for real
+//  background I/O calls this same function with iomethodAsync and reaps
+//  CompleteIO from the io_uring completion thread separately.
 DWORD ErrorIOMgrIssueIO(
-    _In_ COSDisk::IORun*                    /*piorun*/,
-    _In_ const IOREQ::IOMETHOD              /*iomethod*/,
-    __inout const PFILE_SEGMENT_ELEMENT     /*rgfse*/,
-    _In_ const DWORD                        /*cfse*/,
+    _In_ COSDisk::IORun*                    piorun,
+    _In_ const IOREQ::IOMETHOD              iomethod,
+    __inout const PFILE_SEGMENT_ELEMENT     rgfse,
+    _In_ const DWORD                        cfse,
     _Out_ BOOL *                            pfIOCompleted,
     _Out_ DWORD *                           pcbTransfer,
     _Out_ IOREQ **                          ppioreqHead = nullptr )
@@ -6729,7 +6736,71 @@ DWORD ErrorIOMgrIssueIO(
     if ( pfIOCompleted ) *pfIOCompleted = FALSE;
     if ( pcbTransfer )   *pcbTransfer   = 0;
     if ( ppioreqHead )   *ppioreqHead   = nullptr;
-    return ERROR_INVALID_FUNCTION;
+
+    Assert( piorun != nullptr );
+
+    //  PrepareForIssue:
+    //    * coalesces IOREQs into a single run + scatter/gather list,
+    //    * sets pioreqHead->ovlp.{Offset,OffsetHigh} = run offset,
+    //    * calls IOREQ::BeginIO on each member (transitioning state to
+    //      ioreqIssuedSyncIO / ioreqIssuedAsyncIO).
+    DWORD cbRun = 0;
+    BOOL  fIOOSLowPriority = fFalse;
+    piorun->PrepareForIssue( iomethod, &cbRun, &fIOOSLowPriority, rgfse, cfse );
+    IOREQ* const pioreqHead = piorun->PioreqGetRun();
+    piorun = nullptr;
+
+    if ( ppioreqHead )
+    {
+        *ppioreqHead = pioreqHead;
+    }
+
+    OVERLAPPED ovlpLocal;
+    memset( &ovlpLocal, 0, sizeof( ovlpLocal ) );
+    ovlpLocal.Offset     = pioreqHead->ovlp.Offset;
+    ovlpLocal.OffsetHigh = pioreqHead->ovlp.OffsetHigh;
+
+    BOOL fSucceeded = FALSE;
+
+    if ( iomethod == IOREQ::iomethodScatterGather && cfse > 0 && rgfse != nullptr )
+    {
+        fSucceeded = pioreqHead->fWrite
+            ? WriteFileGather( pioreqHead->p_osf->hFile, rgfse, cbRun, nullptr, &ovlpLocal )
+            : ReadFileScatter( pioreqHead->p_osf->hFile, rgfse, cbRun, nullptr, &ovlpLocal );
+        if ( fSucceeded )
+        {
+            *pcbTransfer = cbRun;
+        }
+    }
+    else
+    {
+        fSucceeded = pioreqHead->fWrite
+            ? WriteFile( pioreqHead->p_osf->hFile, pioreqHead->pbData, cbRun, pcbTransfer, &ovlpLocal )
+            : ReadFile( pioreqHead->p_osf->hFile, (LPVOID)pioreqHead->pbData, cbRun, pcbTransfer, &ovlpLocal );
+    }
+
+    if ( fSucceeded )
+    {
+        if ( iomethod == IOREQ::iomethodSync || iomethod == IOREQ::iomethodSemiSync )
+        {
+            //  Sync/SemiSync: signal immediate completion; caller
+            //  takes the "completed inline" branch in FIOMgrHandleIOResult.
+            *pfIOCompleted = TRUE;
+        }
+        else
+        {
+            //  Async / Scatter-Gather: the engine expects a deferred
+            //  completion via OSDiskIIOThreadCompleteWithErr.  We just
+            //  did the I/O inline, so post the completion now — the
+            //  caller's *pfIOCompleted stays FALSE and the assertion at
+            //  osdisk.cxx:7881 only fires for true sync paths.
+            OSDiskIIOThreadCompleteWithErr( ERROR_SUCCESS, *pcbTransfer, pioreqHead );
+        }
+        return ERROR_SUCCESS;
+    }
+
+    const DWORD error = GetLastError();
+    return ( error != ERROR_SUCCESS ) ? error : ERROR_IO_DEVICE;
 }
 
 #endif // ESE_OS_WINDOWS
