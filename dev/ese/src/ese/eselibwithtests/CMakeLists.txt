@@ -68,6 +68,7 @@ set(ESE_TEST_SOURCES_PORTABLE
     ../node_test.cxx
     ../oslayer_test.cxx
     ../osu_test.cxx
+    ../rbscleaner_test.cxx
     daehelpers_test.cxx
 )
 

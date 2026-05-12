@@ -3,6 +3,11 @@
 
 #include "std.hxx"
 
+//  swprintf_s isn't in std.hxx's transitive include chain on Linux; pull
+//  it (the windows-shim macro that expands to StringCbPrintfW) explicitly.
+//  Matches the same include in fmp_test.cxx.
+#include <windows.h>
+
 #ifndef ENABLE_JET_UNIT_TEST
 #error This file should only be compiled with the unit tests!
 #endif // ENABLE_JET_UNIT_TEST
