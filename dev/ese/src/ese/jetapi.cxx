@@ -19793,10 +19793,8 @@ LOCAL JET_ERR JetDBUtilitiesEx( JET_DBUTIL_W *pdbutilW )
     // particular, we regularly use perf tests across versions in order to narrow
     // down regressions.
     
-#if defined(ESE_ARCH_64BIT) && defined(ESE_OS_WINDOWS)
+#if defined(ESE_ARCH_64BIT)
     C_ASSERT( sizeof(JET_DBUTIL_W) == 136 );
-#elif defined(ESE_ARCH_64BIT) && defined(ESE_OS_LINUX)
-    C_ASSERT( sizeof(JET_DBUTIL_W) == 124 );
 #else  //  !ESE_ARCH_64BIT
     C_ASSERT( sizeof(JET_DBUTIL_W) == 84 );
 #endif //  ESE_ARCH_64BIT

@@ -121,11 +121,10 @@ typedef unsigned char INST;
 void OSPrepreinitSetUserTLSSize( const ULONG cbUserTLSSize );
 
 #ifdef OS_LAYER_VIOLATIONS
-#if defined(__linux__)
-// Linux x86_64. wchar_t is 32 bits in libc but the engine uses -fshort-wchar
-// (16-bit). Confirmed against sizeof(TLS) at static-assert.
-#define ESE_USER_TLS_SIZE 176
-#elif defined(_WIN64)
+// Pack(8) on any 64-bit target (Win64 + Linux LP64 / aarch64 LP64)
+// produces the same TLS layout — the JET_THREADSTATS4 members inside
+// TLS pad identically.  Pack(4) on Win32 was the old smaller layout.
+#ifdef ESE_ARCH_64BIT
 #define ESE_USER_TLS_SIZE 184
 #else
 #define ESE_USER_TLS_SIZE 160

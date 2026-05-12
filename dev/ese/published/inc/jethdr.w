@@ -59,7 +59,13 @@ extern "C" {
 
 #define JET_cbPage  4096            //  UNDONE: Remove when no more components reference this. // not_PubEsent
 
-#if defined(_WIN64)
+#include "platform.h"
+
+//  Pack to 8 on every 64-bit target (Win64, Linux LP64, aarch64).
+//  Treating Linux like Win32 (pack(4)) silently inflates every JET_*
+//  aggregate the engine and the public-API consumers disagree on,
+//  corrupting cross-module calls.
+#ifdef ESE_ARCH_64BIT
 #include <pshpack8.h>
 #else
 #include <pshpack4.h>
