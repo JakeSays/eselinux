@@ -96,32 +96,52 @@ NTSTATUS NtQueryVolumeInformationFile(HANDLE FileHandle,
         if (fstat(k->fileFd, &st) < 0)
             return STATUS_ACCESS_DENIED;
 
-        //  ESE requires sector sizes to be powers of 2 and >= 512.  ioctl
-        //  for block devices reports honest hardware values; st_blksize for
-        //  regular files / directories on networked or automount filesystems
-        //  can return ridiculous numbers (2560, 3584, etc. — the kernel's
-        //  preferred-IO hint).  Clamp anything non-power-of-2 to 4096.
+        //  ESE requires sector sizes to be powers of 2, >= 512, and <= 4096.
+        //  The upper bound matches what ESE actually services on Windows:
+        //  it fires FirewallTag:SectorSizeTooBig and clamps to 4K for
+        //  anything larger (osfs.cxx around line 2021), and the log
+        //  layer warns + clamps separately (logstream.cxx around line
+        //  196).  The FireWall is benign — it's an audit trace, not a
+        //  recovery action — but it spams the event log on every file
+        //  open under filesystems like ZFS whose recordsize defaults to
+        //  128 KB.  Cap the shim's output at 4K so the engine never
+        //  sees the oversized value in the first place.
+        //
+        //  ioctl for block devices reports honest hardware values;
+        //  st_blksize for regular files / directories on networked or
+        //  automount filesystems can return non-power-of-2 numbers
+        //  (2560, 3584, etc. — the kernel's preferred-IO hint).  Clamp
+        //  those to 4096 as well.
+        static constexpr unsigned int MaximumSectorSize = 4096;
         auto IsPow2 = [](unsigned int v) -> bool
         {
             return v != 0 && (v & (v - 1)) == 0;
         };
-        unsigned int logical = 4096;
-        unsigned int physical = 4096;
+        auto ClampSectorSize = [&IsPow2](unsigned int candidate) -> unsigned int
+        {
+            if (candidate < 512 || !IsPow2(candidate))
+            {
+                return MaximumSectorSize;
+            }
+            return candidate > MaximumSectorSize ? MaximumSectorSize : candidate;
+        };
+        unsigned int logical = MaximumSectorSize;
+        unsigned int physical = MaximumSectorSize;
         if (S_ISBLK(st.st_mode))
         {
             int logicalT = 0;
             int physicalT = 0;
-            if (ioctl(k->fileFd, BLKSSZGET, &logicalT) == 0 && logicalT >= 512 && IsPow2((unsigned int) logicalT))
-                logical = (unsigned int) logicalT;
-            if (ioctl(k->fileFd, BLKPBSZGET, &physicalT) == 0 && physicalT >= 512 && IsPow2((unsigned int) physicalT))
-                physical = (unsigned int) physicalT;
+            if (ioctl(k->fileFd, BLKSSZGET, &logicalT) == 0)
+                logical = ClampSectorSize((unsigned int) logicalT);
+            if (ioctl(k->fileFd, BLKPBSZGET, &physicalT) == 0)
+                physical = ClampSectorSize((unsigned int) physicalT);
         }
-        else if (st.st_blksize >= 512 && IsPow2((unsigned int) st.st_blksize))
+        else
         {
-            //  Regular file on a well-behaved filesystem (ext4/xfs/btrfs):
-            //  honour st_blksize.  Otherwise stick with the 4096 default.
-            physical = (unsigned int) st.st_blksize;
-            logical = physical;
+            //  Regular file / directory: honour st_blksize when sane,
+            //  otherwise fall back to the 4096 default.
+            physical = ClampSectorSize((unsigned int) st.st_blksize);
+            logical  = physical;
         }
 
         FILE_FS_SECTOR_SIZE_INFORMATION* const pInfo =
