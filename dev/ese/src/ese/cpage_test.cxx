@@ -2923,7 +2923,12 @@ void CPageTestFixture::TestReplacePerf()
     printf( "\n" );
     
 #ifdef DEBUG
-    INT cIterations = 50;
+    //  Was 50 in DEBUG, which is too few to time meaningfully — the
+    //  resulting per-iteration µs comes out as 0.000000 (the loop
+    //  finishes faster than the ms-resolution timer can measure).
+    //  Bump to 10000 so we get ~0.1µs precision on the per-iteration
+    //  number while still running ~15x faster than the release path.
+    INT cIterations = 10000;
 #else
     INT cIterations = 150000;
 #endif
