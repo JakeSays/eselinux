@@ -123,17 +123,17 @@ wchar_t wszBookDescription3 []          = L"A great historical, cultural and sen
 
 //  Orders
 //
-long lOrderCustomerID1                  = 5;
-long rglOrderItems1[]                       = { 1 };
+LONG lOrderCustomerID1                  = 5;
+LONG rglOrderItems1[]                       = { 1 };
 
-long lOrderCustomerID2                  = 1;
-long rglOrderItems2[]                       = { 2, 3 };
+LONG lOrderCustomerID2                  = 1;
+LONG rglOrderItems2[]                       = { 2, 3 };
 
-long lOrderCustomerID3                  = 2;
-long rglOrderItems3[]                       = { 3, 3 };
+LONG lOrderCustomerID3                  = 2;
+LONG rglOrderItems3[]                       = { 3, 3 };
 
-long lOrderCustomerID4                  = 4;
-long rglOrderItems4[]                       = { 1, 2, 3 };
+LONG lOrderCustomerID4                  = 4;
+LONG rglOrderItems4[]                       = { 1, 2, 3 };
 
 
 ////////////////////////////////////////////////////////////
@@ -581,7 +581,7 @@ void GetLocalTimeAsLongLong( unsigned char *rgbLocalTime )
 }
 
 
-JET_ERR ErrProcessOrder( JET_SESID sesidT, JET_TABLEID tableidOrders, JET_TABLEID tableidBooks, long lCustomerID, long *rglItems, long clItems )
+JET_ERR ErrProcessOrder( JET_SESID sesidT, JET_TABLEID tableidOrders, JET_TABLEID tableidBooks, LONG lCustomerID, LONG *rglItems, LONG clItems )
 {
     JET_ERR                 err = JET_errSuccess;
     int                     ilT = 0;
@@ -860,7 +860,7 @@ JET_ERR ErrDumpCustomersToScreen( JET_SESID sesidT, JET_TABLEID tableidCustomers
     JET_ERR                 err = JET_errSuccess;
     JET_RETRIEVECOLUMN      rgretrievecolumnT[10];
     char                    szCustomerNameT[256];
-    long                    lCustomerIDT = 0;
+    LONG                    lCustomerIDT = 0;
 
     rgretrievecolumnT[0].columnid = columnidCustomerName;
     rgretrievecolumnT[0].pvData = szCustomerNameT;
@@ -905,7 +905,7 @@ JET_ERR ErrDumpCustomersToScreen( JET_SESID sesidT, JET_TABLEID tableidCustomers
         Call( JetRetrieveColumns( sesidT, tableidCustomers, rgretrievecolumnT, 2 ) );
             
         printf( "%-32s", szCustomerNameT );
-        printf("%ld\n", lCustomerIDT );
+        printf("%ld\n", (long)lCustomerIDT );
     }
     err = JET_errSuccess;
     printf( "--------------------------------------------------------\n" );
@@ -932,8 +932,8 @@ JET_ERR ErrQueryTopThreeOrdersByOrderAmount( JET_SESID sesidT, JET_DBID dbidData
     //  order amount is not indexed, and a temporary table is used to sort the data in descending order amount order
     //
     JET_RETRIEVECOLUMN      rgretrievecolumnT[10];
-    long                        lOrderID                                = 0;
-    long                        lOrderCustomerID                        = 0;
+    LONG                        lOrderID                                = 0;
+    LONG                        lOrderCustomerID                        = 0;
     __int64                 llOrderAmount                           = 0;
     unsigned char               bOrderCancelled                         = 0;
     char                        szCustomerNameT[256];
