@@ -206,7 +206,7 @@ extern "C" BOOL CopyFileExW(
 
 extern "C" wchar_t* _wfullpath(wchar_t* absPath, const wchar_t* relPath, size_t cchMax)
 {
-    if (!relPath || cchMax == 0)
+    if (cchMax == 0)
         return nullptr;
 
     static thread_local wchar_t s_buf[PATH_MAX];
@@ -240,7 +240,12 @@ extern "C" wchar_t* _wfullpath(wchar_t* absPath, const wchar_t* relPath, size_t 
     };
 
     size_t i = 0;
-    if (relPath[0] != L'/')
+
+    //  MSDN: "If the path argument is NULL or points to an empty string,
+    //  _wfullpath returns the current working directory."  Engine relies
+    //  on this for JET_paramTempPath etc. when the caller passes NULL.
+    const bool useCwd = (relPath == nullptr) || (relPath[0] == L'\0') || (relPath[0] != L'/');
+    if (useCwd)
     {
         char szCwd[PATH_MAX];
         if (!getcwd(szCwd, sizeof(szCwd)))
@@ -251,8 +256,11 @@ extern "C" wchar_t* _wfullpath(wchar_t* absPath, const wchar_t* relPath, size_t 
             return nullptr;
         dst[i++] = L'/';
     }
-    if (!AppendWide(relPath, i))
-        return nullptr;
+    if (relPath != nullptr)
+    {
+        if (!AppendWide(relPath, i))
+            return nullptr;
+    }
     dst[i] = L'\0';
     return dst;
 }
