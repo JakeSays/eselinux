@@ -1554,7 +1554,12 @@ INLINE VOID CPAGE::InitItagState( const PGHDR* ppghdr )
     // When someone modifies itagState (adds/removes an itag) on a leagcy page,
     // it will push the correct ctagReserved value to the page and upgrade to new behavior.
     m_itagMicFree = ppghdr->itagState & PGHDR::ITAG_MIC_FREE_MASK;
-    USHORT  ctagReserved = ppghdr->itagState >> PGHDR::SHF_CTAG_RESERVED;
+    //  Bit 15 of itagState is "reserved for future use" per the PGHDR
+    //  layout comment — mask it off so ctagReserved stays in its declared
+    //  3-bit range (0..7) instead of 0..15.  Normal page writes never set
+    //  bit 15, but the fuzz tests (CorruptHdr) can, and the engine code
+    //  that consumes CTagReserved_() assumes the masked range.
+    USHORT  ctagReserved = ( ppghdr->itagState & PGHDR::CTAG_RESERVED_MASK ) >> PGHDR::SHF_CTAG_RESERVED;
     m_ctagReserved = max( 1, ctagReserved );
 }
 
