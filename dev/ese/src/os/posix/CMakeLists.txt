@@ -152,6 +152,11 @@ if (NOT WIN32)
     # libucl backs config_posix.cxx — reads /etc/ese.conf and
     # <exe>.ese.conf at OS-layer init.  Vendored under third_party/.
     target_link_libraries(osposix PRIVATE ucl)
+
+    # zstd backs winapi_compression.cxx (the RtlCompressBuffer /
+    # RtlDecompressBufferEx shim used by the blockcache journal-entry
+    # compression path).  Vendored under third_party/zstd-1.5.7/.
+    target_link_libraries(osposix PRIVATE zstd)
 endif ()
 
 target_include_directories(osposix PRIVATE

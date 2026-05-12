@@ -419,6 +419,12 @@ endif()
 if (NOT WIN32)
     add_subdirectory(third_party/libucl-0.9.4)
 
+    # Vendored zstd — backs the RtlCompressBuffer / RtlDecompressBufferEx
+    # shim in dev/ese/src/os/posix/winapi_compression.cxx, which in turn
+    # backs the blockcache journal-entry compression.  Static-linked into
+    # osposix; no system libzstd dependency.
+    add_subdirectory(third_party/zstd-1.5.7)
+
     # libnls — vendored as a git submodule under third_party/libnls/,
     # built as part of the ESE build.  Provides the Win32 NLS surface
     # that windows-shim/windows.h pulls in via <winnls.h>.  Every TU
