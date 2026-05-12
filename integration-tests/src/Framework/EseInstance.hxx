@@ -32,8 +32,14 @@ public:
     // all live under directory.Path(). instanceName is used as
     // JET_paramBaseName so multiple instances under the same parent
     // directory don't collide.
+    //
+    // runtimeCallback wires JET_paramRuntimeCallback before JetInit —
+    // required for JetSetLS / JetGetLS, JetRegisterCallback for the
+    // free-LS callback types, and the user-defined-default codepath.
+    // Pass nullptr (the default) when the scenario doesn't need it.
     EseInstance(const TemporaryDirectory& directory,
-                std::string_view instanceName = "ese-tests");
+                std::string_view instanceName = "ese-tests",
+                JET_CALLBACK runtimeCallback = nullptr);
     ~EseInstance();
 
     EseInstance(const EseInstance&) = delete;

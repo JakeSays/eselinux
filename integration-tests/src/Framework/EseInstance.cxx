@@ -44,7 +44,8 @@ void SetIntegerParameter(JET_INSTANCE instance,
 } // namespace
 
 EseInstance::EseInstance(const TemporaryDirectory& directory,
-                         std::string_view instanceName)
+                         std::string_view instanceName,
+                         JET_CALLBACK runtimeCallback)
     : _directory(directory.Path())
 {
     // Path strings need a trailing slash so JET concatenates filenames
@@ -72,6 +73,13 @@ EseInstance::EseInstance(const TemporaryDirectory& directory,
     // CircularLog keeps the log directory bounded — every scenario is
     // a one-shot process and we don't care about replay past it.
     SetIntegerParameter(_handle, JET_paramCircularLog, 1);
+
+    if (runtimeCallback != nullptr)
+    {
+        SetIntegerParameter(_handle,
+                            JET_paramRuntimeCallback,
+                            reinterpret_cast<JET_API_PTR>(runtimeCallback));
+    }
 
     CheckJet(JetInit(&_handle));
 }
