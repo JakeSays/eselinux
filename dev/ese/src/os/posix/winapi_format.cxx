@@ -455,7 +455,42 @@ struct SpecInfo
     char conv = 0;
 };
 
-void ParseSpec(const wchar_t*& p, SpecInfo* s)
+//  Render a (possibly negative) int into a SpecInfo digit-slot
+//  (`s->width[]` or `s->prec[]`).  Used by the `%*x` / `%.*x` arms
+//  below to convert a runtime width/precision into the same digit
+//  string a literal width/precision would have produced.
+void AppendDigits(char* dst, size_t cap, size_t& n, int value)
+{
+    if (value < 0)
+    {
+        if (n < cap) dst[n++] = '-';
+        value = -value;
+    }
+    char tmp[12];
+    int t = 0;
+    if (value == 0)
+    {
+        if (n < cap) dst[n++] = '0';
+        return;
+    }
+    while (value > 0 && t < (int) sizeof(tmp))
+    {
+        tmp[t++] = static_cast<char>('0' + (value % 10));
+        value /= 10;
+    }
+    while (t > 0 && n < cap)
+    {
+        dst[n++] = tmp[--t];
+    }
+}
+
+//  va_list is `__va_list_tag[1]` on x86-64 / aarch64 clang.  Function-
+//  parameter va_lists decay to `__va_list_tag*`, so "pass by reference"
+//  comes for free: ParseSpec's va_arg calls walk the same underlying
+//  __va_list_tag the caller's WideFormatV iterates over.  No & needed
+//  at the callsite, and va_list cannot legally be taken by reference
+//  in any portable way.
+void ParseSpec(const wchar_t*& p, SpecInfo* s, va_list args)
 {
     // flags
     for (;;)
@@ -470,23 +505,41 @@ void ParseSpec(const wchar_t*& p, SpecInfo* s)
         else
             break;
     }
-    // width
-    while (*p >= L'0' && *p <= L'9')
+    // width (* consumes an int from args; digits accumulate as-is)
+    if (*p == L'*')
     {
-        if (s->widthN < sizeof(s->width))
-            s->width[s->widthN++] = static_cast<char>(*p);
+        AppendDigits(s->width, sizeof(s->width), s->widthN,
+                     va_arg(args, int));
         ++p;
+    }
+    else
+    {
+        while (*p >= L'0' && *p <= L'9')
+        {
+            if (s->widthN < sizeof(s->width))
+                s->width[s->widthN++] = static_cast<char>(*p);
+            ++p;
+        }
     }
     // precision
     if (*p == L'.')
     {
         s->hasPrec = true;
         ++p;
-        while (*p >= L'0' && *p <= L'9')
+        if (*p == L'*')
         {
-            if (s->precN < sizeof(s->prec))
-                s->prec[s->precN++] = static_cast<char>(*p);
+            AppendDigits(s->prec, sizeof(s->prec), s->precN,
+                         va_arg(args, int));
             ++p;
+        }
+        else
+        {
+            while (*p >= L'0' && *p <= L'9')
+            {
+                if (s->precN < sizeof(s->prec))
+                    s->prec[s->precN++] = static_cast<char>(*p);
+                ++p;
+            }
         }
     }
     // size modifiers
@@ -682,7 +735,7 @@ HRESULT WideFormatV(WSink& sink, const wchar_t* fmt, va_list args)
         }
 
         SpecInfo s{};
-        ParseSpec(p, &s);
+        ParseSpec(p, &s, args);
 
         switch (s.conv)
         {
