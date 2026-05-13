@@ -6747,6 +6747,38 @@ DWORD ErrorIOMgrIssueIO(
         *ppioreqHead = pioreqHead;
     }
 
+    //  RFS: pre-completion error.  Mirrors the Win32 arm so the
+    //  resource-failure-simulator harness fires its failure
+    //  injection on the Linux IO submit path.
+    if ( !RFSAlloc( pioreqHead->fWrite ? OSFileWrite : OSFileRead ) )
+    {
+        return ErrorRFSIssueFailedIO();
+    }
+    DWORD error = ErrFaultInjection( 17384 );
+    if ( error )
+    {
+        return error;
+    }
+
+    //  Exclusive IOREQs can't handle OOM, so only fault-inject the
+    //  64738 OOM for non-exclusive IOs.  42980 fires unconditionally.
+    if ( !FExclusiveIoreq( pioreqHead ) && ErrFaultInjection( 64738 ) < JET_errSuccess )
+    {
+        return ERROR_NOT_ENOUGH_MEMORY;
+    }
+    if ( ErrFaultInjection( 42980 ) < JET_errSuccess )
+    {
+        return ERROR_NOT_ENOUGH_MEMORY;
+    }
+
+    //  Lower IO priority for background submits (scavenger, async
+    //  dirty-page flush).  Maps to ioprio_set( IOPRIO_CLASS_IDLE )
+    //  via the SetThreadPriority shim — see winapi_thread.cxx.
+    if ( fIOOSLowPriority )
+    {
+        UtilThreadBeginLowIOPriority();
+    }
+
     const QWORD ibOffset =
             ( (QWORD) pioreqHead->ovlp.OffsetHigh << 32 ) | pioreqHead->ovlp.Offset;
 
@@ -6755,15 +6787,21 @@ DWORD ErrorIOMgrIssueIO(
         //  Async path: submit to io_uring and return immediately with
         //  *pfIOCompleted = FALSE.  The completion thread reaps the CQE
         //  and calls OSDiskIIOThreadCompleteWithErr.
-        const DWORD error = OSPosixIouringSubmitIOREQ(
-                                pioreqHead->p_osf->hFile,
-                                pioreqHead,
-                                !!pioreqHead->fWrite,
-                                (void*) pioreqHead->pbData,
-                                cbRun,
-                                ibOffset,
-                                iomethod == IOREQ::iomethodScatterGather ? rgfse : nullptr,
-                                iomethod == IOREQ::iomethodScatterGather ? cfse  : 0 );
+        error = OSPosixIouringSubmitIOREQ(
+                    pioreqHead->p_osf->hFile,
+                    pioreqHead,
+                    !!pioreqHead->fWrite,
+                    (void*) pioreqHead->pbData,
+                    cbRun,
+                    ibOffset,
+                    iomethod == IOREQ::iomethodScatterGather ? rgfse : nullptr,
+                    iomethod == IOREQ::iomethodScatterGather ? cfse  : 0 );
+
+        if ( fIOOSLowPriority )
+        {
+            UtilThreadEndLowIOPriority();
+        }
+
         if ( error != ERROR_SUCCESS )
         {
             return error;
@@ -6784,13 +6822,18 @@ DWORD ErrorIOMgrIssueIO(
         ? WriteFile( pioreqHead->p_osf->hFile, pioreqHead->pbData, cbRun, pcbTransfer, &ovlpLocal )
         : ReadFile( pioreqHead->p_osf->hFile, (LPVOID) pioreqHead->pbData, cbRun, pcbTransfer, &ovlpLocal );
 
+    if ( fIOOSLowPriority )
+    {
+        UtilThreadEndLowIOPriority();
+    }
+
     if ( fSucceeded )
     {
         *pfIOCompleted = TRUE;
         return ERROR_SUCCESS;
     }
 
-    const DWORD error = GetLastError();
+    error = GetLastError();
     return ( error != ERROR_SUCCESS ) ? error : ERROR_IO_DEVICE;
 }
 

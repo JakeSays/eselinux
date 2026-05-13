@@ -20,6 +20,30 @@
 #include <sched.h>
 #include <stdlib.h>
 #include <sys/resource.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+
+//  ioprio_set(2): glibc doesn't ship a wrapper.  Hand-roll the constants
+//  and call through syscall(SYS_ioprio_set, ...).  Used by
+//  SetThreadPriority's THREAD_MODE_BACKGROUND_BEGIN/END handling to
+//  reduce kernel IO scheduler priority for background workers
+//  (scavenger, async dirty-page flushes).
+#ifndef IOPRIO_CLASS_NONE
+#define IOPRIO_CLASS_NONE  0
+#define IOPRIO_CLASS_RT    1
+#define IOPRIO_CLASS_BE    2
+#define IOPRIO_CLASS_IDLE  3
+#endif
+
+#ifndef IOPRIO_WHO_PROCESS
+//  Despite the name, this targets a Linux task (kernel thread), not a
+//  process.  `who = 0` means the current task.
+#define IOPRIO_WHO_PROCESS 1
+#endif
+
+#ifndef IOPRIO_PRIO_VALUE
+#define IOPRIO_PRIO_VALUE( cls, data ) ( ( ( cls ) << 13 ) | ( data ) )
+#endif
 
 using osposix::AllocKObject;
 using osposix::HandleKind;
@@ -177,12 +201,44 @@ BOOL GetExitCodeThread( HANDLE hThread, LPDWORD lpExitCode )
 
 BOOL SetThreadPriority( HANDLE hThread, int nPriority )
 {
+    //  The two THREAD_MODE_BACKGROUND_* values are the Win32 "drop me
+    //  to background priority" / "restore me" pair.  They're always
+    //  paired around an IO submission on the calling thread (see
+    //  UtilThreadBeginLowIOPriority / EndLowIOPriority in thread.cxx)
+    //  so we route them to ioprio_set on the current task instead of
+    //  treating them as numeric priority values.
+    if ( nPriority == THREAD_MODE_BACKGROUND_BEGIN ||
+         nPriority == THREAD_MODE_BACKGROUND_END )
+    {
+        const int cls = nPriority == THREAD_MODE_BACKGROUND_BEGIN
+                            ? IOPRIO_CLASS_IDLE
+                            : IOPRIO_CLASS_NONE;
+        //  who = 0 → operate on the calling task.  IOPRIO_PRIO_VALUE
+        //  packs the (class, data) tuple; data is unused for IDLE /
+        //  NONE so we pass 0.  Failures are intentionally swallowed
+        //  to match the Win32 behaviour (the engine ignores the
+        //  return of SetThreadPriority on background-begin/end).
+        ( void )syscall( SYS_ioprio_set, IOPRIO_WHO_PROCESS, 0,
+                         IOPRIO_PRIO_VALUE( cls, 0 ) );
+        return TRUE;
+    }
+
+    //  GetCurrentThread() returns the -2 pseudo-handle which has no
+    //  backing KObject; for normal numeric priority values on the
+    //  current thread we silently no-op (CAP_SYS_NICE is needed for
+    //  real enforcement and we don't assume the engine runs with it).
+    if ( reinterpret_cast< intptr_t >( hThread ) == -2 ||
+         reinterpret_cast< intptr_t >( hThread ) == -1 )
+    {
+        return TRUE;
+    }
+
     KObject* const k = HandleToK( hThread );
     pthread_mutex_lock( &k->lock );
     k->threadPriority = nPriority;
     pthread_mutex_unlock( &k->lock );
-    // Real priority enforcement requires CAP_SYS_NICE / SCHED_FIFO setup;
-    // record the request so GetThreadPriority reflects it.
+    //  Real priority enforcement requires CAP_SYS_NICE / SCHED_FIFO setup;
+    //  record the request so GetThreadPriority reflects it.
     return TRUE;
 }
 
