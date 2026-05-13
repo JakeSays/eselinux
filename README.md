@@ -1,4 +1,13 @@
-# Extensible-Storage-Engine
+
+
+# Extensible-Storage-Engine for Linux
+
+This repository contains a port of Mocrosoft's ESE for Linux. See BUILDING.md for Linux specific build instructions.
+
+To insulate the Linux consumer from Windows types `jetapi.h` is provided. This standalone header uses only `<stdint.h>` types (and `uchar.h` when needed). The tests under integration-tests use this header.
+
+### String types in ESE
+ESE provides both Ascii and Unicode API's that are driven by the `JET_UNICODE` define. If `JET_UNICODE` is defined before `jetapi.h` is included, the types and function definitions accept Unicode strings. On Windows Unicode characters are 16 bit, and this has been carried forward on Linux via the `char16_t` type.
 
 ## A Non-SQL Database Engine
 
