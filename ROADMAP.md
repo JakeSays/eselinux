@@ -37,7 +37,6 @@ Known gaps that block "real users."
 - **Encryption is stubbed.**  `dev/ese/src/os/posix/encrypt_posix.cxx` returns `JET_errFeatureNotAvailable` for `ErrOSEncryptWithAes256`/`ErrOSDecryptWithAes256`/`ErrOSCreateAes256Key`; CRC32C and size-math kept portable.  Engine works for any consumer that doesn't enable encryption at rest.
 - **Some `winapi_*.cxx` functions remain unexercised** — surface that compiles and links but no test or live code path touches yet.  Not a gating problem; flagged for the eventual API-coverage audit (priority #3 below).
 - **Templated `FOSEventTraceEnabled<etguid>()` still returns `fFalse`.**  A handful of engine call sites consult it to skip expensive data-gathering before an `ET*` call.  Wiring it to query lttng-ust's per-tracepoint enable state (`lttng_ust_tracepoint_ese___X.state`) is follow-up work; impact is minor since most ET* paths don't gate on the templated check.
-- **Release isn't the default.**  Both build modes work, but the project layout still leans on `build/` being the canonical Debug tree.  Promoting Release to default is a config tweak, not new code.
 
 ## Priority list
 
@@ -77,12 +76,13 @@ What's worth doing here:
 
 This is also where to fold in the "untouched winapi_*.cxx functions" audit — anything the engine never calls is dead surface we can either delete or stub down.
 
-### 4. Default to Release, capture Release perf baseline
+### 4. Capture a Release perf baseline
 
-Both build modes work.  What's left is cosmetic + measurement:
-
-- Default CMake to `Release` unless `-DCMAKE_BUILD_TYPE=Debug` is explicitly passed.
-- Run perf-flagged tests (`CPAGE.ReplacePerf`, `CHECKSUM.Perf`, the iouring micro-bench) in Release and pin the numbers somewhere durable.  These were captured for Debug at `31a90b1`; Release deltas haven't been written down.
+Debug perf numbers are pinned at commit `31a90b1`; Release deltas
+haven't been written down.  Run the perf-flagged tests
+(`CPAGE.ReplacePerf`, `CHECKSUM.Perf`, the iouring micro-bench)
+against a Release build and check the numbers into the repo so
+future regressions are visible.
 
 ## Things explicitly out of scope (still)
 
