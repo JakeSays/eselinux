@@ -41,6 +41,39 @@ void OSEventReportEvent(
         const DWORD         cDataSize = 0,
         void *              pvRawData = nullptr );
 
+//  Platform sink for fully-formatted admin events.  OSEventReportEvent
+//  calls this after FormatMessageW has produced the human-readable text.
+//
+//  Linux: forwards through syslog(3) — captured by journald on systemd
+//  boxes, by rsyslogd/syslog-ng elsewhere — and additionally tries
+//  sd_journal_sendv via a libsystemd dlopen for structured fields when
+//  journald is available.  Implemented in os/posix/eventoslog_posix.cxx.
+//
+//  Windows: stays empty; the Win32 ReportEventW path inside
+//  OSEventReportEvent is the canonical sink.
+
+#ifdef ESE_OS_LINUX
+
+void OSEventEmitToOsLog(
+        const EEventType    type,
+        const WCHAR *       szSourceEventKey,
+        const CategoryId    catid,
+        const MessageId     msgid,
+        const WCHAR *       wszFormattedText );
+
+#else
+
+INLINE void OSEventEmitToOsLog(
+        const EEventType,
+        const WCHAR *,
+        const CategoryId,
+        const MessageId,
+        const WCHAR * )
+{
+}
+
+#endif
+
 #ifdef OS_LAYER_VIOLATIONS
 #include "eventu.hxx"
 

@@ -210,6 +210,15 @@ void OSEventReportEvent(    const WCHAR*        szSourceEventKey,
             OSTrace( JET_tracetagEventlog, OSFormat( "%hs", SzOSFormatStringW( wszLogStr ) ) );
         }
 
+        //  Platform sink: on Windows this is a no-op (ReportEventW
+        //  below is the real path); on Linux it forwards to
+        //  syslog(3), with sd_journal_sendv as an opportunistic
+        //  upgrade.  Gated on the same facility bit ReportEventW is.
+        if ( eventfacility & eventfacilityReportOsEvent )
+        {
+            OSEventEmitToOsLog( type, szSourceEventKey, catid, msgid, wszLogStr );
+        }
+
         if ( eventfacility & eventfacilityOsEventTrace )
         {
             switch ( type )

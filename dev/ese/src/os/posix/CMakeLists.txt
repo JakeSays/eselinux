@@ -49,6 +49,7 @@ set(OSPOSIX_WINAPI_SOURCES
     dllentry_posix.cxx
     encrypt_posix.cxx
     error_posix.cxx
+    eventoslog_posix.cxx
     library_posix.cxx
     memory_posix.cxx
     memorynotification_posix.cxx
@@ -157,6 +158,13 @@ if (NOT WIN32)
     # RtlDecompressBufferEx shim used by the blockcache journal-entry
     # compression path).  Vendored under third_party/zstd-1.5.7/.
     target_link_libraries(osposix PRIVATE zstd)
+
+    # libdl backs the dlopen of libsystemd.so.0 inside
+    # eventoslog_posix.cxx (best-effort upgrade from syslog(3) to
+    # sd_journal_sendv when journald is installed).  No hard link
+    # against libsystemd — non-systemd boxes stay on the syslog(3)
+    # path.
+    target_link_libraries(osposix PRIVATE ${CMAKE_DL_LIBS})
 endif ()
 
 target_include_directories(osposix PRIVATE
