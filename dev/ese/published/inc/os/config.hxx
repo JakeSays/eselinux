@@ -4,7 +4,12 @@
 #ifndef _OS_CONFIG_HXX_INCLUDED
 #define _OS_CONFIG_HXX_INCLUDED
 
-#include "../platform.h"   //  ESE_OS_WINDOWS / ESE_OS_LINUX
+//  config.hxx ships both at the source path (dev/ese/published/inc/os/)
+//  and copied to ${INC_OUTPUT_DIRECTORY}/config.hxx by CMake.  A plain
+//  `#include "platform.h"` works from either copy: every consumer of
+//  the published headers has dev/ese/published/inc/ on its -I path,
+//  so the search lands on the canonical platform.h there.
+#include "platform.h"   //  ESE_OS_WINDOWS / ESE_OS_LINUX
 
 
 //  On Windows, RTM/MINIMAL_FUNCTIONALITY builds suppress all registry

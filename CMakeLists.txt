@@ -461,3 +461,31 @@ option(IntegrationTestsEnabled "Build the public-API integration test suite" ON)
 if (NOT WIN32 AND IntegrationTestsEnabled)
     add_subdirectory(integration-tests)
 endif ()
+
+
+# `run-all-tests` — convenience target that builds every test binary
+# and then drives them through repo/run-all-tests.sh.  Each suite gets
+# its own subdirectory under ${CMAKE_BINARY_DIR}/test-output, so a
+# `rm -rf test-output` cleans up everything.
+#
+# Invoke with:  cmake --build <build-dir> --target run-all-tests
+if (NOT WIN32)
+    add_custom_target(run-all-tests
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/test-output
+        COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}/test-output
+                ${CMAKE_SOURCE_DIR}/run-all-tests.sh ${CMAKE_BINARY_DIR}
+        DEPENDS
+            ese-tests
+            ese-config-test
+            EseLibWithTestsRunner
+            CcLayerUnit
+            COLLECTIONUNIT
+            ERRVALIDATOR
+            IterQueryUnit
+            RESMGRUNIT
+            STATUNIT
+            SYNCUNIT
+            nls_smoke
+        COMMENT "Running all ESE test suites"
+        USES_TERMINAL)
+endif ()
