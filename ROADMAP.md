@@ -34,30 +34,14 @@ Major plumbing pieces in place.
 - Event logging — admin events go to syslog(3) (baseline; captured by journald or any syslogd) with `sd_journal_sendv` as an opportunistic upgrade via libsystemd dlopen (no hard build dep).  Analytic events flow through a dlopen-loaded `libese_tracepoints.so` (LTTng UST), generated from `EseEtwEventsPregen.txt` by the `tools/etwlttng/` C# AOT tool.  Boxes without lttng-ust skip the .so and tracing stays quiet; lttng-tools captures all 77 event types when present.  See `~/.claude/projects/-p-ese-repo/memory/project_port_event_logging.md`.
 
 Known gaps that block "real users."
-- **No end-to-end smoke binary that doubles as a regression net.**  `BookStoreSample` boots the engine but exits with sample-level `-1047`; we have framework-driven coverage in `ese-tests` and `EseLibWithTestsRunner` but no standalone `samples/jet_smoke.cxx`-style program that proves a clean `CreateInstance → Init → CreateDatabase → insert → reopen → verify → Term` round trip and fails loud in CI when the libese.so init chain breaks again.
 - **Encryption is stubbed.**  `dev/ese/src/os/posix/encrypt_posix.cxx` returns `JET_errFeatureNotAvailable` for `ErrOSEncryptWithAes256`/`ErrOSDecryptWithAes256`/`ErrOSCreateAes256Key`; CRC32C and size-math kept portable.  Engine works for any consumer that doesn't enable encryption at rest.
-- **Some `winapi_*.cxx` functions remain unexercised** — surface that compiles and links but no test or live code path touches yet.  Not a gating problem; flagged for the eventual API-coverage audit (priority #4 below).
+- **Some `winapi_*.cxx` functions remain unexercised** — surface that compiles and links but no test or live code path touches yet.  Not a gating problem; flagged for the eventual API-coverage audit (priority #3 below).
 - **Templated `FOSEventTraceEnabled<etguid>()` still returns `fFalse`.**  A handful of engine call sites consult it to skip expensive data-gathering before an `ET*` call.  Wiring it to query lttng-ust's per-tracepoint enable state (`lttng_ust_tracepoint_ese___X.state`) is follow-up work; impact is minor since most ET* paths don't gate on the templated check.
 - **Release isn't the default.**  Both build modes work, but the project layout still leans on `build/` being the canonical Debug tree.  Promoting Release to default is a config tweak, not new code.
 
 ## Priority list
 
-### 1. End-to-end "minimum viable database" smoke binary
-
-A small standalone program — `samples/jet_smoke.cxx` is the natural home, or a revived/repurposed `BookStoreSample` — that demonstrates the whole JET round trip:
-
-```
-JetCreateInstance(...) → JetSetSystemParameter(SystemPath/TempPath/LogFilePath)
-→ JetInit(...) → JetBeginSession → JetCreateDatabase → JetCreateTable
-→ JetAddColumn → JetOpenTable → JetPrepareUpdate(prepInsert)
-→ JetSetColumn (a few rows) → JetUpdate
-→ JetEndSession → JetTerm(...)
-→ reopen, verify rows survived restart, close.
-```
-
-The point is a binary anyone can run by hand to see Linux ESE work — without `EseLibWithTestsRunner`'s tier-1/tier-2 init shims and without the `ese-tests` framework's per-scenario harness.  Both of those tools mask init bugs that real consumers would hit.  The standalone smoke should also be wired into CMake so a future regression in the libese.so init chain trips the build, not a downstream user.
-
-### 2. Encryption: libsodium-backed AES-256
+### 1. Encryption: libsodium-backed AES-256
 
 The last meaningful runtime stub.  Replace `JET_errFeatureNotAvailable` in `encrypt_posix.cxx` with libsodium-backed AES-256.  Since on-disk format compat isn't required, AES-256-GCM (libsodium's high-level `crypto_aead_aes256gcm_*` API) is fine if CBC bit-compat with Windows turns out to be friction; CBC is the default for compat-friendliness but we're not chasing it.
 
@@ -68,7 +52,7 @@ Sequence (matches the "tests over runtime" rule):
 3. Replace the stubs in `encrypt_posix.cxx`.
 4. Run tier-1 + tier-2 with an encrypted-database scenario.
 
-### 3. Unify the `ErrorIOMgrIssueIO` / `GetOverlappedResult_` paths
+### 2. Unify the `ErrorIOMgrIssueIO` / `GetOverlappedResult_` paths
 
 `osdisk.cxx` had four `#ifdef ESE_OS_WINDOWS` gates.  Three were closed in the same pass that landed disk-info, queue-depth, and SMART shims:
 
@@ -83,24 +67,22 @@ What's worth doing here:
 - **Mirror the Win32 pre/post amble onto the Linux body.**  The Windows path runs `RFSAlloc`, `ErrFaultInjection(17384/64738/42980)`, and `UtilThreadBeginLowIOPriority`/`UtilThreadEndLowIOPriority` around the submit; the Linux body skips them.  Lifting these into the Linux arm (or into a shared helper) would close the testable-behavior gap between the two arms while still allowing the submit step itself to diverge.
 - **Optional: extend `ReadFile`/`WriteFile` to honour an `OVERLAPPED.hEvent` async contract via io_uring.**  Then both arms could share most of the dispatch, and the gate would shrink to just the iomethod switch.  Bigger change; defer unless we end up wanting it for some other reason.
 
-### 4. JET public API coverage inventory + ratcheting
+### 3. JET public API coverage ratcheting
 
-`ese-tests` is at 125 scenarios but coverage isn't measured against the full `JetXxx` surface.  Worth doing once:
+`ese-tests` is at 157 scenarios — 42% of base JET surface per `integration-tests/COVERAGE.md`.  Standing pull:
 
-- Enumerate every `JetXxx` exported function from `dev/ese/src/inc/jet.h`.
-- Grade each as: exercised by `ese-tests`, exercised by tier-1/2 only, not exercised, or known-broken.
-- File gaps as scenarios in `ese-tests`.
+- Pick the next batch from COVERAGE.md's "not exercised" column.
+- Land new scenarios; refresh COVERAGE.md.
 - Promote any scenario that uncovers a real engine bug to a permanent regression (the Phase 6 Compact/OverwriteLV/Restore fixes were exactly this pattern).
 
 This is also where to fold in the "untouched winapi_*.cxx functions" audit — anything the engine never calls is dead surface we can either delete or stub down.
 
-### 5. Default to Release, capture Release perf baseline
+### 4. Default to Release, capture Release perf baseline
 
 Both build modes work.  What's left is cosmetic + measurement:
 
 - Default CMake to `Release` unless `-DCMAKE_BUILD_TYPE=Debug` is explicitly passed.
 - Run perf-flagged tests (`CPAGE.ReplacePerf`, `CHECKSUM.Perf`, the iouring micro-bench) in Release and pin the numbers somewhere durable.  These were captured for Debug at `31a90b1`; Release deltas haven't been written down.
-- Add a Release smoke target to whatever CMake-level smoke (#1) ends up looking like.
 
 ## Things explicitly out of scope (still)
 
