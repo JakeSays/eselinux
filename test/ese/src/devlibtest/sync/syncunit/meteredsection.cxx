@@ -85,7 +85,12 @@ typedef struct
     HANDLE          hThread;
     DWORD           tid;
 
-    INT         cbashphase;
+    //  Written by the worker thread (line 221), polled by the main
+    //  thread (line 309).  Must be volatile so the optimiser doesn't
+    //  hoist the load out of the polling loop — without this, Release
+    //  builds hang here because the main thread reads cbashphase once
+    //  into a register and never observes the worker's update.
+    volatile INT cbashphase;
 
     // these must be before rgcGroup
     QWORD           cUnderflowNegThree; //  one to grow on

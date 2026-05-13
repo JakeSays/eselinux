@@ -4,6 +4,17 @@
 #ifndef _COLLECTION_HXX_INCLUDED
 #define _COLLECTION_HXX_INCLUDED
 
+//  Engine code throughout this header uses the `new T[]; if (p == NULL)`
+//  idiom — historically valid on MSVC where the default operator new
+//  returned NULL on failure.  Under `-fno-exceptions` on clang the
+//  standard `new T[]` is assumed by the optimizer to either succeed or
+//  abort, so the NULL check is dead code (DCE'd at -O2), and OOM paths
+//  silently fall through to the success return.  `<new>` brings in the
+//  `std::nothrow` overload that explicitly returns NULL on failure;
+//  every CArray / CDynamicArray allocation below uses it so the
+//  matching NULL checks survive optimisation.
+#include <new>
+
 //  asserts
 //
 //  #define COLLAssert to point to your favorite assert function per #include
@@ -825,7 +836,7 @@ inline typename CInvasiveConcurrentModSet< CObject, OffsetOfIAE>::ERR CInvasiveC
         }
     }
 
-    prgValueArray = new ARRAY_VALUE [ ulArrayAllocated ];
+    prgValueArray = new( std::nothrow ) ARRAY_VALUE [ ulArrayAllocated ];
     if ( nullptr == prgValueArray )
     {
         return ERR::errOutOfMemory;
@@ -959,7 +970,7 @@ inline VOID CInvasiveConcurrentModSet< CObject, OffsetOfIAE >::Compact_()
 
         if ( 0 != ulArrayAllocated )
         {
-            ARRAY_VALUE *prgValueArray =  new ARRAY_VALUE [ ulArrayAllocated ];
+            ARRAY_VALUE *prgValueArray =  new( std::nothrow ) ARRAY_VALUE [ ulArrayAllocated ];
             if ( nullptr != prgValueArray )
             {
                 memcpy( (void*)prgValueArray, m_prgValueArray, ulArrayAllocated * sizeof( m_prgValueArray[ 0 ] ) );
@@ -4376,7 +4387,7 @@ _PvMEMAlloc( const size_t cbSize, const size_t cbAlign )
         return NULL;
     }
 
-    void* const pv = new BYTE[ cbSize + cbAlign ];
+    void* const pv = new( std::nothrow ) BYTE[ cbSize + cbAlign ];
     if ( pv )
     {
         return _PvMEMIAlign( pv, cbAlign );
@@ -4526,7 +4537,7 @@ ErrClone( const CArray& array )
 
     if ( array.m_centryMax )
     {
-        if ( !( rgentryNew = new CEntry[ array.m_centryMax ] ) )
+        if ( !( rgentryNew = new( std::nothrow ) CEntry[ array.m_centryMax ] ) )
         {
             return ERR::errOutOfMemory;
         }
@@ -4620,7 +4631,7 @@ ErrSetCapacity( const size_t centryMax )
         {
             CEntry* rgentryNew = NULL;
 
-            if ( ( rgentryNew = new CEntry[ centryMax ] ) == NULL )
+            if ( ( rgentryNew = new( std::nothrow ) CEntry[ centryMax ] ) == NULL )
             {
                 return ERR::errOutOfMemory;
             }
