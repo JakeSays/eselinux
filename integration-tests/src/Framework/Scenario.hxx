@@ -39,6 +39,7 @@ enum class ScenarioCategory
     Error,
     Scale,
     Concurrency,
+    Encryption,
 };
 
 const char* ToString(ScenarioCategory category);

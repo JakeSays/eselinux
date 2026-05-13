@@ -33,26 +33,15 @@ Major plumbing pieces in place.
 - Standalone freestanding `jetapi.h` at repo root: customer-facing JET surface with no Windows-isms (stdint types throughout, `char16_t` for wide strings, JET_VERSION pinned at 0x0A01).  `integration-tests/` consumes only this header — no `windows-shim/`, no `dev/ese/published/inc/`.
 - Event logging — admin events go to syslog(3) (baseline; captured by journald or any syslogd) with `sd_journal_sendv` as an opportunistic upgrade via libsystemd dlopen (no hard build dep).  Analytic events flow through a dlopen-loaded `libese_tracepoints.so` (LTTng UST), generated from `EseEtwEventsPregen.txt` by the `tools/etwlttng/` C# AOT tool.  Boxes without lttng-ust skip the .so and tracing stays quiet; lttng-tools captures all 77 event types when present.  See `~/.claude/projects/-p-ese-repo/memory/project_port_event_logging.md`.
 - IO submit pre/post hooks mirror Win32 on the Linux arm of `ErrorIOMgrIssueIO`: `RFSAlloc` resource-failure gate, the three `ErrFaultInjection` IDs (17384 / 64738 / 42980), and `UtilThreadBeginLowIOPriority` / `EndLowIOPriority` bracketing.  The latter pair is wired through `SetThreadPriority`'s `THREAD_MODE_BACKGROUND_BEGIN/END` recognition in `winapi_thread.cxx`, which calls `ioprio_set(2)` on the current task (drops to `IOPRIO_CLASS_IDLE` on begin, restores to `IOPRIO_CLASS_NONE` on end).
+- Encryption-at-rest: AES-256-GCM via libsodium (`crypto_aead_aes256gcm_*`), runtime-optional via dlopen.  `libese.so` has no link-time dependency on libsodium; on first use of any encryption entry point we `dlopen("libsodium.so.23")` and resolve five function pointers (`sodium_init`, `crypto_aead_aes256gcm_is_available`, `_encrypt`, `_decrypt`, `randombytes_buf`).  If the library isn't installed, or AES-NI / ARM CryptoExtension is unavailable, `ErrOSCreateAes256Key` / `ErrOSEncryptWithAes256` / `ErrOSDecryptWithAes256` return `JET_errFeatureNotAvailable` — engines that don't enable at-rest encryption are unaffected.  On-disk layout per encrypted blob: `[ciphertext (N bytes)][auth tag (16)][trailer Version=1, IV=16]`; only the first 12 bytes of the trailer's InitVector are used (the GCM nonce).  GCM's auth tag replaces the upstream CRC32-of-plaintext integrity check.
 
 Known gaps that block "real users."
-- **Encryption is stubbed.**  `dev/ese/src/os/posix/encrypt_posix.cxx` returns `JET_errFeatureNotAvailable` for `ErrOSEncryptWithAes256`/`ErrOSDecryptWithAes256`/`ErrOSCreateAes256Key`; CRC32C and size-math kept portable.  Engine works for any consumer that doesn't enable encryption at rest.
-- **Some `winapi_*.cxx` functions remain unexercised** — surface that compiles and links but no test or live code path touches yet.  Not a gating problem; flagged for the eventual API-coverage audit (priority #2 below).
+- **Some `winapi_*.cxx` functions remain unexercised** — surface that compiles and links but no test or live code path touches yet.  Not a gating problem; flagged for the eventual API-coverage audit (priority #1 below).
 - **Templated `FOSEventTraceEnabled<etguid>()` still returns `fFalse`.**  A handful of engine call sites consult it to skip expensive data-gathering before an `ET*` call.  Wiring it to query lttng-ust's per-tracepoint enable state (`lttng_ust_tracepoint_ese___X.state`) is follow-up work; impact is minor since most ET* paths don't gate on the templated check.
 
 ## Priority list
 
-### 1. Encryption: libsodium-backed AES-256
-
-The last meaningful runtime stub.  Replace `JET_errFeatureNotAvailable` in `encrypt_posix.cxx` with libsodium-backed AES-256.  Since on-disk format compat isn't required, AES-256-GCM (libsodium's high-level `crypto_aead_aes256gcm_*` API) is fine if CBC bit-compat with Windows turns out to be friction; CBC is the default for compat-friendliness but we're not chasing it.
-
-Sequence (matches the "tests over runtime" rule):
-
-1. Unit test the new encrypt path under `dev/ese/src/_devlibtest/` — round-trip a known plaintext, verify failure modes match `JET_err*`.
-2. Wire libsodium into the CMake graph (pkg-config probe, fall back to vendored if not available).
-3. Replace the stubs in `encrypt_posix.cxx`.
-4. Run tier-1 + tier-2 with an encrypted-database scenario.
-
-### 2. JET public API coverage ratcheting
+### 1. JET public API coverage ratcheting
 
 `ese-tests` is at 157 scenarios — 42% of base JET surface per `integration-tests/COVERAGE.md`.  Standing pull:
 
@@ -62,7 +51,7 @@ Sequence (matches the "tests over runtime" rule):
 
 This is also where to fold in the "untouched winapi_*.cxx functions" audit — anything the engine never calls is dead surface we can either delete or stub down.
 
-### 3. Capture a Release perf baseline
+### 2. Capture a Release perf baseline
 
 Debug perf numbers are pinned at commit `31a90b1`; Release deltas
 haven't been written down.  Run the perf-flagged tests

@@ -32,6 +32,7 @@ add_executable(ese-tests
     src/Scenarios/ConcurrencyScenarios.cxx
     src/Scenarios/DatabaseScenarios.cxx
     src/Scenarios/DataManipulationScenarios.cxx
+    src/Scenarios/EncryptionScenarios.cxx
     src/Scenarios/ErrorScenarios.cxx
     src/Scenarios/EscrowScenarios.cxx
     src/Scenarios/LimitScenarios.cxx

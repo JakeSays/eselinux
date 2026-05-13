@@ -1,24 +1,86 @@
-// POSIX equivalent of os/encrypt.cxx. Upstream uses Win32 CryptoAPI
-// (CryptAcquireContext / CryptGenKey / CryptEncrypt) for AES-256/CBC plus a
-// hardware-accelerated CRC32C path. Per the port plan, AES will be replaced
-// with libsodium in a later phase; for Phase 5 we keep the portable bits and
-// stub the AES surface with JET_errFeatureNotAvailable.
+// POSIX equivalent of os/encrypt.cxx.  Upstream uses Win32 CryptoAPI
+// (CryptAcquireContext / CryptGenKey / CryptEncrypt) with AES-256-CBC
+// + an appended CRC32 for plaintext integrity.  The Linux port uses
+// libsodium's AES-256-GCM instead — but as a *runtime-optional*
+// dependency, dlopened on first use:
+//
+//   - libsodium is NOT a hard build-time dep.  libese.so has no
+//     reference to libsodium symbols; encrypt_posix.cxx loads
+//     libsodium.so via dlopen() and resolves the four functions
+//     we need (sodium_init, _aes256gcm_is_available, _encrypt,
+//     _decrypt, plus randombytes_buf) into a static table.
+//   - Boxes without libsodium installed get cleanly-failing encrypt
+//     entry points (JET_errFeatureNotAvailable) — engine simply
+//     can't enable at-rest encryption.  Engines that don't request
+//     encryption are unaffected.
+//   - GCM is authenticated encryption (AEAD) — the auth tag replaces
+//     the appended CRC32-of-plaintext integrity check.
+//   - GCM is a stream cipher mode, so no padding to a 16-byte block;
+//     ciphertext is the same length as plaintext.
+//   - libsodium's crypto_aead_aes256gcm_* uses AES-NI on x86_64 and
+//     the ARM CryptoExtension on aarch64.  The library reports 0
+//     from `_is_available()` on machines without hardware support;
+//     we treat that the same as a missing library.
+//
+// On-disk layout produced by the encrypt path:
+//
+//     [ciphertext (N bytes)] [auth tag (16)] [trailer (Version=1, IV=16)]
+//
+// The trailer struct matches the upstream layout byte-for-byte
+// (1-byte Version, 16-byte InitVector), but only the first 12 bytes
+// of InitVector are meaningful (the GCM nonce).  Keeping the same
+// struct simplifies the engine-side accounting and lets the
+// decrypt-path "find the trailer at the end" idiom carry over
+// unchanged.
 //
 // What we keep portable from upstream:
 //
-//   - dwCRC32_LOOKUP_TABLE — the 256-entry table for the bit-reversed CRC32C
-//   - Crc32Checksum — table-driven implementation (no SSE4.2 intrinsics; the
-//     intrinsic path remains useful but isn't required for correctness)
-//   - OSInitializeProcessorSupportsCRC32 — kept as a no-op so callers compile
-//   - CbOSEncryptAes256SizeNeeded — pure size math
-//   - ErrOSEncryptionVerifyKey — uses Crc32Checksum and a struct layout
-//
-// What we stub:
-//
-//   - ErrOSEncryptWithAes256 / ErrOSDecryptWithAes256 / ErrOSCreateAes256Key —
-//     return JET_errFeatureNotAvailable until libsodium lands
+//   - dwCRC32_LOOKUP_TABLE — used by ErrOSEncryptionVerifyKey for
+//     key-header integrity (still keyed by the Win32 protocol)
+//   - Crc32Checksum — table-driven implementation
+//   - OSInitializeProcessorSupportsCRC32 — kept as a no-op
+//   - ErrOSEncryptionVerifyKey — same struct, same checksum
 
 #include "osstd.hxx"
+
+#include <dlfcn.h>
+#include <pthread.h>
+#include <stddef.h>
+
+
+////////////////////////////////////////////////
+//  libsodium type aliases (we don't pull <sodium.h> in — the .so is
+//  optional and there's no compile-time dep on its headers).
+//
+//  The constants below come straight from libsodium 1.0.x's stable
+//  ABI; they haven't moved in years and aren't expected to.
+
+namespace
+{
+
+constexpr size_t kAes256GcmKeyBytes = 32;
+constexpr size_t kAes256GcmNonceBytes = 12;
+constexpr size_t kAes256GcmAbytes = 16;
+
+typedef int ( *PfnSodiumInit )( void );
+typedef int ( *PfnAes256GcmIsAvailable )( void );
+typedef int ( *PfnAes256GcmEncrypt )(
+        unsigned char* c, unsigned long long* clen_p,
+        const unsigned char* m, unsigned long long mlen,
+        const unsigned char* ad, unsigned long long adlen,
+        const unsigned char* nsec,
+        const unsigned char* npub,
+        const unsigned char* k );
+typedef int ( *PfnAes256GcmDecrypt )(
+        unsigned char* m, unsigned long long* mlen_p,
+        unsigned char* nsec,
+        const unsigned char* c, unsigned long long clen,
+        const unsigned char* ad, unsigned long long adlen,
+        const unsigned char* npub,
+        const unsigned char* k );
+typedef void ( *PfnRandombytesBuf )( void* buf, size_t size );
+
+} // anonymous namespace
 
 
 ////////////////////////////////////////////////
@@ -80,21 +142,100 @@ ULONG Crc32Checksum( _In_reads_bytes_(cbData) const BYTE *pbData,
 
 
 ////////////////////////////////////////////////
-//  Lifecycle
+//  libsodium dlopen + lifecycle
+//
+//  The library is loaded lazily on first use (pthread_once-gated).
+//  If any step fails — dlopen, dlsym, sodium_init(), or the
+//  AES-NI / CryptoExtension probe — g_fEncryptionAvailable stays
+//  fFalse and all three AES entry points return
+//  JET_errFeatureNotAvailable.  No engine-visible side effect on
+//  boxes without libsodium.
+
+namespace
+{
+
+struct SodiumProvider
+{
+    PfnSodiumInit pfnInit;
+    PfnAes256GcmIsAvailable pfnIsAvailable;
+    PfnAes256GcmEncrypt pfnEncrypt;
+    PfnAes256GcmDecrypt pfnDecrypt;
+    PfnRandombytesBuf pfnRandombytesBuf;
+};
+
+pthread_once_t g_onceSodium = PTHREAD_ONCE_INIT;
+void* g_phSodium = nullptr;
+SodiumProvider g_sodium = { nullptr, nullptr, nullptr, nullptr, nullptr };
+BOOL g_fEncryptionAvailable = fFalse;
+
+void SodiumInitOnce()
+{
+    //  Try the soname that's stable across libsodium 1.0.x on every
+    //  Linux distro we care about; fall back to the unversioned link
+    //  in case a development install is on the box without the
+    //  versioned symlink.
+    g_phSodium = dlopen( "libsodium.so.23", RTLD_LAZY | RTLD_LOCAL );
+    if ( g_phSodium == nullptr )
+    {
+        g_phSodium = dlopen( "libsodium.so", RTLD_LAZY | RTLD_LOCAL );
+    }
+    if ( g_phSodium == nullptr )
+    {
+        return;
+    }
+
+    g_sodium.pfnInit = (PfnSodiumInit)dlsym( g_phSodium, "sodium_init" );
+    g_sodium.pfnIsAvailable = (PfnAes256GcmIsAvailable)dlsym( g_phSodium, "crypto_aead_aes256gcm_is_available" );
+    g_sodium.pfnEncrypt = (PfnAes256GcmEncrypt)dlsym( g_phSodium, "crypto_aead_aes256gcm_encrypt" );
+    g_sodium.pfnDecrypt = (PfnAes256GcmDecrypt)dlsym( g_phSodium, "crypto_aead_aes256gcm_decrypt" );
+    g_sodium.pfnRandombytesBuf = (PfnRandombytesBuf)dlsym( g_phSodium, "randombytes_buf" );
+
+    if ( !g_sodium.pfnInit || !g_sodium.pfnIsAvailable ||
+         !g_sodium.pfnEncrypt || !g_sodium.pfnDecrypt || !g_sodium.pfnRandombytesBuf )
+    {
+        return;
+    }
+
+    if ( g_sodium.pfnInit() < 0 )
+    {
+        return;
+    }
+    if ( g_sodium.pfnIsAvailable() == 0 )
+    {
+        //  No AES-NI on x86_64 or no ARM CryptoExtension on aarch64.
+        //  Software fallback is intentionally not provided — bail
+        //  the same as if the library were missing.
+        return;
+    }
+
+    g_fEncryptionAvailable = fTrue;
+}
+
+void SodiumEnsureInit()
+{
+    pthread_once( &g_onceSodium, SodiumInitOnce );
+}
+
+} // anonymous namespace
 
 BOOL FOSEncryptionPreinit()
 {
     OSInitializeProcessorSupportsCRC32();
+    SodiumEnsureInit();
     return fTrue;
 }
 
 void OSEncryptionPostterm() {}
 void OSEncryptionTerm()     {}
-ERR  ErrOSEncryptionInit()  { return JET_errSuccess; }
+ERR  ErrOSEncryptionInit()
+{
+    SodiumEnsureInit();
+    return g_fEncryptionAvailable ? JET_errSuccess : ErrERRCheck( JET_errFeatureNotAvailable );
+}
 
 
 ////////////////////////////////////////////////
-//  AES-256 surface — stubbed until libsodium lands
+//  AES-256-GCM surface, backed by libsodium when available
 
 #include <pshpack1.h>
 struct AES256KEY
@@ -103,14 +244,21 @@ struct AES256KEY
     UnalignedLittleEndian<ULONG>    Checksum;
     BYTE                            pbKey[0];
 };
+//  Trailer appended to ciphertext: same layout as the upstream Win32
+//  build (1-byte Version + 16-byte InitVector), but only the first 12
+//  bytes of InitVector are used (the GCM nonce).
+struct AES256BLOBTRAILER
+{
+    BYTE                            Version;
+    BYTE                            InitVector[ 16 ];
+};
 #include <poppack.h>
 
 ULONG CbOSEncryptAes256SizeNeeded( ULONG cbDataLen )
 {
-    //  16-byte IV + PKCS5 padding to a 16-byte block boundary
-    const ULONG cbBlockSize = 16;
-    const ULONG cbPadded = ( cbDataLen / cbBlockSize + 1 ) * cbBlockSize;
-    return cbBlockSize + cbPadded;
+    //  GCM is a stream cipher mode: ciphertext is the same length as
+    //  plaintext.  We append the 16-byte auth tag and the trailer.
+    return cbDataLen + (ULONG)kAes256GcmAbytes + (ULONG)sizeof( AES256BLOBTRAILER );
 }
 
 ERR ErrOSEncryptionVerifyKey(
@@ -128,29 +276,167 @@ ERR ErrOSEncryptionVerifyKey(
 }
 
 ERR ErrOSCreateAes256Key(
-    _Out_writes_bytes_to_opt_(*pcbKeySize, *pcbKeySize) BYTE *  /* pbKey */,
+    _Out_writes_bytes_to_opt_(*pcbKeySize, *pcbKeySize) BYTE *  pbKey,
     _Inout_                                             ULONG * pcbKeySize )
 {
-    if ( pcbKeySize ) { *pcbKeySize = 0; }
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    SodiumEnsureInit();
+    if ( !g_fEncryptionAvailable )
+    {
+        if ( pcbKeySize )
+        {
+            *pcbKeySize = 0;
+        }
+        return ErrERRCheck( JET_errFeatureNotAvailable );
+    }
+
+    const ULONG cbNeeded = (ULONG)sizeof( AES256KEY ) + (ULONG)kAes256GcmKeyBytes;
+
+    //  Caller protocol matches the Win32 path: pass *pcbKeySize < cbNeeded
+    //  (or pbKey == NULL) to query the required buffer size; we write
+    //  cbNeeded back and return JET_errBufferTooSmall.
+    if ( pbKey == nullptr || *pcbKeySize < cbNeeded )
+    {
+        *pcbKeySize = cbNeeded;
+        return ErrERRCheck( JET_errBufferTooSmall );
+    }
+
+    AES256KEY * const pKey = (AES256KEY *)pbKey;
+    g_sodium.pfnRandombytesBuf( pKey->pbKey, kAes256GcmKeyBytes );
+    pKey->Version  = JET_EncryptionAlgorithmAes256;
+    pKey->Checksum = Crc32Checksum( pKey->pbKey, (ULONG)kAes256GcmKeyBytes );
+    *pcbKeySize    = cbNeeded;
+
+#ifdef DEBUG
+    CallS( ErrOSEncryptionVerifyKey( pbKey, *pcbKeySize ) );
+#endif
+
+    return JET_errSuccess;
 }
 
 ERR ErrOSEncryptWithAes256(
-    _Inout_updates_bytes_to_(cbDataBufLen, *pcbDataLen)     BYTE *  /* pbData */,
-    _Inout_                                                 ULONG * /* pcbDataLen */,
-    _In_                                                    ULONG   /* cbDataBufLen */,
-    _In_reads_bytes_(cbKey)                         const   BYTE *  /* pbKey */,
-    _In_                                                    ULONG   /* cbKey */ )
+    _Inout_updates_bytes_to_(cbDataBufLen, *pcbDataLen)     BYTE *  pbData,
+    _Inout_                                                 ULONG * pcbDataLen,
+    _In_                                                    ULONG   cbDataBufLen,
+    _In_reads_bytes_(cbKey)                         const   BYTE *  pbKey,
+    _In_                                                    ULONG   cbKey )
 {
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    ERR err = JET_errSuccess;
+
+    SodiumEnsureInit();
+    if ( !g_fEncryptionAvailable )
+    {
+        return ErrERRCheck( JET_errFeatureNotAvailable );
+    }
+
+    CallR( ErrOSEncryptionVerifyKey( pbKey, cbKey ) );
+    if ( cbKey - sizeof( AES256KEY ) < kAes256GcmKeyBytes )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+
+    const ULONG cbPlaintext = *pcbDataLen;
+    const ULONG cbNeeded    = CbOSEncryptAes256SizeNeeded( cbPlaintext );
+    if ( cbNeeded > cbDataBufLen )
+    {
+        *pcbDataLen = cbNeeded;
+        return ErrERRCheck( JET_errBufferTooSmall );
+    }
+
+    //  Build the trailer first so we can hand its InitVector to GCM
+    //  as the nonce.  Only the first 12 bytes are meaningful for
+    //  AES-GCM; zero the remainder so the trailer bits are
+    //  deterministic on disk.
+    AES256BLOBTRAILER trailer;
+    memset( &trailer, 0, sizeof( trailer ) );
+    trailer.Version = JET_EncryptionAlgorithmAes256;
+    g_sodium.pfnRandombytesBuf( trailer.InitVector, kAes256GcmNonceBytes );
+
+    AES256KEY * const pKey = (AES256KEY *)pbKey;
+
+    //  In-place encrypt: writes ciphertext + tag (cbPlaintext +
+    //  kAes256GcmAbytes bytes) starting at pbData.  libsodium
+    //  documents that c == m (overlap) is supported.
+    unsigned long long clen = 0;
+    if ( g_sodium.pfnEncrypt(
+                pbData, &clen,
+                pbData, cbPlaintext,
+                /* ad   */ nullptr, 0,
+                /* nsec */ nullptr,
+                /* npub */ trailer.InitVector,
+                /* k    */ pKey->pbKey ) != 0 )
+    {
+        return ErrERRCheck( JET_errInternalError );
+    }
+    Assert( clen == (unsigned long long)( cbPlaintext + kAes256GcmAbytes ) );
+
+    //  Append the trailer after the ciphertext+tag block.
+    memcpy( pbData + clen, &trailer, sizeof( trailer ) );
+    *pcbDataLen = (ULONG)clen + (ULONG)sizeof( AES256BLOBTRAILER );
+
+    Assert( *pcbDataLen == cbNeeded );
+    Assert( *pcbDataLen <= cbDataBufLen );
+
+    return err;
 }
 
 ERR ErrOSDecryptWithAes256(
-    _In_reads_( *pcbDataLen )                           BYTE *  /* pbDataIn */,
-    _Out_writes_bytes_to_(*pcbDataLen, *pcbDataLen)     BYTE *  /* pbDataOut */,
-    _Inout_                                             ULONG * /* pcbDataLen */,
-    _In_reads_bytes_(cbKey)                     const   BYTE *  /* pbKey */,
-    _In_                                                ULONG   /* cbKey */ )
+    _In_reads_( *pcbDataLen )                           BYTE *  pbDataIn,
+    _Out_writes_bytes_to_(*pcbDataLen, *pcbDataLen)     BYTE *  pbDataOut,
+    _Inout_                                             ULONG * pcbDataLen,
+    _In_reads_bytes_(cbKey)                     const   BYTE *  pbKey,
+    _In_                                                ULONG   cbKey )
 {
-    return ErrERRCheck( JET_errFeatureNotAvailable );
+    ERR err = JET_errSuccess;
+
+    SodiumEnsureInit();
+    if ( !g_fEncryptionAvailable )
+    {
+        return ErrERRCheck( JET_errFeatureNotAvailable );
+    }
+
+    CallR( ErrOSEncryptionVerifyKey( pbKey, cbKey ) );
+    if ( cbKey - sizeof( AES256KEY ) < kAes256GcmKeyBytes )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+
+    //  Minimum size = auth tag (16) + trailer (17).  Anything below
+    //  that can't possibly be valid GCM ciphertext from our encrypt
+    //  path.
+    if ( *pcbDataLen < kAes256GcmAbytes + sizeof( AES256BLOBTRAILER ) )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+
+    const AES256BLOBTRAILER * const pTrailer =
+        (const AES256BLOBTRAILER *)( pbDataIn + *pcbDataLen ) - 1;
+    if ( pTrailer->Version != JET_EncryptionAlgorithmAes256 )
+    {
+        return ErrERRCheck( JET_errInvalidParameter );
+    }
+
+    const ULONG cbCipherAndTag = *pcbDataLen - (ULONG)sizeof( AES256BLOBTRAILER );
+    AES256KEY * const pKey     = (AES256KEY *)pbKey;
+
+    //  libsodium accepts c == m for overlap, but the caller hands us
+    //  separate in/out buffers — copy then decrypt-in-place on the
+    //  output, which still satisfies GCM's auth-before-release
+    //  guarantee since it tag-verifies before writing the plaintext
+    //  into the buffer.
+    memcpy( pbDataOut, pbDataIn, cbCipherAndTag );
+
+    unsigned long long mlen = 0;
+    if ( g_sodium.pfnDecrypt(
+                pbDataOut, &mlen,
+                /* nsec */ nullptr,
+                pbDataOut, cbCipherAndTag,
+                /* ad   */ nullptr, 0,
+                /* npub */ pTrailer->InitVector,
+                /* k    */ pKey->pbKey ) != 0 )
+    {
+        return ErrERRCheck( JET_errDecryptionFailed );
+    }
+
+    *pcbDataLen = (ULONG)mlen;
+    return err;
 }

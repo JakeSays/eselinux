@@ -54,6 +54,8 @@ const char* ToString(ScenarioCategory category)
             return "Scale";
         case ScenarioCategory::Concurrency:
             return "Concurrency";
+        case ScenarioCategory::Encryption:
+            return "Encryption";
     }
     return "Unknown";
 }

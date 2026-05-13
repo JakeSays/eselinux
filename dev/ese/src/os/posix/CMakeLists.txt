@@ -162,11 +162,14 @@ if (NOT WIN32)
     # compression path).  Vendored under third_party/zstd-1.5.7/.
     target_link_libraries(osposix PRIVATE zstd)
 
-    # libdl backs the dlopen of libsystemd.so.0 inside
-    # eventoslog_posix.cxx (best-effort upgrade from syslog(3) to
-    # sd_journal_sendv when journald is installed).  No hard link
-    # against libsystemd — non-systemd boxes stay on the syslog(3)
-    # path.
+    # libdl backs runtime dlopen() of two optional sibling libraries:
+    #   - libsystemd.so.0 from eventoslog_posix.cxx (sd_journal_sendv
+    #     structured-fields upgrade; falls back to syslog(3) if absent)
+    #   - libsodium.so from encrypt_posix.cxx (AES-256-GCM for at-rest
+    #     encryption; encrypt entry points return
+    #     JET_errFeatureNotAvailable if absent)
+    # Neither library is a hard build-time dep — libese.so links cleanly
+    # without them and the call sites probe + degrade at runtime.
     target_link_libraries(osposix PRIVATE ${CMAKE_DL_LIBS})
 endif ()
 
