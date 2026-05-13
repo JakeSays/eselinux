@@ -69,3 +69,27 @@ target_include_directories(ese-tests PRIVATE
 target_link_libraries(ese-tests PRIVATE
     ese
     Threads::Threads)
+
+
+# ese-config-test — standalone integration test for the libucl-backed
+# registry replacement (`dev/ese/src/os/posix/config_posix.cxx`).
+#
+# Separate executable because the loader is `pthread_once`-cached: once
+# the engine reads its merged UCL object in this process, it can't be
+# asked to read a different one without re-exec.  Each subtest in the
+# binary runs in a forked child so it can plant its own `.ese.conf`
+# (the per-binary file the loader looks for next to /proc/self/exe)
+# without poisoning the others.
+
+add_executable(ese-config-test config-test/main.cxx)
+
+set_target_properties(ese-config-test PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON)
+
+target_compile_options(ese-config-test PRIVATE -fexceptions -frtti)
+
+target_include_directories(ese-config-test PRIVATE
+    ${CMAKE_SOURCE_DIR})
+
+target_link_libraries(ese-config-test PRIVATE ese)
