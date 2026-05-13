@@ -49,9 +49,15 @@
 
 namespace
 {
-//  Loaded once on first access; treated as read-only afterwards.
+//  Loaded once explicitly via OSConfigSetPath + ErrOSConfigInit; treated
+//  as read-only afterwards.  Reads before the load return "not found".
+//  The loader does NOT auto-fire on first FOSConfigGet anymore — that
+//  used to trigger during libese.so's static-initializer chain
+//  (FOSTracePreinit -> FOSConfigGet), which was before any caller had
+//  a chance to point at a non-default conf file.
 ucl_object_t* g_pucMerged = nullptr;
-pthread_once_t g_uclLoadOnce = PTHREAD_ONCE_INIT;
+bool          g_fConfigLoaded = false;
+char*         g_szOverridePath = nullptr;  // owned; freed at term
 
 void LoadOneFile(const char* szPath, ucl_object_t* dst)
 {
@@ -86,31 +92,57 @@ void LoadOneFile(const char* szPath, ucl_object_t* dst)
 
 void LoadConfigImpl()
 {
-    g_pucMerged = ucl_object_typed_new(UCL_OBJECT);
-    if (g_pucMerged == nullptr)
+    if (g_fConfigLoaded)
     {
         return;
     }
+    g_pucMerged = ucl_object_typed_new(UCL_OBJECT);
+    if (g_pucMerged == nullptr)
+    {
+        g_fConfigLoaded = true;  // sticky "tried, gave up" state
+        return;
+    }
 
-    //  Layer 1: /etc/ese.conf (system-wide).
+    //  Layer 1 (always): /etc/ese.conf — system-wide settings the
+    //  admin manages.  Per-binary / per-test layers merge on top of
+    //  these; the system file is the floor, not a fallback.
     LoadOneFile("/etc/ese.conf", g_pucMerged);
 
-    //  Layer 2: <exe>.ese.conf (per-binary).
-    //  /proc/self/exe is the real executable, immune to argv[0] tampering.
-    char exePath[PATH_MAX];
-    const ssize_t n = readlink("/proc/self/exe", exePath, sizeof(exePath) - 1);
-    if (n > 0 && n < (ssize_t) (sizeof(exePath) - sizeof(".ese.conf")))
+    //  Layer 2: per-caller selection.  An explicit override path
+    //  (set via OSConfigSetPath, typically by JetPlatformInitialize
+    //  with a non-null szConfigPath) wins; otherwise we fall back to
+    //  the conventional <exe>.ese.conf lookup off /proc/self/exe.
+    if (g_szOverridePath != nullptr)
     {
-        exePath[n] = '\0';
-        char cfgPath[PATH_MAX + 16];
-        snprintf(cfgPath, sizeof(cfgPath), "%s.ese.conf", exePath);
-        LoadOneFile(cfgPath, g_pucMerged);
+        LoadOneFile(g_szOverridePath, g_pucMerged);
     }
+    else
+    {
+        char exePath[PATH_MAX];
+        const ssize_t n = readlink("/proc/self/exe",
+                                   exePath, sizeof(exePath) - 1);
+        if (n > 0 && n < (ssize_t) (sizeof(exePath) - sizeof(".ese.conf")))
+        {
+            exePath[n] = '\0';
+            char cfgPath[PATH_MAX + 16];
+            snprintf(cfgPath, sizeof(cfgPath), "%s.ese.conf", exePath);
+            LoadOneFile(cfgPath, g_pucMerged);
+        }
+    }
+    g_fConfigLoaded = true;
 }
 
 const ucl_object_t* EnsureLoaded()
 {
-    pthread_once(&g_uclLoadOnce, LoadConfigImpl);
+    //  Pre-load: every FOSConfigGet returns "not found".  Callers
+    //  that run during libese.so static init (FOSTracePreinit) hit
+    //  this branch and pick up engine defaults.  After
+    //  JetPlatformInitialize2 (or any explicit OSConfigInit), the
+    //  config is loaded and subsequent reads see the parsed values.
+    if (!g_fConfigLoaded)
+    {
+        return nullptr;
+    }
     return g_pucMerged;
 }
 
@@ -480,6 +512,18 @@ ERR ErrConfigReadValue(_In_ CConfigStore* const pcs,
 
 void OSConfigPostterm()
 {
+    //  Run after all OSU/OS layers have torn down; free the merged
+    //  object and any override-path string so a future engine cycle
+    //  in the same process (eseutil under a long-lived shell, the
+    //  tier-2 test runner, etc.) starts clean.
+    if (g_pucMerged != nullptr)
+    {
+        ucl_object_unref(g_pucMerged);
+        g_pucMerged = nullptr;
+    }
+    free(g_szOverridePath);
+    g_szOverridePath = nullptr;
+    g_fConfigLoaded = false;
 }
 
 BOOL FOSConfigPreinit() { return fTrue; }
@@ -488,4 +532,26 @@ void OSConfigTerm()
 {
 }
 
-ERR ErrOSConfigInit() { return JET_errSuccess; }
+//  Override the per-binary config-file path the next ErrOSConfigInit
+//  will merge on top of /etc/ese.conf.  Pass nullptr (or empty) to
+//  revert to the default `<exe>.ese.conf` lookup.  /etc/ese.conf is
+//  always loaded first either way.  Must be called BEFORE the config
+//  has been loaded; calling after has no effect and the new path is
+//  ignored.
+void OSConfigSetPath(const char* szPath)
+{
+    if (g_fConfigLoaded)
+    {
+        return;
+    }
+    free(g_szOverridePath);
+    g_szOverridePath = (szPath != nullptr && szPath[0] != '\0')
+                       ? strdup(szPath)
+                       : nullptr;
+}
+
+ERR ErrOSConfigInit()
+{
+    LoadConfigImpl();
+    return JET_errSuccess;
+}

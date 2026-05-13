@@ -4,8 +4,17 @@
 #ifndef _OS_CONFIG_HXX_INCLUDED
 #define _OS_CONFIG_HXX_INCLUDED
 
+#include "../platform.h"   //  ESE_OS_WINDOWS / ESE_OS_LINUX
 
-#if defined(RTM) || defined(MINIMAL_FUNCTIONALITY)
+
+//  On Windows, RTM/MINIMAL_FUNCTIONALITY builds suppress all registry
+//  reads (hardening: production callers shouldn't be redirected via
+//  HKLM\Software\Microsoft\<image>\... at runtime).  Linux mirrors
+//  the same surface with a deliberate user-visible config file
+//  (/etc/ese.conf + <exe>.ese.conf), which is the documented way to
+//  configure the engine — so the gate does NOT apply on Linux.  RTM
+//  Linux builds still honour the .ese.conf files.
+#if defined(ESE_OS_WINDOWS) && ( defined(RTM) || defined(MINIMAL_FUNCTIONALITY) )
 #ifndef DEBUG
 #define DISABLE_REGISTRY
 #endif
@@ -35,6 +44,21 @@
 //  NOTE:  either '/' or '\\' is a valid path separator
 
 const BOOL FOSConfigGet_( __in_z const WCHAR * const wszPath, __in_z const WCHAR* const wszName, __out_bcount_z(cbBuf) WCHAR* const wszBuf, const LONG cbBuf );
+
+
+//  Linux-only: select the config-file path the next ErrOSConfigInit
+//  will read.  Pass nullptr (or empty) to fall back to the layered
+//  default (/etc/ese.conf + <exe>.ese.conf).  No-op once the config
+//  has been loaded; the caller (JetPlatformInitialize2) is expected
+//  to call this strictly before ErrOSConfigInit runs.
+//
+//  Windows config.cxx reads from the registry live — there's no
+//  equivalent surface there, and the stub below makes that explicit.
+#ifdef ESE_OS_LINUX
+void OSConfigSetPath( const char * szPath );
+#else
+inline void OSConfigSetPath( const char * /*szPath*/ ) { }
+#endif
 
 
 //  V2 of Persistent Configuration

@@ -23453,7 +23453,7 @@ extern "C" void JetPlatformAtexit_( void )
 //  registered on the first successful call drives JetPlatformTerminate
 //  so the OSU layer's CInitTermLock doesn't enforce-fail in its dtor
 //  when callers exit without an explicit Terminate.
-JET_ERR JET_API JetPlatformInitialize( void )
+JET_ERR JET_API JetPlatformInitializeWithConfig( const char * szConfigPath )
 {
     ERR err = JET_errSuccess;
 
@@ -23466,6 +23466,13 @@ JET_ERR JET_API JetPlatformInitialize( void )
 
     COSLayerPreInit::DisablePerfmon();
     COSLayerPreInit::DisableTracing();
+
+    //  Wire the configuration file the engine reads at startup.  This
+    //  must happen before ErrOSUInit -> ErrOSConfigInit, which is what
+    //  actually loads and parses the file.  A nullptr / empty path
+    //  preserves the layered default: /etc/ese.conf merged with
+    //  <readlink(/proc/self/exe)>.ese.conf.
+    OSConfigSetPath( szConfigPath );
 
     Call( ErrSetSystemParameter( pinstNil, JET_sesidNil, JET_paramDisablePerfmon, fTrue, nullptr ) );
 
@@ -23492,6 +23499,13 @@ JET_ERR JET_API JetPlatformInitialize( void )
 
 HandleError:
     return err;
+}
+
+JET_ERR JET_API JetPlatformInitialize( void )
+{
+    //  Default conf-file selection: /etc/ese.conf merged with
+    //  <readlink(/proc/self/exe)>.ese.conf.
+    return JetPlatformInitializeWithConfig( nullptr );
 }
 
 JET_ERR JET_API JetPlatformTerminate( void )

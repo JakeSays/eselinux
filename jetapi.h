@@ -9720,6 +9720,21 @@ JET_ERR JET_API JetConsumeLogData(
 //  Pair with JetPlatformTerminate() at process shutdown when you want
 //  deterministic teardown; otherwise the .so destructor handles it.
 JET_ERR JET_API JetPlatformInitialize( void );
+
+//  Variant that pins the per-binary config file the engine merges on
+//  top of /etc/ese.conf at startup.  Pass an absolute path; the file
+//  at that path is merged into the system-wide /etc/ese.conf instead
+//  of the conventional `<readlink(/proc/self/exe)>.ese.conf` lookup.
+//  Either way, /etc/ese.conf (if present) is always loaded first.
+//
+//  Useful for test scaffolds that need per-scenario config isolation
+//  without managing files next to the binary.  An empty / null
+//  szConfigPath is equivalent to calling JetPlatformInitialize().
+//
+//  Behaviour matches JetPlatformInitialize otherwise (idempotent;
+//  atexit-driven termination if no explicit Terminate runs).
+JET_ERR JET_API JetPlatformInitializeWithConfig( const char * szConfigPath );
+
 JET_ERR JET_API JetPlatformTerminate( void );
 #endif /* !_WIN32 */
 
