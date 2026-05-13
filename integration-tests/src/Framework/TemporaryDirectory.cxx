@@ -16,7 +16,11 @@ namespace ese::tests
 namespace
 {
 
-constexpr std::string_view TestsRoot = "/p/ese/temp/ese-tests";
+//  Per-run scratch root, rooted at the test process's CWD.  Caller
+//  decides where the tests scribble by `cd`'ing somewhere safe before
+//  invocation; the namespaced subdir means even a misfire (cd $HOME)
+//  leaves at most one stray directory to `rm -rf`.
+constexpr std::string_view TestsSubdir = "ese-tests";
 
 bool _keepOnDestruction = false;
 
@@ -47,7 +51,8 @@ TemporaryDirectory::TemporaryDirectory(std::string_view scenarioName)
     const auto sequence = _scenarioSequence.fetch_add(1, std::memory_order_relaxed);
     const auto processId = static_cast<long>(::getpid());
 
-    _path = std::filesystem::path(TestsRoot)
+    _path = std::filesystem::current_path()
+            / TestsSubdir
             / std::format("{}-{}-{:04}", SanitiseName(scenarioName), processId, sequence);
 
     std::error_code errorCode;

@@ -50,21 +50,28 @@ std::string SelfExePath()
     return std::string(buf);
 }
 
-//  Per-subtest scratch path under /tmp, suffixed with the pid so two
-//  concurrent runs don't trip over each other.
+//  Per-subtest scratch path rooted at $CWD/ese-config-test/.  The
+//  caller chooses where artefacts land by `cd`'ing before invocation;
+//  the namespaced subdir means even a stray run leaves at most one
+//  directory to `rm -rf`.  Pid suffix lets concurrent runs coexist.
 std::string ConfPathFor(std::string_view scenarioName)
 {
-    char path[256];
-    snprintf(path, sizeof(path),
-             "/tmp/ese-config-test.%d.%.*s.ese.conf",
-             (int) getpid(),
+    char filename[256];
+    snprintf(filename, sizeof(filename),
+             "%.*s-%d.ese.conf",
              (int) scenarioName.size(),
-             scenarioName.data());
-    return path;
+             scenarioName.data(),
+             (int) getpid());
+    return (std::filesystem::current_path()
+            / "ese-config-test"
+            / filename).string();
 }
 
 void WriteConf(const std::string& path, std::string_view contents)
 {
+    std::error_code ec;
+    std::filesystem::create_directories(
+        std::filesystem::path(path).parent_path(), ec);
     FILE* const f = fopen(path.c_str(), "w");
     if (!f)
     {
