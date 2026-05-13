@@ -102,10 +102,13 @@ add_library(osposix STATIC
     ${OSPOSIX_PORTED_SOURCES}
 )
 
+add_subdirectory(tracepoints)
+
 add_dependencies(osposix
     gen_etw
     gen_jetmsgex
     gen_tracetagimpl
+    gen_etwlttng
 )
 
 # DISABLE_EVENT_LOG: route OSEventReportEvent to the no-op path in event.cxx
@@ -169,6 +172,7 @@ endif ()
 
 target_include_directories(osposix PRIVATE
     ${CMAKE_SOURCE_DIR}/windows-shim
+    ${GEN_OUTPUT_DIRECTORY}/etwlttng
     ./
 )
 

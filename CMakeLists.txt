@@ -357,6 +357,32 @@ else ()
     else ()
         message(STATUS "SUCCESS: Found Message Compiler: '${CMAKE_MESSAGE_COMPILER}'")
     endif ()
+
+    # etwlttng: parses EseEtwEventsPregen.txt and emits the LTTng UST
+    # tracepoint provider + osposix dispatch glue.  Built from tools/
+    # etwlttng/.
+    find_program(ETWLTTNG NAMES etwlttng HINTS "$ENV{HOME}/bin")
+    if (NOT ETWLTTNG)
+        message(FATAL_ERROR "etwlttng not found: build and install tools/etwlttng to ~/bin")
+    else ()
+        message(STATUS "Found etwlttng: '${ETWLTTNG}'")
+    endif ()
+
+    # lttng-ust: required to build libese_tracepoints.so (the dlopen-
+    # loaded analytic tracing provider).  Optional at build time —
+    # absent boxes skip the .so target and libese.so falls back to
+    # the no-tracepoint code path at runtime.
+    find_package(PkgConfig QUIET)
+    if (PkgConfig_FOUND)
+        pkg_check_modules(LTTNG_UST IMPORTED_TARGET lttng-ust)
+    endif ()
+    if (LTTNG_UST_FOUND)
+        message(STATUS "Found lttng-ust ${LTTNG_UST_VERSION}: building libese_tracepoints.so")
+        set(ESE_BUILD_TRACEPOINTS TRUE)
+    else ()
+        message(STATUS "lttng-ust not found: libese_tracepoints.so will be skipped (libese.so still builds and runs without tracing)")
+        set(ESE_BUILD_TRACEPOINTS FALSE)
+    endif ()
 endif (WIN32)
 
 if (MSVC)
