@@ -32,10 +32,11 @@ Major plumbing pieces in place.
 - Consumer entry points: `JetPlatformInitialize` / `JetPlatformTerminate` were added so `libese.so` consumers (eseutil, BookStoreSample, third-party callers) get the OS layer pre-init done for them.  `JetPlatformInitializeWithConfig(const char* path)` lets a host process point at an explicit config file (still merged on top of `/etc/ese.conf`).
 - Standalone freestanding `jetapi.h` at repo root: customer-facing JET surface with no Windows-isms (stdint types throughout, `char16_t` for wide strings, JET_VERSION pinned at 0x0A01).  `integration-tests/` consumes only this header — no `windows-shim/`, no `dev/ese/published/inc/`.
 - Event logging — admin events go to syslog(3) (baseline; captured by journald or any syslogd) with `sd_journal_sendv` as an opportunistic upgrade via libsystemd dlopen (no hard build dep).  Analytic events flow through a dlopen-loaded `libese_tracepoints.so` (LTTng UST), generated from `EseEtwEventsPregen.txt` by the `tools/etwlttng/` C# AOT tool.  Boxes without lttng-ust skip the .so and tracing stays quiet; lttng-tools captures all 77 event types when present.  See `~/.claude/projects/-p-ese-repo/memory/project_port_event_logging.md`.
+- IO submit pre/post hooks mirror Win32 on the Linux arm of `ErrorIOMgrIssueIO`: `RFSAlloc` resource-failure gate, the three `ErrFaultInjection` IDs (17384 / 64738 / 42980), and `UtilThreadBeginLowIOPriority` / `EndLowIOPriority` bracketing.  The latter pair is wired through `SetThreadPriority`'s `THREAD_MODE_BACKGROUND_BEGIN/END` recognition in `winapi_thread.cxx`, which calls `ioprio_set(2)` on the current task (drops to `IOPRIO_CLASS_IDLE` on begin, restores to `IOPRIO_CLASS_NONE` on end).
 
 Known gaps that block "real users."
 - **Encryption is stubbed.**  `dev/ese/src/os/posix/encrypt_posix.cxx` returns `JET_errFeatureNotAvailable` for `ErrOSEncryptWithAes256`/`ErrOSDecryptWithAes256`/`ErrOSCreateAes256Key`; CRC32C and size-math kept portable.  Engine works for any consumer that doesn't enable encryption at rest.
-- **Some `winapi_*.cxx` functions remain unexercised** — surface that compiles and links but no test or live code path touches yet.  Not a gating problem; flagged for the eventual API-coverage audit (priority #3 below).
+- **Some `winapi_*.cxx` functions remain unexercised** — surface that compiles and links but no test or live code path touches yet.  Not a gating problem; flagged for the eventual API-coverage audit (priority #2 below).
 - **Templated `FOSEventTraceEnabled<etguid>()` still returns `fFalse`.**  A handful of engine call sites consult it to skip expensive data-gathering before an `ET*` call.  Wiring it to query lttng-ust's per-tracepoint enable state (`lttng_ust_tracepoint_ese___X.state`) is follow-up work; impact is minor since most ET* paths don't gate on the templated check.
 
 ## Priority list
@@ -51,22 +52,7 @@ Sequence (matches the "tests over runtime" rule):
 3. Replace the stubs in `encrypt_posix.cxx`.
 4. Run tier-1 + tier-2 with an encrypted-database scenario.
 
-### 2. Unify the `ErrorIOMgrIssueIO` / `GetOverlappedResult_` paths
-
-`osdisk.cxx` had four `#ifdef ESE_OS_WINDOWS` gates.  Three were closed in the same pass that landed disk-info, queue-depth, and SMART shims:
-
-- `LoadDiskInfo_` / `LoadCachePerf_` now compile on both platforms; the Linux dispatcher fills `STORAGE_DEVICE_DESCRIPTOR` (vendor/model/firmware/serial from `/sys/block/<dev>/device/{vendor,model,rev,firmware_rev,serial}`), `STORAGE_ADAPTER_DESCRIPTOR` (with NVMe vs SATA inferred from the disk name), and reports `ERROR_NOT_SUPPORTED` for `SMART_GET_VERSION` / `SMART_RCV_DRIVE_DATA` / `StorageDeviceCopyOffloadProperty` so the engine's degradation paths take over.
-- `ErrInitDisk` now opens `\\.\PhysicalDriveN` on Linux via the same shim path Windows uses.  The shim decodes N as a makedev-encoded `(major:minor)` (matching what `IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS` packs), resolves it through `/sys/dev/block/<major>:<minor>`, and fails the open when no real device backs the number — which preserves the engine's "couldn't determine disk identity, treat as HDD" path that unit tests with synthetic dwDiskNumber values rely on.
-- `QueryDiskPerformance` reads queue depth through `IOCTL_DISK_PERFORMANCE`, which the shim backs with `/proc/diskstats` (field 12, `in_flight`).
-
-The remaining gate (`osdisk.cxx:6390..6797`) wraps `GetOverlappedResult_` and the Windows `ErrorIOMgrIssueIO` body — the Win32 path uses `OVERLAPPED` + IOCP and waits via `GetOverlappedResult_`; the Linux path submits async IOs through io_uring (`OSPosixIouringSubmitIOREQ`) or runs sync IOs through pread/pwrite-backed `ReadFile`/`WriteFile`.  This is a genuine architectural divergence in IO submission, not a missing shim — keeping it as a gate is the right shape per the "last resort" exception in `~/.claude/projects/-p-ese-repo/memory/feedback_port_extend_shim_not_gate.md`.
-
-What's worth doing here:
-
-- **Mirror the Win32 pre/post amble onto the Linux body.**  The Windows path runs `RFSAlloc`, `ErrFaultInjection(17384/64738/42980)`, and `UtilThreadBeginLowIOPriority`/`UtilThreadEndLowIOPriority` around the submit; the Linux body skips them.  Lifting these into the Linux arm (or into a shared helper) would close the testable-behavior gap between the two arms while still allowing the submit step itself to diverge.
-- **Optional: extend `ReadFile`/`WriteFile` to honour an `OVERLAPPED.hEvent` async contract via io_uring.**  Then both arms could share most of the dispatch, and the gate would shrink to just the iomethod switch.  Bigger change; defer unless we end up wanting it for some other reason.
-
-### 3. JET public API coverage ratcheting
+### 2. JET public API coverage ratcheting
 
 `ese-tests` is at 157 scenarios — 42% of base JET surface per `integration-tests/COVERAGE.md`.  Standing pull:
 
@@ -76,7 +62,7 @@ What's worth doing here:
 
 This is also where to fold in the "untouched winapi_*.cxx functions" audit — anything the engine never calls is dead surface we can either delete or stub down.
 
-### 4. Capture a Release perf baseline
+### 3. Capture a Release perf baseline
 
 Debug perf numbers are pinned at commit `31a90b1`; Release deltas
 haven't been written down.  Run the perf-flagged tests
