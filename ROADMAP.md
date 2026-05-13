@@ -1,6 +1,6 @@
 # ESE Linux port — roadmap
 
-Last refreshed: 2026-05-12 (commit `04bd25e`).
+Last refreshed: 2026-05-13 (commit `151cb0e`).
 
 The aim of the port is a working Linux ESE: `libese.so` plus consuming applications that can create, open, write, read, and close JET databases through the same JET API surface Windows ESE exports.  Reading Windows-produced `.edb`/`.log` files is **not** in scope for the initial release (see `~/.claude/projects/-p-ese-repo/memory/project_port_scope.md`); the on-disk format is allowed to diverge between platforms.
 
@@ -8,16 +8,18 @@ The aim of the port is a working Linux ESE: `libese.so` plus consuming applicati
 
 Build & link surface — solid.
 - Clang 22 toolchain at `/apps/clang-22.1.3`, libc++/libc++abi/libunwind statically linked, `-std=c++20 -fshort-wchar -fvisibility=hidden`.
-- `libese.so` and 12 consumer binaries (`BookStoreSample`, `CcLayerUnit`, `COLLECTIONUnit`, `ERRVALIDATOR`, `EseLibWithTestsRunner`, `ese-tests`, `eseutil`, `IterQueryUnit`, `nls_smoke`, `RESMGRUNIT`, `STATUNIT`, `SYNCUNIT`) build clean in both Debug and Release.  Zero compiler warnings.
-- Third-party deps wired: io_uring, libnls (vendored submodule under `third_party/libnls/`), libucl (vendored under `third_party/libucl-0.9.4/`), zstd 1.5.7 (vendored under `third_party/zstd-1.5.7/`).
+- `libese.so` + an optional `libese_tracepoints.so` (LTTng provider) and 13 consumer binaries (`BookStoreSample`, `CcLayerUnit`, `COLLECTIONUnit`, `ERRVALIDATOR`, `EseLibWithTestsRunner`, `ese-tests`, `ese-config-test`, `eseutil`, `IterQueryUnit`, `nls_smoke`, `RESMGRUNIT`, `STATUNIT`, `SYNCUNIT`) build clean in both Debug and Release.  Zero compiler warnings.
+- Third-party deps wired: io_uring, libnls (vendored submodule under `third_party/libnls/`), libucl (vendored under `third_party/libucl-0.9.4/`), zstd 1.5.7 (vendored under `third_party/zstd-1.5.7/`).  Optional, dlopen-loaded at runtime: lttng-ust (used by `libese_tracepoints.so`), libsystemd (for `sd_journal_sendv` structured fields).  Neither is a hard build-time dep.
 - Build modes: Debug at `build/`, Release at `build-release/`.  Both pass the suite.
 
 Test surface — extensive and green.
 - `EseLibWithTestsRunner` tier-1 (no `-d`, runs JETUNITTEST): default-on suite passes cleanly with 35 opt-in tests skipped.  Release matches Debug.
 - `EseLibWithTestsRunner` tier-2 (`-d <dir>`, runs JETUNITTESTDB against a real JET database): 32 tests pass; 776 opt-in tests skipped.
 - `devlibtest` (7 binaries: `CcLayerUnit`, `COLLECTIONUnit`, `ERRVALIDATOR`, `IterQueryUnit`, `RESMGRUNIT`, `STATUNIT`, `SYNCUNIT`): tens of millions of assertions across the OS, sync, resmgr, and collection layers.  All passing.  `RESMGRUNIT` alone runs 2.1M tests; `SYNCUNIT` 2.5M.
-- `ese-tests` (new — public-JET-API integration scenarios at `integration-tests/`): 125 scenarios across DDL, DML, navigation, transactions, long values, multi-values, escrow, temporary tables, sessions, backup/restore, recovery (including SIGKILL crash), snapshots, maintenance (compact), schema, limits, errors, scale, and concurrency.  Passes in Debug (23s) and Release (15s).
+- `ese-tests` (public-JET-API integration scenarios at `integration-tests/`): 157 scenarios across DDL, DML, navigation, transactions, long values, multi-values, escrow, temporary tables, sessions, backup/restore, recovery (including SIGKILL crash), snapshots, maintenance (compact), schema, limits, errors, scale, and concurrency.  Coverage tracked in `integration-tests/COVERAGE.md` (42% of base JET surface).  Passes in Debug (~30s) and Release (~25s).
+- `ese-config-test`: dedicated integration test for the libucl `/etc/ese.conf` + `<exe>.ese.conf` loader, via fork+exec so each subtest gets a pristine engine instance.
 - All 7 originally-Windows-only test files (`daehelpers_test`, `osu_test`, `oslayer_test`, `logprereader_test`, `fmp_test`, `node_test`, `rbscleaner_test`) compile and pass on Linux.
+- `run-all-tests.sh` + `run-all-tests` CMake target drive every test binary in one shot.  12/12 suites green on both Debug and Release.
 
 Major plumbing pieces in place.
 - `windows-shim/` (Win32 API surface) covers everything `osposix` + the engine reach for, including a real `__try`/`__except` via SIGSEGV + `sigsetjmp` (see `windows-shim/excpt.h` + `dev/ese/src/os/posix/winapi_seh.cxx`).
@@ -27,14 +29,15 @@ Major plumbing pieces in place.
 - File I/O: upstream `osfile.cxx` + `osfs.cxx` + `osdisk.cxx` now drive the live path.  The earlier parallel posix shims (`osdisk_posix.cxx`, `syncfile_posix.cxx`, the posix-specific `osfile`/`osfs` rewrites) have been retired.  `CIoUringFile` lives under the upstream `IFileAPI`, and IOREQ pool submissions route through io_uring (or the fall-back ReadFile/WriteFile path on filesystems without async support).
 - Block-device identity wired against `/sys/block/<dev>/queue/rotational` + storage IOCTLs through `winapi_blockdev.cxx` and `winapi_blockdev_ioctl.cxx`, with a fallback for filesystems whose backing device isn't visible under `/sys`.
 - Compression: Rtl* family backed by zstd 1.5.7 via `winapi_compression.cxx`.  Smoke test covers the journal compression round trip.
-- Consumer entry points: `JetPlatformInitialize` / `JetPlatformTerminate` were added so `libese.so` consumers (eseutil, BookStoreSample, third-party callers) get the OS layer pre-init done for them.
+- Consumer entry points: `JetPlatformInitialize` / `JetPlatformTerminate` were added so `libese.so` consumers (eseutil, BookStoreSample, third-party callers) get the OS layer pre-init done for them.  `JetPlatformInitializeWithConfig(const char* path)` lets a host process point at an explicit config file (still merged on top of `/etc/ese.conf`).
+- Standalone freestanding `jetapi.h` at repo root: customer-facing JET surface with no Windows-isms (stdint types throughout, `char16_t` for wide strings, JET_VERSION pinned at 0x0A01).  `integration-tests/` consumes only this header — no `windows-shim/`, no `dev/ese/published/inc/`.
+- Event logging — admin events go to syslog(3) (baseline; captured by journald or any syslogd) with `sd_journal_sendv` as an opportunistic upgrade via libsystemd dlopen (no hard build dep).  Analytic events flow through a dlopen-loaded `libese_tracepoints.so` (LTTng UST), generated from `EseEtwEventsPregen.txt` by the `tools/etwlttng/` C# AOT tool.  Boxes without lttng-ust skip the .so and tracing stays quiet; lttng-tools captures all 77 event types when present.  See `~/.claude/projects/-p-ese-repo/memory/project_port_event_logging.md`.
 
 Known gaps that block "real users."
 - **No end-to-end smoke binary that doubles as a regression net.**  `BookStoreSample` boots the engine but exits with sample-level `-1047`; we have framework-driven coverage in `ese-tests` and `EseLibWithTestsRunner` but no standalone `samples/jet_smoke.cxx`-style program that proves a clean `CreateInstance → Init → CreateDatabase → insert → reopen → verify → Term` round trip and fails loud in CI when the libese.so init chain breaks again.
 - **Encryption is stubbed.**  `dev/ese/src/os/posix/encrypt_posix.cxx` returns `JET_errFeatureNotAvailable` for `ErrOSEncryptWithAes256`/`ErrOSDecryptWithAes256`/`ErrOSCreateAes256Key`; CRC32C and size-math kept portable.  Engine works for any consumer that doesn't enable encryption at rest.
 - **Some `winapi_*.cxx` functions remain unexercised** — surface that compiles and links but no test or live code path touches yet.  Not a gating problem; flagged for the eventual API-coverage audit (priority #4 below).
-- **ETW is no-op stubs.**  Eventual target is LTTng UST; not started.
-- **Event log is `DISABLE_EVENT_LOG`.**  Currently the `_etguidEventLogInfo/Warn/Error` path routes to stderr for visibility; syslog/journald is the eventual real backend.
+- **Templated `FOSEventTraceEnabled<etguid>()` still returns `fFalse`.**  A handful of engine call sites consult it to skip expensive data-gathering before an `ET*` call.  Wiring it to query lttng-ust's per-tracepoint enable state (`lttng_ust_tracepoint_ese___X.state`) is follow-up work; impact is minor since most ET* paths don't gate on the templated check.
 - **Release isn't the default.**  Both build modes work, but the project layout still leans on `build/` being the canonical Debug tree.  Promoting Release to default is a config tweak, not new code.
 
 ## Priority list
@@ -98,14 +101,6 @@ Both build modes work.  What's left is cosmetic + measurement:
 - Default CMake to `Release` unless `-DCMAKE_BUILD_TYPE=Debug` is explicitly passed.
 - Run perf-flagged tests (`CPAGE.ReplacePerf`, `CHECKSUM.Perf`, the iouring micro-bench) in Release and pin the numbers somewhere durable.  These were captured for Debug at `31a90b1`; Release deltas haven't been written down.
 - Add a Release smoke target to whatever CMake-level smoke (#1) ends up looking like.
-
-### 6. ETW → LTTng UST
-
-Currently every ETW emitter is a no-op stub.  The `_etguidEventLog*` family is special-cased to route to stderr (so `JET_EventLoggingLevelMax` actually produces visible output).  Eventual target is LTTng UST: ABI-compatible enough with ETW that the indirection layer can be straightforward.  Defer until tracing engine behavior in production is on the table.
-
-### 7. Real event-log backend (syslog/journald)
-
-`DISABLE_EVENT_LOG` is defined; events go nowhere (except the stderr-routing case above).  The existing `OSEventReportEvent` chokepoint is the natural place to plug in syslog (`syslog(3)`) or systemd-journal (`sd_journal_send`).  Defer until #1 lands — there's no point logging events if no real binary is yet a real consumer.
 
 ## Things explicitly out of scope (still)
 
