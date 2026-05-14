@@ -11,6 +11,8 @@
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
+#include <cstring>
+
 using namespace ese::tests;
 
 EseIntegrationScenario(Transaction, BeginAndCommit)
@@ -291,10 +293,11 @@ EseIntegrationScenario(Transaction, GetLockOutsideTransactionReturnsNotInTransac
                     JET_errNotInTransaction);
 }
 
-EseIntegrationScenario(Transaction, PrepareToCommitTransactionIsReachable)
+EseIntegrationScenario(Transaction,
+                       BeginTransaction3StoresTrxIdInLogStream)
 {
     TemporaryDirectory directory(
-        "Transaction.PrepareToCommitTransactionIsReachable");
+        "Transaction.BeginTransaction3StoresTrxIdInLogStream");
     EseInstance instance(directory);
     EseSession session(instance);
     EseDatabase database(session, "Transaction.mdb");
@@ -303,27 +306,69 @@ EseIntegrationScenario(Transaction, PrepareToCommitTransactionIsReachable)
                                     JET_coltypLong,
                                     JET_bitColumnNotNULL);
 
-    //  JetPrepareToCommitTransaction lets the client stash an opaque
-    //  context blob that the engine attaches to the commit-0 LR for
-    //  the current transaction.  The public dispatch entry is wired
-    //  up; this Linux build answers JET_errFeatureNotAvailable
-    //  because the underlying mechanism isn't ported yet.  Either
-    //  outcome counts as the API entry being reachable.
-    EseTransaction transaction(session);
-    InsertSingleFixedColumnRow<int32_t>(table, columnId, 99);
+    //  JetBeginTransaction3 extends BeginTransaction2 by letting the
+    //  caller stamp a 64-bit application trxid that the engine
+    //  records in the BeginTransaction0 log record.  Used by
+    //  distributed-transaction managers to correlate engine-side
+    //  state with a higher-level coordinator.  Functional behaviour
+    //  matches the simpler form — the row inserted inside the
+    //  transaction must be visible after commit.
+    constexpr int64_t TransactionId = 0x0123'4567'89AB'CDEFLL;
+    CheckJet(JetBeginTransaction3(session.Handle(), TransactionId, 0));
 
-    static constexpr char CommitContext[] =
-        "ese-tests-pretransaction-context";
-    const auto prepareErr = JetPrepareToCommitTransaction(session.Handle(),
-                                                          CommitContext,
-                                                          sizeof(CommitContext) - 1,
-                                                          0);
-    Require(prepareErr == JET_errSuccess ||
-            prepareErr == JET_errFeatureNotAvailable);
-    transaction.Commit();
+    InsertSingleFixedColumnRow<int32_t>(table, columnId, 4242);
+    CheckJet(JetCommitTransaction(session.Handle(), 0));
 
     CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
     const auto observed =
         RetrieveFixedColumnFromCurrentRecord<int32_t>(table, columnId);
-    Require(observed == 99);
+    Require(observed == 4242);
+}
+
+EseIntegrationScenario(Transaction,
+                       CommitTransaction2ReturnsMonotonicCommitId)
+{
+    TemporaryDirectory directory(
+        "Transaction.CommitTransaction2ReturnsMonotonicCommitId");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Transaction.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Value",
+                                    JET_coltypLong,
+                                    JET_bitColumnNotNULL);
+
+    //  JetCommitTransaction2 adds two outputs to the v1 form:
+    //    cmsecDurableCommit — caller-allowed delay before forcing
+    //      the commit-0 LR to disk (0 = sync), and
+    //    pCommitId — a JET_COMMIT_ID stamped with the log signature
+    //      + monotonically-increasing commitId per session.
+    //  Two commits in sequence must report a strictly increasing
+    //  commitId.
+    JET_COMMIT_ID commitIdA = {};
+    {
+        CheckJet(JetBeginTransaction(session.Handle()));
+        InsertSingleFixedColumnRow<int32_t>(table, columnId, 1);
+        CheckJet(JetCommitTransaction2(session.Handle(),
+                                       0,
+                                       /*cmsecDurableCommit=*/0,
+                                       &commitIdA));
+    }
+
+    JET_COMMIT_ID commitIdB = {};
+    {
+        CheckJet(JetBeginTransaction(session.Handle()));
+        InsertSingleFixedColumnRow<int32_t>(table, columnId, 2);
+        CheckJet(JetCommitTransaction2(session.Handle(),
+                                       0,
+                                       /*cmsecDurableCommit=*/0,
+                                       &commitIdB));
+    }
+
+    Require(commitIdB.commitId > commitIdA.commitId);
+    //  Both commits land against the same log stream so the
+    //  signatures must match.
+    Require(std::memcmp(&commitIdA.signLog,
+                        &commitIdB.signLog,
+                        sizeof(JET_SIGNATURE)) == 0);
 }

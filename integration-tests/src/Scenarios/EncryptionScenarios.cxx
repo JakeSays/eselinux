@@ -17,34 +17,11 @@
 using namespace ese::tests;
 
 
-//  Returns true when the engine reports AES-256 is available on this
-//  platform/runtime.  False on:
-//    - libsodium absent (dlopen fails)
-//    - libsodium <= 1.0.18 on aarch64 (no AArch64 AES path in that
-//      version of the library)
-//    - any future build/runtime where ErrOSEncryptionInit'd
-//      g_fEncryptionAvailable came back false
-//
-//  Scenarios that need encryption call this first and return early
-//  (counts as scenario PASS) when it returns false — the test
-//  framework has no native "skip" status, so a graceful early return
-//  is the closest we can get without spuriously failing on boxes
-//  without crypto.
-static bool IsAesEncryptionAvailable()
-{
-    uint32_t cbKey = 0;
-    const auto err = JetCreateEncryptionKey(JET_EncryptionAlgorithmAes256,
-                                            nullptr,
-                                            0,
-                                            &cbKey);
-    return err == JET_errBufferTooSmall;
-}
-
-
 //  Helper: pull a key blob out of JetCreateEncryptionKey using its
-//  buffer-too-small protocol.  Caller must have already confirmed
-//  IsAesEncryptionAvailable() before invoking — Require()s here will
-//  trip otherwise.
+//  buffer-too-small protocol.  The Linux build always ships
+//  libsodium (built from-source by the root CMakeLists ExternalProject
+//  and staged into $ORIGIN/../lib), so AES-256 is always available
+//  at runtime — failure to allocate a key means a real port bug.
 static std::vector<uint8_t> CreateAes256Key()
 {
     uint32_t cbKey = 0;
@@ -67,11 +44,6 @@ static std::vector<uint8_t> CreateAes256Key()
 
 EseIntegrationScenario(Encryption, CreateEncryptionKeyRoundTripsBufferTooSmall)
 {
-    if (!IsAesEncryptionAvailable())
-    {
-        return;
-    }
-
     //  JetCreateEncryptionKey's discovery protocol: pass cbKey=0 and
     //  the engine reports the required size; allocate, call again,
     //  get the populated blob.
@@ -88,11 +60,6 @@ EseIntegrationScenario(Encryption, CreateEncryptionKeyRoundTripsBufferTooSmall)
 
 EseIntegrationScenario(Encryption, ColumnRoundTripsThroughEncryptedTable)
 {
-    if (!IsAesEncryptionAvailable())
-    {
-        return;
-    }
-
     TemporaryDirectory directory(
         "Encryption.ColumnRoundTripsThroughEncryptedTable");
     EseInstance instance(directory);
@@ -184,11 +151,6 @@ EseIntegrationScenario(Encryption, ColumnRoundTripsThroughEncryptedTable)
 
 EseIntegrationScenario(Encryption, WrongKeyFailsDecryption)
 {
-    if (!IsAesEncryptionAvailable())
-    {
-        return;
-    }
-
     TemporaryDirectory directory("Encryption.WrongKeyFailsDecryption");
     EseInstance instance(directory);
     EseSession session(instance);

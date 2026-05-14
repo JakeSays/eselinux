@@ -227,29 +227,6 @@ EseIntegrationScenario(Maintenance, IdleAvailBuffersStatusReportsState)
     Require(err == JET_errSuccess || err == JET_wrnIdleFull);
 }
 
-EseIntegrationScenario(Maintenance, GetAndResetCounterAreReachable)
-{
-    TemporaryDirectory directory(
-        "Maintenance.GetAndResetCounterAreReachable");
-    EseInstance instance(directory);
-    EseSession session(instance);
-
-    //  JetGetCounter / JetResetCounter expose the engine's per-session
-    //  performance counter slots.  Some builds wire them up to real
-    //  meters; this Linux build currently dispatches them through the
-    //  public surface but the counters themselves aren't implemented,
-    //  so the engine answers JET_errFeatureNotAvailable.  Both shapes
-    //  count as "the API entry point reaches the engine" — which is
-    //  exactly what these scenarios prove.
-    int32_t value = -1;
-    const auto getErr = JetGetCounter(session.Handle(), 0, &value);
-    Require(getErr == JET_errSuccess || getErr == JET_errFeatureNotAvailable);
-
-    const auto resetErr = JetResetCounter(session.Handle(), 0);
-    Require(resetErr == JET_errSuccess ||
-            resetErr == JET_errFeatureNotAvailable);
-}
-
 EseIntegrationScenario(Maintenance, SetColumnDefaultValueAppliesToFutureRows)
 {
     TemporaryDirectory directory(
@@ -317,4 +294,91 @@ EseIntegrationScenario(Maintenance, ResizeDatabaseGrowsPageCount)
                                &cpgActual,
                                JET_bitResizeDatabaseOnlyGrow));
     Require(cpgActual >= cpgTarget);
+}
+
+EseIntegrationScenario(Maintenance, DatabaseScanBatchPassRunsToCompletion)
+{
+    TemporaryDirectory directory(
+        "Maintenance.DatabaseScanBatchPassRunsToCompletion");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Scan.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Value",
+                                    JET_coltypLong,
+                                    JET_bitColumnNotNULL);
+
+    //  Populate enough rows that the scan touches at least a few
+    //  pages.  Database Maintenance walks every leaf page checking
+    //  on-page checksums and refreshing the dbtime baseline.
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < 500; ++i)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, i);
+        }
+        transaction.Commit();
+    }
+
+    //  JET_bitDatabaseScanBatchStart asks the engine to perform one
+    //  synchronous scan pass; pcSecondsMax bounds the run.  On a tiny
+    //  database the call completes well inside the cap; the engine
+    //  updates pcSecondsMax in place with the seconds actually used.
+    uint32_t secondsMax = 30;
+    CheckJet(JetDatabaseScan(session.Handle(),
+                             database.Id(),
+                             &secondsMax,
+                             /*cmsecSleep=*/0,
+                             /*pfnCallback=*/nullptr,
+                             JET_bitDatabaseScanBatchStart));
+}
+
+EseIntegrationScenario(Maintenance, Defragment2RunsBatchPassToCompletion)
+{
+    TemporaryDirectory directory(
+        "Maintenance.Defragment2RunsBatchPassToCompletion");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Maintenance.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Value",
+                                    JET_coltypLong,
+                                    JET_bitColumnNotNULL);
+
+    //  Generate enough activity that the defrag has something to do.
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < 500; ++i)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, i);
+        }
+        transaction.Commit();
+    }
+
+    //  JetDefragment2 adds a JET_CALLBACK progress hook to the v1
+    //  shape.  Start with one batch pass capped at 30s; the engine
+    //  reports the actual seconds + passes consumed.  On a tiny
+    //  database both come back near zero — what we care about is
+    //  that the v2 entry point reaches the same engine path.
+    uint32_t passes = 1;
+    uint32_t seconds = 30;
+    CheckJet(JetDefragment2A(session.Handle(),
+                             database.Id(),
+                             /*szTableName=*/nullptr,
+                             &passes,
+                             &seconds,
+                             /*callback=*/nullptr,
+                             JET_bitDefragmentBatchStart));
+
+    //  Stop the background defrag so the next scenario doesn't
+    //  inherit a running thread.
+    passes = 1;
+    seconds = 30;
+    CheckJet(JetDefragment2A(session.Handle(),
+                             database.Id(),
+                             nullptr,
+                             &passes,
+                             &seconds,
+                             nullptr,
+                             JET_bitDefragmentBatchStop));
 }

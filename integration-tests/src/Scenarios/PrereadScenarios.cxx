@@ -166,3 +166,73 @@ EseIntegrationScenario(Preread, PrereadTablesAcceptsKnownTableName)
                                static_cast<int32_t>(std::size(tableNames)),
                                0));
 }
+
+EseIntegrationScenario(Preread, PrereadIndexRangesAcceptsTwoRanges)
+{
+    TemporaryDirectory directory(
+        "Preread.PrereadIndexRangesAcceptsTwoRanges");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Preread.mdb");
+    EseTable table(database, "Rows");
+    auto identityColumnId = PopulatePrereadTable(table, 512);
+
+    //  Establish two disjoint anchor pairs over the same column.  The
+    //  engine prereads pages covering both ranges in a single call.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    auto firstIdentity =
+        RetrieveFixedColumnFromCurrentRecord<int32_t>(table, identityColumnId);
+
+    int32_t rangeAStart = firstIdentity;
+    int32_t rangeAEnd = firstIdentity + 99;
+    int32_t rangeBStart = firstIdentity + 200;
+    int32_t rangeBEnd = firstIdentity + 299;
+
+    JET_INDEX_COLUMN aStart = {};
+    aStart.columnid = identityColumnId;
+    aStart.relop = JET_relopEquals;
+    aStart.pv = &rangeAStart;
+    aStart.cb = sizeof(rangeAStart);
+
+    JET_INDEX_COLUMN aEnd = {};
+    aEnd.columnid = identityColumnId;
+    aEnd.relop = JET_relopEquals;
+    aEnd.pv = &rangeAEnd;
+    aEnd.cb = sizeof(rangeAEnd);
+
+    JET_INDEX_COLUMN bStart = {};
+    bStart.columnid = identityColumnId;
+    bStart.relop = JET_relopEquals;
+    bStart.pv = &rangeBStart;
+    bStart.cb = sizeof(rangeBStart);
+
+    JET_INDEX_COLUMN bEnd = {};
+    bEnd.columnid = identityColumnId;
+    bEnd.relop = JET_relopEquals;
+    bEnd.pv = &rangeBEnd;
+    bEnd.cb = sizeof(rangeBEnd);
+
+    JET_INDEX_RANGE ranges[2] = {};
+    ranges[0].rgStartColumns = &aStart;
+    ranges[0].cStartColumns = 1;
+    ranges[0].rgEndColumns = &aEnd;
+    ranges[0].cEndColumns = 1;
+    ranges[1].rgStartColumns = &bStart;
+    ranges[1].cStartColumns = 1;
+    ranges[1].rgEndColumns = &bEnd;
+    ranges[1].cEndColumns = 1;
+
+    uint32_t rangesPreread = 0;
+    CheckJet(JetPrereadIndexRanges(session.Handle(),
+                                   table.Id(),
+                                   ranges,
+                                   static_cast<uint32_t>(std::size(ranges)),
+                                   &rangesPreread,
+                                   /*rgcolumnidPreread=*/nullptr,
+                                   /*ccolumnidPreread=*/0,
+                                   JET_bitPrereadForward));
+    //  rangesPreread reports how many of the requested ranges the
+    //  engine actually initiated preread for; bounded by the input
+    //  count.
+    Require(rangesPreread <= std::size(ranges));
+}

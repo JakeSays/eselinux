@@ -810,19 +810,11 @@ EseIntegrationScenario(Navigation, SetCursorFilterRejectsNonMatchingRows)
 
     //  JetSetCursorFilter installs a server-side residual predicate.
     //  Rows whose Value column is not 7 are silently skipped on Move.
-    //  Filtering on un-indexed columns may not be supported by every
-    //  engine build — JET_errFilteredMoveNotSupported is the
-    //  documented fallback; both outcomes count as "API exercised".
-    const auto filterErr = JetSetCursorFilter(session.Handle(),
-                                              table.Id(),
-                                              &filter,
-                                              1,
-                                              0);
-    if (filterErr == JET_errFilteredMoveNotSupported)
-    {
-        return;
-    }
-    CheckJet(filterErr);
+    CheckJet(JetSetCursorFilter(session.Handle(),
+                                table.Id(),
+                                &filter,
+                                1,
+                                0));
 
     int rowsSeen = 0;
     auto rc = JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0);
@@ -967,4 +959,122 @@ EseIntegrationScenario(Navigation, SecondaryIndexBookmarkRoundTrip)
     const auto roundTripIdentity =
         RetrieveFixedColumnFromCurrentRecord<int32_t>(table, identityColumnId);
     Require(roundTripIdentity == landingIdentity);
+}
+
+EseIntegrationScenario(Navigation, IndexRecordCount2Reports64BitCount)
+{
+    TemporaryDirectory directory(
+        "Navigation.IndexRecordCount2Reports64BitCount");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Rows");
+
+    auto columnId = table.AddColumn("Key",
+                                    JET_coltypLong,
+                                    JET_bitColumnNotNULL);
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Key\0\0", 6);
+    table.CreateIndex("PrimaryByKey", PrimaryKey, JET_bitIndexPrimary);
+
+    constexpr int RowCount = 75;
+    {
+        EseTransaction transaction(session);
+        for (int32_t v = 0; v < RowCount; ++v)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, v);
+        }
+        transaction.Commit();
+    }
+
+    //  JetIndexRecordCount2 widens the v1 32-bit counters to 64-bit
+    //  so callers can handle indexes with >4 billion entries.
+    //  Functional behaviour matches the v1 form on a small table.
+    uint64_t indexed = 0;
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    CheckJet(JetIndexRecordCount2(session.Handle(),
+                                  table.Id(),
+                                  &indexed,
+                                  /*crecMax=*/0));
+    Require(indexed == RowCount);
+
+    uint64_t bounded = 0;
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    CheckJet(JetIndexRecordCount2(session.Handle(),
+                                  table.Id(),
+                                  &bounded,
+                                  /*crecMax=*/25));
+    Require(bounded == 25);
+}
+
+EseIntegrationScenario(Navigation, SetCurrentIndex2WithNoMoveLeavesCursorInPlace)
+{
+    TemporaryDirectory directory(
+        "Navigation.SetCurrentIndex2WithNoMoveLeavesCursorInPlace");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Sorted");
+
+    auto identityColumnId = table.AddColumn(
+        "Identity",
+        JET_coltypLong,
+        JET_bitColumnAutoincrement | JET_bitColumnNotNULL);
+    auto rankColumnId = table.AddColumn("Rank",
+                                        JET_coltypLong,
+                                        JET_bitColumnNotNULL);
+
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Identity\0\0", 11);
+    table.CreateIndex("PrimaryByIdentity",
+                      PrimaryKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    static constexpr std::string_view RankKey =
+        std::string_view("+Rank\0\0", 7);
+    table.CreateIndex("ByRank", RankKey);
+
+    constexpr int RowCount = 6;
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < RowCount; ++i)
+        {
+            const int32_t rank = RowCount - i;
+            CheckJet(JetPrepareUpdate(session.Handle(),
+                                      table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(),
+                                  table.Id(),
+                                  rankColumnId,
+                                  &rank,
+                                  sizeof(rank),
+                                  0,
+                                  nullptr));
+            CheckJet(JetUpdate(session.Handle(),
+                               table.Id(),
+                               nullptr,
+                               0,
+                               nullptr));
+        }
+        transaction.Commit();
+    }
+
+    //  Position on the third row by Identity, capture its rank.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    CheckJet(JetMove(session.Handle(), table.Id(), 2, 0));
+    const auto landingIdentity =
+        RetrieveFixedColumnFromCurrentRecord<int32_t>(table, identityColumnId);
+
+    //  JetSetCurrentIndex (v1) implicitly moves to the first row of
+    //  the new index — losing our position.  JetSetCurrentIndex2
+    //  with JET_bitNoMove keeps the cursor pinned on the same logical
+    //  row across the index switch by translating the current
+    //  bookmark to the new index's key.
+    CheckJet(JetSetCurrentIndex2A(session.Handle(),
+                                  table.Id(),
+                                  "ByRank",
+                                  JET_bitNoMove));
+    const auto identityAfterSwitch =
+        RetrieveFixedColumnFromCurrentRecord<int32_t>(table, identityColumnId);
+    Require(identityAfterSwitch == landingIdentity);
 }

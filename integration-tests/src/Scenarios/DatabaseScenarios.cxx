@@ -236,4 +236,23 @@ EseIntegrationScenario(Database, GetDatabasePagesAndGetPageInfoRoundTrip)
     //  always initialised.
     Require(pageInfos[0].fPageIsInitialized);
     Require(pageInfos[1].fPageIsInitialized);
+
+    //  JET_PAGEINFO2 wraps JET_PAGEINFO with three additional
+    //  checksum slots; JetGetPageInfo2 is the v2 entry point that
+    //  fills them.  Same input contract — caller stamps pgno per
+    //  element.
+    std::vector<JET_PAGEINFO2> pageInfos2(kPageCount);
+    for (uint32_t i = 0; i < kPageCount; ++i)
+    {
+        pageInfos2[i].pageInfo.pgno = i + 1;
+    }
+    CheckJet(JetGetPageInfo2(rawPages.get(),
+                             kTotalBytes,
+                             pageInfos2.data(),
+                             static_cast<uint32_t>(pageInfos2.size() *
+                                                   sizeof(JET_PAGEINFO2)),
+                             0,
+                             JET_PageInfo2));
+    Require(pageInfos2[0].pageInfo.fPageIsInitialized);
+    Require(pageInfos2[1].pageInfo.fPageIsInitialized);
 }

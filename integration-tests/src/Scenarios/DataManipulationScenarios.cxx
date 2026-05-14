@@ -13,6 +13,8 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <string_view>
+#include <vector>
 
 using namespace ese::tests;
 
@@ -696,4 +698,192 @@ EseIntegrationScenario(DataManipulation, RetrieveTaggedColumnListReportsTaggedCo
     }
     Require(foundA);
     Require(foundB);
+}
+
+EseIntegrationScenario(DataManipulation, GetRecordSize2ReportsCompressedColumns)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.GetRecordSize2ReportsCompressedColumns");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "Rows");
+
+    auto idColumnId = table.AddColumn("Id",
+                                      JET_coltypLong,
+                                      JET_bitColumnNotNULL);
+    auto blobColumnId = table.AddColumn("Body", JET_coltypLongBinary);
+
+    static constexpr std::string_view BlobPayload =
+        "the quick brown fox jumps over the lazy dog";
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(),
+                                  table.Id(),
+                                  JET_prepInsert));
+        const int32_t idValue = 1;
+        CheckJet(JetSetColumn(session.Handle(),
+                              table.Id(),
+                              idColumnId,
+                              &idValue,
+                              sizeof(idValue),
+                              0,
+                              nullptr));
+        CheckJet(JetSetColumn(session.Handle(),
+                              table.Id(),
+                              blobColumnId,
+                              BlobPayload.data(),
+                              static_cast<uint32_t>(BlobPayload.size()),
+                              0,
+                              nullptr));
+        CheckJet(JetUpdate(session.Handle(),
+                           table.Id(),
+                           nullptr,
+                           0,
+                           nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    //  JetGetRecordSize2 widens the v1 struct with cCompressedColumns
+    //  + cbDataCompressed slots — useful when compression is enabled.
+    //  Even without compression the v2 call must populate the v1
+    //  fields correctly.
+    JET_RECSIZE2 recsize = {};
+    CheckJet(JetGetRecordSize2(session.Handle(),
+                               table.Id(),
+                               &recsize,
+                               0));
+    Require(recsize.cbData >= BlobPayload.size());
+    Require(recsize.cNonTaggedColumns + recsize.cTaggedColumns >= 2);
+    //  cbDataCompressed equals cbData when no LV is compressed —
+    //  the v2-specific field must be populated, not left as zero.
+    Require(recsize.cbDataCompressed > 0);
+}
+
+EseIntegrationScenario(DataManipulation, GetRecordSize3ReportsIntrinsicLongValueBytes)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.GetRecordSize3ReportsIntrinsicLongValueBytes");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "Rows");
+
+    auto idColumnId = table.AddColumn("Id",
+                                      JET_coltypLong,
+                                      JET_bitColumnNotNULL);
+    auto blobColumnId = table.AddColumn("Body", JET_coltypLongBinary);
+
+    //  Small blob — well under the separation threshold — so the
+    //  engine keeps the bytes inline as an intrinsic LV instead of
+    //  spilling to the long-value B-tree.  That's the storage path
+    //  cIntrinsicLongValues / cbIntrinsicLongValueData track.
+    std::vector<uint8_t> blob(256, 0xAB);
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(),
+                                  table.Id(),
+                                  JET_prepInsert));
+        const int32_t idValue = 1;
+        CheckJet(JetSetColumn(session.Handle(),
+                              table.Id(),
+                              idColumnId,
+                              &idValue,
+                              sizeof(idValue),
+                              0,
+                              nullptr));
+        CheckJet(JetSetColumn(session.Handle(),
+                              table.Id(),
+                              blobColumnId,
+                              blob.data(),
+                              static_cast<uint32_t>(blob.size()),
+                              0,
+                              nullptr));
+        CheckJet(JetUpdate(session.Handle(),
+                           table.Id(),
+                           nullptr,
+                           0,
+                           nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    //  JetGetRecordSize3 extends v2 with intrinsic-LV accounting:
+    //  cIntrinsicLongValues counts intrinsic blobs in the record,
+    //  cbIntrinsicLongValueData reports their bytes.  Our 2 KiB blob
+    //  fits inline (LV threshold is 8 KiB) so it shows up in those
+    //  intrinsic-LV fields — cbData itself tracks only fixed/
+    //  variable column data, not the intrinsic LV bytes.
+    JET_RECSIZE3 recsize = {};
+    CheckJet(JetGetRecordSize3(session.Handle(),
+                               table.Id(),
+                               &recsize,
+                               0));
+    Require(recsize.cIntrinsicLongValues >= 1);
+    Require(recsize.cbIntrinsicLongValueData >= blob.size());
+    //  The blob is stored intrinsically, so cbLongValueData (LV-tree
+    //  storage) must NOT count it.
+    Require(recsize.cbLongValueData == 0);
+}
+
+EseIntegrationScenario(DataManipulation, Update2WithBookmarkAndGrbitInserts)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.Update2WithBookmarkAndGrbitInserts");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "Rows");
+
+    auto columnId = table.AddColumn("Value",
+                                    JET_coltypLong,
+                                    JET_bitColumnNotNULL);
+
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Value\0\0", 8);
+    table.CreateIndex("PrimaryByValue", PrimaryKey, JET_bitIndexPrimary);
+
+    //  JetUpdate2 extends JetUpdate with a grbit parameter.  Calling
+    //  it with grbit=0 must behave identically to JetUpdate — emit
+    //  the inserted record to disk AND populate the bookmark
+    //  out-param when one is requested.
+    //
+    //  (The documented JET_bitUpdateNoVersion is only valid on
+    //  uncommitted tables — applying it to a normal post-create row
+    //  surfaces JET_errUpdateMustVersion.  That contract is
+    //  separately verifiable but distracting from this scenario's
+    //  goal.)
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(),
+                                  table.Id(),
+                                  JET_prepInsert));
+        const int32_t value = 7777;
+        CheckJet(JetSetColumn(session.Handle(),
+                              table.Id(),
+                              columnId,
+                              &value,
+                              sizeof(value),
+                              0,
+                              nullptr));
+
+        uint8_t bookmark[JET_cbBookmarkMost] = {};
+        uint32_t cbBookmark = 0;
+        CheckJet(JetUpdate2(session.Handle(),
+                            table.Id(),
+                            bookmark,
+                            sizeof(bookmark),
+                            &cbBookmark,
+                            0));
+        Require(cbBookmark > 0);
+        Require(cbBookmark <= sizeof(bookmark));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    Require(RetrieveFixedColumnFromCurrentRecord<int32_t>(table, columnId)
+            == 7777);
 }

@@ -11,9 +11,13 @@
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <memory>
+#include <string>
 #include <system_error>
+#include <vector>
 
 using namespace ese::tests;
 
@@ -367,17 +371,353 @@ EseIntegrationScenario(BackupRestore,
     TemporaryDirectory directory(
         "BackupRestore.GetLogFileInfoReadsHeaderOfClosedLog");
 
-    //  Generate enough log activity for the engine to roll a fresh
-    //  log generation, then JetTerm so all logs flush + close
-    //  cleanly.  After term the on-disk log files are static and
-    //  JetGetLogFileInfoA can read their headers.
-    {
-        EseInstance instance(directory);
-        EseSession session(instance);
-        EseDatabase database(session, "LogFileInfo.mdb");
-        EseTable table(database, "Rows");
-        auto columnId = table.AddColumn("Value", JET_coltypLong);
+    //  EseInstance enables circular logging by default, which keeps
+    //  only one rolling log on disk and that file isn't a
+    //  standalone-readable log header.  We need a real closed
+    //  generation to read; provision the instance manually with
+    //  circular log OFF, do enough work to roll one log generation,
+    //  then JetTerm so the closed gen is flushed to disk.
+    JET_INSTANCE instanceHandle = JET_instanceNil;
+    CheckJet(JetCreateInstance2A(&instanceHandle,
+                                 "GetLogFileInfo",
+                                 "GetLogFileInfo",
+                                 0));
 
+    auto pathWithSep = directory.Path().string();
+    if (!pathWithSep.empty() && pathWithSep.back() != '/')
+    {
+        pathWithSep.push_back('/');
+    }
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramSystemPath, 0,
+                                    pathWithSep.c_str()));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramTempPath, 0,
+                                    pathWithSep.c_str()));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramLogFilePath, 0,
+                                    pathWithSep.c_str()));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramBaseName, 0, "edb"));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramEventSource, 0, "GetLogFileInfo"));
+    //  Crucial: circular logging OFF — keeps closed generations on
+    //  disk so JetGetLogFileInfo has something well-formed to read.
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramCircularLog, 0, nullptr));
+    //  Cap log file size at the minimum (64 KiB) so a small amount
+    //  of work rolls the generation.
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramLogFileSize, 64, nullptr));
+
+    CheckJet(JetInit(&instanceHandle));
+
+    JET_SESID sesid = JET_sesidNil;
+    CheckJet(JetBeginSessionA(instanceHandle, &sesid, nullptr, nullptr));
+
+    JET_DBID dbid = JET_dbidNil;
+    const auto dbPath = (directory.Path() / "LogFileInfo.mdb").string();
+    CheckJet(JetCreateDatabaseA(sesid, dbPath.c_str(),
+                                nullptr, &dbid, 0));
+
+    JET_TABLEID tableid = JET_tableidNil;
+    CheckJet(JetCreateTableA(sesid, dbid, "Rows", 8, 100, &tableid));
+
+    JET_COLUMNDEF coldef = {};
+    coldef.cbStruct = sizeof(coldef);
+    coldef.coltyp = JET_coltypLong;
+    JET_COLUMNID columnId = 0;
+    CheckJet(JetAddColumnA(sesid, tableid, "Value",
+                           &coldef, nullptr, 0, &columnId));
+
+    {
+        CheckJet(JetBeginTransaction(sesid));
+        for (int32_t i = 0; i < 2000; ++i)
+        {
+            CheckJet(JetPrepareUpdate(sesid, tableid, JET_prepInsert));
+            CheckJet(JetSetColumn(sesid, tableid, columnId,
+                                  &i, sizeof(i), 0, nullptr));
+            CheckJet(JetUpdate(sesid, tableid, nullptr, 0, nullptr));
+        }
+        CheckJet(JetCommitTransaction(sesid, JET_bitCommitLazyFlush));
+    }
+
+    CheckJet(JetCloseTable(sesid, tableid));
+    CheckJet(JetCloseDatabase(sesid, dbid, 0));
+    CheckJet(JetDetachDatabaseA(sesid, dbPath.c_str()));
+    CheckJet(JetEndSession(sesid, 0));
+    CheckJet(JetTerm2(instanceHandle, JET_bitTermComplete));
+
+    //  A non-circular setup leaves closed generations like
+    //  edb00000001.log, edb00000002.log, ... and edb.log (which is
+    //  the next "current" slot).  Pick the first numbered generation
+    //  — that one is fully written and closed.
+    std::filesystem::path closedLog;
+    for (const auto& entry :
+         std::filesystem::directory_iterator(directory.Path()))
+    {
+        if (!entry.is_regular_file())
+        {
+            continue;
+        }
+        const auto name = entry.path().filename().string();
+        //  Numbered logs match edb<HEX>.log — the digit count varies
+        //  with engine config; checking for "edb" prefix + ".log"
+        //  suffix + at least one digit between is enough.
+        if (name.rfind("edb", 0) == 0 &&
+            entry.path().extension() == ".log" &&
+            name.size() > std::strlen("edb.log"))
+        {
+            closedLog = entry.path();
+            break;
+        }
+    }
+    Require(!closedLog.empty());
+
+    JET_LOGINFOMISC logInfo = {};
+    CheckJet(JetGetLogFileInfoA(closedLog.string().c_str(),
+                                &logInfo,
+                                sizeof(logInfo),
+                                JET_LogInfoMisc));
+    Require(logInfo.cbFile > 0);
+    Require(logInfo.cbDatabasePageSize == 4096);
+    Require(logInfo.ulGeneration >= 1);
+}
+
+EseIntegrationScenario(BackupRestore,
+                       BeginAndEndExternalBackupGlobalForms)
+{
+    TemporaryDirectory directory(
+        "BackupRestore.BeginAndEndExternalBackupGlobalForms");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "BackupGlobal.mdb");
+
+    //  JetBeginExternalBackup / JetEndExternalBackup are the global
+    //  (no instance handle) wrappers that operate on the engine's
+    //  single active instance when running in single-instance mode —
+    //  the mode EseInstance configures.
+    CheckJet(JetBeginExternalBackup(0));
+
+    //  Inside the backup, JetGetAttachInfo must report at least one
+    //  attached database — proves the global-form started a real
+    //  session, not a stub.
+    char attachInfo[4096] = {};
+    uint32_t cbActual = 0;
+    CheckJet(JetGetAttachInfoA(attachInfo,
+                               sizeof(attachInfo),
+                               &cbActual));
+    Require(cbActual > 0);
+
+    CheckJet(JetEndExternalBackup());
+}
+
+EseIntegrationScenario(BackupRestore,
+                       StopBackupGlobalCancelsActiveBackup)
+{
+    TemporaryDirectory directory(
+        "BackupRestore.StopBackupGlobalCancelsActiveBackup");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "StopBackupGlobal.mdb");
+
+    //  JetStopBackup is the global (no instance) variant of
+    //  StopBackupInstance.  Start a backup, ask the engine to abort
+    //  it, then end the session cleanly.
+    CheckJet(JetBeginExternalBackup(0));
+    CheckJet(JetStopBackup());
+    CheckJet(JetEndExternalBackup());
+}
+
+EseIntegrationScenario(BackupRestore,
+                       TruncateLogGlobalEnforcesSequence)
+{
+    TemporaryDirectory directory(
+        "BackupRestore.TruncateLogGlobalEnforcesSequence");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "TruncateGlobal.mdb");
+
+    //  JetTruncateLog is the global counterpart to
+    //  JetTruncateLogInstance.  Like the *Instance form it can only
+    //  be invoked inside an external backup that has read the logs.
+    //  Outside any backup the engine surfaces JET_errNoBackup;
+    //  inside a barely-started backup it surfaces
+    //  JET_errInvalidBackupSequence.  Both contract-violation paths
+    //  are reachable from the public surface and exercise the API.
+    RequireJetError(JetTruncateLog(), JET_errNoBackup);
+
+    CheckJet(JetBeginExternalBackup(0));
+    RequireJetError(JetTruncateLog(), JET_errInvalidBackupSequence);
+    CheckJet(JetEndExternalBackup());
+}
+
+namespace
+{
+
+//  Scope guard that ensures JetEndExternalBackupInstance runs even
+//  when an inner Require/CheckJet throws.  Without it the engine's
+//  process-global "backup in progress" flag stays set and subsequent
+//  scenarios fail JetSetSystemParameter with AlreadyInitialized.
+class ExternalBackupSession
+{
+public:
+    explicit ExternalBackupSession(JET_INSTANCE instance)
+        : _instance(instance)
+    {
+        CheckJet(JetBeginExternalBackupInstance(_instance, 0));
+        _active = true;
+    }
+
+    ~ExternalBackupSession()
+    {
+        if (_active)
+        {
+            (void)JetEndExternalBackupInstance(_instance);
+        }
+    }
+
+    void EndNormally()
+    {
+        CheckJet(JetEndExternalBackupInstance(_instance));
+        _active = false;
+    }
+
+    ExternalBackupSession(const ExternalBackupSession&) = delete;
+    ExternalBackupSession& operator=(const ExternalBackupSession&) = delete;
+
+private:
+    JET_INSTANCE _instance = JET_instanceNil;
+    bool _active = false;
+};
+
+}  // namespace
+
+EseIntegrationScenario(BackupRestore,
+                       OpenAndReadAndCloseFileInstanceCopiesDatabase)
+{
+    TemporaryDirectory directory(
+        "BackupRestore.OpenAndReadAndCloseFileInstanceCopiesDatabase");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "FileRead.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Value", JET_coltypLong);
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < 100; ++i)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, i);
+        }
+        transaction.Commit();
+    }
+
+    //  Real external-backup protocol: Begin -> GetAttachInfo gives
+    //  the attached .edb path(s) as multistring -> open each file
+    //  for read via JetOpenFileInstance -> JetReadFileInstance ->
+    //  CloseFile -> EndBackup.
+    ExternalBackupSession backupSession(instance.Handle());
+
+    char attachInfo[4096] = {};
+    uint32_t cbAttach = 0;
+    CheckJet(JetGetAttachInfoInstanceA(instance.Handle(),
+                                       attachInfo,
+                                       sizeof(attachInfo),
+                                       &cbAttach));
+    Require(cbAttach > 0);
+
+    //  Multistring format: filename\0filename\0...\0\0.  Pick the
+    //  first one.
+    const std::string firstDatabase(attachInfo);
+    Require(!firstDatabase.empty());
+
+    //  The engine returns a backup-handle index in *phfFile —
+    //  starting at 0 for the first open file, so handle == 0 is a
+    //  *valid* handle, not an error sentinel.  Width / pulFileSizeLow
+    //  is the load-bearing assertion: the database file is non-empty.
+    JET_HANDLE fileHandle = 0;
+    uint32_t fileSizeLow = 0;
+    uint32_t fileSizeHigh = 0;
+    CheckJet(JetOpenFileInstanceA(instance.Handle(),
+                                  firstDatabase.c_str(),
+                                  &fileHandle,
+                                  &fileSizeLow,
+                                  &fileSizeHigh));
+    const uint64_t fileSize =
+        (static_cast<uint64_t>(fileSizeHigh) << 32) | fileSizeLow;
+    Require(fileSize > 0);
+
+    //  Pull a chunk of the database into a caller buffer.  Engine
+    //  constraints (BACKUP_CONTEXT::ErrBKReadFile, backup.cxx ~2806):
+    //    - destination buffer must be aligned to the OS memory-page
+    //      commit granularity (4 KiB on this build) — the read is
+    //      submitted as O_DIRECT-style IO,
+    //    - cbMax must be a multiple of the DB page size (4 KiB), and
+    //    - the first read must request more than cpgDBReserved (= 2)
+    //      pages so the header + at least one data page come back in
+    //      a single shot.
+    //  4 pages (16 KiB) satisfies all three.
+    static constexpr uint32_t PageSize = 4096;
+    static constexpr uint32_t ChunkBytes = PageSize * 4;
+    struct AlignedFree
+    {
+        void operator()(void* ptr) const
+        {
+            std::free(ptr);
+        }
+    };
+    std::unique_ptr<uint8_t, AlignedFree> buffer(
+        static_cast<uint8_t*>(std::aligned_alloc(PageSize, ChunkBytes)));
+    Require(buffer != nullptr);
+
+    uint32_t cbRead = 0;
+    CheckJet(JetReadFileInstance(instance.Handle(),
+                                 fileHandle,
+                                 buffer.get(),
+                                 ChunkBytes,
+                                 &cbRead));
+    Require(cbRead == ChunkBytes);
+
+    CheckJet(JetCloseFileInstance(instance.Handle(), fileHandle));
+    backupSession.EndNormally();
+}
+
+EseIntegrationScenario(BackupRestore,
+                       EndExternalBackupInstance2AcceptsAbortGrbit)
+{
+    TemporaryDirectory directory(
+        "BackupRestore.EndExternalBackupInstance2AcceptsAbortGrbit");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "EndV2.mdb");
+
+    //  JetEndExternalBackupInstance2 takes a grbit on the close call;
+    //  JET_bitBackupEndAbort signals "we aborted the backup mid-flight,
+    //  don't stamp the headers as backed-up".  Either grbit shape
+    //  closes the session; aborting should leave the database
+    //  flagged the same as if no backup had occurred.
+    CheckJet(JetBeginExternalBackupInstance(instance.Handle(), 0));
+    CheckJet(JetEndExternalBackupInstance2(instance.Handle(),
+                                           JET_bitBackupEndAbort));
+
+    //  A subsequent normal backup must succeed — the aborted one
+    //  released its session correctly.
+    CheckJet(JetBeginExternalBackupInstance(instance.Handle(), 0));
+    CheckJet(JetEndExternalBackupInstance2(instance.Handle(),
+                                           JET_bitBackupEndNormal));
+}
+
+EseIntegrationScenario(BackupRestore,
+                       GetLogInfoInstance2ReportsLogGenerationRange)
+{
+    TemporaryDirectory directory(
+        "BackupRestore.GetLogInfoInstance2ReportsLogGenerationRange");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "LogInfoV2.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Value", JET_coltypLong);
+    {
         EseTransaction transaction(session);
         for (int32_t i = 0; i < 256; ++i)
         {
@@ -386,28 +726,421 @@ EseIntegrationScenario(BackupRestore,
         transaction.Commit();
     }
 
-    //  After JetTerm with JET_bitTermComplete the engine renames the
-    //  active log back to edb.log; that's the file with a complete
-    //  header.  edbtmp.log is the engine's scratch slot and is not a
-    //  well-formed log from JetGetLogFileInfo's perspective.
-    const auto logPath = directory.Path() / "edb.log";
-    Require(std::filesystem::exists(logPath));
+    //  JetGetLogInfoInstance2 layers an extra JET_LOGINFO_A out-arg
+    //  on top of the v1 form: alongside the multistring of log
+    //  filenames it returns the base name and the (low, high) log
+    //  generation range covered.
+    CheckJet(JetBeginExternalBackupInstance(instance.Handle(), 0));
 
-    JET_LOGINFOMISC logInfo = {};
-    const auto err = JetGetLogFileInfoA(logPath.string().c_str(),
-                                        &logInfo,
-                                        sizeof(logInfo),
-                                        JET_LogInfoMisc);
-    if (err == JET_errLogFileCorrupt)
+    char logBuffer[4096] = {};
+    uint32_t cbLog = 0;
+    JET_LOGINFO_A logInfo = {};
+    logInfo.cbSize = sizeof(logInfo);
+    CheckJet(JetGetLogInfoInstance2A(instance.Handle(),
+                                     logBuffer,
+                                     sizeof(logBuffer),
+                                     &cbLog,
+                                     &logInfo));
+    Require(cbLog > 0);
+    Require(logInfo.ulGenHigh >= logInfo.ulGenLow);
+    Require(logInfo.szBaseName[0] != '\0');
+
+    CheckJet(JetEndExternalBackupInstance(instance.Handle()));
+}
+
+namespace
+{
+
+//  Global-form counterpart to ExternalBackupSession — wraps
+//  JetBeginExternalBackup / JetEndExternalBackup (no instance
+//  handle), the single-instance flavour the engine selects in
+//  default mode.
+class GlobalExternalBackupSession
+{
+public:
+    GlobalExternalBackupSession()
     {
-        //  Circular logging mode trims the closed log so the trailing
-        //  edb.log isn't a well-formed standalone log file.  The API
-        //  is reachable and rejecting it with the documented corrupt
-        //  error counts as exercised; broader assertions would need a
-        //  non-circular setup not currently parameterised in EseInstance.
-        return;
+        CheckJet(JetBeginExternalBackup(0));
+        _active = true;
     }
-    CheckJet(err);
-    Require(logInfo.cbFile > 0);
-    Require(logInfo.cbDatabasePageSize > 0);
+
+    ~GlobalExternalBackupSession()
+    {
+        if (_active)
+        {
+            (void)JetEndExternalBackup();
+        }
+    }
+
+    void EndNormally()
+    {
+        CheckJet(JetEndExternalBackup());
+        _active = false;
+    }
+
+    GlobalExternalBackupSession(const GlobalExternalBackupSession&) = delete;
+    GlobalExternalBackupSession& operator=(const GlobalExternalBackupSession&)
+        = delete;
+
+private:
+    bool _active = false;
+};
+
+}  // namespace
+
+EseIntegrationScenario(BackupRestore,
+                       OpenAndReadAndCloseFileGlobalCopiesDatabase)
+{
+    TemporaryDirectory directory(
+        "BackupRestore.OpenAndReadAndCloseFileGlobalCopiesDatabase");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "FileReadGlobal.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Value", JET_coltypLong);
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < 100; ++i)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, i);
+        }
+        transaction.Commit();
+    }
+
+    //  Global file-access form: JetOpenFile / JetReadFile / JetCloseFile
+    //  (no instance handle).  Same constraints as the *Instance form —
+    //  Begin/End wrap them, buffer must be 4 KiB-aligned, byte count a
+    //  multiple of the DB page size + over the 2-page reserved
+    //  prologue on first read.
+    GlobalExternalBackupSession backupSession;
+
+    char attachInfo[4096] = {};
+    uint32_t cbAttach = 0;
+    CheckJet(JetGetAttachInfoA(attachInfo,
+                               sizeof(attachInfo),
+                               &cbAttach));
+    Require(cbAttach > 0);
+    const std::string firstDatabase(attachInfo);
+    Require(!firstDatabase.empty());
+
+    JET_HANDLE fileHandle = 0;
+    uint32_t fileSizeLow = 0;
+    uint32_t fileSizeHigh = 0;
+    CheckJet(JetOpenFileA(firstDatabase.c_str(),
+                          &fileHandle,
+                          &fileSizeLow,
+                          &fileSizeHigh));
+    const uint64_t fileSize =
+        (static_cast<uint64_t>(fileSizeHigh) << 32) | fileSizeLow;
+    Require(fileSize > 0);
+
+    static constexpr uint32_t PageSize = 4096;
+    static constexpr uint32_t ChunkBytes = PageSize * 4;
+    struct AlignedFree
+    {
+        void operator()(void* ptr) const
+        {
+            std::free(ptr);
+        }
+    };
+    std::unique_ptr<uint8_t, AlignedFree> buffer(
+        static_cast<uint8_t*>(std::aligned_alloc(PageSize, ChunkBytes)));
+    Require(buffer != nullptr);
+
+    uint32_t cbRead = 0;
+    CheckJet(JetReadFile(fileHandle,
+                         buffer.get(),
+                         ChunkBytes,
+                         &cbRead));
+    Require(cbRead == ChunkBytes);
+
+    CheckJet(JetCloseFile(fileHandle));
+    backupSession.EndNormally();
+}
+
+EseIntegrationScenario(BackupRestore,
+                       GetLogInfoGlobalListsActiveLogs)
+{
+    TemporaryDirectory directory(
+        "BackupRestore.GetLogInfoGlobalListsActiveLogs");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "LogInfoGlobal.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Value", JET_coltypLong);
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < 256; ++i)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, i);
+        }
+        transaction.Commit();
+    }
+
+    //  JetGetLogInfo (global form) lists log files the backup must
+    //  copy.  Returns a multistring of paths.
+    GlobalExternalBackupSession backupSession;
+
+    char logInfo[4096] = {};
+    uint32_t cbActual = 0;
+    CheckJet(JetGetLogInfoA(logInfo,
+                            sizeof(logInfo),
+                            &cbActual));
+    Require(cbActual > 0);
+    //  The first entry should look like a log filename — contain
+    //  "edb" (the base name our framework sets via JET_paramBaseName).
+    const std::string firstLog(logInfo);
+    Require(firstLog.find("edb") != std::string::npos);
+
+    backupSession.EndNormally();
+}
+
+EseIntegrationScenario(BackupRestore,
+                       OpenFileSectionInstanceReadsLogTail)
+{
+    TemporaryDirectory directory(
+        "BackupRestore.OpenFileSectionInstanceReadsLogTail");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "SectionRead.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Value", JET_coltypLong);
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < 200; ++i)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, i);
+        }
+        transaction.Commit();
+    }
+
+    //  JetOpenFileSectionInstance opens a specific N-byte section
+    //  (iSection / cSections) of an attached database, used by
+    //  backup agents that parallelise reads across workers.  Section
+    //  0 of 1 covers the entire file — equivalent to JetOpenFile.
+    ExternalBackupSession backupSession(instance.Handle());
+
+    char attachInfo[4096] = {};
+    uint32_t cbAttach = 0;
+    CheckJet(JetGetAttachInfoInstanceA(instance.Handle(),
+                                       attachInfo,
+                                       sizeof(attachInfo),
+                                       &cbAttach));
+    Require(cbAttach > 0);
+    std::string firstDatabase(attachInfo);
+
+    JET_HANDLE fileHandle = 0;
+    uint32_t sectionSizeLow = 0;
+    int32_t sectionSizeHigh = 0;
+    CheckJet(JetOpenFileSectionInstanceA(instance.Handle(),
+                                         firstDatabase.data(),
+                                         &fileHandle,
+                                         /*iSection=*/0,
+                                         /*cSections=*/1,
+                                         /*ibRead=*/0,
+                                         &sectionSizeLow,
+                                         &sectionSizeHigh));
+    const uint64_t sectionSize =
+        (static_cast<uint64_t>(static_cast<uint32_t>(sectionSizeHigh)) << 32)
+        | sectionSizeLow;
+    Require(sectionSize > 0);
+
+    CheckJet(JetCloseFileInstance(instance.Handle(), fileHandle));
+    backupSession.EndNormally();
+}
+
+EseIntegrationScenario(BackupRestore, RemoveLogfileRejectsActiveLog)
+{
+    TemporaryDirectory directory(
+        "BackupRestore.RemoveLogfileRejectsActiveLog");
+
+    //  Produce a closed database + a known-on-disk log file with
+    //  non-circular logging so we have something to point
+    //  JetRemoveLogfile at.  The API expects the engine NOT to be
+    //  holding the database open — it's an offline admin operation.
+    std::filesystem::path dbPath;
+    std::filesystem::path logPath;
+    {
+        JET_INSTANCE instanceHandle = JET_instanceNil;
+        CheckJet(JetCreateInstance2A(&instanceHandle,
+                                     "RemoveLog",
+                                     "RemoveLog",
+                                     0));
+
+        auto pathWithSep = directory.Path().string();
+        if (!pathWithSep.empty() && pathWithSep.back() != '/')
+        {
+            pathWithSep.push_back('/');
+        }
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramSystemPath, 0,
+                                        pathWithSep.c_str()));
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramTempPath, 0,
+                                        pathWithSep.c_str()));
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramLogFilePath, 0,
+                                        pathWithSep.c_str()));
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramBaseName, 0, "edb"));
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramEventSource, 0, "RemoveLog"));
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramCircularLog, 0, nullptr));
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramLogFileSize, 64, nullptr));
+
+        CheckJet(JetInit(&instanceHandle));
+
+        JET_SESID sesid = JET_sesidNil;
+        CheckJet(JetBeginSessionA(instanceHandle, &sesid, nullptr, nullptr));
+        JET_DBID dbid = JET_dbidNil;
+        dbPath = directory.Path() / "RemoveLog.mdb";
+        CheckJet(JetCreateDatabaseA(sesid, dbPath.string().c_str(),
+                                    nullptr, &dbid, 0));
+        JET_TABLEID tableid = JET_tableidNil;
+        CheckJet(JetCreateTableA(sesid, dbid, "Rows", 8, 100, &tableid));
+        JET_COLUMNDEF coldef = {};
+        coldef.cbStruct = sizeof(coldef);
+        coldef.coltyp = JET_coltypLong;
+        JET_COLUMNID columnId = 0;
+        CheckJet(JetAddColumnA(sesid, tableid, "Value",
+                               &coldef, nullptr, 0, &columnId));
+        CheckJet(JetBeginTransaction(sesid));
+        for (int32_t i = 0; i < 2000; ++i)
+        {
+            CheckJet(JetPrepareUpdate(sesid, tableid, JET_prepInsert));
+            CheckJet(JetSetColumn(sesid, tableid, columnId,
+                                  &i, sizeof(i), 0, nullptr));
+            CheckJet(JetUpdate(sesid, tableid, nullptr, 0, nullptr));
+        }
+        CheckJet(JetCommitTransaction(sesid, JET_bitCommitLazyFlush));
+        CheckJet(JetCloseTable(sesid, tableid));
+        CheckJet(JetCloseDatabase(sesid, dbid, 0));
+        CheckJet(JetDetachDatabaseA(sesid, dbPath.string().c_str()));
+        CheckJet(JetEndSession(sesid, 0));
+        CheckJet(JetTerm2(instanceHandle, JET_bitTermComplete));
+
+        for (const auto& entry :
+             std::filesystem::directory_iterator(directory.Path()))
+        {
+            const auto name = entry.path().filename().string();
+            if (name.rfind("edb", 0) == 0 &&
+                entry.path().extension() == ".log" &&
+                name.size() > std::strlen("edb.log"))
+            {
+                logPath = entry.path();
+                break;
+            }
+        }
+    }
+    Require(!logPath.empty());
+
+    //  Contract test: grbit is reserved (must be 0).  Engine entry
+    //  validates it and returns JET_errInvalidParameter for anything
+    //  else — and the API actually opens both files for real-side
+    //  validation (so it's not a no-op stub).
+    RequireJetError(JetRemoveLogfileA(dbPath.string().c_str(),
+                                      logPath.string().c_str(),
+                                      0xDEADBEEF),
+                    JET_errInvalidParameter);
+
+    //  Missing database path is also rejected at the entry guard.
+    RequireJetError(JetRemoveLogfileA("",
+                                      logPath.string().c_str(),
+                                      0),
+                    JET_errInvalidParameter);
+
+    //  Missing log path: ditto.
+    RequireJetError(JetRemoveLogfileA(dbPath.string().c_str(),
+                                      "",
+                                      0),
+                    JET_errInvalidParameter);
+}
+
+EseIntegrationScenario(BackupRestore,
+                       BeginAndEndSurrogateBackupRoundTrip)
+{
+    TemporaryDirectory directory(
+        "BackupRestore.BeginAndEndSurrogateBackupRoundTrip");
+
+    //  Surrogate backup tells the engine that an external agent
+    //  (typically SAN-replication infrastructure) has captured a
+    //  consistent snapshot of the database files + log generations
+    //  [lgenFirst, lgenLast].  Engine stamps the headers as
+    //  "backed up to lgenLast" without itself touching the bytes.
+    //
+    //  The engine rejects surrogate backup when circular logging is
+    //  enabled (JET_errInvalidBackup -526), so this scenario can't
+    //  use the framework default.  Provision an instance manually
+    //  with circular log off.
+    JET_INSTANCE instanceHandle = JET_instanceNil;
+    CheckJet(JetCreateInstance2A(&instanceHandle,
+                                 "Surrogate",
+                                 "Surrogate",
+                                 0));
+
+    auto pathWithSep = directory.Path().string();
+    if (!pathWithSep.empty() && pathWithSep.back() != '/')
+    {
+        pathWithSep.push_back('/');
+    }
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramSystemPath, 0,
+                                    pathWithSep.c_str()));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramTempPath, 0,
+                                    pathWithSep.c_str()));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramLogFilePath, 0,
+                                    pathWithSep.c_str()));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramBaseName, 0, "edb"));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramEventSource, 0, "Surrogate"));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramCircularLog, 0, nullptr));
+
+    CheckJet(JetInit(&instanceHandle));
+
+    JET_SESID sesid = JET_sesidNil;
+    CheckJet(JetBeginSessionA(instanceHandle, &sesid, nullptr, nullptr));
+    JET_DBID dbid = JET_dbidNil;
+    const auto dbPath = (directory.Path() / "Surrogate.mdb").string();
+    CheckJet(JetCreateDatabaseA(sesid, dbPath.c_str(),
+                                nullptr, &dbid, 0));
+    JET_TABLEID tableid = JET_tableidNil;
+    CheckJet(JetCreateTableA(sesid, dbid, "Rows", 8, 100, &tableid));
+    JET_COLUMNDEF coldef = {};
+    coldef.cbStruct = sizeof(coldef);
+    coldef.coltyp = JET_coltypLong;
+    JET_COLUMNID columnId = 0;
+    CheckJet(JetAddColumnA(sesid, tableid, "Value",
+                           &coldef, nullptr, 0, &columnId));
+    CheckJet(JetBeginTransaction(sesid));
+    for (int32_t i = 0; i < 100; ++i)
+    {
+        CheckJet(JetPrepareUpdate(sesid, tableid, JET_prepInsert));
+        CheckJet(JetSetColumn(sesid, tableid, columnId,
+                              &i, sizeof(i), 0, nullptr));
+        CheckJet(JetUpdate(sesid, tableid, nullptr, 0, nullptr));
+    }
+    CheckJet(JetCommitTransaction(sesid, 0));
+    CheckJet(JetCloseTable(sesid, tableid));
+
+    //  Begin a surrogate session covering log generations [1, 1].
+    //  Engine accepts even degenerate (lgenFirst == lgenLast) ranges
+    //  — the contract is "you took the snapshot, here's what's in
+    //  it".  Pair with End immediately so the session unwinds.
+    CheckJet(JetBeginSurrogateBackup(instanceHandle,
+                                     /*lgenFirst=*/1,
+                                     /*lgenLast=*/1,
+                                     0));
+    CheckJet(JetEndSurrogateBackup(instanceHandle,
+                                   JET_bitBackupEndNormal));
+
+    CheckJet(JetCloseDatabase(sesid, dbid, 0));
+    CheckJet(JetDetachDatabaseA(sesid, dbPath.c_str()));
+    CheckJet(JetEndSession(sesid, 0));
+    CheckJet(JetTerm2(instanceHandle, JET_bitTermComplete));
 }

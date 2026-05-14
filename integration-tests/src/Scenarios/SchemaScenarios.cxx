@@ -7,6 +7,7 @@
 #include "Framework/EseSession.hxx"
 #include "Framework/EseTable.hxx"
 #include "Framework/EseTransaction.hxx"
+#include "Framework/RowOperations.hxx"
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
@@ -461,4 +462,232 @@ EseIntegrationScenario(Schema, GetIndexInfoReturnsIndexCount)
                               &indexCount, sizeof(indexCount),
                               JET_IdxInfoCount));
     Require(indexCount == 2);
+}
+
+EseIntegrationScenario(Schema, CreateIndex2BuildsSecondaryIndex)
+{
+    TemporaryDirectory directory("Schema.CreateIndex2BuildsSecondaryIndex");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Schema.mdb");
+    EseTable table(database, "Rows");
+
+    auto identityColumnId = table.AddColumn(
+        "Identity",
+        JET_coltypLong,
+        JET_bitColumnAutoincrement | JET_bitColumnNotNULL);
+    auto rankColumnId = table.AddColumn("Rank",
+                                        JET_coltypLong,
+                                        JET_bitColumnNotNULL);
+
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Identity\0\0", 11);
+    table.CreateIndex("PrimaryByIdentity",
+                      PrimaryKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    //  JetCreateIndex2 builds N secondary indexes in one call using
+    //  the JET_INDEXCREATE struct (vs the simpler szKey + grbit
+    //  shape of v1).  Each entry sets cbStruct + szIndexName + szKey
+    //  + cbKey + grbit + ulDensity.
+    static constexpr std::string_view RankKey =
+        std::string_view("+Rank\0\0", 7);
+    JET_INDEXCREATE_A indexes[1] = { {} };
+    indexes[0].cbStruct = sizeof(indexes[0]);
+    indexes[0].szIndexName = const_cast<char*>("ByRank");
+    indexes[0].szKey = const_cast<char*>(RankKey.data());
+    indexes[0].cbKey = static_cast<uint32_t>(RankKey.size());
+    indexes[0].grbit = 0;
+    indexes[0].ulDensity = 80;
+
+    CheckJet(JetCreateIndex2A(session.Handle(),
+                              table.Id(),
+                              indexes,
+                              1));
+    Require(indexes[0].err == JET_errSuccess);
+
+    //  Populate rows in descending rank, then walk the new index —
+    //  must come back in ascending rank order proving the index is
+    //  built and active.
+    constexpr int RowCount = 5;
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < RowCount; ++i)
+        {
+            const int32_t rank = RowCount - i;
+            CheckJet(JetPrepareUpdate(session.Handle(),
+                                      table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(),
+                                  table.Id(),
+                                  rankColumnId,
+                                  &rank,
+                                  sizeof(rank),
+                                  0,
+                                  nullptr));
+            CheckJet(JetUpdate(session.Handle(),
+                               table.Id(),
+                               nullptr,
+                               0,
+                               nullptr));
+        }
+        transaction.Commit();
+    }
+
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(), "ByRank"));
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t previousRank = 0;
+    for (int i = 0; i < RowCount; ++i)
+    {
+        const auto rank =
+            RetrieveFixedColumnFromCurrentRecord<int32_t>(table,
+                                                          rankColumnId);
+        if (i > 0)
+        {
+            Require(rank > previousRank);
+        }
+        previousRank = rank;
+        if (i + 1 < RowCount)
+        {
+            CheckJet(JetMove(session.Handle(),
+                             table.Id(),
+                             JET_MoveNext,
+                             0));
+        }
+    }
+
+    (void)identityColumnId;
+}
+
+EseIntegrationScenario(Schema, CreateDatabase2HonorsMaxPagesCap)
+{
+    TemporaryDirectory directory("Schema.CreateDatabase2HonorsMaxPagesCap");
+    EseInstance instance(directory);
+    EseSession session(instance);
+
+    //  JetCreateDatabase2 takes a per-database cpgDatabaseSizeMax
+    //  cap that the engine treats as a hard ceiling — equivalent to
+    //  setting JET_dbparamDbSizeMaxPages.  256 pages = 1 MiB at 4 KiB
+    //  pages, plenty for the small DDL we're going to add.
+    const auto dbPath = (directory.Path() / "Capped.mdb").string();
+    JET_DBID dbid = JET_dbidNil;
+    CheckJet(JetCreateDatabase2A(session.Handle(),
+                                 dbPath.c_str(),
+                                 /*cpgDatabaseSizeMax=*/256,
+                                 &dbid,
+                                 0));
+    Require(dbid != JET_dbidNil);
+
+    //  Verify the cap was honored by reading it back via
+    //  JetGetMaxDatabaseSize.
+    uint32_t cappedPages = 0;
+    CheckJet(JetGetMaxDatabaseSize(session.Handle(),
+                                   dbid,
+                                   &cappedPages,
+                                   0));
+    Require(cappedPages == 256);
+
+    CheckJet(JetCloseDatabase(session.Handle(), dbid, 0));
+    CheckJet(JetDetachDatabaseA(session.Handle(), dbPath.c_str()));
+}
+
+EseIntegrationScenario(Schema, AttachDatabase2AppliesMaxPagesCapOnAttach)
+{
+    TemporaryDirectory directory(
+        "Schema.AttachDatabase2AppliesMaxPagesCapOnAttach");
+    EseInstance instance(directory);
+    EseSession session(instance);
+
+    //  Phase A: create a database with no cap.
+    const auto dbPath = (directory.Path() / "Reattach.mdb").string();
+    {
+        JET_DBID dbid = JET_dbidNil;
+        CheckJet(JetCreateDatabaseA(session.Handle(),
+                                    dbPath.c_str(),
+                                    nullptr,
+                                    &dbid,
+                                    0));
+        CheckJet(JetCloseDatabase(session.Handle(), dbid, 0));
+        CheckJet(JetDetachDatabaseA(session.Handle(), dbPath.c_str()));
+    }
+
+    //  Phase B: re-attach via JetAttachDatabase2 with a 512-page
+    //  cap.  The cap is per-attach state, so a subsequent
+    //  JetGetMaxDatabaseSize must report the new ceiling.
+    CheckJet(JetAttachDatabase2A(session.Handle(),
+                                 dbPath.c_str(),
+                                 /*cpgDatabaseSizeMax=*/512,
+                                 0));
+    JET_DBID dbid = JET_dbidNil;
+    CheckJet(JetOpenDatabaseA(session.Handle(),
+                              dbPath.c_str(),
+                              nullptr,
+                              &dbid,
+                              0));
+
+    uint32_t cappedPages = 0;
+    CheckJet(JetGetMaxDatabaseSize(session.Handle(),
+                                   dbid,
+                                   &cappedPages,
+                                   0));
+    Require(cappedPages == 512);
+
+    CheckJet(JetCloseDatabase(session.Handle(), dbid, 0));
+    CheckJet(JetDetachDatabaseA(session.Handle(), dbPath.c_str()));
+}
+
+EseIntegrationScenario(Schema, CreateTableColumnIndex2BulkCreateRoundTrip)
+{
+    TemporaryDirectory directory(
+        "Schema.CreateTableColumnIndex2BulkCreateRoundTrip");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Schema.mdb");
+
+    //  JET_TABLECREATE2 vs JET_TABLECREATE: same payload + extra
+    //  szCallback / cbtyp fields for column-modify hooks.  Test the
+    //  bulk-create entry by handing it the same DDL the v1 scenario
+    //  uses, plus a NULL callback (we don't need it here).
+    JET_COLUMNCREATE_A columns[2] = { {}, {} };
+    columns[0].cbStruct = sizeof(columns[0]);
+    columns[0].szColumnName = const_cast<char*>("Id");
+    columns[0].coltyp = JET_coltypLong;
+    columns[0].grbit = JET_bitColumnAutoincrement | JET_bitColumnNotNULL;
+
+    columns[1].cbStruct = sizeof(columns[1]);
+    columns[1].szColumnName = const_cast<char*>("Name");
+    columns[1].coltyp = JET_coltypLongText;
+    columns[1].cp = 1252;
+
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Id\0\0", 5);
+    JET_INDEXCREATE_A indexes[1] = { {} };
+    indexes[0].cbStruct = sizeof(indexes[0]);
+    indexes[0].szIndexName = const_cast<char*>("PrimaryById");
+    indexes[0].szKey = const_cast<char*>(PrimaryKey.data());
+    indexes[0].cbKey = static_cast<uint32_t>(PrimaryKey.size());
+    indexes[0].grbit = JET_bitIndexPrimary | JET_bitIndexUnique;
+    indexes[0].ulDensity = 80;
+
+    JET_TABLECREATE2_A create = {};
+    create.cbStruct = sizeof(create);
+    create.szTableName = const_cast<char*>("BulkV2");
+    create.ulPages = 16;
+    create.ulDensity = 80;
+    create.rgcolumncreate = columns;
+    create.cColumns = 2;
+    create.rgindexcreate = indexes;
+    create.cIndexes = 1;
+
+    CheckJet(JetCreateTableColumnIndex2A(session.Handle(),
+                                         database.Id(),
+                                         &create));
+    Require(create.tableid != JET_tableidNil);
+    //  cCreated counts table + 2 columns + 1 index (no callback).
+    Require(create.cCreated == 4);
+    Require(columns[0].columnid != 0);
+    Require(columns[1].columnid != 0);
+    Require(indexes[0].err == JET_errSuccess);
+
+    CheckJet(JetCloseTable(session.Handle(), create.tableid));
 }

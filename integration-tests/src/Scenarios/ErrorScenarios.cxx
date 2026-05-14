@@ -254,3 +254,26 @@ EseIntegrationScenario(Error, DeletingMissingIndexReturnsIndexNotFound)
     RequireJetError(JetDeleteIndexA(session.Handle(), table.Id(), "NoSuchIndex"),
                     JET_errIndexNotFound);
 }
+
+EseIntegrationScenario(Error, GetErrorInfoReportsCategoryHierarchy)
+{
+    //  JetGetErrorInfoW takes a pointer to a JET_ERR as context and
+    //  fills a JET_ERRINFOBASIC_W with category metadata describing
+    //  the error: the error value, the engine's classification
+    //  (Fatal / IO / Resource / Api / ...), and the source file +
+    //  line that raised it.
+    //
+    //  No instance / session needed — the call inspects the error
+    //  taxonomy compiled into the engine, not runtime state.
+    JET_ERR err = JET_errRecordNotFound;
+    JET_ERRINFOBASIC_W info = {};
+    info.cbStruct = sizeof(info);
+
+    CheckJet(JetGetErrorInfoW(&err,
+                              &info,
+                              sizeof(info),
+                              JET_ErrorInfoSpecificErr,
+                              0));
+    Require(info.errValue == JET_errRecordNotFound);
+    Require(info.errcatMostSpecific != JET_errcatUnknown);
+}

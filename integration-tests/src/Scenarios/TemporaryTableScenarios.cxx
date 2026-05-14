@@ -202,3 +202,92 @@ EseIntegrationScenario(TemporaryTable, UpdatableTempTableAcceptsReplace)
 
     CheckJet(JetCloseTable(session.Handle(), temporaryTableId));
 }
+
+EseIntegrationScenario(TemporaryTable, OpenTempTable3SortsViaUnicodeIndex)
+{
+    TemporaryDirectory directory(
+        "TemporaryTable.OpenTempTable3SortsViaUnicodeIndex");
+    EseInstance instance(directory);
+    EseSession session(instance);
+
+    //  JetOpenTempTable3 replaces JetOpenTempTable2's bare lcid arg
+    //  with a JET_UNICODEINDEX pointer.  That lets callers pass NLS
+    //  flags (case-insensitive, etc.) alongside the locale.
+    //
+    //  Build a temp table sorted by a Unicode-text key with the
+    //  English (US) LCID and LCMAP_LOWERCASE so the sort folds
+    //  case.  Insert "banana", "Apple", "cherry" and walk forward —
+    //  case-insensitive sort puts Apple first.
+    JET_COLUMNDEF columns[1] = { {} };
+    columns[0].cbStruct = sizeof(columns[0]);
+    columns[0].coltyp = JET_coltypLongText;
+    columns[0].cp = 1200;  //  UTF-16
+    columns[0].grbit = JET_bitColumnTTKey;
+
+    JET_UNICODEINDEX unicodeIndex = {};
+    unicodeIndex.lcid = 1033;  // en-US
+    //  ErrNORMCheckLCMapFlags (`dev/ese/src/os/norm.cxx:685`) validates
+    //  these against a whitelist that includes NORM_IGNORECASE and
+    //  IGNORENONSPACE; it auto-ORs in LCMAP_SORTKEY.  Anything else
+    //  is rejected with JET_errInvalidLCMapStringFlags.
+    unicodeIndex.dwMapFlags = 0x00000001 /* NORM_IGNORECASE */;
+
+    JET_COLUMNID columnId = 0;
+    JET_TABLEID tableid = JET_tableidNil;
+    CheckJet(JetOpenTempTable3(session.Handle(),
+                               columns,
+                               1,
+                               &unicodeIndex,
+                               JET_bitTTUpdatable,
+                               &tableid,
+                               &columnId));
+    Require(tableid != JET_tableidNil);
+    Require(columnId != 0);
+
+    auto insertWide = [&](const char16_t* text, uint32_t cch) {
+        CheckJet(JetPrepareUpdate(session.Handle(),
+                                  tableid,
+                                  JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(),
+                              tableid,
+                              columnId,
+                              text,
+                              cch * sizeof(char16_t),
+                              0,
+                              nullptr));
+        CheckJet(JetUpdate(session.Handle(),
+                           tableid,
+                           nullptr,
+                           0,
+                           nullptr));
+    };
+
+    //  JET_bitTTUpdatable temp tables don't have the implicit
+    //  transaction semantics the read-only variants enjoy; wrap
+    //  inserts in an explicit transaction so JetSetColumn doesn't
+    //  trip JET_errNotInTransaction.
+    CheckJet(JetBeginTransaction(session.Handle()));
+    static const char16_t Banana[] = u"banana";
+    static const char16_t Apple[]  = u"Apple";
+    static const char16_t Cherry[] = u"cherry";
+    insertWide(Banana, 6);
+    insertWide(Apple, 5);
+    insertWide(Cherry, 6);
+    CheckJet(JetCommitTransaction(session.Handle(), 0));
+
+    CheckJet(JetMove(session.Handle(), tableid, JET_MoveFirst, 0));
+    char16_t buffer[16] = {};
+    uint32_t cbActual = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(),
+                               tableid,
+                               columnId,
+                               buffer,
+                               sizeof(buffer),
+                               &cbActual,
+                               0,
+                               nullptr));
+    //  Case-insensitive sort puts "Apple" first.
+    Require(buffer[0] == u'A' || buffer[0] == u'a');
+
+    CheckJet(JetCloseTable(session.Handle(), tableid));
+}
