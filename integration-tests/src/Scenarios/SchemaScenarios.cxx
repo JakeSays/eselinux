@@ -691,3 +691,228 @@ EseIntegrationScenario(Schema, CreateTableColumnIndex2BulkCreateRoundTrip)
 
     CheckJet(JetCloseTable(session.Handle(), create.tableid));
 }
+
+EseIntegrationScenario(Schema, ConvertDDLIncreasesMaxColumnSize)
+{
+    TemporaryDirectory directory("Schema.ConvertDDLIncreasesMaxColumnSize");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    const auto dbPath = (directory.Path() / "Schema.mdb").string();
+
+    //  Phase A: create the database + a table with a Text column
+    //  capped at InitialMax bytes.  Insert a row whose value
+    //  exceeds the cap and confirm the engine silently truncates
+    //  it (JET_wrnColumnMaxTruncated + read-back exactly cap-many
+    //  bytes).  Detach the database when done — the catalog change
+    //  in Phase B needs a fresh attach to invalidate the cached
+    //  FCB/TDB that holds the in-memory cap.
+    static constexpr uint32_t InitialMax = 16;
+    static constexpr char LongValue[] =
+        "abcdefghijklmnopqrstuvwxyz012345";  // 32 chars
+    static_assert(sizeof(LongValue) - 1 > InitialMax);
+    JET_COLUMNID columnId = 0;
+    {
+        JET_DBID dbid = JET_dbidNil;
+        CheckJet(JetCreateDatabaseA(session.Handle(),
+                                    dbPath.c_str(),
+                                    nullptr,
+                                    &dbid,
+                                    0));
+
+        JET_TABLEID tableid = JET_tableidNil;
+        CheckJet(JetCreateTableA(session.Handle(),
+                                 dbid,
+                                 "Strings",
+                                 16,
+                                 80,
+                                 &tableid));
+        JET_COLUMNDEF coldef = {};
+        coldef.cbStruct = sizeof(coldef);
+        coldef.coltyp = JET_coltypText;
+        coldef.cp = 1252;
+        coldef.cbMax = InitialMax;
+        coldef.grbit = JET_bitColumnNotNULL;
+        CheckJet(JetAddColumnA(session.Handle(),
+                               tableid,
+                               "Value",
+                               &coldef,
+                               nullptr,
+                               0,
+                               &columnId));
+
+        CheckJet(JetBeginTransaction(session.Handle()));
+        CheckJet(JetPrepareUpdate(session.Handle(),
+                                  tableid,
+                                  JET_prepInsert));
+        const auto setErr = JetSetColumn(session.Handle(),
+                                         tableid,
+                                         columnId,
+                                         LongValue,
+                                         sizeof(LongValue) - 1,
+                                         0,
+                                         nullptr);
+        Require(setErr == JET_wrnColumnMaxTruncated);
+        CheckJet(JetUpdate(session.Handle(), tableid, nullptr, 0, nullptr));
+        CheckJet(JetCommitTransaction(session.Handle(), 0));
+
+        CheckJet(JetMove(session.Handle(), tableid, JET_MoveFirst, 0));
+        char preReadBack[128] = {};
+        uint32_t cbActual = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(),
+                                   tableid,
+                                   columnId,
+                                   preReadBack,
+                                   sizeof(preReadBack),
+                                   &cbActual,
+                                   0,
+                                   nullptr));
+        Require(cbActual == InitialMax);
+
+        CheckJet(JetCloseTable(session.Handle(), tableid));
+        CheckJet(JetCloseDatabase(session.Handle(), dbid, 0));
+        CheckJet(JetDetachDatabaseA(session.Handle(), dbPath.c_str()));
+    }
+
+    //  Phase B: reattach.  Now apply ConvertDDL to raise the cap.
+    //  ErrCATIncreaseMaxColumnSize writes the new value to the
+    //  catalog row.  Detach again to invalidate the FCB cache
+    //  before Phase C reattaches with the new cap visible.
+    {
+        CheckJet(JetAttachDatabaseA(session.Handle(),
+                                    dbPath.c_str(),
+                                    0));
+        JET_DBID dbid = JET_dbidNil;
+        CheckJet(JetOpenDatabaseA(session.Handle(),
+                                  dbPath.c_str(),
+                                  nullptr,
+                                  &dbid,
+                                  0));
+
+        JET_DDLMAXCOLUMNSIZE_A increase = {};
+        increase.szTable = const_cast<char*>("Strings");
+        increase.szColumn = const_cast<char*>("Value");
+        increase.cbMax = 128;
+        CheckJet(JetConvertDDLA(session.Handle(),
+                                dbid,
+                                opDDLConvIncreaseMaxColumnSize,
+                                &increase,
+                                sizeof(increase)));
+
+        CheckJet(JetCloseDatabase(session.Handle(), dbid, 0));
+        CheckJet(JetDetachDatabaseA(session.Handle(), dbPath.c_str()));
+    }
+
+    //  Phase C: reattach with a fresh FCB.  The full 32-byte
+    //  string now round-trips without truncation.
+    {
+        CheckJet(JetAttachDatabaseA(session.Handle(),
+                                    dbPath.c_str(),
+                                    0));
+        JET_DBID dbid = JET_dbidNil;
+        CheckJet(JetOpenDatabaseA(session.Handle(),
+                                  dbPath.c_str(),
+                                  nullptr,
+                                  &dbid,
+                                  0));
+        JET_TABLEID tableid = JET_tableidNil;
+        CheckJet(JetOpenTableA(session.Handle(),
+                               dbid,
+                               "Strings",
+                               nullptr,
+                               0,
+                               0,
+                               &tableid));
+
+        CheckJet(JetBeginTransaction(session.Handle()));
+        CheckJet(JetPrepareUpdate(session.Handle(),
+                                  tableid,
+                                  JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(),
+                              tableid,
+                              columnId,
+                              LongValue,
+                              sizeof(LongValue) - 1,
+                              0,
+                              nullptr));
+        CheckJet(JetUpdate(session.Handle(), tableid, nullptr, 0, nullptr));
+        CheckJet(JetCommitTransaction(session.Handle(), 0));
+
+        CheckJet(JetMove(session.Handle(), tableid, JET_MoveLast, 0));
+        char postReadBack[128] = {};
+        uint32_t cbActual = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(),
+                                   tableid,
+                                   columnId,
+                                   postReadBack,
+                                   sizeof(postReadBack),
+                                   &cbActual,
+                                   0,
+                                   nullptr));
+        Require(cbActual == sizeof(LongValue) - 1);
+        Require(std::memcmp(postReadBack, LongValue, cbActual) == 0);
+
+        CheckJet(JetCloseTable(session.Handle(), tableid));
+        CheckJet(JetCloseDatabase(session.Handle(), dbid, 0));
+        CheckJet(JetDetachDatabaseA(session.Handle(), dbPath.c_str()));
+    }
+}
+
+EseIntegrationScenario(Schema, ConvertDDLChangesIndexDensity)
+{
+    TemporaryDirectory directory("Schema.ConvertDDLChangesIndexDensity");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Schema.mdb");
+    EseTable table(database, "Rows");
+
+    auto columnId = table.AddColumn("Key",
+                                    JET_coltypLong,
+                                    JET_bitColumnNotNULL);
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Key\0\0", 6);
+    table.CreateIndex("PrimaryByKey",
+                      PrimaryKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    //  Bump density to 95 via JetConvertDDL.  Routes through
+    //  ErrCATChangeIndexDensity which updates the catalog row for
+    //  this index; existing pages are not restructured, but the
+    //  new value affects future page splits.
+    JET_DDLINDEXDENSITY_A change = {};
+    change.szTable = const_cast<char*>("Rows");
+    change.szIndex = const_cast<char*>("PrimaryByKey");
+    change.ulDensity = 95;
+    CheckJet(JetConvertDDLA(session.Handle(),
+                            database.Id(),
+                            opDDLConvChangeIndexDensity,
+                            &change,
+                            sizeof(change)));
+
+    //  Insert + scan still works — verify the post-change index
+    //  is usable.
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < 50; ++i)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, i);
+        }
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int seen = 0;
+    while (true)
+    {
+        ++seen;
+        const auto rc = JetMove(session.Handle(),
+                                table.Id(),
+                                JET_MoveNext,
+                                0);
+        if (rc == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(rc);
+    }
+    Require(seen == 50);
+}

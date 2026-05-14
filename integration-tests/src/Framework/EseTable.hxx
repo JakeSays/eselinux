@@ -78,6 +78,15 @@ public:
                      JET_GRBIT flags = 0,
                      unsigned long density = 80);
 
+    // Detach this wrapper from the underlying tableid — caller takes
+    // ownership of the JET handle. Used by scenarios that need to
+    // close + reopen the table mid-flight (e.g., to pick up a
+    // catalog change). After Release() the destructor is a no-op.
+    void Release()
+    {
+        _id = JET_tableidNil;
+    }
+
 private:
     EseDatabase& _database;
     std::string _name;

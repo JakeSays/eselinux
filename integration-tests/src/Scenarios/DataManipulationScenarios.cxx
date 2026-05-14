@@ -887,3 +887,376 @@ EseIntegrationScenario(DataManipulation, Update2WithBookmarkAndGrbitInserts)
     Require(RetrieveFixedColumnFromCurrentRecord<int32_t>(table, columnId)
             == 7777);
 }
+
+EseIntegrationScenario(DataManipulation,
+                       RetrieveColumnByReferenceReadsSeparatedLongValue)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.RetrieveColumnByReferenceReadsSeparatedLongValue");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "Refs");
+
+    auto idColumn = table.AddColumn("Id", JET_coltypLong, JET_bitColumnNotNULL);
+    auto blobColumn = table.AddColumn("Body", JET_coltypLongBinary);
+
+    //  Pack a 16 KiB blob — comfortably above the ~8 KiB intrinsic-LV
+    //  threshold so the engine spills it to the LV tree (separated).
+    //  Separated LVs are what JET_bitRetrieveAsRefIfNotInRecord
+    //  turns into a reference token.
+    std::vector<uint8_t> blob(16 * 1024);
+    for (size_t i = 0; i < blob.size(); ++i)
+    {
+        blob[i] = static_cast<uint8_t>((i * 31u + 17u) & 0xFFu);
+    }
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(),
+                                  table.Id(),
+                                  JET_prepInsert));
+        const int32_t id = 1;
+        CheckJet(JetSetColumn(session.Handle(),
+                              table.Id(),
+                              idColumn,
+                              &id,
+                              sizeof(id),
+                              0,
+                              nullptr));
+        CheckJet(JetSetColumn(session.Handle(),
+                              table.Id(),
+                              blobColumn,
+                              blob.data(),
+                              static_cast<uint32_t>(blob.size()),
+                              0,
+                              nullptr));
+        CheckJet(JetUpdate(session.Handle(),
+                           table.Id(),
+                           nullptr,
+                           0,
+                           nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    //  JetRetrieveColumn with JET_bitRetrieveAsRefIfNotInRecord on a
+    //  separated LV returns JET_wrnColumnReference + writes the
+    //  reference token (variable-length, opaque to the caller) into
+    //  the caller's buffer.  The reference is what we hand to
+    //  JetRetrieveColumnByReference to read the actual bytes.
+    uint8_t reference[256] = {};
+    uint32_t cbReference = 0;
+    const auto refErr = JetRetrieveColumn(session.Handle(),
+                                          table.Id(),
+                                          blobColumn,
+                                          reference,
+                                          sizeof(reference),
+                                          &cbReference,
+                                          JET_bitRetrieveAsRefIfNotInRecord,
+                                          nullptr);
+    Require(refErr == JET_wrnColumnReference);
+    Require(cbReference > 0);
+    Require(cbReference <= sizeof(reference));
+
+    //  Read the full blob through the reference — same bytes back.
+    std::vector<uint8_t> readBack(blob.size());
+    uint32_t cbActual = 0;
+    CheckJet(JetRetrieveColumnByReference(session.Handle(),
+                                          table.Id(),
+                                          reference,
+                                          cbReference,
+                                          /*ibData=*/0,
+                                          readBack.data(),
+                                          static_cast<uint32_t>(readBack.size()),
+                                          &cbActual,
+                                          0));
+    Require(cbActual == blob.size());
+    Require(std::memcmp(readBack.data(), blob.data(), blob.size()) == 0);
+
+    //  Byte-range read: ibData=1024 skips the first 1 KiB.
+    std::vector<uint8_t> middle(blob.size() - 1024);
+    cbActual = 0;
+    CheckJet(JetRetrieveColumnByReference(session.Handle(),
+                                          table.Id(),
+                                          reference,
+                                          cbReference,
+                                          /*ibData=*/1024,
+                                          middle.data(),
+                                          static_cast<uint32_t>(middle.size()),
+                                          &cbActual,
+                                          0));
+    Require(cbActual == middle.size());
+    Require(std::memcmp(middle.data(), blob.data() + 1024, middle.size()) == 0);
+
+    //  JET_bitRetrievePhysicalSize via the by-reference path returns
+    //  the on-disk byte count without copying any data.
+    cbActual = 0;
+    CheckJet(JetRetrieveColumnByReference(session.Handle(),
+                                          table.Id(),
+                                          reference,
+                                          cbReference,
+                                          /*ibData=*/0,
+                                          /*pvData=*/nullptr,
+                                          /*cbData=*/0,
+                                          &cbActual,
+                                          JET_bitRetrievePhysicalSize));
+    Require(cbActual >= blob.size());
+}
+
+EseIntegrationScenario(DataManipulation,
+                       PrereadColumnsByReferenceReportsRequestedCount)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.PrereadColumnsByReferenceReportsRequestedCount");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "Refs");
+
+    auto idColumn = table.AddColumn("Id", JET_coltypLong, JET_bitColumnNotNULL);
+    auto blobColumn = table.AddColumn("Body", JET_coltypLongBinary);
+
+    constexpr int RowCount = 4;
+    static constexpr uint32_t BlobSize = 16 * 1024;
+    {
+        EseTransaction transaction(session);
+        std::vector<uint8_t> blob(BlobSize);
+        for (int32_t r = 0; r < RowCount; ++r)
+        {
+            for (size_t i = 0; i < blob.size(); ++i)
+            {
+                blob[i] = static_cast<uint8_t>((r * 7u + i) & 0xFFu);
+            }
+            CheckJet(JetPrepareUpdate(session.Handle(),
+                                      table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(),
+                                  table.Id(),
+                                  idColumn,
+                                  &r,
+                                  sizeof(r),
+                                  0,
+                                  nullptr));
+            CheckJet(JetSetColumn(session.Handle(),
+                                  table.Id(),
+                                  blobColumn,
+                                  blob.data(),
+                                  BlobSize,
+                                  0,
+                                  nullptr));
+            CheckJet(JetUpdate(session.Handle(),
+                               table.Id(),
+                               nullptr,
+                               0,
+                               nullptr));
+        }
+        transaction.Commit();
+    }
+
+    //  Walk the rows, harvesting one reference token per row.
+    std::vector<std::vector<uint8_t>> referenceStorage;
+    std::vector<const void*> referencePointers;
+    std::vector<uint32_t> referenceByteCounts;
+    referenceStorage.reserve(RowCount);
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    for (int row = 0; row < RowCount; ++row)
+    {
+        uint8_t reference[256] = {};
+        uint32_t cbReference = 0;
+        const auto refErr = JetRetrieveColumn(session.Handle(),
+                                              table.Id(),
+                                              blobColumn,
+                                              reference,
+                                              sizeof(reference),
+                                              &cbReference,
+                                              JET_bitRetrieveAsRefIfNotInRecord,
+                                              nullptr);
+        Require(refErr == JET_wrnColumnReference);
+        Require(cbReference > 0);
+        referenceStorage.emplace_back(reference, reference + cbReference);
+        if (row + 1 < RowCount)
+        {
+            CheckJet(JetMove(session.Handle(),
+                             table.Id(),
+                             JET_MoveNext,
+                             0));
+        }
+    }
+    for (auto& ref : referenceStorage)
+    {
+        referencePointers.push_back(ref.data());
+        referenceByteCounts.push_back(static_cast<uint32_t>(ref.size()));
+    }
+
+    //  Preread all four references into the cache.  Engine reports
+    //  how many of them it actually initiated I/O for; on a freshly-
+    //  written database the LV pages are still in cache so the
+    //  count may be < RowCount.  Bound: the count must be reasonable
+    //  (>= 0, <= RowCount).
+    uint32_t referencesPreread = 0;
+    CheckJet(JetPrereadColumnsByReference(session.Handle(),
+                                          table.Id(),
+                                          referencePointers.data(),
+                                          referenceByteCounts.data(),
+                                          static_cast<uint32_t>(
+                                              referencePointers.size()),
+                                          /*cPageCacheMin=*/1,
+                                          /*cPageCacheMax=*/64,
+                                          &referencesPreread,
+                                          0));
+    Require(referencesPreread <= static_cast<uint32_t>(referencePointers.size()));
+}
+
+EseIntegrationScenario(DataManipulation,
+                       StreamRecordsAndParseRoundTripsAllColumnsInIndexOrder)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.StreamRecordsAndParseRoundTripsAllColumnsInIndexOrder");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "Stream");
+
+    auto idColumn = table.AddColumn("Id",
+                                    JET_coltypLong,
+                                    JET_bitColumnNotNULL);
+    auto valueColumn = table.AddColumn("Value",
+                                       JET_coltypLong,
+                                       JET_bitColumnNotNULL);
+
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Id\0\0", 5);
+    table.CreateIndex("PrimaryById",
+                      PrimaryKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    //  Populate four rows with paired (Id, Value) ints; Value = Id*10
+    //  so the parsed stream is easy to verify.
+    constexpr int RowCount = 4;
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < RowCount; ++i)
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(),
+                                      table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(),
+                                  table.Id(),
+                                  idColumn,
+                                  &i,
+                                  sizeof(i),
+                                  0,
+                                  nullptr));
+            const int32_t value = i * 10;
+            CheckJet(JetSetColumn(session.Handle(),
+                                  table.Id(),
+                                  valueColumn,
+                                  &value,
+                                  sizeof(value),
+                                  0,
+                                  nullptr));
+            CheckJet(JetUpdate(session.Handle(),
+                               table.Id(),
+                               nullptr,
+                               0,
+                               nullptr));
+        }
+        transaction.Commit();
+    }
+
+    //  Position at the first row before streaming — the stream
+    //  walks forward from the current cursor position.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    //  JetStreamRecords packs (record, column) tuples into a
+    //  caller-allocated buffer with a private engine-defined layout
+    //  (RECORD_BUFFER_HEADER_V1 + zero-or-more RECORD_BUFFER_COLUMN_VALUE
+    //  entries).  4 records × 2 columns × ~32 bytes/tuple fits
+    //  comfortably in 4 KiB.
+    JET_COLUMNID columnsToFetch[2] = { idColumn, valueColumn };
+    static constexpr uint32_t BufferBytes = 4096;
+    std::vector<uint8_t> buffer(BufferBytes);
+    uint32_t cbActual = 0;
+    CheckJet(JetStreamRecords(session.Handle(),
+                              table.Id(),
+                              static_cast<uint32_t>(std::size(columnsToFetch)),
+                              columnsToFetch,
+                              buffer.data(),
+                              BufferBytes,
+                              &cbActual,
+                              JET_bitStreamForward));
+    Require(cbActual > 0);
+    Require(cbActual <= BufferBytes);
+
+    //  Truncate to the actual filled size — the parser uses cbData
+    //  to decide where the stream ends.
+    buffer.resize(cbActual);
+
+    //  Walk the stream via JetRetrieveColumnFromRecordStream.
+    //  Each call advances an internal cursor (held in the header at
+    //  the start of the buffer) and reports the next column value's
+    //  (iRecord, columnid, itagSequence, ibValue, cbValue).
+    //  Returns JET_wrnNoMoreRecords when the buffer is fully parsed.
+    int32_t idsObserved[RowCount] = {};
+    int32_t valuesObserved[RowCount] = {};
+    bool sawIdForRecord[RowCount] = {};
+    bool sawValueForRecord[RowCount] = {};
+
+    while (true)
+    {
+        uint32_t iRecord = 0;
+        JET_COLUMNID columnid = 0;
+        uint32_t itagSequence = 0;
+        uint32_t ibValue = 0;
+        uint32_t cbValue = 0;
+        const auto err = JetRetrieveColumnFromRecordStream(buffer.data(),
+                                                           static_cast<uint32_t>(buffer.size()),
+                                                           &iRecord,
+                                                           &columnid,
+                                                           &itagSequence,
+                                                           &ibValue,
+                                                           &cbValue);
+        if (err == JET_wrnNoMoreRecords)
+        {
+            break;
+        }
+        CheckJet(err);
+
+        //  iRecord is 0-based: the engine initialises the header's
+        //  iRecord to ulMax so the first new-record flip lands on 0.
+        Require(iRecord < RowCount);
+        Require(cbValue == sizeof(int32_t));
+        Require(ibValue + cbValue <= buffer.size());
+
+        int32_t value = 0;
+        std::memcpy(&value, buffer.data() + ibValue, sizeof(value));
+
+        const int recordIndex = static_cast<int>(iRecord);
+        if (columnid == idColumn)
+        {
+            idsObserved[recordIndex] = value;
+            sawIdForRecord[recordIndex] = true;
+        }
+        else if (columnid == valueColumn)
+        {
+            valuesObserved[recordIndex] = value;
+            sawValueForRecord[recordIndex] = true;
+        }
+        else
+        {
+            Require(false);  //  unexpected column id in stream
+        }
+    }
+
+    //  Every record's Id and Value should have appeared, exactly
+    //  once each, and the pairing must match what we inserted.
+    for (int i = 0; i < RowCount; ++i)
+    {
+        Require(sawIdForRecord[i]);
+        Require(sawValueForRecord[i]);
+        Require(idsObserved[i] == i);
+        Require(valuesObserved[i] == i * 10);
+    }
+}

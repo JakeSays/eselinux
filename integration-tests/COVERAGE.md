@@ -15,9 +15,9 @@ APIs whose engine implementation is an unconditional stub upstream
 platform — `dev/ese/src/ese/pib.cxx:994`, `jetapi.cxx:9582`,
 `jetapi.cxx:18940`) are out-of-scope, not "covered with caveats".
 
-**Totals:** 212 base APIs declared, 158 covered (75%), 54 untested.
+**Totals:** 212 base APIs declared, 167 covered (79%), 45 untested.
 
-## Tested (158)
+## Tested (167)
 
 Core surface for every scenario the engine actually runs.  Includes
 DDL (table/column/index create/delete/rename, **JetDeleteTable**,
@@ -87,6 +87,19 @@ Instance lifecycle: **JetCreateInstance** (unversioned) in addition
 to `JetCreateInstance2`, **JetInit2**, **JetEnableMultiInstance**
 (forked-child scenario for pristine engine).
 
+Service control: **JetStopService**, **JetStopServiceInstance**,
+**JetStopServiceInstance2** (with `JET_bitStopServiceBackgroundUserTasks`
++ `JET_bitStopServiceResume`).
+
+Crash configuration: **JetConfigureProcessForCrashDump**.
+
+DDL conversion: **JetConvertDDL** (`opDDLConvIncreaseMaxColumnSize`
+and `opDDLConvChangeIndexDensity`).
+
+Column-by-reference + stream surface:
+**JetRetrieveColumnByReference**, **JetPrereadColumnsByReference**,
+**JetStreamRecords**, **JetRetrieveColumnFromRecordStream**.
+
 Versioned variants that add functional surface (not just thin
 wrappers): **JetBeginTransaction3** (trxid stamping),
 **JetCommitTransaction2** (commit-id + durable delay),
@@ -104,37 +117,24 @@ wrappers): **JetBeginTransaction3** (trxid stamping),
 The engine ships these and no test exercises any version.  Roughly
 ordered by user-visible value.
 
-### DML
-- `JetRetrieveColumnByReference`, `JetRetrieveColumnFromRecordStream`,
-  `JetPrereadColumnsByReference`, `JetStreamRecords` — column-stream
-  surface
-
-### Database lifecycle
-- `JetConvertDDL` — DB-level DDL migration
-
 ### Logs / replay
-- `JetGetLogInfoInstance2` (covered via the BackupRestore round-4
-  scenario)
 - `JetConsumeLogData`, `JetExternalRestore`, `JetExternalRestore2`
+  (round 8 — replication)
 - `JetBeginDatabaseIncrementalReseed`, `JetEndDatabaseIncrementalReseed`
+  (round 8 — replication)
 
 ### Page inspection
-- `JetOnlinePatchDatabasePage`, `JetPatchDatabasePages`
+- `JetOnlinePatchDatabasePage`, `JetPatchDatabasePages` (round 8 —
+  replication page repair)
 
 ### Snapshot extensions
 - `JetOSSnapshotTruncateLog`, `JetOSSnapshotTruncateLogInstance` —
   blocked on engine investigation (hang inside
   `pSession->ErrTruncateLogs` on this Linux build)
 
-### Revertable-Backup-Set (RBS)
+### Revertable-Backup-Set (RBS) — round 7
 - `JetRBSPrepareRevert`, `JetRBSExecuteRevert`, `JetRBSCancelRevert`,
   `JetGetRBSFileInfo`
-
-### Service / housekeeping
-- `JetStopService`, `JetStopServiceInstance`, `JetStopServiceInstance2`
-
-### Multi-instance / params
-- `JetConfigureProcessForCrashDump`
 
 ## Version-variant gaps (newer surface, base form covered)
 
@@ -227,7 +227,7 @@ coverage target:
   list: `JetGetCounter`, `JetResetCounter`,
   `JetPrepareToCommitTransaction`.
 
-- **Round 5** (current): global file-access (`JetOpenFile`,
+- **Round 5**: global file-access (`JetOpenFile`,
   `JetReadFile`, `JetCloseFile`), `JetGetLogInfo` (global),
   `JetOpenFileSectionInstance`, `JetRemoveLogfile`,
   `JetBeginSurrogateBackup`, `JetEndSurrogateBackup`,
@@ -237,25 +237,19 @@ coverage target:
   `JetOpenTempTable3`, `JetDefragment2`, `JetInit2`,
   `JetEnableMultiInstance` (forked-child via CrashHelper).
 
-## Suggested round 6 candidates
-
-The remaining genuine gaps are higher-cost or lower-value than what
-round 5 picked up:
-
-1. **`JetConvertDDL`** — opaque DDL-conversion path used during
-   schema migration.  Needs a test database with the
-   pre-conversion DDL on disk.
-2. **`JetBeginDatabaseIncrementalReseed` / `JetEndDatabaseIncrementalReseed`**
-   — partial-database reseed for replication recovery.  Complex
-   protocol; needs a corrupted+rebuilt-from-source-instance setup.
-3. **`JetOnlinePatchDatabasePage` / `JetPatchDatabasePages`** — page
-   patch surface for replication.  Requires a corrupted page token
-   + the patch bytes from a known-good replica.
-4. **`JetConsumeLogData`** — feed log records into the engine from
-   an external replication source.
-5. **`JetOSSnapshotTruncateLog` / `JetOSSnapshotTruncateLogInstance`**
-   — blocked on the engine hang noted in round 4.
-6. **`JetStopService`** family — graceful instance shutdown.
+- **Round 6** (current): `JetStopService`,
+  `JetStopServiceInstance`, `JetStopServiceInstance2`,
+  `JetConfigureProcessForCrashDump`, `JetConvertDDL`
+  (`opDDLConvIncreaseMaxColumnSize` + `opDDLConvChangeIndexDensity`),
+  `JetRetrieveColumnByReference`, `JetPrereadColumnsByReference`,
+  `JetStreamRecords`, `JetRetrieveColumnFromRecordStream`.
+  Surfaced three engine-contract gotchas (documented inline in
+  scenarios + below): JetConvertDDL doesn't invalidate cached
+  FCB/TDB so cbMax changes need detach+reattach; the record-stream
+  parser's `iRecord` is 0-based (header inits to `ulMax`, first
+  flip wraps to 0); string-column overflow on `JetSetColumn`
+  surfaces as `JET_wrnColumnMaxTruncated` (1512), not
+  `JET_errColumnTooBig`.
 
 ## Suggested round 7 candidates
 

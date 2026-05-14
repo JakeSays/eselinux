@@ -449,9 +449,43 @@ EseIntegrationScenario(BackupRestore,
     CheckJet(JetTerm2(instanceHandle, JET_bitTermComplete));
 
     //  A non-circular setup leaves closed generations like
-    //  edb00000001.log, edb00000002.log, ... and edb.log (which is
-    //  the next "current" slot).  Pick the first numbered generation
-    //  — that one is fully written and closed.
+    //  edb00000001.log, edb00000002.log, ... plus edb.log (the next
+    //  "current" slot) and edbtmp.log (the engine's scratch slot —
+    //  not a valid standalone log).  Pick the first numbered
+    //  generation; the bytes between "edb" and ".log" must be hex
+    //  digits, which excludes both "tmp" and the empty-base "".
+    auto isClosedLogName = [](const std::string& name) {
+        constexpr std::string_view Prefix = "edb";
+        constexpr std::string_view Suffix = ".log";
+        if (name.size() <= Prefix.size() + Suffix.size())
+        {
+            return false;
+        }
+        if (name.compare(0, Prefix.size(), Prefix) != 0)
+        {
+            return false;
+        }
+        if (name.compare(name.size() - Suffix.size(),
+                         Suffix.size(),
+                         Suffix) != 0)
+        {
+            return false;
+        }
+        for (size_t i = Prefix.size(); i < name.size() - Suffix.size(); ++i)
+        {
+            const auto c = name[i];
+            const bool isHex =
+                (c >= '0' && c <= '9') ||
+                (c >= 'a' && c <= 'f') ||
+                (c >= 'A' && c <= 'F');
+            if (!isHex)
+            {
+                return false;
+            }
+        }
+        return true;
+    };
+
     std::filesystem::path closedLog;
     for (const auto& entry :
          std::filesystem::directory_iterator(directory.Path()))
@@ -460,13 +494,7 @@ EseIntegrationScenario(BackupRestore,
         {
             continue;
         }
-        const auto name = entry.path().filename().string();
-        //  Numbered logs match edb<HEX>.log — the digit count varies
-        //  with engine config; checking for "edb" prefix + ".log"
-        //  suffix + at least one digit between is enough.
-        if (name.rfind("edb", 0) == 0 &&
-            entry.path().extension() == ".log" &&
-            name.size() > std::strlen("edb.log"))
+        if (isClosedLogName(entry.path().filename().string()))
         {
             closedLog = entry.path();
             break;

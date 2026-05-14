@@ -3,7 +3,9 @@
 
 #include "Framework/Check.hxx"
 #include "Framework/CrashHelper.hxx"
+#include "Framework/EseDatabase.hxx"
 #include "Framework/EseInstance.hxx"
+#include "Framework/EseSession.hxx"
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
@@ -297,4 +299,129 @@ EseIntegrationScenario(Platform, EnableMultiInstanceHostsTwoIndependentInstances
     //  Require fired.
     Require(WIFEXITED(status));
     Require(WEXITSTATUS(status) == 0);
+}
+
+EseIntegrationScenario(Platform, StopServiceInstanceBlocksSubsequentApiCalls)
+{
+    TemporaryDirectory directory(
+        "Platform.StopServiceInstanceBlocksSubsequentApiCalls");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "StopService.mdb");
+
+    //  Before StopService, the engine accepts normal API calls.
+    JET_TABLEID tableid = JET_tableidNil;
+    CheckJet(JetCreateTableA(session.Handle(),
+                             database.Id(),
+                             "Rows",
+                             8,
+                             100,
+                             &tableid));
+    CheckJet(JetCloseTable(session.Handle(), tableid));
+
+    //  JetStopServiceInstance flips m_fStopJetService on the engine
+    //  state.  Subsequent JET API calls that don't whitelist the
+    //  flag fail with JET_errClientRequestToStopJetService.
+    CheckJet(JetStopServiceInstance(instance.Handle()));
+
+    JET_TABLEID rejected = JET_tableidNil;
+    RequireJetError(JetCreateTableA(session.Handle(),
+                                    database.Id(),
+                                    "Rejected",
+                                    8,
+                                    100,
+                                    &rejected),
+                    JET_errClientRequestToStopJetService);
+
+    //  JetTerm/JetRollback are whitelisted (the engine needs to be
+    //  able to wind down cleanly after the stop).  Verify rollback
+    //  of a transaction started before stop still works.
+    //  (The EseInstance dtor will JetTerm next.)
+}
+
+EseIntegrationScenario(Platform,
+                       StopServiceInstance2BackgroundOnlyKeepsForegroundAlive)
+{
+    TemporaryDirectory directory(
+        "Platform.StopServiceInstance2BackgroundOnlyKeepsForegroundAlive");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "StopService.mdb");
+
+    //  JetStopServiceInstance2 with JET_bitStopServiceBackgroundUserTasks
+    //  asks the engine to halt restartable background work (B+ tree
+    //  defrag, etc.) WITHOUT setting the master "stop service" flag
+    //  — foreground API calls continue to work.  This is the cancellable
+    //  variant; pair with JET_bitStopServiceResume to reverse.
+    CheckJet(JetStopServiceInstance2(instance.Handle(),
+                                     JET_bitStopServiceBackgroundUserTasks));
+
+    JET_TABLEID tableid = JET_tableidNil;
+    CheckJet(JetCreateTableA(session.Handle(),
+                             database.Id(),
+                             "Foreground",
+                             8,
+                             100,
+                             &tableid));
+    CheckJet(JetCloseTable(session.Handle(), tableid));
+
+    //  Resume restores normal background-work scheduling.
+    CheckJet(JetStopServiceInstance2(instance.Handle(),
+                                     JET_bitStopServiceBackgroundUserTasks |
+                                     JET_bitStopServiceResume));
+
+    //  Foreground still works.
+    CheckJet(JetCreateTableA(session.Handle(),
+                             database.Id(),
+                             "AfterResume",
+                             8,
+                             100,
+                             &tableid));
+    CheckJet(JetCloseTable(session.Handle(), tableid));
+}
+
+EseIntegrationScenario(Platform, StopServiceGlobalRoutesToActiveInstance)
+{
+    TemporaryDirectory directory(
+        "Platform.StopServiceGlobalRoutesToActiveInstance");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "StopService.mdb");
+
+    //  The instance-less JetStopService() just delegates to
+    //  JetStopServiceInstance against the single registered
+    //  instance — only valid in single-instance mode (which our
+    //  framework configures by default).  Same post-condition as
+    //  the per-instance form: subsequent JET API calls return
+    //  JET_errClientRequestToStopJetService.
+    CheckJet(JetStopService());
+
+    JET_TABLEID rejected = JET_tableidNil;
+    RequireJetError(JetCreateTableA(session.Handle(),
+                                    database.Id(),
+                                    "Rejected",
+                                    8,
+                                    100,
+                                    &rejected),
+                    JET_errClientRequestToStopJetService);
+}
+
+EseIntegrationScenario(Platform, ConfigureProcessForCrashDumpAcceptsGrbits)
+{
+    //  JetConfigureProcessForCrashDump is process-wide (not
+    //  instance-scoped) — it tells the engine which slices of its
+    //  in-memory state to fold into a minidump when the process
+    //  crashes.  On Linux the actual minidump-writer path is a
+    //  no-op (Win32-specific), but the API validates the grbit
+    //  set and updates the engine's per-process bookkeeping; it
+    //  must accept the documented dump-grbit combinations.
+    CheckJet(JetConfigureProcessForCrashDump(JET_bitDumpMinimum));
+    CheckJet(JetConfigureProcessForCrashDump(JET_bitDumpMaximum));
+    CheckJet(JetConfigureProcessForCrashDump(
+        JET_bitDumpMinimum | JET_bitDumpCacheIncludeDirtyPages));
+
+    //  Invalid grbit must be rejected.  Bit 0x40000000 isn't
+    //  defined in the JET_bitDump* set.
+    RequireJetError(JetConfigureProcessForCrashDump(0x40000000),
+                    JET_errInvalidGrbit);
 }
