@@ -300,269 +300,67 @@ coverage target:
     database appears unchanged at the row level even though
     `revertInfo.cPagesReverted > 0`.
 
-## Suggested round 8 candidates
+- **Round 8** (current): replication / replica repair — 6 APIs
+  across 9 scenarios in `ReplicationScenarios.cxx`, with wire
+  transport + orchestration helpers under
+  `Scenarios/Replication/` (`WireProtocol.{hxx,cxx}`,
+  `Orchestrator.{hxx,cxx}`).  Topology: TCP-loopback between
+  separate OS processes — active opens `127.0.0.1:0`, spawns its
+  passive with `--connect-port=N` on the CLI, parent test
+  scenario is a thin driver that forks the active and verifies
+  the passive's DB afterwards.
 
-**Replication surface** — the engine's log-shipping and replica-repair
-APIs.  Round 8 is the heaviest round on the roadmap: every replica is
-a **separate OS process** with its own engine, communicating with
-peers over **Unix domain sockets**.  No multi-instance shortcuts —
-this is the topology real Exchange DAG deployments use (one engine
-per host) compressed onto a single box.
+  APIs covered:
+  - `JetConsumeLogData` (+ `JET_paramEmitLogDataCallback`
+    round-trip) — log-shipping live tail.
+  - `JetBeginDatabaseIncrementalReseed` /
+    `JetPatchDatabasePages` / `JetEndDatabaseIncrementalReseed`
+    — incremental-reseed bracket, both cancel-path and
+    commit-path scenarios.
+  - `JetOnlinePatchDatabasePage` — online page repair with a
+    well-formed `PAGE_PATCH_TOKEN`.
+  - `JetExternalRestore` — caller pre-stages backup files in the
+    target dir, then API applies recovery to bring the DB
+    current; runs in a forked child to avoid process-state
+    collisions.
 
-APIs to cover:
-- `JetConsumeLogData` — passive side of log shipping; feeds bytes
-  captured from the active back into a local engine.
-- `JET_paramEmitLogDataCallback` / `EmitLogDataCallbackCtx` +
-  `JET_PFNEMITLOGDATA` (callback type) — active side; engine fires
-  the callback whenever the log writer flushes, rolls a
-  generation, or starts/stops the stream.  The callback's body is
-  what writes the wire-protocol frames onto the UDS.
-- `JetPatchDatabasePages` — offline page repair against a closed
-  database file (used when recovery itself can't proceed because
-  of a header-path corruption).
-- `JetOnlinePatchDatabasePage` — online single-page repair against
-  a live database, with a token issued by the active so a stale
-  shipment can't clobber an already-healed page.
-- `JetBeginDatabaseIncrementalReseed` /
-  `JetEndDatabaseIncrementalReseed` — generation-level divergence
-  repair when active and passive forked at some log gen.
-- `JetExternalRestore` / `JetExternalRestore2` — cold-restore a
-  full replica from a peer's captured files, with a
-  `JET_RSTMAP`/`JET_RSTMAP2` path remapping.
+  Engine-contract gotchas surfaced (documented inline + in
+  `project_jetconsumelogdata_shadow_log` memory):
+  - `JetConsumeLogData` writes shadow `.jsl` files alongside
+    `.log`.  Recovery reads only `.log`, so the passive renames
+    `.jsl` -> `.log` post-consume and the verify-side `JetInit2`
+    passes `JET_bitAllowMissingCurrentLog` (the rename doesn't
+    synthesise an unnumbered `edb.log` "current writer" marker).
+  - The active runs a SINGLE engine cycle with the emit callback
+    set BEFORE `JetInit` so every log byte — including each
+    gen's `LGFILEHDR` — emits to the passive.  Two-phase splits
+    fail because phase-1 `JetTerm` pre-allocates the next gen
+    and phase-2 writes start mid-gen (after the header skip),
+    tripping the consumer's `bMidSequenceFirstData` path with
+    no pre-existing `.jsl` to open.
+  - `JetPatchDatabasePages` + `JetBegin/End*Reseed` require
+    `JET_dbstateDirtyShutdown`: build the DB then JetTerm with
+    `JET_bitTermDirty` and SKIP `JetDetachDatabaseA` (detach
+    flushes the .edb header to clean shutdown).  `End` with
+    `genFirstDivergedLog=0` selects the passive-page-patch path
+    that doesn't require a log-divergence range.  The
+    `genMinRequired` log file's header must carry attach info,
+    which only propagates to a header on gen rollover — small
+    DBs (< ~600 rows in one gen) don't roll, so the build phase
+    writes 2000 rows in 50-row chunks to force gen-1 -> gen-2.
+  - `JetOnlinePatchDatabasePage` requires
+    `JET_paramEnableExternalAutoHealing=1` (default 0) and a
+    48-byte `PAGE_PATCH_TOKEN` with `cbStruct=48`, `dbtime`, and
+    `signLog` matching
+    `JetGetInstanceMiscInfo(JET_InstanceMiscInfoLogSignature)`.
+    No registered patch request -> engine returns success but
+    silently skips the rewrite (the documented "speculative
+    patch" path).
+  - `JetExternalRestoreA` is "external" because the CALLER
+    physically stages backup files in the target directory
+    beforehand; the API only runs recovery on those files.
+    Trailing slashes required on both `szCheckpointFilePath`
+    and `szLogPath`.  Caller runs the whole flow in a forked
+    child to avoid process-state collisions with the runner's
+    already-initialised engine globals.
 
-### Process topology
-
-Each scenario spins up two or more **child processes** via the
-existing `ChildProcess` machinery in `CrashHelper`:
-
-```
-parent (scenario body)
-  ├─ fork+exec child "active"  — owns ActiveDb.mdb in its TemporaryDirectory subdir
-  ├─ fork+exec child "passive1" — owns Passive1.mdb in its subdir
-  ├─ fork+exec child "passive2" — owns Passive2.mdb in its subdir (optional)
-  └─ wait for all children to exit cleanly
-```
-
-- Each child gets its own **scratch directory** under the scenario's
-  `TemporaryDirectory` (no shared on-disk state — replication is
-  about the engines being totally independent and meeting only on
-  the wire).
-- Each child is a normal single-instance `EseInstance` — no
-  `JetEnableMultiInstance` complications, the whole framework
-  carries over.
-- The parent's job is **orchestrator**: pick UDS paths, spawn
-  children with role + socket-path arguments, monitor exits.
-
-### Wire protocol (proposed `replication-wire.hxx`)
-
-A tiny framed protocol over `SOCK_STREAM` UDS, little-endian, no
-authentication (this is loopback-only, single-host).  Each frame:
-
-```
-struct ReplicationFrame {
-    uint32_t kind;          // ReplicationFrameKind
-    uint32_t payloadBytes;  // bytes that follow this header
-    // payload follows: layout determined by kind
-};
-
-enum class ReplicationFrameKind : uint32_t {
-    // Active → passive (log shipping)
-    LogData = 1,            // payload: JET_EMITDATACTX || cbLogData || raw log bytes
-    StreamComplete = 2,     // no payload — active is shutting down its emit channel
-
-    // Active ↔ passive (identity + checkpoint)
-    LogSignatureQuery = 10, // passive asks active for its log signature
-    LogSignatureReply = 11, // payload: JET_SIGNATURE
-    CheckpointQuery = 12,
-    CheckpointReply = 13,   // payload: lgpos QWORD
-
-    // Active → passive (page repair)
-    PageReadRequest = 20,   // payload: pgnoStart, cpg
-    PageReadReply = 21,     // payload: cpg, raw page bytes (aligned)
-    OnlinePatchRequest = 22,// payload: pgno, token bytes, page bytes
-
-    // Incremental reseed handshake
-    DivergedLogReport = 30, // active → passive: "your stream diverges from gen N"
-    ReseedPatchRequest = 31,// passive → active: "send me page P"
-    ReseedComplete = 32,    // active confirms all pages shipped
-
-    // Test signalling
-    Ready = 100,            // child → parent (via separate sentinel file, not UDS)
-    AssertionFailure = 101, // child → parent: payload is UTF-8 error message
-};
-```
-
-The framework provides:
-- `ReplicationServer` — listens on a UDS path, accepts one peer.
-- `ReplicationClient` — connects to a UDS path.
-- `ReplicationChannel` — full-duplex helper around an accepted/connected
-  fd; `SendFrame(kind, span<const byte>)` + `RecvFrame()`.
-
-All frame I/O is **blocking** with an explicit timeout — easier to
-debug than async; replication scenarios run in well-defined
-phases.  Cancellation = close the fd, peer's next read returns 0.
-
-### Active-child structure
-
-```cpp
-void RunActiveChild(const std::filesystem::path& directory,
-                    const std::string& uplinkSocketPath)
-{
-    ReplicationServer server(uplinkSocketPath);
-    ReplicationChannel channel = server.AcceptOne(std::chrono::seconds(10));
-
-    JET_INSTANCE handle = ...;  // standard EseInstance pattern
-    // Pre-init params:
-    //   JET_paramEmitLogDataCallback     = &EmitCallback
-    //   JET_paramEmitLogDataCallbackCtx  = &channel
-    // EmitCallback's job: serialise JET_EMITDATACTX + the log buffer
-    //                     into a LogData frame and SendFrame on channel.
-    // Also handles control frames inbound (page reads, etc.) on a
-    // worker thread.
-
-    // ... insert rows, commit, term ...
-    channel.SendFrame(ReplicationFrameKind::StreamComplete, {});
-}
-```
-
-### Passive-child structure
-
-```cpp
-void RunPassiveChild(const std::filesystem::path& directory,
-                     const std::string& uplinkSocketPath)
-{
-    ReplicationClient client(uplinkSocketPath);
-    ReplicationChannel channel = client.Connect(std::chrono::seconds(10));
-
-    // Standard EseInstance; configure a database that will receive
-    // shipped log data.  CRITICAL: passive must JetCreateInstance with
-    // the *same log signature* as the active before it can consume
-    // the active's log bytes.  Use JetSetSystemParameter with
-    // JET_paramLogSignature (if exposed) or seed via a captured
-    // initial snapshot.
-
-    while (true)
-    {
-        auto frame = channel.RecvFrame();
-        if (frame.kind == ReplicationFrameKind::StreamComplete) break;
-        if (frame.kind == ReplicationFrameKind::LogData)
-        {
-            // Deserialise JET_EMITDATACTX + payload, hand to engine.
-            JetConsumeLogData(handle, &ctx, pvLogData, cbLogData, 0);
-        }
-        // ... handle other frame kinds ...
-    }
-}
-```
-
-### Scenarios
-
-1. **`Replication.LogShippingActiveToOnePassive`** — active commits N
-   rows.  Passive child reads each LogData frame, calls
-   `JetConsumeLogData`.  After active sends StreamComplete and both
-   children exit, parent attaches the passive's database read-only
-   and verifies all N rows are present.
-2. **`Replication.LogShippingActiveToTwoPassives`** — active fans
-   out the same emit buffer to two independent passive sockets
-   (one frame, two sends).  Both replicas converge to the same row
-   set.  Tests that a single emit can drive multiple passives —
-   the DAG fan-out pattern.
-3. **`Replication.CheckpointAdvancesOnPassive`** — passive
-   periodically issues `CheckpointQuery` to the active and
-   compares against its own
-   `JetGetInstanceMiscInfo(JET_InstanceMiscInfoCheckpoint)`.
-   Passive's checkpoint must advance monotonically and never lead
-   the active's.
-4. **`Replication.LogSignatureMismatchRejectsForeignConsume`** —
-   spin up two independent active children (separate signatures);
-   a passive that was seeded from active A connects to active B
-   and tries to consume.  Engine on the passive must reject with
-   a signature-mismatch error.
-5. **`Replication.OnlinePatchHealsCorruptedPageAcrossSocket`** —
-   active populates + ships normally.  Passive child closes its
-   engine, scenario flips one byte in a data page of the
-   passive's `.edb`, passive re-opens.  Passive issues a
-   PageReadRequest over the UDS, active replies with the good
-   bytes from `JetGetDatabasePages`, passive applies via
-   `JetOnlinePatchDatabasePage`.  Verify the corrupted-then-healed
-   row reads correctly.
-6. **`Replication.OfflinePatchRepairsClosedReplica`** — same
-   corruption scenario, but the passive applies via
-   `JetPatchDatabasePages` against the *closed* `.edb`.
-7. **`Replication.IncrementalReseedAcrossDivergedActives`** —
-   start with active+passive in sync.  Kill the active, promote
-   the passive (now the "new active") for a few writes.  Bring
-   the original active back as the new passive; original's stream
-   has diverged.  Run the incremental-reseed protocol:
-   `JetBeginDatabaseIncrementalReseed(divergedGen)` →
-   PageReadRequests for the divergent range → `End*` with the new
-   required-log window.  Verify the original-active-now-passive
-   converges with the new active.
-8. **`Replication.ExternalRestoreReplacesFailedActive`** — active
-   produces a backup using `JetBackupInstanceA` (already covered).
-   Active's directory is then `rm -rf`'d (simulated total loss).
-   A passive child receives the backup files over the UDS,
-   writes them to its own directory, calls `JetExternalRestore`
-   with a `JET_RSTMAP` remapping, attaches the restored DB,
-   verifies it's queryable.
-9. **`Replication.ThreeNodeChainAToBToC`** — three children:
-   - A: active, emits to socket-AB.
-   - B: passive of A on socket-AB AND active for C on socket-BC.
-     B installs its own emit callback that re-frames received
-     LogData into outbound frames.
-   - C: passive of B on socket-BC.
-   Insert N rows on A; verify after stream-complete that C has
-   all N rows.  Tests cascaded replication — Exchange DAGs deploy
-   this pattern when bandwidth between datacenters is constrained.
-10. **`Replication.PassiveDeathDuringShippingTriggersChannelClose`**
-    — kill the passive child mid-stream while active is still
-    emitting; active's `SendFrame` should return an error, active
-    cleans up and exits.  Parent verifies neither child leaks.
-
-### Framework deliverables before scenarios
-
-In priority order:
-1. **`Framework/ReplicationWire.hxx` + `.cxx`** — frame layout,
-   `ReplicationServer`/`Client`/`Channel`.  Roughly 150–200 LOC,
-   self-contained (no JET dependency).
-2. **`Framework/ReplicationNode.hxx`** — child-entry helpers that
-   wrap the active and passive role above.  Each child entry uses
-   the existing `RegisterChildEntry` mechanism so the test binary
-   re-exec'd in `--child-entry <name>` mode dispatches into the
-   right role.
-3. **`Framework/ReplicationOrchestrator.hxx`** — parent-side
-   spawn-and-wait helper.  Takes a list of `(role, socket-path,
-   directory)` and forks a child for each, then `WaitForExit` on
-   all of them.  A non-zero exit on any child is a scenario failure.
-4. **`Scenarios/ReplicationScenarios.cxx`** — the ten scenarios
-   above.
-
-### Open engineering questions for round 8
-
-- **Seeding a passive with the right log signature.**  A passive can
-  only consume an active's log bytes if its instance was seeded with
-  the same `JET_SIGNATURE`.  Three candidate approaches:
-    (a) the orchestrator does an initial full backup on the active
-        and copies it into each passive's directory before the
-        passive child starts;
-    (b) the passive starts with no database, the active's first
-        emit frame includes the database file header, and the
-        passive writes that header out before opening the engine;
-    (c) some form of `JetSetSystemParameter` lets us set the log
-        signature directly — needs investigation.
-  Approach (a) is closest to how Exchange does it; (b) is closer to
-  what the wire protocol can naturally express.
-- **Emit callback runs on the engine's log-writer thread.**  The
-  callback body has to be thread-safe with respect to other engine
-  callbacks and quick (it stalls log writes).  The UDS `send()` is
-  probably fine but worth measuring.
-- **Active's response to control frames** (page reads, checkpoint
-  query) must happen on a *different* thread from the emit
-  callback — the emit callback is on the log-writer thread which
-  can't issue further JET API calls.  Easiest: spawn a single
-  worker thread inside the active child that owns the channel-recv
-  side and dispatches `PageReadRequest` etc. against a separate
-  session.
-- **Cleanup on assertion failure.**  Children may panic mid-stream.
-  Parent must reap them all.  Existing `ChildProcess` destructor
-  SIGKILLs uncreaped children — good enough.
