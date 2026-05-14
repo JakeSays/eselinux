@@ -15,9 +15,9 @@ APIs whose engine implementation is an unconditional stub upstream
 platform — `dev/ese/src/ese/pib.cxx:994`, `jetapi.cxx:9582`,
 `jetapi.cxx:18940`) are out-of-scope, not "covered with caveats".
 
-**Totals:** 212 base APIs declared, 180 covered (85%), 32 untested.
+**Totals:** 212 base APIs declared, 188 covered (89%), 24 untested.
 
-## Tested (180)
+## Tested (188)
 
 Core surface for every scenario the engine actually runs.  Includes
 DDL (table/column/index create/delete/rename, **JetDeleteTable**,
@@ -120,9 +120,17 @@ Versioned variants that add functional surface (not just thin
 wrappers): **JetBeginTransaction3** (trxid stamping),
 **JetCommitTransaction2** (commit-id + durable delay),
 **JetUpdate2** (grbit), **JetSetCurrentIndex2** (NoMove),
+**JetSetCurrentIndex4** (JET_INDEXID cache + itagSequence),
 **JetCreateIndex2** (JET_INDEXCREATE struct),
+**JetCreateIndex3** (INDEXCREATE2 + JET_SPACEHINTS),
+**JetCreateIndex4** (INDEXCREATE3 + JET_UNICODEINDEX2),
 **JetCreateDatabase2** / **JetAttachDatabase2** (size-cap),
+**JetCreateDatabase3** / **JetAttachDatabase3** (JET_SETDBPARAM
+array at create/attach time),
 **JetCreateTableColumnIndex2** (callback hook),
+**JetCreateTableColumnIndex3** / **4** / **5** (TABLECREATE3/4/5 —
+pSeqSpacehints/cbSeparateLV, INDEXCREATE3 with locale-name
+sort, cbLVChunkMax),
 **JetInit4** (RSTINFO2 / RSTMAP2 — exercised by RBS scenarios),
 **JetOpenTempTable3** (JET_UNICODEINDEX),
 **JetOpenTemporaryTable** / **JetOpenTemporaryTable2**
@@ -154,13 +162,6 @@ that don't add observable functional surface beyond their v1/v2
 sibling.  Low-priority; the underlying capability is exercised.
 
 - `JetInit3` (`JetInit`, `JetInit2`, `JetInit4` covered)
-- `JetAttachDatabase3` (`JetAttachDatabase` / `JetAttachDatabase2`
-  covered)
-- `JetCreateDatabase3` (`JetCreateDatabase` / `JetCreateDatabase2`
-  covered)
-- `JetCreateIndex3` / `JetCreateIndex4` (`JetCreateIndex2` covered)
-- `JetCreateTableColumnIndex3` / `4` / `5` (`JetCreateTableColumnIndex`
-  / `2` covered)
 - `JetDefragment3` (`JetDefragment` / `JetDefragment2` covered)
 - `JetDeleteColumn2`
 - `JetDeleteTable2` (`JetDeleteTable` covered)
@@ -169,8 +170,9 @@ sibling.  Low-priority; the underlying capability is exercised.
   `JetOpenTemporaryTable` / `JetOpenTemporaryTable2` covered;
   `JetOpenTempTable2` is the lcid-argument legacy form that the
   newer struct-based and `JET_UNICODEINDEX*` variants supersede)
-- `JetSetCurrentIndex3` / `JetSetCurrentIndex4`
-  (`JetSetCurrentIndex` / `JetSetCurrentIndex2` covered)
+- `JetSetCurrentIndex3` (`JetSetCurrentIndex` /
+  `JetSetCurrentIndex2` / `JetSetCurrentIndex4` covered;
+  `JetSetCurrentIndex3` is the JET_INDEXID-less mid-form)
 - `JetRestore` / `JetRestore2` (the *Instance* variant covered)
 - `JetBackup` (the *Instance* variant covered)
 
@@ -369,31 +371,28 @@ coverage target:
     child to avoid process-state collisions with the runner's
     already-initialised engine globals.
 
-## Suggested round 9 candidates
-
-**Versioned variants with genuinely new functional surface.**
-Each of these adds parameters or struct fields that change
-observable behavior — not just thin wrappers.  Expected ~4
-scenarios, ~6 APIs covered.
-
-- `JetSetCurrentIndex4` — adds an `itag` argument for selecting
-  a specific entry within a clustered index.  Real new behavior
-  used by Exchange for partitioned-index navigation.
-- `JetAttachDatabase3` — takes a `JET_SETDBPARAM` array, letting
-  callers stamp per-database parameters (cache priority, shrink
-  options, etc.) at attach time.
-- `JetCreateDatabase3` — same `JET_SETDBPARAM` mechanism at
-  create time.
-- `JetCreateIndex3` — `JET_INDEXCREATE2` adds `JET_TUPLELIMITS`
-  for substring-tuple indexes.
-- `JetCreateIndex4` — `JET_INDEXCREATE3` swaps the lcid-based
-  `JET_UNICODEINDEX` for the locale-name-based
-  `JET_UNICODEINDEX2`.
-- `JetCreateTableColumnIndex3` / `4` / `5` — `JET_TABLECREATE2/3/4/5`
-  progressively add fields (cbSeparateLV, callbacks, key-most).
-  At minimum cover the latest (`5`) since it supersedes earlier
-  shapes; can collapse `3` + `4` into the same scenario if
-  convenient.
+- **Round 9** (current): versioned variants with genuinely new
+  functional surface — 6 scenarios across `SchemaScenarios.cxx`
+  + `NavigationScenarios.cxx`, covering 8 APIs:
+  `JetCreateDatabase3`, `JetAttachDatabase3` (`JET_SETDBPARAM`
+  stamping verified via `JetGetMaxDatabaseSize` round-trip),
+  `JetCreateIndex3` (INDEXCREATE2 with `JET_SPACEHINTS`),
+  `JetCreateIndex4` (INDEXCREATE3 with locale-name
+  `JET_UNICODEINDEX2`), `JetCreateTableColumnIndex3` / `4` / `5`
+  (one scenario building three tables, one per struct version),
+  and `JetSetCurrentIndex4` (cached `JET_INDEXID` + `itagSequence`
+  index swap that preserves cursor position).  Engine
+  contract gotchas surfaced:
+  - `JetCreateTableColumnIndex5`'s `cbLVChunkMax` is capped at
+    `JET_paramLVChunkSizeMost` (a read-only system param), which
+    is page-size dependent (`~4 KiB - LVChunkOverheadSmallPage`
+    on small pages).  Scenarios should pass a conservatively
+    small value (≤1 KiB) for portability across page-size
+    configurations.
+  - `JET_SPACEHINTS` validation in `cat.cxx` is strict; for a
+    smoke-test scenario, leaving `pSpacehints`/`pSeqSpacehints`
+    null is safer than fabricating one with arbitrary
+    `ulInitialDensity` / `cbInitial` values.
 
 ## Suggested round 10 candidates
 

@@ -1078,3 +1078,103 @@ EseIntegrationScenario(Navigation, SetCurrentIndex2WithNoMoveLeavesCursorInPlace
         RetrieveFixedColumnFromCurrentRecord<int32_t>(table, identityColumnId);
     Require(identityAfterSwitch == landingIdentity);
 }
+
+//  ============================================================
+//  Round 9 — JetSetCurrentIndex4.  Same surface as
+//  JetSetCurrentIndex2, plus a JET_INDEXID cache pointer and an
+//  itagSequence positioning argument.  The JET_INDEXID is opaque;
+//  callers obtain one via JetGetTableIndexInfo(..., JET_IdxInfoIndexId)
+//  and pass it back on subsequent calls so the engine skips
+//  index-name resolution.  Verify that switching to a non-primary
+//  index by JET_INDEXID + JET_bitNoMove preserves the cursor's
+//  current logical record (translated to the secondary index's
+//  key), matching the SetCurrentIndex2 contract — proves the
+//  v4 entry actually plumbs through the index lookup correctly.
+//  ============================================================
+
+EseIntegrationScenario(Navigation, SetCurrentIndex4PositionsViaIndexId)
+{
+    TemporaryDirectory directory(
+        "Navigation.SetCurrentIndex4PositionsViaIndexId");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "SetIndex4.mdb");
+
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetCreateTableA(session.Handle(), database.Id(),
+                             "Rows", 16, 100, &tableId));
+    JET_COLUMNDEF identityColumn = {};
+    identityColumn.cbStruct = sizeof(identityColumn);
+    identityColumn.coltyp = JET_coltypLong;
+    identityColumn.grbit = JET_bitColumnAutoincrement;
+    JET_COLUMNID identityColumnId = 0;
+    CheckJet(JetAddColumnA(session.Handle(), tableId, "Identity",
+                           &identityColumn, nullptr, 0,
+                           &identityColumnId));
+    JET_COLUMNDEF rankColumn = {};
+    rankColumn.cbStruct = sizeof(rankColumn);
+    rankColumn.coltyp = JET_coltypLong;
+    rankColumn.grbit = JET_bitColumnNotNULL;
+    JET_COLUMNID rankColumnId = 0;
+    CheckJet(JetAddColumnA(session.Handle(), tableId, "Rank",
+                           &rankColumn, nullptr, 0, &rankColumnId));
+    //  Primary index on Identity so MoveFirst + Move(N) walks the
+    //  insertion order deterministically; secondary "ByRank" so the
+    //  SetCurrentIndex4 swap is observable (different ordering).
+    CheckJet(JetCreateIndexA(session.Handle(), tableId, "PrimaryByIdentity",
+                             JET_bitIndexPrimary | JET_bitIndexUnique,
+                             "+Identity\0", 11, 80));
+    CheckJet(JetCreateIndexA(session.Handle(), tableId, "ByRank",
+                             JET_bitIndexUnique, "+Rank\0", 7, 80));
+
+    //  Insert N rows with ranks N..1 so insertion order is the
+    //  reverse of the ByRank index order.
+    constexpr int32_t RowCount = 5;
+    CheckJet(JetBeginTransaction(session.Handle()));
+    for (int32_t i = 0; i < RowCount; ++i)
+    {
+        const int32_t rank = RowCount - i;
+        CheckJet(JetPrepareUpdate(session.Handle(), tableId,
+                                  JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), tableId, rankColumnId,
+                              &rank, sizeof(rank), 0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), tableId, nullptr, 0, nullptr));
+    }
+    CheckJet(JetCommitTransaction(session.Handle(), 0));
+
+    //  Query JET_INDEXID for ByRank up front — JetGetTableIndexInfo
+    //  doesn't require the cursor to be on the named index.
+    JET_INDEXID byRankIndexId = {};
+    CheckJet(JetGetTableIndexInfoA(session.Handle(), tableId,
+                                   "ByRank",
+                                   &byRankIndexId, sizeof(byRankIndexId),
+                                   JET_IdxInfoIndexId));
+
+    //  Position on the third row in the primary (Identity) index.
+    CheckJet(JetMove(session.Handle(), tableId, JET_MoveFirst, 0));
+    CheckJet(JetMove(session.Handle(), tableId, 2, 0));
+    int32_t identityBefore = 0;
+    uint32_t cb = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), tableId,
+                               identityColumnId,
+                               &identityBefore, sizeof(identityBefore),
+                               &cb, 0, nullptr));
+
+    //  Use SetCurrentIndex4 with the cached JET_INDEXID + JET_bitNoMove
+    //  + itagSequence=1 to swap indexes without losing the row.
+    //  itagSequence=1 selects the primary entry on a possibly
+    //  multi-valued index (we have only one value per row, so 1
+    //  is the standard pick).
+    CheckJet(JetSetCurrentIndex4A(session.Handle(), tableId,
+                                  "ByRank", &byRankIndexId,
+                                  JET_bitNoMove, /*itagSequence=*/1));
+
+    int32_t identityAfter = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), tableId,
+                               identityColumnId,
+                               &identityAfter, sizeof(identityAfter),
+                               &cb, 0, nullptr));
+    Require(identityAfter == identityBefore);
+
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+}

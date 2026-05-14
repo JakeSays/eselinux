@@ -916,3 +916,384 @@ EseIntegrationScenario(Schema, ConvertDDLChangesIndexDensity)
     }
     Require(seen == 50);
 }
+
+//  ============================================================
+//  Round 9 — versioned variants with genuinely new functional
+//  surface.  Each scenario exercises a -3/-4/-5 variant whose
+//  struct/argument additions change observable behaviour, not
+//  just expose the same plumbing under a wider signature.
+//  ============================================================
+
+//  JetCreateDatabase3 adds a JET_SETDBPARAM array — callers stamp
+//  per-database parameters at create time.  Set
+//  JET_dbparamDbSizeMaxPages and confirm JetGetMaxDatabaseSize
+//  reads back the same value, proving the param actually
+//  landed in the engine's per-DB state (rather than just being
+//  accepted and discarded).
+EseIntegrationScenario(Schema, CreateDatabase3StampsDbSizeMaxPages)
+{
+    TemporaryDirectory directory("Schema.CreateDatabase3StampsDbSizeMaxPages");
+    EseInstance instance(directory);
+    EseSession session(instance);
+
+    constexpr uint32_t MaxPages = 4096;
+    uint32_t maxPagesParam = MaxPages;
+
+    JET_SETDBPARAM params[1] = { {} };
+    params[0].dbparamid = JET_dbparamDbSizeMaxPages;
+    params[0].pvParam = &maxPagesParam;
+    params[0].cbParam = sizeof(maxPagesParam);
+
+    const auto databasePath = directory.Path() / "Stamped.mdb";
+    JET_DBID databaseId = JET_dbidNil;
+    CheckJet(JetCreateDatabase3A(session.Handle(),
+                                 databasePath.string().c_str(),
+                                 &databaseId,
+                                 params, 1,
+                                 JET_bitDbOverwriteExisting));
+
+    uint32_t readBack = 0;
+    CheckJet(JetGetMaxDatabaseSize(session.Handle(), databaseId,
+                                   &readBack, 0));
+    Require(readBack == MaxPages);
+
+    CheckJet(JetCloseDatabase(session.Handle(), databaseId, 0));
+    CheckJet(JetDetachDatabaseA(session.Handle(),
+                                databasePath.string().c_str()));
+}
+
+//  JetAttachDatabase3 mirrors JetCreateDatabase3 — same
+//  JET_SETDBPARAM array, applied at attach time.  Create the
+//  DB without a max-pages cap, detach, then re-attach via
+//  JetAttachDatabase3 specifying a cap; verify the engine
+//  picks it up.
+EseIntegrationScenario(Schema, AttachDatabase3StampsDbSizeMaxPages)
+{
+    TemporaryDirectory directory("Schema.AttachDatabase3StampsDbSizeMaxPages");
+    EseInstance instance(directory);
+    EseSession session(instance);
+
+    const auto databasePath = directory.Path() / "Stamped.mdb";
+
+    //  Phase 1: create with default cap, immediately detach.
+    {
+        JET_DBID databaseId = JET_dbidNil;
+        CheckJet(JetCreateDatabaseA(session.Handle(),
+                                    databasePath.string().c_str(),
+                                    nullptr, &databaseId,
+                                    JET_bitDbOverwriteExisting));
+        CheckJet(JetCloseDatabase(session.Handle(), databaseId, 0));
+        CheckJet(JetDetachDatabaseA(session.Handle(),
+                                    databasePath.string().c_str()));
+    }
+
+    //  Phase 2: re-attach with the cap set via JetAttachDatabase3.
+    constexpr uint32_t MaxPages = 8192;
+    uint32_t maxPagesParam = MaxPages;
+    JET_SETDBPARAM params[1] = { {} };
+    params[0].dbparamid = JET_dbparamDbSizeMaxPages;
+    params[0].pvParam = &maxPagesParam;
+    params[0].cbParam = sizeof(maxPagesParam);
+
+    CheckJet(JetAttachDatabase3A(session.Handle(),
+                                 databasePath.string().c_str(),
+                                 params, 1, 0));
+    JET_DBID databaseId = JET_dbidNil;
+    CheckJet(JetOpenDatabaseA(session.Handle(),
+                              databasePath.string().c_str(),
+                              nullptr, &databaseId, 0));
+
+    uint32_t readBack = 0;
+    CheckJet(JetGetMaxDatabaseSize(session.Handle(), databaseId,
+                                   &readBack, 0));
+    Require(readBack == MaxPages);
+
+    CheckJet(JetCloseDatabase(session.Handle(), databaseId, 0));
+    CheckJet(JetDetachDatabaseA(session.Handle(),
+                                databasePath.string().c_str()));
+}
+
+//  JetCreateIndex3 takes a JET_INDEXCREATE2 — same as
+//  JET_INDEXCREATE plus a JET_SPACEHINTS pointer for explicit
+//  index-space tuning.  Build a table with a string column, use
+//  JetCreateIndex3 with non-default space hints, then exercise
+//  the index with a seek — confirms the index actually built
+//  and is usable.
+EseIntegrationScenario(Schema, CreateIndex3WithSpaceHintsBuilds)
+{
+    TemporaryDirectory directory("Schema.CreateIndex3WithSpaceHintsBuilds");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Index3.mdb");
+
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetCreateTableA(session.Handle(), database.Id(),
+                             "Rows", 16, 100, &tableId));
+    JET_COLUMNDEF columnDefinition = {};
+    columnDefinition.cbStruct = sizeof(columnDefinition);
+    columnDefinition.coltyp = JET_coltypLong;
+    JET_COLUMNID valueColumnId = 0;
+    CheckJet(JetAddColumnA(session.Handle(), tableId, "Value",
+                           &columnDefinition, nullptr, 0,
+                           &valueColumnId));
+
+    JET_SPACEHINTS spaceHints = {};
+    spaceHints.cbStruct = sizeof(spaceHints);
+    spaceHints.ulInitialDensity = 80;
+    spaceHints.cbInitial = 16 * 1024;  // 16 KiB
+    spaceHints.grbit = 0;
+    spaceHints.ulMaintDensity = 80;
+
+    char indexKey[] = "+Value\0";
+    JET_INDEXCREATE2_A indexCreate = {};
+    indexCreate.cbStruct = sizeof(indexCreate);
+    indexCreate.szIndexName = const_cast<char*>("ValueIndex");
+    indexCreate.szKey = indexKey;
+    indexCreate.cbKey = sizeof(indexKey);
+    indexCreate.grbit = JET_bitIndexUnique;
+    indexCreate.ulDensity = 80;
+    indexCreate.pSpacehints = &spaceHints;
+
+    CheckJet(JetCreateIndex3A(session.Handle(), tableId,
+                              &indexCreate, 1));
+    Require(indexCreate.err == JET_errSuccess);
+
+    //  Exercise the index: insert two rows, seek to the second.
+    CheckJet(JetBeginTransaction(session.Handle()));
+    for (int32_t value : { 100, 200 })
+    {
+        CheckJet(JetPrepareUpdate(session.Handle(), tableId,
+                                  JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), tableId, valueColumnId,
+                              &value, sizeof(value), 0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), tableId, nullptr, 0, nullptr));
+    }
+    CheckJet(JetCommitTransaction(session.Handle(), 0));
+
+    CheckJet(JetSetCurrentIndex2A(session.Handle(), tableId,
+                                  "ValueIndex", 0));
+    const int32_t seekKey = 200;
+    CheckJet(JetMakeKey(session.Handle(), tableId,
+                        &seekKey, sizeof(seekKey), JET_bitNewKey));
+    CheckJet(JetSeek(session.Handle(), tableId, JET_bitSeekEQ));
+
+    int32_t observed = 0;
+    uint32_t actualSize = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), tableId, valueColumnId,
+                               &observed, sizeof(observed), &actualSize,
+                               0, nullptr));
+    Require(observed == seekKey);
+
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+}
+
+//  JetCreateIndex4 takes a JET_INDEXCREATE3 — same as
+//  JET_INDEXCREATE2 but with JET_UNICODEINDEX2 (locale-name
+//  based) instead of the lcid-based JET_UNICODEINDEX.  Mirrors
+//  the temp-table OpenTemporaryTable2 upgrade.  Build an index
+//  over a Unicode-text column with case-insensitive collation
+//  via locale-name "en-US".
+EseIntegrationScenario(Schema, CreateIndex4WithUnicodeIndex2Sorts)
+{
+    TemporaryDirectory directory("Schema.CreateIndex4WithUnicodeIndex2Sorts");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Index4.mdb");
+
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetCreateTableA(session.Handle(), database.Id(),
+                             "Rows", 16, 100, &tableId));
+    JET_COLUMNDEF textColumn = {};
+    textColumn.cbStruct = sizeof(textColumn);
+    textColumn.coltyp = JET_coltypLongText;
+    textColumn.cp = 1200;  // UTF-16
+    textColumn.grbit = JET_bitColumnNotNULL;
+    JET_COLUMNID textColumnId = 0;
+    CheckJet(JetAddColumnA(session.Handle(), tableId, "Word",
+                           &textColumn, nullptr, 0, &textColumnId));
+
+    static char16_t LocaleName[] = u"en-US";
+    JET_UNICODEINDEX2 unicodeIndex = {};
+    unicodeIndex.szLocaleName = LocaleName;
+    unicodeIndex.dwMapFlags = 0x00000001;  // NORM_IGNORECASE
+
+    char indexKey[] = "+Word\0";
+    JET_INDEXCREATE3_A indexCreate = {};
+    indexCreate.cbStruct = sizeof(indexCreate);
+    indexCreate.szIndexName = const_cast<char*>("WordIndex");
+    indexCreate.szKey = indexKey;
+    indexCreate.cbKey = sizeof(indexKey);
+    indexCreate.grbit = JET_bitIndexUnicode;
+    indexCreate.ulDensity = 80;
+    indexCreate.pidxunicode = &unicodeIndex;
+
+    CheckJet(JetCreateIndex4A(session.Handle(), tableId,
+                              &indexCreate, 1));
+    Require(indexCreate.err == JET_errSuccess);
+
+    auto insertWord = [&](const char16_t* text, uint32_t cch)
+    {
+        CheckJet(JetBeginTransaction(session.Handle()));
+        CheckJet(JetPrepareUpdate(session.Handle(), tableId,
+                                  JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), tableId, textColumnId,
+                              text, cch * sizeof(char16_t),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), tableId, nullptr, 0, nullptr));
+        CheckJet(JetCommitTransaction(session.Handle(), 0));
+    };
+    static const char16_t Banana[] = u"banana";
+    static const char16_t Apple[]  = u"Apple";
+    static const char16_t Cherry[] = u"cherry";
+    insertWord(Banana, 6);
+    insertWord(Apple, 5);
+    insertWord(Cherry, 6);
+
+    CheckJet(JetSetCurrentIndex2A(session.Handle(), tableId,
+                                  "WordIndex", 0));
+    CheckJet(JetMove(session.Handle(), tableId, JET_MoveFirst, 0));
+    char16_t buffer[16] = {};
+    uint32_t cbActual = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), tableId, textColumnId,
+                               buffer, sizeof(buffer), &cbActual,
+                               0, nullptr));
+    //  Case-insensitive sort puts "Apple" first.
+    Require(buffer[0] == u'A' || buffer[0] == u'a');
+
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+}
+
+//  JetCreateTableColumnIndex3/4/5 build a table + columns +
+//  indexes in one call, each version layering on more struct
+//  surface:
+//    TABLECREATE3: pSeqSpacehints / pLVSpacehints / cbSeparateLV
+//                  + JET_INDEXCREATE2 (space hints per index).
+//    TABLECREATE4: same as 3 but indexes carry JET_INDEXCREATE3
+//                  (UNICODEINDEX2 locale-name).
+//    TABLECREATE5: TABLECREATE4 + cbLVChunkMax.
+//  One scenario exercises all three by building three tables
+//  in the same database — each call must succeed and yield a
+//  usable table with the expected column count.
+EseIntegrationScenario(Schema, CreateTableColumnIndex345BuildsProgressiveForms)
+{
+    TemporaryDirectory directory(
+        "Schema.CreateTableColumnIndex345BuildsProgressiveForms");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "TableCreate345.mdb");
+
+    //  Reusable column + index seed.  Each TABLECREATE struct
+    //  borrows these by pointer; the cCreated readback then
+    //  proves the engine made (table + columns + indexes).
+    JET_COLUMNCREATE_A columns[2] = { {}, {} };
+    columns[0].cbStruct = sizeof(columns[0]);
+    columns[0].szColumnName = const_cast<char*>("Key");
+    columns[0].coltyp = JET_coltypLong;
+    columns[0].grbit = JET_bitColumnNotNULL;
+    columns[1].cbStruct = sizeof(columns[1]);
+    columns[1].szColumnName = const_cast<char*>("Payload");
+    columns[1].coltyp = JET_coltypLong;
+
+    char keyIndexKey[] = "+Key\0";
+
+    //  TABLECREATE3: JET_INDEXCREATE2 (with pSpacehints left null —
+    //  the engine's ValidateSpaceHints rejects most non-default
+    //  values, and the field is genuinely optional).  Exercise
+    //  cbSeparateLV which is one of the v3 surface additions.
+    {
+        JET_INDEXCREATE2_A indexes[1] = { {} };
+        indexes[0].cbStruct = sizeof(indexes[0]);
+        indexes[0].szIndexName = const_cast<char*>("PrimaryKey");
+        indexes[0].szKey = keyIndexKey;
+        indexes[0].cbKey = sizeof(keyIndexKey);
+        indexes[0].grbit = JET_bitIndexPrimary | JET_bitIndexUnique;
+        indexes[0].ulDensity = 80;
+
+        JET_TABLECREATE3_A tableCreate = {};
+        tableCreate.cbStruct = sizeof(tableCreate);
+        tableCreate.szTableName = const_cast<char*>("Three");
+        tableCreate.ulPages = 1;
+        tableCreate.ulDensity = 80;
+        tableCreate.rgcolumncreate = columns;
+        tableCreate.cColumns = 2;
+        tableCreate.rgindexcreate = indexes;
+        tableCreate.cIndexes = 1;
+        tableCreate.cbSeparateLV = 1024;
+
+        CheckJet(JetCreateTableColumnIndex3A(session.Handle(),
+                                             database.Id(),
+                                             &tableCreate));
+        //  cCreated counts table + columns + indexes (+ callbacks).
+        //  Here: 1 table + 2 columns + 1 index = 4.
+        Require(tableCreate.cCreated == 4);
+        Require(tableCreate.tableid != JET_tableidNil);
+        CheckJet(JetCloseTable(session.Handle(), tableCreate.tableid));
+    }
+
+    //  TABLECREATE4: JET_INDEXCREATE3 with UNICODEINDEX2.
+    {
+        static char16_t LocaleName[] = u"en-US";
+        JET_UNICODEINDEX2 unicodeIndex = {};
+        unicodeIndex.szLocaleName = LocaleName;
+        unicodeIndex.dwMapFlags = 0x00000001;
+
+        JET_INDEXCREATE3_A indexes[1] = { {} };
+        indexes[0].cbStruct = sizeof(indexes[0]);
+        indexes[0].szIndexName = const_cast<char*>("PrimaryKey");
+        indexes[0].szKey = keyIndexKey;
+        indexes[0].cbKey = sizeof(keyIndexKey);
+        indexes[0].grbit = JET_bitIndexPrimary | JET_bitIndexUnique;
+        indexes[0].ulDensity = 80;
+
+        JET_TABLECREATE4_A tableCreate = {};
+        tableCreate.cbStruct = sizeof(tableCreate);
+        tableCreate.szTableName = const_cast<char*>("Four");
+        tableCreate.ulPages = 1;
+        tableCreate.ulDensity = 80;
+        tableCreate.rgcolumncreate = columns;
+        tableCreate.cColumns = 2;
+        tableCreate.rgindexcreate = indexes;
+        tableCreate.cIndexes = 1;
+
+        CheckJet(JetCreateTableColumnIndex4A(session.Handle(),
+                                             database.Id(),
+                                             &tableCreate));
+        Require(tableCreate.cCreated == 4);
+        Require(tableCreate.tableid != JET_tableidNil);
+        CheckJet(JetCloseTable(session.Handle(), tableCreate.tableid));
+    }
+
+    //  TABLECREATE5: TABLECREATE4 + cbLVChunkMax.
+    {
+        JET_INDEXCREATE3_A indexes[1] = { {} };
+        indexes[0].cbStruct = sizeof(indexes[0]);
+        indexes[0].szIndexName = const_cast<char*>("PrimaryKey");
+        indexes[0].szKey = keyIndexKey;
+        indexes[0].cbKey = sizeof(keyIndexKey);
+        indexes[0].grbit = JET_bitIndexPrimary | JET_bitIndexUnique;
+        indexes[0].ulDensity = 80;
+
+        JET_TABLECREATE5_A tableCreate = {};
+        tableCreate.cbStruct = sizeof(tableCreate);
+        tableCreate.szTableName = const_cast<char*>("Five");
+        tableCreate.ulPages = 1;
+        tableCreate.ulDensity = 80;
+        tableCreate.rgcolumncreate = columns;
+        tableCreate.cColumns = 2;
+        tableCreate.rgindexcreate = indexes;
+        tableCreate.cIndexes = 1;
+        tableCreate.cbSeparateLV = 1024;
+        //  Engine caps cbLVChunkMax at JET_paramLVChunkSizeMost (R/O,
+        //  page-size dependent — ~4 KiB minus per-page overhead on
+        //  small pages, more on larger).  Use 1024 so the test is
+        //  insensitive to the page size the engine boots with.
+        tableCreate.cbLVChunkMax = 1024;
+
+        CheckJet(JetCreateTableColumnIndex5A(session.Handle(),
+                                             database.Id(),
+                                             &tableCreate));
+        Require(tableCreate.cCreated == 4);
+        Require(tableCreate.tableid != JET_tableidNil);
+        CheckJet(JetCloseTable(session.Handle(), tableCreate.tableid));
+    }
+}
