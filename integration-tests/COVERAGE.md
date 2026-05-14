@@ -15,9 +15,9 @@ APIs whose engine implementation is an unconditional stub upstream
 platform — `dev/ese/src/ese/pib.cxx:994`, `jetapi.cxx:9582`,
 `jetapi.cxx:18940`) are out-of-scope, not "covered with caveats".
 
-**Totals:** 212 base APIs declared, 177 covered (83%), 35 untested.
+**Totals:** 212 base APIs declared, 180 covered (85%), 32 untested.
 
-## Tested (177)
+## Tested (180)
 
 Core surface for every scenario the engine actually runs.  Includes
 DDL (table/column/index create/delete/rename, **JetDeleteTable**,
@@ -123,7 +123,11 @@ wrappers): **JetBeginTransaction3** (trxid stamping),
 **JetCreateIndex2** (JET_INDEXCREATE struct),
 **JetCreateDatabase2** / **JetAttachDatabase2** (size-cap),
 **JetCreateTableColumnIndex2** (callback hook),
+**JetInit4** (RSTINFO2 / RSTMAP2 — exercised by RBS scenarios),
 **JetOpenTempTable3** (JET_UNICODEINDEX),
+**JetOpenTemporaryTable** / **JetOpenTemporaryTable2**
+(struct-based open with JET_UNICODEINDEX / JET_UNICODEINDEX2 +
+cbKeyMost / cbVarSegMac limits),
 **JetDefragment2** (callback),
 **JetGetPageInfo2**, **JetGetRecordSize2**, **JetGetRecordSize3**,
 **JetIndexRecordCount2**.
@@ -149,7 +153,7 @@ These are "v2/v3/v4 wrappers add new params on top of a tested base"
 that don't add observable functional surface beyond their v1/v2
 sibling.  Low-priority; the underlying capability is exercised.
 
-- `JetInit3` / `JetInit4` (`JetInit`, `JetInit2` covered)
+- `JetInit3` (`JetInit`, `JetInit2`, `JetInit4` covered)
 - `JetAttachDatabase3` (`JetAttachDatabase` / `JetAttachDatabase2`
   covered)
 - `JetCreateDatabase3` (`JetCreateDatabase` / `JetCreateDatabase2`
@@ -161,9 +165,10 @@ sibling.  Low-priority; the underlying capability is exercised.
 - `JetDeleteColumn2`
 - `JetDeleteTable2` (`JetDeleteTable` covered)
 - `JetDetachDatabase2`
-- `JetOpenTemporaryTable` / `JetOpenTemporaryTable2` /
-  `JetOpenTempTable2` (`JetOpenTempTable` / `JetOpenTempTable3`
-  covered)
+- `JetOpenTempTable2` (`JetOpenTempTable` / `JetOpenTempTable3` /
+  `JetOpenTemporaryTable` / `JetOpenTemporaryTable2` covered;
+  `JetOpenTempTable2` is the lcid-argument legacy form that the
+  newer struct-based and `JET_UNICODEINDEX*` variants supersede)
 - `JetSetCurrentIndex3` / `JetSetCurrentIndex4`
   (`JetSetCurrentIndex` / `JetSetCurrentIndex2` covered)
 - `JetRestore` / `JetRestore2` (the *Instance* variant covered)
@@ -363,4 +368,56 @@ coverage target:
     and `szLogPath`.  Caller runs the whole flow in a forked
     child to avoid process-state collisions with the runner's
     already-initialised engine globals.
+
+## Suggested round 9 candidates
+
+**Versioned variants with genuinely new functional surface.**
+Each of these adds parameters or struct fields that change
+observable behavior — not just thin wrappers.  Expected ~4
+scenarios, ~6 APIs covered.
+
+- `JetSetCurrentIndex4` — adds an `itag` argument for selecting
+  a specific entry within a clustered index.  Real new behavior
+  used by Exchange for partitioned-index navigation.
+- `JetAttachDatabase3` — takes a `JET_SETDBPARAM` array, letting
+  callers stamp per-database parameters (cache priority, shrink
+  options, etc.) at attach time.
+- `JetCreateDatabase3` — same `JET_SETDBPARAM` mechanism at
+  create time.
+- `JetCreateIndex3` — `JET_INDEXCREATE2` adds `JET_TUPLELIMITS`
+  for substring-tuple indexes.
+- `JetCreateIndex4` — `JET_INDEXCREATE3` swaps the lcid-based
+  `JET_UNICODEINDEX` for the locale-name-based
+  `JET_UNICODEINDEX2`.
+- `JetCreateTableColumnIndex3` / `4` / `5` — `JET_TABLECREATE2/3/4/5`
+  progressively add fields (cbSeparateLV, callbacks, key-most).
+  At minimum cover the latest (`5`) since it supersedes earlier
+  shapes; can collapse `3` + `4` into the same scenario if
+  convenient.
+
+## Suggested round 10 candidates
+
+**Thin-wrapper variants — single grbit or callback added on top
+of a covered base.**  These are mostly call-shape verification
+plus a sanity check that the new param actually does what its
+documentation claims.
+
+- `JetInit3` — adds a `JET_PFNINITCALLBACK` for recovery progress.
+- `JetDefragment3` — adds the callback variant.
+- `JetDeleteColumn2` — adds `grbit` (e.g.,
+  `JET_bitDeleteColumnIgnoreTemplateColumns`).
+- `JetDeleteTable2` — adds `grbit`.
+- `JetDetachDatabase2` — adds `grbit` (e.g.,
+  `JET_bitForceCloseAndDetach`).
+- `JetExternalRestore2` — adds `JET_LOGINFO` for explicit log
+  range, otherwise identical flow to round 8's
+  `JetExternalRestore` scenario.
+
+## Suggested round 11 — engine investigation
+
+`JetOSSnapshotTruncateLog` and `JetOSSnapshotTruncateLogInstance`
+hang inside `pSession->ErrTruncateLogs` on this Linux build.
+Round 11 is the investigation + fix to unblock these.  Not a
+test-authoring round — it ships engine changes (or surfaces an
+upstream bug to defer).
 

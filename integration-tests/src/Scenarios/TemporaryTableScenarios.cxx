@@ -291,3 +291,133 @@ EseIntegrationScenario(TemporaryTable, OpenTempTable3SortsViaUnicodeIndex)
 
     CheckJet(JetCloseTable(session.Handle(), tableid));
 }
+
+//  JetOpenTemporaryTable is the struct-based counterpart to
+//  JetOpenTempTable3 — same JET_UNICODEINDEX-style sort control,
+//  but the caller bundles columns + grbits + key/seg limits into
+//  a JET_OPENTEMPORARYTABLE struct so future versions can add new
+//  fields without changing the function arity.  We test the
+//  struct shape end-to-end: insert two rows out of key order,
+//  confirm the temp table sorts them on walk.
+EseIntegrationScenario(TemporaryTable, OpenTemporaryTableStructDrivesSort)
+{
+    TemporaryDirectory directory(
+        "TemporaryTable.OpenTemporaryTableStructDrivesSort");
+    EseInstance instance(directory);
+    EseSession session(instance);
+
+    JET_COLUMNDEF columns[1] = { {} };
+    columns[0].cbStruct = sizeof(columns[0]);
+    columns[0].coltyp = JET_coltypLong;
+    columns[0].grbit = JET_bitColumnTTKey;
+
+    JET_COLUMNID columnIds[1] = { 0 };
+    JET_UNICODEINDEX unicodeIndex = {};
+    unicodeIndex.lcid = 1033;  // en-US — unused for Long-typed keys
+                                // but required to be valid so the
+                                // struct path matches the engine's
+                                // JET_bitIndexUnicode validation.
+
+    JET_OPENTEMPORARYTABLE openParameters = {};
+    openParameters.cbStruct = sizeof(openParameters);
+    openParameters.prgcolumndef = columns;
+    openParameters.ccolumn = 1;
+    openParameters.pidxunicode = &unicodeIndex;
+    openParameters.grbit = JET_bitTTUpdatable;
+    openParameters.prgcolumnid = columnIds;
+    openParameters.cbKeyMost = 0;
+    openParameters.cbVarSegMac = 0;
+
+    CheckJet(JetOpenTemporaryTable(session.Handle(), &openParameters));
+    Require(openParameters.tableid != JET_tableidNil);
+    Require(columnIds[0] != 0);
+
+    const auto tableid = openParameters.tableid;
+    const auto columnId = columnIds[0];
+
+    InsertLong(session.Handle(), tableid, columnId, 25);
+    InsertLong(session.Handle(), tableid, columnId, 5);
+    InsertLong(session.Handle(), tableid, columnId, 15);
+
+    CheckJet(JetMove(session.Handle(), tableid, JET_MoveFirst, 0));
+    Require(RetrieveCurrentLong(session.Handle(), tableid, columnId) == 5);
+    CheckJet(JetMove(session.Handle(), tableid, JET_MoveNext, 0));
+    Require(RetrieveCurrentLong(session.Handle(), tableid, columnId) == 15);
+    CheckJet(JetMove(session.Handle(), tableid, JET_MoveNext, 0));
+    Require(RetrieveCurrentLong(session.Handle(), tableid, columnId) == 25);
+
+    CheckJet(JetCloseTable(session.Handle(), tableid));
+}
+
+//  JetOpenTemporaryTable2 swaps the lcid-based JET_UNICODEINDEX for
+//  the locale-name-based JET_UNICODEINDEX2 (`szLocaleName` +
+//  `dwMapFlags`).  Exercise it with a UTF-16 Unicode-text key column
+//  and en-US locale, NORM_IGNORECASE map flag — the same surface
+//  that JetOpenTempTable3SortsViaUnicodeIndex tests via the
+//  lcid-based struct, but routed through the v2 entry point.
+EseIntegrationScenario(TemporaryTable, OpenTemporaryTable2SortsWithLocaleName)
+{
+    TemporaryDirectory directory(
+        "TemporaryTable.OpenTemporaryTable2SortsWithLocaleName");
+    EseInstance instance(directory);
+    EseSession session(instance);
+
+    JET_COLUMNDEF columns[1] = { {} };
+    columns[0].cbStruct = sizeof(columns[0]);
+    columns[0].coltyp = JET_coltypLongText;
+    columns[0].cp = 1200;  // UTF-16
+    columns[0].grbit = JET_bitColumnTTKey;
+
+    JET_COLUMNID columnIds[1] = { 0 };
+    static char16_t LocaleName[] = u"en-US";
+    JET_UNICODEINDEX2 unicodeIndex = {};
+    unicodeIndex.szLocaleName = LocaleName;
+    unicodeIndex.dwMapFlags = 0x00000001;  // NORM_IGNORECASE
+
+    JET_OPENTEMPORARYTABLE2 openParameters = {};
+    openParameters.cbStruct = sizeof(openParameters);
+    openParameters.prgcolumndef = columns;
+    openParameters.ccolumn = 1;
+    openParameters.pidxunicode = &unicodeIndex;
+    openParameters.grbit = JET_bitTTUpdatable;
+    openParameters.prgcolumnid = columnIds;
+    openParameters.cbKeyMost = 0;
+    openParameters.cbVarSegMac = 0;
+
+    CheckJet(JetOpenTemporaryTable2(session.Handle(), &openParameters));
+    Require(openParameters.tableid != JET_tableidNil);
+    Require(columnIds[0] != 0);
+
+    const auto tableid = openParameters.tableid;
+    const auto columnId = columnIds[0];
+
+    auto insertWide = [&](const char16_t* text, uint32_t cch) {
+        CheckJet(JetPrepareUpdate(session.Handle(), tableid,
+                                  JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), tableid, columnId,
+                              text, cch * sizeof(char16_t),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), tableid,
+                           nullptr, 0, nullptr));
+    };
+
+    CheckJet(JetBeginTransaction(session.Handle()));
+    static const char16_t Banana[] = u"banana";
+    static const char16_t Apple[]  = u"Apple";
+    static const char16_t Cherry[] = u"cherry";
+    insertWide(Banana, 6);
+    insertWide(Apple, 5);
+    insertWide(Cherry, 6);
+    CheckJet(JetCommitTransaction(session.Handle(), 0));
+
+    CheckJet(JetMove(session.Handle(), tableid, JET_MoveFirst, 0));
+    char16_t buffer[16] = {};
+    uint32_t cbActual = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), tableid, columnId,
+                               buffer, sizeof(buffer), &cbActual,
+                               0, nullptr));
+    //  Case-insensitive sort puts "Apple" first.
+    Require(buffer[0] == u'A' || buffer[0] == u'a');
+
+    CheckJet(JetCloseTable(session.Handle(), tableid));
+}
