@@ -425,3 +425,65 @@ EseIntegrationScenario(Platform, ConfigureProcessForCrashDumpAcceptsGrbits)
     RequireJetError(JetConfigureProcessForCrashDump(0x40000000),
                     JET_errInvalidGrbit);
 }
+
+//  JetInit3 thin variant.  Same engine surface as JetInit /
+//  JetInit2 but the caller hands the engine a JET_RSTINFO struct
+//  (rstmap + lgposStop + logtimeStop + pfnStatus).  Empty
+//  rstInfo (no rstmap, lgposStop=0) yields the same behaviour
+//  as JetInit/JetInit2 — the test confirms the v3 entry reaches
+//  the same engine path and produces a usable instance.
+
+EseIntegrationScenario(Platform, Init3WithEmptyRstInfoBootsInstance)
+{
+    TemporaryDirectory directory(
+        "Platform.Init3WithEmptyRstInfoBootsInstance");
+
+    JET_INSTANCE instanceHandle = JET_instanceNil;
+    CheckJet(JetCreateInstance2A(&instanceHandle,
+                                 "Platform.Init3",
+                                 "Platform.Init3", 0));
+
+    auto pathWithSeparator = directory.Path().string();
+    if (!pathWithSeparator.empty() &&
+        pathWithSeparator.back() != '/')
+    {
+        pathWithSeparator.push_back('/');
+    }
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramSystemPath, 0,
+                                    pathWithSeparator.c_str()));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramTempPath, 0,
+                                    pathWithSeparator.c_str()));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramLogFilePath, 0,
+                                    pathWithSeparator.c_str()));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramBaseName, 0, "edb"));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramCircularLog, 1, nullptr));
+
+    //  Empty rstInfo — no rstmap, no stop point.  JetInit3 should
+    //  treat this equivalently to JetInit2.
+    JET_RSTINFO_A rstInfo = {};
+    rstInfo.cbStruct = sizeof(rstInfo);
+    CheckJet(JetInit3A(&instanceHandle, &rstInfo, 0));
+
+    //  Sanity: we can open a session and create a database,
+    //  proving the instance is fully alive after the v3 entry.
+    JET_SESID sessionHandle = JET_sesidNil;
+    CheckJet(JetBeginSessionA(instanceHandle,
+                              &sessionHandle, nullptr, nullptr));
+    const auto databasePath =
+        (directory.Path() / "Init3.mdb").string();
+    JET_DBID databaseId = JET_dbidNil;
+    CheckJet(JetCreateDatabaseA(sessionHandle,
+                                databasePath.c_str(),
+                                nullptr, &databaseId,
+                                JET_bitDbOverwriteExisting));
+    CheckJet(JetCloseDatabase(sessionHandle, databaseId, 0));
+    CheckJet(JetDetachDatabaseA(sessionHandle,
+                                databasePath.c_str()));
+    CheckJet(JetEndSession(sessionHandle, 0));
+    CheckJet(JetTerm2(instanceHandle, JET_bitTermComplete));
+}

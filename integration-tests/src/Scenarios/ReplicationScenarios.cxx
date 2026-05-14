@@ -1687,12 +1687,203 @@ void RunExternalRestoreWorker(const std::filesystem::path& directory)
     }
 }
 
+constexpr const char* ChildEntryExternalRestore2 =
+    "Replication.ExternalRestore2.Worker";
+
+//  JetExternalRestore2 — same flow as v1 but the
+//  (genLow, genHigh) pair is bundled into a JET_LOGINFO struct
+//  with an explicit szBaseName, and the API gets explicit
+//  target-instance overrides for name + log + checkpoint paths
+//  (all nullable; passing nullptr means "use the szLogPath and
+//  szCheckpointFilePath args").  Otherwise identical to the v1
+//  scenario: build + JetBackupInstanceA + clone backup files
+//  into the target dir + finalise via JetExternalRestore2A.
+void RunExternalRestore2Worker(const std::filesystem::path& directory)
+{
+    const auto sourceDirectory = directory / "source";
+    const auto backupDirectory = directory / "backup";
+    const auto restoreDirectory = directory / "restore";
+    std::filesystem::create_directories(sourceDirectory);
+    std::filesystem::create_directories(backupDirectory);
+    std::filesystem::create_directories(restoreDirectory);
+
+    const auto sourceDbPath = sourceDirectory / ExternalRestoreDbName;
+    const auto restoreDbPath = restoreDirectory / ExternalRestoreDbName;
+
+    {
+        JET_INSTANCE buildInstance = JET_instanceNil;
+        CheckJet(JetCreateInstance2A(&buildInstance,
+                                     "ExternalRestore2Source",
+                                     "ExternalRestore2Source", 0));
+        ConfigureChildInstanceParameters(&buildInstance,
+                                          sourceDirectory,
+                                          "ExternalRestore2Source");
+        CheckJet(JetInit(&buildInstance));
+        JET_SESID buildSession = JET_sesidNil;
+        CheckJet(JetBeginSessionA(buildInstance,
+                                  &buildSession, nullptr, nullptr));
+        JET_DBID buildDbid = JET_dbidNil;
+        CheckJet(JetCreateDatabaseA(buildSession,
+                                    sourceDbPath.string().c_str(),
+                                    nullptr, &buildDbid,
+                                    JET_bitDbOverwriteExisting));
+        JET_TABLEID buildTable = JET_tableidNil;
+        CheckJet(JetCreateTableA(buildSession, buildDbid,
+                                 "Rows", 8, 100, &buildTable));
+        JET_COLUMNDEF columnDefinition = {};
+        columnDefinition.cbStruct = sizeof(columnDefinition);
+        columnDefinition.coltyp = JET_coltypLong;
+        JET_COLUMNID columnId = 0;
+        CheckJet(JetAddColumnA(buildSession, buildTable, "Value",
+                               &columnDefinition, nullptr, 0,
+                               &columnId));
+        CheckJet(JetBeginTransaction(buildSession));
+        for (int32_t rowIndex = 0;
+             rowIndex < ExternalRestoreRowCount;
+             ++rowIndex)
+        {
+            CheckJet(JetPrepareUpdate(buildSession, buildTable,
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(buildSession, buildTable, columnId,
+                                  &rowIndex, sizeof(rowIndex),
+                                  0, nullptr));
+            CheckJet(JetUpdate(buildSession, buildTable,
+                               nullptr, 0, nullptr));
+        }
+        CheckJet(JetCommitTransaction(buildSession, 0));
+        CheckJet(JetCloseTable(buildSession, buildTable));
+        CheckJet(JetCloseDatabase(buildSession, buildDbid, 0));
+        CheckJet(JetBackupInstanceA(buildInstance,
+                                    backupDirectory.string().c_str(),
+                                    0, nullptr));
+        CheckJet(JetDetachDatabaseA(buildSession,
+                                    sourceDbPath.string().c_str()));
+        CheckJet(JetEndSession(buildSession, 0));
+        CheckJet(JetTerm2(buildInstance, JET_bitTermComplete));
+    }
+
+    CloneDirectory(backupDirectory, restoreDirectory);
+
+    long highestBackupGen = 0;
+    for (const auto& entry :
+         std::filesystem::directory_iterator(backupDirectory))
+    {
+        if (!entry.is_regular_file() ||
+            entry.path().extension() != ".log")
+        {
+            continue;
+        }
+        const auto stem = entry.path().stem().string();
+        if (stem.size() != 11 || stem.substr(0, 3) != "edb")
+        {
+            continue;
+        }
+        try
+        {
+            const auto gen = std::stol(stem.substr(3));
+            if (gen > highestBackupGen)
+            {
+                highestBackupGen = gen;
+            }
+        }
+        catch (...) {}
+    }
+    Require(highestBackupGen >= 1);
+
+    JET_RSTMAP_A restoreMap = {};
+    auto backupDbPathString = (backupDirectory / ExternalRestoreDbName).string();
+    auto restoreDbPathString = restoreDbPath.string();
+    restoreMap.szDatabaseName = backupDbPathString.data();
+    restoreMap.szNewDatabaseName = restoreDbPathString.data();
+
+    auto restoreDirString = restoreDirectory.string();
+    if (restoreDirString.back() != '/')
+    {
+        restoreDirString.push_back('/');
+    }
+    auto backupDirString = backupDirectory.string();
+    if (backupDirString.back() != '/')
+    {
+        backupDirString.push_back('/');
+    }
+
+    JET_LOGINFO_A logInfo = {};
+    logInfo.cbSize = sizeof(logInfo);
+    logInfo.ulGenLow = 1;
+    logInfo.ulGenHigh = static_cast<uint32_t>(highestBackupGen);
+    logInfo.szBaseName[0] = 'e';
+    logInfo.szBaseName[1] = 'd';
+    logInfo.szBaseName[2] = 'b';
+    logInfo.szBaseName[3] = '\0';
+
+    //  Target-instance overrides all null — equivalent to v1.
+    CheckJet(JetExternalRestore2A(restoreDirString.data(),
+                                  restoreDirString.data(),
+                                  &restoreMap, 1,
+                                  backupDirString.data(),
+                                  &logInfo,
+                                  nullptr, nullptr, nullptr,
+                                  nullptr));
+
+    {
+        JET_INSTANCE verifyInstance = JET_instanceNil;
+        CheckJet(JetCreateInstance2A(&verifyInstance,
+                                     "ExternalRestore2Verify",
+                                     "ExternalRestore2Verify", 0));
+        ConfigureChildInstanceParameters(&verifyInstance,
+                                          restoreDirectory,
+                                          "ExternalRestore2Verify");
+        CheckJet(JetInit(&verifyInstance));
+        JET_SESID verifySession = JET_sesidNil;
+        CheckJet(JetBeginSessionA(verifyInstance,
+                                  &verifySession, nullptr, nullptr));
+        CheckJet(JetAttachDatabaseA(verifySession,
+                                    restoreDbPath.string().c_str(),
+                                    JET_bitDbReadOnly));
+        JET_DBID verifyDbid = JET_dbidNil;
+        CheckJet(JetOpenDatabaseA(verifySession,
+                                  restoreDbPath.string().c_str(),
+                                  nullptr, &verifyDbid,
+                                  JET_bitDbReadOnly));
+        JET_TABLEID verifyTable = JET_tableidNil;
+        CheckJet(JetOpenTableA(verifySession, verifyDbid, "Rows",
+                               nullptr, 0, 0, &verifyTable));
+        int32_t rowCount = 0;
+        const auto firstRc = JetMove(verifySession, verifyTable,
+                                     JET_MoveFirst, 0);
+        if (firstRc != JET_errNoCurrentRecord)
+        {
+            CheckJet(firstRc);
+            while (true)
+            {
+                ++rowCount;
+                const auto nextRc = JetMove(verifySession, verifyTable,
+                                            JET_MoveNext, 0);
+                if (nextRc == JET_errNoCurrentRecord)
+                {
+                    break;
+                }
+                CheckJet(nextRc);
+            }
+        }
+        Require(rowCount == ExternalRestoreRowCount);
+        CheckJet(JetCloseTable(verifySession, verifyTable));
+        CheckJet(JetCloseDatabase(verifySession, verifyDbid, 0));
+        CheckJet(JetDetachDatabaseA(verifySession,
+                                    restoreDbPath.string().c_str()));
+        CheckJet(JetEndSession(verifySession, 0));
+        CheckJet(JetTerm2(verifyInstance, JET_bitTermComplete));
+    }
+}
+
 struct ExternalRestoreRegistrar
 {
     ExternalRestoreRegistrar()
     {
         RegisterChildEntry(ChildEntryExternalRestore,
                            SimpleChildEntryPoint(&RunExternalRestoreWorker));
+        RegisterChildEntry(ChildEntryExternalRestore2,
+                           SimpleChildEntryPoint(&RunExternalRestore2Worker));
     }
 };
 [[maybe_unused]] static ExternalRestoreRegistrar
@@ -1711,4 +1902,15 @@ EseIntegrationScenario(Replication, ExternalRestoreImportsBackupIntoFreshDir)
     //  engine globals.
     ChildProcess worker(ChildEntryExternalRestore, directory.Path());
     RequireCleanExit(worker, "external-restore-worker");
+}
+
+EseIntegrationScenario(Replication, ExternalRestore2ImportsBackupViaLogInfo)
+{
+    TemporaryDirectory directory(
+        "Replication.ExternalRestore2ImportsBackupViaLogInfo");
+
+    //  v2 is process-state sensitive for the same reason as v1 —
+    //  run in a fresh child.
+    ChildProcess worker(ChildEntryExternalRestore2, directory.Path());
+    RequireCleanExit(worker, "external-restore2-worker");
 }

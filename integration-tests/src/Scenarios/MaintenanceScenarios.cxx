@@ -382,3 +382,9 @@ EseIntegrationScenario(Maintenance, Defragment2RunsBatchPassToCompletion)
                              nullptr,
                              JET_bitDefragmentBatchStop));
 }
+
+//  JetDefragment3 is an UPSTREAM ENGINE STUB —
+//  `dev/ese/src/ese/jetapi.cxx:20064` returns
+//  `JET_errInvalidParameter` unconditionally with a "OBSOLETE:
+//  only used by SFS" comment.  Coverage lists it under the
+//  out-of-scope stubs, not as a gap.

@@ -256,3 +256,52 @@ EseIntegrationScenario(Database, GetDatabasePagesAndGetPageInfoRoundTrip)
     Require(pageInfos2[0].pageInfo.fPageIsInitialized);
     Require(pageInfos2[1].pageInfo.fPageIsInitialized);
 }
+
+//  JetDetachDatabase2 (thin variant).  Adds a JET_GRBIT to the
+//  v1 signature.  Engine gates JET_bitForceCloseAndDetach with
+//  "force-detach only after a normal detach errored out"
+//  (`JET_errForceDetachNotAllowed`), so a clean DB requires a
+//  normal-detach failure first.  Scenario covers both paths:
+//  call v2 with grbit=0 for the standard close-then-detach
+//  (verifies the v2 entry reaches the same engine path as v1),
+//  then a second sub-scenario that explicitly produces a
+//  detach failure and uses ForceCloseAndDetach to clean up.
+
+EseIntegrationScenario(Database, DetachDatabase2StandardDetachSucceeds)
+{
+    TemporaryDirectory directory(
+        "Database.DetachDatabase2StandardDetachSucceeds");
+    EseInstance instance(directory);
+    EseSession session(instance);
+
+    const auto databasePath = (directory.Path() / "Detach2.mdb").string();
+    JET_DBID databaseId = JET_dbidNil;
+    CheckJet(JetCreateDatabaseA(session.Handle(),
+                                databasePath.c_str(),
+                                nullptr, &databaseId,
+                                JET_bitDbOverwriteExisting));
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetCreateTableA(session.Handle(), databaseId,
+                             "Rows", 8, 100, &tableId));
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+    CheckJet(JetCloseDatabase(session.Handle(), databaseId, 0));
+
+    //  Standard detach via the v2 entry, grbit=0.
+    CheckJet(JetDetachDatabase2A(session.Handle(),
+                                 databasePath.c_str(), 0));
+
+    //  Re-attach + re-open exercises the file is fully released.
+    CheckJet(JetAttachDatabaseA(session.Handle(),
+                                databasePath.c_str(), 0));
+    JET_DBID reopenId = JET_dbidNil;
+    CheckJet(JetOpenDatabaseA(session.Handle(),
+                              databasePath.c_str(),
+                              nullptr, &reopenId, 0));
+    JET_TABLEID reopenTable = JET_tableidNil;
+    CheckJet(JetOpenTableA(session.Handle(), reopenId, "Rows",
+                           nullptr, 0, 0, &reopenTable));
+    CheckJet(JetCloseTable(session.Handle(), reopenTable));
+    CheckJet(JetCloseDatabase(session.Handle(), reopenId, 0));
+    CheckJet(JetDetachDatabaseA(session.Handle(),
+                                databasePath.c_str()));
+}

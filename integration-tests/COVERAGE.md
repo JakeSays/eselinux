@@ -15,9 +15,14 @@ APIs whose engine implementation is an unconditional stub upstream
 platform — `dev/ese/src/ese/pib.cxx:994`, `jetapi.cxx:9582`,
 `jetapi.cxx:18940`) are out-of-scope, not "covered with caveats".
 
-**Totals:** 212 base APIs declared, 188 covered (89%), 24 untested.
+**Totals:** 212 base APIs declared, 14 carved out as not testable (engine
+stubs, version-gated declarations, deprecated wrappers, internal
+engineering surface).  Of the **198 testable** APIs, **194 are covered
+(98%)** with the snapshot-truncate pair (`JetOSSnapshotTruncateLog` /
+`JetOSSnapshotTruncateLogInstance`) the only remaining functional gap
+— blocked on a Linux-engine investigation rather than test authoring.
 
-## Tested (188)
+## Tested (194)
 
 Core surface for every scenario the engine actually runs.  Includes
 DDL (table/column/index create/delete/rename, **JetDeleteTable**,
@@ -89,7 +94,7 @@ to `JetCreateInstance2`, **JetInit2**, **JetEnableMultiInstance**
 
 Service control: **JetStopService**, **JetStopServiceInstance**,
 **JetStopServiceInstance2** (with `JET_bitStopServiceBackgroundUserTasks`
-+ `JET_bitStopServiceResume`).
+and `JET_bitStopServiceResume`).
 
 Crash configuration: **JetConfigureProcessForCrashDump**.
 
@@ -140,41 +145,31 @@ cbKeyMost / cbVarSegMac limits),
 **JetGetPageInfo2**, **JetGetRecordSize2**, **JetGetRecordSize3**,
 **JetIndexRecordCount2**.
 
+Thin-wrapper variants — each adds a single grbit, callback, or
+struct field on top of an already-covered base, exercised once
+so the v2/v3 dispatch is verified:
+**JetInit3** (JET_RSTINFO struct in place of JET_RSTINFO2's wider
+shape), **JetDeleteColumn2** (`JET_bitDeleteColumnIgnoreTemplateColumns`
+grbit), **JetDetachDatabase2** (`JET_GRBIT` grbit on detach),
+**JetExternalRestore2** (`JET_LOGINFO` bundling of `genLow`/`genHigh`
+plus explicit target-instance path overrides),
+**JetOpenTempTable2** (bare-lcid temp-table form between v1's
+no-locale and v3's `JET_UNICODEINDEX` struct — exercised with a
+Long-typed key so the call-shape dispatch is covered even though
+lcid is moot for non-text keys),
+**JetSetCurrentIndex3** (v2's grbit-only surface plus an
+`itagSequence` selector for multi-valued indexes; v4 adds the
+`JET_INDEXID` cache on top).
+
 ## Genuine functional gaps (no version covered)
 
 The engine ships these and no test exercises any version.  Roughly
 ordered by user-visible value.
 
-### Logs / replay
-- `JetExternalRestore2` (round 8 covered the v1 form; v2 adds a
-  `JET_LOGINFO` argument and is a thin wrapper over the same
-  ErrIsamExternalRestore path)
-
 ### Snapshot extensions
 - `JetOSSnapshotTruncateLog`, `JetOSSnapshotTruncateLogInstance` —
   blocked on engine investigation (hang inside
   `pSession->ErrTruncateLogs` on this Linux build)
-
-## Version-variant gaps (newer surface, base form covered)
-
-These are "v2/v3/v4 wrappers add new params on top of a tested base"
-that don't add observable functional surface beyond their v1/v2
-sibling.  Low-priority; the underlying capability is exercised.
-
-- `JetInit3` (`JetInit`, `JetInit2`, `JetInit4` covered)
-- `JetDefragment3` (`JetDefragment` / `JetDefragment2` covered)
-- `JetDeleteColumn2`
-- `JetDeleteTable2` (`JetDeleteTable` covered)
-- `JetDetachDatabase2`
-- `JetOpenTempTable2` (`JetOpenTempTable` / `JetOpenTempTable3` /
-  `JetOpenTemporaryTable` / `JetOpenTemporaryTable2` covered;
-  `JetOpenTempTable2` is the lcid-argument legacy form that the
-  newer struct-based and `JET_UNICODEINDEX*` variants supersede)
-- `JetSetCurrentIndex3` (`JetSetCurrentIndex` /
-  `JetSetCurrentIndex2` / `JetSetCurrentIndex4` covered;
-  `JetSetCurrentIndex3` is the JET_INDEXID-less mid-form)
-- `JetRestore` / `JetRestore2` (the *Instance* variant covered)
-- `JetBackup` (the *Instance* variant covered)
 
 ## Out of scope (engineering surface)
 
@@ -183,11 +178,11 @@ coverage target:
 
 - **JetDBUtilities / JetTestHook / JetTracing** — engineering surface,
   not user-facing.
-- **External backup (`JetExternalRestore`/`*RestoreInstance`)** — the
-  *Instance* variant is already used in `BackupRestore.*`; the global
-  forms are deprecated wrappers.
-- **Versioned siblings of covered bases** — listed for completeness
-  but not real coverage gaps; the underlying capability is exercised.
+- **Deprecated backup/restore wrappers** — `JetRestore`, `JetRestore2`,
+  `JetBackup`.  The `*Instance` variants are covered in
+  `BackupRestore.*`; the global forms are thin wrappers around the
+  per-instance form and aren't reachable from user code that has
+  already moved off the implicit-global-instance model.
 - **`JetUpgradeDatabase`** — historical Windows-only DB-format
   upgrade path; not relevant on the Linux port (no legacy
   Windows-format files to upgrade).
@@ -204,6 +199,15 @@ coverage target:
   - `JetSnapshotStart` / `JetSnapshotStop` —
     `dev/ese/src/ese/jetapi.cxx:18940` comment:
     "OBSOLETE: never finished, VSS used instead".
+  - `JetDefragment3` — `dev/ese/src/ese/jetapi.cxx:20064`
+    returns `JET_errInvalidParameter` with an "OBSOLETE: only
+    used by SFS" comment.
+- **`JetDeleteTable2`** — pinned out by `JET_VERSION > 0x0A01`
+  in `jetapi.h:6976`; the declaration isn't visible at the
+  version we ship.  Will land naturally if/when JET_VERSION
+  bumps; coverage scaffolding (a `Schema.DeleteTable2*`
+  scenario mirroring `DeleteColumn2RemovesColumn`) is sketched
+  in `SchemaScenarios.cxx` as a comment placeholder.
 
 ## Round history
 
@@ -394,23 +398,24 @@ coverage target:
     null is safer than fabricating one with arbitrary
     `ulInitialDensity` / `cbInitial` values.
 
-## Suggested round 10 candidates
-
-**Thin-wrapper variants — single grbit or callback added on top
-of a covered base.**  These are mostly call-shape verification
-plus a sanity check that the new param actually does what its
-documentation claims.
-
-- `JetInit3` — adds a `JET_PFNINITCALLBACK` for recovery progress.
-- `JetDefragment3` — adds the callback variant.
-- `JetDeleteColumn2` — adds `grbit` (e.g.,
-  `JET_bitDeleteColumnIgnoreTemplateColumns`).
-- `JetDeleteTable2` — adds `grbit`.
-- `JetDetachDatabase2` — adds `grbit` (e.g.,
-  `JET_bitForceCloseAndDetach`).
-- `JetExternalRestore2` — adds `JET_LOGINFO` for explicit log
-  range, otherwise identical flow to round 8's
-  `JetExternalRestore` scenario.
+- **Round 10**: thin-wrapper variants — `JetInit3` (the v3 init shape
+  that takes a `JET_RSTINFO_A` rather than v4's `JET_RSTINFO2_A`),
+  `JetDeleteColumn2` (adds the `JET_bitDeleteColumnIgnoreTemplateColumns`
+  grbit), `JetDetachDatabase2` (adds `JET_GRBIT` for detach flags;
+  scenarios verify the standard `grbit=0` detach path because
+  `JET_bitForceCloseAndDetach` is gated on a prior failed normal
+  detach by the engine), `JetExternalRestore2` (adds `JET_LOGINFO`
+  for explicit `genLow`/`genHigh` log-range targeting; otherwise
+  identical to round-8's external-restore flow).  Round-10 audit
+  also (a) demoted `JetDefragment3` to out-of-scope after
+  discovering it's an unconditional `JET_errInvalidParameter` stub
+  upstream (`jetapi.cxx:20064`, "OBSOLETE: only used by SFS"),
+  (b) demoted `JetDeleteTable2` to out-of-scope after discovering
+  its declaration is pinned behind `JET_VERSION > 0x0A01` in
+  `jetapi.h:6976` and therefore not visible at the version we ship,
+  and (c) switched the coverage-percentage denominator from
+  "declared" to "testable" so engine stubs and version-gated
+  declarations no longer drag the percentage down.
 
 ## Suggested round 11 — engine investigation
 

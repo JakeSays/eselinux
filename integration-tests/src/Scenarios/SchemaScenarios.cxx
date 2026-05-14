@@ -917,12 +917,10 @@ EseIntegrationScenario(Schema, ConvertDDLChangesIndexDensity)
     Require(seen == 50);
 }
 
-//  ============================================================
-//  Round 9 — versioned variants with genuinely new functional
-//  surface.  Each scenario exercises a -3/-4/-5 variant whose
-//  struct/argument additions change observable behaviour, not
-//  just expose the same plumbing under a wider signature.
-//  ============================================================
+//  Versioned variants with genuinely new functional surface.
+//  Each scenario exercises a -3/-4/-5 variant whose struct or
+//  argument additions change observable behaviour, not just
+//  expose the same plumbing under a wider signature.
 
 //  JetCreateDatabase3 adds a JET_SETDBPARAM array — callers stamp
 //  per-database parameters at create time.  Set
@@ -1297,3 +1295,49 @@ EseIntegrationScenario(Schema, CreateTableColumnIndex345BuildsProgressiveForms)
         CheckJet(JetCloseTable(session.Handle(), tableCreate.tableid));
     }
 }
+
+//  Thin-wrapper variants for column / table delete.  Each adds
+//  a JET_GRBIT to the v1 signature.  Build a small schema,
+//  exercise the v2 entry, then verify the deletion actually
+//  took effect via JetGetColumnInfo / JetOpenTable reads that
+//  should now miss.
+
+EseIntegrationScenario(Schema, DeleteColumn2RemovesColumn)
+{
+    TemporaryDirectory directory("Schema.DeleteColumn2RemovesColumn");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "DeleteColumn2.mdb");
+
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetCreateTableA(session.Handle(), database.Id(),
+                             "Rows", 8, 100, &tableId));
+    JET_COLUMNDEF columnDefinition = {};
+    columnDefinition.cbStruct = sizeof(columnDefinition);
+    columnDefinition.coltyp = JET_coltypLong;
+    JET_COLUMNID columnId = 0;
+    CheckJet(JetAddColumnA(session.Handle(), tableId, "Doomed",
+                           &columnDefinition, nullptr, 0, &columnId));
+
+    //  JetDeleteColumn2 takes the JET_bitDeleteColumnIgnoreTemplateColumns
+    //  grbit.  We don't have a template-derived table here so the bit
+    //  is a no-op, but it's the documented value to pass.
+    CheckJet(JetDeleteColumn2A(session.Handle(), tableId, "Doomed",
+                               JET_bitDeleteColumnIgnoreTemplateColumns));
+
+    //  Functional verification: post-delete GetColumnInfo for the
+    //  removed column must report ColumnNotFound.
+    JET_COLUMNDEF probe = {};
+    RequireJetError(JetGetColumnInfoA(session.Handle(), database.Id(),
+                                      "Rows", "Doomed",
+                                      &probe, sizeof(probe),
+                                      JET_ColInfo),
+                    JET_errColumnNotFound);
+
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+}
+
+//  JetDeleteTable2 is gated behind `JET_VERSION > 0x0A01` in
+//  jetapi.h (line 6976) — not present in this pin.  When the
+//  JET_VERSION bumps to include it, drop a scenario here that
+//  mirrors `DeleteColumn2RemovesColumn` above.

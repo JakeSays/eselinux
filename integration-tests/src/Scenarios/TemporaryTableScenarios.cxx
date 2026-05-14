@@ -203,6 +203,71 @@ EseIntegrationScenario(TemporaryTable, UpdatableTempTableAcceptsReplace)
     CheckJet(JetCloseTable(session.Handle(), temporaryTableId));
 }
 
+//  JetOpenTempTable2 sits between v1 (no locale at all) and v3 (full
+//  JET_UNICODEINDEX struct with map flags): it accepts a bare lcid but
+//  no NORM_* flags.  Exercise the v2 entry with a Long-typed key — lcid
+//  is moot for non-text keys, but the call still has to flow through
+//  the v2 dispatch and produce a sorted temp table.  Insert three rows
+//  out of order, walk and confirm ascending order.
+EseIntegrationScenario(TemporaryTable, OpenTempTable2WithLcidBuildsSortedTable)
+{
+    TemporaryDirectory directory(
+        "TemporaryTable.OpenTempTable2WithLcidBuildsSortedTable");
+    EseInstance instance(directory);
+    EseSession session(instance);
+
+    JET_COLUMNDEF columns[2] = { {}, {} };
+    columns[0].cbStruct = sizeof(columns[0]);
+    columns[0].coltyp = JET_coltypLong;
+    columns[0].grbit = JET_bitColumnTTKey;
+    columns[1].cbStruct = sizeof(columns[1]);
+    columns[1].coltyp = JET_coltypLong;
+
+    JET_COLUMNID columnIdentifiers[2] = { 0, 0 };
+    JET_TABLEID temporaryTableId = JET_tableidNil;
+    CheckJet(JetOpenTempTable2(session.Handle(),
+                               columns,
+                               2,
+                               1033 /* en-US lcid, unused for Long key */,
+                               JET_bitTTUpdatable,
+                               &temporaryTableId,
+                               columnIdentifiers));
+    Require(temporaryTableId != JET_tableidNil);
+    Require(columnIdentifiers[0] != 0);
+    Require(columnIdentifiers[1] != 0);
+
+    auto insertPair = [&](int32_t key, int32_t value) {
+        CheckJet(JetPrepareUpdate(session.Handle(), temporaryTableId,
+                                  JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), temporaryTableId,
+                              columnIdentifiers[0], &key, sizeof(key),
+                              0, nullptr));
+        CheckJet(JetSetColumn(session.Handle(), temporaryTableId,
+                              columnIdentifiers[1], &value, sizeof(value),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), temporaryTableId,
+                           nullptr, 0, nullptr));
+    };
+
+    CheckJet(JetBeginTransaction(session.Handle()));
+    insertPair(30, 300);
+    insertPair(10, 100);
+    insertPair(20, 200);
+    CheckJet(JetCommitTransaction(session.Handle(), 0));
+
+    CheckJet(JetMove(session.Handle(), temporaryTableId, JET_MoveFirst, 0));
+    Require(RetrieveCurrentLong(session.Handle(), temporaryTableId,
+                                columnIdentifiers[0]) == 10);
+    CheckJet(JetMove(session.Handle(), temporaryTableId, JET_MoveNext, 0));
+    Require(RetrieveCurrentLong(session.Handle(), temporaryTableId,
+                                columnIdentifiers[0]) == 20);
+    CheckJet(JetMove(session.Handle(), temporaryTableId, JET_MoveNext, 0));
+    Require(RetrieveCurrentLong(session.Handle(), temporaryTableId,
+                                columnIdentifiers[0]) == 30);
+
+    CheckJet(JetCloseTable(session.Handle(), temporaryTableId));
+}
+
 EseIntegrationScenario(TemporaryTable, OpenTempTable3SortsViaUnicodeIndex)
 {
     TemporaryDirectory directory(
