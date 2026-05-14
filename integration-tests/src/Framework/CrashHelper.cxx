@@ -59,6 +59,17 @@ void RegisterChildEntry(std::string name, ChildEntryPoint entry)
     ChildEntryTable().emplace(std::move(name), std::move(entry));
 }
 
+void RegisterChildEntry(std::string name, SimpleChildEntryPoint entry)
+{
+    ChildEntryTable().emplace(
+        std::move(name),
+        [entry = std::move(entry)](const std::filesystem::path& directory,
+                                   std::span<const std::string_view>)
+        {
+            entry(directory);
+        });
+}
+
 const ChildEntryPoint* FindChildEntry(std::string_view name)
 {
     auto& table = ChildEntryTable();
@@ -77,7 +88,8 @@ void ChildProcess::SignalReady(const std::filesystem::path& directory)
 }
 
 ChildProcess::ChildProcess(std::string_view entryName,
-                           const std::filesystem::path& directory)
+                           const std::filesystem::path& directory,
+                           std::span<const std::string> extraArgs)
     : _directory(directory)
 {
     const auto entryNameOwned = std::string(entryName);
@@ -86,11 +98,16 @@ ChildProcess::ChildProcess(std::string_view entryName,
 
     // Build argv for execve. All arguments must outlive the call.
     std::vector<std::string> argumentStorage;
+    argumentStorage.reserve(5 + extraArgs.size());
     argumentStorage.push_back(executablePath);
     argumentStorage.push_back("--child-entry");
     argumentStorage.push_back(entryNameOwned);
     argumentStorage.push_back("--child-directory");
     argumentStorage.push_back(directoryString);
+    for (const auto& extraArg : extraArgs)
+    {
+        argumentStorage.push_back(extraArg);
+    }
 
     std::vector<char*> argumentPointers;
     argumentPointers.reserve(argumentStorage.size() + 1);

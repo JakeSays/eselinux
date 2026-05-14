@@ -42,6 +42,7 @@ enum class ScenarioCategory
     Encryption,
     Preread,
     Rbs,
+    Replication,
 };
 
 const char* ToString(ScenarioCategory category);

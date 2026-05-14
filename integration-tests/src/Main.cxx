@@ -28,8 +28,10 @@
 #include <filesystem>
 #include <format>
 #include <iostream>
+#include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace
 {
@@ -44,6 +46,11 @@ struct CommandLineOptions
     bool ChildMode = false;
     std::string ChildEntryName;
     std::string ChildDirectory;
+    //  Any tokens that appear in argv after --child-directory in
+    //  child-entry mode.  These reach the child entry function as
+    //  `extraArgs` and carry per-child state (TCP ports, role tags,
+    //  peer endpoints).
+    std::vector<std::string> ChildExtraArgs;
 };
 
 void PrintUsage(std::string_view programName)
@@ -144,6 +151,15 @@ bool ParseCommandLine(int argc, char** argv, CommandLineOptions& options)
                 return false;
             }
             options.ChildDirectory = value;
+            //  Anything after --child-directory is fed verbatim to the
+            //  child entry as extraArgs.  This is how the parent
+            //  hands per-child state (TCP ports, role flags) across
+            //  the fork+execve boundary — no on-disk config files.
+            while (index + 1 < argc)
+            {
+                ++index;
+                options.ChildExtraArgs.emplace_back(argv[index]);
+            }
         }
         else if (argument == "--help" || argument == "-h")
         {
@@ -174,7 +190,14 @@ int RunChildEntry(const CommandLineOptions& options)
     }
     try
     {
-        (*entry)(std::filesystem::path(options.ChildDirectory));
+        std::vector<std::string_view> argViews;
+        argViews.reserve(options.ChildExtraArgs.size());
+        for (const auto& token : options.ChildExtraArgs)
+        {
+            argViews.emplace_back(token);
+        }
+        (*entry)(std::filesystem::path(options.ChildDirectory),
+                 std::span<const std::string_view>(argViews));
     }
     catch (const std::exception& exception)
     {

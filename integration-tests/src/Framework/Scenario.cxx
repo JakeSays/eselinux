@@ -60,6 +60,8 @@ const char* ToString(ScenarioCategory category)
             return "Preread";
         case ScenarioCategory::Rbs:
             return "Rbs";
+        case ScenarioCategory::Replication:
+            return "Replication";
     }
     return "Unknown";
 }

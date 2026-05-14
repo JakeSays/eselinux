@@ -15,9 +15,9 @@ APIs whose engine implementation is an unconditional stub upstream
 platform — `dev/ese/src/ese/pib.cxx:994`, `jetapi.cxx:9582`,
 `jetapi.cxx:18940`) are out-of-scope, not "covered with caveats".
 
-**Totals:** 212 base APIs declared, 171 covered (81%), 41 untested.
+**Totals:** 212 base APIs declared, 177 covered (83%), 35 untested.
 
-## Tested (171)
+## Tested (177)
 
 Core surface for every scenario the engine actually runs.  Includes
 DDL (table/column/index create/delete/rename, **JetDeleteTable**,
@@ -104,6 +104,18 @@ Revertable-Backup-Set (RBS / revert snapshot):
 **JetRBSPrepareRevert**, **JetRBSExecuteRevert**,
 **JetRBSCancelRevert**, **JetGetRBSFileInfo**.
 
+Replication / replica repair (TCP-loopback multi-process topology):
+**JetConsumeLogData** (live-tail log shipping via
+`JET_paramEmitLogDataCallback` round-trip; passive promotes
+`.jsl` shadow logs to `.log` for recovery),
+**JetBeginDatabaseIncrementalReseed**,
+**JetPatchDatabasePages** (Cancel-path and Commit-path scenarios),
+**JetEndDatabaseIncrementalReseed**,
+**JetOnlinePatchDatabasePage** (PAGE_PATCH_TOKEN with log
+signature),
+**JetExternalRestore** (caller pre-stages backup files in the
+target dir, then API applies log replay to bring DB current).
+
 Versioned variants that add functional surface (not just thin
 wrappers): **JetBeginTransaction3** (trxid stamping),
 **JetCommitTransaction2** (commit-id + durable delay),
@@ -122,14 +134,9 @@ The engine ships these and no test exercises any version.  Roughly
 ordered by user-visible value.
 
 ### Logs / replay
-- `JetConsumeLogData`, `JetExternalRestore`, `JetExternalRestore2`
-  (round 8 — replication)
-- `JetBeginDatabaseIncrementalReseed`, `JetEndDatabaseIncrementalReseed`
-  (round 8 — replication)
-
-### Page inspection
-- `JetOnlinePatchDatabasePage`, `JetPatchDatabasePages` (round 8 —
-  replication page repair)
+- `JetExternalRestore2` (round 8 covered the v1 form; v2 adds a
+  `JET_LOGINFO` argument and is a thin wrapper over the same
+  ErrIsamExternalRestore path)
 
 ### Snapshot extensions
 - `JetOSSnapshotTruncateLog`, `JetOSSnapshotTruncateLogInstance` —
@@ -251,7 +258,7 @@ coverage target:
   surfaces as `JET_wrnColumnMaxTruncated` (1512), not
   `JET_errColumnTooBig`.
 
-- **Round 7** (current): RBS / revert-snapshot surface —
+- **Round 7**: RBS / revert-snapshot surface —
   `JetRBSPrepareRevert`, `JetRBSExecuteRevert`,
   `JetRBSCancelRevert`, `JetGetRBSFileInfo` (via
   `JetGetRBSFileInfoA`).  Four scenarios in `RbsScenarios.cxx`:

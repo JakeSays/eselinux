@@ -24,19 +24,40 @@
 #include <chrono>
 #include <filesystem>
 #include <functional>
+#include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <sys/types.h>
 
 namespace ese::tests
 {
 
-using ChildEntryPoint = std::function<void(const std::filesystem::path& directory)>;
+// A child-entry function receives its scratch directory and any extra
+// argv tokens the parent appended via ChildProcess.  Per-child state
+// (TCP ports, role tags, peer endpoints) travels through `extraArgs`
+// — never via on-disk config files.  Use a simple `key=value`
+// convention so each token is self-describing and order-independent.
+using ChildEntryPoint = std::function<void(
+    const std::filesystem::path& directory,
+    std::span<const std::string_view> extraArgs)>;
+
+// Convenience alias for child entries that don't care about extra
+// args — most recovery-style scenarios.  Register one of these with
+// the 1-arg overload of RegisterChildEntry below.
+using SimpleChildEntryPoint =
+    std::function<void(const std::filesystem::path& directory)>;
 
 // Register a child-process entry point. The name must match the
 // --child-entry argument the parent passes to itself.
 void RegisterChildEntry(std::string name, ChildEntryPoint entry);
+
+// Overload for child entries that take only a directory.  The
+// implementation wraps the callback so the underlying registry
+// still stores a uniform 2-arg signature; extra args, if any, are
+// silently dropped.
+void RegisterChildEntry(std::string name, SimpleChildEntryPoint entry);
 
 // Look up a previously-registered entry by name. Used by Main()
 // when invoked with --child-entry. Returns nullptr if unknown.
@@ -46,10 +67,13 @@ class ChildProcess
 {
 public:
     // Forks and re-executes the current binary with
-    // --child-entry <entryName> --child-directory <directory>. The
-    // child looks up the entry by name and invokes it.
+    // --child-entry <entryName> --child-directory <directory>
+    // followed by every token in `extraArgs`.  The child entry looks
+    // up the entry by name and invokes it with the directory and
+    // extraArgs view.
     ChildProcess(std::string_view entryName,
-                 const std::filesystem::path& directory);
+                 const std::filesystem::path& directory,
+                 std::span<const std::string> extraArgs = {});
     ~ChildProcess();
 
     ChildProcess(const ChildProcess&) = delete;

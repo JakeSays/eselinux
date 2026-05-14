@@ -44,6 +44,9 @@ add_executable(ese-tests
     src/Scenarios/PrereadScenarios.cxx
     src/Scenarios/RbsScenarios.cxx
     src/Scenarios/RecoveryScenarios.cxx
+    src/Scenarios/Replication/Orchestrator.cxx
+    src/Scenarios/Replication/WireProtocol.cxx
+    src/Scenarios/ReplicationScenarios.cxx
     src/Scenarios/ScaleScenarios.cxx
     src/Scenarios/SchemaScenarios.cxx
     src/Scenarios/SessionScenarios.cxx
