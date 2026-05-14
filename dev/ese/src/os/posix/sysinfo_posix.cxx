@@ -12,7 +12,12 @@
 
 #include "osstd.hxx"
 
+#if defined( ESE_ARCH_AMD64 ) || defined( ESE_ARCH_X86 )
+//  cpuid.h is clang's x86-only intrinsic header; the
+//  DetermineProcessorCapabilities body that uses it is itself
+//  gated on the same arch macros below.
 #include <cpuid.h>
+#endif
 #include <dlfcn.h>
 #include <link.h>
 #include <pthread.h>
@@ -250,6 +255,21 @@ LOCAL VOID DetermineProcessorCapabilities()
             g_fAVXEnabled = ((xcr0 & 0x6) == 0x6);
         }
     }
+#elif defined( ESE_ARCH_ARM64 )
+    //  ARMv8-A always has NEON; we expose that as "FAVXEnabled" so
+    //  the checksum-selection assertion in checksum_test.cxx accepts
+    //  ChecksumNewFormatAVX (which on this arch is the NEON port —
+    //  see checksum/avx/checksum_neon.cxx).
+    //
+    //  SSE/SSE2/Popcnt all stay false: callers branch on those to
+    //  reach x86-specific kernels (ChecksumNewFormatSSE2<...> etc.)
+    //  whose aarch64 builds are stub-only and Enforce(fFalse) on
+    //  entry.  In particular, FPopcntAvailable() being true would
+    //  trip the ECC unit test's direct SSE2_Popcnt invocation.
+    g_fSSEInstructionsAvailable = fFalse;
+    g_fSSE2InstructionsAvailable = fFalse;
+    g_fPopcntAvailable = fFalse;
+    g_fAVXEnabled = fTrue;
 #else
     g_fSSEInstructionsAvailable = fFalse;
     g_fSSE2InstructionsAvailable = fFalse;

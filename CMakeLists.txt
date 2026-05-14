@@ -124,16 +124,27 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         # Resolve the toolchain's per-target lib dir from the compiler.
         # `-print-resource-dir` returns `<root>/lib/clang/<ver>`; the runtime
         # archives live at `<root>/lib/<triple>/`.
+        #
+        # The triple comes from CMAKE_CXX_COMPILER_TARGET when the toolchain
+        # file set it (cross builds); otherwise we ask clang for its default
+        # target (native builds).  `clang -print-target-triple` ignores any
+        # target inferred from argv0 (e.g. aarch64-linux-gnu-clang++) and
+        # always reports the compiler's *default* target — so on a cross
+        # build it would wrongly return the host triple if we relied on it.
         execute_process(
             COMMAND ${CMAKE_CXX_COMPILER} -print-resource-dir
             OUTPUT_VARIABLE _llvm_resource_dir
             OUTPUT_STRIP_TRAILING_WHITESPACE
         )
-        execute_process(
-            COMMAND ${CMAKE_CXX_COMPILER} -print-target-triple
-            OUTPUT_VARIABLE _llvm_target_triple
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
+        if (CMAKE_CXX_COMPILER_TARGET)
+            set(_llvm_target_triple "${CMAKE_CXX_COMPILER_TARGET}")
+        else ()
+            execute_process(
+                COMMAND ${CMAKE_CXX_COMPILER} -print-target-triple
+                OUTPUT_VARIABLE _llvm_target_triple
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+        endif ()
         get_filename_component(_llvm_lib_root "${_llvm_resource_dir}/../.." ABSOLUTE)
         set(_llvm_libdir "${_llvm_lib_root}/${_llvm_target_triple}")
         if (NOT EXISTS "${_llvm_libdir}/libc++.a")
@@ -440,6 +451,26 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     )
 endif()
 
+# Pin a $ORIGIN-relative RPATH on every Linux target — executables in
+# <build>/bin/ resolve libese.so / libnls.so / etc. in <build>/lib/
+# regardless of where the build tree lives, and the deployed bin+lib
+# pair works under any prefix.  We use the install-RPATH machinery
+# (with BUILD_WITH_INSTALL_RPATH) rather than
+# CMAKE_BUILD_RPATH_USE_ORIGIN because the latter has a CMake/Ninja
+# interaction that strips the leading `/` and yields a broken RUNPATH
+# like `p/ese/repo/out/debug/lib`.
+#
+# This block must run BEFORE any add_subdirectory() that defines
+# targets (vendored deps included) — directory-scoped variables only
+# propagate into subdirectories processed after the set().  Putting it
+# below `add_subdirectory(third_party/libnls)` made nls_smoke pick up
+# the absolute build-tree path instead of $ORIGIN.
+if (NOT WIN32)
+    set( CMAKE_INSTALL_RPATH         "\$ORIGIN/../lib;\$ORIGIN" )
+    set( CMAKE_BUILD_WITH_INSTALL_RPATH TRUE )
+    set( CMAKE_SKIP_BUILD_RPATH         FALSE )
+endif ()
+
 # Vendored libucl, used by the Linux config layer (config_posix.cxx).
 # Windows builds use the registry-backed config.cxx and don't need it.
 if (NOT WIN32)
@@ -462,20 +493,96 @@ if (NOT WIN32)
     get_target_property(NLS_INC_DIRS nls::nls INTERFACE_INCLUDE_DIRECTORIES)
     include_directories(SYSTEM ${NLS_INC_DIRS})
 
-    # Debug builds: pin a $ORIGIN-relative RPATH so executables in
-    # <build>/bin/ find libnls.so (and libese.so) in <build>/lib/
-    # regardless of where the build tree lives.  We use the
-    # install-RPATH machinery (with BUILD_WITH_INSTALL_RPATH) rather
-    # than CMAKE_BUILD_RPATH_USE_ORIGIN because the latter has a
-    # CMake/Ninja interaction that strips the leading `/` and yields
-    # a broken RUNPATH like `p/ese/repo/out/debug/lib`.  Case-
-    # insensitive compare so the toggle catches `=debug` / `=DEBUG`.
-    string( TOLOWER "${CMAKE_BUILD_TYPE}" _ese_build_type_lower )
-    if ( _ese_build_type_lower STREQUAL "debug" )
-        set( CMAKE_INSTALL_RPATH         "\$ORIGIN/../lib;\$ORIGIN" )
-        set( CMAKE_BUILD_WITH_INSTALL_RPATH TRUE )
-        set( CMAKE_SKIP_BUILD_RPATH         FALSE )
+    # libsodium — downloaded and built at configure time (NOT vendored
+    # in the repo).  libese.so dlopens libsodium.so.26 at runtime for
+    # AES-256-GCM at-rest encryption; we ship our own 1.0.22-stable
+    # build because the 1.0.18 release that Ubuntu 24.04 / Debian 12
+    # / etc. carry has no AArch64 AES path (its aes256gcm
+    # implementation is x86-AES-NI-only).
+    #
+    # No CMake dep on libsodium — the .so just needs to land under
+    # <build>/lib/ so libese.so's $ORIGIN/../lib RPATH resolves the
+    # runtime dlopen.  ExternalProject_Add fetches, configures with
+    # autotools (cross-aware via CC + CFLAGS + --host), and copies
+    # the produced libsodium.so* into the build's lib output dir.
+    include(ExternalProject)
+
+    set(LIBSODIUM_URL "https://download.libsodium.org/libsodium/releases/libsodium-1.0.22-stable.tar.gz")
+    set(LIBSODIUM_SHA256 "ba3e9f0310f546f6877498891e9afc0b6e7973dfae412cfe9f3bca511dbb4087")
+
+    #  Bake every position-sensitive flag into the CC string passed
+    #  to autotools.  libtool reorders / filters LDFLAGS when it
+    #  reconstructs the link line and drops --target,
+    #  --rtlib=compiler-rt, --stdlib=libc++, -unwindlib=libunwind
+    #  even when they're in LDFLAGS — so the shared-library link
+    #  falls back to the host triple + GCC runtime and fails to
+    #  find aarch64 crt files / libgcc.  Folding the flags into CC
+    #  makes them part of every clang invocation libtool emits,
+    #  since CC is treated as a single command and survives all of
+    #  libtool's reordering.
+    #
+    #  LDFLAGS still carries -fuse-ld=lld — that one libtool does
+    #  preserve, and clang accepts it from either position.
+    set(_libsodium_cc "${CMAKE_C_COMPILER}")
+    if (CMAKE_CROSSCOMPILING)
+        string(APPEND _libsodium_cc " --target=${CMAKE_C_COMPILER_TARGET}")
+        if (CMAKE_SYSROOT)
+            string(APPEND _libsodium_cc " --sysroot=${CMAKE_SYSROOT}")
+        endif ()
     endif ()
+    #  --rtlib=compiler-rt replaces libgcc, which the sysroot
+    #  doesn't ship (we're LLVM end-to-end).  libsodium is pure C
+    #  with no exception/unwinding needs, so we don't bother
+    #  specifying an unwindlib — compiler-rt + lld produce a clean
+    #  shared library on their own.
+    string(APPEND _libsodium_cc " --rtlib=compiler-rt")
+
+    set(_libsodium_cflags "")
+    set(_libsodium_ldflags "-fuse-ld=lld")
+
+    set(_libsodium_host_arg "")
+    if (CMAKE_CROSSCOMPILING)
+        set(_libsodium_host_arg "--host=${CMAKE_C_COMPILER_TARGET}")
+    endif ()
+
+    set(_libsodium_install_dir "${CMAKE_BINARY_DIR}/_deps/libsodium-install")
+
+    ExternalProject_Add(libsodium_external
+        URL ${LIBSODIUM_URL}
+        URL_HASH SHA256=${LIBSODIUM_SHA256}
+        PREFIX ${CMAKE_BINARY_DIR}/_deps/libsodium
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        CONFIGURE_COMMAND
+            env "CC=${_libsodium_cc}"
+                "CFLAGS=${_libsodium_cflags}"
+                "LDFLAGS=${_libsodium_ldflags}"
+            <SOURCE_DIR>/configure
+            --prefix=${_libsodium_install_dir}
+            --libdir=${_libsodium_install_dir}/lib
+            --disable-static
+            --disable-dependency-tracking
+            ${_libsodium_host_arg}
+        BUILD_COMMAND make -j14
+        INSTALL_COMMAND make install
+        BUILD_BYPRODUCTS
+            ${_libsodium_install_dir}/lib/libsodium.so.26
+    )
+
+    #  Stage libsodium.so* into <build>/lib/ so $ORIGIN-relative
+    #  dlopen from libese.so finds it.  cp -P preserves the symlinks
+    #  (libsodium.so → libsodium.so.26 → libsodium.so.26.X.Y) so any
+    #  SOname spelling resolves.
+    add_custom_command(
+        OUTPUT ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libsodium.so.26
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+        COMMAND sh -c "cp -P ${_libsodium_install_dir}/lib/libsodium.so* ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/"
+        DEPENDS libsodium_external
+        COMMENT "Staging libsodium.so* into ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/"
+    )
+
+    add_custom_target(libsodium_stage ALL
+        DEPENDS ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libsodium.so.26
+    )
 endif ()
 
 # Finally, in this project, we configure and build these subdirectories:

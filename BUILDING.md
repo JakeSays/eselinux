@@ -1,8 +1,8 @@
 # Building ESE on Linux
 
 This document describes how to build the Linux port of ESE.  Supported
-targets are x86_64 and aarch64 Linux; the Windows toolchain is no
-longer supported from this tree.
+targets are x86_64 and aarch64 Linux; the Windows toolchain is not 
+currently supported from this tree.
 
 ## Prerequisites
 

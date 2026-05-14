@@ -1808,8 +1808,13 @@ CPAGE::TAG * CPAGE::PtagFromItag_( INT itag ) const
 
     TAG * ptag = (TAG *)( (BYTE*)m_bfl.pv + m_platchManager->CbBuffer( m_bfl ) );
     ptag -= itag + 1;
-#if !defined(_M_ARM) && !defined(_M_ARM64) && !defined(_ARM64EC_)
+#if ( defined ESE_ARCH_AMD64 || defined ESE_ARCH_X86 ) && !defined _ARM64EC_
     _mm_prefetch( (char*)ptag, _MM_HINT_T0 );   //  almost always this will be immediately useful ...
+#elif defined ESE_ARCH_ARM64
+    //  aarch64 equivalent of _mm_prefetch( T0 ): emits PRFM pldl1keep
+    //  on the AArch64 backend.  (rw=0 read, locality=3 keep in all
+    //  cache levels.)
+    __builtin_prefetch( ptag, 0, 3 );
 #endif
     Assert( NULL != ptag );
     Assert( !FAssertNotOnPage_( ptag ) || FNegTest( fCorruptingPageLogically ) );

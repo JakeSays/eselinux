@@ -5,8 +5,15 @@
 find_package (Threads REQUIRED)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.2")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx")
+    # -msse4.2 / -mavx only on x86 targets.  The intrinsic-bearing
+    # source files (checksum_amd64.cxx etc.) are already gated on
+    # ESE_ARCH_AMD64 / ESE_ARCH_X86 internally, so on aarch64 they
+    # compile to empty TUs — passing -mavx to clang for an aarch64
+    # target is a hard error.
+    if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|i[3-6]86)$")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.2")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx")
+    endif ()
 
     # We have some strings in the code, such as "<???>", that are interpreted as trigraphs by GCC
     add_compile_options(-Wno-trigraphs)

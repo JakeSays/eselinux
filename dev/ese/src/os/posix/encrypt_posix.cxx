@@ -170,14 +170,36 @@ BOOL g_fEncryptionAvailable = fFalse;
 
 void SodiumInitOnce()
 {
-    //  Try the soname that's stable across libsodium 1.0.x on every
-    //  Linux distro we care about; fall back to the unversioned link
-    //  in case a development install is on the box without the
-    //  versioned symlink.
-    g_phSodium = dlopen( "libsodium.so.23", RTLD_LAZY | RTLD_LOCAL );
-    if ( g_phSodium == nullptr )
+    //  Three sonames in order of preference:
+    //
+    //    1. libsodium.so.26 — the SOname of libsodium >= 1.0.20,
+    //       which is what our build's ExternalProject ships (and
+    //       what Debian trixie / Ubuntu 25.04+ / recent Fedora carry
+    //       system-wide).  This is the version that has the AArch64
+    //       AES path; older versions on aarch64 fail the
+    //       crypto_aead_aes256gcm_is_available() check.
+    //
+    //    2. libsodium.so.23 — pre-1.0.20 SOname (Ubuntu 24.04,
+    //       Debian 12).  Works on x86 with AES-NI; on aarch64 the
+    //       availability check fails and we return FNA at the
+    //       call-site level.
+    //
+    //    3. libsodium.so — unversioned dev symlink (only present if
+    //       `-dev` package is installed, or when our own build
+    //       stages the lib next to libese.so).
+    static const char* const sodiumSonames[] =
     {
-        g_phSodium = dlopen( "libsodium.so", RTLD_LAZY | RTLD_LOCAL );
+        "libsodium.so.26",
+        "libsodium.so.23",
+        "libsodium.so",
+    };
+    for ( const char* soname : sodiumSonames )
+    {
+        g_phSodium = dlopen( soname, RTLD_LAZY | RTLD_LOCAL );
+        if ( g_phSodium != nullptr )
+        {
+            break;
+        }
     }
     if ( g_phSodium == nullptr )
     {
@@ -229,8 +251,14 @@ void OSEncryptionPostterm() {}
 void OSEncryptionTerm()     {}
 ERR  ErrOSEncryptionInit()
 {
+    //  Always succeed.  If libsodium is missing (or its aes256gcm
+    //  isn't available on this arch — e.g. libsodium <= 1.0.18 on
+    //  aarch64), encryption-using call sites get
+    //  JET_errFeatureNotAvailable from ErrOSCreateAes256Key /
+    //  Encrypt / Decrypt; the engine continues working for any
+    //  consumer that doesn't enable at-rest encryption.
     SodiumEnsureInit();
-    return g_fEncryptionAvailable ? JET_errSuccess : ErrERRCheck( JET_errFeatureNotAvailable );
+    return JET_errSuccess;
 }
 
 

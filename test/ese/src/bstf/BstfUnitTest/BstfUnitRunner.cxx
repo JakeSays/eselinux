@@ -9,6 +9,7 @@
 
 #include "testerr.h"
 #include "bstf.hxx"
+#include "platform.h"  // ESE_ARCH_*
 
 
 #ifndef BSTF_AVOID_WIN_DEPENDENCE
@@ -133,14 +134,21 @@ static ERR ErrRunTest( UNITTEST * const punittest )
 
     if ( punittest->m_btcf & btcfForceStackTrash )
         {
-#ifdef DEBUG
+#if defined(DEBUG) && ( defined(ESE_ARCH_AMD64) || defined(ESE_ARCH_X86) )
         BstfTrashTestStackWithPattern();
 #else
         //  Stack-trash tests sanity-check compiler behavior around partial
         //  aggregate zero-fill and uninitialized-stack reads.  The latter
-        //  is UB and only works when the optimizer is off, so the suite
-        //  can't pass under -O2.  None of these tests exercise engine code.
-        printf( "==> %s skipped (btcfForceStackTrash; release build)\r\n", punittest->SzName() );
+        //  is UB and only works under a specific stack layout — none of
+        //  these tests exercise engine code.  Two cases skip:
+        //    - Release (any arch): -O2 reorders / elides stack reads
+        //      so the trash pattern doesn't survive to the read site.
+        //    - aarch64 (any config): the AArch64 PCS frame layout
+        //      doesn't overlap the trashed region with the test's
+        //      local array, so the "is the stack still 0xFE..." check
+        //      fails or — worse — the read falls into unmapped memory
+        //      and traps.
+        printf( "==> %s skipped (btcfForceStackTrash)\r\n", punittest->SzName() );
         return JET_errSuccess;
 #endif
         }

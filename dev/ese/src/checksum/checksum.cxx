@@ -290,6 +290,14 @@ XECHECKSUM ChecksumSelectNewFormat( const unsigned char * const pb, const ULONG 
             pfn = ChecksumNewFormatSSE;
         }
     }
+#elif defined(ESE_ARCH_ARM64)
+    //  NEON is mandatory in ARMv8-A.  The `ChecksumNewFormatAVX`
+    //  symbol on this arch is actually the NEON port of the HSIAO
+    //  ECC kernel (see checksum/avx/checksum_neon.cxx) — kept under
+    //  the AVX name so the function-pointer table and the test
+    //  selection assertion `pfnChecksumNewFormat == ChecksumNewFormatAVX`
+    //  work without per-arch fork.
+    pfn = ChecksumNewFormatAVX;
 #endif
 
     if (pfn == ChecksumSelectNewFormat)

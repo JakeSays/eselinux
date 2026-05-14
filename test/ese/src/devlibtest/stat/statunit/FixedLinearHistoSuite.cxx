@@ -54,12 +54,19 @@ class EmbeddedMultiHistos
 private:
     static const INT cHistoSections = 6;
 
-    BYTE rgbHistoUp[     CbCFixedLinearHistogram( cHistoSections ) ];
-    BYTE rgbHistoDown[   CbCFixedLinearHistogram( cHistoSections ) ];
-    BYTE rgbHistoTop[    CbCFixedLinearHistogram( cHistoSections ) ];
-    BYTE rgbHistoBottom[ CbCFixedLinearHistogram( cHistoSections ) ];
-    BYTE rgbHistoStrange[CbCFixedLinearHistogram( cHistoSections ) ];
-    BYTE rgbHistoCharm[  CbCFixedLinearHistogram( cHistoSections ) ];
+    //  Buffers for placement-new'd CFixedLinearHistogram objects.
+    //  Without an explicit alignment hint the BYTE[] is 1-byte
+    //  aligned, which is fine on x86 but causes a SIGBUS on
+    //  aarch64 when the vtable pointer or other 64-bit members are
+    //  accessed through an unaligned address.  alignas() to the
+    //  class's own alignment matches what `new CFixedLinearHistogram`
+    //  would do.
+    alignas( CFixedLinearHistogram ) BYTE rgbHistoUp[     CbCFixedLinearHistogram( cHistoSections ) ];
+    alignas( CFixedLinearHistogram ) BYTE rgbHistoDown[   CbCFixedLinearHistogram( cHistoSections ) ];
+    alignas( CFixedLinearHistogram ) BYTE rgbHistoTop[    CbCFixedLinearHistogram( cHistoSections ) ];
+    alignas( CFixedLinearHistogram ) BYTE rgbHistoBottom[ CbCFixedLinearHistogram( cHistoSections ) ];
+    alignas( CFixedLinearHistogram ) BYTE rgbHistoStrange[CbCFixedLinearHistogram( cHistoSections ) ];
+    alignas( CFixedLinearHistogram ) BYTE rgbHistoCharm[  CbCFixedLinearHistogram( cHistoSections ) ];
 
 public:
     EmbeddedMultiHistos()
@@ -193,7 +200,7 @@ ERR FixedLinearHistogramBasicTest::ErrTest()
     if ( fPrintStatus )
         wprintf(L" Testing CFixedLinearHistogram...\n");
 
-    BYTE rgbFixedHistoInline[ CbCFixedLinearHistogram( 11 ) ];
+    alignas( CFixedLinearHistogram ) BYTE rgbFixedHistoInline[ CbCFixedLinearHistogram( 11 ) ];
     CStats * phisto = new( rgbFixedHistoInline )CFixedLinearHistogram( sizeof( rgbFixedHistoInline ), 0, 10, 11, flhfFullRoundUp );
 
     SAMPLE qwSample = 0;

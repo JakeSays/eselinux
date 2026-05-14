@@ -92,7 +92,11 @@
 
 #define __nullterminated
 #define __nullnullterminated
-#define __reserved
+//  Intentionally not defining `__reserved` as a legacy SAL annotation
+//  here — the Linux kernel uses it as an actual struct member name in
+//  asm/sigcontext.h, asm/ucontext.h, etc., and #define'ing it to empty
+//  breaks those headers.  No code in the engine uses __reserved as a
+//  SAL annotation, so this is loss-free.
 #define __notnull
 #define __maybenull
 #define __format_string

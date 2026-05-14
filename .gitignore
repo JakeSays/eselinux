@@ -31,9 +31,9 @@
 *.out
 *.app
 
-# For out-of-source CMake builds
+# For out-of-source CMake builds — every sub-tree under build/
+# (e.g. build/debug, build/release, build/aarch64-debug) is ignored.
 build/
-build-release/
 bin/
 obj/
 out/

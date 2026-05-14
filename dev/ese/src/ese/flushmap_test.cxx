@@ -3619,7 +3619,11 @@ JETUNITTEST( CFlushMap, DumpAndChecksumOfCorruptedFlushMapWorks )
     // Corrupt flush map.
     IFileAPI* pfapi = NULL;
     CHECK( JET_errSuccess == pfsapi->ErrFileOpen( wszFmFilePath, IFileAPI::fmfNone, &pfapi ) );
-    const BYTE rgbCorruption[ CFlushMap::s_cbFlushMapPageOnDisk ] = { 12, 34, 56, 78 };
+    //  fmfNone maps to FILE_FLAG_NO_BUFFERING (-> O_DIRECT on
+    //  Linux) which requires a sector-aligned buffer.  4KB
+    //  alignment covers every Linux logical-block-size we've seen
+    //  (eMMC 4KB; most disks 512 or 4KB).
+    alignas( 4096 ) const BYTE rgbCorruption[ CFlushMap::s_cbFlushMapPageOnDisk ] = { 12, 34, 56, 78 };
     CHECK( JET_errSuccess == pfapi->ErrIOWrite(
         *TraceContextScope( iorpFlushMap ),
         2 * CFlushMap::s_cbFlushMapPageOnDisk,
@@ -3702,7 +3706,9 @@ JETUNITTEST( CFlushMap, DumpAndChecksumOfCorruptedFlushMapDoesNotWorkIfHeaderCor
     // Corrupt flush map.
     IFileAPI* pfapi = NULL;
     CHECK( JET_errSuccess == pfsapi->ErrFileOpen( wszFmFilePath, IFileAPI::fmfNone, &pfapi ) );
-    const BYTE rgbCorruption[ CFlushMap::s_cbFlushMapPageOnDisk ] = { 12, 34, 56, 78 };
+    //  See comment in DumpAndChecksumOfCorruptedFlushMapWorks above
+    //  re: alignas(4096) for O_DIRECT buffer alignment.
+    alignas( 4096 ) const BYTE rgbCorruption[ CFlushMap::s_cbFlushMapPageOnDisk ] = { 12, 34, 56, 78 };
     CHECK( JET_errSuccess == pfapi->ErrIOWrite(
         *TraceContextScope( iorpFlushMap ),
         0,
@@ -3797,8 +3803,10 @@ JETUNITTEST( CFlushMap, VariousInvalidFlushMapConditionsAreCorrectlyDetected )
     const WCHAR* const wszDbFileBadPath = L".\\database.edb";
     const WCHAR* const wszDbFileBigPath = L"C:\\0008001200160020002400280032003600400044004800520056006000640068007200760080008400880092009601000104010801120116012001240128013201360140014401480152015601600164016801720176018001840188019201960200020402080212021602200224022802320236024002440248025202560260";
     const size_t cbFmHdr = CFlushMap::s_cbFlushMapPageOnDisk;
-    // Use alloca to ensure proper alignment. (checksummming requires 16-byte alignment.)
-    BYTE* rgbFmHdr = (BYTE*) alloca( cbFmHdr );
+    // O_DIRECT (fmfNone -> FILE_FLAG_NO_BUFFERING) requires 4KB-aligned
+    // buffers on Linux; alloca only gives stack-alignment, so use an
+    // aligned automatic instead.  16-byte alignment satisfies checksumming.
+    alignas( 4096 ) BYTE rgbFmHdr[ CFlushMap::s_cbFlushMapPageOnDisk ];
     memset( rgbFmHdr, 0, cbFmHdr );
 
     SIGNATURE signDbHdrFlushFromDbInitial, signFlushMapHdrFlushFromDbInitial;
