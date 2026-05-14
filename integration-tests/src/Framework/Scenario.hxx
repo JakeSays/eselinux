@@ -43,6 +43,7 @@ enum class ScenarioCategory
     Preread,
     Rbs,
     Replication,
+    WideApi,
 };
 
 const char* ToString(ScenarioCategory category);

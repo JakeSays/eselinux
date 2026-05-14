@@ -22,6 +22,18 @@ engineering surface).  Of the **198 testable** APIs, **194 are covered
 `JetOSSnapshotTruncateLogInstance`) the only remaining functional gap
 — blocked on a Linux-engine investigation rather than test authoring.
 
+**A/W methodology note:** the 194-covered count is measured at the
+*base* API name — `JetCreateInstance` covered means at least one of
+`JetCreateInstanceA` / `JetCreateInstanceW` is exercised.  Round 11
+adds W-variant smoke scenarios (`WideApiScenarios.cxx`) so the
+UTF-16 entry points aren't entirely unexercised, but those W-only
+scenarios are explicitly NOT counted in the percentage — the
+underlying capability is already covered by the corresponding A
+scenario, and counting W as a separate "API" would double-count.
+Round 11 is a sanity check on the windows-shim
+MultiByteToWideChar / WideCharToMultiByte plumbing, not net new
+functional coverage.
+
 ## Tested (194)
 
 Core surface for every scenario the engine actually runs.  Includes
@@ -417,11 +429,39 @@ coverage target:
   "declared" to "testable" so engine stubs and version-gated
   declarations no longer drag the percentage down.
 
-## Suggested round 11 — engine investigation
+- **Round 11**: W-variant (UTF-16) smoke coverage in
+  `WideApiScenarios.cxx`.  12 scenarios — instance / session / DB /
+  schema / params / non-ASCII paths-and-identifiers — each routed
+  end-to-end through `Jet*W` entry points without touching the
+  A-based Framework helpers (`EseInstance` etc.).  Not counted in
+  the coverage percentage: A and W collapse at the base name, so
+  the underlying APIs are already credited; round 11 is purely a
+  windows-shim `MultiByteToWideChar` / `WideCharToMultiByte`
+  smoke check.
+
+  APIs exercised by at least one W call-site:
+  `JetCreateInstanceW`, `JetCreateInstance2W`, `JetBeginSessionW`,
+  `JetSetSystemParameterW`, `JetGetSystemParameterW`,
+  `JetCreateDatabaseW`, `JetCreateDatabase2W`, `JetAttachDatabaseW`,
+  `JetAttachDatabase2W`, `JetDetachDatabaseW`, `JetOpenDatabaseW`,
+  `JetCreateTableW`, `JetCreateTableColumnIndexW`, `JetAddColumnW`,
+  `JetCreateIndexW`, `JetCreateIndex2W`, `JetOpenTableW`.
+
+  Engine-contract gotchas surfaced (documented inline):
+  - `JetCreateIndexW`'s `cbKey` parameter is a byte count (not
+    code-unit count) — the wide keyspec doubles the byte cost
+    compared to the A path.
+  - String-valued system parameters are init-time only on both
+    A and W paths; setting `JET_paramEventSource` (or similar
+    string params) after `JetInit` returns
+    `JET_errAlreadyInitialized`.  W scenarios that exercise
+    `JetSetSystemParameterW` must do so before `JetInit`.
+
+## Suggested round 12 — engine investigation
 
 `JetOSSnapshotTruncateLog` and `JetOSSnapshotTruncateLogInstance`
 hang inside `pSession->ErrTruncateLogs` on this Linux build.
-Round 11 is the investigation + fix to unblock these.  Not a
+Round 12 is the investigation + fix to unblock these.  Not a
 test-authoring round — it ships engine changes (or surfaces an
 upstream bug to defer).
 

@@ -53,6 +53,7 @@ add_executable(ese-tests
     src/Scenarios/SnapshotScenarios.cxx
     src/Scenarios/TemporaryTableScenarios.cxx
     src/Scenarios/TransactionScenarios.cxx
+    src/Scenarios/WideApiScenarios.cxx
 )
 
 set_target_properties(ese-tests PROPERTIES
