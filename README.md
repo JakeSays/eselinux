@@ -2,7 +2,7 @@
 
 # Extensible-Storage-Engine for Linux
 
-This repository contains a port of Mocrosoft's ESE for Linux. See BUILDING.md for Linux specific build instructions.
+This repository contains a port of Microsoft's ESE for Linux. See BUILDING.md for Linux specific build instructions.
 
 To insulate the Linux consumer from Windows types `jetapi.h` is provided. This standalone header uses only `<stdint.h>` types (and `uchar.h` when needed). The tests under integration-tests use this header.
 
