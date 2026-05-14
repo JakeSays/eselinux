@@ -41,6 +41,7 @@ add_executable(ese-tests
     src/Scenarios/MultiValueScenarios.cxx
     src/Scenarios/NavigationScenarios.cxx
     src/Scenarios/PlatformScenarios.cxx
+    src/Scenarios/PrereadScenarios.cxx
     src/Scenarios/RecoveryScenarios.cxx
     src/Scenarios/ScaleScenarios.cxx
     src/Scenarios/SchemaScenarios.cxx

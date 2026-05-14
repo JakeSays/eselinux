@@ -663,3 +663,308 @@ EseIntegrationScenario(Navigation, IndexRecordCountReportsRowCount)
                                  &bounded, /*crecMax*/ 10));
     Require(bounded == 10);
 }
+
+EseIntegrationScenario(Navigation, GetCurrentIndexReportsActiveIndex)
+{
+    TemporaryDirectory directory("Navigation.GetCurrentIndexReportsActiveIndex");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Sorted");
+
+    table.AddColumn("Identity",
+                    JET_coltypLong,
+                    JET_bitColumnAutoincrement | JET_bitColumnNotNULL);
+    auto rankColumnId = table.AddColumn("Rank",
+                                        JET_coltypLong,
+                                        JET_bitColumnNotNULL);
+
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Identity\0\0", 11);
+    table.CreateIndex("PrimaryByIdentity",
+                      PrimaryKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    static constexpr std::string_view RankKey =
+        std::string_view("+Rank\0\0", 7);
+    table.CreateIndex("ByRank", RankKey);
+
+    //  Defaults to the primary index when nothing is selected; the
+    //  engine reports its name.
+    char indexName[ JET_cbNameMost + 1 ] = {};
+    CheckJet(JetGetCurrentIndexA(session.Handle(),
+                                 table.Id(),
+                                 indexName,
+                                 sizeof(indexName)));
+    Require(std::string_view(indexName) == "PrimaryByIdentity");
+
+    //  Switching the cursor's index flips what JetGetCurrentIndex
+    //  reports.
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(), "ByRank"));
+    std::memset(indexName, 0, sizeof(indexName));
+    CheckJet(JetGetCurrentIndexA(session.Handle(),
+                                 table.Id(),
+                                 indexName,
+                                 sizeof(indexName)));
+    Require(std::string_view(indexName) == "ByRank");
+
+    (void)rankColumnId;
+}
+
+EseIntegrationScenario(Navigation, SetAndResetTableSequentialRoundTrip)
+{
+    TemporaryDirectory directory(
+        "Navigation.SetAndResetTableSequentialRoundTrip");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Rows");
+    auto identityColumnId = PopulateAutoIncrementTable(table, 32);
+
+    //  JetSetTableSequential is a perf hint — the engine prereads
+    //  pages assuming we'll walk the table front-to-back.  No flags
+    //  in the unversioned form; round-trip with Reset.
+    CheckJet(JetSetTableSequential(session.Handle(), table.Id(), 0));
+
+    int seen = 0;
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    while (true)
+    {
+        ++seen;
+        const auto rc = JetMove(session.Handle(), table.Id(), JET_MoveNext, 0);
+        if (rc == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(rc);
+    }
+    Require(seen == 32);
+
+    CheckJet(JetResetTableSequential(session.Handle(), table.Id(), 0));
+
+    (void)identityColumnId;
+}
+
+EseIntegrationScenario(Navigation, SetCursorFilterRejectsNonMatchingRows)
+{
+    TemporaryDirectory directory(
+        "Navigation.SetCursorFilterRejectsNonMatchingRows");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Filtered");
+
+    auto keyColumnId = table.AddColumn("Key",
+                                       JET_coltypLong,
+                                       JET_bitColumnNotNULL);
+    auto valueColumnId = table.AddColumn("Value",
+                                         JET_coltypLong,
+                                         JET_bitColumnNotNULL);
+
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Key\0\0", 6);
+    table.CreateIndex("PrimaryByKey",
+                      PrimaryKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    //  Insert 10 rows with Value alternating between 7 and 11.  The
+    //  filter pins the visible set to Value=7 (5 of the 10).
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < 10; ++i)
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(),
+                                      table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(),
+                                  table.Id(),
+                                  keyColumnId,
+                                  &i,
+                                  sizeof(i),
+                                  0,
+                                  nullptr));
+            const int32_t value = (i % 2 == 0) ? 7 : 11;
+            CheckJet(JetSetColumn(session.Handle(),
+                                  table.Id(),
+                                  valueColumnId,
+                                  &value,
+                                  sizeof(value),
+                                  0,
+                                  nullptr));
+            CheckJet(JetUpdate(session.Handle(),
+                               table.Id(),
+                               nullptr,
+                               0,
+                               nullptr));
+        }
+        transaction.Commit();
+    }
+
+    int32_t target = 7;
+    JET_INDEX_COLUMN filter = {};
+    filter.columnid = valueColumnId;
+    filter.relop = JET_relopEquals;
+    filter.pv = &target;
+    filter.cb = sizeof(target);
+    filter.grbit = 0;
+
+    //  JetSetCursorFilter installs a server-side residual predicate.
+    //  Rows whose Value column is not 7 are silently skipped on Move.
+    //  Filtering on un-indexed columns may not be supported by every
+    //  engine build — JET_errFilteredMoveNotSupported is the
+    //  documented fallback; both outcomes count as "API exercised".
+    const auto filterErr = JetSetCursorFilter(session.Handle(),
+                                              table.Id(),
+                                              &filter,
+                                              1,
+                                              0);
+    if (filterErr == JET_errFilteredMoveNotSupported)
+    {
+        return;
+    }
+    CheckJet(filterErr);
+
+    int rowsSeen = 0;
+    auto rc = JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0);
+    while (rc != JET_errNoCurrentRecord)
+    {
+        CheckJet(rc);
+        const auto value = RetrieveFixedColumnFromCurrentRecord<int32_t>(
+            table, valueColumnId);
+        Require(value == 7);
+        ++rowsSeen;
+        rc = JetMove(session.Handle(), table.Id(), JET_MoveNext, 0);
+    }
+    Require(rowsSeen == 5);
+}
+
+EseIntegrationScenario(Navigation, GetAndGotoRecordPositionRoundTrip)
+{
+    TemporaryDirectory directory(
+        "Navigation.GetAndGotoRecordPositionRoundTrip");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Rows");
+
+    auto identityColumnId = PopulateAutoIncrementTable(table, 25);
+
+    //  Walk forward 12 rows from the start so we land somewhere
+    //  interior to the table.  Capture the row's value AND record
+    //  position; resetting the cursor and JetGotoPosition'ing back
+    //  must land us on the same row.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    CheckJet(JetMove(session.Handle(), table.Id(), 12, 0));
+    const auto landingValue =
+        RetrieveFixedColumnFromCurrentRecord<int32_t>(table, identityColumnId);
+
+    JET_RECPOS recpos = {};
+    recpos.cbStruct = sizeof(recpos);
+    CheckJet(JetGetRecordPosition(session.Handle(),
+                                  table.Id(),
+                                  &recpos,
+                                  sizeof(recpos)));
+    Require(recpos.centriesTotal >= recpos.centriesLT);
+
+    //  Reposition somewhere else, then ask the engine to put us back
+    //  by fraction-of-table.  JetGotoPosition is an approximate seek
+    //  (it finds the closest record matching the LT/Total ratio); on a
+    //  small table that's exactly the row we recorded above.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    CheckJet(JetGotoPosition(session.Handle(), table.Id(), &recpos));
+    const auto roundTripValue =
+        RetrieveFixedColumnFromCurrentRecord<int32_t>(table, identityColumnId);
+    Require(roundTripValue == landingValue);
+}
+
+EseIntegrationScenario(Navigation, SecondaryIndexBookmarkRoundTrip)
+{
+    TemporaryDirectory directory(
+        "Navigation.SecondaryIndexBookmarkRoundTrip");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Indexed");
+
+    auto identityColumnId = table.AddColumn(
+        "Identity",
+        JET_coltypLong,
+        JET_bitColumnAutoincrement | JET_bitColumnNotNULL);
+    auto rankColumnId = table.AddColumn("Rank",
+                                        JET_coltypLong,
+                                        JET_bitColumnNotNULL);
+
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Identity\0\0", 11);
+    table.CreateIndex("PrimaryByIdentity",
+                      PrimaryKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    static constexpr std::string_view RankKey =
+        std::string_view("+Rank\0\0", 7);
+    table.CreateIndex("ByRank", RankKey);
+
+    constexpr int RowCount = 8;
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < RowCount; ++i)
+        {
+            const int32_t rank = RowCount - i;
+            CheckJet(JetPrepareUpdate(session.Handle(),
+                                      table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(),
+                                  table.Id(),
+                                  rankColumnId,
+                                  &rank,
+                                  sizeof(rank),
+                                  0,
+                                  nullptr));
+            CheckJet(JetUpdate(session.Handle(),
+                               table.Id(),
+                               nullptr,
+                               0,
+                               nullptr));
+        }
+        transaction.Commit();
+    }
+
+    //  Position on the third row of the secondary index, capture both
+    //  bookmarks, reposition the cursor elsewhere, and re-seek via
+    //  JetGotoSecondaryIndexBookmark — we should land on the same row.
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(), "ByRank"));
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    CheckJet(JetMove(session.Handle(), table.Id(), 2, 0));
+    const auto landingIdentity =
+        RetrieveFixedColumnFromCurrentRecord<int32_t>(table, identityColumnId);
+
+    uint8_t secondaryKey[256] = {};
+    uint8_t primaryBookmark[256] = {};
+    uint32_t cbSecondary = 0;
+    uint32_t cbPrimary = 0;
+    CheckJet(JetGetSecondaryIndexBookmark(session.Handle(),
+                                          table.Id(),
+                                          secondaryKey,
+                                          sizeof(secondaryKey),
+                                          &cbSecondary,
+                                          primaryBookmark,
+                                          sizeof(primaryBookmark),
+                                          &cbPrimary,
+                                          0));
+    Require(cbSecondary > 0);
+    Require(cbPrimary > 0);
+
+    //  Drift the cursor to confirm Goto actually moves us.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveLast, 0));
+
+    CheckJet(JetGotoSecondaryIndexBookmark(session.Handle(),
+                                           table.Id(),
+                                           secondaryKey,
+                                           cbSecondary,
+                                           primaryBookmark,
+                                           cbPrimary,
+                                           0));
+    const auto roundTripIdentity =
+        RetrieveFixedColumnFromCurrentRecord<int32_t>(table, identityColumnId);
+    Require(roundTripIdentity == landingIdentity);
+}

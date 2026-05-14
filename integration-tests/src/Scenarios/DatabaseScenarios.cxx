@@ -8,9 +8,14 @@
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <string_view>
+#include <vector>
 
 using namespace ese::tests;
 
@@ -135,4 +140,100 @@ EseIntegrationScenario(Database, GetDatabaseInfoReportsFilenameAndSize)
                                  &pageSize, sizeof(pageSize),
                                  JET_DbInfoPageSize));
     Require(pageSize == 4096);
+}
+
+EseIntegrationScenario(Database, GetDatabaseFileInfoReportsFileType)
+{
+    TemporaryDirectory directory("Database.GetDatabaseFileInfoReportsFileType");
+
+    //  JetGetDatabaseFileInfo works on a closed file path — it opens
+    //  the .edb, peeks at the header, and closes again.  Create a
+    //  database inside its own EseInstance scope so it's flushed and
+    //  detached cleanly before we probe it.
+    std::filesystem::path databasePath;
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+        EseDatabase database(session, "FileInfo.mdb");
+        databasePath = database.Path();
+    }
+
+    uint32_t fileType = 0;
+    CheckJet(JetGetDatabaseFileInfoA(databasePath.string().c_str(),
+                                     &fileType,
+                                     sizeof(fileType),
+                                     JET_DbInfoFileType));
+    Require(fileType == JET_filetypeDatabase);
+
+    uint32_t pageSize = 0;
+    CheckJet(JetGetDatabaseFileInfoA(databasePath.string().c_str(),
+                                     &pageSize,
+                                     sizeof(pageSize),
+                                     JET_DbInfoPageSize));
+    Require(pageSize == 4096);
+}
+
+EseIntegrationScenario(Database, GetDatabasePagesAndGetPageInfoRoundTrip)
+{
+    TemporaryDirectory directory(
+        "Database.GetDatabasePagesAndGetPageInfoRoundTrip");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Pages.mdb");
+
+    //  JetGetDatabasePages copies raw on-disk pages into a caller
+    //  buffer.  Pull the first 4 pages (16 KiB at 4 KiB pages) — pgno
+    //  1 is the database header, pgno 2 the shadow header.
+    //
+    //  The engine requires the destination buffer to be aligned to
+    //  the OS memory-page commit granularity (4 KiB on this build) —
+    //  it reads directly with O_DIRECT.  std::vector / new wouldn't
+    //  satisfy that; std::aligned_alloc does.
+    static constexpr uint32_t kPageSize = 4096;
+    static constexpr uint32_t kPageCount = 4;
+    static constexpr uint32_t kTotalBytes = kPageSize * kPageCount;
+
+    struct AlignedFree
+    {
+        void operator()(void* ptr) const
+        {
+            std::free(ptr);
+        }
+    };
+    std::unique_ptr<uint8_t, AlignedFree> rawPages(
+        static_cast<uint8_t*>(std::aligned_alloc(kPageSize, kTotalBytes)));
+    Require(rawPages != nullptr);
+    std::memset(rawPages.get(), 0, kTotalBytes);
+
+    uint32_t cbActual = 0;
+    CheckJet(JetGetDatabasePages(session.Handle(),
+                                 database.Id(),
+                                 /*pgnoStart=*/1,
+                                 kPageCount,
+                                 rawPages.get(),
+                                 kTotalBytes,
+                                 &cbActual,
+                                 0));
+    Require(cbActual == kTotalBytes);
+
+    //  JetGetPageInfo parses those raw bytes into a JET_PAGEINFO
+    //  array.  Each element's `pgno` field is INPUT — caller stamps
+    //  the page number it wants info on; engine fills the rest.
+    std::vector<JET_PAGEINFO> pageInfos(kPageCount);
+    for (uint32_t i = 0; i < kPageCount; ++i)
+    {
+        pageInfos[i].pgno = i + 1;
+    }
+    CheckJet(JetGetPageInfo(rawPages.get(),
+                            kTotalBytes,
+                            pageInfos.data(),
+                            static_cast<uint32_t>(pageInfos.size() *
+                                                  sizeof(JET_PAGEINFO)),
+                            0,
+                            JET_PageInfo));
+
+    //  Pages 1 and 2 are the database header and shadow header —
+    //  always initialised.
+    Require(pageInfos[0].fPageIsInitialized);
+    Require(pageInfos[1].fPageIsInitialized);
 }

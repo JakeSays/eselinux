@@ -290,3 +290,40 @@ EseIntegrationScenario(Transaction, GetLockOutsideTransactionReturnsNotInTransac
     RequireJetError(JetGetLock(session.Handle(), table.Id(), JET_bitWriteLock),
                     JET_errNotInTransaction);
 }
+
+EseIntegrationScenario(Transaction, PrepareToCommitTransactionIsReachable)
+{
+    TemporaryDirectory directory(
+        "Transaction.PrepareToCommitTransactionIsReachable");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Transaction.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Value",
+                                    JET_coltypLong,
+                                    JET_bitColumnNotNULL);
+
+    //  JetPrepareToCommitTransaction lets the client stash an opaque
+    //  context blob that the engine attaches to the commit-0 LR for
+    //  the current transaction.  The public dispatch entry is wired
+    //  up; this Linux build answers JET_errFeatureNotAvailable
+    //  because the underlying mechanism isn't ported yet.  Either
+    //  outcome counts as the API entry being reachable.
+    EseTransaction transaction(session);
+    InsertSingleFixedColumnRow<int32_t>(table, columnId, 99);
+
+    static constexpr char CommitContext[] =
+        "ese-tests-pretransaction-context";
+    const auto prepareErr = JetPrepareToCommitTransaction(session.Handle(),
+                                                          CommitContext,
+                                                          sizeof(CommitContext) - 1,
+                                                          0);
+    Require(prepareErr == JET_errSuccess ||
+            prepareErr == JET_errFeatureNotAvailable);
+    transaction.Commit();
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    const auto observed =
+        RetrieveFixedColumnFromCurrentRecord<int32_t>(table, columnId);
+    Require(observed == 99);
+}

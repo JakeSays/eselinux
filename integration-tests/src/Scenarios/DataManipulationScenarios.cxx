@@ -611,3 +611,89 @@ EseIntegrationScenario(DataManipulation, GetRecordSizeReportsNonZeroData)
     Require(recsize.cbData >= BlobPayload.size());
     Require(recsize.cNonTaggedColumns + recsize.cTaggedColumns >= 2);
 }
+
+EseIntegrationScenario(DataManipulation, RetrieveTaggedColumnListReportsTaggedColumns)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.RetrieveTaggedColumnListReportsTaggedColumns");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "Tagged");
+
+    //  JET_coltypLongBinary / LongText are tagged columns by default.
+    //  Add a fixed Id (non-tagged) plus two tagged blobs so the
+    //  enumeration has something to report.
+    auto idColumn = table.AddColumn("Id", JET_coltypLong, JET_bitColumnNotNULL);
+    auto blobA = table.AddColumn("BlobA", JET_coltypLongBinary);
+    auto blobB = table.AddColumn("BlobB", JET_coltypLongBinary);
+
+    static constexpr char BlobAPayload[] = "alpha";
+    static constexpr char BlobBPayload[] = "bravo";
+
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(),
+                                  table.Id(),
+                                  JET_prepInsert));
+        const int32_t id = 1;
+        CheckJet(JetSetColumn(session.Handle(),
+                              table.Id(),
+                              idColumn,
+                              &id,
+                              sizeof(id),
+                              0,
+                              nullptr));
+        CheckJet(JetSetColumn(session.Handle(),
+                              table.Id(),
+                              blobA,
+                              BlobAPayload,
+                              sizeof(BlobAPayload) - 1,
+                              0,
+                              nullptr));
+        CheckJet(JetSetColumn(session.Handle(),
+                              table.Id(),
+                              blobB,
+                              BlobBPayload,
+                              sizeof(BlobBPayload) - 1,
+                              0,
+                              nullptr));
+        CheckJet(JetUpdate(session.Handle(),
+                           table.Id(),
+                           nullptr,
+                           0,
+                           nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    JET_RETRIEVEMULTIVALUECOUNT entries[16] = {};
+    uint32_t cEntries = 0;
+    CheckJet(JetRetrieveTaggedColumnList(session.Handle(),
+                                         table.Id(),
+                                         &cEntries,
+                                         entries,
+                                         sizeof(entries),
+                                         /*columnidStart=*/0,
+                                         0));
+    //  Both blob columns must show up; the engine may also report the
+    //  internal record-content columnid (0 or low value) — exact count
+    //  isn't load-bearing, but we expect at least 2 tagged values.
+    Require(cEntries >= 2);
+    bool foundA = false;
+    bool foundB = false;
+    for (uint32_t i = 0; i < cEntries && i < std::size(entries); ++i)
+    {
+        if (entries[i].columnid == blobA)
+        {
+            foundA = true;
+        }
+        if (entries[i].columnid == blobB)
+        {
+            foundB = true;
+        }
+    }
+    Require(foundA);
+    Require(foundB);
+}

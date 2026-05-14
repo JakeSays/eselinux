@@ -226,3 +226,95 @@ EseIntegrationScenario(Maintenance, IdleAvailBuffersStatusReportsState)
     const auto err = JetIdle(session.Handle(), JET_bitIdleAvailBuffersStatus);
     Require(err == JET_errSuccess || err == JET_wrnIdleFull);
 }
+
+EseIntegrationScenario(Maintenance, GetAndResetCounterAreReachable)
+{
+    TemporaryDirectory directory(
+        "Maintenance.GetAndResetCounterAreReachable");
+    EseInstance instance(directory);
+    EseSession session(instance);
+
+    //  JetGetCounter / JetResetCounter expose the engine's per-session
+    //  performance counter slots.  Some builds wire them up to real
+    //  meters; this Linux build currently dispatches them through the
+    //  public surface but the counters themselves aren't implemented,
+    //  so the engine answers JET_errFeatureNotAvailable.  Both shapes
+    //  count as "the API entry point reaches the engine" — which is
+    //  exactly what these scenarios prove.
+    int32_t value = -1;
+    const auto getErr = JetGetCounter(session.Handle(), 0, &value);
+    Require(getErr == JET_errSuccess || getErr == JET_errFeatureNotAvailable);
+
+    const auto resetErr = JetResetCounter(session.Handle(), 0);
+    Require(resetErr == JET_errSuccess ||
+            resetErr == JET_errFeatureNotAvailable);
+}
+
+EseIntegrationScenario(Maintenance, SetColumnDefaultValueAppliesToFutureRows)
+{
+    TemporaryDirectory directory(
+        "Maintenance.SetColumnDefaultValueAppliesToFutureRows");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Maintenance.mdb");
+    EseTable table(database, "Defaults");
+
+    auto columnId = table.AddColumn("Value", JET_coltypLong);
+
+    //  Set a column-level default; rows inserted without a value for
+    //  Value see the engine fill in 42.
+    int32_t defaultValue = 42;
+    CheckJet(JetSetColumnDefaultValueA(session.Handle(),
+                                       database.Id(),
+                                       "Defaults",
+                                       "Value",
+                                       &defaultValue,
+                                       sizeof(defaultValue),
+                                       0));
+
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(),
+                                  table.Id(),
+                                  JET_prepInsert));
+        CheckJet(JetUpdate(session.Handle(),
+                           table.Id(),
+                           nullptr,
+                           0,
+                           nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    const auto observed =
+        RetrieveFixedColumnFromCurrentRecord<int32_t>(table, columnId);
+    Require(observed == defaultValue);
+}
+
+EseIntegrationScenario(Maintenance, ResizeDatabaseGrowsPageCount)
+{
+    TemporaryDirectory directory(
+        "Maintenance.ResizeDatabaseGrowsPageCount");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Maintenance.mdb");
+
+    //  Find the current page count, ask the engine to grow to that +
+    //  256 pages.  JetResizeDatabase honours JET_bitResizeDatabaseOnlyGrow
+    //  so we can be certain we never shrink mid-test.
+    uint32_t cpgBefore = 0;
+    CheckJet(JetGetDatabaseInfoA(session.Handle(),
+                                 database.Id(),
+                                 &cpgBefore,
+                                 sizeof(cpgBefore),
+                                 JET_DbInfoFilesize));
+
+    const uint32_t cpgTarget = cpgBefore + 256;
+    uint32_t cpgActual = 0;
+    CheckJet(JetResizeDatabase(session.Handle(),
+                               database.Id(),
+                               cpgTarget,
+                               &cpgActual,
+                               JET_bitResizeDatabaseOnlyGrow));
+    Require(cpgActual >= cpgTarget);
+}

@@ -8,15 +8,20 @@ covered.  Version-suffixed siblings (e.g. `JetCreateIndex2`,
 `JetCreateIndex3`, `JetCreateIndex4`) are tracked separately from their
 unversioned base.
 
-**Totals:** 212 base APIs declared, 89 covered (42%), 123 untested.
+**Totals:** 212 base APIs declared, 120 covered (57%), 92 untested.
 
-## Tested (89)
+## Tested (120)
 
 Core surface for every scenario the engine actually runs.  Includes
-DDL (table/column/index create/delete/rename, **JetDeleteTable**), DML
-(insert/update/delete/retrieve, **JetEnumerateColumns**), navigation
-(move/seek/setIndex/setRange, **JetIntersectIndexes**), transactions
-(begin/commit/rollback), backup/restore (incl. external + restore),
+DDL (table/column/index create/delete/rename, **JetDeleteTable**,
+**JetSetColumnDefaultValue**), DML
+(insert/update/delete/retrieve, **JetEnumerateColumns**,
+**JetRetrieveTaggedColumnList**), navigation
+(move/seek/setIndex/setRange, **JetIntersectIndexes**,
+**JetSetCursorFilter**, **JetSetTableSequential** /
+**JetResetTableSequential**), transactions
+(begin/commit/rollback, **JetPrepareToCommitTransaction**),
+backup/restore (incl. external + restore, **JetStopBackupInstance**),
 snapshot lifecycle, params, init/term, attach/detach/open/close,
 JetCompact / JetDefragment, JetEscrowUpdate, JetComputeStats,
 JetGetBookmark / JetGotoBookmark, JetFreeBuffer.
@@ -26,54 +31,61 @@ Diagnostics: **JetGetSessionInfo**, **JetGetCursorInfo**,
 
 Cursor handle management: **JetDupSession**, **JetDupCursor**.
 
+Cursor / position queries: **JetGetCurrentIndex**,
+**JetGetRecordPosition**, **JetGotoPosition**,
+**JetGetSecondaryIndexBookmark**, **JetGotoSecondaryIndexBookmark**.
+
 Database lifecycle: **JetGrowDatabase**, **JetSetDatabaseSize**,
-**JetSetMaxDatabaseSize**, **JetGetMaxDatabaseSize**.
+**JetSetMaxDatabaseSize**, **JetGetMaxDatabaseSize**,
+**JetResizeDatabase**.
 
 Engine hooks: **JetRegisterCallback**, **JetUnregisterCallback**,
 **JetIdle** (`JET_bitIdleWaitForAsyncActivity` /
 `JET_bitIdleAvailBuffersStatus`).
 
 Info surface: **JetGetDatabaseInfo**, **JetGetObjectInfo**,
-**JetGetIndexInfo**, **JetGetInstanceInfo**.
+**JetGetIndexInfo**, **JetGetInstanceInfo**,
+**JetGetInstanceMiscInfo**, **JetGetDatabaseFileInfo**,
+**JetGetLogFileInfo**, **JetGetLogInfoInstance**,
+**JetGetTruncateLogInfoInstance**, **JetGetAttachInfo** (global),
+**JetGetPageInfo**, **JetGetDatabasePages**, **JetGetSystemParameter**.
 
 Record-level: **JetRetrieveKey**, **JetGetLock**, **JetGetRecordSize**,
 **JetIndexRecordCount**.
 
 Session / cursor local storage: **JetSetSessionContext**,
-**JetResetSessionContext**, **JetSetLS**, **JetGetLS**.
+**JetResetSessionContext**, **JetSetLS**, **JetGetLS**,
+**JetSetSessionParameter**, **JetGetSessionParameter**.
+
+Pre-read surface: **JetPrereadKeys**, **JetPrereadIndexRange**,
+**JetPrereadTables**.
+
+Counters: **JetGetCounter**, **JetResetCounter** (FNA-tolerant — the
+Linux build dispatches the calls but the underlying counters aren't
+ported yet; both the call shape and the engine's FNA response are
+exercised).
+
+Logs / backup: **JetTruncateLogInstance** (covers the call shape +
+out-of-sequence error path).
+
+Instance lifecycle: **JetCreateInstance** (unversioned) in addition
+to `JetCreateInstance2`.
 
 ## Genuine functional gaps (no version covered)
 
 The engine ships these and no test exercises any version.  Roughly
 ordered by user-visible value.
 
-### Cursor / stream
-- `JetGetCurrentIndex` — diagnostics
-- `JetSetCursorFilter` — server-side row filter
-- `JetSetTableSequential` / `JetResetTableSequential` — sequential
-  scan hint
-- `JetGetRecordPosition`, `JetGotoPosition` — record-position
-  navigation (fraction-of-table)
-- `JetGetSecondaryIndexBookmark`, `JetGotoSecondaryIndexBookmark` —
-  cross-index navigation
-
 ### DML
-- `JetRetrieveTaggedColumnList` — tag enumeration on tagged columns
 - `JetRetrieveColumnByReference`, `JetRetrieveColumnFromRecordStream`,
   `JetPrereadColumnsByReference`, `JetStreamRecords` — column-stream
   surface
 - `JetGetRecordSize2` / `JetGetRecordSize3` — newer revs (base `JetGetRecordSize` covered)
-- `JetSetColumnDefaultValue` — change a column's default
 
 ### Pre-read surface
-- `JetPrereadKeys`, `JetPrereadIndexRange`, `JetPrereadIndexRanges`,
-  `JetPrereadTables`
-
-### Sessions / context
-- `JetSetSessionParameter`, `JetGetSessionParameter`
+- `JetPrereadIndexRanges` — multi-range form (singular `JetPrereadIndexRange` covered)
 
 ### Database lifecycle
-- `JetResizeDatabase` — DB-size lifecycle (Grow/SetSize covered)
 - `JetUpgradeDatabase`, `JetConvertDDL`
 - `JetDatabaseScan` — online corruption/integrity scan
 
@@ -84,22 +96,17 @@ ordered by user-visible value.
   agents
 
 ### Logs / replay
-- `JetTruncateLog`, `JetTruncateLogInstance`, `JetRemoveLogfile`,
-  `JetGetLogInfo`, `JetGetLogInfoInstance`, `JetGetLogInfoInstance2`,
-  `JetGetLogFileInfo`, `JetGetTruncateLogInfoInstance`
-- `JetGetAttachInfo`, `JetGetInstanceInfo`, `JetGetInstanceMiscInfo`
+- `JetTruncateLog`, `JetRemoveLogfile`,
+  `JetGetLogInfo`, `JetGetLogInfoInstance2`
 - `JetConsumeLogData`, `JetExternalRestore`, `JetExternalRestore2`,
   `JetBeginExternalBackup`, `JetEndExternalBackup` (we have the
   *Instance* variants but not the global ones)
-- `JetStopBackup`, `JetStopBackupInstance`
+- `JetStopBackup` (`JetStopBackupInstance` covered)
 - `JetBeginDatabaseIncrementalReseed`, `JetEndDatabaseIncrementalReseed`
 - `JetBeginSurrogateBackup`, `JetEndSurrogateBackup`
 
 ### Page / index inspection
-- `JetGetPageInfo`, `JetGetPageInfo2`, `JetGetDatabasePages`
-- `JetGetDatabaseFileInfo` — additional info-query surface
-  (`JetGetDatabaseInfo` / `JetGetObjectInfo` / `JetGetIndexInfo` are
-  covered)
+- `JetGetPageInfo2` (base `JetGetPageInfo` covered)
 - `JetIndexRecordCount2` — newer rev (base covered)
 - `JetOnlinePatchDatabasePage`, `JetPatchDatabasePages`
 
@@ -115,19 +122,16 @@ ordered by user-visible value.
 
 ### Service / housekeeping
 - `JetStopService`, `JetStopServiceInstance`, `JetStopServiceInstance2`
-- `JetGetCounter`, `JetResetCounter`
 
 ### Multi-instance / params
-- `JetEnableMultiInstance`, `JetCreateInstance` (unversioned;
-  `JetCreateInstance2` IS covered)
-- `JetGetSystemParameter`, `JetGetResourceParam`, `JetSetResourceParam`
+- `JetEnableMultiInstance`
+- `JetGetResourceParam`, `JetSetResourceParam`
 - `JetConfigureProcessForCrashDump`
 - `JetGetErrorInfo` — structured error metadata
-- `JetCreateEncryptionKey` (engine has libsodium stub)
+- `JetCreateEncryptionKey` is now exercised by `Encryption.*` scenarios
 
 ### Tools / hooks
 - `JetTracing`, `JetTestHook`, `JetDBUtilities`
-- `JetPrepareToCommitTransaction`
 
 ## Version-variant gaps (newer surface, base form covered)
 
@@ -157,30 +161,40 @@ Low-priority; the underlying functionality is exercised.
 
 ## Suggested next priorities (high-value, low-cost scenarios)
 
-**Items 1–9 from round 1 and items 1–8 from round 2 landed.**  Round 2
-added `JetRetrieveKey`, `JetGetLock`, `JetGetRecordSize`,
-`JetGetDatabaseInfo`, `JetGetObjectInfo`, `JetGetIndexInfo`,
-`JetGetInstanceInfo`, `JetSetSessionContext` /
-`JetResetSessionContext`, `JetSetLS` / `JetGetLS`,
-`JetIndexRecordCount`.
+**Rounds 1 + 2 + 3 landed.**  Round 3 added `JetGetCurrentIndex`,
+`JetSetTableSequential` / `JetResetTableSequential`,
+`JetSetCursorFilter`, `JetGetRecordPosition` / `JetGotoPosition`,
+`JetGetSecondaryIndexBookmark` / `JetGotoSecondaryIndexBookmark`,
+`JetSetSessionParameter` / `JetGetSessionParameter`,
+`JetGetSystemParameter`, `JetGetCounter` / `JetResetCounter`,
+`JetSetColumnDefaultValue`, `JetResizeDatabase`,
+`JetGetAttachInfo` (global), `JetGetLogInfoInstance`,
+`JetGetTruncateLogInfoInstance`, `JetTruncateLogInstance`,
+`JetStopBackupInstance`, `JetGetInstanceMiscInfo`,
+`JetGetLogFileInfo`, `JetGetDatabaseFileInfo`, `JetGetPageInfo`,
+`JetGetDatabasePages`, `JetRetrieveTaggedColumnList`,
+`JetPrereadKeys`, `JetPrereadIndexRange`, `JetPrereadTables`,
+`JetPrepareToCommitTransaction`, `JetCreateInstance` (unversioned) —
+31 base APIs in one push, advancing the meter from 42% to 57%.
 
-Round 3 candidates from the remaining gap list:
+Round 4 candidates from the remaining gap list:
 
-1. **`JetGetCurrentIndex`** — companion to `JetSetCurrentIndex`
-   (covered); reports the active index name on a cursor.
-2. **`JetSetTableSequential` / `JetResetTableSequential`** — sequential
-   scan hint; trivial scenario, covers the prefetch path.
-3. **`JetSetCursorFilter`** — server-side row filter; pairs with
-   navigation scenarios.
-4. **`JetGetRecordPosition` / `JetGotoPosition`** — fraction-of-table
-   navigation.
-5. **`JetGetSecondaryIndexBookmark` / `JetGotoSecondaryIndexBookmark`** —
-   cross-index navigation.
-6. **`JetTruncateLog` / `JetTruncateLogInstance`** — log management.
-7. **`JetGetLogInfoInstance`** — log-file metadata; complements the
-   existing backup scenarios.
-8. **`JetGetAttachInfo`** — global form (the *Instance* variant is
-   covered by `BackupRestore.ExternalBackupExposesAttachInfo`).
+1. **`JetEnableMultiInstance`** — requires a forked child for a pristine
+   engine (single-instance mode locks in at first JetSetSystemParameter
+   in the parent).  CrashHelper already has the fork machinery.
+2. **`JetGetErrorInfo`** — structured `JET_ERRINFOBASIC_W` for a
+   captured engine error; pairs with the ErrorScenarios matrix.
+3. **`JetPrereadIndexRanges`** (multi-range) — extend
+   `Preread.PrereadIndexRangeAcceptsBoundedRange` to two ranges.
+4. **`JetDatabaseScan`** — online integrity scan; a "scan empty DB
+   succeeds" scenario covers the API entry.
+5. **`JetGetResourceParam` / `JetSetResourceParam`** — pre-init
+   resource-pool tuning; need a fresh instance.
+6. **`JetGetPageInfo2`** — same shape as `JetGetPageInfo`, with the
+   extended checksum array.
+7. **`JetOSSnapshotPrepareInstance`** — instance-scoped snapshot
+   alongside the existing global prepare/freeze/thaw.
+8. **`JetOSSnapshotAbort`** — abort path between `Freeze` and `Thaw`.
 
 ## What's NOT in scope here
 

@@ -33,3 +33,16 @@ EseIntegrationScenario(Platform, GetInstanceInfoEnumeratesRunningInstance)
     Require(instanceInfoArray != nullptr);
     CheckJet(JetFreeBuffer(reinterpret_cast<char*>(instanceInfoArray)));
 }
+
+EseIntegrationScenario(Platform, CreateInstanceAllocatesHandleWithoutInit)
+{
+    //  JetCreateInstance is the unversioned alloc-only form (the
+    //  framework uses JetCreateInstance2 elsewhere because it accepts
+    //  a display name).  Round-trip Create -> Term without an Init in
+    //  between is the documented "abandon" path.
+    JET_INSTANCE handle = JET_instanceNil;
+    CheckJet(JetCreateInstanceA(&handle, "Platform.CreateInstance"));
+    Require(handle != JET_instanceNil);
+
+    CheckJet(JetTerm(handle));
+}

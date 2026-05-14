@@ -56,6 +56,8 @@ const char* ToString(ScenarioCategory category)
             return "Concurrency";
         case ScenarioCategory::Encryption:
             return "Encryption";
+        case ScenarioCategory::Preread:
+            return "Preread";
     }
     return "Unknown";
 }

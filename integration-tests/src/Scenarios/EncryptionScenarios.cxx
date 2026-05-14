@@ -120,9 +120,9 @@ EseIntegrationScenario(Encryption, ColumnRoundTripsThroughEncryptedTable)
                               static_cast<uint32_t>(key.size()),
                               JET_TblInfoEncryptionKey));
 
-    static constexpr int32_t kPlainValue = 0xABCDEF01;
-    static constexpr char kSecretValue[] = "the password is 12345";
-    const uint32_t cbSecret = static_cast<uint32_t>(sizeof(kSecretValue));
+    static constexpr int32_t PlainValue = 0xABCDEF01;
+    static constexpr char SecretValue[] = "the password is 12345";
+    const uint32_t cbSecret = static_cast<uint32_t>(sizeof(SecretValue));
 
     {
         EseTransaction transaction(session);
@@ -132,14 +132,14 @@ EseIntegrationScenario(Encryption, ColumnRoundTripsThroughEncryptedTable)
         CheckJet(JetSetColumn(session.Handle(),
                               table.Id(),
                               plainColumn,
-                              &kPlainValue,
-                              sizeof(kPlainValue),
+                              &PlainValue,
+                              sizeof(PlainValue),
                               0,
                               nullptr));
         CheckJet(JetSetColumn(session.Handle(),
                               table.Id(),
                               secretColumn,
-                              kSecretValue,
+                              SecretValue,
                               cbSecret,
                               0,
                               nullptr));
@@ -166,9 +166,9 @@ EseIntegrationScenario(Encryption, ColumnRoundTripsThroughEncryptedTable)
                                0,
                                nullptr));
     Require(cbActual == sizeof(plainBack));
-    Require(plainBack == kPlainValue);
+    Require(plainBack == PlainValue);
 
-    char secretBack[sizeof(kSecretValue)] = {};
+    char secretBack[sizeof(SecretValue)] = {};
     CheckJet(JetRetrieveColumn(session.Handle(),
                                table.Id(),
                                secretColumn,
@@ -178,7 +178,7 @@ EseIntegrationScenario(Encryption, ColumnRoundTripsThroughEncryptedTable)
                                0,
                                nullptr));
     Require(cbActual == cbSecret);
-    Require(std::memcmp(secretBack, kSecretValue, cbSecret) == 0);
+    Require(std::memcmp(secretBack, SecretValue, cbSecret) == 0);
 }
 
 
@@ -208,8 +208,8 @@ EseIntegrationScenario(Encryption, WrongKeyFailsDecryption)
                               static_cast<uint32_t>(keyA.size()),
                               JET_TblInfoEncryptionKey));
 
-    static constexpr char kSecret[] = "secret payload";
-    const uint32_t cbSecret = static_cast<uint32_t>(sizeof(kSecret));
+    static constexpr char SecretPayload[] = "secret payload";
+    const uint32_t cbSecret = static_cast<uint32_t>(sizeof(SecretPayload));
 
     {
         EseTransaction transaction(session);
@@ -219,7 +219,7 @@ EseIntegrationScenario(Encryption, WrongKeyFailsDecryption)
         CheckJet(JetSetColumn(session.Handle(),
                               table.Id(),
                               secretColumn,
-                              kSecret,
+                              SecretPayload,
                               cbSecret,
                               0,
                               nullptr));
@@ -244,7 +244,7 @@ EseIntegrationScenario(Encryption, WrongKeyFailsDecryption)
 
     CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
 
-    char scratch[sizeof(kSecret)] = {};
+    char scratch[sizeof(SecretPayload)] = {};
     uint32_t cbActual = 0;
     const auto err = JetRetrieveColumn(session.Handle(),
                                        table.Id(),

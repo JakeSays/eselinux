@@ -11,6 +11,8 @@
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
+#include <cstring>
+
 using namespace ese::tests;
 
 EseIntegrationScenario(Session, OpenAndClose)
@@ -345,4 +347,53 @@ EseIntegrationScenario(Session, SetAndGetCursorLocalStorageRoundTrip)
     RequireJetError(JetGetLS(session.Handle(), table.Id(),
                              &lsAfterReset, JET_bitLSCursor),
                     JET_errLSNotSet);
+}
+
+EseIntegrationScenario(Session, SetAndGetSessionParameterRoundTrip)
+{
+    TemporaryDirectory directory(
+        "Session.SetAndGetSessionParameterRoundTrip");
+    EseInstance instance(directory);
+    EseSession session(instance);
+
+    //  JET_sesparamCorrelationID is a uint32 tag the client gets to
+    //  set per-session — the engine echoes it in traces and stores
+    //  nothing else.  Set, read back, confirm.
+    constexpr uint32_t CorrelationId = 0xDEADBEEF;
+    CheckJet(JetSetSessionParameter(session.Handle(),
+                                    JET_sesparamCorrelationID,
+                                    const_cast<uint32_t*>(&CorrelationId),
+                                    sizeof(CorrelationId)));
+
+    uint32_t observed = 0;
+    uint32_t cbActual = 0;
+    CheckJet(JetGetSessionParameter(session.Handle(),
+                                    JET_sesparamCorrelationID,
+                                    &observed,
+                                    sizeof(observed),
+                                    &cbActual));
+    Require(cbActual == sizeof(observed));
+    Require(observed == CorrelationId);
+}
+
+EseIntegrationScenario(Session, GetSystemParameterReportsConfiguredBaseName)
+{
+    TemporaryDirectory directory(
+        "Session.GetSystemParameterReportsConfiguredBaseName");
+    EseInstance instance(directory);
+
+    //  JET_paramBaseName is a 3-char string EseInstance configures at
+    //  init.  JetGetSystemParameter mirrors JetSetSystemParameter's
+    //  shape — caller passes a JET_API_PTR* slot AND a string buffer;
+    //  string params populate the buffer, numeric params populate
+    //  *plParam.  Used here to confirm the framework's baseline.
+    JET_API_PTR lParam = 0;
+    char baseName[16] = {};
+    CheckJet(JetGetSystemParameterA(instance.Handle(),
+                                    JET_sesidNil,
+                                    JET_paramBaseName,
+                                    &lParam,
+                                    baseName,
+                                    sizeof(baseName)));
+    Require(std::strlen(baseName) >= 1);
 }
