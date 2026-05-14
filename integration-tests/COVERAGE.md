@@ -15,9 +15,9 @@ APIs whose engine implementation is an unconditional stub upstream
 platform — `dev/ese/src/ese/pib.cxx:994`, `jetapi.cxx:9582`,
 `jetapi.cxx:18940`) are out-of-scope, not "covered with caveats".
 
-**Totals:** 212 base APIs declared, 167 covered (79%), 45 untested.
+**Totals:** 212 base APIs declared, 171 covered (81%), 41 untested.
 
-## Tested (167)
+## Tested (171)
 
 Core surface for every scenario the engine actually runs.  Includes
 DDL (table/column/index create/delete/rename, **JetDeleteTable**,
@@ -100,6 +100,10 @@ Column-by-reference + stream surface:
 **JetRetrieveColumnByReference**, **JetPrereadColumnsByReference**,
 **JetStreamRecords**, **JetRetrieveColumnFromRecordStream**.
 
+Revertable-Backup-Set (RBS / revert snapshot):
+**JetRBSPrepareRevert**, **JetRBSExecuteRevert**,
+**JetRBSCancelRevert**, **JetGetRBSFileInfo**.
+
 Versioned variants that add functional surface (not just thin
 wrappers): **JetBeginTransaction3** (trxid stamping),
 **JetCommitTransaction2** (commit-id + durable delay),
@@ -131,10 +135,6 @@ ordered by user-visible value.
 - `JetOSSnapshotTruncateLog`, `JetOSSnapshotTruncateLogInstance` —
   blocked on engine investigation (hang inside
   `pSession->ErrTruncateLogs` on this Linux build)
-
-### Revertable-Backup-Set (RBS) — round 7
-- `JetRBSPrepareRevert`, `JetRBSExecuteRevert`, `JetRBSCancelRevert`,
-  `JetGetRBSFileInfo`
 
 ## Version-variant gaps (newer surface, base form covered)
 
@@ -237,7 +237,7 @@ coverage target:
   `JetOpenTempTable3`, `JetDefragment2`, `JetInit2`,
   `JetEnableMultiInstance` (forked-child via CrashHelper).
 
-- **Round 6** (current): `JetStopService`,
+- **Round 6**: `JetStopService`,
   `JetStopServiceInstance`, `JetStopServiceInstance2`,
   `JetConfigureProcessForCrashDump`, `JetConvertDDL`
   (`opDDLConvIncreaseMaxColumnSize` + `opDDLConvChangeIndexDensity`),
@@ -251,35 +251,47 @@ coverage target:
   surfaces as `JET_wrnColumnMaxTruncated` (1512), not
   `JET_errColumnTooBig`.
 
-## Suggested round 7 candidates
-
-**RBS surface** — the Revertable Backup Set / Revert Snapshot API:
-- `JetRBSPrepareRevert` — declare the intent to revert the database
-  back to a point in time covered by the existing `.rbs` journal.
-- `JetRBSExecuteRevert` — actually apply the pre-image pages in
-  reverse, rolling the database backwards.
-- `JetRBSCancelRevert` — abort a prepared revert.
-- `JetGetRBSFileInfo` — header inspection on an `.rbs` file.
-
-RBS is the engine's "undo the last N hours of writes" feature.  Each
-page modification captures its pre-image into a parallel `.rbs` file
-(see `dev/ese/src/ese/rbsdump.cxx`, `RBSFILEHDR`, `RBSATTACHINFO`);
-the API lets the caller roll the database back to a chosen log
-generation without restoring from an external backup.  Distinct from
-`JetBackup`/`JetRestore` (point-in-time external snapshot) and from
-`JetOSSnapshot*` (VSS-style consistent freeze).
-
-Engine support gates on `JET_efvRevertSnapshot` (efv 9360 — adds the
-revert-snapshot flush signature to the DB header and the
-`lrtypExtentFreed` log record); tuned via the `JET_paramFlight_RBS*`
-knobs (`RBSRollIntervalSec`, `MaxRBSBuffers`, `RBSMaxTableDeletePages`,
-etc.).  `rbscleaner_test` from tier-1 already passes on Linux, so
-the lower layers are wired up.
-
-Round-7 scenarios need: (a) a fresh instance with RBS enabled,
-(b) populate the database, (c) capture a "good" log generation,
-(d) further mutate, (e) request a revert to step (c)'s generation,
-(f) verify the post-revert state matches step (b).
+- **Round 7** (current): RBS / revert-snapshot surface —
+  `JetRBSPrepareRevert`, `JetRBSExecuteRevert`,
+  `JetRBSCancelRevert`, `JetGetRBSFileInfo` (via
+  `JetGetRBSFileInfoA`).  Four scenarios in `RbsScenarios.cxx`:
+  prepare+cancel, file-info, prepare-reject for an unreachable
+  target, and end-to-end execute-revert that rolls a 502-row
+  database back to its 500-row bootstrap state.
+  Engine-contract gotchas surfaced during the round (documented
+  inline in the scenarios):
+  - `JetRBSPrepareRevert` and `JetRBSCancelRevert` are
+    `FEnterWithoutInit`-gated — they take an instance with paths
+    configured but NOT yet `JetInit`'d.  A live RBS-rolling
+    thread would clash with the revert path.
+  - The RBS subsystem only initialises if the rstmap built during
+    `JetInit` carries at least one database entry whose `.edb`
+    header has the `JET_efvRevertSnapshot` flag set.  Plain
+    `JetInit` (no rstmap) leaves `m_irstmapMac=0`,
+    `FRBSFeatureEnabledFromRstmap` returns false, and no `.rbs`
+    files ever roll.  Bootstrap pattern: phase A creates the
+    `.edb` under plain `JetInit`; later `JetInit4A` calls pass
+    an explicit `JET_RSTMAP2_A` pointing the path at itself so
+    RBS comes up.
+  - The roll-snapshot check fires at `JetInit` / `JetTerm` /
+    redo only — not during writes (`tm.cxx ~1046:
+    if ( pinst->m_prbs && pinst->m_prbs->FRollSnapshot() )`).
+    To roll multiple `.rbs` generations from a test, do multiple
+    init/work/term cycles with the
+    `JET_paramFlight_RBSRollIntervalSec` and
+    `JET_paramFlight_RBSForceRollIntervalSec` flighting knobs
+    pinned to 1 second.
+  - A revert target before any `.rbs` generation's `tmCreate`
+    surfaces as `JET_errRBSRCInvalidRBS` (-1929) from
+    `ErrComputeRBSRangeToApply` (`!tmPrevGen.FIsSet()` on the
+    oldest gen).
+  - `JetRBSExecuteRevert` applies the pre-image pages but does
+    NOT truncate existing log generations by default.  Without
+    `JET_bitDeleteAllExistingLogs` on `JetRBSPrepareRevert`'s
+    grbit (`revertsnapshot.cxx:5817`), the next `JetInit`'s
+    redo cleanly re-applies the rolled-back writes and the
+    database appears unchanged at the row level even though
+    `revertInfo.cPagesReverted > 0`.
 
 ## Suggested round 8 candidates
 

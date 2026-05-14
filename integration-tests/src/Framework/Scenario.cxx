@@ -58,6 +58,8 @@ const char* ToString(ScenarioCategory category)
             return "Encryption";
         case ScenarioCategory::Preread:
             return "Preread";
+        case ScenarioCategory::Rbs:
+            return "Rbs";
     }
     return "Unknown";
 }
