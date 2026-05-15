@@ -36,6 +36,7 @@
 #include "osstd.hxx"
 
 #include <ctype.h>
+#include <locale.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -44,7 +45,58 @@
 
 namespace
 {
+    //  Pin every snprintf / strtoll call in this TU to the C locale so
+    //  output of `%f`/`%g` uses '.' as the decimal separator regardless
+    //  of what `LC_NUMERIC` happens to be set to in the host process.
+    //  The locale_t is created once per process and intentionally
+    //  leaked; uselocale on it is cheap.
+    locale_t CLocaleHandle()
+    {
+        static locale_t cloc = newlocale( LC_ALL_MASK, "C", (locale_t)0 );
+        return cloc;
+    }
+
+    class ScopedCLocale
+    {
+        locale_t _saved;
+    public:
+        ScopedCLocale()  : _saved( uselocale( CLocaleHandle() ) ) {}
+        ~ScopedCLocale() { uselocale( _saved ); }
+        ScopedCLocale( const ScopedCLocale& )            = delete;
+        ScopedCLocale& operator=( const ScopedCLocale& ) = delete;
+    };
+}
+
+namespace
+{
 // ---- narrow output sinks ---------------------------------------------
+
+//  Narrow a wide string to the engine's ANSI codepage (CP_ACP=1252
+//  on Linux), pushing bytes through `Put`.  Replaces the old
+//  truncate-to-low-byte hack with proper codepage-aware conversion;
+//  codepoints not representable in 1252 substitute '?' (default).
+template<typename Sink>
+void EmitNarrowedWide(Sink& sink, const wchar_t* ws)
+{
+    if (!ws)
+        ws = L"(null)";
+    constexpr size_t kChunk = 64;
+    while (*ws)
+    {
+        size_t chunkLen = 0;
+        while (chunkLen < kChunk && ws[chunkLen])
+            ++chunkLen;
+        char buf[kChunk * 2];
+        const int n = WideCharToMultiByte(CP_ACP, 0, ws,
+                                          static_cast<int>(chunkLen),
+                                          buf, static_cast<int>(sizeof(buf)),
+                                          nullptr, nullptr);
+        if (n <= 0)
+            return;
+        sink.PutN(buf, static_cast<size_t>(n));
+        ws += chunkLen;
+    }
+}
 
 struct NBufSink
 {
@@ -73,12 +125,7 @@ struct NBufSink
 
     void PutWide(const wchar_t* ws)
     {
-        if (!ws)
-            ws = L"(null)";
-        while (*ws)
-        {
-            Put(static_cast<char>(*ws++));
-        }
+        EmitNarrowedWide(*this, ws);
     }
 };
 
@@ -134,12 +181,7 @@ struct NFileSink
 
     void PutWide(const wchar_t* ws)
     {
-        if (!ws)
-            ws = L"(null)";
-        while (*ws)
-        {
-            Put(static_cast<char>(*ws++));
-        }
+        EmitNarrowedWide(*this, ws);
     }
 };
 
@@ -895,6 +937,7 @@ HRESULT NarrowVPrintfImpl(char* dst, size_t cchDst, const char* fmt, va_list arg
 {
     if (!dst || cchDst == 0)
         return STRSAFE_E_INVALID_PARAMETER;
+    ScopedCLocale localeGuard;
     NBufSink sink{dst, cchDst, 0, false};
     NarrowFormatV(sink, fmt, args);
     if (sink.used < cchDst)
@@ -908,6 +951,7 @@ HRESULT NarrowVPrintfImpl(char* dst, size_t cchDst, const char* fmt, va_list arg
 
 int NarrowVFPrintfImpl(FILE* fp, const char* fmt, va_list args)
 {
+    ScopedCLocale localeGuard;
     NFileSink sink{fp, {}, 0, 0, false};
     NarrowFormatV(sink, fmt, args);
     sink.Flush();
@@ -925,6 +969,7 @@ HRESULT WideVPrintfImpl(wchar_t* dst, size_t cchDst, const wchar_t* fmt, va_list
         dst[0] = 0;
         return STRSAFE_E_INVALID_PARAMETER;
     }
+    ScopedCLocale localeGuard;
     WSink sink{dst, cchDst, 0, false};
     const HRESULT hr = WideFormatV(sink, fmt, args);
     sink.dst[sink.used] = 0;
@@ -935,6 +980,7 @@ int WideVFPrintfImpl(FILE* fp, const wchar_t* fmt, va_list args)
 {
     if (!fp || !fmt)
         return -1;
+    ScopedCLocale localeGuard;
     wchar_t wbuf[4096];
     WSink sink{wbuf, sizeof(wbuf) / sizeof(wbuf[0]), 0, false};
     WideFormatV(sink, fmt, args);
@@ -968,6 +1014,7 @@ int NarrowVSScanfImpl(const char* in, const char* fmt, va_list args)
     if (!in || !fmt)
         return 0;
 
+    ScopedCLocale localeGuard;
     int matched = 0;
     const char* p = fmt;
 

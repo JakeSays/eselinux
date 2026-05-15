@@ -40,6 +40,7 @@
 #include "osstd.hxx"
 
 #include <errno.h>
+#include <locale.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -85,6 +86,13 @@ const wchar_t* FindMessageTemplate( DWORD msgid )
 //  Render a system error code into an ASCII description.  Engine callers
 //  pass Win32 codes; we translate the small set that the OS layer
 //  actually surfaces and fall back to the raw numeric value.
+//
+//  `strerror` is `LC_MESSAGES`-locale-aware on Linux — i.e. would
+//  emit the description in the process's currently-selected locale.
+//  We want the engine's diagnostic surface to be English-only
+//  regardless of host locale (matches the en-US `g_rgEseMsgTable`
+//  used elsewhere), so the strerror call runs under a temporary C
+//  locale via uselocale().
 void FormatSystemMessage( DWORD msgid, wchar_t* dst, size_t cchDst )
 {
     int en = 0;
@@ -118,9 +126,12 @@ void FormatSystemMessage( DWORD msgid, wchar_t* dst, size_t cchDst )
     char nbuf[ 128 ];
     if ( en != 0 )
     {
+        static locale_t cloc = newlocale( LC_ALL_MASK, "C", (locale_t)0 );
+        const locale_t prev = uselocale( cloc );
         const char* msg = strerror( en );
         snprintf( nbuf, sizeof( nbuf ), "%s (Win32 0x%lx)",
                   msg ? msg : "(unknown)", (unsigned long)msgid );
+        uselocale( prev );
     }
     else
     {
@@ -191,7 +202,11 @@ DWORD ExpandTemplate( const wchar_t* tpl, wchar_t* dst, size_t cchDst,
     }
 
     const bool fIgnoreInserts = ( dwFlags & FORMAT_MESSAGE_IGNORE_INSERTS ) != 0;
-    const bool fDropSoftBreaks = ( dwFlags & FORMAT_MESSAGE_MAX_WIDTH_MASK ) != 0;
+    //  Drop soft breaks only when the width-mask byte is exactly
+    //  0xFF (the "no max width but drop soft breaks" sentinel).
+    //  Bounded widths 1..254 are rejected up in FormatMessageW().
+    const bool fDropSoftBreaks = ( dwFlags & FORMAT_MESSAGE_MAX_WIDTH_MASK )
+                                 == FORMAT_MESSAGE_MAX_WIDTH_MASK;
 
     size_t used       = 0;
     bool   terminator = false;
@@ -317,9 +332,42 @@ extern "C"
 {
 
 DWORD FormatMessageW( DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId,
-                      DWORD /*dwLanguageId*/, LPWSTR lpBuffer, DWORD nSize,
+                      DWORD dwLanguageId, LPWSTR lpBuffer, DWORD nSize,
                       va_list* Arguments )
 {
+    //  Validate MAX_WIDTH_MASK byte.  Engine usage is exclusively
+    //  0xFF (= "drop soft breaks, no wrap"), which we honor in
+    //  ExpandTemplate.  Real width-bounded wrapping (1..254) is
+    //  not implemented; reject rather than silently misbehave.
+    const DWORD widthByte = dwFlags & FORMAT_MESSAGE_MAX_WIDTH_MASK;
+    if ( widthByte != 0 && widthByte != FORMAT_MESSAGE_MAX_WIDTH_MASK )
+    {
+        SetLastError( ERROR_INVALID_PARAMETER );
+        return 0;
+    }
+
+    //  Validate dwLanguageId for HMODULE lookups.  We ship only the
+    //  en-US `g_rgEseMsgTable`, so accept LANGIDs whose primary
+    //  language is English (or LANG_NEUTRAL / 0 which mean "use the
+    //  process default" and are commonly passed by callers that
+    //  don't care).  LANG_INVARIANT (0x7F) also accepted as a
+    //  request for "no locale-specific output", which our English-
+    //  only table happens to provide.  Anything else returns
+    //  ERROR_RESOURCE_LANG_NOT_FOUND per Win32 spec.
+    if ( dwFlags & FORMAT_MESSAGE_FROM_HMODULE )
+    {
+        const DWORD primary = dwLanguageId & 0x3FF;
+        const bool langOk = ( dwLanguageId == 0 ) ||
+                            ( primary == LANG_NEUTRAL ) ||
+                            ( primary == LANG_INVARIANT ) ||
+                            ( primary == LANG_ENGLISH );
+        if ( !langOk )
+        {
+            SetLastError( ERROR_RESOURCE_LANG_NOT_FOUND );
+            return 0;
+        }
+    }
+
     const wchar_t* tpl = nullptr;
     wchar_t        systemMsg[ 128 ];
 

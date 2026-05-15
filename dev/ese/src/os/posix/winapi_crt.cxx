@@ -163,27 +163,28 @@ wchar_t* wcscat(wchar_t* dst, const wchar_t* src) noexcept
 
 extern "C"
 {
+//  ASCII-only fold to lowercase.  Locale-independent: `tolower()` /
+//  `_tolower()` follow the process's `LC_CTYPE` and would drift the
+//  fold under non-C locales (Turkish's dotless-I is the canonical
+//  example).  Matches Windows's ASCII-only catalog-name semantic.
+static inline int AsciiToLower(int c)
+{
+    return (c >= 'A' && c <= 'Z') ? (c + ('a' - 'A')) : c;
+}
+
 int _wcsicmp(const wchar_t* s1, const wchar_t* s2)
 {
     while (*s1 && *s2)
     {
-        const int c1 = (*s1 < 0x80)
-                       ? tolower(*s1)
-                       : *s1;
-        const int c2 = (*s2 < 0x80)
-                       ? tolower(*s2)
-                       : *s2;
+        const int c1 = (*s1 < 0x80) ? AsciiToLower(*s1) : *s1;
+        const int c2 = (*s2 < 0x80) ? AsciiToLower(*s2) : *s2;
         if (c1 != c2)
             return c1 - c2;
         ++s1;
         ++s2;
     }
-    const int c1 = (*s1 < 0x80)
-                   ? tolower(*s1)
-                   : *s1;
-    const int c2 = (*s2 < 0x80)
-                   ? tolower(*s2)
-                   : *s2;
+    const int c1 = (*s1 < 0x80) ? AsciiToLower(*s1) : *s1;
+    const int c2 = (*s2 < 0x80) ? AsciiToLower(*s2) : *s2;
     return c1 - c2;
 }
 
@@ -191,12 +192,8 @@ int _wcsnicmp(const wchar_t* s1, const wchar_t* s2, size_t n)
 {
     for (size_t i = 0; i < n; ++i)
     {
-        const int c1 = (s1[i] < 0x80)
-                       ? tolower(s1[i])
-                       : s1[i];
-        const int c2 = (s2[i] < 0x80)
-                       ? tolower(s2[i])
-                       : s2[i];
+        const int c1 = (s1[i] < 0x80) ? AsciiToLower(s1[i]) : s1[i];
+        const int c2 = (s2[i] < 0x80) ? AsciiToLower(s2[i]) : s2[i];
         if (c1 != c2)
             return c1 - c2;
         if (c1 == 0)
@@ -209,8 +206,8 @@ int _strnicmp(const char* s1, const char* s2, size_t n)
 {
     for (size_t i = 0; i < n; ++i)
     {
-        const int c1 = tolower(static_cast<unsigned char>(s1[i]));
-        const int c2 = tolower(static_cast<unsigned char>(s2[i]));
+        const int c1 = AsciiToLower(static_cast<unsigned char>(s1[i]));
+        const int c2 = AsciiToLower(static_cast<unsigned char>(s2[i]));
         if (c1 != c2)
             return c1 - c2;
         if (c1 == 0)
@@ -627,13 +624,21 @@ int _wmakepath_s(wchar_t* wszPath, size_t cchPath,
     return 0;
 }
 
+//  ASCII-only fold to uppercase.  Locale-independent for the same
+//  reason AsciiToLower is — see comment up top.  Non-ASCII bytes
+//  pass through unchanged, matching Windows's behavior on ASCII
+//  catalog identifiers.
 char* _strupr(char* s)
 {
     if (!s)
         return s;
     for (char* p = s; *p; ++p)
     {
-        *p = static_cast<char>(toupper(static_cast<unsigned char>(*p)));
+        const unsigned char c = static_cast<unsigned char>(*p);
+        if (c >= 'a' && c <= 'z')
+        {
+            *p = static_cast<char>(c - ('a' - 'A'));
+        }
     }
     return s;
 }

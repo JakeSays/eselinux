@@ -568,10 +568,14 @@ EseIntegrationScenario( WideApi, NonAsciiTableAndColumnNamesRoundTrip )
     CheckJet( JetCreateDatabaseW( session, databasePath.c_str(), nullptr,
                                   &dbid, 0 ) );
 
-    //  "товары" (Russian for "goods") as the table name; column
-    //  names mix Cyrillic and Latin-1 Supplement so every byte of
-    //  the marshalled-to-UTF-8 form is multi-byte.
-    static const char16_t TableName[] = u"товары";
+    //  Identifier names round-trip through the engine's narrow
+    //  catalog, which on Linux is CP_ACP = Windows-1252.  These
+    //  names use 1252-representable characters (Latin-1 Supplement +
+    //  ligatures from 1252's 0x80-0x9F block).  See companion
+    //  scenario `NonCp1252IdentifierIsRejected` for the explicit
+    //  rejection of codepoints outside the codepage.
+    static const char16_t TableName[]  = u"Café";   // U+00E9 in 1252
+    static const char16_t ColumnName[] = u"étoile"; // U+00E9 in 1252
     JET_TABLEID tableId = JET_tableidNil;
     CheckJet( JetCreateTableW( session, dbid, TableName, 16, 100,
                                &tableId ) );
@@ -581,7 +585,6 @@ EseIntegrationScenario( WideApi, NonAsciiTableAndColumnNamesRoundTrip )
     column.coltyp = JET_coltypLong;
     column.grbit = JET_bitColumnNotNULL;
     JET_COLUMNID columnId = 0;
-    static const char16_t ColumnName[] = u"étoile";  // "étoile"
     CheckJet( JetAddColumnW( session, tableId, ColumnName,
                              &column, nullptr, 0, &columnId ) );
 
@@ -610,6 +613,41 @@ EseIntegrationScenario( WideApi, NonAsciiTableAndColumnNamesRoundTrip )
     Require( retrieved == 7 );
 
     CheckJet( JetCloseTable( session, reopened ) );
+    CheckJet( JetCloseDatabase( session, dbid, 0 ) );
+    CheckJet( JetEndSession( session, 0 ) );
+    TerminateInstance( handle );
+}
+
+//  Catalog identifiers (table / column / index names) are stored
+//  in the engine's narrow form, which on Linux is CP_ACP = 1252.
+//  Codepoints outside 1252 (e.g. Cyrillic) can't round-trip; the
+//  shim's WideCharToMultiByte substitutes the default '?' for each
+//  unrepresentable codepoint, and the engine then rejects the
+//  resulting identifier as invalid (JET_errInvalidName).  This is
+//  Windows-equivalent behavior for an en-US Windows install.
+EseIntegrationScenario( WideApi, NonCp1252IdentifierIsRejected )
+{
+    TemporaryDirectory directory( "WideApi.NonCp1252IdentifierIsRejected" );
+    JET_INSTANCE handle = InitInstanceWide( directory, u"WideApi-NonCp1252" );
+    JET_SESID session = JET_sesidNil;
+    CheckJet( JetBeginSessionW( handle, &session, nullptr, nullptr ) );
+
+    const auto databasePath = DatabasePathUnder( directory.Path(),
+                                                 u"noncp1252.mdb" );
+    JET_DBID dbid = JET_dbidNil;
+    CheckJet( JetCreateDatabaseW( session, databasePath.c_str(), nullptr,
+                                  &dbid, 0 ) );
+
+    //  "товары" (Russian for "goods") — none of these codepoints
+    //  are in CP_1252.  Wide → 1252 substitutes '?' for each,
+    //  yielding "??????", and the engine rejects the all-'?' name.
+    static const char16_t CyrillicTableName[] = u"товары";
+    JET_TABLEID tableId = JET_tableidNil;
+    RequireJetError( JetCreateTableW( session, dbid,
+                                      CyrillicTableName, 16, 100,
+                                      &tableId ),
+                     JET_errInvalidName );
+
     CheckJet( JetCloseDatabase( session, dbid, 0 ) );
     CheckJet( JetEndSession( session, 0 ) );
     TerminateInstance( handle );

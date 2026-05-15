@@ -87,6 +87,7 @@
 #define ERROR_FILE_CORRUPT               1392L
 #define ERROR_DISK_CORRUPT               1393L
 #define ERROR_NO_UNICODE_TRANSLATION     1113L
+#define ERROR_RESOURCE_LANG_NOT_FOUND    1815L
 #define ERROR_NOT_SAME_DEVICE            17L
 #define ERROR_BAD_PIPE                   230L
 #define ERROR_PIPE_BUSY                  231L
