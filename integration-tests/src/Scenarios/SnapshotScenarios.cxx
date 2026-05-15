@@ -139,3 +139,60 @@ EseIntegrationScenario(Snapshot, GetFreezeInfoReturnsActiveInstance)
     CheckJet(JetOSSnapshotThaw(snapshotId, 0));
 }
 
+//  JetOSSnapshotTruncateLog.  JET_bitContinueAfterThaw is a Prepare
+//  flag (not a Thaw flag); it keeps the snap-id alive past Thaw so
+//  the post-thaw TruncateLog + End calls can still reach it.  Thaw
+//  itself only accepts NO_GRBIT.
+EseIntegrationScenario(Snapshot, TruncateLogClearsBackupLogs)
+{
+    TemporaryDirectory directory("Snapshot.TruncateLogClearsBackupLogs");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Snapshot.mdb");
+
+    JET_OSSNAPID snapshotId = 0;
+    CheckJet(JetOSSnapshotPrepare(&snapshotId, JET_bitContinueAfterThaw));
+
+    uint32_t freezeCount = 0;
+    JET_INSTANCE_INFO_A* freezeInfo = nullptr;
+    CheckJet(JetOSSnapshotFreezeA(snapshotId,
+                                  &freezeCount,
+                                  &freezeInfo,
+                                  0));
+    Require(freezeCount >= 1);
+    CheckJet(JetFreeBuffer(reinterpret_cast<char*>(freezeInfo)));
+
+    CheckJet(JetOSSnapshotThaw(snapshotId, 0));
+    CheckJet(JetOSSnapshotTruncateLog(snapshotId, 0));
+    CheckJet(JetOSSnapshotEnd(snapshotId, 0));
+}
+
+//  JetOSSnapshotTruncateLogInstance narrows the truncate to a single
+//  instance handle.  Same Prepare/Freeze/Thaw bracket as the global
+//  form, but TruncateLogInstance hits one explicit instance rather
+//  than walking every enrolled instance.
+EseIntegrationScenario(Snapshot, TruncateLogInstanceClearsOneInstance)
+{
+    TemporaryDirectory directory("Snapshot.TruncateLogInstanceClearsOneInstance");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Snapshot.mdb");
+
+    JET_OSSNAPID snapshotId = 0;
+    CheckJet(JetOSSnapshotPrepare(&snapshotId, JET_bitContinueAfterThaw));
+
+    uint32_t freezeCount = 0;
+    JET_INSTANCE_INFO_A* freezeInfo = nullptr;
+    CheckJet(JetOSSnapshotFreezeA(snapshotId,
+                                  &freezeCount,
+                                  &freezeInfo,
+                                  0));
+    CheckJet(JetFreeBuffer(reinterpret_cast<char*>(freezeInfo)));
+
+    CheckJet(JetOSSnapshotThaw(snapshotId, 0));
+    CheckJet(JetOSSnapshotTruncateLogInstance(snapshotId,
+                                              instance.Handle(),
+                                              0));
+    CheckJet(JetOSSnapshotEnd(snapshotId, 0));
+}
+

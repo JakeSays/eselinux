@@ -17,12 +17,10 @@ platform — `dev/ese/src/ese/pib.cxx:994`, `jetapi.cxx:9582`,
 
 **Totals:** 212 base APIs declared, 14 carved out as not testable (engine
 stubs, version-gated declarations, deprecated wrappers, internal
-engineering surface).  Of the **198 testable** APIs, **194 are covered
-(98%)** with the snapshot-truncate pair (`JetOSSnapshotTruncateLog` /
-`JetOSSnapshotTruncateLogInstance`) the only remaining functional gap
-— blocked on a Linux-engine investigation rather than test authoring.
+engineering surface).  Of the **198 testable** APIs, **196 are covered
+(99%)**.
 
-**A/W methodology note:** the 194-covered count is measured at the
+**A/W methodology note:** the 196-covered count is measured at the
 *base* API name — `JetCreateInstance` covered means at least one of
 `JetCreateInstanceA` / `JetCreateInstanceW` is exercised.  Round 11
 adds W-variant smoke scenarios (`WideApiScenarios.cxx`) so the
@@ -34,7 +32,7 @@ Round 11 is a sanity check on the windows-shim
 MultiByteToWideChar / WideCharToMultiByte plumbing, not net new
 functional coverage.
 
-## Tested (194)
+## Tested (196)
 
 Core surface for every scenario the engine actually runs.  Includes
 DDL (table/column/index create/delete/rename, **JetDeleteTable**,
@@ -98,7 +96,10 @@ External-backup protocol (global + instance forms): **JetBeginExternalBackup**,
 **JetBeginSurrogateBackup**, **JetEndSurrogateBackup**.
 
 OS snapshot extensions: **JetOSSnapshotAbort**,
-**JetOSSnapshotPrepareInstance**, **JetOSSnapshotGetFreezeInfo**.
+**JetOSSnapshotPrepareInstance**, **JetOSSnapshotGetFreezeInfo**,
+**JetOSSnapshotTruncateLog**, **JetOSSnapshotTruncateLogInstance**
+(Prepare with `JET_bitContinueAfterThaw`, then Freeze → Thaw →
+TruncateLog → End).
 
 Instance lifecycle: **JetCreateInstance** (unversioned) in addition
 to `JetCreateInstance2`, **JetInit2**, **JetEnableMultiInstance**
@@ -172,16 +173,6 @@ lcid is moot for non-text keys),
 **JetSetCurrentIndex3** (v2's grbit-only surface plus an
 `itagSequence` selector for multi-valued indexes; v4 adds the
 `JET_INDEXID` cache on top).
-
-## Genuine functional gaps (no version covered)
-
-The engine ships these and no test exercises any version.  Roughly
-ordered by user-visible value.
-
-### Snapshot extensions
-- `JetOSSnapshotTruncateLog`, `JetOSSnapshotTruncateLogInstance` —
-  blocked on engine investigation (hang inside
-  `pSession->ErrTruncateLogs` on this Linux build)
 
 ## Out of scope (engineering surface)
 
@@ -457,11 +448,16 @@ coverage target:
     `JET_errAlreadyInitialized`.  W scenarios that exercise
     `JetSetSystemParameterW` must do so before `JetInit`.
 
-## Suggested round 12 — engine investigation
-
-`JetOSSnapshotTruncateLog` and `JetOSSnapshotTruncateLogInstance`
-hang inside `pSession->ErrTruncateLogs` on this Linux build.
-Round 12 is the investigation + fix to unblock these.  Not a
-test-authoring round — it ships engine changes (or surfaces an
-upstream bug to defer).
+- **Round 12**: snapshot-truncate (`JetOSSnapshotTruncateLog` /
+  `JetOSSnapshotTruncateLogInstance`) — 2 scenarios in
+  `SnapshotScenarios.cxx`.  The pair was flagged in earlier rounds
+  as "hangs on Linux inside `pSession->ErrTruncateLogs`"; turned
+  out to be a test-author bug: `JET_bitContinueAfterThaw` is a
+  Prepare flag, not a Thaw flag.  Passing it to Thaw returns
+  `JET_errInvalidGrbit` immediately, but the failed Thaw leaves
+  the freeze timer running, which expires ~70s later and looked
+  like a hang.  Correct sequence: `JetOSSnapshotPrepare(…,
+  JET_bitContinueAfterThaw)` → Freeze → `Thaw(0)` → TruncateLog →
+  End.  Closes the last remaining in-scope functional gap; 196/198
+  testable APIs now covered.
 

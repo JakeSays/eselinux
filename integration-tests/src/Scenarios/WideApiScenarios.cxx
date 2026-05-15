@@ -47,6 +47,21 @@ std::u16string PathWithSeparator( const std::filesystem::path& directory )
     return ToWide( narrow );
 }
 
+//  Build an absolute path under `directory` for a UTF-16 leaf
+//  filename.  Used by every scenario that calls JetCreateDatabaseW
+//  so the .mdb lands under the scenario's TemporaryDirectory and
+//  not in whatever cwd the test runner happened to be in.
+std::u16string DatabasePathUnder( const std::filesystem::path& directory,
+                                  const char16_t* leafName )
+{
+    auto path = PathWithSeparator( directory );
+    for ( const char16_t* p = leafName; *p != u'\0'; ++p )
+    {
+        path.push_back( *p );
+    }
+    return path;
+}
+
 //  Boot an instance with the path/log/temp params pointed at the
 //  scenario's temp directory.  Mirrors EseInstance's A-based bootstrap
 //  but every system-parameter call goes through JetSetSystemParameterW.
@@ -176,21 +191,22 @@ EseIntegrationScenario( WideApi, CreateDatabaseWThenAttachWReopens )
     JET_SESID session = JET_sesidNil;
     CheckJet( JetBeginSessionW( handle, &session, nullptr, nullptr ) );
 
-    static const char16_t DatabaseName[] = u"createdbw.mdb";
+    const auto databasePath = DatabasePathUnder( directory.Path(),
+                                                 u"createdbw.mdb" );
     JET_DBID dbid = JET_dbidNil;
     CheckJet( JetCreateDatabaseW( session,
-                                  DatabaseName,
+                                  databasePath.c_str(),
                                   nullptr,
                                   &dbid,
                                   0 ) );
     Require( dbid != JET_dbidNil );
     CheckJet( JetCloseDatabase( session, dbid, 0 ) );
-    CheckJet( JetDetachDatabaseW( session, DatabaseName ) );
+    CheckJet( JetDetachDatabaseW( session, databasePath.c_str() ) );
 
-    CheckJet( JetAttachDatabaseW( session, DatabaseName, 0 ) );
+    CheckJet( JetAttachDatabaseW( session, databasePath.c_str(), 0 ) );
     JET_DBID reopened = JET_dbidNil;
     CheckJet( JetOpenDatabaseW( session,
-                                DatabaseName,
+                                databasePath.c_str(),
                                 nullptr,
                                 &reopened,
                                 0 ) );
@@ -210,11 +226,12 @@ EseIntegrationScenario( WideApi, CreateDatabase2WCapsMaxSize )
     JET_SESID session = JET_sesidNil;
     CheckJet( JetBeginSessionW( handle, &session, nullptr, nullptr ) );
 
-    static const char16_t DatabaseName[] = u"createdb2w.mdb";
+    const auto databasePath = DatabasePathUnder( directory.Path(),
+                                                 u"createdb2w.mdb" );
     JET_DBID dbid = JET_dbidNil;
     constexpr uint32_t MaxPages = 2048;
     CheckJet( JetCreateDatabase2W( session,
-                                   DatabaseName,
+                                   databasePath.c_str(),
                                    MaxPages,
                                    &dbid,
                                    0 ) );
@@ -240,20 +257,21 @@ EseIntegrationScenario( WideApi, AttachDatabase2WAppliesMaxSize )
     JET_SESID session = JET_sesidNil;
     CheckJet( JetBeginSessionW( handle, &session, nullptr, nullptr ) );
 
-    static const char16_t DatabaseName[] = u"attachdb2w.mdb";
+    const auto databasePath = DatabasePathUnder( directory.Path(),
+                                                 u"attachdb2w.mdb" );
     JET_DBID dbid = JET_dbidNil;
-    CheckJet( JetCreateDatabaseW( session, DatabaseName, nullptr,
+    CheckJet( JetCreateDatabaseW( session, databasePath.c_str(), nullptr,
                                   &dbid, 0 ) );
     CheckJet( JetCloseDatabase( session, dbid, 0 ) );
-    CheckJet( JetDetachDatabaseW( session, DatabaseName ) );
+    CheckJet( JetDetachDatabaseW( session, databasePath.c_str() ) );
 
     constexpr uint32_t MaxPages = 4096;
     CheckJet( JetAttachDatabase2W( session,
-                                   DatabaseName,
+                                   databasePath.c_str(),
                                    MaxPages,
                                    0 ) );
     JET_DBID reopened = JET_dbidNil;
-    CheckJet( JetOpenDatabaseW( session, DatabaseName, nullptr,
+    CheckJet( JetOpenDatabaseW( session, databasePath.c_str(), nullptr,
                                 &reopened, 0 ) );
     uint32_t observedMaxPages = 0;
     CheckJet( JetGetMaxDatabaseSize( session, reopened,
@@ -276,9 +294,10 @@ EseIntegrationScenario( WideApi, CreateTableWAddColumnWCreateIndexWFullDDL )
     JET_SESID session = JET_sesidNil;
     CheckJet( JetBeginSessionW( handle, &session, nullptr, nullptr ) );
 
-    static const char16_t DatabaseName[] = u"ddlchainw.mdb";
+    const auto databasePath = DatabasePathUnder( directory.Path(),
+                                                 u"ddlchainw.mdb" );
     JET_DBID dbid = JET_dbidNil;
-    CheckJet( JetCreateDatabaseW( session, DatabaseName, nullptr,
+    CheckJet( JetCreateDatabaseW( session, databasePath.c_str(), nullptr,
                                   &dbid, 0 ) );
 
     static const char16_t TableName[] = u"Items";
@@ -349,9 +368,10 @@ EseIntegrationScenario( WideApi, CreateTableColumnIndexWBuildsAtomically )
     JET_SESID session = JET_sesidNil;
     CheckJet( JetBeginSessionW( handle, &session, nullptr, nullptr ) );
 
-    static const char16_t DatabaseName[] = u"ctciw.mdb";
+    const auto databasePath = DatabasePathUnder( directory.Path(),
+                                                 u"ctciw.mdb" );
     JET_DBID dbid = JET_dbidNil;
-    CheckJet( JetCreateDatabaseW( session, DatabaseName, nullptr,
+    CheckJet( JetCreateDatabaseW( session, databasePath.c_str(), nullptr,
                                   &dbid, 0 ) );
 
     JET_COLUMNCREATE_W columns[2] = { {}, {} };
@@ -408,9 +428,10 @@ EseIntegrationScenario( WideApi, CreateIndex2WStructPath )
     JET_SESID session = JET_sesidNil;
     CheckJet( JetBeginSessionW( handle, &session, nullptr, nullptr ) );
 
-    static const char16_t DatabaseName[] = u"ci2w.mdb";
+    const auto databasePath = DatabasePathUnder( directory.Path(),
+                                                 u"ci2w.mdb" );
     JET_DBID dbid = JET_dbidNil;
-    CheckJet( JetCreateDatabaseW( session, DatabaseName, nullptr,
+    CheckJet( JetCreateDatabaseW( session, databasePath.c_str(), nullptr,
                                   &dbid, 0 ) );
 
     JET_TABLEID tableId = JET_tableidNil;
@@ -510,16 +531,17 @@ EseIntegrationScenario( WideApi, NonAsciiDatabasePathPersists )
     //  "test-тест-café.mdb" — mix of ASCII, Cyrillic and Latin-1
     //  Supplement, all representable in BMP so each char16_t is a
     //  single code unit.
-    static const char16_t DatabaseName[] = u"test-тест-café.mdb";
+    const auto databasePath = DatabasePathUnder( directory.Path(),
+                                                 u"test-тест-café.mdb" );
     JET_DBID dbid = JET_dbidNil;
-    CheckJet( JetCreateDatabaseW( session, DatabaseName, nullptr,
+    CheckJet( JetCreateDatabaseW( session, databasePath.c_str(), nullptr,
                                   &dbid, 0 ) );
     CheckJet( JetCloseDatabase( session, dbid, 0 ) );
-    CheckJet( JetDetachDatabaseW( session, DatabaseName ) );
+    CheckJet( JetDetachDatabaseW( session, databasePath.c_str() ) );
 
-    CheckJet( JetAttachDatabaseW( session, DatabaseName, 0 ) );
+    CheckJet( JetAttachDatabaseW( session, databasePath.c_str(), 0 ) );
     JET_DBID reopened = JET_dbidNil;
-    CheckJet( JetOpenDatabaseW( session, DatabaseName, nullptr,
+    CheckJet( JetOpenDatabaseW( session, databasePath.c_str(), nullptr,
                                 &reopened, 0 ) );
     Require( reopened != JET_dbidNil );
     CheckJet( JetCloseDatabase( session, reopened, 0 ) );
@@ -540,9 +562,10 @@ EseIntegrationScenario( WideApi, NonAsciiTableAndColumnNamesRoundTrip )
     JET_SESID session = JET_sesidNil;
     CheckJet( JetBeginSessionW( handle, &session, nullptr, nullptr ) );
 
-    static const char16_t DatabaseName[] = u"nonascii-schema.mdb";
+    const auto databasePath = DatabasePathUnder( directory.Path(),
+                                                 u"nonascii-schema.mdb" );
     JET_DBID dbid = JET_dbidNil;
-    CheckJet( JetCreateDatabaseW( session, DatabaseName, nullptr,
+    CheckJet( JetCreateDatabaseW( session, databasePath.c_str(), nullptr,
                                   &dbid, 0 ) );
 
     //  "товары" (Russian for "goods") as the table name; column
