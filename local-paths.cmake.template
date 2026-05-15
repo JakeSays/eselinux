@@ -1,0 +1,46 @@
+# Template for local-paths.cmake (gitignored, at the repo root).
+#
+# The musl toolchain files (cmake/x86_64-linux-musl-toolchain.cmake,
+# cmake/aarch64-linux-musl-toolchain.cmake) include this file at
+# configure time to discover where this workstation keeps its Clang
+# prefix and musl sysroots.  Copy this template to `local-paths.cmake`
+# (same directory) and edit the values to match your environment.
+#
+# `local-paths.cmake` is gitignored; each developer keeps their own
+# copy.  Variables are guarded with `if (NOT DEFINED …)` so anything
+# you pass on the `cmake` command line (e.g.
+# `-DESE_TOOLCHAIN_ROOT=/path`) still wins over the values in this
+# file.
+
+#  Root of the LLVM toolchain.  Must contain bin/clang(++) and the
+#  musl-targeted libc++/libc++abi/libunwind under
+#  lib-musl/lib/<triple>/.
+if (NOT DEFINED ESE_TOOLCHAIN_ROOT)
+    set(ESE_TOOLCHAIN_ROOT "/path/to/clang-22.1.3")
+endif ()
+
+#  Musl x86_64 sysroot.  Must contain a complete musl libc + headers
+#  plus any runtime deps you want linked (liburing, lttng-ust, …).
+if (NOT DEFINED ESE_MUSL_X64_SYSROOT)
+    set(ESE_MUSL_X64_SYSROOT "/path/to/musl-x64-sysroot")
+endif ()
+
+#  Musl aarch64 sysroot.  Same shape as above, aarch64-targeted.
+#  Only used by the aarch64 musl toolchain; leave at the placeholder
+#  if you only build x86_64 musl.
+if (NOT DEFINED ESE_MUSL_AARCH64_SYSROOT)
+    set(ESE_MUSL_AARCH64_SYSROOT "/path/to/musl-aarch64-sysroot")
+endif ()
+
+#  OPTIONAL.  Set this if your aarch64 deployment host doesn't have a
+#  musl runtime at the standard paths (loader at /lib/ld-musl-aarch64.so.1,
+#  shared libs under /lib + /usr/lib) — for example, a Debian/glibc
+#  aarch64 box with the musl runtime staged at a custom path.  When
+#  set, PT_INTERP and DT_RUNPATH are baked at link time to resolve
+#  the loader + shared libs from
+#  ${ESE_MUSL_AARCH64_DEPLOY_ROOT}/{lib,usr/lib}.  Leave UNSET (or
+#  empty) for native-musl targets like Alpine — the linker's default
+#  PT_INTERP is already correct there.
+# if (NOT DEFINED ESE_MUSL_AARCH64_DEPLOY_ROOT)
+#     set(ESE_MUSL_AARCH64_DEPLOY_ROOT "/path/on/deploy/host/musl-aarch64")
+# endif ()

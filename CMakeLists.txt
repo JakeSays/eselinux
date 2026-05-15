@@ -131,22 +131,29 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         # target inferred from argv0 (e.g. aarch64-linux-gnu-clang++) and
         # always reports the compiler's *default* target — so on a cross
         # build it would wrongly return the host triple if we relied on it.
-        execute_process(
-            COMMAND ${CMAKE_CXX_COMPILER} -print-resource-dir
-            OUTPUT_VARIABLE _llvm_resource_dir
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-        if (CMAKE_CXX_COMPILER_TARGET)
-            set(_llvm_target_triple "${CMAKE_CXX_COMPILER_TARGET}")
+        # A toolchain file (e.g. the musl one) can override the libc++
+        # location directly when the layout doesn't match the default
+        # lib/<triple>/ scheme — musl libs live under lib-musl/lib/<triple>/.
+        if (DEFINED ESE_LLVM_LIBDIR)
+            set(_llvm_libdir "${ESE_LLVM_LIBDIR}")
         else ()
             execute_process(
-                COMMAND ${CMAKE_CXX_COMPILER} -print-target-triple
-                OUTPUT_VARIABLE _llvm_target_triple
+                COMMAND ${CMAKE_CXX_COMPILER} -print-resource-dir
+                OUTPUT_VARIABLE _llvm_resource_dir
                 OUTPUT_STRIP_TRAILING_WHITESPACE
             )
+            if (CMAKE_CXX_COMPILER_TARGET)
+                set(_llvm_target_triple "${CMAKE_CXX_COMPILER_TARGET}")
+            else ()
+                execute_process(
+                    COMMAND ${CMAKE_CXX_COMPILER} -print-target-triple
+                    OUTPUT_VARIABLE _llvm_target_triple
+                    OUTPUT_STRIP_TRAILING_WHITESPACE
+                )
+            endif ()
+            get_filename_component(_llvm_lib_root "${_llvm_resource_dir}/../.." ABSOLUTE)
+            set(_llvm_libdir "${_llvm_lib_root}/${_llvm_target_triple}")
         endif ()
-        get_filename_component(_llvm_lib_root "${_llvm_resource_dir}/../.." ABSOLUTE)
-        set(_llvm_libdir "${_llvm_lib_root}/${_llvm_target_triple}")
         if (NOT EXISTS "${_llvm_libdir}/libc++.a")
             message(FATAL_ERROR
                 "libc++.a not found at ${_llvm_libdir}; "
@@ -163,6 +170,24 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
             $<IF:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>,${_llvm_libdir}/libunwind_pic.a,${_llvm_libdir}/libunwind.a>
             -Wl,--end-group
         )
+
+        # Resolve where the toolchain ships <libunwind.h>.  The musl
+        # toolchain pins this to its lib-musl/include tree explicitly;
+        # for the glibc builds we infer it from the compiler path
+        # (`<clang-root>/include`).  Both end up at LLVM's libunwind
+        # header (NOT the GNU libunwind in /usr/include — those two
+        # disagree on the `unw_*` symbol naming, ABI-incompatible).
+        # osposix consumes this in its target_include_directories.
+        if (NOT DEFINED ESE_LIBUNWIND_INCLUDE_DIR)
+            get_filename_component(_clang_bin "${CMAKE_CXX_COMPILER}" DIRECTORY)
+            get_filename_component(_clang_root "${_clang_bin}/.." ABSOLUTE)
+            set(ESE_LIBUNWIND_INCLUDE_DIR "${_clang_root}/include")
+        endif ()
+        if (NOT EXISTS "${ESE_LIBUNWIND_INCLUDE_DIR}/libunwind.h")
+            message(FATAL_ERROR
+                "libunwind.h not found at ${ESE_LIBUNWIND_INCLUDE_DIR}; "
+                "expected the LLVM toolchain to provide it there.")
+        endif ()
 
     endif ()
 

@@ -179,6 +179,18 @@ target_include_directories(osposix PRIVATE
     ./
 )
 
+#  winapi_memory.cxx's RtlCaptureStackBackTrace shim uses LLVM
+#  libunwind's `unw_*` cursor API.  Force the toolchain-shipped
+#  libunwind.h to win over any GNU libunwind in /usr/include/
+#  (Debian-style systems install both as separate packages; the GNU
+#  one renames `unw_*` to `_U<arch>_*` symbols that aren't ABI-
+#  compatible with the LLVM libunwind we statically link against).
+#  `-isystem` from compile_options sorts ahead of the driver-added
+#  /usr include-dir.
+target_compile_options(osposix PRIVATE
+    -isystem ${ESE_LIBUNWIND_INCLUDE_DIR}
+)
+
 target_precompile_headers(osposix PRIVATE
     osstd.hxx
 )

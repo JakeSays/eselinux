@@ -413,7 +413,7 @@ INLINE TJournalSegment<I>::TJournalSegment( _In_    IFileFilter* const          
         m_fSealed( fSealed ),
         m_err( JET_errSuccess ),
         m_pfnSealed( NULL ),
-        m_keySealed( NULL ),
+        m_keySealed( 0 ),
         m_ibRegions( 0 ),
         m_sigSealed( CSyncBasicInfo( "TJournalSegment<I>::m_sigSealed" ) )
 {

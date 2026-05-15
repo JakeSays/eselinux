@@ -3177,11 +3177,11 @@ BOOL COSVolume::FDiskFixed()
 
                     if( ErrOSVolumeConnect( (COSFileSystem*)pfsapi, wszWinDir, &posvDir ) >= JET_errSuccess )
                     {
-                        ULONG_PTR ulpDiskIdDir = NULL;
+                        ULONG_PTR ulpDiskIdDir = 0;
                         //  SOMEONE, unncessarily made this return an ERR that is always success, fine handle it.
                         if( posvDir->ErrDiskId( &ulpDiskIdDir ) >= JET_errSuccess )
                         {
-                            ULONG_PTR ulpDiskIdTarget = NULL;
+                            ULONG_PTR ulpDiskIdTarget = 0;
                             if( ErrDiskId( &ulpDiskIdTarget ) >= JET_errSuccess )
                             {
                                 eosDiskType = ( ulpDiskIdTarget == ulpDiskIdDir ) ? DRIVE_FIXED : DRIVE_UNKNOWN;

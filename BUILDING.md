@@ -1,8 +1,9 @@
 # Building ESE on Linux
 
 This document describes how to build the Linux port of ESE.  Supported
-targets are x86_64 and aarch64 Linux; the Windows toolchain is not 
-currently supported from this tree.
+targets are x86_64 and aarch64 Linux, against either **glibc** or
+**musl libc**; the Windows toolchain is not currently supported from
+this tree.
 
 ## Prerequisites
 
@@ -113,6 +114,92 @@ cmake .. -G "Unix Makefiles" \
 cmake --build . -j$(nproc)
 ```
 
+### musl (cross-libc) build — x86_64 or aarch64
+
+Building against musl libc instead of glibc requires:
+
+- A musl sysroot containing the musl C library, musl-targeted
+  `liburing` (+ `pkg-config` `.pc` files), and any other runtime
+  dependencies (lttng-ust, liburcu, libsodium, …) you want built into
+  `libese.so`.  Alpine's `musl-dev`, `liburing-dev`, etc. packages
+  staged under a single sysroot prefix work well.
+- A Clang install that ships **musl-targeted** libc++, libc++abi,
+  and libunwind archives.  The recent LLVM tarballs publish these
+  under `lib-musl/lib/x86_64-unknown-linux-musl/` next to the
+  default-target `lib/x86_64-unknown-linux-gnu/` tree.  These are
+  separate `_pic.a` archives — the gnu-targeted libc++ won't link
+  against musl objects.
+
+The repository ships two CMake toolchain files for canonical
+configurations:
+
+- `cmake/x86_64-linux-musl-toolchain.cmake` — musl x86_64 for local
+  development on a glibc workstation.  PT_INTERP points at the
+  sysroot's loader so `./ese-tests` runs directly without an
+  explicit `ld-musl-x86_64.so.1 …` invocation.
+- `cmake/aarch64-linux-musl-toolchain.cmake` — musl aarch64
+  cross-compilation onto a separate aarch64 runtime host.  PT_INTERP
+  and DT_RUNPATH bake in the deployment paths on that host, so the
+  staged binary runs natively there once the sysroot's loader + libc
+  + needed shared libraries are rsynced to the matching paths.
+
+Workstation-specific paths are passed in two equivalent ways — the
+toolchain files don't carry any hardcoded paths:
+
+- **Recommended**: copy `local-paths.cmake.template` (at the repo root)
+  to `local-paths.cmake` (same directory; gitignored) and edit the
+  values to match your environment.  Both musl toolchain files
+  `include()` this file if it exists.
+- **Ad hoc**: pass the same variables on the `cmake` command line
+  via `-DESE_TOOLCHAIN_ROOT=...` etc.  Command-line values win over
+  whatever's in `local-paths.cmake`.
+
+The required variables:
+
+| Variable                       | Purpose                                                              |
+|--------------------------------|----------------------------------------------------------------------|
+| `ESE_TOOLCHAIN_ROOT`           | Root of the LLVM toolchain (`bin/`, `lib-musl/lib/<triple>/…`).      |
+| `ESE_MUSL_X64_SYSROOT`         | musl x86_64 sysroot.  Required by the x86_64-musl toolchain.        |
+| `ESE_MUSL_AARCH64_SYSROOT`     | musl aarch64 sysroot.  Required by the aarch64-musl toolchain.      |
+
+Optional:
+
+| Variable                       | Purpose                                                              |
+|--------------------------------|----------------------------------------------------------------------|
+| `ESE_MUSL_AARCH64_DEPLOY_ROOT` | aarch64 runtime-host path where the musl runtime is staged.  When set, PT_INTERP and DT_RUNPATH are baked at link time to resolve the loader + shared libs from `${path}/{lib,usr/lib}`.  Needed only if the target host doesn't carry a musl runtime at the standard `/lib/ld-musl-aarch64.so.1` + `/lib` + `/usr/lib` — for example, a Debian/glibc aarch64 box with the musl runtime rsynced to a custom location.  Leave unset for native-musl targets like Alpine. |
+
+Configure + build:
+
+```sh
+mkdir -p build-musl
+cd build-musl
+cmake .. -G Ninja \
+    -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-musl-toolchain.cmake \
+    -DCMAKE_BUILD_TYPE=Debug
+cmake --build . -j$(nproc)
+```
+
+A few non-obvious details the toolchain file handles for you:
+
+- `_LIBCPP_PROVIDES_DEFAULT_RUNE_TABLE` is defined globally — LLVM's
+  libc++ `__locale` header doesn't have a musl branch in its
+  rune-table detection chain.
+- `__GNUC__=4` is defined globally.  The engine compiles with
+  `-fms-compatibility`, which suppresses `__GNUC__`.  musl's
+  `<stddef.h>` then falls back to the non-constexpr null-pointer-trick
+  `offsetof`, which breaks the engine's `static_assert( offsetof(...) )`
+  uses.  Restoring `__GNUC__` makes musl headers pick the
+  `__builtin_offsetof` branch.
+- `PKG_CONFIG_LIBDIR` + `PKG_CONFIG_SYSROOT_DIR` route `pkg-config` at
+  the sysroot, so `liburing` / `lttng-ust` / etc. resolve against
+  musl-targeted libraries rather than the host's glibc ones.
+- The produced binaries embed `${MUSL_SYSROOT}/lib/ld-musl-x86_64.so.1`
+  as the dynamic linker (via `-Wl,--dynamic-linker=…`) and the
+  sysroot's `usr/lib` + `lib` in `DT_RUNPATH`, so the result runs
+  directly with no `LD_LIBRARY_PATH` dance.  The musl loader silently
+  skips non-existent rpath entries, so on an Alpine target the local
+  `/lib` + `/usr/lib` will win at load time.
+
 ### Building a specific target
 
 ```sh
@@ -148,7 +235,12 @@ the source tree.
 mkdir -p /tmp/ese-tests && cd /tmp/ese-tests
 /path/to/build/bin/ese-tests                              # full suite
 /path/to/build/bin/ese-tests --filter "Schema.*"          # filter by name glob
+/path/to/build/bin/ese-tests --log-file /tmp/ese-tests/run.log
 ```
+
+`--log-file <path>` mirrors every stdout/stderr write into the
+specified file in addition to the terminal; convenient for `grep`ping
+failures after a run without re-executing.
 
 ### Engine-side tier-1 / tier-2 tests
 

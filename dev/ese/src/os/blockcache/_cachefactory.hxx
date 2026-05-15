@@ -102,12 +102,12 @@ INLINE ERR CCacheFactory::ErrCreate(    _In_    IFileSystemFilter* const        
     //  write the caching file header
 
     Call( (*ppffCaching)->ErrIOWrite(   *tcScope,
-                                        0, 
+                                        0,
                                         sizeof( *pch ),
                                         (const BYTE*)pch,
-                                        qosIONormal, 
-                                        NULL, 
-                                        NULL, 
+                                        qosIONormal,
+                                        NULL,
+                                        0,
                                         NULL ) );
 
     //  flush the caching file

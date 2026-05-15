@@ -20,7 +20,7 @@ class COSFilePerfDummy
             const DWORD     diskQueueDepth,
             const BOOL      fWrite )
         {
-            return NULL;
+            return 0;
         }
 
         virtual VOID IncrementIOCompletion(
@@ -212,7 +212,7 @@ class COSFile  //  osf
                         __out_bcount( cbData ) BYTE* const  pbData,
                         const OSFILEQOS                     grbitQOS,
                         const PfnIOComplete                 pfnIOComplete   = NULL,
-                        const DWORD_PTR                     keyIOComplete   = NULL,
+                        const DWORD_PTR                     keyIOComplete   = 0,
                         const PfnIOHandoff                  pfnIOHandoff    = NULL,
                         const VOID *                        pioreq          = NULL  ) override;
         ERR ErrIOWrite( const TraceContext& tc,
@@ -221,7 +221,7 @@ class COSFile  //  osf
                         const BYTE* const   pbData,
                         const OSFILEQOS     grbitQOS,
                         const PfnIOComplete pfnIOComplete   = NULL,
-                        const DWORD_PTR     keyIOComplete   = NULL,
+                        const DWORD_PTR     keyIOComplete   = 0,
                         const PfnIOHandoff  pfnIOHandoff    = NULL  ) override;
         ERR ErrIOIssue() override;
 
@@ -309,7 +309,7 @@ class COSFile  //  osf
                     :   m_signal( CSyncBasicInfo( _T( "CIOComplete::m_signal" ) ) ),
                         m_err( JET_errSuccess ),
                         m_tidWait( DwUtilThreadId() ),
-                        m_keyIOComplete( NULL ),
+                        m_keyIOComplete( 0 ),
                         m_pfnIOHandoff( NULL )
                 {
                 }

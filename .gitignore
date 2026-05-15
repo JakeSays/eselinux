@@ -34,6 +34,11 @@
 # For out-of-source CMake builds — every sub-tree under build/
 # (e.g. build/debug, build/release, build/aarch64-debug) is ignored.
 build/
+
+# Workstation-local toolchain paths for the musl builds.  Each
+# developer copies local-paths.cmake.template (committed) to
+# local-paths.cmake (this entry) and fills in their values.
+/local-paths.cmake
 bin/
 obj/
 out/

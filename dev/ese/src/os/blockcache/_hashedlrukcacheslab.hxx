@@ -1622,7 +1622,7 @@ INLINE TCachedBlockSlab<I>::TCachedBlockSlab(   _In_    IFileFilter* const      
         m_fDirty( fFalse ),
         m_rgfSlotSuperceded( NULL ),
         m_pfnSlabSaved( NULL ),
-        m_keySlabSaved( NULL ),
+        m_keySlabSaved( 0 ),
         m_errSaved( JET_errSuccess ),
         m_cSaveStepPending( 0 ),
         m_cbidLastRead( CCachedBlockId() ),

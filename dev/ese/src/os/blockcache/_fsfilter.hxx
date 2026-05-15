@@ -777,7 +777,7 @@ ERR TFileSystemFilter<I>::ErrFileOpenById(  _In_    const VolumeId              
         //
         //  NOTE:  we presume any file opened by file id is opened by the cache
 
-        err = ErrFileOpenInternal( wszAnyAbsPath, wszKeyPath, fmf, fTrue, fFalse, NULL, NULL, &pffr );
+        err = ErrFileOpenInternal( wszAnyAbsPath, wszKeyPath, fmf, fTrue, fFalse, NULL, 0, &pffr );
 
         if ( err == JET_errFileNotFound || err == JET_errInvalidPath )
         {
@@ -1040,7 +1040,7 @@ ERR TFileSystemFilter<I>::ErrFileOpen(  _In_z_ const WCHAR* const               
                                         _In_   const IFileAPI::FileModeFlags    fmf,
                                         _Out_  IFileAPI** const                 ppfapi )
 {
-    return ErrFileOpenInternal( wszPath, fmf, fFalse, NULL, NULL, ppfapi );
+    return ErrFileOpenInternal( wszPath, fmf, fFalse, NULL, 0, ppfapi );
 }
 
 template< class I >
@@ -2060,7 +2060,7 @@ ERR TFileSystemFilter<I>::ErrDetachFile(    _In_        CFileFilter* const      
                                 qosIONormal,
                                 cpDontCache,
                                 NULL,
-                                NULL ) );
+                                0 ) );
 
     //  write the pinned header data out to the file
     //
@@ -2069,14 +2069,14 @@ ERR TFileSystemFilter<I>::ErrDetachFile(    _In_        CFileFilter* const      
     Call( pff->ErrPath( wszCachedFile ) );
     BlockCacheNotableEvent( wszCachedFile, "Detach" );
 
-    Call( pff->ErrWrite(    *tcScope, 
-                            0, 
+    Call( pff->ErrWrite(    *tcScope,
+                            0,
                             pff->Pcfh()->CbPinnedHeader(),
-                            (const BYTE*)pvData, 
-                            qosIONormal, 
+                            (const BYTE*)pvData,
+                            qosIONormal,
                             iomRaw,
-                            NULL, 
-                            NULL, 
+                            NULL,
+                            0,
                             NULL ) );
     fPresumeDetached = fTrue;
     Call( pff->ErrFlush( iofrBlockCache, iomRaw ) );

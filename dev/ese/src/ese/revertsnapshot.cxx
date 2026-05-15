@@ -4026,7 +4026,7 @@ CRBSDatabaseRevertContext::~CRBSDatabaseRevertContext()
                 OSMemoryPageFree( (void*) m_rgRBSDbPage->Entry( i ).DwPage() );
             }
 
-            errArray = m_rgRBSDbPage->ErrSetEntry( i, NULL );
+            errArray = m_rgRBSDbPage->ErrSetEntry( i, CPagePointer() );
             Assert( errArray == CArray< CPagePointer >::ERR::errSuccess );
         }
 
@@ -4473,7 +4473,7 @@ ERR CRBSDatabaseRevertContext::ErrAddPage( void* pvPage, PGNO pgno, BOOL fReplac
 
             // Free the memory here after getting the existing page from cache and replace it with the given page image.
             OSMemoryPageFree( (void*) ppTempPage.DwPage() );
-            errArray = m_rgRBSDbPage->ErrSetEntry( ientryExisting, NULL );
+            errArray = m_rgRBSDbPage->ErrSetEntry( ientryExisting, CPagePointer() );
 
             if ( errArray != CArray< CPagePointer >::ERR::errSuccess )
             {
@@ -5132,7 +5132,7 @@ ERR CRBSDatabaseRevertContext::ErrFlushDBPages( USHORT cbDbPageSize, BOOL fFlush
 
         // Free the memory here after flushing the page. Same memory pointer as the one stored in the array entry.
         OSMemoryPageFree( (void*) ppTempPage.DwPage() );
-        errArray = m_rgRBSDbPage->ErrSetEntry( i, NULL );
+        errArray = m_rgRBSDbPage->ErrSetEntry( i, CPagePointer() );
 
         if ( errArray != CArray< CPagePointer >::ERR::errSuccess )
         {

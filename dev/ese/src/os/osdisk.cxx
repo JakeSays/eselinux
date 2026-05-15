@@ -1408,7 +1408,7 @@ void PatrolDogSynchronizer::InitPatrolDogState_()
     m_asigNudgePatrolDog.Reset();
     m_fPutDownPatrolDog = fTrue;
     m_cLoiters = 0;
-    m_threadPatrolDog = NULL;
+    m_threadPatrolDog = 0;
     m_pvContext = NULL;
     m_patrolDogState = pdsInactive;
     AssertPatrolDogInitialState_();
@@ -1419,7 +1419,7 @@ void PatrolDogSynchronizer::AssertPatrolDogInitialState_( const PatrolDogState p
     Assert( !m_asigNudgePatrolDog.FIsSet() );
     Assert( m_fPutDownPatrolDog );
     Assert( m_cLoiters == 0 );
-    Assert( m_threadPatrolDog == NULL );
+    Assert( m_threadPatrolDog == 0 );
     Assert( m_pvContext == NULL );
     Assert( m_patrolDogState == pdsExpected );
 }
@@ -1471,7 +1471,7 @@ ERR PatrolDogSynchronizer::ErrInitPatrolDog( const PUTIL_THREAD_PROC pfnPatrolDo
                                 priority,
                                 &m_threadPatrolDog,
                                 (DWORD_PTR)this ) );
-    Assert( m_threadPatrolDog != NULL );
+    Assert( m_threadPatrolDog != 0 );
 
     //  WARNING: point of no return.
 
@@ -1481,7 +1481,7 @@ HandleError:
 
     if ( err < JET_errSuccess )
     {
-        Assert( m_threadPatrolDog == NULL );
+        Assert( m_threadPatrolDog == 0 );
         Assert( m_patrolDogState == pdsActivating );
         InitPatrolDogState_();
     }
@@ -1504,7 +1504,7 @@ void PatrolDogSynchronizer::TermPatrolDog()
 
     Assert( !m_fPutDownPatrolDog );
     Assert( m_cLoiters == 0 );
-    Assert( m_threadPatrolDog != NULL );
+    Assert( m_threadPatrolDog != 0 );
 
     //  Deactivate thread.
 

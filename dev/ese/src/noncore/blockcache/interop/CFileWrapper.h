@@ -68,7 +68,7 @@ namespace Internal
                                         __out_bcount( cbData ) BYTE* const  pbData,
                                         const OSFILEQOS                     grbitQOS,
                                         const IFileAPI::PfnIOComplete       pfnIOComplete   = NULL,
-                                        const DWORD_PTR                     keyIOComplete   = NULL,
+                                        const DWORD_PTR                     keyIOComplete   = 0,
                                         const IFileAPI::PfnIOHandoff        pfnIOHandoff    = NULL,
                                         const VOID *                        pioreq          = NULL  ) override;
                         ERR ErrIOWrite( const TraceContext&             tc,
@@ -77,7 +77,7 @@ namespace Internal
                                         const BYTE* const               pbData,
                                         const OSFILEQOS                 grbitQOS,
                                         const IFileAPI::PfnIOComplete   pfnIOComplete   = NULL,
-                                        const DWORD_PTR                 keyIOComplete   = NULL,
+                                        const DWORD_PTR                 keyIOComplete   = 0,
                                         const IFileAPI::PfnIOHandoff    pfnIOHandoff    = NULL  ) override;
                         ERR ErrIOIssue() override;
 

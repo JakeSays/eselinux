@@ -396,10 +396,10 @@ INLINE ERR CBlockCacheHeaderHelpers::ErrReadHeader( _In_                        
                             ib,
                             cbData,
                             (BYTE*)pvData,
-                            qosIONormal,        
+                            qosIONormal,
                             IOM,
                             NULL,
-                            NULL,
+                            0,
                             NULL,
                             NULL );
 }

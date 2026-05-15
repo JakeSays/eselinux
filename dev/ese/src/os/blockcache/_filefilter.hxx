@@ -3084,7 +3084,7 @@ ERR TFileFilter<I>::ErrInvalidate( _In_ const COffsets& offsets )
                                     qosIONormal,
                                     cpPinned,
                                     NULL,
-                                    NULL ) );
+                                    0 ) );
         }
 
         //  invalidate the cache for this offset range
@@ -3171,15 +3171,15 @@ ERR TFileFilter<I>::ErrAttach( _In_ const COffsets& offsetsFirstWrite )
     Alloc( pvData = PvOSMemoryPageAlloc( (size_t)( m_offsetsCachedFileHeader.Cb() ), NULL ) );
     if ( cbSize > 0 )
     {
-        Call( ErrRead(  *tcScope, 
-                        0, 
+        Call( ErrRead(  *tcScope,
+                        0,
                         (DWORD)min( m_offsetsCachedFileHeader.Cb(), cbSize ),
-                        (BYTE*)pvData, 
-                        qosIONormal, 
+                        (BYTE*)pvData,
+                        qosIONormal,
                         iomRaw,
-                        NULL, 
-                        NULL, 
-                        NULL, 
+                        NULL,
+                        0,
+                        NULL,
                         NULL ) );
     }
 
@@ -3203,7 +3203,7 @@ ERR TFileFilter<I>::ErrAttach( _In_ const COffsets& offsetsFirstWrite )
                             qosIONormal,
                             cpPinned,
                             NULL,
-                            NULL ) );
+                            0 ) );
     fPresumeCached = fTrue;
     Call( m_pc->ErrFlush( m_volumeid, m_fileid, m_fileserial ) );
 
@@ -3218,14 +3218,14 @@ ERR TFileFilter<I>::ErrAttach( _In_ const COffsets& offsetsFirstWrite )
     memset( pvData, 0, (size_t)( m_offsetsCachedFileHeader.Cb() ) );
     UtilMemCpy( pvData, pcfh, sizeof( *pcfh ) );
 
-    Call( ErrWrite( *tcScope, 
-                    0, 
-                    (DWORD)m_offsetsCachedFileHeader.Cb(), 
-                    (const BYTE*)pvData, 
-                    qosIONormal, 
-                    iomRaw, 
-                    NULL, 
-                    NULL, 
+    Call( ErrWrite( *tcScope,
+                    0,
+                    (DWORD)m_offsetsCachedFileHeader.Cb(),
+                    (const BYTE*)pvData,
+                    qosIONormal,
+                    iomRaw,
+                    NULL,
+                    0,
                     NULL ) );
     fPresumeAttached = fTrue;
 
@@ -3874,7 +3874,7 @@ ERR TFileFilter<I>::ErrCacheMiss(   _In_                    const TraceContext& 
     ERR             err                     = JET_errSuccess;
     OSFILEQOS       grbitQOSOutputActual    = grbitQOSOutput;
     const void*     pioreq                  = *ppioreq;
-    BOOL            fThrottleReleaser       = pfThrottleReleaser ? *pfThrottleReleaser : NULL;
+    BOOL            fThrottleReleaser       = pfThrottleReleaser ? *pfThrottleReleaser : fFalse;
     CIOComplete*    piocomplete             = NULL;
 
     *ppioreq = NULL;

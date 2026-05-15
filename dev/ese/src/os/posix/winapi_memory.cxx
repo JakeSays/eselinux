@@ -3,11 +3,16 @@
 //
 // Local heap (LocalAlloc / LocalFree) and stack walking on POSIX. The
 // engine uses LocalAlloc only for small short-lived buffers — back it
-// with malloc/calloc. Stack walking goes through glibc backtrace().
+// with malloc/calloc.  Stack walking goes through LLVM libunwind's
+// low-level cursor API (already statically linked end-to-end), which
+// works on both glibc and musl — unlike <execinfo.h>'s `backtrace()`,
+// which is a glibc-only extension that Alpine/musl doesn't ship.
+
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
 
 #include "osstd.hxx"
 
-#include <execinfo.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -35,28 +40,56 @@ USHORT RtlCaptureStackBackTrace(DWORD FramesToSkip, DWORD FramesToCapture,
         return 0;
     }
 
-    // backtrace() captures starting at the caller; we need to over-capture
-    // by FramesToSkip+1 (one extra for this very frame) and then shift.
-    constexpr DWORD c_maxFrames = 256;
-    void* raw[c_maxFrames];
-    const DWORD want = FramesToSkip + FramesToCapture + 1;
-    const DWORD cap = (want > c_maxFrames)
-                      ? c_maxFrames
-                      : want;
-
-    const int got = backtrace(raw, static_cast<int>(cap));
-    if (got <= static_cast<int>(FramesToSkip + 1))
+    // libunwind walks the local stack frame-by-frame from this point
+    // outward.  Step past `FramesToSkip + 1` frames first (the +1 is
+    // this function's own frame), then emit up to FramesToCapture
+    // instruction pointers into BackTrace.
+    unw_context_t context;
+    if (unw_getcontext(&context) != 0)
+    {
+        if (BackTraceHash)
+            *BackTraceHash = 0;
+        return 0;
+    }
+    unw_cursor_t cursor;
+    if (unw_init_local(&cursor, &context) != 0)
     {
         if (BackTraceHash)
             *BackTraceHash = 0;
         return 0;
     }
 
-    const DWORD captured = static_cast<DWORD>(got) - (FramesToSkip + 1);
-    const DWORD emit = (captured > FramesToCapture)
-                       ? FramesToCapture
-                       : captured;
-    memcpy(BackTrace, raw + FramesToSkip + 1, emit * sizeof(void*));
+    // Skip this function's frame plus the caller's requested skip count.
+    for (DWORD i = 0; i < FramesToSkip + 1; ++i)
+    {
+        if (unw_step(&cursor) <= 0)
+        {
+            if (BackTraceHash)
+                *BackTraceHash = 0;
+            return 0;
+        }
+    }
+
+    DWORD emit = 0;
+    while (emit < FramesToCapture)
+    {
+        unw_word_t ip = 0;
+        if (unw_get_reg(&cursor, UNW_REG_IP, &ip) != 0)
+        {
+            break;
+        }
+        BackTrace[emit++] = reinterpret_cast<void*>(static_cast<uintptr_t>(ip));
+        if (unw_step(&cursor) <= 0)
+        {
+            break;
+        }
+    }
+    if (emit == 0)
+    {
+        if (BackTraceHash)
+            *BackTraceHash = 0;
+        return 0;
+    }
 
     if (BackTraceHash)
     {

@@ -21,7 +21,7 @@ class CSlabWriteBack  //  swb
                 m_jposLast( jposInvalid ),
                 m_jposEndLast( jposInvalid ),
                 m_pfnSaved( NULL ),
-                m_keySaved( NULL ),
+                m_keySaved( 0 ),
                 m_pcbsSave( NULL ),
                 m_fReleaseSlabOnSave( fFalse ),
                 m_sigSave( CSyncBasicInfo( "THashedLRUKCache<I>::CSlabWriteBack::m_sigSave" ) )

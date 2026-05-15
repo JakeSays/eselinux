@@ -136,7 +136,7 @@ class THashedLRUKCache
                         m_cCachingFileIO( 0 ),
                         m_iorl( this ),
                         m_pfnIORangeLockAcquired( NULL ),
-                        m_keyIORangeLockAcquired( NULL )
+                        m_keyIORangeLockAcquired( 0 )
                 {
                     m_ilRequestsByIO.InsertAsPrevMost( this );
                 }
@@ -165,7 +165,7 @@ class THashedLRUKCache
                 typedef void (*PfnIORangeLockAcquired)( const DWORD_PTR dwCompletionKey );
 
                 void WaitForIORangeLock(    _In_opt_ CRequest::PfnIORangeLockAcquired   pfnIORangeLockAcquired  = NULL,
-                                            _In_opt_ const DWORD_PTR                    keyIORangeLockAcquired  = NULL )
+                                            _In_opt_ const DWORD_PTR                    keyIORangeLockAcquired  = 0 )
                 {
                     if ( pfnIORangeLockAcquired )
                     {
@@ -190,7 +190,7 @@ class THashedLRUKCache
                 typedef CMeteredSection::PFNPARTITIONCOMPLETE PfnIOComplete;
 
                 void WaitForIO( _In_opt_ CRequest::PfnIOComplete    pfnIOComplete   = NULL,
-                                _In_opt_ const DWORD_PTR            keyIOComplete   = NULL )
+                                _In_opt_ const DWORD_PTR            keyIOComplete   = 0 )
                 {
                     IssueIO();
 
@@ -5134,9 +5134,9 @@ ERR THashedLRUKCache<I>::ErrCreate()
                                     ibHeader,
                                     cbHeader,
                                     (const BYTE*)pch,
-                                    qosIONormal, 
-                                    NULL, 
+                                    qosIONormal,
                                     NULL,
+                                    0,
                                     NULL ) );
 
     //  flush the caching file

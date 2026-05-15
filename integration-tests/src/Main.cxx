@@ -27,11 +27,16 @@
 #include <cstring>
 #include <filesystem>
 #include <format>
+#include <fstream>
 #include <iostream>
+#include <memory>
 #include <span>
+#include <streambuf>
 #include <string>
 #include <string_view>
 #include <vector>
+
+using namespace ese::tests;
 
 namespace
 {
@@ -39,7 +44,7 @@ namespace
 struct CommandLineOptions
 {
     std::string FilterPattern;
-    ese::tests::ScaleProfileSize ScaleSize = ese::tests::ScaleProfileSize::Small;
+    ScaleProfileSize ScaleSize = ScaleProfileSize::Small;
     bool ListOnly = false;
     bool Verbose = false;
     bool KeepTemporary = false;
@@ -51,6 +56,102 @@ struct CommandLineOptions
     //  `extraArgs` and carry per-child state (TCP ports, role tags,
     //  peer endpoints).
     std::vector<std::string> ChildExtraArgs;
+    //  --log-file <path>.  When set, every write to std::cout and
+    //  std::cerr is duplicated to <path> in addition to the original
+    //  stdout/stderr fds.  Removes the need for `| tee` at the
+    //  invocation site.
+    std::string LogFile;
+};
+
+//  A std::streambuf that forwards every write to two upstream
+//  streambufs.  Used to plumb std::cout / std::cerr into both their
+//  original destination AND the --log-file path simultaneously.
+class TeeStreambuf : public std::streambuf
+{
+public:
+    TeeStreambuf(std::streambuf* primary, std::streambuf* secondary)
+        : _primary(primary), _secondary(secondary)
+    {
+    }
+
+protected:
+    int overflow(int character) override
+    {
+        if (character == traits_type::eof())
+        {
+            return traits_type::not_eof(character);
+        }
+        const auto a = _primary != nullptr
+                       ? _primary->sputc(static_cast<char>(character))
+                       : character;
+        const auto b = _secondary != nullptr
+                       ? _secondary->sputc(static_cast<char>(character))
+                       : character;
+        return (a == traits_type::eof() || b == traits_type::eof())
+                ? traits_type::eof()
+                : character;
+    }
+
+    std::streamsize xsputn(const char* data, std::streamsize count) override
+    {
+        const auto a = _primary != nullptr
+                       ? _primary->sputn(data, count)
+                       : count;
+        const auto b = _secondary != nullptr
+                       ? _secondary->sputn(data, count)
+                       : count;
+        return std::min(a, b);
+    }
+
+    int sync() override
+    {
+        const auto a = _primary != nullptr ? _primary->pubsync() : 0;
+        const auto b = _secondary != nullptr ? _secondary->pubsync() : 0;
+        return (a == 0 && b == 0) ? 0 : -1;
+    }
+
+private:
+    std::streambuf* _primary;
+    std::streambuf* _secondary;
+};
+
+//  RAII guard that installs TeeStreambuf as the active buffer for
+//  std::cout and std::cerr, and restores the originals at scope exit.
+class ConsoleLogTee
+{
+public:
+    explicit ConsoleLogTee(const std::string& logPath)
+        : _logFile(logPath, std::ios::out | std::ios::trunc)
+    {
+        if (!_logFile.is_open())
+        {
+            throw std::runtime_error("failed to open --log-file: " + logPath);
+        }
+        _coutTee = std::make_unique<TeeStreambuf>(std::cout.rdbuf(),
+                                                  _logFile.rdbuf());
+        _cerrTee = std::make_unique<TeeStreambuf>(std::cerr.rdbuf(),
+                                                  _logFile.rdbuf());
+        _originalCout = std::cout.rdbuf(_coutTee.get());
+        _originalCerr = std::cerr.rdbuf(_cerrTee.get());
+    }
+
+    ~ConsoleLogTee()
+    {
+        std::cout.flush();
+        std::cerr.flush();
+        std::cout.rdbuf(_originalCout);
+        std::cerr.rdbuf(_originalCerr);
+    }
+
+    ConsoleLogTee(const ConsoleLogTee&) = delete;
+    ConsoleLogTee& operator=(const ConsoleLogTee&) = delete;
+
+private:
+    std::ofstream _logFile;
+    std::unique_ptr<TeeStreambuf> _coutTee;
+    std::unique_ptr<TeeStreambuf> _cerrTee;
+    std::streambuf* _originalCout = nullptr;
+    std::streambuf* _originalCerr = nullptr;
 };
 
 void PrintUsage(std::string_view programName)
@@ -65,6 +166,8 @@ void PrintUsage(std::string_view programName)
               << " --verbose Print per-scenario start lines and failure detail.\n"
               << " --keep-temp Don't delete scenario temp directories on exit.\n"
               << " --help, -h Show this message.\n"
+              << "\n"
+              << " --log-file <path> Also write every console line to <path>.\n"
               << "\n"
               << "Child-entry mode (used internally for crash-recovery scenarios):\n"
               << " --child-entry <name> Run the named child-entry callback and exit.\n"
@@ -105,15 +208,15 @@ bool ParseCommandLine(int argc, char** argv, CommandLineOptions& options)
             const std::string_view valueView = value;
             if (valueView == "Small")
             {
-                options.ScaleSize = ese::tests::ScaleProfileSize::Small;
+                options.ScaleSize = ScaleProfileSize::Small;
             }
             else if (valueView == "Medium")
             {
-                options.ScaleSize = ese::tests::ScaleProfileSize::Medium;
+                options.ScaleSize = ScaleProfileSize::Medium;
             }
             else if (valueView == "Large")
             {
-                options.ScaleSize = ese::tests::ScaleProfileSize::Large;
+                options.ScaleSize = ScaleProfileSize::Large;
             }
             else
             {
@@ -132,6 +235,15 @@ bool ParseCommandLine(int argc, char** argv, CommandLineOptions& options)
         else if (argument == "--keep-temp")
         {
             options.KeepTemporary = true;
+        }
+        else if (argument == "--log-file")
+        {
+            auto* value = requireValue(argument);
+            if (value == nullptr)
+            {
+                return false;
+            }
+            options.LogFile = value;
         }
         else if (argument == "--child-entry")
         {
@@ -182,7 +294,7 @@ int RunChildEntry(const CommandLineOptions& options)
         std::cerr << "--child-entry requires --child-directory\n";
         return 2;
     }
-    auto* entry = ese::tests::FindChildEntry(options.ChildEntryName);
+    auto* entry = FindChildEntry(options.ChildEntryName);
     if (entry == nullptr)
     {
         std::cerr << "unknown child-entry: " << options.ChildEntryName << "\n";
@@ -210,10 +322,10 @@ int RunChildEntry(const CommandLineOptions& options)
 
 int RunScenarios(const CommandLineOptions& options)
 {
-    ese::tests::TemporaryDirectory::SetKeepOnDestruction(options.KeepTemporary);
-    ese::tests::SetActiveScaleProfile(options.ScaleSize);
+    TemporaryDirectory::SetKeepOnDestruction(options.KeepTemporary);
+    SetActiveScaleProfile(options.ScaleSize);
 
-    auto& registry = ese::tests::ScenarioRegistry::Instance();
+    auto& registry = ScenarioRegistry::Instance();
     const auto pattern = options.FilterPattern.empty() ? "*" : options.FilterPattern;
     const auto matching = registry.Filtered(pattern);
 
@@ -254,7 +366,7 @@ int RunScenarios(const CommandLineOptions& options)
             scenario->Run();
             passed = true;
         }
-        catch (const ese::tests::ScenarioFailure& failure)
+        catch (const ScenarioFailure& failure)
         {
             failureMessage = failure.what();
         }
@@ -313,7 +425,7 @@ public:
         if (initializeErrorCode < JET_errSuccess)
         {
             std::cerr << "JetPlatformInitialize failed: "
-                      << ese::tests::JetErrorName(initializeErrorCode)
+                      << JetErrorName(initializeErrorCode)
                       << " (" << static_cast<int>(initializeErrorCode) << ")\n";
             std::exit(2);
         }
@@ -332,7 +444,7 @@ public:
         if (assertActionErrorCode < JET_errSuccess)
         {
             std::cerr << "JetSetSystemParameter(AssertAction) failed: "
-                      << ese::tests::JetErrorName(assertActionErrorCode) << "\n";
+                      << JetErrorName(assertActionErrorCode) << "\n";
             std::exit(2);
         }
         auto disablePerfmonErrorCode = JetSetSystemParameterA(nullptr,
@@ -343,7 +455,7 @@ public:
         if (disablePerfmonErrorCode < JET_errSuccess)
         {
             std::cerr << "JetSetSystemParameter(DisablePerfmon) failed: "
-                      << ese::tests::JetErrorName(disablePerfmonErrorCode) << "\n";
+                      << JetErrorName(disablePerfmonErrorCode) << "\n";
             std::exit(2);
         }
     }
@@ -365,6 +477,27 @@ int main(int argc, char** argv)
     {
         PrintUsage(argv[0]);
         return 2;
+    }
+
+    //  Mirror all parent-process stdout/stderr writes to --log-file,
+    //  if requested.  Construct the guard before any other work so we
+    //  also capture engine startup errors, JetPlatformInitialize
+    //  diagnostics, etc.  Child processes inherit the parent's actual
+    //  fd 1/2 — the tee only affects this process's std::cout / cerr,
+    //  not its file descriptors, so children still write to whatever
+    //  the parent's stdout/stderr point at.
+    std::unique_ptr<ConsoleLogTee> consoleLogTee;
+    if (!options.LogFile.empty())
+    {
+        try
+        {
+            consoleLogTee = std::make_unique<ConsoleLogTee>(options.LogFile);
+        }
+        catch (const std::exception& exception)
+        {
+            std::cerr << exception.what() << "\n";
+            return 2;
+        }
     }
 
     PlatformInitializer platformInitializer;

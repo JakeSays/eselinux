@@ -3973,7 +3973,7 @@ ERR OLD2_STATUS::ErrCreateTable_(
             JET_bitIndexPrimary,
             100,
             nullptr,
-            NULL,
+            0,
             nullptr,
             0,
             JET_errSuccess,

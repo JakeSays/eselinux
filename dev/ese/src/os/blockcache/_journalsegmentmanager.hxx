@@ -771,7 +771,7 @@ INLINE ERR TJournalSegmentManager<I>::ErrInitEmptyJournal()
 
     Call( CJournalSegment::ErrCreate( m_pff, m_ibLast, m_sposFirst, 0, m_sposFirst, m_sposFirst, &pjs ) );
     Call( pjs->ErrGetProperties( NULL, &m_dwUniqueIdPrev, NULL, NULL, NULL, NULL ) );
-    Call( pjs->ErrSeal( NULL, NULL ) );
+    Call( pjs->ErrSeal( NULL, 0 ) );
     Call( ErrFlush() );
 
 HandleError:
