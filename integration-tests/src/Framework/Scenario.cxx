@@ -54,6 +54,8 @@ const char* ToString(ScenarioCategory category)
             return "Scale";
         case ScenarioCategory::Concurrency:
             return "Concurrency";
+        case ScenarioCategory::MultiThreaded:
+            return "MultiThreaded";
         case ScenarioCategory::Encryption:
             return "Encryption";
         case ScenarioCategory::Preread:
@@ -64,6 +66,8 @@ const char* ToString(ScenarioCategory category)
             return "Replication";
         case ScenarioCategory::WideApi:
             return "WideApi";
+        case ScenarioCategory::LongRunning:
+            return "LongRunning";
     }
     return "Unknown";
 }

@@ -39,11 +39,13 @@ enum class ScenarioCategory
     Error,
     Scale,
     Concurrency,
+    MultiThreaded,
     Encryption,
     Preread,
     Rbs,
     Replication,
     WideApi,
+    LongRunning,
 };
 
 const char* ToString(ScenarioCategory category);

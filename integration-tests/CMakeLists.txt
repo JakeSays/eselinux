@@ -36,8 +36,11 @@ add_executable(ese-tests
     src/Scenarios/ErrorScenarios.cxx
     src/Scenarios/EscrowScenarios.cxx
     src/Scenarios/LimitScenarios.cxx
+    src/Scenarios/LongRunningScenarios.cxx
+    src/Scenarios/LongRunningTwoInstanceScenarios.cxx
     src/Scenarios/LongValueScenarios.cxx
     src/Scenarios/MaintenanceScenarios.cxx
+    src/Scenarios/MultiThreadedScenarios.cxx
     src/Scenarios/MultiValueScenarios.cxx
     src/Scenarios/NavigationScenarios.cxx
     src/Scenarios/PlatformScenarios.cxx
@@ -57,7 +60,7 @@ add_executable(ese-tests
 )
 
 set_target_properties(ese-tests PROPERTIES
-    CXX_STANDARD 20
+    CXX_STANDARD 23
     CXX_STANDARD_REQUIRED ON)
 
 #  Root CMakeLists.txt installs -fno-exceptions / -fno-rtti for the

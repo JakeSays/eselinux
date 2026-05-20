@@ -13,6 +13,7 @@
 // for clean shutdown.
 
 #include "Framework/Check.hxx"
+#include "Framework/Console.hxx"
 #include "Framework/CrashHelper.hxx"
 #include "Framework/ScaleProfile.hxx"
 #include "Framework/Scenario.hxx"
@@ -27,11 +28,7 @@
 #include <cstring>
 #include <filesystem>
 #include <format>
-#include <fstream>
-#include <iostream>
-#include <memory>
 #include <span>
-#include <streambuf>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -48,6 +45,10 @@ struct CommandLineOptions
     bool ListOnly = false;
     bool Verbose = false;
     bool KeepTemporary = false;
+    // LongRunning scenarios are opt-in: they take minutes apiece and
+    // exist to hammer the engine, not to gate fast iteration. Off by
+    // default; --include-long-running flips them on.
+    bool IncludeLongRunning = false;
     bool ChildMode = false;
     std::string ChildEntryName;
     std::string ChildDirectory;
@@ -56,122 +57,34 @@ struct CommandLineOptions
     //  `extraArgs` and carry per-child state (TCP ports, role tags,
     //  peer endpoints).
     std::vector<std::string> ChildExtraArgs;
-    //  --log-file <path>.  When set, every write to std::cout and
-    //  std::cerr is duplicated to <path> in addition to the original
-    //  stdout/stderr fds.  Removes the need for `| tee` at the
-    //  invocation site.
+    //  --log-file <path>.  When set, every line PrintLine emits is
+    //  duplicated to <path> in addition to stdout.  Removes the need
+    //  for `| tee` at the invocation site.
     std::string LogFile;
 };
 
-//  A std::streambuf that forwards every write to two upstream
-//  streambufs.  Used to plumb std::cout / std::cerr into both their
-//  original destination AND the --log-file path simultaneously.
-class TeeStreambuf : public std::streambuf
-{
-public:
-    TeeStreambuf(std::streambuf* primary, std::streambuf* secondary)
-        : _primary(primary), _secondary(secondary)
-    {
-    }
-
-protected:
-    int overflow(int character) override
-    {
-        if (character == traits_type::eof())
-        {
-            return traits_type::not_eof(character);
-        }
-        const auto a = _primary != nullptr
-                       ? _primary->sputc(static_cast<char>(character))
-                       : character;
-        const auto b = _secondary != nullptr
-                       ? _secondary->sputc(static_cast<char>(character))
-                       : character;
-        return (a == traits_type::eof() || b == traits_type::eof())
-                ? traits_type::eof()
-                : character;
-    }
-
-    std::streamsize xsputn(const char* data, std::streamsize count) override
-    {
-        const auto a = _primary != nullptr
-                       ? _primary->sputn(data, count)
-                       : count;
-        const auto b = _secondary != nullptr
-                       ? _secondary->sputn(data, count)
-                       : count;
-        return std::min(a, b);
-    }
-
-    int sync() override
-    {
-        const auto a = _primary != nullptr ? _primary->pubsync() : 0;
-        const auto b = _secondary != nullptr ? _secondary->pubsync() : 0;
-        return (a == 0 && b == 0) ? 0 : -1;
-    }
-
-private:
-    std::streambuf* _primary;
-    std::streambuf* _secondary;
-};
-
-//  RAII guard that installs TeeStreambuf as the active buffer for
-//  std::cout and std::cerr, and restores the originals at scope exit.
-class ConsoleLogTee
-{
-public:
-    explicit ConsoleLogTee(const std::string& logPath)
-        : _logFile(logPath, std::ios::out | std::ios::trunc)
-    {
-        if (!_logFile.is_open())
-        {
-            throw std::runtime_error("failed to open --log-file: " + logPath);
-        }
-        _coutTee = std::make_unique<TeeStreambuf>(std::cout.rdbuf(),
-                                                  _logFile.rdbuf());
-        _cerrTee = std::make_unique<TeeStreambuf>(std::cerr.rdbuf(),
-                                                  _logFile.rdbuf());
-        _originalCout = std::cout.rdbuf(_coutTee.get());
-        _originalCerr = std::cerr.rdbuf(_cerrTee.get());
-    }
-
-    ~ConsoleLogTee()
-    {
-        std::cout.flush();
-        std::cerr.flush();
-        std::cout.rdbuf(_originalCout);
-        std::cerr.rdbuf(_originalCerr);
-    }
-
-    ConsoleLogTee(const ConsoleLogTee&) = delete;
-    ConsoleLogTee& operator=(const ConsoleLogTee&) = delete;
-
-private:
-    std::ofstream _logFile;
-    std::unique_ptr<TeeStreambuf> _coutTee;
-    std::unique_ptr<TeeStreambuf> _cerrTee;
-    std::streambuf* _originalCout = nullptr;
-    std::streambuf* _originalCerr = nullptr;
-};
 
 void PrintUsage(std::string_view programName)
 {
-    std::cout << "Usage: " << programName << " [options]\n"
-              << "\n"
-              << "Options:\n"
-              << " --filter <pattern> Run only scenarios whose FullName matches <pattern>.\n"
-              << " Glob: '*' and '?' supported. Default: '*'\n"
-              << " --scale Small|Medium|Large Workload size profile. Default: Small.\n"
-              << " --list Print every registered scenario and exit.\n"
-              << " --verbose Print per-scenario start lines and failure detail.\n"
-              << " --keep-temp Don't delete scenario temp directories on exit.\n"
-              << " --help, -h Show this message.\n"
-              << "\n"
-              << " --log-file <path> Also write every console line to <path>.\n"
-              << "\n"
-              << "Child-entry mode (used internally for crash-recovery scenarios):\n"
-              << " --child-entry <name> Run the named child-entry callback and exit.\n"
-              << " --child-directory <path> Scratch directory the child should use.\n";
+    PrintLine("Usage: {} [options]", programName);
+    PrintLine("");
+    PrintLine("Options:");
+    PrintLine(" --filter <pattern> Run only scenarios whose FullName matches <pattern>.");
+    PrintLine(" Glob: '*' and '?' supported. Default: '*'");
+    PrintLine(" --scale Small|Medium|Large Workload size profile. Default: Small.");
+    PrintLine(" --list Print every registered scenario and exit.");
+    PrintLine(" --verbose Print per-scenario start lines and failure detail.");
+    PrintLine(" --keep-temp Don't delete scenario temp directories on exit.");
+    PrintLine(" --include-long-running Force-include the LongRunning category in a");
+    PrintLine("                        broader run. Not needed when --filter matches");
+    PrintLine("                        only LongRunning scenarios.");
+    PrintLine(" --help, -h Show this message.");
+    PrintLine("");
+    PrintLine(" --log-file <path> Also write every console line to <path>.");
+    PrintLine("");
+    PrintLine("Child-entry mode (used internally for crash-recovery scenarios):");
+    PrintLine(" --child-entry <name> Run the named child-entry callback and exit.");
+    PrintLine(" --child-directory <path> Scratch directory the child should use.");
 }
 
 bool ParseCommandLine(int argc, char** argv, CommandLineOptions& options)
@@ -183,7 +96,7 @@ bool ParseCommandLine(int argc, char** argv, CommandLineOptions& options)
         {
             if (index + 1 >= argc)
             {
-                std::cerr << "missing value for " << name << "\n";
+                PrintLine("missing value for {}", name);
                 return nullptr;
             }
             return argv[++index];
@@ -220,7 +133,7 @@ bool ParseCommandLine(int argc, char** argv, CommandLineOptions& options)
             }
             else
             {
-                std::cerr << "unknown --scale value: " << valueView << "\n";
+                PrintLine("unknown --scale value: {}", valueView);
                 return false;
             }
         }
@@ -235,6 +148,10 @@ bool ParseCommandLine(int argc, char** argv, CommandLineOptions& options)
         else if (argument == "--keep-temp")
         {
             options.KeepTemporary = true;
+        }
+        else if (argument == "--include-long-running")
+        {
+            options.IncludeLongRunning = true;
         }
         else if (argument == "--log-file")
         {
@@ -280,7 +197,7 @@ bool ParseCommandLine(int argc, char** argv, CommandLineOptions& options)
         }
         else
         {
-            std::cerr << "unknown argument: " << argument << "\n";
+            PrintLine("unknown argument: {}", argument);
             return false;
         }
     }
@@ -291,13 +208,13 @@ int RunChildEntry(const CommandLineOptions& options)
 {
     if (options.ChildDirectory.empty())
     {
-        std::cerr << "--child-entry requires --child-directory\n";
+        PrintLine("--child-entry requires --child-directory");
         return 2;
     }
     auto* entry = FindChildEntry(options.ChildEntryName);
     if (entry == nullptr)
     {
-        std::cerr << "unknown child-entry: " << options.ChildEntryName << "\n";
+        PrintLine("unknown child-entry: {}", options.ChildEntryName);
         return 2;
     }
     try
@@ -313,8 +230,8 @@ int RunChildEntry(const CommandLineOptions& options)
     }
     catch (const std::exception& exception)
     {
-        std::cerr << "child-entry " << options.ChildEntryName
-                  << " threw: " << exception.what() << "\n";
+        PrintLine("child-entry {} threw: {}",
+                  options.ChildEntryName, exception.what());
         return 1;
     }
     return 0;
@@ -327,20 +244,58 @@ int RunScenarios(const CommandLineOptions& options)
 
     auto& registry = ScenarioRegistry::Instance();
     const auto pattern = options.FilterPattern.empty() ? "*" : options.FilterPattern;
-    const auto matching = registry.Filtered(pattern);
+    const auto matchedScenarios = registry.Filtered(pattern);
+
+    // LongRunning scenarios are suppressed by default — minutes apiece,
+    // they would dominate any unfiltered run.  Two paths include them:
+    // an explicit --include-long-running, or a filter pattern that
+    // matches LongRunning scenarios exclusively (the operator named
+    // them, so we trust the intent).
+    bool everyMatchIsLongRunning = !matchedScenarios.empty();
+    for (auto* scenario : matchedScenarios)
+    {
+        if (scenario->Category() != ScenarioCategory::LongRunning)
+        {
+            everyMatchIsLongRunning = false;
+            break;
+        }
+    }
+    const bool includeLongRunning =
+        options.IncludeLongRunning || everyMatchIsLongRunning;
+
+    std::vector<Scenario*> matching;
+    matching.reserve(matchedScenarios.size());
+    uint32_t suppressedLongRunningCount = 0;
+    for (auto* scenario : matchedScenarios)
+    {
+        if (scenario->Category() == ScenarioCategory::LongRunning
+            && !includeLongRunning)
+        {
+            ++suppressedLongRunningCount;
+            continue;
+        }
+        matching.push_back(scenario);
+    }
 
     if (options.ListOnly)
     {
         for (auto* scenario : matching)
         {
-            std::cout << scenario->FullName() << "\n";
+            PrintLine("{}", scenario->FullName());
+        }
+        if (suppressedLongRunningCount > 0)
+        {
+            PrintLine("(skipping {} LongRunning scenario(s); "
+                      "pass --include-long-running or filter them "
+                      "explicitly to enable)",
+                      suppressedLongRunningCount);
         }
         return 0;
     }
 
     if (matching.empty())
     {
-        std::cerr << "no scenarios match filter '" << pattern << "'\n";
+        PrintLine("no scenarios match filter '{}'", pattern);
         return 1;
     }
 
@@ -354,7 +309,7 @@ int RunScenarios(const CommandLineOptions& options)
         const auto fullName = scenario->FullName();
         if (options.Verbose)
         {
-            std::cout << "[ RUN ] " << fullName << "\n";
+            PrintLine("[ RUN ] {}", fullName);
         }
 
         const auto scenarioStart = std::chrono::steady_clock::now();
@@ -386,17 +341,15 @@ int RunScenarios(const CommandLineOptions& options)
         if (passed)
         {
             ++passedCount;
-            std::cout << std::format("[ PASS ] {} ({} ms)\n",
-                                     fullName,
-                                     scenarioDuration.count());
+            PrintLine("[ PASS ] {} ({} ms)",
+                      fullName, scenarioDuration.count());
         }
         else
         {
             ++failedCount;
-            std::cout << std::format("[ FAIL ] {} ({} ms)\n",
-                                     fullName,
-                                     scenarioDuration.count())
-                      << " " << failureMessage << "\n";
+            PrintLine("[ FAIL ] {} ({} ms)",
+                      fullName, scenarioDuration.count());
+            PrintLine(" {}", failureMessage);
         }
     }
 
@@ -404,11 +357,9 @@ int RunScenarios(const CommandLineOptions& options)
         std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - suiteStart);
 
-    std::cout << "\n"
-              << std::format("=== {} passed, {} failed ({} ms total) ===\n",
-                             passedCount,
-                             failedCount,
-                             suiteDuration.count());
+    PrintLine("");
+    PrintLine("=== {} passed, {} failed ({} ms total) ===",
+              passedCount, failedCount, suiteDuration.count());
 
     return failedCount == 0 ? 0 : 1;
 }
@@ -424,9 +375,9 @@ public:
         auto initializeErrorCode = JetPlatformInitialize();
         if (initializeErrorCode < JET_errSuccess)
         {
-            std::cerr << "JetPlatformInitialize failed: "
-                      << JetErrorName(initializeErrorCode)
-                      << " (" << static_cast<int>(initializeErrorCode) << ")\n";
+            PrintLine("JetPlatformInitialize failed: {} ({})",
+                      JetErrorName(initializeErrorCode),
+                      static_cast<int>(initializeErrorCode));
             std::exit(2);
         }
 
@@ -443,8 +394,8 @@ public:
                                                             nullptr);
         if (assertActionErrorCode < JET_errSuccess)
         {
-            std::cerr << "JetSetSystemParameter(AssertAction) failed: "
-                      << JetErrorName(assertActionErrorCode) << "\n";
+            PrintLine("JetSetSystemParameter(AssertAction) failed: {}",
+                      JetErrorName(assertActionErrorCode));
             std::exit(2);
         }
         auto disablePerfmonErrorCode = JetSetSystemParameterA(nullptr,
@@ -454,8 +405,8 @@ public:
                                                               nullptr);
         if (disablePerfmonErrorCode < JET_errSuccess)
         {
-            std::cerr << "JetSetSystemParameter(DisablePerfmon) failed: "
-                      << JetErrorName(disablePerfmonErrorCode) << "\n";
+            PrintLine("JetSetSystemParameter(DisablePerfmon) failed: {}",
+                      JetErrorName(disablePerfmonErrorCode));
             std::exit(2);
         }
     }
@@ -479,32 +430,30 @@ int main(int argc, char** argv)
         return 2;
     }
 
-    //  Mirror all parent-process stdout/stderr writes to --log-file,
-    //  if requested.  Construct the guard before any other work so we
-    //  also capture engine startup errors, JetPlatformInitialize
-    //  diagnostics, etc.  Child processes inherit the parent's actual
-    //  fd 1/2 — the tee only affects this process's std::cout / cerr,
-    //  not its file descriptors, so children still write to whatever
-    //  the parent's stdout/stderr point at.
-    std::unique_ptr<ConsoleLogTee> consoleLogTee;
+    // Mirror every PrintLine to --log-file if one was supplied. Open
+    // it before any other work so engine startup errors land in the
+    // log too. Child processes inherit the parent's actual fd 1; the
+    // mirror is process-local and doesn't follow them.
     if (!options.LogFile.empty())
     {
-        try
+        if (!OpenLogFile(options.LogFile))
         {
-            consoleLogTee = std::make_unique<ConsoleLogTee>(options.LogFile);
-        }
-        catch (const std::exception& exception)
-        {
-            std::cerr << exception.what() << "\n";
+            PrintLine("failed to open --log-file: {}", options.LogFile);
             return 2;
         }
     }
 
     PlatformInitializer platformInitializer;
 
+    int exitCode;
     if (options.ChildMode)
     {
-        return RunChildEntry(options);
+        exitCode = RunChildEntry(options);
     }
-    return RunScenarios(options);
+    else
+    {
+        exitCode = RunScenarios(options);
+    }
+    CloseLogFile();
+    return exitCode;
 }

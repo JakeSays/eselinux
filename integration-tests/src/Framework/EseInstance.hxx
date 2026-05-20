@@ -25,6 +25,23 @@ namespace ese::tests
 
 class TemporaryDirectory;
 
+// SingleInstance — set system params globally, then JetInit.  ESE
+// stays in single-instance mode; the no-instance "Global" APIs
+// (JetBeginExternalBackup, JetTruncateLog, etc.) work.  This is the
+// default and matches almost every scenario in the suite.
+//
+// MultiInstance — JetCreateInstance2, then set per-instance params,
+// then JetInit.  The engine permanently switches to multi-instance
+// mode for the lifetime of the process.  Required when a scenario
+// needs more than one live JET_INSTANCE simultaneously, but it
+// breaks the no-instance Global APIs from that point onward — so
+// scenarios that opt in should run in isolation (or be ordered last).
+enum class EseInstanceMode
+{
+    SingleInstance,
+    MultiInstance,
+};
+
 class EseInstance
 {
 public:
@@ -39,7 +56,8 @@ public:
     // Pass nullptr (the default) when the scenario doesn't need it.
     EseInstance(const TemporaryDirectory& directory,
                 std::string_view instanceName = "ese-tests",
-                JET_CALLBACK runtimeCallback = nullptr);
+                JET_CALLBACK runtimeCallback = nullptr,
+                EseInstanceMode mode = EseInstanceMode::SingleInstance);
     ~EseInstance();
 
     EseInstance(const EseInstance&) = delete;
