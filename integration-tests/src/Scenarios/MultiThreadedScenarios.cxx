@@ -420,9 +420,15 @@ EseIntegrationScenario(MultiThreaded, LargeBinaryBlobsAcrossThreadsRoundTripExac
     };
     ColumnIds columnIds = {};
 
+    // Keep one long-lived session+database attached for the whole
+    // scenario.  Workers and the verify pass open the DB through
+    // their own sessions in Open mode, so they don't churn the
+    // engine's per-instance attachment state — that churn races the
+    // LV-tree flush under heavy concurrent writes and surfaces as
+    // JET_errPageNotInitialized at verify-read time.
+    EseSession setupSession(instance);
+    EseDatabase setupDatabase(setupSession, DatabaseFileName);
     {
-        EseSession setupSession(instance);
-        EseDatabase setupDatabase(setupSession, DatabaseFileName);
         EseTable setupTable(setupDatabase, TableName);
         columnIds.ThreadIndex = setupTable.AddColumn(
             ThreadIndexColumnName, JET_coltypLong, JET_bitColumnNotNULL);
@@ -449,7 +455,7 @@ EseIntegrationScenario(MultiThreaded, LargeBinaryBlobsAcrossThreadsRoundTripExac
         EseSession session(instance);
         EseDatabase database(session,
                              DatabaseFileName,
-                             EseDatabaseMode::AttachAndOpen);
+                             EseDatabaseMode::Open);
         EseTable table(database, TableName, EseTableMode::Open);
 
         // Each worker spreads its rows across several transactions so
@@ -513,7 +519,7 @@ EseIntegrationScenario(MultiThreaded, LargeBinaryBlobsAcrossThreadsRoundTripExac
     EseSession verifySession(instance);
     EseDatabase verifyDatabase(verifySession,
                                DatabaseFileName,
-                               EseDatabaseMode::AttachAndOpen);
+                               EseDatabaseMode::Open);
     EseTable verifyTable(verifyDatabase, TableName, EseTableMode::Open);
 
     uint32_t observedRowCount = 0;

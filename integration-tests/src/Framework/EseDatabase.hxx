@@ -22,6 +22,12 @@ enum class EseDatabaseMode
 {
     Create,
     AttachAndOpen,
+    // Open an already-attached database without performing a new
+    // attach.  Use this for additional sessions when one session in
+    // the same instance has already attached the file — avoids the
+    // attach/detach churn that can race the engine's LV-tree page
+    // flush under heavy concurrent writes.
+    Open,
 };
 
 class EseDatabase
