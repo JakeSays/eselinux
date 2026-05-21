@@ -246,3 +246,72 @@ EseIntegrationScenario(Escrow, DeleteOnZeroEventuallyRemovesRecord)
                 moveResult == JET_errRecordDeleted);
     }
 }
+
+EseIntegrationScenario(Escrow, NoRollbackPreservesDeltaAcrossExplicitRollback)
+{
+    TemporaryDirectory directory(
+        "Escrow.NoRollbackPreservesDeltaAcrossExplicitRollback");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Escrow.mdb");
+    EseTable table(database, "Counter");
+
+    const int32_t initialValue = 50;
+    auto columnId = table.AddColumnWithDefault("Counter",
+                                               JET_coltypLong,
+                                               &initialValue,
+                                               sizeof(initialValue),
+                                               JET_bitColumnEscrowUpdate);
+
+    InsertSingleEscrowRow(session, table);
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    // JET_bitEscrowNoRollback tells the engine to skip the per-row
+    // undo image for this escrow change.  A subsequent rollback
+    // therefore CANNOT undo the delta — the counter stays bumped.
+    {
+        EseTransaction transaction(session);
+        int32_t delta = 25;
+        uint32_t actualSize = 0;
+        CheckJet(JetEscrowUpdate(session.Handle(),
+                                 table.Id(),
+                                 columnId,
+                                 &delta, sizeof(delta),
+                                 nullptr, 0, &actualSize,
+                                 JET_bitEscrowNoRollback));
+        transaction.Rollback();
+    }
+    Require(RetrieveLong(session, table, columnId) == initialValue + 25);
+
+    // Control: same operation WITHOUT the flag rolls back as normal —
+    // the counter snaps back to 75 after a fresh +99 attempt is undone.
+    {
+        EseTransaction transaction(session);
+        int32_t delta = 99;
+        uint32_t actualSize = 0;
+        CheckJet(JetEscrowUpdate(session.Handle(),
+                                 table.Id(),
+                                 columnId,
+                                 &delta, sizeof(delta),
+                                 nullptr, 0, &actualSize,
+                                 0));
+        transaction.Rollback();
+    }
+    Require(RetrieveLong(session, table, columnId) == initialValue + 25);
+
+    // And a committed delta with NoRollback simply applies (the flag's
+    // promise is "no undo" — committing keeps the change either way).
+    {
+        EseTransaction transaction(session);
+        int32_t delta = 10;
+        uint32_t actualSize = 0;
+        CheckJet(JetEscrowUpdate(session.Handle(),
+                                 table.Id(),
+                                 columnId,
+                                 &delta, sizeof(delta),
+                                 nullptr, 0, &actualSize,
+                                 JET_bitEscrowNoRollback));
+        transaction.Commit();
+    }
+    Require(RetrieveLong(session, table, columnId) == initialValue + 25 + 10);
+}

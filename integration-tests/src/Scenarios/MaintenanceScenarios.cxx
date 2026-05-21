@@ -388,3 +388,278 @@ EseIntegrationScenario(Maintenance, Defragment2RunsBatchPassToCompletion)
 //  `JET_errInvalidParameter` unconditionally with a "OBSOLETE:
 //  only used by SFS" comment.  Coverage lists it under the
 //  out-of-scope stubs, not as a gap.
+
+EseIntegrationScenario(Maintenance, CompactPreserveOriginalKeepsSourceFileIntact)
+{
+    TemporaryDirectory directory(
+        "Maintenance.CompactPreserveOriginalKeepsSourceFileIntact");
+
+    static constexpr int RowCount = 200;
+    const auto sourceDatabasePath = directory.Path() / "Source.mdb";
+    const auto destinationDatabasePath = directory.Path() / "Compacted.mdb";
+
+    // Seed the source database, then JetTerm so JetCompact sees a
+    // detached file in a known state.
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+        EseDatabase database(session, "Source.mdb");
+        EseTable table(database, "Rows");
+        auto columnId = table.AddColumn("Value", JET_coltypLong,
+                                         JET_bitColumnNotNULL);
+        EseTransaction transaction(session);
+        for (int rowIndex = 0; rowIndex < RowCount; ++rowIndex)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, rowIndex);
+        }
+        transaction.Commit();
+    }
+
+    // Snapshot the on-disk size of the source so we can reconcile
+    // afterward.  A compact run without PreserveOriginal would
+    // typically replace the file in-place; with the flag the source
+    // must remain byte-equivalent.
+    const auto sizeBefore = std::filesystem::file_size(sourceDatabasePath);
+
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+
+        CheckJet(JetAttachDatabaseA(session.Handle(),
+                                    sourceDatabasePath.string().c_str(),
+                                    JET_bitDbReadOnly));
+
+        CheckJet(JetCompactA(session.Handle(),
+                             sourceDatabasePath.string().c_str(),
+                             destinationDatabasePath.string().c_str(),
+                             nullptr, nullptr,
+                             JET_bitCompactPreserveOriginal));
+
+        CheckJet(JetDetachDatabaseA(session.Handle(),
+                                    sourceDatabasePath.string().c_str()));
+    }
+
+    // Source must still exist with the same size.
+    Require(std::filesystem::exists(sourceDatabasePath));
+    Require(std::filesystem::file_size(sourceDatabasePath) == sizeBefore);
+
+    // And the compacted destination is a real, openable database.
+    Require(std::filesystem::exists(destinationDatabasePath));
+
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+        CheckJet(JetAttachDatabaseA(session.Handle(),
+                                    destinationDatabasePath.string().c_str(),
+                                    0));
+        JET_DBID compactedDbid = JET_dbidNil;
+        CheckJet(JetOpenDatabaseA(session.Handle(),
+                                  destinationDatabasePath.string().c_str(),
+                                  nullptr, &compactedDbid, 0));
+        JET_TABLEID tableId = JET_tableidNil;
+        CheckJet(JetOpenTableA(session.Handle(), compactedDbid, "Rows",
+                               nullptr, 0, 0, &tableId));
+
+        int observedCount = 0;
+        CheckJet(JetMove(session.Handle(), tableId, JET_MoveFirst, 0));
+        do
+        {
+            ++observedCount;
+        }
+        while (JetMove(session.Handle(), tableId, JET_MoveNext, 0)
+               != JET_errNoCurrentRecord);
+        Require(observedCount == RowCount);
+
+        CheckJet(JetCloseTable(session.Handle(), tableId));
+        CheckJet(JetCloseDatabase(session.Handle(), compactedDbid, 0));
+        CheckJet(JetDetachDatabaseA(session.Handle(),
+                                    destinationDatabasePath.string().c_str()));
+    }
+}
+
+EseIntegrationScenario(Maintenance, CompactRepairProducesIdenticalRows)
+{
+    TemporaryDirectory directory(
+        "Maintenance.CompactRepairProducesIdenticalRows");
+
+    static constexpr int RowCount = 250;
+    const auto sourceDatabasePath = directory.Path() / "Source.mdb";
+    const auto destinationDatabasePath = directory.Path() / "Repaired.mdb";
+
+    // Seed the source database with a known monotonic sequence so
+    // the compacted copy is verifiable row-by-row.
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+        EseDatabase database(session, "Source.mdb");
+        EseTable table(database, "Rows");
+        auto columnId = table.AddColumn("Value", JET_coltypLong,
+                                         JET_bitColumnNotNULL);
+
+        static constexpr std::string_view PrimaryKeyDescriptor =
+            std::string_view("+Value\0\0", 8);
+        table.CreateIndex("ByValue", PrimaryKeyDescriptor,
+                          JET_bitIndexPrimary | JET_bitIndexUnique);
+
+        EseTransaction transaction(session);
+        for (int rowIndex = 0; rowIndex < RowCount; ++rowIndex)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, rowIndex);
+        }
+        transaction.Commit();
+    }
+
+    // Compact in repair mode: JET_bitCompactRepair tells the engine
+    // to skip preread and tolerate duplicate keys.  On a healthy
+    // source the data must come through unchanged.
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+
+        CheckJet(JetAttachDatabaseA(session.Handle(),
+                                    sourceDatabasePath.string().c_str(),
+                                    JET_bitDbReadOnly));
+
+        CheckJet(JetCompactA(session.Handle(),
+                             sourceDatabasePath.string().c_str(),
+                             destinationDatabasePath.string().c_str(),
+                             nullptr, nullptr,
+                             JET_bitCompactRepair));
+
+        CheckJet(JetDetachDatabaseA(session.Handle(),
+                                    sourceDatabasePath.string().c_str()));
+    }
+
+    // Walk the repaired copy and confirm every Value 0..RowCount-1
+    // is present exactly once, in order.
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+        CheckJet(JetAttachDatabaseA(session.Handle(),
+                                    destinationDatabasePath.string().c_str(),
+                                    0));
+        JET_DBID repairedDbid = JET_dbidNil;
+        CheckJet(JetOpenDatabaseA(session.Handle(),
+                                  destinationDatabasePath.string().c_str(),
+                                  nullptr, &repairedDbid, 0));
+        JET_TABLEID tableId = JET_tableidNil;
+        CheckJet(JetOpenTableA(session.Handle(), repairedDbid, "Rows",
+                               nullptr, 0, 0, &tableId));
+
+        JET_COLUMNDEF columnDef = {};
+        columnDef.cbStruct = sizeof(columnDef);
+        CheckJet(JetGetTableColumnInfoA(session.Handle(), tableId,
+                                        "Value", &columnDef,
+                                        sizeof(columnDef), JET_ColInfo));
+
+        int expectedValue = 0;
+        CheckJet(JetMove(session.Handle(), tableId, JET_MoveFirst, 0));
+        do
+        {
+            int32_t value = 0;
+            uint32_t actualBytes = 0;
+            CheckJet(JetRetrieveColumn(session.Handle(), tableId,
+                                       columnDef.columnid,
+                                       &value, sizeof(value),
+                                       &actualBytes, 0, nullptr));
+            Require(value == expectedValue);
+            ++expectedValue;
+        }
+        while (JetMove(session.Handle(), tableId, JET_MoveNext, 0)
+               != JET_errNoCurrentRecord);
+        Require(expectedValue == RowCount);
+
+        CheckJet(JetCloseTable(session.Handle(), tableId));
+        CheckJet(JetCloseDatabase(session.Handle(), repairedDbid, 0));
+        CheckJet(JetDetachDatabaseA(session.Handle(),
+                                    destinationDatabasePath.string().c_str()));
+    }
+}
+
+EseIntegrationScenario(Maintenance, DefragmentAvailSpaceTreesOnlyPreservesData)
+{
+    TemporaryDirectory directory(
+        "Maintenance.DefragmentAvailSpaceTreesOnlyPreservesData");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Maintenance.mdb");
+    EseTable table(database, "Rows");
+
+    auto columnId = table.AddColumn("Value", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
+
+    static constexpr int RowCount = 400;
+    {
+        EseTransaction transaction(session);
+        for (int rowIndex = 0; rowIndex < RowCount; ++rowIndex)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, rowIndex);
+        }
+        transaction.Commit();
+    }
+
+    // Delete every other row to create freelist churn — the engine
+    // has actual work to do on the AvailExt tree.
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+        int rowIndex = 0;
+        while (true)
+        {
+            if ((rowIndex & 1) != 0)
+            {
+                CheckJet(JetDelete(session.Handle(), table.Id()));
+            }
+            ++rowIndex;
+            const JET_ERR moveResult =
+                JetMove(session.Handle(), table.Id(), JET_MoveNext, 0);
+            if (moveResult == JET_errNoCurrentRecord)
+            {
+                break;
+            }
+            CheckJet(moveResult);
+        }
+        transaction.Commit();
+    }
+
+    // Run defrag in AvailSpaceTreesOnly mode — the engine restricts
+    // the pass to the AvailExt B-trees (no data-tree work).  Combine
+    // with BatchStart so the engine accepts the pass parameters.
+    uint32_t passes = 1;
+    uint32_t seconds = 30;
+    CheckJet(JetDefragment2A(session.Handle(), database.Id(),
+                             nullptr,
+                             &passes, &seconds, nullptr,
+                             JET_bitDefragmentBatchStart
+                             | JET_bitDefragmentAvailSpaceTreesOnly));
+
+    // Stop the background defrag so the next scenario doesn't inherit
+    // a running pass.
+    passes = 1;
+    seconds = 30;
+    CheckJet(JetDefragment2A(session.Handle(), database.Id(),
+                             nullptr,
+                             &passes, &seconds, nullptr,
+                             JET_bitDefragmentBatchStop));
+
+    // Data still walks correctly after the AvailSpace pass —
+    // RowCount/2 even rows survive (0, 2, 4, ...).
+    int observedCount = 0;
+    int lastObservedValue = -1;
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    do
+    {
+        int32_t value = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), columnId,
+                                   &value, sizeof(value),
+                                   &actualBytes, 0, nullptr));
+        Require(value == lastObservedValue + 2 || lastObservedValue == -1);
+        Require((value & 1) == 0);
+        lastObservedValue = value;
+        ++observedCount;
+    }
+    while (JetMove(session.Handle(), table.Id(), JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+    Require(observedCount == RowCount / 2);
+}
