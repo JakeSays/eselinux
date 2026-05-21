@@ -1259,3 +1259,440 @@ EseIntegrationScenario(Navigation, SetCurrentIndex4PositionsViaIndexId)
 
     CheckJet(JetCloseTable(session.Handle(), tableId));
 }
+
+namespace
+{
+
+// Sparse-key setup used by the seek-comparison scenarios.  Keys are
+// 10, 20, 30, 40, 50 so seeks targeting in-between values (15, 25,
+// 35, ...) unambiguously resolve to one neighbor.  Returns the
+// Identity column id.
+JET_COLUMNID PopulateSparseKeyTable(EseTable& table,
+                                    const std::vector<int32_t>& keys)
+{
+    const auto identityColumnId =
+        table.AddColumn("Identity", JET_coltypLong, JET_bitColumnNotNULL);
+
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Identity\0\0", 11);
+    table.CreateIndex("PrimaryByIdentity",
+                      PrimaryKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    auto sessionHandle = table.Database().Session().Handle();
+    EseTransaction transaction(table.Database().Session());
+    for (auto key : keys)
+    {
+        CheckJet(JetPrepareUpdate(sessionHandle, table.Id(), JET_prepInsert));
+        CheckJet(JetSetColumn(sessionHandle, table.Id(),
+                              identityColumnId,
+                              &key, sizeof(key),
+                              0, nullptr));
+        CheckJet(JetUpdate(sessionHandle, table.Id(), nullptr, 0, nullptr));
+    }
+    transaction.Commit();
+    return identityColumnId;
+}
+
+// Seek helper: build a single-int32 key, JetSeek with the supplied
+// grbits, and return the engine's result code (so callers can assert
+// JET_wrn* / JET_err* values directly).
+JET_ERR SeekIntKey(EseTable& table, int32_t key, JET_GRBIT seekGrbit)
+{
+    auto sessionHandle = table.Database().Session().Handle();
+    CheckJet(JetMakeKey(sessionHandle, table.Id(),
+                        &key, sizeof(key), JET_bitNewKey));
+    return JetSeek(sessionHandle, table.Id(), seekGrbit);
+}
+
+} // namespace
+
+EseIntegrationScenario(Navigation, SeekLessThanLandsOnPredecessor)
+{
+    TemporaryDirectory directory("Navigation.SeekLessThanLandsOnPredecessor");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Sparse");
+    auto identityColumnId =
+        PopulateSparseKeyTable(table, { 10, 20, 30, 40, 50 });
+
+    auto seekResultIsHit = [](JET_ERR result)
+    {
+        return result == JET_errSuccess || result == JET_wrnSeekNotEqual;
+    };
+
+    // Seek with bitSeekLT for a key strictly between two existing
+    // entries — the cursor lands on the largest entry that is strictly
+    // less than the search key.  ESE has historically returned either
+    // JET_errSuccess or JET_wrnSeekNotEqual here; we accept both and
+    // pin the truth on the cursor's resulting position.
+    Require(seekResultIsHit(SeekIntKey(table, 25, JET_bitSeekLT)));
+    Require(RetrieveFixedColumnFromCurrentRecord<int32_t>(table,
+                                                          identityColumnId)
+            == 20);
+
+    // Exact-match key on bitSeekLT still falls back to the strict
+    // predecessor (LT excludes equal).
+    Require(seekResultIsHit(SeekIntKey(table, 30, JET_bitSeekLT)));
+    Require(RetrieveFixedColumnFromCurrentRecord<int32_t>(table,
+                                                          identityColumnId)
+            == 20);
+
+    // No predecessor exists below the smallest key — the engine
+    // returns JET_errRecordNotFound and leaves no current record.
+    Require(SeekIntKey(table, 10, JET_bitSeekLT) == JET_errRecordNotFound);
+    RequireJetError(JetRetrieveColumn(session.Handle(), table.Id(),
+                                      identityColumnId,
+                                      nullptr, 0, nullptr, 0, nullptr),
+                    JET_errNoCurrentRecord);
+}
+
+EseIntegrationScenario(Navigation, SeekLessThanOrEqualHitsExactOrPredecessor)
+{
+    TemporaryDirectory directory(
+        "Navigation.SeekLessThanOrEqualHitsExactOrPredecessor");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Sparse");
+    auto identityColumnId =
+        PopulateSparseKeyTable(table, { 10, 20, 30, 40, 50 });
+
+    // Exact match: bitSeekLE returns JET_errSuccess and positions on
+    // the exact key.
+    Require(SeekIntKey(table, 30, JET_bitSeekLE) == JET_errSuccess);
+    Require(RetrieveFixedColumnFromCurrentRecord<int32_t>(table,
+                                                          identityColumnId)
+            == 30);
+
+    // Between-keys lookup: bitSeekLE falls back to the largest entry
+    // less than the search key, with the wrnSeekNotEqual warning.
+    Require(SeekIntKey(table, 35, JET_bitSeekLE) == JET_wrnSeekNotEqual);
+    Require(RetrieveFixedColumnFromCurrentRecord<int32_t>(table,
+                                                          identityColumnId)
+            == 30);
+
+    // No predecessor exists for keys below the table's minimum.
+    Require(SeekIntKey(table, 5, JET_bitSeekLE) == JET_errRecordNotFound);
+}
+
+EseIntegrationScenario(Navigation, SeekGreaterThanLandsOnSuccessor)
+{
+    TemporaryDirectory directory(
+        "Navigation.SeekGreaterThanLandsOnSuccessor");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Sparse");
+    auto identityColumnId =
+        PopulateSparseKeyTable(table, { 10, 20, 30, 40, 50 });
+
+    auto seekResultIsHit = [](JET_ERR result)
+    {
+        return result == JET_errSuccess || result == JET_wrnSeekNotEqual;
+    };
+
+    // Between-keys lookup: bitSeekGT lands on the smallest entry that
+    // is strictly greater than the search key.  Like bitSeekLT, ESE
+    // may signal the hit as either success or wrnSeekNotEqual.
+    Require(seekResultIsHit(SeekIntKey(table, 25, JET_bitSeekGT)));
+    Require(RetrieveFixedColumnFromCurrentRecord<int32_t>(table,
+                                                          identityColumnId)
+            == 30);
+
+    // Exact key: bitSeekGT excludes equal — lands on the next entry.
+    Require(seekResultIsHit(SeekIntKey(table, 30, JET_bitSeekGT)));
+    Require(RetrieveFixedColumnFromCurrentRecord<int32_t>(table,
+                                                          identityColumnId)
+            == 40);
+
+    // Past the last key: no successor exists.
+    Require(SeekIntKey(table, 50, JET_bitSeekGT) == JET_errRecordNotFound);
+    Require(SeekIntKey(table, 75, JET_bitSeekGT) == JET_errRecordNotFound);
+}
+
+EseIntegrationScenario(Navigation, SeekEqualWithCheckUniquenessSignalsUniqueKey)
+{
+    TemporaryDirectory directory(
+        "Navigation.SeekEqualWithCheckUniquenessSignalsUniqueKey");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "NonUnique");
+
+    auto identityColumnId =
+        table.AddColumn("Identity", JET_coltypLong,
+                        JET_bitColumnAutoincrement | JET_bitColumnNotNULL);
+    auto categoryColumnId =
+        table.AddColumn("Category", JET_coltypLong, JET_bitColumnNotNULL);
+
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Identity\0\0", 11);
+    table.CreateIndex("PrimaryByIdentity",
+                      PrimaryKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    // Secondary, non-unique index over Category.
+    static constexpr std::string_view CategoryKey =
+        std::string_view("+Category\0\0", 11);
+    table.CreateIndex("ByCategory", CategoryKey, 0);
+
+    // Categories: 100 has dupes (3 rows), 200 has dupes (2 rows),
+    // 300 is unique (1 row).  bitCheckUniqueness on SeekEQ must
+    // report JET_wrnUniqueKey for 300 and plain success for 100/200.
+    const std::vector<int32_t> categories = { 100, 100, 100, 200, 200, 300 };
+    {
+        EseTransaction transaction(session);
+        for (auto category : categories)
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  categoryColumnId,
+                                  &category, sizeof(category),
+                                  0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+    (void)identityColumnId;
+
+    // Switch to the secondary index so JetSeek operates on Category.
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(), "ByCategory"));
+
+    Require(SeekIntKey(table, 100,
+                       JET_bitSeekEQ | JET_bitCheckUniqueness) == JET_errSuccess);
+    Require(SeekIntKey(table, 200,
+                       JET_bitSeekEQ | JET_bitCheckUniqueness) == JET_errSuccess);
+    Require(SeekIntKey(table, 300,
+                       JET_bitSeekEQ | JET_bitCheckUniqueness) == JET_wrnUniqueKey);
+
+    // The unique-key seek must have landed on the actual unique
+    // entry — read back to confirm.
+    int32_t category = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                               categoryColumnId,
+                               &category, sizeof(category),
+                               &actualBytes, 0, nullptr));
+    Require(category == 300);
+}
+
+EseIntegrationScenario(Navigation, SetIndexRangeExclusiveUpperBoundExcludesBoundary)
+{
+    TemporaryDirectory directory(
+        "Navigation.SetIndexRangeExclusiveUpperBoundExcludesBoundary");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Sparse");
+    auto identityColumnId =
+        PopulateSparseKeyTable(table, { 10, 20, 30, 40, 50 });
+
+    // Position on the smallest key and establish an EXCLUSIVE upper
+    // limit at 40 — the boundary value itself must be excluded.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t exclusiveUpperBound = 40;
+    CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                        &exclusiveUpperBound, sizeof(exclusiveUpperBound),
+                        JET_bitNewKey));
+    CheckJet(JetSetIndexRange(session.Handle(), table.Id(),
+                              JET_bitRangeUpperLimit));
+
+    std::vector<int32_t> observed;
+    while (true)
+    {
+        const auto value = RetrieveFixedColumnFromCurrentRecord<int32_t>(
+            table, identityColumnId);
+        observed.push_back(value);
+        const auto moveResult = JetMove(session.Handle(), table.Id(),
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+
+    // 40 must NOT appear in the walk — exclusive upper bound.
+    const std::vector<int32_t> expected = { 10, 20, 30 };
+    Require(observed.size() == expected.size());
+    for (size_t index = 0; index < expected.size(); ++index)
+    {
+        Require(observed[index] == expected[index]);
+    }
+}
+
+EseIntegrationScenario(Navigation, SetIndexRangeRemoveClearsActiveRange)
+{
+    TemporaryDirectory directory(
+        "Navigation.SetIndexRangeRemoveClearsActiveRange");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Sparse");
+    auto identityColumnId =
+        PopulateSparseKeyTable(table, { 10, 20, 30, 40, 50 });
+
+    // Set an inclusive range bounded at 20 so the cursor's walk
+    // observes only {10, 20}.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t upperLimit = 20;
+    CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                        &upperLimit, sizeof(upperLimit), JET_bitNewKey));
+    CheckJet(JetSetIndexRange(session.Handle(), table.Id(),
+                              JET_bitRangeInclusive | JET_bitRangeUpperLimit));
+
+    // Now clear the range with bitRangeRemove.  The Make/Seek key
+    // payload is ignored on remove, but ESE still expects a valid
+    // JetSetIndexRange call.
+    CheckJet(JetSetIndexRange(session.Handle(), table.Id(),
+                              JET_bitRangeRemove));
+
+    // From the current position, the entire remainder of the index
+    // must be visible again.
+    std::vector<int32_t> observed;
+    do
+    {
+        observed.push_back(
+            RetrieveFixedColumnFromCurrentRecord<int32_t>(table,
+                                                          identityColumnId));
+    }
+    while (JetMove(session.Handle(), table.Id(), JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+
+    const std::vector<int32_t> expected = { 10, 20, 30, 40, 50 };
+    Require(observed.size() == expected.size());
+    for (size_t index = 0; index < expected.size(); ++index)
+    {
+        Require(observed[index] == expected[index]);
+    }
+}
+
+EseIntegrationScenario(Navigation, SetIndexRangeInstantDurationDoesNotStick)
+{
+    TemporaryDirectory directory(
+        "Navigation.SetIndexRangeInstantDurationDoesNotStick");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Sparse");
+    auto identityColumnId =
+        PopulateSparseKeyTable(table, { 10, 20, 30, 40, 50 });
+
+    // Park the cursor on the smallest key, then validate with an
+    // InstantDuration range whose upper bound is 20.  The current
+    // key (10) falls inside, so JetSetIndexRange returns success.
+    // The crucial property: the range does NOT remain active — a
+    // subsequent MoveNext sweep must visit every row past 20, proving
+    // the engine cleared the range as part of "instant duration".
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t probeUpperBound = 20;
+    CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                        &probeUpperBound, sizeof(probeUpperBound),
+                        JET_bitNewKey));
+    CheckJet(JetSetIndexRange(session.Handle(), table.Id(),
+                              JET_bitRangeInstantDuration
+                              | JET_bitRangeInclusive
+                              | JET_bitRangeUpperLimit));
+
+    // If InstantDuration had stuck, the walk would terminate after 20.
+    // It must not.
+    std::vector<int32_t> observed;
+    do
+    {
+        observed.push_back(
+            RetrieveFixedColumnFromCurrentRecord<int32_t>(table,
+                                                          identityColumnId));
+    }
+    while (JetMove(session.Handle(), table.Id(), JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+
+    const std::vector<int32_t> expected = { 10, 20, 30, 40, 50 };
+    Require(observed.size() == expected.size());
+    for (size_t index = 0; index < expected.size(); ++index)
+    {
+        Require(observed[index] == expected[index]);
+    }
+}
+
+EseIntegrationScenario(Navigation, MoveWithKeyNotEqualSkipsEqualKeyEntries)
+{
+    TemporaryDirectory directory(
+        "Navigation.MoveWithKeyNotEqualSkipsEqualKeyEntries");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Navigation.mdb");
+    EseTable table(database, "Categories");
+
+    auto identityColumnId =
+        table.AddColumn("Identity", JET_coltypLong,
+                        JET_bitColumnAutoincrement | JET_bitColumnNotNULL);
+    auto categoryColumnId =
+        table.AddColumn("Category", JET_coltypLong, JET_bitColumnNotNULL);
+
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Identity\0\0", 11);
+    table.CreateIndex("PrimaryByIdentity",
+                      PrimaryKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    // Non-unique secondary index over Category.
+    static constexpr std::string_view CategoryKey =
+        std::string_view("+Category\0\0", 11);
+    table.CreateIndex("ByCategory", CategoryKey, 0);
+
+    // Three categories, with multiple rows each: 100 × 3, 200 × 2,
+    // 300 × 4.  Distinct keys on the secondary index: 100, 200, 300.
+    const std::vector<int32_t> categories = {
+        100, 100, 100, 200, 200, 300, 300, 300, 300
+    };
+    {
+        EseTransaction transaction(session);
+        for (auto category : categories)
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  categoryColumnId,
+                                  &category, sizeof(category),
+                                  0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+    (void)identityColumnId;
+
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(), "ByCategory"));
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    // MoveKeyNE on MoveNext skips past every entry whose key equals
+    // the current key — landing on the first row of the next distinct
+    // key value.  Expected sequence: 100 -> 200 -> 300 -> end.
+    std::vector<int32_t> distinctKeys;
+    while (true)
+    {
+        const auto category = RetrieveFixedColumnFromCurrentRecord<int32_t>(
+            table, categoryColumnId);
+        distinctKeys.push_back(category);
+        const auto moveResult = JetMove(session.Handle(), table.Id(),
+                                        JET_MoveNext, JET_bitMoveKeyNE);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+
+    const std::vector<int32_t> expected = { 100, 200, 300 };
+    Require(distinctKeys.size() == expected.size());
+    for (size_t index = 0; index < expected.size(); ++index)
+    {
+        Require(distinctKeys[index] == expected[index]);
+    }
+}
+
+
