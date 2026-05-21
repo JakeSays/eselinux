@@ -6000,7 +6000,7 @@ typedef JET_ERR (JET_API *JET_PFNEMITLOGDATA)(
 
 #define JET_errCannotIndexOnEncryptedColumn         -1440   //  Cannot index encrypted column
 
-/*  DML errors
+// DML errors
 // Note: Some DML errors have snuck into other categories.
 // Note: Some DDL errors have inappropriately snuck in here.
 #define JET_errColumnLong                   -1501 /* Column value is long */
