@@ -1341,3 +1341,409 @@ EseIntegrationScenario(Schema, DeleteColumn2RemovesColumn)
 //  jetapi.h (line 6976) — not present in this pin.  When the
 //  JET_VERSION bumps to include it, drop a scenario here that
 //  mirrors `DeleteColumn2RemovesColumn` above.
+
+EseIntegrationScenario(Schema, OpenTableReadOnlyRejectsInsertButAllowsRead)
+{
+    TemporaryDirectory directory(
+        "Schema.OpenTableReadOnlyRejectsInsertButAllowsRead");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Schema.mdb");
+
+    static constexpr std::string_view TableName = "Documents";
+
+    JET_COLUMNID valueColumnId = JET_columnidNil;
+    {
+        EseTable setupTable(database, TableName);
+        valueColumnId = setupTable.AddColumn("Value", JET_coltypLong,
+                                              JET_bitColumnNotNULL);
+        EseTransaction transaction(session);
+        for (int32_t value : { 11, 22, 33 })
+        {
+            InsertSingleFixedColumnRow<int32_t>(setupTable, valueColumnId, value);
+        }
+        transaction.Commit();
+    }
+
+    // Open the table with JET_bitTableReadOnly.  All reads must
+    // succeed; any attempt to start an update returns
+    // JET_errPermissionDenied.
+    JET_TABLEID readOnlyTableId = JET_tableidNil;
+    const std::string tableNameOwned(TableName);
+    CheckJet(JetOpenTableA(session.Handle(), database.Id(),
+                           tableNameOwned.c_str(),
+                           nullptr, 0,
+                           JET_bitTableReadOnly,
+                           &readOnlyTableId));
+
+    // Walk the rows — reads work.
+    CheckJet(JetMove(session.Handle(), readOnlyTableId, JET_MoveFirst, 0));
+    std::vector<int32_t> observed;
+    do
+    {
+        int32_t value = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), readOnlyTableId,
+                                   valueColumnId,
+                                   &value, sizeof(value),
+                                   &actualBytes, 0, nullptr));
+        observed.push_back(value);
+    }
+    while (JetMove(session.Handle(), readOnlyTableId, JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+    Require(observed.size() == 3);
+    Require(observed[0] == 11);
+    Require(observed[1] == 22);
+    Require(observed[2] == 33);
+
+    // PrepareUpdate(Insert) must be refused.
+    RequireJetError(JetPrepareUpdate(session.Handle(), readOnlyTableId,
+                                     JET_prepInsert),
+                    JET_errPermissionDenied);
+
+    // And PrepareUpdate(Replace) on the current row is equally refused.
+    CheckJet(JetMove(session.Handle(), readOnlyTableId, JET_MoveFirst, 0));
+    RequireJetError(JetPrepareUpdate(session.Handle(), readOnlyTableId,
+                                     JET_prepReplace),
+                    JET_errPermissionDenied);
+
+    CheckJet(JetCloseTable(session.Handle(), readOnlyTableId));
+}
+
+EseIntegrationScenario(Schema, OpenTableDenyWriteBlocksConcurrentWritersInOtherSessions)
+{
+    TemporaryDirectory directory(
+        "Schema.OpenTableDenyWriteBlocksConcurrentWritersInOtherSessions");
+    EseInstance instance(directory);
+    EseSession setupSession(instance);
+    EseDatabase setupDatabase(setupSession, "Schema.mdb");
+
+    static constexpr std::string_view TableName = "Shared";
+    const std::string tableNameOwned(TableName);
+
+    JET_COLUMNID valueColumnId = JET_columnidNil;
+    {
+        EseTable setupTable(setupDatabase, TableName);
+        valueColumnId = setupTable.AddColumn("Value", JET_coltypLong,
+                                              JET_bitColumnNotNULL);
+        EseTransaction transaction(setupSession);
+        InsertSingleFixedColumnRow<int32_t>(setupTable, valueColumnId, 7);
+        transaction.Commit();
+    }
+
+    // Session A opens with DenyWrite — reads succeed; A also still
+    // writes through this cursor (DenyWrite denies *other* writers,
+    // not the holder).
+    EseSession sessionA(instance);
+    EseDatabase databaseA(sessionA, "Schema.mdb", EseDatabaseMode::Open);
+    JET_TABLEID denyWriteTableId = JET_tableidNil;
+    CheckJet(JetOpenTableA(sessionA.Handle(), databaseA.Id(),
+                           tableNameOwned.c_str(),
+                           nullptr, 0,
+                           JET_bitTableDenyWrite,
+                           &denyWriteTableId));
+
+    int32_t observedValue = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetMove(sessionA.Handle(), denyWriteTableId, JET_MoveFirst, 0));
+    CheckJet(JetRetrieveColumn(sessionA.Handle(), denyWriteTableId,
+                               valueColumnId,
+                               &observedValue, sizeof(observedValue),
+                               &actualBytes, 0, nullptr));
+    Require(observedValue == 7);
+
+    // Session B requesting an explicit Updatable open is refused
+    // with JET_errTableLocked — fileopen.cxx:1077-1093 walks the
+    // FCB's cursor list and rejects any new updatable cursor from
+    // another session while DomainDenyWrite is set.
+    EseSession sessionB(instance);
+    EseDatabase databaseB(sessionB, "Schema.mdb", EseDatabaseMode::Open);
+    JET_TABLEID rejectedUpdatableId = JET_tableidNil;
+    const JET_ERR explicitUpdatableResult =
+        JetOpenTableA(sessionB.Handle(), databaseB.Id(),
+                      tableNameOwned.c_str(),
+                      nullptr, 0,
+                      JET_bitTableUpdatable,
+                      &rejectedUpdatableId);
+    Require(explicitUpdatableResult == JET_errTableLocked);
+
+    // A read-only open from session B is still permitted — DenyWrite
+    // does not lock out readers.
+    JET_TABLEID readOnlyId = JET_tableidNil;
+    CheckJet(JetOpenTableA(sessionB.Handle(), databaseB.Id(),
+                           tableNameOwned.c_str(),
+                           nullptr, 0,
+                           JET_bitTableReadOnly,
+                           &readOnlyId));
+
+    CheckJet(JetMove(sessionB.Handle(), readOnlyId, JET_MoveFirst, 0));
+    int32_t sessionBObserved = 0;
+    CheckJet(JetRetrieveColumn(sessionB.Handle(), readOnlyId,
+                               valueColumnId,
+                               &sessionBObserved, sizeof(sessionBObserved),
+                               &actualBytes, 0, nullptr));
+    Require(sessionBObserved == 7);
+
+    CheckJet(JetCloseTable(sessionB.Handle(), readOnlyId));
+    CheckJet(JetCloseTable(sessionA.Handle(), denyWriteTableId));
+
+    // After A releases DenyWrite, session B's explicit-updatable
+    // open succeeds and can write through.
+    JET_TABLEID afterReleaseId = JET_tableidNil;
+    CheckJet(JetOpenTableA(sessionB.Handle(), databaseB.Id(),
+                           tableNameOwned.c_str(),
+                           nullptr, 0,
+                           JET_bitTableUpdatable,
+                           &afterReleaseId));
+    {
+        EseTransaction successfulWrite(sessionB);
+        CheckJet(JetPrepareUpdate(sessionB.Handle(), afterReleaseId,
+                                  JET_prepInsert));
+        const int32_t newValue = 99;
+        CheckJet(JetSetColumn(sessionB.Handle(), afterReleaseId, valueColumnId,
+                              &newValue, sizeof(newValue), 0, nullptr));
+        CheckJet(JetUpdate(sessionB.Handle(), afterReleaseId,
+                           nullptr, 0, nullptr));
+        successfulWrite.Commit();
+    }
+
+    // Both rows present and correct after the DenyWrite lock cycles.
+    CheckJet(JetMove(sessionB.Handle(), afterReleaseId, JET_MoveFirst, 0));
+    std::vector<int32_t> finalRows;
+    do
+    {
+        int32_t value = 0;
+        CheckJet(JetRetrieveColumn(sessionB.Handle(), afterReleaseId,
+                                   valueColumnId,
+                                   &value, sizeof(value),
+                                   &actualBytes, 0, nullptr));
+        finalRows.push_back(value);
+    }
+    while (JetMove(sessionB.Handle(), afterReleaseId, JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+    Require(finalRows.size() == 2);
+    Require(finalRows[0] == 7);
+    Require(finalRows[1] == 99);
+
+    CheckJet(JetCloseTable(sessionB.Handle(), afterReleaseId));
+}
+
+EseIntegrationScenario(Schema, OpenTableDenyReadBlocksReadsFromOtherSessions)
+{
+    TemporaryDirectory directory(
+        "Schema.OpenTableDenyReadBlocksReadsFromOtherSessions");
+    EseInstance instance(directory);
+    EseSession setupSession(instance);
+    EseDatabase setupDatabase(setupSession, "Schema.mdb");
+
+    static constexpr std::string_view TableName = "Locked";
+    const std::string tableNameOwned(TableName);
+
+    JET_COLUMNID valueColumnId = JET_columnidNil;
+    {
+        EseTable setupTable(setupDatabase, TableName);
+        valueColumnId = setupTable.AddColumn("Value", JET_coltypLong,
+                                              JET_bitColumnNotNULL);
+        EseTransaction transaction(setupSession);
+        InsertSingleFixedColumnRow<int32_t>(setupTable, valueColumnId, 42);
+        transaction.Commit();
+    }
+    // Drain catalog RCEs so DenyRead can be granted (same fix as the
+    // PermitDDL scenario).
+    {
+        const JET_ERR idleResult =
+            JetIdle(setupSession.Handle(), JET_bitIdleCompact);
+        if (idleResult < JET_errSuccess)
+        {
+            CheckJet(idleResult);
+        }
+    }
+
+    // Session A acquires DenyRead — the strictest table-level lock.
+    EseSession sessionA(instance);
+    EseDatabase databaseA(sessionA, "Schema.mdb", EseDatabaseMode::Open);
+    JET_TABLEID denyReadId = JET_tableidNil;
+    CheckJet(JetOpenTableA(sessionA.Handle(), databaseA.Id(),
+                           tableNameOwned.c_str(),
+                           nullptr, 0,
+                           JET_bitTableDenyRead,
+                           &denyReadId));
+
+    // Session B's open is refused with JET_errTableLocked while A
+    // holds DenyRead (fileopen.cxx:1052-1058).
+    EseSession sessionB(instance);
+    EseDatabase databaseB(sessionB, "Schema.mdb", EseDatabaseMode::Open);
+    JET_TABLEID rejectedReadId = JET_tableidNil;
+    const JET_ERR rejectedResult =
+        JetOpenTableA(sessionB.Handle(), databaseB.Id(),
+                      tableNameOwned.c_str(),
+                      nullptr, 0,
+                      JET_bitTableReadOnly,
+                      &rejectedReadId);
+    Require(rejectedResult == JET_errTableLocked);
+
+    // Closing A's cursor releases the lock; session B can open.
+    CheckJet(JetCloseTable(sessionA.Handle(), denyReadId));
+
+    JET_TABLEID afterReleaseId = JET_tableidNil;
+    CheckJet(JetOpenTableA(sessionB.Handle(), databaseB.Id(),
+                           tableNameOwned.c_str(),
+                           nullptr, 0, 0, &afterReleaseId));
+    CheckJet(JetMove(sessionB.Handle(), afterReleaseId, JET_MoveFirst, 0));
+    int32_t observedValue = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(sessionB.Handle(), afterReleaseId,
+                               valueColumnId,
+                               &observedValue, sizeof(observedValue),
+                               &actualBytes, 0, nullptr));
+    Require(observedValue == 42);
+    CheckJet(JetCloseTable(sessionB.Handle(), afterReleaseId));
+}
+
+EseIntegrationScenario(Schema, OpenTablePermitDDLAllowsAddColumnOnFixedDDLTable)
+{
+    TemporaryDirectory directory(
+        "Schema.OpenTablePermitDDLAllowsAddColumnOnFixedDDLTable");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Schema.mdb");
+
+    static constexpr std::string_view TableName = "Fixed";
+    const std::string tableNameOwned(TableName);
+
+    // Create a FixedDDL table — schema is frozen after the initial
+    // create cursor closes.  The seed column is added while the
+    // create cursor is still live (DDL is unrestricted until close).
+    JET_COLUMNID seedColumnId = 0;
+    {
+        JET_TABLECREATE_A tableCreate = {};
+        tableCreate.cbStruct = sizeof(tableCreate);
+        tableCreate.szTableName = const_cast<char*>(tableNameOwned.c_str());
+        tableCreate.ulPages = 16;
+        tableCreate.ulDensity = 80;
+        tableCreate.grbit = JET_bitTableCreateFixedDDL;
+        CheckJet(JetCreateTableColumnIndexA(session.Handle(), database.Id(),
+                                            &tableCreate));
+        const JET_TABLEID createTableId = tableCreate.tableid;
+
+        JET_COLUMNDEF seedColumnDef = {};
+        seedColumnDef.cbStruct = sizeof(seedColumnDef);
+        seedColumnDef.coltyp = JET_coltypLong;
+        seedColumnDef.grbit = JET_bitColumnNotNULL;
+        CheckJet(JetAddColumnA(session.Handle(), createTableId,
+                               "Seed", &seedColumnDef,
+                               nullptr, 0, &seedColumnId));
+        CheckJet(JetCloseTable(session.Handle(), createTableId));
+    }
+
+    // PermitDDL has two gates beyond grbit validation
+    // (fileopen.cxx around lines 1133+ and 1189+):
+    //   1. DenyRead must be grantable — no other session has a
+    //      cursor on the table.  In a single-session test this is
+    //      always satisfied.
+    //   2. The FCB's RCE list must be empty — no pending
+    //      version-store entries on this table.
+    // JetCreateTableColumnIndex inserts catalog rows whose RCEs
+    // remain pending until the version-store cleaner drains them.
+    // JetIdle(JET_bitIdleCompact) is the synchronous way to trigger
+    // that drain.  The warning code it returns (JET_wrnIdleFull or
+    // similar) is informational; we only care that the call
+    // succeeded enough to clear the FCB.
+    {
+        const JET_ERR idleResult =
+            JetIdle(session.Handle(), JET_bitIdleCompact);
+        if (idleResult < JET_errSuccess)
+        {
+            CheckJet(idleResult);
+        }
+    }
+
+    // Post-create open with PermitDDL|DenyRead — succeeds and
+    // accepts a new column.  PermitDDL must be paired with DenyRead
+    // per the jetapi.h flag comment.
+    JET_COLUMNID permittedColumnId = 0;
+    {
+        JET_TABLEID permitDDLId = JET_tableidNil;
+        CheckJet(JetOpenTableA(session.Handle(), database.Id(),
+                               tableNameOwned.c_str(),
+                               nullptr, 0,
+                               JET_bitTablePermitDDL | JET_bitTableDenyRead,
+                               &permitDDLId));
+
+        JET_COLUMNDEF acceptedColumnDef = {};
+        acceptedColumnDef.cbStruct = sizeof(acceptedColumnDef);
+        acceptedColumnDef.coltyp = JET_coltypLong;
+        CheckJet(JetAddColumnA(session.Handle(), permitDDLId,
+                               "PermittedExtension", &acceptedColumnDef,
+                               nullptr, 0, &permittedColumnId));
+        CheckJet(JetCloseTable(session.Handle(), permitDDLId));
+    }
+
+    // Default open: JetAddColumn refuses because the table is
+    // FixedDDL and PermitDDL is not requested.
+    {
+        JET_TABLEID defaultOpenId = JET_tableidNil;
+        CheckJet(JetOpenTableA(session.Handle(), database.Id(),
+                               tableNameOwned.c_str(),
+                               nullptr, 0, 0, &defaultOpenId));
+
+        JET_COLUMNDEF rejectedColumnDef = {};
+        rejectedColumnDef.cbStruct = sizeof(rejectedColumnDef);
+        rejectedColumnDef.coltyp = JET_coltypLong;
+        JET_COLUMNID rejectedColumnId = 0;
+        RequireJetError(JetAddColumnA(session.Handle(), defaultOpenId,
+                                      "RejectedExtension", &rejectedColumnDef,
+                                      nullptr, 0, &rejectedColumnId),
+                        JET_errFixedDDL);
+        CheckJet(JetCloseTable(session.Handle(), defaultOpenId));
+    }
+
+    // Default re-open + JetGetTableColumnInfo sees the new column;
+    // write through it and round-trip, proving the PermitDDL change
+    // persisted to disk.
+    JET_TABLEID reopenId = JET_tableidNil;
+    CheckJet(JetOpenTableA(session.Handle(), database.Id(),
+                           tableNameOwned.c_str(),
+                           nullptr, 0, 0, &reopenId));
+
+    JET_COLUMNDEF reopenedColumnDef = {};
+    reopenedColumnDef.cbStruct = sizeof(reopenedColumnDef);
+    CheckJet(JetGetTableColumnInfoA(session.Handle(), reopenId,
+                                    "PermittedExtension",
+                                    &reopenedColumnDef,
+                                    sizeof(reopenedColumnDef),
+                                    JET_ColInfo));
+    Require(reopenedColumnDef.coltyp == JET_coltypLong);
+    Require(reopenedColumnDef.columnid == permittedColumnId);
+
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), reopenId, JET_prepInsert));
+        const int32_t seedValue = 1;
+        const int32_t extensionValue = 99;
+        CheckJet(JetSetColumn(session.Handle(), reopenId, seedColumnId,
+                              &seedValue, sizeof(seedValue), 0, nullptr));
+        CheckJet(JetSetColumn(session.Handle(), reopenId,
+                              permittedColumnId,
+                              &extensionValue, sizeof(extensionValue),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), reopenId, nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), reopenId, JET_MoveFirst, 0));
+    int32_t persistedSeed = 0;
+    int32_t persistedExtension = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), reopenId, seedColumnId,
+                               &persistedSeed, sizeof(persistedSeed),
+                               &actualBytes, 0, nullptr));
+    CheckJet(JetRetrieveColumn(session.Handle(), reopenId,
+                               permittedColumnId,
+                               &persistedExtension, sizeof(persistedExtension),
+                               &actualBytes, 0, nullptr));
+    Require(persistedSeed == 1);
+    Require(persistedExtension == 99);
+
+    CheckJet(JetCloseTable(session.Handle(), reopenId));
+}

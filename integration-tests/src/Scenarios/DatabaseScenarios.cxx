@@ -305,3 +305,102 @@ EseIntegrationScenario(Database, DetachDatabase2StandardDetachSucceeds)
     CheckJet(JetDetachDatabaseA(session.Handle(),
                                 databasePath.c_str()));
 }
+
+EseIntegrationScenario(Database, AttachDatabaseReadOnlyAllowsReadsButRejectsWrites)
+{
+    TemporaryDirectory directory(
+        "Database.AttachDatabaseReadOnlyAllowsReadsButRejectsWrites");
+    EseInstance instance(directory);
+    EseSession session(instance);
+
+    const auto databasePath =
+        (instance.Directory() / "ReadOnly.mdb").string();
+
+    static constexpr int32_t SeededValue = 0xCAFEFEED;
+
+    // Seed: create the DB writable, populate one row, detach.
+    {
+        JET_DBID createDbId = JET_dbidNil;
+        CheckJet(JetCreateDatabaseA(session.Handle(),
+                                    databasePath.c_str(),
+                                    nullptr, &createDbId,
+                                    JET_bitDbOverwriteExisting));
+
+        JET_TABLEID seedTableId = JET_tableidNil;
+        CheckJet(JetCreateTableA(session.Handle(), createDbId,
+                                 "Rows", 8, 100, &seedTableId));
+        JET_COLUMNDEF valueColumnDef = {};
+        valueColumnDef.cbStruct = sizeof(valueColumnDef);
+        valueColumnDef.coltyp = JET_coltypLong;
+        valueColumnDef.grbit = JET_bitColumnNotNULL;
+        JET_COLUMNID valueColumnId = 0;
+        CheckJet(JetAddColumnA(session.Handle(), seedTableId,
+                               "Value", &valueColumnDef,
+                               nullptr, 0, &valueColumnId));
+
+        CheckJet(JetBeginTransaction2(session.Handle(), 0));
+        CheckJet(JetPrepareUpdate(session.Handle(), seedTableId,
+                                  JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), seedTableId, valueColumnId,
+                              &SeededValue, sizeof(SeededValue),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), seedTableId,
+                           nullptr, 0, nullptr));
+        CheckJet(JetCommitTransaction(session.Handle(), 0));
+
+        CheckJet(JetCloseTable(session.Handle(), seedTableId));
+        CheckJet(JetCloseDatabase(session.Handle(), createDbId, 0));
+        CheckJet(JetDetachDatabaseA(session.Handle(), databasePath.c_str()));
+    }
+
+    // Re-attach with JET_bitDbReadOnly.  Reads of the seeded row work;
+    // any DDL or DML attempt comes back JET_errPermissionDenied.
+    CheckJet(JetAttachDatabase2A(session.Handle(),
+                                 databasePath.c_str(),
+                                 /*cpgDatabaseSizeMax*/ 0,
+                                 JET_bitDbReadOnly));
+
+    JET_DBID readOnlyDbId = JET_dbidNil;
+    CheckJet(JetOpenDatabaseA(session.Handle(),
+                              databasePath.c_str(),
+                              nullptr, &readOnlyDbId,
+                              JET_bitDbReadOnly));
+
+    JET_TABLEID readOnlyTableId = JET_tableidNil;
+    CheckJet(JetOpenTableA(session.Handle(), readOnlyDbId,
+                           "Rows", nullptr, 0,
+                           JET_bitTableReadOnly,
+                           &readOnlyTableId));
+
+    JET_COLUMNDEF reopenedValueDef = {};
+    reopenedValueDef.cbStruct = sizeof(reopenedValueDef);
+    CheckJet(JetGetTableColumnInfoA(session.Handle(), readOnlyTableId,
+                                    "Value", &reopenedValueDef,
+                                    sizeof(reopenedValueDef),
+                                    JET_ColInfo));
+
+    int32_t readValue = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetMove(session.Handle(), readOnlyTableId, JET_MoveFirst, 0));
+    CheckJet(JetRetrieveColumn(session.Handle(), readOnlyTableId,
+                               reopenedValueDef.columnid,
+                               &readValue, sizeof(readValue),
+                               &actualBytes, 0, nullptr));
+    Require(readValue == SeededValue);
+
+    // CreateTable on a read-only DB must be refused.
+    JET_TABLEID rejectedTableId = JET_tableidNil;
+    RequireJetError(JetCreateTableA(session.Handle(), readOnlyDbId,
+                                    "RejectedTable", 8, 100,
+                                    &rejectedTableId),
+                    JET_errPermissionDenied);
+
+    // PrepareUpdate(Insert) is refused as well.
+    RequireJetError(JetPrepareUpdate(session.Handle(), readOnlyTableId,
+                                     JET_prepInsert),
+                    JET_errPermissionDenied);
+
+    CheckJet(JetCloseTable(session.Handle(), readOnlyTableId));
+    CheckJet(JetCloseDatabase(session.Handle(), readOnlyDbId, 0));
+    CheckJet(JetDetachDatabaseA(session.Handle(), databasePath.c_str()));
+}
