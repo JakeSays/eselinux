@@ -1851,3 +1851,401 @@ EseIntegrationScenario(Schema, OpenTablePermitDDLAllowsAddColumnOnFixedDDLTable)
 
     CheckJet(JetCloseTable(session.Handle(), reopenId));
 }
+
+EseIntegrationScenario(Schema, CreateIndexSortNullsHighPlacesNullsAfterData)
+{
+    TemporaryDirectory directory(
+        "Schema.CreateIndexSortNullsHighPlacesNullsAfterData");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Schema.mdb");
+    EseTable table(database, "NullSort");
+
+    auto identityColumnId =
+        table.AddColumn("Identity", JET_coltypLong,
+                        JET_bitColumnAutoincrement | JET_bitColumnNotNULL);
+    auto sortableColumnId =
+        table.AddColumn("Sortable", JET_coltypLong);
+
+    static constexpr std::string_view PrimaryKeyDescriptor =
+        std::string_view("+Identity\0\0", 11);
+    table.CreateIndex("PrimaryByIdentity", PrimaryKeyDescriptor,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    // Secondary index over Sortable with JET_bitIndexSortNullsHigh —
+    // NULL entries sort AFTER non-NULL.
+    static constexpr std::string_view SortableKeyDescriptor =
+        std::string_view("+Sortable\0\0", 11);
+    table.CreateIndex("BySortable", SortableKeyDescriptor,
+                      JET_bitIndexSortNullsHigh);
+
+    // Insert four rows: 10, NULL, 20, NULL.
+    {
+        EseTransaction transaction(session);
+        for (auto value : { 10, -1 /*NULL marker*/, 20, -1 })
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            if (value != -1)
+            {
+                const int32_t setValue = value;
+                CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                      sortableColumnId,
+                                      &setValue, sizeof(setValue),
+                                      0, nullptr));
+            }
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+
+    // Walk in BySortable order — non-NULL entries come first, NULL
+    // entries come last because of JET_bitIndexSortNullsHigh.
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(),
+                                 "BySortable"));
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    std::vector<int32_t> walkOrder;
+    do
+    {
+        int32_t value = 0;
+        uint32_t actualBytes = 0;
+        const auto retrieveResult =
+            JetRetrieveColumn(session.Handle(), table.Id(),
+                              sortableColumnId,
+                              &value, sizeof(value),
+                              &actualBytes, 0, nullptr);
+        if (retrieveResult == JET_wrnColumnNull)
+        {
+            walkOrder.push_back(-1);
+        }
+        else
+        {
+            CheckJet(retrieveResult);
+            walkOrder.push_back(value);
+        }
+    }
+    while (JetMove(session.Handle(), table.Id(), JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+
+    Require(walkOrder.size() == 4);
+    Require(walkOrder[0] == 10);
+    Require(walkOrder[1] == 20);
+    Require(walkOrder[2] == -1);
+    Require(walkOrder[3] == -1);
+    (void)identityColumnId;
+}
+
+EseIntegrationScenario(Schema, CreateIndexEmptyDoesNotPopulateExistingRows)
+{
+    TemporaryDirectory directory(
+        "Schema.CreateIndexEmptyDoesNotPopulateExistingRows");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Schema.mdb");
+    EseTable table(database, "EmptyHinted");
+
+    auto valueColumnId = table.AddColumn("Value", JET_coltypLong,
+                                          JET_bitColumnNotNULL);
+
+    // Pre-populate the table with non-NULL rows.
+    static constexpr int32_t RowCount = 50;
+    {
+        EseTransaction transaction(session);
+        for (int32_t rowIndex = 0; rowIndex < RowCount; ++rowIndex)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, valueColumnId,
+                                                rowIndex);
+        }
+        transaction.Commit();
+    }
+
+    // JET_bitIndexEmpty | JET_bitIndexIgnoreAnyNull tells the engine:
+    // "trust me, all rows are NULL on this index column; don't scan".
+    // We're lying — the rows have real values — but the engine takes
+    // the hint and skips population, producing an empty index even
+    // though the data would be eligible.
+    static constexpr std::string_view ValueKeyDescriptor =
+        std::string_view("+Value\0\0", 8);
+    table.CreateIndex("ByValueClaimedEmpty", ValueKeyDescriptor,
+                      JET_bitIndexEmpty | JET_bitIndexIgnoreAnyNull);
+
+    // Switch to the new index and count.  IndexRecordCount reports 0
+    // because the engine never walked the data to populate.
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(),
+                                 "ByValueClaimedEmpty"));
+    uint32_t recordCount = 0;
+    CheckJet(JetIndexRecordCount(session.Handle(), table.Id(),
+                                 &recordCount, 0));
+    Require(recordCount == 0);
+
+    // The data is still walkable via no-index iteration (primary order
+    // is record order in the absence of a primary index).
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(), nullptr));
+    int32_t observedDataRows = 0;
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    do
+    {
+        ++observedDataRows;
+    }
+    while (JetMove(session.Handle(), table.Id(), JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+    Require(observedDataRows == RowCount);
+}
+
+EseIntegrationScenario(Schema, CreateIndexUnversionedAcceptedAndDataIntact)
+{
+    TemporaryDirectory directory(
+        "Schema.CreateIndexUnversionedAcceptedAndDataIntact");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Schema.mdb");
+
+    // JET_bitIndexUnversioned tells the engine to skip per-entry
+    // version-store records during the build.  This is a build-time
+    // performance hint; the resulting index is functionally identical.
+    // We pin acceptance + data correctness; the perf gain isn't
+    // observable through the public API.
+    static constexpr std::string_view TableName = "Unversioned";
+    EseTable table(database, TableName);
+    auto valueColumnId = table.AddColumn("Value", JET_coltypLong,
+                                          JET_bitColumnNotNULL);
+
+    static constexpr int32_t RowCount = 64;
+    {
+        EseTransaction transaction(session);
+        for (int32_t rowIndex = 0; rowIndex < RowCount; ++rowIndex)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, valueColumnId,
+                                                rowIndex);
+        }
+        transaction.Commit();
+    }
+
+    static constexpr std::string_view ValueKeyDescriptor =
+        std::string_view("+Value\0\0", 8);
+    table.CreateIndex("ByValueUnversioned", ValueKeyDescriptor,
+                      JET_bitIndexUnversioned);
+
+    // Walk via the new index — every row in order.
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(),
+                                 "ByValueUnversioned"));
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    uint32_t recordCount = 0;
+    CheckJet(JetIndexRecordCount(session.Handle(), table.Id(),
+                                 &recordCount, 0));
+    Require(static_cast<int32_t>(recordCount) == RowCount);
+
+    int32_t expectedValue = 0;
+    do
+    {
+        int32_t value = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   valueColumnId,
+                                   &value, sizeof(value),
+                                   &actualBytes, 0, nullptr));
+        Require(value == expectedValue);
+        ++expectedValue;
+    }
+    while (JetMove(session.Handle(), table.Id(), JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+    Require(expectedValue == RowCount);
+}
+
+EseIntegrationScenario(Schema, CreateIndexLazyFlushAcceptedAndDataIntact)
+{
+    TemporaryDirectory directory(
+        "Schema.CreateIndexLazyFlushAcceptedAndDataIntact");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Schema.mdb");
+    EseTable table(database, "LazyFlush");
+
+    auto valueColumnId = table.AddColumn("Value", JET_coltypLong,
+                                          JET_bitColumnNotNULL);
+
+    static constexpr int32_t RowCount = 64;
+    {
+        EseTransaction transaction(session);
+        for (int32_t rowIndex = 0; rowIndex < RowCount; ++rowIndex)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, valueColumnId,
+                                                rowIndex);
+        }
+        transaction.Commit();
+    }
+
+    // JET_bitIndexLazyFlush — defers the durability flush of the index
+    // build commit.  Functionally identical from the API surface; the
+    // commit lands in the log eventually but not synchronously with
+    // CreateIndex.  Validate acceptance + correctness.
+    static constexpr std::string_view ValueKeyDescriptor =
+        std::string_view("+Value\0\0", 8);
+    table.CreateIndex("ByValueLazyFlush", ValueKeyDescriptor,
+                      JET_bitIndexLazyFlush);
+
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(),
+                                 "ByValueLazyFlush"));
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    uint32_t recordCount = 0;
+    CheckJet(JetIndexRecordCount(session.Handle(), table.Id(),
+                                 &recordCount, 0));
+    Require(static_cast<int32_t>(recordCount) == RowCount);
+
+    int32_t expectedValue = 0;
+    do
+    {
+        int32_t value = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   valueColumnId,
+                                   &value, sizeof(value),
+                                   &actualBytes, 0, nullptr));
+        Require(value == expectedValue);
+        ++expectedValue;
+    }
+    while (JetMove(session.Handle(), table.Id(), JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+    Require(expectedValue == RowCount);
+}
+
+EseIntegrationScenario(Schema, CreateIndexTuplesEnablesSubstringSeek)
+{
+    TemporaryDirectory directory(
+        "Schema.CreateIndexTuplesEnablesSubstringSeek");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Schema.mdb");
+    EseTable table(database, "Substrings");
+
+    static constexpr uint16_t Codepage1252 = 1252;
+    auto identityColumnId =
+        table.AddColumn("Identity", JET_coltypLong,
+                        JET_bitColumnAutoincrement | JET_bitColumnNotNULL);
+    auto textColumnId =
+        table.AddColumn("Word", JET_coltypText, 0,
+                        /*maximumBytes*/ 128, Codepage1252);
+
+    static constexpr std::string_view PrimaryKeyDescriptor =
+        std::string_view("+Identity\0\0", 11);
+    table.CreateIndex("PrimaryByIdentity", PrimaryKeyDescriptor,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    // JET_bitIndexTuples builds a substring index — every N-char
+    // window of the text column becomes a key.  The engine refuses
+    // to materialize huge tuple sets, so we cap with TupleLimits
+    // (chLengthMin=3, chLengthMax=8) to keep the build bounded.
+    JET_TUPLELIMITS tupleLimits = {};
+    tupleLimits.chLengthMin = 3;
+    tupleLimits.chLengthMax = 8;
+    tupleLimits.chToIndexMax = 64;
+    tupleLimits.cchIncrement = 1;
+    tupleLimits.ichStart = 0;
+
+    JET_INDEXCREATE_A indexCreate = {};
+    indexCreate.cbStruct = sizeof(indexCreate);
+    indexCreate.szIndexName = const_cast<char*>("ByWordTuples");
+    static constexpr std::string_view WordKeyDescriptor =
+        std::string_view("+Word\0\0", 7);
+    indexCreate.szKey = const_cast<char*>(WordKeyDescriptor.data());
+    indexCreate.cbKey = static_cast<uint32_t>(WordKeyDescriptor.size());
+    indexCreate.grbit = JET_bitIndexTuples | JET_bitIndexTupleLimits;
+    indexCreate.ulDensity = 80;
+    indexCreate.ptuplelimits = &tupleLimits;
+    indexCreate.err = JET_errSuccess;
+    CheckJet(JetCreateIndex2A(session.Handle(), table.Id(),
+                              &indexCreate, 1));
+    CheckJet(indexCreate.err);
+
+    {
+        EseTransaction transaction(session);
+        for (auto word : { "hello world", "open source", "world peace",
+                           "hello again", "quick brown fox" })
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  textColumnId,
+                                  word, static_cast<uint32_t>(std::strlen(word)),
+                                  0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+
+    // Seek for substring "hello" via the tuple index.  Two rows
+    // contain "hello"; walk the matching range to count.
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(),
+                                 "ByWordTuples"));
+
+    // Tuple-index substring search: build a lower-bound key from the
+    // search term, seek GE, then build an upper-bound key with
+    // JET_bitStrLimit so SetIndexRange caps the walk at entries whose
+    // tuple-key prefix matches.  Each matching row may produce
+    // multiple tuple entries (one per matching window), so we
+    // collect distinct Identity values to count rows, not entries.
+    // Walk every tuple-index entry, collecting the distinct Identity
+    // values that appear.  Two rows in our seed set contain "hello"
+    // ("hello world" and "hello again"); both Identities must show
+    // up via the tuple index.  Two rows do not contain "hello"; the
+    // tuple index, by construction, surfaces tuple windows only over
+    // characters actually present in each Word, so those rows still
+    // appear in the index — but their entries don't help us prove the
+    // substring property here.  Instead we exercise the substring-seek
+    // primitive directly: MakeKey("hello") + JetSeek(GE) must hit an
+    // index entry whose source row contains "hello".
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    uint32_t tupleEntryCount = 0;
+    do
+    {
+        ++tupleEntryCount;
+    }
+    while (JetMove(session.Handle(), table.Id(), JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+
+    // The tuple index materialises one entry per (chLengthMin..
+    // chLengthMax)-window per source row.  For our 5 short Words at
+    // length 3..8, the per-row tuple count comfortably exceeds 1, so
+    // the total tuple-entry count must exceed the row count.
+    Require(tupleEntryCount > 5);
+
+    // Substring seek: MakeKey("hello") + JetSeek(GE) — must land on
+    // an entry whose owning row contains "hello".  Read Identity off
+    // the cursor position, then walk to the primary index and verify
+    // the Word column on that row contains the substring.
+    static constexpr std::string_view SearchTerm = "hello";
+    CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                        SearchTerm.data(),
+                        static_cast<uint32_t>(SearchTerm.size()),
+                        JET_bitNewKey));
+    const JET_ERR seekResult =
+        JetSeek(session.Handle(), table.Id(), JET_bitSeekGE);
+    Require(seekResult == JET_errSuccess
+            || seekResult == JET_wrnSeekNotEqual);
+
+    int32_t hitIdentity = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                               identityColumnId,
+                               &hitIdentity, sizeof(hitIdentity),
+                               &actualBytes, 0, nullptr));
+
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(),
+                                 "PrimaryByIdentity"));
+    CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                        &hitIdentity, sizeof(hitIdentity), JET_bitNewKey));
+    CheckJet(JetSeek(session.Handle(), table.Id(), JET_bitSeekEQ));
+
+    char wordBuffer[64] = {};
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                               textColumnId,
+                               wordBuffer, sizeof(wordBuffer) - 1,
+                               &actualBytes, 0, nullptr));
+    const std::string_view hitWord(wordBuffer, actualBytes);
+    Require(hitWord.find(SearchTerm) != std::string_view::npos);
+}

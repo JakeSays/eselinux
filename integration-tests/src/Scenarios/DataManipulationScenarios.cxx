@@ -1674,3 +1674,238 @@ EseIntegrationScenario(DataManipulation, UpdateCheckESE97CompatibilityRejectsOve
     Require(observedCount == 1);
 }
 
+EseIntegrationScenario(DataManipulation, RetrieveFromPrimaryBookmarkExtractsPrimaryKeyFromSecondaryEntry)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.RetrieveFromPrimaryBookmarkExtractsPrimaryKeyFromSecondaryEntry");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "PrimaryAndSecondary");
+
+    auto identityColumnId =
+        table.AddColumn("Identity", JET_coltypLong,
+                        JET_bitColumnAutoincrement | JET_bitColumnNotNULL);
+    auto categoryColumnId =
+        table.AddColumn("Category", JET_coltypLong, JET_bitColumnNotNULL);
+
+    static constexpr std::string_view PrimaryKeyDescriptor =
+        std::string_view("+Identity\0\0", 11);
+    table.CreateIndex("PrimaryByIdentity", PrimaryKeyDescriptor,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    // Secondary index over Category.  Its index entries internally
+    // carry the primary key (Identity) as the bookmark.
+    static constexpr std::string_view CategoryKeyDescriptor =
+        std::string_view("+Category\0\0", 11);
+    table.CreateIndex("ByCategory", CategoryKeyDescriptor, 0);
+
+    // Seed rows with distinct Category values so each secondary entry
+    // is unambiguous.
+    const std::vector<int32_t> categories = { 100, 200, 300, 400, 500 };
+    {
+        EseTransaction transaction(session);
+        for (auto category : categories)
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  categoryColumnId,
+                                  &category, sizeof(category),
+                                  0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+
+    // JET_bitRetrieveFromPrimaryBookmark retrieves the primary-key
+    // column from the bookmark bytes embedded in the secondary index
+    // entry (fldext.cxx around line 1041+: pidb = pfcbTable->Pidb(),
+    // the primary IDB).  The requested column must be IN the primary
+    // index — Identity here.
+    //
+    // Walk on the secondary index, for each entry retrieve Identity
+    // two ways: (a) JET_bitRetrieveFromPrimaryBookmark off the
+    // secondary entry, (b) plain retrieve via record latch.  Both
+    // must agree.
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(),
+                                 "ByCategory"));
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    int32_t observedCount = 0;
+    do
+    {
+        int32_t identityFromBookmark = 0;
+        int32_t identityFromRecord = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   identityColumnId,
+                                   &identityFromBookmark,
+                                   sizeof(identityFromBookmark),
+                                   &actualBytes,
+                                   JET_bitRetrieveFromPrimaryBookmark,
+                                   nullptr));
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   identityColumnId,
+                                   &identityFromRecord,
+                                   sizeof(identityFromRecord),
+                                   &actualBytes,
+                                   0, nullptr));
+        Require(identityFromBookmark == identityFromRecord);
+        Require(identityFromBookmark > 0);
+        ++observedCount;
+    }
+    while (JetMove(session.Handle(), table.Id(), JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+    Require(observedCount == static_cast<int32_t>(categories.size()));
+
+    // Negative path: a column that is NOT in the primary index
+    // (Category itself is in the secondary, not primary) returns
+    // JET_errColumnNotFound under FromPrimaryBookmark.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t scratch = 0;
+    uint32_t scratchBytes = 0;
+    const JET_ERR negativeResult =
+        JetRetrieveColumn(session.Handle(), table.Id(),
+                          categoryColumnId,
+                          &scratch, sizeof(scratch),
+                          &scratchBytes,
+                          JET_bitRetrieveFromPrimaryBookmark, nullptr);
+    Require(negativeResult == JET_errColumnNotFound);
+}
+
+EseIntegrationScenario(DataManipulation, EnumerateColumnsIgnoreDefaultMarksDefaultColumns)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.EnumerateColumnsIgnoreDefaultMarksDefaultColumns");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "Defaults");
+
+    // Two TAGGED columns with explicit defaults; one column without.
+    // JET_bitEnumerateIgnoreDefault affects how the engine merges the
+    // default record image — only meaningful for tagged columns whose
+    // default value sits in the default image rather than every
+    // record's fixed-column slots.
+    const int32_t firstDefaultValue = 11;
+    const int32_t secondDefaultValue = 22;
+    auto firstColumnId = table.AddColumnWithDefault(
+        "First", JET_coltypLong,
+        &firstDefaultValue, sizeof(firstDefaultValue),
+        JET_bitColumnTagged);
+    auto secondColumnId = table.AddColumnWithDefault(
+        "Second", JET_coltypLong,
+        &secondDefaultValue, sizeof(secondDefaultValue),
+        JET_bitColumnTagged);
+    auto plainColumnId = table.AddColumn("Plain", JET_coltypLong,
+                                          JET_bitColumnTagged);
+
+    // Insert one row that explicitly sets Second to a non-default
+    // value and Plain to a real value; leave First at its default.
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepInsert));
+        const int32_t secondOverride = 99;
+        const int32_t plainValue = 7;
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), secondColumnId,
+                              &secondOverride, sizeof(secondOverride),
+                              0, nullptr));
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), plainColumnId,
+                              &plainValue, sizeof(plainValue),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), table.Id(),
+                           nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    // Baseline: default-mode enumeration includes the column at its
+    // default value (First).  fldenum.cxx:1981 sets fDefaultRecord =
+    // !IgnoreDefault && tableHasDefault, so without the flag the
+    // engine merges the default record image and First shows up with
+    // the default value.
+    {
+        uint32_t cEnumColumn = 0;
+        JET_ENUMCOLUMN* rgEnumColumn = nullptr;
+        CheckJet(JetEnumerateColumns(session.Handle(), table.Id(),
+                                     0, nullptr,
+                                     &cEnumColumn, &rgEnumColumn,
+                                     EnumerateColumnsRealloc, nullptr,
+                                     0, 0));
+        bool sawFirstAtDefault = false;
+        for (uint32_t i = 0; i < cEnumColumn; ++i)
+        {
+            if (rgEnumColumn[i].columnid == firstColumnId
+                && rgEnumColumn[i].err == JET_errSuccess
+                && rgEnumColumn[i].cEnumColumnValue == 1)
+            {
+                int32_t firstValue = 0;
+                std::memcpy(&firstValue,
+                            rgEnumColumn[i].rgEnumColumnValue[0].pvData,
+                            sizeof(firstValue));
+                if (firstValue == firstDefaultValue)
+                {
+                    sawFirstAtDefault = true;
+                }
+            }
+        }
+        Require(sawFirstAtDefault);
+        EnumerateColumnsRealloc(nullptr, rgEnumColumn, 0);
+    }
+
+    // With JET_bitEnumerateIgnoreDefault, the engine SKIPS the default
+    // record image (fldenum.cxx:1981) — First was never explicitly set
+    // so it is absent from the enumeration entirely.  Second (explicit
+    // override) and Plain (explicit value) still appear with their
+    // values.
+    {
+        uint32_t cEnumColumn = 0;
+        JET_ENUMCOLUMN* rgEnumColumn = nullptr;
+        CheckJet(JetEnumerateColumns(session.Handle(), table.Id(),
+                                     0, nullptr,
+                                     &cEnumColumn, &rgEnumColumn,
+                                     EnumerateColumnsRealloc, nullptr,
+                                     0, JET_bitEnumerateIgnoreDefault));
+        bool sawFirst = false;
+        bool sawSecondOverride = false;
+        bool sawPlainValue = false;
+        for (uint32_t i = 0; i < cEnumColumn; ++i)
+        {
+            if (rgEnumColumn[i].columnid == firstColumnId)
+            {
+                sawFirst = true;
+            }
+            else if (rgEnumColumn[i].columnid == secondColumnId)
+            {
+                Require(rgEnumColumn[i].err == JET_errSuccess);
+                Require(rgEnumColumn[i].cEnumColumnValue == 1);
+                int32_t storedSecond = 0;
+                std::memcpy(&storedSecond,
+                            rgEnumColumn[i].rgEnumColumnValue[0].pvData,
+                            sizeof(storedSecond));
+                Require(storedSecond == 99);
+                sawSecondOverride = true;
+            }
+            else if (rgEnumColumn[i].columnid == plainColumnId)
+            {
+                Require(rgEnumColumn[i].err == JET_errSuccess);
+                Require(rgEnumColumn[i].cEnumColumnValue == 1);
+                int32_t storedPlain = 0;
+                std::memcpy(&storedPlain,
+                            rgEnumColumn[i].rgEnumColumnValue[0].pvData,
+                            sizeof(storedPlain));
+                Require(storedPlain == 7);
+                sawPlainValue = true;
+            }
+        }
+        Require(!sawFirst);
+        Require(sawSecondOverride);
+        Require(sawPlainValue);
+        EnumerateColumnsRealloc(nullptr, rgEnumColumn, 0);
+    }
+}
+

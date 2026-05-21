@@ -10,6 +10,7 @@
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
+#include <cstring>
 #include <optional>
 
 using namespace ese::tests;
@@ -480,4 +481,95 @@ EseIntegrationScenario(MultiValue, SetRevertToDefaultValueRestoresColumnDefault)
                                &afterRevert, sizeof(afterRevert),
                                &actualBytes, 0, nullptr));
     Require(afterRevert == defaultValue);
+}
+
+EseIntegrationScenario(MultiValue, SetUniqueNormalizedMultiValuesRejectsCaseEquivalent)
+{
+    TemporaryDirectory directory(
+        "MultiValue.SetUniqueNormalizedMultiValuesRejectsCaseEquivalent");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "MultiValue.mdb");
+    EseTable table(database, "NormalizedTags");
+
+    static constexpr uint16_t Codepage1252 = 1252;
+    auto tagsColumnId = table.AddColumn(
+        "Tag", JET_coltypText,
+        JET_bitColumnTagged | JET_bitColumnMultiValued,
+        /*maximumBytes*/ 64, Codepage1252);
+
+    // JET_bitSetUniqueNormalizedMultiValues normalizes (case-folds for
+    // text columns) before comparing for duplicates.  "Hello" and
+    // "HELLO" must be considered equal under this rule.  A distinct
+    // string with the same flag still succeeds.
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepInsert));
+
+        // First value goes in normally.
+        const char* mixedCase = "Hello";
+        JET_SETINFO firstSetInformation = {};
+        firstSetInformation.cbStruct = sizeof(firstSetInformation);
+        firstSetInformation.itagSequence = 1;
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), tagsColumnId,
+                              mixedCase,
+                              static_cast<uint32_t>(std::strlen(mixedCase)),
+                              0, &firstSetInformation));
+
+        // Case-equivalent duplicate under the normalized-unique flag —
+        // must be rejected.  The engine surfaces either
+        // JET_errMultiValuedDuplicate or
+        // JET_errMultiValuedDuplicateAfterTruncation depending on
+        // whether the comparison required normalization truncation.
+        const char* upperCase = "HELLO";
+        JET_SETINFO duplicateSetInformation = {};
+        duplicateSetInformation.cbStruct = sizeof(duplicateSetInformation);
+        duplicateSetInformation.itagSequence = 0;
+        const JET_ERR duplicateResult =
+            JetSetColumn(session.Handle(), table.Id(), tagsColumnId,
+                         upperCase,
+                         static_cast<uint32_t>(std::strlen(upperCase)),
+                         JET_bitSetUniqueNormalizedMultiValues,
+                         &duplicateSetInformation);
+        Require(duplicateResult == JET_errMultiValuedDuplicate
+                || duplicateResult == JET_errMultiValuedDuplicateAfterTruncation);
+
+        // A distinct value under the same flag succeeds.
+        const char* distinct = "World";
+        JET_SETINFO acceptedSetInformation = {};
+        acceptedSetInformation.cbStruct = sizeof(acceptedSetInformation);
+        acceptedSetInformation.itagSequence = 0;
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), tagsColumnId,
+                              distinct,
+                              static_cast<uint32_t>(std::strlen(distinct)),
+                              JET_bitSetUniqueNormalizedMultiValues,
+                              &acceptedSetInformation));
+
+        CheckJet(JetUpdate(session.Handle(), table.Id(), nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    // Walk the surviving itags — exactly two should be set ("Hello"
+    // and "World"), the rejected "HELLO" never landed.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    uint32_t presentSlots = 0;
+    for (uint32_t itag = 1; itag <= 4; ++itag)
+    {
+        JET_RETINFO retrieveInformation = {};
+        retrieveInformation.cbStruct = sizeof(retrieveInformation);
+        retrieveInformation.itagSequence = itag;
+        char buffer[16] = {};
+        uint32_t actualBytes = 0;
+        const JET_ERR retrieveResult =
+            JetRetrieveColumn(session.Handle(), table.Id(), tagsColumnId,
+                              buffer, sizeof(buffer) - 1,
+                              &actualBytes, 0, &retrieveInformation);
+        if (retrieveResult == JET_wrnColumnNull)
+        {
+            continue;
+        }
+        CheckJet(retrieveResult);
+        ++presentSlots;
+    }
+    Require(presentSlots == 2);
 }

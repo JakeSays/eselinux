@@ -786,6 +786,59 @@ EseIntegrationScenario(LongValue, SetIntrinsicLVSilentlySeparatesOversizeValue)
                         OversizePayloadBytes) == 0);
 }
 
+EseIntegrationScenario(LongValue, SetContiguousLVRoundTripsLargeData)
+{
+    TemporaryDirectory directory("LongValue.SetContiguousLVRoundTripsLargeData");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "LongValue.mdb");
+    EseTable table(database, "Contiguous");
+
+    auto bodyColumnId = table.AddColumn("Body", JET_coltypLongBinary);
+
+    // JET_bitSetContiguousLV asks the engine to allocate the LV across
+    // contiguous pages for better I/O behavior — useful for sequential
+    // scans of large values.  Must be paired with JET_bitSetSeparateLV
+    // per the jetapi.h flag comment (combinations with replace and
+    // certain column options are documented as invalid).  No public
+    // API observes "actually contiguous on disk"; this scenario pins
+    // correctness — the flag is accepted and the payload round-trips.
+    static constexpr uint32_t PayloadBytes = 256 * 1024;
+    std::vector<uint8_t> payload(PayloadBytes);
+    for (uint32_t index = 0; index < PayloadBytes; ++index)
+    {
+        payload[index] = static_cast<uint8_t>((index * 31) & 0xFF);
+    }
+
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), bodyColumnId,
+                              payload.data(),
+                              static_cast<uint32_t>(payload.size()),
+                              JET_bitSetSeparateLV | JET_bitSetContiguousLV,
+                              nullptr));
+        CheckJet(JetUpdate(session.Handle(), table.Id(), nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    // The LV must live in the long-value tree (separated), and the
+    // payload must round-trip byte-exactly.
+    JET_RECSIZE2 recordSize = {};
+    CheckJet(JetGetRecordSize2(session.Handle(), table.Id(),
+                               &recordSize, 0));
+    Require(recordSize.cbLongValueData >= PayloadBytes);
+
+    const auto roundTrip =
+        RetrieveVariableColumnFromCurrentRecord(table, bodyColumnId,
+                                                PayloadBytes);
+    Require(roundTrip.size() == PayloadBytes);
+    Require(std::memcmp(roundTrip.data(), payload.data(),
+                        PayloadBytes) == 0);
+}
+
 EseIntegrationScenario(LongValue, ReplaceLongValueShrinksToZero)
 {
     TemporaryDirectory directory("LongValue.ReplaceLongValueShrinksToZero");
