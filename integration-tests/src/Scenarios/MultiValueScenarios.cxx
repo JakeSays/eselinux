@@ -10,6 +10,8 @@
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
+#include <optional>
+
 using namespace ese::tests;
 
 namespace
@@ -230,6 +232,105 @@ EseIntegrationScenario(MultiValue, RetrievingMissingItagReturnsColumnNotFound)
                                                   0,
                                                   &retrieveInformation);
     Require(retrieveResult == JET_wrnColumnNull);
+}
+
+EseIntegrationScenario(MultiValue, SetUniqueMultiValuesRejectsDuplicateInSameRow)
+{
+    TemporaryDirectory directory(
+        "MultiValue.SetUniqueMultiValuesRejectsDuplicateInSameRow");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "MultiValue.mdb");
+    EseTable table(database, "InRowUnique");
+
+    auto columnId = table.AddColumn("Tag",
+                                    JET_coltypLong,
+                                    JET_bitColumnTagged | JET_bitColumnMultiValued);
+
+    static constexpr int32_t ExistingValue = 42;
+    static constexpr int32_t DistinctValue = 99;
+
+    // Seed itag 1 with ExistingValue, then attempt to add a second
+    // itag carrying the same value but with JET_bitSetUniqueMultiValues.
+    // The engine must refuse the duplicate with
+    // JET_errMultiValuedDuplicate.  Adding a DistinctValue under the
+    // same flag must succeed.
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepInsert));
+
+        // itag 1 = ExistingValue (no flag yet — establishes the existing
+        // multi-value to compare against).
+        JET_SETINFO firstSetInformation = {};
+        firstSetInformation.cbStruct = sizeof(firstSetInformation);
+        firstSetInformation.itagSequence = 1;
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), columnId,
+                              &ExistingValue, sizeof(ExistingValue),
+                              0, &firstSetInformation));
+
+        // itag 0 (engine picks the next free itag) = ExistingValue
+        // with the uniqueness flag — must be rejected.
+        JET_SETINFO duplicateSetInformation = {};
+        duplicateSetInformation.cbStruct = sizeof(duplicateSetInformation);
+        duplicateSetInformation.itagSequence = 0;
+        RequireJetError(JetSetColumn(session.Handle(), table.Id(), columnId,
+                                     &ExistingValue, sizeof(ExistingValue),
+                                     JET_bitSetUniqueMultiValues,
+                                     &duplicateSetInformation),
+                        JET_errMultiValuedDuplicate);
+
+        // A DistinctValue under the same flag must succeed and land
+        // in a new itag slot.
+        JET_SETINFO acceptedSetInformation = {};
+        acceptedSetInformation.cbStruct = sizeof(acceptedSetInformation);
+        acceptedSetInformation.itagSequence = 0;
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), columnId,
+                              &DistinctValue, sizeof(DistinctValue),
+                              JET_bitSetUniqueMultiValues,
+                              &acceptedSetInformation));
+
+        CheckJet(JetUpdate(session.Handle(), table.Id(), nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    Require(RetrieveItag(table, columnId, 1) == ExistingValue);
+
+    // Scan up through itag 4 — exactly one slot beyond 1 must hold
+    // DistinctValue, every other slot must be unset (the rejected
+    // duplicate never landed in the record).
+    auto retrieveItagOptional = [&](uint32_t itag) -> std::optional<int32_t>
+    {
+        JET_RETINFO retrieveInformation = {};
+        retrieveInformation.cbStruct = sizeof(retrieveInformation);
+        retrieveInformation.itagSequence = itag;
+        int32_t value = 0;
+        uint32_t actualBytes = 0;
+        const auto result = JetRetrieveColumn(session.Handle(), table.Id(),
+                                              columnId,
+                                              &value, sizeof(value),
+                                              &actualBytes,
+                                              0, &retrieveInformation);
+        if (result == JET_wrnColumnNull)
+        {
+            return std::nullopt;
+        }
+        CheckJet(result);
+        Require(actualBytes == sizeof(value));
+        return value;
+    };
+
+    uint32_t distinctSightings = 0;
+    for (uint32_t itag = 2; itag <= 4; ++itag)
+    {
+        const auto observed = retrieveItagOptional(itag);
+        if (observed.has_value())
+        {
+            Require(*observed == DistinctValue);
+            ++distinctSightings;
+        }
+    }
+    Require(distinctSightings == 1);
 }
 
 EseIntegrationScenario(MultiValue, UniqueMultiValueIndexRejectsDuplicateAcrossRows)

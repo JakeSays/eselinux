@@ -1260,3 +1260,188 @@ EseIntegrationScenario(DataManipulation,
         Require(valuesObserved[i] == i * 10);
     }
 }
+
+EseIntegrationScenario(DataManipulation, RetrieveCopyReadsStagedValueBeforeUpdate)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.RetrieveCopyReadsStagedValueBeforeUpdate");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "CopyBuffer");
+
+    auto columnId = table.AddColumn("Value", JET_coltypLong, JET_bitColumnNotNULL);
+
+    static constexpr int32_t OriginalValue = 100;
+    static constexpr int32_t StagedValue = 200;
+
+    {
+        EseTransaction transaction(session);
+        InsertSingleFixedColumnRow<int32_t>(table, columnId, OriginalValue);
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    // Begin a replace, stage the new value, but do NOT call JetUpdate
+    // yet.  Two retrievals follow:
+    //   * grbit=0 must read the committed (original) value from the
+    //     record image,
+    //   * JET_bitRetrieveCopy must read the staged copy buffer.
+    EseTransaction transaction(session);
+    CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepReplace));
+    CheckJet(JetSetColumn(session.Handle(), table.Id(), columnId,
+                          &StagedValue, sizeof(StagedValue), 0, nullptr));
+
+    int32_t committedRead = 0;
+    uint32_t committedBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), columnId,
+                               &committedRead, sizeof(committedRead),
+                               &committedBytes, 0, nullptr));
+    Require(committedBytes == sizeof(committedRead));
+    Require(committedRead == OriginalValue);
+
+    int32_t copyRead = 0;
+    uint32_t copyBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), columnId,
+                               &copyRead, sizeof(copyRead),
+                               &copyBytes,
+                               JET_bitRetrieveCopy, nullptr));
+    Require(copyBytes == sizeof(copyRead));
+    Require(copyRead == StagedValue);
+
+    CheckJet(JetUpdate(session.Handle(), table.Id(), nullptr, 0, nullptr));
+    transaction.Commit();
+
+    // After commit the record image is the staged value.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    Require(RetrieveFixedColumnFromCurrentRecord<int32_t>(table, columnId)
+            == StagedValue);
+}
+
+EseIntegrationScenario(DataManipulation, RetrieveFromIndexReadsIndexEntryWithoutRecord)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.RetrieveFromIndexReadsIndexEntryWithoutRecord");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "IndexedRead");
+
+    auto keyColumnId = table.AddColumn("Key", JET_coltypLong, JET_bitColumnNotNULL);
+
+    static constexpr std::string_view PrimaryKeyDescriptor =
+        std::string_view("+Key\0\0", 6);
+    table.CreateIndex("PrimaryByKey", PrimaryKeyDescriptor, JET_bitIndexPrimary);
+
+    static constexpr int32_t SeededKey = 7;
+
+    {
+        EseTransaction transaction(session);
+        InsertSingleFixedColumnRow<int32_t>(table, keyColumnId, SeededKey);
+        transaction.Commit();
+    }
+
+    // Seek to the seeded row via the primary index.  JET_bitRetrieveFromIndex
+    // tells the engine to return the column value from the index entry
+    // itself rather than reading the record — this only works for
+    // columns the current index covers, which is the case here.
+    CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                        &SeededKey, sizeof(SeededKey), JET_bitNewKey));
+    CheckJet(JetSeek(session.Handle(), table.Id(), JET_bitSeekEQ));
+
+    int32_t fromIndex = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), keyColumnId,
+                               &fromIndex, sizeof(fromIndex),
+                               &actualBytes,
+                               JET_bitRetrieveFromIndex, nullptr));
+    Require(actualBytes == sizeof(fromIndex));
+    Require(fromIndex == SeededKey);
+
+    // Sanity: the unflagged retrieve agrees.
+    Require(RetrieveFixedColumnFromCurrentRecord<int32_t>(table, keyColumnId)
+            == SeededKey);
+}
+
+EseIntegrationScenario(DataManipulation, UpdateNoVersionAcceptedOnUncommittedTableRejectedAfterCommit)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.UpdateNoVersionAcceptedOnUncommittedTableRejectedAfterCommit");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+
+    // JET_bitUpdateNoVersion skips the per-row undo image.  Because
+    // there is no undo image, a rollback cannot remove these inserts —
+    // the engine therefore restricts the flag to bulk loads into a
+    // table that is still uncommitted (created in the current
+    // transaction).  Past commit, the flag returns
+    // JET_errUpdateMustVersion.
+
+    static constexpr int32_t RowCount = 16;
+    static constexpr std::string_view TableName = "BulkLoad";
+
+    JET_COLUMNID columnId = JET_columnidNil;
+
+    // 1) Inside an outer transaction: create the table and bulk-load
+    //    every row with JET_bitUpdateNoVersion.  Commit; the data
+    //    must persist.
+    {
+        EseTransaction transaction(session);
+        EseTable bulkLoadTable(database, TableName);
+        columnId = bulkLoadTable.AddColumn("Value", JET_coltypLong,
+                                            JET_bitColumnNotNULL);
+        for (int32_t rowIndex = 0; rowIndex < RowCount; ++rowIndex)
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(), bulkLoadTable.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), bulkLoadTable.Id(),
+                                  columnId,
+                                  &rowIndex, sizeof(rowIndex),
+                                  0, nullptr));
+            CheckJet(JetUpdate2(session.Handle(), bulkLoadTable.Id(),
+                                nullptr, 0, nullptr,
+                                JET_bitUpdateNoVersion));
+        }
+        transaction.Commit();
+    }
+
+    // 2) Verify every bulk-loaded row is present and correct.
+    {
+        EseTable openedTable(database, TableName, EseTableMode::Open);
+        int32_t observedCount = 0;
+        CheckJet(JetMove(session.Handle(), openedTable.Id(),
+                         JET_MoveFirst, 0));
+        do
+        {
+            const auto value = RetrieveFixedColumnFromCurrentRecord<int32_t>(
+                openedTable, columnId);
+            Require(value == observedCount);
+            ++observedCount;
+        }
+        while (JetMove(session.Handle(), openedTable.Id(), JET_MoveNext, 0)
+               != JET_errNoCurrentRecord);
+        Require(observedCount == RowCount);
+    }
+
+    // 3) Now that the table is committed, the same flag must be
+    //    rejected with JET_errUpdateMustVersion.
+    {
+        EseTable openedTable(database, TableName, EseTableMode::Open);
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), openedTable.Id(),
+                                  JET_prepInsert));
+        const int32_t rejectedValue = 9999;
+        CheckJet(JetSetColumn(session.Handle(), openedTable.Id(), columnId,
+                              &rejectedValue, sizeof(rejectedValue),
+                              0, nullptr));
+        RequireJetError(JetUpdate2(session.Handle(), openedTable.Id(),
+                                   nullptr, 0, nullptr,
+                                   JET_bitUpdateNoVersion),
+                        JET_errUpdateMustVersion);
+        CheckJet(JetPrepareUpdate(session.Handle(), openedTable.Id(),
+                                  JET_prepCancel));
+        transaction.Commit();
+    }
+}
