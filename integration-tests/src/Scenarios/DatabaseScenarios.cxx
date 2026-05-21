@@ -404,3 +404,124 @@ EseIntegrationScenario(Database, AttachDatabaseReadOnlyAllowsReadsButRejectsWrit
     CheckJet(JetCloseDatabase(session.Handle(), readOnlyDbId, 0));
     CheckJet(JetDetachDatabaseA(session.Handle(), databasePath.c_str()));
 }
+
+EseIntegrationScenario(Database, TerminateInstanceWithTermAbruptAllowsCleanReopen)
+{
+    TemporaryDirectory directory(
+        "Database.TerminateInstanceWithTermAbruptAllowsCleanReopen");
+
+    static constexpr int32_t SeededValue = 0xDEADBEEF;
+    const auto databasePath =
+        (directory.Path() / "Abrupt.mdb").string();
+
+    // Phase 1: bring up an instance directly via the JET API (so we
+    // can call JetTerm2(JET_bitTermAbrupt) without fighting the
+    // EseInstance RAII destructor's TermComplete call).  Mirror the
+    // critical setup from EseInstance for consistency.
+    JET_INSTANCE instanceHandle = JET_instanceNil;
+    {
+        auto pathWithSeparator = directory.Path().string();
+        if (!pathWithSeparator.empty() && pathWithSeparator.back() != '/')
+        {
+            pathWithSeparator.push_back('/');
+        }
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramSystemPath, 0,
+                                        pathWithSeparator.c_str()));
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramTempPath, 0,
+                                        pathWithSeparator.c_str()));
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramLogFilePath, 0,
+                                        pathWithSeparator.c_str()));
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramBaseName, 0, "edb"));
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramEventSource, 0,
+                                        "ese-tests-abrupt"));
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramCircularLog, 1, nullptr));
+        CheckJet(JetInit(&instanceHandle));
+    }
+
+    // Create a database + one committed row.
+    {
+        JET_SESID sessionHandle = JET_sesidNil;
+        CheckJet(JetBeginSessionA(instanceHandle, &sessionHandle,
+                                  nullptr, nullptr));
+        JET_DBID dbId = JET_dbidNil;
+        CheckJet(JetCreateDatabaseA(sessionHandle, databasePath.c_str(),
+                                    nullptr, &dbId,
+                                    JET_bitDbOverwriteExisting));
+        JET_TABLEID tableId = JET_tableidNil;
+        CheckJet(JetCreateTableA(sessionHandle, dbId, "Rows",
+                                 8, 100, &tableId));
+        JET_COLUMNDEF valueColumnDef = {};
+        valueColumnDef.cbStruct = sizeof(valueColumnDef);
+        valueColumnDef.coltyp = JET_coltypLong;
+        valueColumnDef.grbit = JET_bitColumnNotNULL;
+        JET_COLUMNID valueColumnId = 0;
+        CheckJet(JetAddColumnA(sessionHandle, tableId,
+                               "Value", &valueColumnDef,
+                               nullptr, 0, &valueColumnId));
+
+        CheckJet(JetBeginTransaction2(sessionHandle, 0));
+        CheckJet(JetPrepareUpdate(sessionHandle, tableId, JET_prepInsert));
+        CheckJet(JetSetColumn(sessionHandle, tableId, valueColumnId,
+                              &SeededValue, sizeof(SeededValue),
+                              0, nullptr));
+        CheckJet(JetUpdate(sessionHandle, tableId, nullptr, 0, nullptr));
+        CheckJet(JetCommitTransaction(sessionHandle, 0));
+
+        CheckJet(JetCloseTable(sessionHandle, tableId));
+        CheckJet(JetCloseDatabase(sessionHandle, dbId, 0));
+        CheckJet(JetDetachDatabaseA(sessionHandle, databasePath.c_str()));
+        CheckJet(JetEndSession(sessionHandle, 0));
+    }
+
+    // JetTerm2(JET_bitTermAbrupt) — terminate without running the
+    // graceful shutdown work (no checkpoint advance, no clean
+    // database header update).  Recovery on next attach must still
+    // re-apply the committed insert from the log.
+    CheckJet(JetTerm2(instanceHandle, JET_bitTermAbrupt));
+
+    // Phase 2: reopen via the framework wrapper.  Attach + open the
+    // database written by the abrupted instance and verify the row
+    // survived.
+    EseInstance verifyInstance(directory);
+    EseSession verifySession(verifyInstance);
+
+    CheckJet(JetAttachDatabaseA(verifySession.Handle(),
+                                databasePath.c_str(), 0));
+    JET_DBID verifyDbId = JET_dbidNil;
+    CheckJet(JetOpenDatabaseA(verifySession.Handle(),
+                              databasePath.c_str(),
+                              nullptr, &verifyDbId, 0));
+    JET_TABLEID verifyTableId = JET_tableidNil;
+    CheckJet(JetOpenTableA(verifySession.Handle(), verifyDbId,
+                           "Rows", nullptr, 0, 0, &verifyTableId));
+
+    JET_COLUMNDEF reopenedValueDef = {};
+    reopenedValueDef.cbStruct = sizeof(reopenedValueDef);
+    CheckJet(JetGetTableColumnInfoA(verifySession.Handle(), verifyTableId,
+                                    "Value", &reopenedValueDef,
+                                    sizeof(reopenedValueDef), JET_ColInfo));
+
+    CheckJet(JetMove(verifySession.Handle(), verifyTableId,
+                     JET_MoveFirst, 0));
+    int32_t recoveredValue = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(verifySession.Handle(), verifyTableId,
+                               reopenedValueDef.columnid,
+                               &recoveredValue, sizeof(recoveredValue),
+                               &actualBytes, 0, nullptr));
+    Require(recoveredValue == SeededValue);
+    RequireJetError(JetMove(verifySession.Handle(), verifyTableId,
+                            JET_MoveNext, 0),
+                    JET_errNoCurrentRecord);
+
+    CheckJet(JetCloseTable(verifySession.Handle(), verifyTableId));
+    CheckJet(JetCloseDatabase(verifySession.Handle(), verifyDbId, 0));
+    CheckJet(JetDetachDatabaseA(verifySession.Handle(),
+                                databasePath.c_str()));
+}

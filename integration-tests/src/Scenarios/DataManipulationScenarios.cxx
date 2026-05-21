@@ -1445,3 +1445,232 @@ EseIntegrationScenario(DataManipulation, UpdateNoVersionAcceptedOnUncommittedTab
         transaction.Commit();
     }
 }
+
+EseIntegrationScenario(DataManipulation, RetrievePageNumberReportsResidentPage)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.RetrievePageNumberReportsResidentPage");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "PageHomes");
+
+    auto valueColumnId = table.AddColumn("Value", JET_coltypLong,
+                                          JET_bitColumnNotNULL);
+
+    // Insert several rows so the engine has more than one data page
+    // to populate.  Two rows separated by enough data force at least
+    // one page boundary.
+    static constexpr int32_t RowCount = 64;
+    {
+        EseTransaction transaction(session);
+        for (int32_t rowIndex = 0; rowIndex < RowCount; ++rowIndex)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, valueColumnId, rowIndex);
+        }
+        transaction.Commit();
+    }
+
+    // JET_bitRetrievePageNumber returns the PGNO of the cursor's
+    // current page as a 4-byte unsigned (fldext.cxx:36+).  The flag
+    // must be set in isolation; columnid is ignored.  Validate that
+    // (a) the call returns a non-zero PGNO for both first and last
+    // rows, and (b) different rows can land on different pages if the
+    // table grew large enough.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    uint32_t firstPage = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), valueColumnId,
+                               &firstPage, sizeof(firstPage),
+                               &actualBytes,
+                               JET_bitRetrievePageNumber, nullptr));
+    Require(actualBytes == sizeof(firstPage));
+    Require(firstPage > 0);
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveLast, 0));
+    uint32_t lastPage = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), valueColumnId,
+                               &lastPage, sizeof(lastPage),
+                               &actualBytes,
+                               JET_bitRetrievePageNumber, nullptr));
+    Require(actualBytes == sizeof(lastPage));
+    Require(lastPage > 0);
+
+    // Combining the flag with any other grbit is invalid — the engine
+    // returns JET_errInvalidGrbit (fldext.cxx:41).
+    uint32_t scratch = 0;
+    const JET_ERR combinedResult =
+        JetRetrieveColumn(session.Handle(), table.Id(), valueColumnId,
+                          &scratch, sizeof(scratch),
+                          &actualBytes,
+                          JET_bitRetrievePageNumber | JET_bitRetrieveCopy,
+                          nullptr);
+    Require(combinedResult == JET_errInvalidGrbit);
+
+    // Buffer too small returns JET_errBufferTooSmall.
+    uint8_t shortBuffer[2] = {};
+    const JET_ERR shortResult =
+        JetRetrieveColumn(session.Handle(), table.Id(), valueColumnId,
+                          shortBuffer, sizeof(shortBuffer),
+                          &actualBytes,
+                          JET_bitRetrievePageNumber, nullptr);
+    Require(shortResult == JET_errBufferTooSmall);
+}
+
+EseIntegrationScenario(DataManipulation, RetrieveCopyIntrinsicReportsRemainingInlineCapacity)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.RetrieveCopyIntrinsicReportsRemainingInlineCapacity");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "Intrinsic");
+
+    auto bodyColumnId = table.AddColumn("Body", JET_coltypLongBinary);
+
+    // JET_bitRetrieveCopyIntrinsic only works inside an active
+    // PrepareUpdate (fldext.cxx's ErrRECIGetIntrinsicAvail asserts
+    // FFUCBUpdatePrepared).  Begin an insert, query before adding any
+    // payload — the engine returns the inline-LV budget for this
+    // column as a 4-byte ULONG.
+    EseTransaction transaction(session);
+    CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepInsert));
+
+    uint32_t emptyRecordBudget = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), bodyColumnId,
+                               &emptyRecordBudget, sizeof(emptyRecordBudget),
+                               &actualBytes,
+                               JET_bitRetrieveCopyIntrinsic, nullptr));
+    Require(actualBytes == sizeof(emptyRecordBudget));
+    Require(emptyRecordBudget > 0);
+
+    // Fill some inline bytes; the remaining budget must shrink.
+    static constexpr uint32_t IntrinsicFillBytes = 128;
+    const std::vector<uint8_t> intrinsicFill(IntrinsicFillBytes, 0x55);
+    CheckJet(JetSetColumn(session.Handle(), table.Id(), bodyColumnId,
+                          intrinsicFill.data(),
+                          static_cast<uint32_t>(intrinsicFill.size()),
+                          JET_bitSetIntrinsicLV, nullptr));
+
+    uint32_t budgetAfterFill = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), bodyColumnId,
+                               &budgetAfterFill, sizeof(budgetAfterFill),
+                               &actualBytes,
+                               JET_bitRetrieveCopyIntrinsic, nullptr));
+    Require(actualBytes == sizeof(budgetAfterFill));
+    // The fill consumed inline space — the remaining budget is
+    // smaller than the empty-record figure.
+    Require(budgetAfterFill < emptyRecordBudget);
+
+    CheckJet(JetUpdate(session.Handle(), table.Id(), nullptr, 0, nullptr));
+    transaction.Commit();
+
+    // The persisted row round-trips the inline payload.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    const auto persistedPayload =
+        RetrieveVariableColumnFromCurrentRecord(table, bodyColumnId,
+                                                IntrinsicFillBytes);
+    Require(persistedPayload.size() == IntrinsicFillBytes);
+    Require(std::memcmp(persistedPayload.data(), intrinsicFill.data(),
+                        IntrinsicFillBytes) == 0);
+}
+
+EseIntegrationScenario(DataManipulation, UpdateCheckESE97CompatibilityRejectsOversizeRecord)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.UpdateCheckESE97CompatibilityRejectsOversizeRecord");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Data.mdb");
+    EseTable table(database, "Wide");
+
+    // ESE97 vs modern record-size differ only in how multi-valued
+    // tagged columns pack: ESE97 per-multivalue overhead is larger
+    // (recupd.cxx around the cbESE98ColumnOverhead constants).  To
+    // trigger JET_errRecordTooBigForBackwardCompatibility, we need a
+    // record that fits modern (small per-MV overhead) but exceeds
+    // ESE97's projected layout.  Many short multi-values does it.
+    auto tagsColumnId = table.AddColumn(
+        "Tags", JET_coltypBinary,
+        JET_bitColumnTagged | JET_bitColumnMultiValued,
+        /*maximumBytes*/ 4);
+
+    // Probe the engine's record-size budget at runtime, then size the
+    // multi-value count to fill modern record format almost to the
+    // limit.  ESE97's larger per-MV overhead will push the projected
+    // size over the page-record bound and trigger the
+    // BackwardCompatibility error.
+    JET_API_PTR recordSizeMost = 0;
+    uint32_t paramBytes = sizeof(recordSizeMost);
+    CheckJet(JetGetSystemParameterA(instance.Handle(), JET_sesidNil,
+                                    JET_paramRecordSizeMost,
+                                    &recordSizeMost, nullptr, paramBytes));
+    // Per recupd.cxx, ESE98 overhead = 5-byte initial column +
+    // 2-byte per multi-value; we use 4-byte payloads.  Pick a count
+    // that fills ~80% of the modern budget so we comfortably commit
+    // without exceeding it but ESE97 overhead will push past.
+    static constexpr uint32_t PayloadBytes = 4;
+    static constexpr uint32_t ModernOverheadPerMultiValue =
+        PayloadBytes + 2;
+    const uint32_t multiValueCount =
+        static_cast<uint32_t>((recordSizeMost * 80 / 100)
+                              / ModernOverheadPerMultiValue);
+    const uint8_t payload[PayloadBytes] = { 0xAB, 0xCD, 0xEF, 0x01 };
+
+    // Without the flag, JetUpdate accepts the long multi-value train —
+    // modern record size handles it.
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepInsert));
+        for (uint32_t itag = 1; itag <= multiValueCount; ++itag)
+        {
+            JET_SETINFO setInformation = {};
+            setInformation.cbStruct = sizeof(setInformation);
+            setInformation.itagSequence = itag;
+            CheckJet(JetSetColumn(session.Handle(), table.Id(), tagsColumnId,
+                                  payload, sizeof(payload),
+                                  0, &setInformation));
+        }
+        CheckJet(JetUpdate(session.Handle(), table.Id(), nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    // With JET_bitUpdateCheckESE97Compatibility, the engine projects
+    // the record into ESE97's layout and refuses with
+    // JET_errRecordTooBigForBackwardCompatibility because the ESE97
+    // per-MV overhead pushes the projected size past the per-page
+    // limit (REC::CbRecordMost with JET_cbKeyMost_OLD).
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepInsert));
+        for (uint32_t itag = 1; itag <= multiValueCount; ++itag)
+        {
+            JET_SETINFO setInformation = {};
+            setInformation.cbStruct = sizeof(setInformation);
+            setInformation.itagSequence = itag;
+            CheckJet(JetSetColumn(session.Handle(), table.Id(), tagsColumnId,
+                                  payload, sizeof(payload),
+                                  0, &setInformation));
+        }
+        RequireJetError(JetUpdate2(session.Handle(), table.Id(),
+                                   nullptr, 0, nullptr,
+                                   JET_bitUpdateCheckESE97Compatibility),
+                        JET_errRecordTooBigForBackwardCompatibility);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepCancel));
+        transaction.Commit();
+    }
+
+    // The control row from the first commit is still present; no
+    // extra row leaked from the rejected attempt.
+    int32_t observedCount = 0;
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    do
+    {
+        ++observedCount;
+    }
+    while (JetMove(session.Handle(), table.Id(), JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+    Require(observedCount == 1);
+}
+

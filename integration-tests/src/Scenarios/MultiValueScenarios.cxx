@@ -372,3 +372,112 @@ EseIntegrationScenario(MultiValue, UniqueMultiValueIndexRejectsDuplicateAcrossRo
         transaction.Commit();
     }
 }
+
+EseIntegrationScenario(MultiValue, RetrieveTagFetchesSpecificItagFromTaggedColumn)
+{
+    TemporaryDirectory directory(
+        "MultiValue.RetrieveTagFetchesSpecificItagFromTaggedColumn");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "MultiValue.mdb");
+    EseTable table(database, "Tagged");
+
+    auto columnId = table.AddColumn("Tags",
+                                    JET_coltypLong,
+                                    JET_bitColumnTagged | JET_bitColumnMultiValued);
+
+    // Seed itags 1..4 with distinct values.
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepInsert));
+        SetItag(table, columnId, 1, 1001);
+        SetItag(table, columnId, 2, 1002);
+        SetItag(table, columnId, 3, 1003);
+        SetItag(table, columnId, 4, 1004);
+        CheckJet(JetUpdate(session.Handle(), table.Id(), nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    // JET_bitRetrieveTag combined with JET_RETINFO.itagSequence
+    // selects a specific tagged instance.  Read each in turn and
+    // verify the engine returns the exact itag we asked for.
+    auto retrieveByTag = [&](uint32_t itag) -> int32_t
+    {
+        JET_RETINFO retrieveInformation = {};
+        retrieveInformation.cbStruct = sizeof(retrieveInformation);
+        retrieveInformation.itagSequence = itag;
+        int32_t value = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), columnId,
+                                   &value, sizeof(value),
+                                   &actualBytes,
+                                   JET_bitRetrieveTag,
+                                   &retrieveInformation));
+        Require(actualBytes == sizeof(value));
+        return value;
+    };
+    Require(retrieveByTag(1) == 1001);
+    Require(retrieveByTag(2) == 1002);
+    Require(retrieveByTag(3) == 1003);
+    Require(retrieveByTag(4) == 1004);
+}
+
+EseIntegrationScenario(MultiValue, SetRevertToDefaultValueRestoresColumnDefault)
+{
+    TemporaryDirectory directory(
+        "MultiValue.SetRevertToDefaultValueRestoresColumnDefault");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "MultiValue.mdb");
+    EseTable table(database, "Defaulted");
+
+    // Tagged column with a default value.  JET_bitSetRevertToDefaultValue
+    // says: if setting the last tagged instance to NULL, populate the
+    // default instead of leaving it NULL.
+    const int32_t defaultValue = 777;
+    auto columnId = table.AddColumnWithDefault(
+        "Value", JET_coltypLong,
+        &defaultValue, sizeof(defaultValue),
+        JET_bitColumnTagged);
+
+    // Insert a row that overrides the default explicitly.
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepInsert));
+        const int32_t overrideValue = 42;
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), columnId,
+                              &overrideValue, sizeof(overrideValue),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), table.Id(), nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t beforeRevert = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), columnId,
+                               &beforeRevert, sizeof(beforeRevert),
+                               &actualBytes, 0, nullptr));
+    Require(beforeRevert == 42);
+
+    // Replace: set column to NULL (cbData=0) with the revert flag —
+    // the engine repopulates the default instead of leaving NULL.
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepReplace));
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), columnId,
+                              nullptr, 0,
+                              JET_bitSetRevertToDefaultValue, nullptr));
+        CheckJet(JetUpdate(session.Handle(), table.Id(), nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t afterRevert = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), columnId,
+                               &afterRevert, sizeof(afterRevert),
+                               &actualBytes, 0, nullptr));
+    Require(afterRevert == defaultValue);
+}

@@ -1342,6 +1342,110 @@ EseIntegrationScenario(Schema, DeleteColumn2RemovesColumn)
 //  JET_VERSION bumps to include it, drop a scenario here that
 //  mirrors `DeleteColumn2RemovesColumn` above.
 
+EseIntegrationScenario(Schema, CreateIndexOptionallyUniqueEnforcedOnlyWhenFlagged)
+{
+    TemporaryDirectory directory(
+        "Schema.CreateIndexOptionallyUniqueEnforcedOnlyWhenFlagged");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Schema.mdb");
+    EseTable table(database, "OptionalUnique");
+
+    auto identityColumnId = table.AddColumn("Identity", JET_coltypLong,
+                                             JET_bitColumnAutoincrement);
+    auto valueColumnId = table.AddColumn("Value", JET_coltypLong,
+                                          JET_bitColumnNotNULL);
+
+    // Primary key keeps the table sane.
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Identity\0\0", 11);
+    table.CreateIndex("PrimaryByIdentity", PrimaryKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    // JET_bitIndexOptionallyUnique creates an index whose uniqueness
+    // is enforced ONLY for updates that opt in via
+    // JET_bitUpdateEnforceOptionallyUniqueIndices.  Default updates
+    // accept duplicates silently.
+    static constexpr std::string_view ValueKey =
+        std::string_view("+Value\0\0", 8);
+    table.CreateIndex("ValueOptionallyUnique", ValueKey,
+                      JET_bitIndexOptionallyUnique);
+
+    // First row.
+    {
+        EseTransaction transaction(session);
+        InsertSingleFixedColumnRow<int32_t>(table, valueColumnId, 100);
+        transaction.Commit();
+    }
+
+    // Default-grbit update with a duplicate Value — must succeed.
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepInsert));
+        const int32_t duplicateValue = 100;
+        CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                              valueColumnId,
+                              &duplicateValue, sizeof(duplicateValue),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), table.Id(),
+                           nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    // Update with JET_bitUpdateEnforceOptionallyUniqueIndices on the
+    // same duplicate — engine must refuse with JET_errKeyDuplicate.
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepInsert));
+        const int32_t duplicateValue = 100;
+        CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                              valueColumnId,
+                              &duplicateValue, sizeof(duplicateValue),
+                              0, nullptr));
+        RequireJetError(
+            JetUpdate2(session.Handle(), table.Id(),
+                       nullptr, 0, nullptr,
+                       JET_bitUpdateEnforceOptionallyUniqueIndices),
+            JET_errKeyDuplicate);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepCancel));
+        transaction.Commit();
+    }
+
+    // A distinct Value with the enforce flag must succeed.
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepInsert));
+        const int32_t distinctValue = 200;
+        CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                              valueColumnId,
+                              &distinctValue, sizeof(distinctValue),
+                              0, nullptr));
+        CheckJet(JetUpdate2(session.Handle(), table.Id(),
+                            nullptr, 0, nullptr,
+                            JET_bitUpdateEnforceOptionallyUniqueIndices));
+        transaction.Commit();
+    }
+
+    // Walk on the secondary index, count rows.  Default-update duplicate
+    // is present (two 100s) plus the enforced-update 200 = 3 total.
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(),
+                                 "ValueOptionallyUnique"));
+    int32_t observedCount = 0;
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    do
+    {
+        ++observedCount;
+    }
+    while (JetMove(session.Handle(), table.Id(), JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+    Require(observedCount == 3);
+    (void)identityColumnId;
+}
+
 EseIntegrationScenario(Schema, OpenTableReadOnlyRejectsInsertButAllowsRead)
 {
     TemporaryDirectory directory(

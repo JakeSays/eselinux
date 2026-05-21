@@ -688,6 +688,104 @@ EseIntegrationScenario(LongValue, RetrieveLongIdReturnsEightByteHandle)
     Require(std::memcmp(roundTrip.data(), payload.data(), PayloadBytes) == 0);
 }
 
+EseIntegrationScenario(LongValue, SetIntrinsicLVForcesInlineStorage)
+{
+    TemporaryDirectory directory("LongValue.SetIntrinsicLVForcesInlineStorage");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "LongValue.mdb");
+    EseTable table(database, "Intrinsic");
+
+    auto bodyColumnId = table.AddColumn("Body", JET_coltypLongBinary);
+
+    // A small payload with JET_bitSetIntrinsicLV must stay inline in
+    // the record.  JET_RECSIZE2.cbLongValueData reports 0 (no LV-tree
+    // footprint) confirming the LV did NOT separate.
+    static constexpr uint32_t IntrinsicPayloadBytes = 128;
+    const std::vector<uint8_t> intrinsicPayload(IntrinsicPayloadBytes, 0x33);
+
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), bodyColumnId,
+                              intrinsicPayload.data(),
+                              static_cast<uint32_t>(intrinsicPayload.size()),
+                              JET_bitSetIntrinsicLV, nullptr));
+        CheckJet(JetUpdate(session.Handle(), table.Id(), nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    JET_RECSIZE2 recordSize = {};
+    CheckJet(JetGetRecordSize2(session.Handle(), table.Id(),
+                               &recordSize, 0));
+    Require(recordSize.cbLongValueData == 0);
+
+    const auto roundTrip =
+        RetrieveVariableColumnFromCurrentRecord(table, bodyColumnId,
+                                                IntrinsicPayloadBytes);
+    Require(roundTrip.size() == IntrinsicPayloadBytes);
+    Require(std::memcmp(roundTrip.data(), intrinsicPayload.data(),
+                        IntrinsicPayloadBytes) == 0);
+}
+
+EseIntegrationScenario(LongValue, SetIntrinsicLVSilentlySeparatesOversizeValue)
+{
+    TemporaryDirectory directory(
+        "LongValue.SetIntrinsicLVSilentlySeparatesOversizeValue");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "LongValue.mdb");
+    EseTable table(database, "Oversize");
+
+    auto bodyColumnId = table.AddColumn("Body", JET_coltypLongBinary);
+
+    // The jetapi.h comment for JET_bitSetIntrinsicLV reads "store whole
+    // LV in record without bursting or return an error" — but the
+    // actual engine path (lv.cxx:2762) silently sets fForceSeparateLV
+    // = TRUE when cbIntrinsicPhysical > cbPreferredIntrinsicLV and
+    // falls back to a separated LV.  The header comment lies about the
+    // "or return an error" half; this scenario pins the real behavior
+    // so a future tightening of the engine to match the docs surfaces
+    // as a deliberate test update, not a silent semantics change.
+    static constexpr uint32_t OversizePayloadBytes = 64 * 1024;
+    std::vector<uint8_t> oversizePayload(OversizePayloadBytes);
+    for (uint32_t index = 0; index < OversizePayloadBytes; ++index)
+    {
+        oversizePayload[index] = static_cast<uint8_t>(index & 0xFF);
+    }
+
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), bodyColumnId,
+                              oversizePayload.data(),
+                              static_cast<uint32_t>(oversizePayload.size()),
+                              JET_bitSetIntrinsicLV, nullptr));
+        CheckJet(JetUpdate(session.Handle(), table.Id(), nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    // The engine accepted the oversize LV and stored it in the long-
+    // value tree — JET_RECSIZE2.cbLongValueData attributes the bytes
+    // to the LV tree, not the record body.
+    JET_RECSIZE2 recordSize = {};
+    CheckJet(JetGetRecordSize2(session.Handle(), table.Id(),
+                               &recordSize, 0));
+    Require(recordSize.cbLongValueData > 0);
+
+    // The full payload still round-trips through a normal retrieve.
+    const auto roundTrip =
+        RetrieveVariableColumnFromCurrentRecord(table, bodyColumnId,
+                                                OversizePayloadBytes);
+    Require(roundTrip.size() == OversizePayloadBytes);
+    Require(std::memcmp(roundTrip.data(), oversizePayload.data(),
+                        OversizePayloadBytes) == 0);
+}
+
 EseIntegrationScenario(LongValue, ReplaceLongValueShrinksToZero)
 {
     TemporaryDirectory directory("LongValue.ReplaceLongValueShrinksToZero");
