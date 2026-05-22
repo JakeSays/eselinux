@@ -18,7 +18,7 @@
 
 using namespace ese::tests;
 
-EseIntegrationScenario(DataManipulation, InsertAndReadBackOneRow)
+EseIntegrationScenario(DataManipulation, InsertAndReadBackOneRow, Smoke)
 {
     TemporaryDirectory directory("DataManipulation.InsertAndReadBackOneRow");
     EseInstance instance(directory);
@@ -39,7 +39,7 @@ EseIntegrationScenario(DataManipulation, InsertAndReadBackOneRow)
     Require(readBack == 0x12345678);
 }
 
-EseIntegrationScenario(DataManipulation, InsertMultipleRowsRoundTrip)
+EseIntegrationScenario(DataManipulation, InsertMultipleRowsRoundTrip, Smoke)
 {
     TemporaryDirectory directory("DataManipulation.InsertMultipleRowsRoundTrip");
     EseInstance instance(directory);
@@ -73,7 +73,7 @@ EseIntegrationScenario(DataManipulation, InsertMultipleRowsRoundTrip)
     Require(observed == RowCount);
 }
 
-EseIntegrationScenario(DataManipulation, ReplaceUpdatesValueInPlace)
+EseIntegrationScenario(DataManipulation, ReplaceUpdatesValueInPlace, Smoke)
 {
     TemporaryDirectory directory("DataManipulation.ReplaceUpdatesValueInPlace");
     EseInstance instance(directory);
@@ -111,7 +111,7 @@ EseIntegrationScenario(DataManipulation, ReplaceUpdatesValueInPlace)
     Require(readBack == 999);
 }
 
-EseIntegrationScenario(DataManipulation, DeleteRemovesCurrentRecord)
+EseIntegrationScenario(DataManipulation, DeleteRemovesCurrentRecord, Smoke)
 {
     TemporaryDirectory directory("DataManipulation.DeleteRemovesCurrentRecord");
     EseInstance instance(directory);
@@ -146,7 +146,7 @@ EseIntegrationScenario(DataManipulation, DeleteRemovesCurrentRecord)
                     JET_errNoCurrentRecord);
 }
 
-EseIntegrationScenario(DataManipulation, CancelPreparedInsertLeavesNoRecord)
+EseIntegrationScenario(DataManipulation, CancelPreparedInsertLeavesNoRecord, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.CancelPreparedInsertLeavesNoRecord");
@@ -178,7 +178,7 @@ EseIntegrationScenario(DataManipulation, CancelPreparedInsertLeavesNoRecord)
                     JET_errNoCurrentRecord);
 }
 
-EseIntegrationScenario(DataManipulation, SetColumnsBatchRoundTrip)
+EseIntegrationScenario(DataManipulation, SetColumnsBatchRoundTrip, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.SetColumnsBatchRoundTrip");
@@ -240,7 +240,7 @@ EseIntegrationScenario(DataManipulation, SetColumnsBatchRoundTrip)
     Require(readThird == thirdValue);
 }
 
-EseIntegrationScenario(DataManipulation, RetrievingNullColumnReturnsColumnNullWarning)
+EseIntegrationScenario(DataManipulation, RetrievingNullColumnReturnsColumnNullWarning, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.RetrievingNullColumnReturnsColumnNullWarning");
@@ -283,7 +283,7 @@ EseIntegrationScenario(DataManipulation, RetrievingNullColumnReturnsColumnNullWa
     Require(identity > 0);
 }
 
-EseIntegrationScenario(DataManipulation, RollbackHidesUncommittedRow)
+EseIntegrationScenario(DataManipulation, RollbackHidesUncommittedRow, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.RollbackHidesUncommittedRow");
@@ -354,7 +354,7 @@ JET_ERR JET_API RecordCallback(JET_SESID      /*sesid*/,
 
 } // namespace
 
-EseIntegrationScenario(DataManipulation, EnumerateColumnsReturnsAllColumnValues)
+EseIntegrationScenario(DataManipulation, EnumerateColumnsReturnsAllColumnValues, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.EnumerateColumnsReturnsAllColumnValues");
@@ -431,7 +431,7 @@ EseIntegrationScenario(DataManipulation, EnumerateColumnsReturnsAllColumnValues)
     EnumerateColumnsRealloc(nullptr, rgEnumColumn, 0);
 }
 
-EseIntegrationScenario(DataManipulation, EnumerateColumnsCompressOutputReturnsSingleValueShape)
+EseIntegrationScenario(DataManipulation, EnumerateColumnsCompressOutputReturnsSingleValueShape, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.EnumerateColumnsCompressOutputReturnsSingleValueShape");
@@ -476,7 +476,7 @@ EseIntegrationScenario(DataManipulation, EnumerateColumnsCompressOutputReturnsSi
     EnumerateColumnsRealloc(nullptr, rgEnumColumn, 0);
 }
 
-EseIntegrationScenario(DataManipulation, EnumerateColumnsHonoursColumnIdSubset)
+EseIntegrationScenario(DataManipulation, EnumerateColumnsHonoursColumnIdSubset, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.EnumerateColumnsHonoursColumnIdSubset");
@@ -531,7 +531,7 @@ EseIntegrationScenario(DataManipulation, EnumerateColumnsHonoursColumnIdSubset)
     EnumerateColumnsRealloc(nullptr, rgEnumColumn, 0);
 }
 
-EseIntegrationScenario(DataManipulation, RegisterCallbackFiresOnInsert)
+EseIntegrationScenario(DataManipulation, RegisterCallbackFiresOnInsert, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.RegisterCallbackFiresOnInsert");
@@ -572,7 +572,7 @@ EseIntegrationScenario(DataManipulation, RegisterCallbackFiresOnInsert)
     Require(counters.afterInsert == baseline.afterInsert);
 }
 
-EseIntegrationScenario(DataManipulation, GetRecordSizeReportsNonZeroData)
+EseIntegrationScenario(DataManipulation, GetRecordSizeReportsNonZeroData, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.GetRecordSizeReportsNonZeroData");
@@ -633,7 +633,7 @@ EseIntegrationScenario(DataManipulation, GetRecordSizeReportsNonZeroData)
                         BlobPayload.size()) == 0);
 }
 
-EseIntegrationScenario(DataManipulation, RetrieveTaggedColumnListReportsTaggedColumns)
+EseIntegrationScenario(DataManipulation, RetrieveTaggedColumnListReportsTaggedColumns, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.RetrieveTaggedColumnListReportsTaggedColumns");
@@ -719,7 +719,7 @@ EseIntegrationScenario(DataManipulation, RetrieveTaggedColumnListReportsTaggedCo
     Require(foundB);
 }
 
-EseIntegrationScenario(DataManipulation, GetRecordSize2ReportsCompressedColumns)
+EseIntegrationScenario(DataManipulation, GetRecordSize2ReportsCompressedColumns, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.GetRecordSize2ReportsCompressedColumns");
@@ -781,7 +781,7 @@ EseIntegrationScenario(DataManipulation, GetRecordSize2ReportsCompressedColumns)
     Require(recsize.cbDataCompressed > 0);
 }
 
-EseIntegrationScenario(DataManipulation, GetRecordSize3ReportsIntrinsicLongValueBytes)
+EseIntegrationScenario(DataManipulation, GetRecordSize3ReportsIntrinsicLongValueBytes, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.GetRecordSize3ReportsIntrinsicLongValueBytes");
@@ -848,7 +848,7 @@ EseIntegrationScenario(DataManipulation, GetRecordSize3ReportsIntrinsicLongValue
     Require(recsize.cbLongValueData == 0);
 }
 
-EseIntegrationScenario(DataManipulation, Update2WithBookmarkAndGrbitInserts)
+EseIntegrationScenario(DataManipulation, Update2WithBookmarkAndGrbitInserts, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.Update2WithBookmarkAndGrbitInserts");
@@ -907,8 +907,7 @@ EseIntegrationScenario(DataManipulation, Update2WithBookmarkAndGrbitInserts)
             == 7777);
 }
 
-EseIntegrationScenario(DataManipulation,
-                       RetrieveColumnByReferenceReadsSeparatedLongValue)
+EseIntegrationScenario(DataManipulation, RetrieveColumnByReferenceReadsSeparatedLongValue, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.RetrieveColumnByReferenceReadsSeparatedLongValue");
@@ -1023,8 +1022,7 @@ EseIntegrationScenario(DataManipulation,
     Require(cbActual >= blob.size());
 }
 
-EseIntegrationScenario(DataManipulation,
-                       PrereadColumnsByReferenceReportsRequestedCount)
+EseIntegrationScenario(DataManipulation, PrereadColumnsByReferenceReportsRequestedCount, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.PrereadColumnsByReferenceReportsRequestedCount");
@@ -1128,8 +1126,7 @@ EseIntegrationScenario(DataManipulation,
     Require(referencesPreread <= static_cast<uint32_t>(referencePointers.size()));
 }
 
-EseIntegrationScenario(DataManipulation,
-                       StreamRecordsAndParseRoundTripsAllColumnsInIndexOrder)
+EseIntegrationScenario(DataManipulation, StreamRecordsAndParseRoundTripsAllColumnsInIndexOrder, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.StreamRecordsAndParseRoundTripsAllColumnsInIndexOrder");
@@ -1280,7 +1277,7 @@ EseIntegrationScenario(DataManipulation,
     }
 }
 
-EseIntegrationScenario(DataManipulation, RetrieveCopyReadsStagedValueBeforeUpdate)
+EseIntegrationScenario(DataManipulation, RetrieveCopyReadsStagedValueBeforeUpdate, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.RetrieveCopyReadsStagedValueBeforeUpdate");
@@ -1338,7 +1335,7 @@ EseIntegrationScenario(DataManipulation, RetrieveCopyReadsStagedValueBeforeUpdat
             == StagedValue);
 }
 
-EseIntegrationScenario(DataManipulation, RetrieveFromIndexReadsIndexEntryWithoutRecord)
+EseIntegrationScenario(DataManipulation, RetrieveFromIndexReadsIndexEntryWithoutRecord, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.RetrieveFromIndexReadsIndexEntryWithoutRecord");
@@ -1383,7 +1380,7 @@ EseIntegrationScenario(DataManipulation, RetrieveFromIndexReadsIndexEntryWithout
             == SeededKey);
 }
 
-EseIntegrationScenario(DataManipulation, UpdateNoVersionAcceptedOnUncommittedTableRejectedAfterCommit)
+EseIntegrationScenario(DataManipulation, UpdateNoVersionAcceptedOnUncommittedTableRejectedAfterCommit, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.UpdateNoVersionAcceptedOnUncommittedTableRejectedAfterCommit");
@@ -1465,7 +1462,7 @@ EseIntegrationScenario(DataManipulation, UpdateNoVersionAcceptedOnUncommittedTab
     }
 }
 
-EseIntegrationScenario(DataManipulation, RetrievePageNumberReportsResidentPage)
+EseIntegrationScenario(DataManipulation, RetrievePageNumberReportsResidentPage, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.RetrievePageNumberReportsResidentPage");
@@ -1543,7 +1540,7 @@ EseIntegrationScenario(DataManipulation, RetrievePageNumberReportsResidentPage)
     Require(shortResult == JET_errBufferTooSmall);
 }
 
-EseIntegrationScenario(DataManipulation, RetrieveCopyIntrinsicReportsRemainingInlineCapacity)
+EseIntegrationScenario(DataManipulation, RetrieveCopyIntrinsicReportsRemainingInlineCapacity, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.RetrieveCopyIntrinsicReportsRemainingInlineCapacity");
@@ -1602,7 +1599,7 @@ EseIntegrationScenario(DataManipulation, RetrieveCopyIntrinsicReportsRemainingIn
                         IntrinsicFillBytes) == 0);
 }
 
-EseIntegrationScenario(DataManipulation, UpdateCheckESE97CompatibilityRejectsOversizeRecord)
+EseIntegrationScenario(DataManipulation, UpdateCheckESE97CompatibilityRejectsOversizeRecord, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.UpdateCheckESE97CompatibilityRejectsOversizeRecord");
@@ -1700,7 +1697,7 @@ EseIntegrationScenario(DataManipulation, UpdateCheckESE97CompatibilityRejectsOve
     Require(observedCount == 1);
 }
 
-EseIntegrationScenario(DataManipulation, RetrieveFromPrimaryBookmarkExtractsPrimaryKeyFromSecondaryEntry)
+EseIntegrationScenario(DataManipulation, RetrieveFromPrimaryBookmarkExtractsPrimaryKeyFromSecondaryEntry, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.RetrieveFromPrimaryBookmarkExtractsPrimaryKeyFromSecondaryEntry");
@@ -1801,7 +1798,7 @@ EseIntegrationScenario(DataManipulation, RetrieveFromPrimaryBookmarkExtractsPrim
     Require(negativeResult == JET_errColumnNotFound);
 }
 
-EseIntegrationScenario(DataManipulation, EnumerateColumnsIgnoreDefaultMarksDefaultColumns)
+EseIntegrationScenario(DataManipulation, EnumerateColumnsIgnoreDefaultMarksDefaultColumns, Smoke)
 {
     TemporaryDirectory directory(
         "DataManipulation.EnumerateColumnsIgnoreDefaultMarksDefaultColumns");
@@ -1933,5 +1930,297 @@ EseIntegrationScenario(DataManipulation, EnumerateColumnsIgnoreDefaultMarksDefau
         Require(sawPlainValue);
         EnumerateColumnsRealloc(nullptr, rgEnumColumn, 0);
     }
+}
+
+//  ===================================================================
+//  Tier::Regression — refactor-sensitivity scenarios
+//
+//  Targets B-tree behaviour that the Smoke tier doesn't exercise:
+//  random-order insertion + delete-and-reinsert churn that drives
+//  the freelist coalescing and split/merge code paths.
+//  ===================================================================
+
+namespace
+{
+
+//  Deterministic LCG so the regression scenarios are repeatable.
+struct DeterministicShuffle
+{
+    uint32_t seed;
+    uint32_t next()
+    {
+        seed = seed * 1664525u + 1013904223u;
+        return seed;
+    }
+};
+
+}  // namespace
+
+//  Insert 8192 rows in random key order, then walk the table in
+//  ascending order and confirm every key is present exactly once.
+//  Smoke tests use monotonic-ascending insertion; a refactor that
+//  broke B-tree split selection on random-keys input would land
+//  here.
+EseIntegrationScenario(DataManipulation, RandomOrderInsertSurvivesAscendingWalk, Regression)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.RandomOrderInsertSurvivesAscendingWalk");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Random.mdb");
+    EseTable table(database, "Rows");
+    auto keyColumn = table.AddColumn("Key", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
+    static constexpr std::string_view KeyIndex =
+        std::string_view("+Key\0\0", 6);
+    table.CreateIndex("PrimaryByKey", KeyIndex,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    static constexpr int32_t Count = 8192;
+    std::vector<int32_t> shuffled(Count);
+    for (int32_t i = 0; i < Count; ++i)
+    {
+        shuffled[static_cast<size_t>(i)] = i;
+    }
+    DeterministicShuffle rng{ 0xDEAD };
+    for (int32_t i = Count - 1; i > 0; --i)
+    {
+        const int32_t j = static_cast<int32_t>(
+            rng.next() % static_cast<uint32_t>(i + 1));
+        std::swap(shuffled[static_cast<size_t>(i)],
+                  shuffled[static_cast<size_t>(j)]);
+    }
+
+    {
+        EseTransaction transaction(session);
+        for (int32_t key : shuffled)
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(), keyColumn,
+                                  &key, sizeof(key), 0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t expected = 0;
+    int32_t walkedRowCount = 0;
+    while (true)
+    {
+        int32_t observed = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), keyColumn,
+                                   &observed, sizeof(observed),
+                                   &actualBytes, 0, nullptr));
+        Require(observed == expected);
+        ++expected;
+        ++walkedRowCount;
+        const auto moveResult = JetMove(session.Handle(), table.Id(),
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walkedRowCount == Count);
+}
+
+//  Reverse-order insert.  Smoke tests don't exercise right-to-left
+//  growth at scale; a refactor that broke split direction or
+//  rebalancing under descending input would land here.
+EseIntegrationScenario(DataManipulation, ReverseOrderInsertProducesAscendingTable, Regression)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.ReverseOrderInsertProducesAscendingTable");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Reverse.mdb");
+    EseTable table(database, "Rows");
+    auto keyColumn = table.AddColumn("Key", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
+    static constexpr std::string_view KeyIndex =
+        std::string_view("+Key\0\0", 6);
+    table.CreateIndex("PrimaryByKey", KeyIndex,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    static constexpr int32_t Count = 8192;
+    {
+        EseTransaction transaction(session);
+        for (int32_t key = Count - 1; key >= 0; --key)
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(), keyColumn,
+                                  &key, sizeof(key), 0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t expected = 0;
+    while (true)
+    {
+        int32_t observed = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), keyColumn,
+                                   &observed, sizeof(observed),
+                                   &actualBytes, 0, nullptr));
+        Require(observed == expected);
+        ++expected;
+        const auto moveResult = JetMove(session.Handle(), table.Id(),
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(expected == Count);
+}
+
+//  Random-delete + reinsert churn — the freelist / page-reuse
+//  exerciser.  4096 rows inserted, 50% randomly deleted, then a
+//  fresh 2048 keys (offset to avoid collision) inserted, then
+//  another 50% random delete from the surviving set.  Final walk
+//  verifies every survivor is present in order with the right
+//  value.  A refactor that broke freelist coalescing or
+//  page-reuse heuristics would surface here as a corrupted walk.
+EseIntegrationScenario(DataManipulation, ChurnFromDeleteReinsertPreservesAscendingOrder, Regression)
+{
+    TemporaryDirectory directory(
+        "DataManipulation.ChurnFromDeleteReinsertPreservesAscendingOrder");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Churn.mdb");
+    EseTable table(database, "Rows");
+    auto keyColumn = table.AddColumn("Key", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
+    static constexpr std::string_view KeyIndex =
+        std::string_view("+Key\0\0", 6);
+    table.CreateIndex("PrimaryByKey", KeyIndex,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    static constexpr int32_t InitialCount = 4096;
+    //  Insert 0..InitialCount-1 in random order.
+    std::vector<int32_t> initial(InitialCount);
+    for (int32_t i = 0; i < InitialCount; ++i)
+    {
+        initial[static_cast<size_t>(i)] = i;
+    }
+    DeterministicShuffle rng{ 0xBEEF };
+    for (int32_t i = InitialCount - 1; i > 0; --i)
+    {
+        const int32_t j = static_cast<int32_t>(
+            rng.next() % static_cast<uint32_t>(i + 1));
+        std::swap(initial[static_cast<size_t>(i)],
+                  initial[static_cast<size_t>(j)]);
+    }
+    {
+        EseTransaction transaction(session);
+        for (int32_t key : initial)
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(), keyColumn,
+                                  &key, sizeof(key), 0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+
+    //  Track which keys are alive.  Delete every other key (~50%)
+    //  in random order to fragment the leaf pages.
+    std::vector<bool> alive(InitialCount, true);
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < InitialCount; i += 2)
+        {
+            const int32_t target = initial[static_cast<size_t>(i)];
+            CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                                &target, sizeof(target), JET_bitNewKey));
+            CheckJet(JetSeek(session.Handle(), table.Id(), JET_bitSeekEQ));
+            CheckJet(JetDelete(session.Handle(), table.Id()));
+            alive[static_cast<size_t>(target)] = false;
+        }
+        transaction.Commit();
+    }
+
+    //  Reinsert 2048 fresh keys (offset above the original range)
+    //  in random order — exercises page reuse from the freelist.
+    static constexpr int32_t RefillCount = 2048;
+    static constexpr int32_t RefillOffset = 100000;
+    std::vector<int32_t> refill(RefillCount);
+    for (int32_t i = 0; i < RefillCount; ++i)
+    {
+        refill[static_cast<size_t>(i)] = RefillOffset + i;
+    }
+    for (int32_t i = RefillCount - 1; i > 0; --i)
+    {
+        const int32_t j = static_cast<int32_t>(
+            rng.next() % static_cast<uint32_t>(i + 1));
+        std::swap(refill[static_cast<size_t>(i)],
+                  refill[static_cast<size_t>(j)]);
+    }
+    {
+        EseTransaction transaction(session);
+        for (int32_t key : refill)
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(), keyColumn,
+                                  &key, sizeof(key), 0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+
+    //  Final walk: surviving original keys (the odd ones) appear in
+    //  ascending order, followed by the 2048 refill keys in
+    //  ascending order.  A refactor that corrupted a leaf page
+    //  during reuse, double-counted, or dropped a survivor would
+    //  surface here as a count mismatch or wrong-order value.
+    std::vector<int32_t> expectedKeys;
+    expectedKeys.reserve(InitialCount / 2 + RefillCount);
+    for (int32_t k = 0; k < InitialCount; ++k)
+    {
+        if (alive[static_cast<size_t>(k)])
+        {
+            expectedKeys.push_back(k);
+        }
+    }
+    for (int32_t i = 0; i < RefillCount; ++i)
+    {
+        expectedKeys.push_back(RefillOffset + i);
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    size_t cursor = 0;
+    while (true)
+    {
+        int32_t observed = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), keyColumn,
+                                   &observed, sizeof(observed),
+                                   &actualBytes, 0, nullptr));
+        Require(cursor < expectedKeys.size());
+        Require(observed == expectedKeys[cursor]);
+        ++cursor;
+        const auto moveResult = JetMove(session.Handle(), table.Id(),
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(cursor == expectedKeys.size());
 }
 

@@ -13,9 +13,15 @@
 
 #include <jetapi.h>
 
+#include <atomic>
+#include <chrono>
+#include <cstring>
+#include <thread>
+#include <vector>
+
 using namespace ese::tests;
 
-EseIntegrationScenario(Snapshot, PrepareAndEndCycle)
+EseIntegrationScenario(Snapshot, PrepareAndEndCycle, Smoke)
 {
     TemporaryDirectory directory("Snapshot.PrepareAndEndCycle");
     EseInstance instance(directory);
@@ -44,7 +50,7 @@ EseIntegrationScenario(Snapshot, PrepareAndEndCycle)
                     JET_errOSSnapshotInvalidSnapId);
 }
 
-EseIntegrationScenario(Snapshot, FreezeAndThawAroundActiveInstance)
+EseIntegrationScenario(Snapshot, FreezeAndThawAroundActiveInstance, Smoke)
 {
     TemporaryDirectory directory("Snapshot.FreezeAndThawAroundActiveInstance");
     EseInstance instance(directory);
@@ -71,7 +77,7 @@ EseIntegrationScenario(Snapshot, FreezeAndThawAroundActiveInstance)
     CheckJet(JetOSSnapshotThaw(snapshotId, 0));
 }
 
-EseIntegrationScenario(Snapshot, PrepareAbortDiscardsSnapshot)
+EseIntegrationScenario(Snapshot, PrepareAbortDiscardsSnapshot, Smoke)
 {
     TemporaryDirectory directory("Snapshot.PrepareAbortDiscardsSnapshot");
     EseInstance instance(directory);
@@ -87,7 +93,7 @@ EseIntegrationScenario(Snapshot, PrepareAbortDiscardsSnapshot)
     CheckJet(JetOSSnapshotAbort(snapshotId, 0));
 }
 
-EseIntegrationScenario(Snapshot, PrepareInstanceScopesToOneInstance)
+EseIntegrationScenario(Snapshot, PrepareInstanceScopesToOneInstance, Smoke)
 {
     TemporaryDirectory directory("Snapshot.PrepareInstanceScopesToOneInstance");
     EseInstance instance(directory);
@@ -121,7 +127,7 @@ EseIntegrationScenario(Snapshot, PrepareInstanceScopesToOneInstance)
     CheckJet(JetOSSnapshotThaw(snapshotId, 0));
 }
 
-EseIntegrationScenario(Snapshot, GetFreezeInfoReturnsActiveInstance)
+EseIntegrationScenario(Snapshot, GetFreezeInfoReturnsActiveInstance, Smoke)
 {
     TemporaryDirectory directory("Snapshot.GetFreezeInfoReturnsActiveInstance");
     EseInstance instance(directory);
@@ -159,7 +165,7 @@ EseIntegrationScenario(Snapshot, GetFreezeInfoReturnsActiveInstance)
 //  flag (not a Thaw flag); it keeps the snap-id alive past Thaw so
 //  the post-thaw TruncateLog + End calls can still reach it.  Thaw
 //  itself only accepts NO_GRBIT.
-EseIntegrationScenario(Snapshot, TruncateLogClearsBackupLogs)
+EseIntegrationScenario(Snapshot, TruncateLogClearsBackupLogs, Smoke)
 {
     TemporaryDirectory directory("Snapshot.TruncateLogClearsBackupLogs");
     //  Use non-circular logging so gens accumulate (TruncateLog has
@@ -229,7 +235,7 @@ EseIntegrationScenario(Snapshot, TruncateLogClearsBackupLogs)
 //  instance handle.  Same Prepare/Freeze/Thaw bracket as the global
 //  form, but TruncateLogInstance hits one explicit instance rather
 //  than walking every enrolled instance.
-EseIntegrationScenario(Snapshot, TruncateLogInstanceClearsOneInstance)
+EseIntegrationScenario(Snapshot, TruncateLogInstanceClearsOneInstance, Smoke)
 {
     TemporaryDirectory directory("Snapshot.TruncateLogInstanceClearsOneInstance");
     EseInstance instance(directory);
@@ -252,5 +258,86 @@ EseIntegrationScenario(Snapshot, TruncateLogInstanceClearsOneInstance)
                                               instance.Handle(),
                                               0));
     CheckJet(JetOSSnapshotEnd(snapshotId, 0));
+}
+
+//  ===================================================================
+//  Tier::Regression — repeated snapshot brackets around live
+//  workload.  Smoke snapshot tests run one bracket in isolation.
+//  This scenario interleaves three full snapshot brackets with
+//  insert workloads of varying sizes, then validates the table
+//  contains exactly the predicted row count + every value walks
+//  in insertion order.  Catches refactors that broke
+//  thaw-to-normal-ops state transition or accumulated state
+//  across sequential snapshot ids.
+//  ===================================================================
+EseIntegrationScenario(Snapshot, RepeatedBracketsAroundLiveWorkload, Regression)
+{
+    TemporaryDirectory directory(
+        "Snapshot.RepeatedBracketsAroundLiveWorkload");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "RepSnap.mdb");
+    EseTable table(database, "Rows");
+    auto valueColumn = table.AddColumn("Value", JET_coltypLong,
+                                       JET_bitColumnNotNULL);
+
+    auto insertBatch = [&](int32_t baseValue, int32_t count) {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < count; ++i)
+        {
+            const int32_t value = baseValue + i;
+            InsertSingleFixedColumnRow<int32_t>(table, valueColumn, value);
+        }
+        transaction.Commit();
+    };
+
+    //  Thaw consumes the snapshot id by default (engine releases
+    //  the internal state).  Prepare with JET_bitContinueAfterThaw
+    //  to keep the id alive across Thaw so we can End it cleanly.
+    auto snapshotBracket = [&]() {
+        JET_OSSNAPID snapshotId = 0;
+        CheckJet(JetOSSnapshotPrepare(&snapshotId,
+                                      JET_bitContinueAfterThaw));
+        uint32_t freezeCount = 0;
+        JET_INSTANCE_INFO_A* freezeInfo = nullptr;
+        CheckJet(JetOSSnapshotFreezeA(snapshotId, &freezeCount,
+                                      &freezeInfo, 0));
+        Require(freezeCount >= 1);
+        CheckJet(JetFreeBuffer(reinterpret_cast<char*>(freezeInfo)));
+        CheckJet(JetOSSnapshotThaw(snapshotId, 0));
+        CheckJet(JetOSSnapshotEnd(snapshotId, 0));
+    };
+
+    insertBatch(0, 128);
+    snapshotBracket();
+    insertBatch(128, 256);
+    snapshotBracket();
+    insertBatch(384, 512);
+    snapshotBracket();
+
+    static constexpr int32_t TotalRows = 128 + 256 + 512;
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t expectedValue = 0;
+    int32_t walked = 0;
+    while (true)
+    {
+        int32_t observed = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   valueColumn,
+                                   &observed, sizeof(observed),
+                                   &actualBytes, 0, nullptr));
+        Require(observed == expectedValue);
+        ++expectedValue;
+        ++walked;
+        const auto moveResult = JetMove(session.Handle(), table.Id(),
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walked == TotalRows);
 }
 

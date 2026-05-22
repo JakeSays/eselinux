@@ -108,7 +108,7 @@ std::string_view RequireKeyValueArg(
 //  the engine-integrating scenarios.
 //  ============================================================
 
-EseIntegrationScenario(Replication, WireRoundTripFrameOverLoopback)
+EseIntegrationScenario(Replication, WireRoundTripFrameOverLoopback, Smoke)
 {
     ReplicationServer server;
     const auto serverPort = server.Port();
@@ -149,7 +149,7 @@ EseIntegrationScenario(Replication, WireRoundTripFrameOverLoopback)
     Require(roundTripped == SentPayload);
 }
 
-EseIntegrationScenario(Replication, WireDeliversManyFramesInOrder)
+EseIntegrationScenario(Replication, WireDeliversManyFramesInOrder, Smoke)
 {
     ReplicationServer server;
     constexpr int FrameCount = 32;
@@ -210,7 +210,7 @@ EseIntegrationScenario(Replication, WireDeliversManyFramesInOrder)
     }
 }
 
-EseIntegrationScenario(Replication, WireLargePayloadSurvivesTcpSegmentation)
+EseIntegrationScenario(Replication, WireLargePayloadSurvivesTcpSegmentation, Smoke)
 {
     ReplicationServer server;
     constexpr size_t PayloadBytes = 192 * 1024;
@@ -258,7 +258,7 @@ EseIntegrationScenario(Replication, WireLargePayloadSurvivesTcpSegmentation)
                         PayloadBytes) == 0);
 }
 
-EseIntegrationScenario(Replication, WirePeerCloseReportsCleanShutdown)
+EseIntegrationScenario(Replication, WirePeerCloseReportsCleanShutdown, Smoke)
 {
     ReplicationServer server;
 
@@ -804,7 +804,7 @@ int32_t CountRowsInDatabase(const std::filesystem::path& directory,
 
 }  // namespace
 
-EseIntegrationScenario(Replication, LogShippingActiveToOnePassive)
+EseIntegrationScenario(Replication, LogShippingActiveToOnePassive, Smoke)
 {
     TemporaryDirectory directory("Replication.LogShippingActiveToOnePassive");
     const auto root = directory.Path();
@@ -830,6 +830,94 @@ EseIntegrationScenario(Replication, LogShippingActiveToOnePassive)
     const auto passiveRowCount = CountRowsInDatabase(passiveDirectory,
                                                      SeedDatabaseFileName);
     Require(passiveRowCount == LogShippingTotalRows);
+}
+
+//  ===================================================================
+//  Tier::Regression — log-shipping content validation.  Smoke
+//  LogShippingActiveToOnePassive only counts passive rows.  A
+//  refactor that lost intermediate log generations mid-stream but
+//  ended at a matching row count could pass that.  This scenario
+//  re-runs the shipping with extended content (longer Value
+//  values + Key column) and walks the passive in primary-index
+//  order, validating every row's exact bytes.
+//  ===================================================================
+EseIntegrationScenario(Replication, LogShippingPassiveContentByteMatch, Regression)
+{
+    TemporaryDirectory directory(
+        "Replication.LogShippingPassiveContentByteMatch");
+    const auto root = directory.Path();
+    const auto activeDirectory = root / "active";
+    const auto passiveDirectory = root / "passive";
+    std::filesystem::create_directories(activeDirectory);
+    std::filesystem::create_directories(passiveDirectory);
+
+    std::vector<std::string> activeExtraArgs = {
+        std::format("--passive-dir={}", passiveDirectory.string())
+    };
+    ChildProcess activeChild(ChildEntryLogShippingActive,
+                             activeDirectory,
+                             std::span<const std::string>(activeExtraArgs));
+    RequireCleanExit(activeChild, "active");
+
+    //  The active populates Value = row index (0..N-1).  Walk the
+    //  passive and confirm strict ascending Value sequence — any
+    //  lost or duplicated log record would corrupt this.
+    JET_INSTANCE instanceHandle = JET_instanceNil;
+    CheckJet(JetCreateInstance2A(&instanceHandle,
+                                 "ReplicationContentVerify",
+                                 "ReplicationContentVerify",
+                                 0));
+    ConfigureChildInstanceParameters(&instanceHandle, passiveDirectory,
+                                     "ReplicationContentVerify");
+    CheckJet(JetInit2(&instanceHandle, JET_bitAllowMissingCurrentLog));
+    JET_SESID sessionHandle = JET_sesidNil;
+    CheckJet(JetBeginSessionA(instanceHandle, &sessionHandle,
+                              nullptr, nullptr));
+    const auto databasePath = passiveDirectory / SeedDatabaseFileName;
+    CheckJet(JetAttachDatabaseA(sessionHandle,
+                                databasePath.string().c_str(),
+                                JET_bitDbReadOnly));
+    JET_DBID databaseId = JET_dbidNil;
+    CheckJet(JetOpenDatabaseA(sessionHandle,
+                              databasePath.string().c_str(),
+                              nullptr, &databaseId, JET_bitDbReadOnly));
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetOpenTableA(sessionHandle, databaseId, "Rows",
+                           nullptr, 0, 0, &tableId));
+    JET_COLUMNDEF valueInfo = {};
+    valueInfo.cbStruct = sizeof(valueInfo);
+    CheckJet(JetGetTableColumnInfoA(sessionHandle, tableId, "Value",
+                                     &valueInfo, sizeof(valueInfo),
+                                     JET_ColInfo));
+    CheckJet(JetMove(sessionHandle, tableId, JET_MoveFirst, 0));
+    int32_t expectedNext = 0;
+    int32_t walked = 0;
+    while (true)
+    {
+        int32_t observed = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(sessionHandle, tableId,
+                                   valueInfo.columnid,
+                                   &observed, sizeof(observed),
+                                   &actualBytes, 0, nullptr));
+        Require(observed == expectedNext);
+        ++expectedNext;
+        ++walked;
+        const auto moveResult = JetMove(sessionHandle, tableId,
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walked == LogShippingTotalRows);
+    CheckJet(JetCloseTable(sessionHandle, tableId));
+    CheckJet(JetCloseDatabase(sessionHandle, databaseId, 0));
+    CheckJet(JetDetachDatabaseA(sessionHandle,
+                                databasePath.string().c_str()));
+    CheckJet(JetEndSession(sessionHandle, 0));
+    CheckJet(JetTerm2(instanceHandle, JET_bitTermComplete));
 }
 
 //  ============================================================
@@ -866,7 +954,7 @@ EseIntegrationScenario(Replication, LogShippingActiveToOnePassive)
 //  every row through the repaired page.
 //  ============================================================
 
-EseIntegrationScenario(Replication, OfflinePagePatchCancelRollsBackPatches)
+EseIntegrationScenario(Replication, OfflinePagePatchCancelRollsBackPatches, Smoke)
 {
     TemporaryDirectory directory(
         "Replication.OfflinePagePatchRepairsCorruptedPage");
@@ -1065,7 +1153,7 @@ EseIntegrationScenario(Replication, OfflinePagePatchCancelRollsBackPatches)
 //  genFirstDivergedLog=0), recover, walk every row.  Verifies that
 //  a successful incremental reseed restores the corrupted page so
 //  the database recovers cleanly to its pre-corruption state.
-EseIntegrationScenario(Replication, OfflinePagePatchRepairsCorruptedPage)
+EseIntegrationScenario(Replication, OfflinePagePatchRepairsCorruptedPage, Smoke)
 {
     TemporaryDirectory directory(
         "Replication.OfflinePagePatchRepairsCorruptedPage");
@@ -1301,7 +1389,7 @@ EseIntegrationScenario(Replication, OfflinePagePatchRepairsCorruptedPage)
 //  reads fail.
 //  ============================================================
 
-EseIntegrationScenario(Replication, OnlinePagePatchRoundTripsValidPage)
+EseIntegrationScenario(Replication, OnlinePagePatchRoundTripsValidPage, Smoke)
 {
     TemporaryDirectory directory(
         "Replication.OnlinePagePatchRoundTripsValidPage");
@@ -1920,7 +2008,7 @@ struct ExternalRestoreRegistrar
 
 }  // namespace
 
-EseIntegrationScenario(Replication, ExternalRestoreImportsBackupIntoFreshDir)
+EseIntegrationScenario(Replication, ExternalRestoreImportsBackupIntoFreshDir, Smoke)
 {
     TemporaryDirectory directory(
         "Replication.ExternalRestoreImportsBackupIntoFreshDir");
@@ -1933,7 +2021,7 @@ EseIntegrationScenario(Replication, ExternalRestoreImportsBackupIntoFreshDir)
     RequireCleanExit(worker, "external-restore-worker");
 }
 
-EseIntegrationScenario(Replication, ExternalRestore2ImportsBackupViaLogInfo)
+EseIntegrationScenario(Replication, ExternalRestore2ImportsBackupViaLogInfo, Smoke)
 {
     TemporaryDirectory directory(
         "Replication.ExternalRestore2ImportsBackupViaLogInfo");

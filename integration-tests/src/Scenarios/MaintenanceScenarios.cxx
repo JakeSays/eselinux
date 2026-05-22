@@ -13,10 +13,11 @@
 
 #include <filesystem>
 #include <string>
+#include <string_view>
 
 using namespace ese::tests;
 
-EseIntegrationScenario(Maintenance, ComputeStatsOnEmptyTable)
+EseIntegrationScenario(Maintenance, ComputeStatsOnEmptyTable, Smoke)
 {
     TemporaryDirectory directory("Maintenance.ComputeStatsOnEmptyTable");
     EseInstance instance(directory);
@@ -41,7 +42,7 @@ EseIntegrationScenario(Maintenance, ComputeStatsOnEmptyTable)
     Require((objectInfo.grbit & JET_bitTableInfoUpdatable) != 0);
 }
 
-EseIntegrationScenario(Maintenance, ComputeStatsAfterInsertsSucceeds)
+EseIntegrationScenario(Maintenance, ComputeStatsAfterInsertsSucceeds, Smoke)
 {
     TemporaryDirectory directory("Maintenance.ComputeStatsAfterInsertsSucceeds");
     EseInstance instance(directory);
@@ -63,7 +64,7 @@ EseIntegrationScenario(Maintenance, ComputeStatsAfterInsertsSucceeds)
     CheckJet(JetComputeStats(session.Handle(), table.Id()));
 }
 
-EseIntegrationScenario(Maintenance, OnlineDefragmentRunsToCompletion)
+EseIntegrationScenario(Maintenance, OnlineDefragmentRunsToCompletion, Smoke)
 {
     TemporaryDirectory directory("Maintenance.OnlineDefragmentRunsToCompletion");
     EseInstance instance(directory);
@@ -145,7 +146,7 @@ EseIntegrationScenario(Maintenance, OnlineDefragmentRunsToCompletion)
     Require(walkedRows == 100);
 }
 
-EseIntegrationScenario(Maintenance, CompactProducesCopyWithSameData)
+EseIntegrationScenario(Maintenance, CompactProducesCopyWithSameData, Smoke)
 {
     TemporaryDirectory directory("Maintenance.CompactProducesCopyWithSameData");
 
@@ -225,7 +226,7 @@ EseIntegrationScenario(Maintenance, CompactProducesCopyWithSameData)
     }
 }
 
-EseIntegrationScenario(Maintenance, IdleWaitForAsyncActivitySucceeds)
+EseIntegrationScenario(Maintenance, IdleWaitForAsyncActivitySucceeds, Smoke)
 {
     TemporaryDirectory directory(
         "Maintenance.IdleWaitForAsyncActivitySucceeds");
@@ -253,7 +254,7 @@ EseIntegrationScenario(Maintenance, IdleWaitForAsyncActivitySucceeds)
     Require(err == JET_errSuccess || err == JET_wrnRemainingVersions);
 }
 
-EseIntegrationScenario(Maintenance, IdleAvailBuffersStatusReportsState)
+EseIntegrationScenario(Maintenance, IdleAvailBuffersStatusReportsState, Smoke)
 {
     TemporaryDirectory directory(
         "Maintenance.IdleAvailBuffersStatusReportsState");
@@ -270,7 +271,7 @@ EseIntegrationScenario(Maintenance, IdleAvailBuffersStatusReportsState)
     Require(err == JET_errSuccess || err == JET_wrnIdleFull);
 }
 
-EseIntegrationScenario(Maintenance, SetColumnDefaultValueAppliesToFutureRows)
+EseIntegrationScenario(Maintenance, SetColumnDefaultValueAppliesToFutureRows, Smoke)
 {
     TemporaryDirectory directory(
         "Maintenance.SetColumnDefaultValueAppliesToFutureRows");
@@ -311,7 +312,7 @@ EseIntegrationScenario(Maintenance, SetColumnDefaultValueAppliesToFutureRows)
     Require(observed == defaultValue);
 }
 
-EseIntegrationScenario(Maintenance, ResizeDatabaseGrowsPageCount)
+EseIntegrationScenario(Maintenance, ResizeDatabaseGrowsPageCount, Smoke)
 {
     TemporaryDirectory directory(
         "Maintenance.ResizeDatabaseGrowsPageCount");
@@ -363,7 +364,7 @@ EseIntegrationScenario(Maintenance, ResizeDatabaseGrowsPageCount)
     Require(onDiskBytes >= expectedBytes);
 }
 
-EseIntegrationScenario(Maintenance, DatabaseScanBatchPassRunsToCompletion)
+EseIntegrationScenario(Maintenance, DatabaseScanBatchPassRunsToCompletion, Smoke)
 {
     TemporaryDirectory directory(
         "Maintenance.DatabaseScanBatchPassRunsToCompletion");
@@ -437,7 +438,7 @@ EseIntegrationScenario(Maintenance, DatabaseScanBatchPassRunsToCompletion)
     Require(walkedRows == 500);
 }
 
-EseIntegrationScenario(Maintenance, Defragment2RunsBatchPassToCompletion)
+EseIntegrationScenario(Maintenance, Defragment2RunsBatchPassToCompletion, Smoke)
 {
     TemporaryDirectory directory(
         "Maintenance.Defragment2RunsBatchPassToCompletion");
@@ -493,7 +494,7 @@ EseIntegrationScenario(Maintenance, Defragment2RunsBatchPassToCompletion)
 //  only used by SFS" comment.  Coverage lists it under the
 //  out-of-scope stubs, not as a gap.
 
-EseIntegrationScenario(Maintenance, CompactPreserveOriginalKeepsSourceFileIntact)
+EseIntegrationScenario(Maintenance, CompactPreserveOriginalKeepsSourceFileIntact, Smoke)
 {
     TemporaryDirectory directory(
         "Maintenance.CompactPreserveOriginalKeepsSourceFileIntact");
@@ -581,7 +582,7 @@ EseIntegrationScenario(Maintenance, CompactPreserveOriginalKeepsSourceFileIntact
     }
 }
 
-EseIntegrationScenario(Maintenance, CompactRepairProducesIdenticalRows)
+EseIntegrationScenario(Maintenance, CompactRepairProducesIdenticalRows, Smoke)
 {
     TemporaryDirectory directory(
         "Maintenance.CompactRepairProducesIdenticalRows");
@@ -680,7 +681,7 @@ EseIntegrationScenario(Maintenance, CompactRepairProducesIdenticalRows)
     }
 }
 
-EseIntegrationScenario(Maintenance, CompactStatsInvokesProgressCallback)
+EseIntegrationScenario(Maintenance, CompactStatsInvokesProgressCallback, Smoke)
 {
     TemporaryDirectory directory(
         "Maintenance.CompactStatsInvokesProgressCallback");
@@ -786,7 +787,7 @@ EseIntegrationScenario(Maintenance, CompactStatsInvokesProgressCallback)
     }
 }
 
-EseIntegrationScenario(Maintenance, IdleCompactAsyncSchedulesBackgroundWork)
+EseIntegrationScenario(Maintenance, IdleCompactAsyncSchedulesBackgroundWork, Smoke)
 {
     TemporaryDirectory directory(
         "Maintenance.IdleCompactAsyncSchedulesBackgroundWork");
@@ -864,7 +865,7 @@ EseIntegrationScenario(Maintenance, IdleCompactAsyncSchedulesBackgroundWork)
     Require(secondPassRows == 100);
 }
 
-EseIntegrationScenario(Maintenance, DefragmentAvailSpaceTreesOnlyPreservesData)
+EseIntegrationScenario(Maintenance, DefragmentAvailSpaceTreesOnlyPreservesData, Smoke)
 {
     TemporaryDirectory directory(
         "Maintenance.DefragmentAvailSpaceTreesOnlyPreservesData");
@@ -950,4 +951,355 @@ EseIntegrationScenario(Maintenance, DefragmentAvailSpaceTreesOnlyPreservesData)
     while (JetMove(session.Handle(), table.Id(), JET_MoveNext, 0)
            != JET_errNoCurrentRecord);
     Require(observedCount == RowCount / 2);
+}
+
+//  ===================================================================
+//  Tier::Regression — defragment across multiple pass cycles.
+//
+//  Smoke DefragmentRunsToCompletion drives Start/Stop in one
+//  bracket.  A refactor that broke pass-resumption state, or
+//  forgot to invalidate the in-progress walk position across
+//  successive Start calls, would slip past.  Drive multiple
+//  Start/Stop cycles after deletions; final readback must produce
+//  every survivor in order.
+//  ===================================================================
+EseIntegrationScenario(Maintenance, MultiPassDefragmentPreservesAllSurvivors, Regression)
+{
+    TemporaryDirectory directory(
+        "Maintenance.MultiPassDefragmentPreservesAllSurvivors");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "MultiPass.mdb");
+    EseTable table(database, "Rows");
+    auto keyColumn = table.AddColumn("Key", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Key\0\0", 6);
+    table.CreateIndex("PrimaryByKey", PrimaryKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    static constexpr int32_t RowCount = 2000;
+    {
+        EseTransaction transaction(session);
+        for (int32_t k = 0; k < RowCount; ++k)
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  keyColumn, &k, sizeof(k),
+                                  0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+    //  Delete every 3rd row to fragment leaf pages.
+    {
+        EseTransaction transaction(session);
+        for (int32_t k = 0; k < RowCount; k += 3)
+        {
+            CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                                &k, sizeof(k), JET_bitNewKey));
+            CheckJet(JetSeek(session.Handle(), table.Id(),
+                             JET_bitSeekEQ));
+            CheckJet(JetDelete(session.Handle(), table.Id()));
+        }
+        transaction.Commit();
+    }
+
+    //  Drive Start/Stop three times in a row.  A refactor that
+    //  broke pass-resumption would either deadlock the second Start
+    //  or corrupt the walked-page checkpoint between runs.
+    for (int32_t pass = 0; pass < 3; ++pass)
+    {
+        uint32_t passes = 1;
+        uint32_t seconds = 5;
+        CheckJet(JetDefragmentA(session.Handle(), database.Id(),
+                                nullptr, &passes, &seconds,
+                                JET_bitDefragmentBatchStart));
+        CheckJet(JetDefragmentA(session.Handle(), database.Id(),
+                                nullptr, &passes, &seconds,
+                                JET_bitDefragmentBatchStop));
+    }
+
+    //  Final walk: every survivor key (not a multiple of 3) appears
+    //  in ascending order.  Any corruption shows up here.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t expectedKey = 1;
+    while (expectedKey % 3 == 0)
+    {
+        ++expectedKey;
+    }
+    int32_t walkedRowCount = 0;
+    while (true)
+    {
+        int32_t observed = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   keyColumn,
+                                   &observed, sizeof(observed),
+                                   &actualBytes, 0, nullptr));
+        Require(observed == expectedKey);
+        ++walkedRowCount;
+        do
+        {
+            ++expectedKey;
+        }
+        while (expectedKey % 3 == 0 && expectedKey < RowCount);
+        const auto moveResult = JetMove(session.Handle(), table.Id(),
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    int32_t expectedSurvivors = 0;
+    for (int32_t k = 0; k < RowCount; ++k)
+    {
+        if (k % 3 != 0)
+        {
+            ++expectedSurvivors;
+        }
+    }
+    Require(walkedRowCount == expectedSurvivors);
+}
+
+//  ===================================================================
+//  Tier::Regression — Compact preserves exact row content.
+//
+//  Smoke CompactProducesCopyWithSameData only counts rows.  A
+//  refactor that lost some rows and inserted phantoms with
+//  matching count would slip past.  This scenario seeds with
+//  distinguishable values (Key, Value pairs), compacts to a copy,
+//  and validates every row in the copy.
+//  ===================================================================
+EseIntegrationScenario(Maintenance, CompactProducesByteIdenticalContent, Regression)
+{
+    TemporaryDirectory directory(
+        "Maintenance.CompactProducesByteIdenticalContent");
+    const auto sourcePath = directory.Path() / "Source.mdb";
+    const auto targetPath = directory.Path() / "Target.mdb";
+
+    static constexpr int32_t Rows = 512;
+    auto expectedValueForKey = [](int32_t k) { return k * 17 + 3; };
+
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+        EseDatabase database(session, "Source.mdb");
+        EseTable table(database, "Rows");
+        auto keyColumn = table.AddColumn("Key", JET_coltypLong,
+                                         JET_bitColumnNotNULL);
+        auto valueColumn = table.AddColumn("Value", JET_coltypLong,
+                                           JET_bitColumnNotNULL);
+        static constexpr std::string_view PrimaryKey =
+            std::string_view("+Key\0\0", 6);
+        table.CreateIndex("PrimaryByKey", PrimaryKey,
+                          JET_bitIndexPrimary | JET_bitIndexUnique);
+
+        EseTransaction transaction(session);
+        for (int32_t k = 0; k < Rows; ++k)
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  keyColumn, &k, sizeof(k),
+                                  0, nullptr));
+            const int32_t v = expectedValueForKey(k);
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  valueColumn, &v, sizeof(v),
+                                  0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+    //  Second instance: re-attach read-only, compact, detach.
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+        CheckJet(JetAttachDatabaseA(session.Handle(),
+                                    sourcePath.string().c_str(),
+                                    JET_bitDbReadOnly));
+        CheckJet(JetCompactA(session.Handle(),
+                             sourcePath.string().c_str(),
+                             targetPath.string().c_str(),
+                             nullptr, nullptr, 0));
+        CheckJet(JetDetachDatabaseA(session.Handle(),
+                                    sourcePath.string().c_str()));
+    }
+
+    //  Reopen the compacted target and validate every key/value.
+    EseInstance instance(directory);
+    EseSession session(instance);
+    CheckJet(JetAttachDatabaseA(session.Handle(),
+                                targetPath.string().c_str(), 0));
+    JET_DBID dbid = JET_dbidNil;
+    CheckJet(JetOpenDatabaseA(session.Handle(),
+                              targetPath.string().c_str(),
+                              nullptr, &dbid, 0));
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetOpenTableA(session.Handle(), dbid, "Rows",
+                           nullptr, 0, 0, &tableId));
+    JET_COLUMNDEF keyInfo = {};
+    keyInfo.cbStruct = sizeof(keyInfo);
+    CheckJet(JetGetTableColumnInfoA(session.Handle(), tableId, "Key",
+                                     &keyInfo, sizeof(keyInfo),
+                                     JET_ColInfo));
+    JET_COLUMNDEF valueInfo = {};
+    valueInfo.cbStruct = sizeof(valueInfo);
+    CheckJet(JetGetTableColumnInfoA(session.Handle(), tableId, "Value",
+                                     &valueInfo, sizeof(valueInfo),
+                                     JET_ColInfo));
+    CheckJet(JetMove(session.Handle(), tableId, JET_MoveFirst, 0));
+    int32_t expected = 0;
+    int32_t walked = 0;
+    while (true)
+    {
+        int32_t observedKey = 0;
+        int32_t observedValue = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), tableId,
+                                   keyInfo.columnid,
+                                   &observedKey, sizeof(observedKey),
+                                   &actualBytes, 0, nullptr));
+        CheckJet(JetRetrieveColumn(session.Handle(), tableId,
+                                   valueInfo.columnid,
+                                   &observedValue, sizeof(observedValue),
+                                   &actualBytes, 0, nullptr));
+        Require(observedKey == expected);
+        Require(observedValue == expectedValueForKey(expected));
+        ++expected;
+        ++walked;
+        const auto moveResult = JetMove(session.Handle(), tableId,
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walked == Rows);
+
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+    CheckJet(JetCloseDatabase(session.Handle(), dbid, 0));
+    CheckJet(JetDetachDatabaseA(session.Handle(),
+                                targetPath.string().c_str()));
+}
+
+//  ===================================================================
+//  Tier::Regression — DatabaseScan multi-pass.  Smoke version runs
+//  one pass; this scenario runs two sequential passes, deletes
+//  rows between them, and verifies data integrity after both.
+//  Catches refactors that broke scan-state advancement across
+//  pass boundaries.
+//  ===================================================================
+EseIntegrationScenario(Maintenance, DatabaseScanMultiplePassesDataIntact, Regression)
+{
+    TemporaryDirectory directory(
+        "Maintenance.DatabaseScanMultiplePassesDataIntact");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Scan.mdb");
+    EseTable table(database, "Rows");
+    auto valueColumn = table.AddColumn("Value", JET_coltypLong,
+                                       JET_bitColumnNotNULL);
+
+    static constexpr int32_t InitialRows = 1024;
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < InitialRows; ++i)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, valueColumn, i);
+        }
+        transaction.Commit();
+    }
+
+    //  First pass.
+    {
+        uint32_t secondsMax = 30;
+        CheckJet(JetDatabaseScan(session.Handle(), database.Id(),
+                                 &secondsMax, 0, nullptr,
+                                 JET_bitDatabaseScanBatchStart));
+        CheckJet(JetDatabaseScan(session.Handle(), database.Id(),
+                                 &secondsMax, 0, nullptr,
+                                 JET_bitDatabaseScanBatchStop));
+    }
+    //  Delete every 4th row between passes.
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetMove(session.Handle(), table.Id(),
+                         JET_MoveFirst, 0));
+        int32_t rowIndex = 0;
+        while (true)
+        {
+            if (rowIndex % 4 == 0)
+            {
+                CheckJet(JetDelete(session.Handle(), table.Id()));
+            }
+            const auto moveResult = JetMove(session.Handle(),
+                                            table.Id(),
+                                            JET_MoveNext, 0);
+            if (moveResult == JET_errNoCurrentRecord)
+            {
+                break;
+            }
+            CheckJet(moveResult);
+            ++rowIndex;
+        }
+        transaction.Commit();
+    }
+    //  Second pass.
+    {
+        uint32_t secondsMax = 30;
+        CheckJet(JetDatabaseScan(session.Handle(), database.Id(),
+                                 &secondsMax, 0, nullptr,
+                                 JET_bitDatabaseScanBatchStart));
+        CheckJet(JetDatabaseScan(session.Handle(), database.Id(),
+                                 &secondsMax, 0, nullptr,
+                                 JET_bitDatabaseScanBatchStop));
+    }
+    //  Validate the surviving rows.  Walking insertion order:
+    //  surviving row N is the (N+1)-th non-multiple-of-4 in
+    //  0..InitialRows-1.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t walked = 0;
+    int32_t expectedNext = 1;
+    while (expectedNext % 4 == 0)
+    {
+        ++expectedNext;
+    }
+    while (true)
+    {
+        int32_t observed = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   valueColumn,
+                                   &observed, sizeof(observed),
+                                   &actualBytes, 0, nullptr));
+        Require(observed == expectedNext);
+        do
+        {
+            ++expectedNext;
+        }
+        while (expectedNext % 4 == 0 && expectedNext < InitialRows);
+        ++walked;
+        const auto moveResult = JetMove(session.Handle(), table.Id(),
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    int32_t expectedSurvivors = 0;
+    for (int32_t i = 0; i < InitialRows; ++i)
+    {
+        if (i % 4 != 0)
+        {
+            ++expectedSurvivors;
+        }
+    }
+    Require(walked == expectedSurvivors);
 }

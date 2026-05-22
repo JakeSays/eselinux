@@ -44,7 +44,7 @@ int32_t RetrieveLong(EseSession& session, EseTable& table, JET_COLUMNID column)
 
 }  // namespace
 
-EseIntegrationScenario(Escrow, IncrementOnce)
+EseIntegrationScenario(Escrow, IncrementOnce, Smoke)
 {
     TemporaryDirectory directory("Escrow.IncrementOnce");
     EseInstance instance(directory);
@@ -82,7 +82,7 @@ EseIntegrationScenario(Escrow, IncrementOnce)
     Require(RetrieveLong(session, table, columnId) == initialValue + delta);
 }
 
-EseIntegrationScenario(Escrow, IncrementManyTimesSumsCorrectly)
+EseIntegrationScenario(Escrow, IncrementManyTimesSumsCorrectly, Smoke)
 {
     TemporaryDirectory directory("Escrow.IncrementManyTimesSumsCorrectly");
     EseInstance instance(directory);
@@ -124,7 +124,7 @@ EseIntegrationScenario(Escrow, IncrementManyTimesSumsCorrectly)
             == initialValue + Increments * 3);
 }
 
-EseIntegrationScenario(Escrow, NegativeDeltaDecrements)
+EseIntegrationScenario(Escrow, NegativeDeltaDecrements, Smoke)
 {
     TemporaryDirectory directory("Escrow.NegativeDeltaDecrements");
     EseInstance instance(directory);
@@ -161,7 +161,7 @@ EseIntegrationScenario(Escrow, NegativeDeltaDecrements)
     Require(RetrieveLong(session, table, columnId) == 30);
 }
 
-EseIntegrationScenario(Escrow, EscrowRollbackDiscardsDelta)
+EseIntegrationScenario(Escrow, EscrowRollbackDiscardsDelta, Smoke)
 {
     TemporaryDirectory directory("Escrow.EscrowRollbackDiscardsDelta");
     EseInstance instance(directory);
@@ -198,7 +198,7 @@ EseIntegrationScenario(Escrow, EscrowRollbackDiscardsDelta)
     Require(RetrieveLong(session, table, columnId) == initialValue);
 }
 
-EseIntegrationScenario(Escrow, DeleteOnZeroEventuallyRemovesRecord)
+EseIntegrationScenario(Escrow, DeleteOnZeroEventuallyRemovesRecord, Smoke)
 {
     TemporaryDirectory directory("Escrow.DeleteOnZeroEventuallyRemovesRecord");
     EseInstance instance(directory);
@@ -260,7 +260,7 @@ EseIntegrationScenario(Escrow, DeleteOnZeroEventuallyRemovesRecord)
     }
 }
 
-EseIntegrationScenario(Escrow, NoRollbackPreservesDeltaAcrossExplicitRollback)
+EseIntegrationScenario(Escrow, NoRollbackPreservesDeltaAcrossExplicitRollback, Smoke)
 {
     TemporaryDirectory directory(
         "Escrow.NoRollbackPreservesDeltaAcrossExplicitRollback");

@@ -455,7 +455,7 @@ struct WorkerSummary
 
 } // namespace
 
-EseIntegrationScenario(LongRunning, HeavyMultiThreadedHammer)
+EseIntegrationScenario(MultiThreaded, HeavyMultiThreadedHammer, LongRunning)
 {
     TemporaryDirectory directory("LongRunning.HeavyMultiThreadedHammer");
     EseInstance instance(directory);
@@ -757,4 +757,114 @@ EseIntegrationScenario(LongRunning, HeavyMultiThreadedHammer)
               observedRowCount, verifiedSampleCount);
 
     Require(observedRowCount == expectedRowCount);
+}
+
+//  ===================================================================
+//  Tier::LongRunning — sustained insert/delete churn under buffer
+//  cache pressure to exercise the engine's periodic background
+//  maintenance (page eviction, version-store cleanup, checkpoint
+//  advancement).  Smoke and Regression tiers don't run long
+//  enough to drive these heuristics.  Refactors to the
+//  background-thread cadence or the cache aging policy slip past
+//  tests that only run a few seconds.
+//
+//  Workload: 20 cycles, each inserts 10,000 rows then deletes
+//  every other row.  Total ~5 minutes wall clock — enough for
+//  multiple checkpoint advances and many eviction passes.  Final
+//  walk validates every survivor's exact Value, proving the
+//  engine kept the live set intact across all the background
+//  bookkeeping.
+//  ===================================================================
+EseIntegrationScenario(MultiThreaded, SustainedChurnUnderCachePressure, LongRunning)
+{
+    TemporaryDirectory directory(
+        "MultiThreaded.SustainedChurnUnderCachePressure");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Churn.mdb");
+    EseTable table(database, "Rows");
+    auto keyColumn = table.AddColumn("Key", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
+    auto valueColumn = table.AddColumn("Value", JET_coltypLong,
+                                       JET_bitColumnNotNULL);
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Key\0\0", 6);
+    table.CreateIndex("PrimaryByKey", PrimaryKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    static constexpr int32_t Cycles = 20;
+    static constexpr int32_t RowsPerCycle = 10'000;
+    int32_t nextKey = 0;
+    int32_t aliveCount = 0;
+    int32_t firstAliveKey = -1;
+    for (int32_t cycle = 0; cycle < Cycles; ++cycle)
+    {
+        EseTransaction insertTxn(session);
+        for (int32_t i = 0; i < RowsPerCycle; ++i)
+        {
+            const int32_t key = nextKey++;
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  keyColumn, &key, sizeof(key),
+                                  0, nullptr));
+            const int32_t value = key * 31 + cycle;
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  valueColumn, &value, sizeof(value),
+                                  0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+            if (firstAliveKey < 0)
+            {
+                firstAliveKey = key;
+            }
+        }
+        insertTxn.Commit();
+        aliveCount += RowsPerCycle;
+
+        //  Delete every other row from THIS cycle.
+        EseTransaction deleteTxn(session);
+        const int32_t cycleStart = cycle * RowsPerCycle;
+        for (int32_t k = cycleStart; k < cycleStart + RowsPerCycle; k += 2)
+        {
+            CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                                &k, sizeof(k), JET_bitNewKey));
+            CheckJet(JetSeek(session.Handle(), table.Id(),
+                             JET_bitSeekEQ));
+            CheckJet(JetDelete(session.Handle(), table.Id()));
+            --aliveCount;
+        }
+        deleteTxn.Commit();
+    }
+
+    //  Final walk: confirm every survivor's exact Value.  Surviving
+    //  keys are odd-indexed within each cycle (k%2==1).
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t walked = 0;
+    while (true)
+    {
+        int32_t observedKey = 0;
+        int32_t observedValue = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   keyColumn,
+                                   &observedKey, sizeof(observedKey),
+                                   &actualBytes, 0, nullptr));
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   valueColumn,
+                                   &observedValue, sizeof(observedValue),
+                                   &actualBytes, 0, nullptr));
+        Require(observedKey % 2 == 1);  // survivor
+        const int32_t cycleIndex = observedKey / RowsPerCycle;
+        Require(observedValue == observedKey * 31 + cycleIndex);
+        ++walked;
+        const auto moveResult = JetMove(session.Handle(), table.Id(),
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walked == aliveCount);
 }

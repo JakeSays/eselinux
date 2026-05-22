@@ -218,7 +218,7 @@ void InsertTaggedRow(JET_SESID sessionHandle,
 // the entire table and proves the surviving set is exactly the
 // committed rows — no rolled-back leakage, no committed rows missing.
 
-EseIntegrationScenario(MultiThreaded, MixedCommitAndRollbackPersistsOnlyCommittedRows)
+EseIntegrationScenario(MultiThreaded, MixedCommitAndRollbackPersistsOnlyCommittedRows, Smoke)
 {
     TemporaryDirectory directory(
         "MultiThreaded.MixedCommitAndRollbackPersistsOnlyCommittedRows");
@@ -395,7 +395,7 @@ EseIntegrationScenario(MultiThreaded, MixedCommitAndRollbackPersistsOnlyCommitte
 // fan-out, some single-chunk). Verify session reads every row back
 // and byte-compares against the regenerated payload.
 
-EseIntegrationScenario(MultiThreaded, LargeBinaryBlobsAcrossThreadsRoundTripExactly)
+EseIntegrationScenario(MultiThreaded, LargeBinaryBlobsAcrossThreadsRoundTripExactly, Smoke)
 {
     TemporaryDirectory directory(
         "MultiThreaded.LargeBinaryBlobsAcrossThreadsRoundTripExactly");
@@ -578,7 +578,7 @@ EseIntegrationScenario(MultiThreaded, LargeBinaryBlobsAcrossThreadsRoundTripExac
 // eventually applies, so the final sum across all rows equals the
 // total number of attempts.
 
-EseIntegrationScenario(MultiThreaded, ContendedReplaceRetriesUntilEveryIncrementApplies)
+EseIntegrationScenario(MultiThreaded, ContendedReplaceRetriesUntilEveryIncrementApplies, Smoke)
 {
     TemporaryDirectory directory(
         "MultiThreaded.ContendedReplaceRetriesUntilEveryIncrementApplies");
@@ -807,7 +807,7 @@ EseIntegrationScenario(MultiThreaded, ContendedReplaceRetriesUntilEveryIncrement
 // verifier asserts that exactly the A and C rows survive, none of the
 // B rows do, and every payload is byte-correct.
 
-EseIntegrationScenario(MultiThreaded, NestedSavepointMixHonorsInnerRollback)
+EseIntegrationScenario(MultiThreaded, NestedSavepointMixHonorsInnerRollback, Smoke)
 {
     TemporaryDirectory directory(
         "MultiThreaded.NestedSavepointMixHonorsInnerRollback");
@@ -999,7 +999,7 @@ EseIntegrationScenario(MultiThreaded, NestedSavepointMixHonorsInnerRollback)
 // re-derives the expected survivor set from the deletion rule and the
 // inserter schedule, then walks the entire .edb.
 
-EseIntegrationScenario(MultiThreaded, DeleteAndInsertChurnAcrossThreadsPreservesInvariant)
+EseIntegrationScenario(MultiThreaded, DeleteAndInsertChurnAcrossThreadsPreservesInvariant, Smoke)
 {
     TemporaryDirectory directory(
         "MultiThreaded.DeleteAndInsertChurnAcrossThreadsPreservesInvariant");
@@ -1313,4 +1313,147 @@ EseIntegrationScenario(MultiThreaded, DeleteAndInsertChurnAcrossThreadsPreserves
         CheckJet(moveError);
     }
     Require(observedRowKeys.size() == expectedRowKeys.size());
+}
+
+//  ===================================================================
+//  Tier::Regression — bulk LV commits across many threads.  Smoke
+//  test commits one LV per transaction.  This bulk-commits 32
+//  LVs per transaction per worker, exercising the LV chunk
+//  boundary path under high transaction-batch density.
+//  ===================================================================
+EseIntegrationScenario(MultiThreaded, BulkLongValueCommitsPreserveExactBytes, Regression)
+{
+    TemporaryDirectory directory(
+        "MultiThreaded.BulkLongValueCommitsPreserveExactBytes");
+    EseInstance instance(directory);
+    {
+        EseSession setup(instance);
+        EseDatabase database(setup, "Bulk.mdb");
+        EseTable table(database, "Rows");
+        table.AddColumn("Key", JET_coltypLong, JET_bitColumnNotNULL);
+        table.AddColumn("Body", JET_coltypLongBinary);
+        static constexpr std::string_view PrimaryKey =
+            std::string_view("+Key\0\0", 6);
+        table.CreateIndex("PrimaryByKey", PrimaryKey,
+                          JET_bitIndexPrimary | JET_bitIndexUnique);
+    }
+
+    static constexpr int32_t Workers = 4;
+    static constexpr int32_t TransactionsPerWorker = 4;
+    static constexpr int32_t RowsPerTransaction = 32;
+    static constexpr int32_t LVSize = 2048;
+
+    auto patternByte = [](int32_t worker, int32_t key, int32_t offset) {
+        return static_cast<uint8_t>(
+            ((worker * 71) ^ (key * 13) ^ (offset * 7)) & 0xFF);
+    };
+
+    ThreadGroup threadGroup;
+    threadGroup.Launch(Workers, [&](int threadIndex) {
+        EseSession workerSession(instance);
+        EseDatabase workerDb(workerSession, "Bulk.mdb",
+                             EseDatabaseMode::AttachAndOpen);
+        EseTable workerTable(workerDb, "Rows", EseTableMode::Open);
+        JET_COLUMNDEF keyInfoWorker = {};
+        keyInfoWorker.cbStruct = sizeof(keyInfoWorker);
+        CheckJet(JetGetTableColumnInfoA(workerSession.Handle(),
+                                         workerTable.Id(), "Key",
+                                         &keyInfoWorker, sizeof(keyInfoWorker),
+                                         JET_ColInfo));
+        JET_COLUMNDEF bodyInfoWorker = {};
+        bodyInfoWorker.cbStruct = sizeof(bodyInfoWorker);
+        CheckJet(JetGetTableColumnInfoA(workerSession.Handle(),
+                                         workerTable.Id(), "Body",
+                                         &bodyInfoWorker, sizeof(bodyInfoWorker),
+                                         JET_ColInfo));
+        for (int32_t txn = 0; txn < TransactionsPerWorker; ++txn)
+        {
+            EseTransaction transaction(workerSession);
+            for (int32_t i = 0; i < RowsPerTransaction; ++i)
+            {
+                const int32_t key =
+                    threadIndex * 100000
+                    + txn * RowsPerTransaction
+                    + i;
+                std::vector<uint8_t> body(LVSize);
+                for (int32_t b = 0; b < LVSize; ++b)
+                {
+                    body[static_cast<size_t>(b)] =
+                        patternByte(threadIndex, key, b);
+                }
+                CheckJet(JetPrepareUpdate(workerSession.Handle(),
+                                          workerTable.Id(),
+                                          JET_prepInsert));
+                CheckJet(JetSetColumn(workerSession.Handle(),
+                                      workerTable.Id(),
+                                      keyInfoWorker.columnid,
+                                      &key, sizeof(key),
+                                      0, nullptr));
+                CheckJet(JetSetColumn(workerSession.Handle(),
+                                      workerTable.Id(),
+                                      bodyInfoWorker.columnid,
+                                      body.data(), body.size(),
+                                      0, nullptr));
+                CheckJet(JetUpdate(workerSession.Handle(),
+                                   workerTable.Id(),
+                                   nullptr, 0, nullptr));
+            }
+            transaction.Commit();
+        }
+    });
+    threadGroup.Join();
+
+    EseSession verifySession(instance);
+    EseDatabase verifyDb(verifySession, "Bulk.mdb",
+                         EseDatabaseMode::AttachAndOpen);
+    EseTable verifyTable(verifyDb, "Rows", EseTableMode::Open);
+    JET_COLUMNDEF keyInfoVerify = {};
+    keyInfoVerify.cbStruct = sizeof(keyInfoVerify);
+    CheckJet(JetGetTableColumnInfoA(verifySession.Handle(),
+                                     verifyTable.Id(), "Key",
+                                     &keyInfoVerify, sizeof(keyInfoVerify),
+                                     JET_ColInfo));
+    JET_COLUMNDEF bodyInfoVerify = {};
+    bodyInfoVerify.cbStruct = sizeof(bodyInfoVerify);
+    CheckJet(JetGetTableColumnInfoA(verifySession.Handle(),
+                                     verifyTable.Id(), "Body",
+                                     &bodyInfoVerify, sizeof(bodyInfoVerify),
+                                     JET_ColInfo));
+    CheckJet(JetMove(verifySession.Handle(), verifyTable.Id(),
+                     JET_MoveFirst, 0));
+    int32_t walked = 0;
+    while (true)
+    {
+        int32_t observedKey = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(verifySession.Handle(),
+                                   verifyTable.Id(),
+                                   keyInfoVerify.columnid,
+                                   &observedKey, sizeof(observedKey),
+                                   &actualBytes, 0, nullptr));
+        const int32_t worker = observedKey / 100000;
+        std::vector<uint8_t> observedBody(LVSize);
+        CheckJet(JetRetrieveColumn(verifySession.Handle(),
+                                   verifyTable.Id(),
+                                   bodyInfoVerify.columnid,
+                                   observedBody.data(), observedBody.size(),
+                                   &actualBytes, 0, nullptr));
+        Require(static_cast<int32_t>(actualBytes) == LVSize);
+        for (int32_t b = 0; b < LVSize; ++b)
+        {
+            const uint8_t expected =
+                patternByte(worker, observedKey, b);
+            Require(observedBody[static_cast<size_t>(b)] == expected);
+        }
+        ++walked;
+        const auto moveResult = JetMove(verifySession.Handle(),
+                                        verifyTable.Id(),
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walked == Workers * TransactionsPerWorker * RowsPerTransaction);
 }

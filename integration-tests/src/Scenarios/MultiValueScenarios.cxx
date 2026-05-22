@@ -12,6 +12,8 @@
 
 #include <cstring>
 #include <optional>
+#include <string_view>
+#include <vector>
 
 using namespace ese::tests;
 
@@ -58,7 +60,7 @@ void SetItag(EseTable& table,
 
 }  // namespace
 
-EseIntegrationScenario(MultiValue, TwoItagsRoundTrip)
+EseIntegrationScenario(MultiValue, TwoItagsRoundTrip, Smoke)
 {
     TemporaryDirectory directory("MultiValue.TwoItagsRoundTrip");
     EseInstance instance(directory);
@@ -84,7 +86,7 @@ EseIntegrationScenario(MultiValue, TwoItagsRoundTrip)
     Require(RetrieveItag(table, columnId, 2) == 202);
 }
 
-EseIntegrationScenario(MultiValue, ManyItagsRoundTrip)
+EseIntegrationScenario(MultiValue, ManyItagsRoundTrip, Smoke)
 {
     TemporaryDirectory directory("MultiValue.ManyItagsRoundTrip");
     EseInstance instance(directory);
@@ -116,7 +118,7 @@ EseIntegrationScenario(MultiValue, ManyItagsRoundTrip)
     }
 }
 
-EseIntegrationScenario(MultiValue, RetrievingPastLastItagReturnsColumnNull)
+EseIntegrationScenario(MultiValue, RetrievingPastLastItagReturnsColumnNull, Smoke)
 {
     TemporaryDirectory directory("MultiValue.RetrievingPastLastItagReturnsColumnNull");
     EseInstance instance(directory);
@@ -158,7 +160,7 @@ EseIntegrationScenario(MultiValue, RetrievingPastLastItagReturnsColumnNull)
     Require(retrieveResult == JET_wrnColumnNull);
 }
 
-EseIntegrationScenario(MultiValue, ReplaceSingleItagPreservesOthers)
+EseIntegrationScenario(MultiValue, ReplaceSingleItagPreservesOthers, Smoke)
 {
     TemporaryDirectory directory("MultiValue.ReplaceSingleItagPreservesOthers");
     EseInstance instance(directory);
@@ -195,7 +197,7 @@ EseIntegrationScenario(MultiValue, ReplaceSingleItagPreservesOthers)
     Require(RetrieveItag(table, columnId, 3) == 300);
 }
 
-EseIntegrationScenario(MultiValue, RetrievingMissingItagReturnsColumnNotFound)
+EseIntegrationScenario(MultiValue, RetrievingMissingItagReturnsColumnNotFound, Smoke)
 {
     TemporaryDirectory directory(
         "MultiValue.RetrievingMissingItagReturnsColumnNotFound");
@@ -235,7 +237,7 @@ EseIntegrationScenario(MultiValue, RetrievingMissingItagReturnsColumnNotFound)
     Require(retrieveResult == JET_wrnColumnNull);
 }
 
-EseIntegrationScenario(MultiValue, SetUniqueMultiValuesRejectsDuplicateInSameRow)
+EseIntegrationScenario(MultiValue, SetUniqueMultiValuesRejectsDuplicateInSameRow, Smoke)
 {
     TemporaryDirectory directory(
         "MultiValue.SetUniqueMultiValuesRejectsDuplicateInSameRow");
@@ -334,7 +336,7 @@ EseIntegrationScenario(MultiValue, SetUniqueMultiValuesRejectsDuplicateInSameRow
     Require(distinctSightings == 1);
 }
 
-EseIntegrationScenario(MultiValue, UniqueMultiValueIndexRejectsDuplicateAcrossRows)
+EseIntegrationScenario(MultiValue, UniqueMultiValueIndexRejectsDuplicateAcrossRows, Smoke)
 {
     TemporaryDirectory directory(
         "MultiValue.UniqueMultiValueIndexRejectsDuplicateAcrossRows");
@@ -400,7 +402,7 @@ EseIntegrationScenario(MultiValue, UniqueMultiValueIndexRejectsDuplicateAcrossRo
     Require(rowsSeen == 1);
 }
 
-EseIntegrationScenario(MultiValue, RetrieveTagFetchesSpecificItagFromTaggedColumn)
+EseIntegrationScenario(MultiValue, RetrieveTagFetchesSpecificItagFromTaggedColumn, Smoke)
 {
     TemporaryDirectory directory(
         "MultiValue.RetrieveTagFetchesSpecificItagFromTaggedColumn");
@@ -451,7 +453,7 @@ EseIntegrationScenario(MultiValue, RetrieveTagFetchesSpecificItagFromTaggedColum
     Require(retrieveByTag(4) == 1004);
 }
 
-EseIntegrationScenario(MultiValue, SetRevertToDefaultValueRestoresColumnDefault)
+EseIntegrationScenario(MultiValue, SetRevertToDefaultValueRestoresColumnDefault, Smoke)
 {
     TemporaryDirectory directory(
         "MultiValue.SetRevertToDefaultValueRestoresColumnDefault");
@@ -509,7 +511,7 @@ EseIntegrationScenario(MultiValue, SetRevertToDefaultValueRestoresColumnDefault)
     Require(afterRevert == defaultValue);
 }
 
-EseIntegrationScenario(MultiValue, SetUniqueNormalizedMultiValuesRejectsCaseEquivalent)
+EseIntegrationScenario(MultiValue, SetUniqueNormalizedMultiValuesRejectsCaseEquivalent, Smoke)
 {
     TemporaryDirectory directory(
         "MultiValue.SetUniqueNormalizedMultiValuesRejectsCaseEquivalent");
@@ -617,3 +619,139 @@ EseIntegrationScenario(MultiValue, SetUniqueNormalizedMultiValuesRejectsCaseEqui
     Require(sawHello);
     Require(sawWorld);
 }
+
+//  ===================================================================
+//  Tier::Regression — multivalued column with 100 itags.  Smoke
+//  test uses 50 itags; this exercises the itag B-tree / linked-
+//  list at twice that scale and validates EVERY itag's value
+//  round-trips (the Smoke equivalent only retrieves a couple).
+//  Catches refactors that broke itag layout at full capacity.
+//  ===================================================================
+EseIntegrationScenario(MultiValue, OneHundredItagsAllValuesRoundTrip, Regression)
+{
+    TemporaryDirectory directory(
+        "MultiValue.OneHundredItagsAllValuesRoundTrip");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "ManyItag.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Tags", JET_coltypLong,
+                                    JET_bitColumnTagged
+                                    | JET_bitColumnMultiValued);
+
+    static constexpr uint32_t ItagCount = 100;
+    auto valueForItag = [](uint32_t itag) {
+        return static_cast<int32_t>(itag * 1000 + 7);
+    };
+
+    //  Insert sequentially — the engine retains the value at the
+    //  requested itag.  Test exercises the itag B-tree / linked
+    //  list at full 100-element capacity, not 1..3 like Smoke.
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepInsert));
+        for (uint32_t itag = 1; itag <= ItagCount; ++itag)
+        {
+            const int32_t value = valueForItag(itag);
+            JET_SETINFO setInfo = {};
+            setInfo.cbStruct = sizeof(setInfo);
+            setInfo.itagSequence = itag;
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  columnId,
+                                  &value, sizeof(value),
+                                  0, &setInfo));
+        }
+        CheckJet(JetUpdate(session.Handle(), table.Id(),
+                           nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    //  Probe every itag — every slot must round-trip its
+    //  predicted value.  Catches refactors that broke the itag
+    //  layout at scale.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    for (uint32_t itag = 1; itag <= ItagCount; ++itag)
+    {
+        JET_RETINFO retInfo = {};
+        retInfo.cbStruct = sizeof(retInfo);
+        retInfo.itagSequence = itag;
+        int32_t observed = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   columnId,
+                                   &observed, sizeof(observed),
+                                   &actualBytes, 0, &retInfo));
+        Require(observed == valueForItag(itag));
+    }
+}
+
+//  ===================================================================
+//  Tier::Regression — unique multi-valued index enforcement at
+//  scale.  Smoke test inserts 2 rows; this populates 1000 rows
+//  each carrying 4 distinct multi-values, then exercises the
+//  uniqueness check against every cross-row pair sample.
+//  ===================================================================
+EseIntegrationScenario(MultiValue, UniqueMultiValueIndexAtScale, Regression)
+{
+    TemporaryDirectory directory(
+        "MultiValue.UniqueMultiValueIndexAtScale");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "UniqueScale.mdb");
+    EseTable table(database, "Tags");
+    auto columnId = table.AddColumn("Tag", JET_coltypLong,
+                                    JET_bitColumnTagged
+                                    | JET_bitColumnMultiValued);
+    static constexpr std::string_view UniqueKey =
+        std::string_view("+Tag\0\0", 6);
+    table.CreateIndex("ByTagUnique", UniqueKey,
+                      JET_bitIndexUnique | JET_bitIndexIgnoreNull);
+
+    static constexpr int32_t Rows = 1000;
+    static constexpr int32_t TagsPerRow = 4;
+    for (int32_t row = 0; row < Rows; ++row)
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepInsert));
+        for (int32_t i = 0; i < TagsPerRow; ++i)
+        {
+            JET_SETINFO setInfo = {};
+            setInfo.cbStruct = sizeof(setInfo);
+            setInfo.itagSequence = static_cast<uint32_t>(i + 1);
+            const int32_t value = row * TagsPerRow + i;
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  columnId,
+                                  &value, sizeof(value),
+                                  0, &setInfo));
+        }
+        CheckJet(JetUpdate(session.Handle(), table.Id(),
+                           nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    //  Probe: a fresh row that reuses any existing tag value must
+    //  be rejected with JET_errKeyDuplicate.  Sample three values
+    //  across the range.
+    for (int32_t probe : { 0, Rows * TagsPerRow / 2, Rows * TagsPerRow - 1 })
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepInsert));
+        JET_SETINFO setInfo = {};
+        setInfo.cbStruct = sizeof(setInfo);
+        setInfo.itagSequence = 1;
+        CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                              columnId,
+                              &probe, sizeof(probe),
+                              0, &setInfo));
+        RequireJetError(JetUpdate(session.Handle(), table.Id(),
+                                  nullptr, 0, nullptr),
+                        JET_errKeyDuplicate);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepCancel));
+        transaction.Commit();
+    }
+}
+

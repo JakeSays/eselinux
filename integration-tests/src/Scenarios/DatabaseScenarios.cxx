@@ -5,6 +5,9 @@
 #include "Framework/EseDatabase.hxx"
 #include "Framework/EseInstance.hxx"
 #include "Framework/EseSession.hxx"
+#include "Framework/EseTable.hxx"
+#include "Framework/EseTransaction.hxx"
+#include "Framework/RowOperations.hxx"
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
@@ -19,7 +22,7 @@
 
 using namespace ese::tests;
 
-EseIntegrationScenario(Database, CreateAndClose)
+EseIntegrationScenario(Database, CreateAndClose, Smoke)
 {
     TemporaryDirectory directory("Database.CreateAndClose");
     EseInstance instance(directory);
@@ -60,7 +63,7 @@ EseIntegrationScenario(Database, CreateAndClose)
     CheckJet(JetCloseTable(session.Handle(), tableId));
 }
 
-EseIntegrationScenario(Database, GrowDatabaseExtendsFileBySpecifiedPages)
+EseIntegrationScenario(Database, GrowDatabaseExtendsFileBySpecifiedPages, Smoke)
 {
     TemporaryDirectory directory(
         "Database.GrowDatabaseExtendsFileBySpecifiedPages");
@@ -84,7 +87,7 @@ EseIntegrationScenario(Database, GrowDatabaseExtendsFileBySpecifiedPages)
     Require(pagesAfterNoOp == pagesReal);
 }
 
-EseIntegrationScenario(Database, SetDatabaseSizeMatchesGrowSemantics)
+EseIntegrationScenario(Database, SetDatabaseSizeMatchesGrowSemantics, Smoke)
 {
     TemporaryDirectory directory(
         "Database.SetDatabaseSizeMatchesGrowSemantics");
@@ -180,7 +183,7 @@ EseIntegrationScenario(Database, SetDatabaseSizeMatchesGrowSemantics)
     database.Release();
 }
 
-EseIntegrationScenario(Database, SetMaxDatabaseSizeIsReadableViaGetMax)
+EseIntegrationScenario(Database, SetMaxDatabaseSizeIsReadableViaGetMax, Smoke)
 {
     TemporaryDirectory directory(
         "Database.SetMaxDatabaseSizeIsReadableViaGetMax");
@@ -198,7 +201,7 @@ EseIntegrationScenario(Database, SetMaxDatabaseSizeIsReadableViaGetMax)
     Require(observedCap == CapPages);
 }
 
-EseIntegrationScenario(Database, GetDatabaseInfoReportsFilenameAndSize)
+EseIntegrationScenario(Database, GetDatabaseInfoReportsFilenameAndSize, Smoke)
 {
     TemporaryDirectory directory(
         "Database.GetDatabaseInfoReportsFilenameAndSize");
@@ -233,7 +236,7 @@ EseIntegrationScenario(Database, GetDatabaseInfoReportsFilenameAndSize)
     Require(pageSize == 4096);
 }
 
-EseIntegrationScenario(Database, GetDatabaseFileInfoReportsFileType)
+EseIntegrationScenario(Database, GetDatabaseFileInfoReportsFileType, Smoke)
 {
     TemporaryDirectory directory("Database.GetDatabaseFileInfoReportsFileType");
 
@@ -264,7 +267,7 @@ EseIntegrationScenario(Database, GetDatabaseFileInfoReportsFileType)
     Require(pageSize == 4096);
 }
 
-EseIntegrationScenario(Database, GetDatabasePagesAndGetPageInfoRoundTrip)
+EseIntegrationScenario(Database, GetDatabasePagesAndGetPageInfoRoundTrip, Smoke)
 {
     TemporaryDirectory directory(
         "Database.GetDatabasePagesAndGetPageInfoRoundTrip");
@@ -358,7 +361,7 @@ EseIntegrationScenario(Database, GetDatabasePagesAndGetPageInfoRoundTrip)
 //  then a second sub-scenario that explicitly produces a
 //  detach failure and uses ForceCloseAndDetach to clean up.
 
-EseIntegrationScenario(Database, DetachDatabase2StandardDetachSucceeds)
+EseIntegrationScenario(Database, DetachDatabase2StandardDetachSucceeds, Smoke)
 {
     TemporaryDirectory directory(
         "Database.DetachDatabase2StandardDetachSucceeds");
@@ -397,7 +400,7 @@ EseIntegrationScenario(Database, DetachDatabase2StandardDetachSucceeds)
                                 databasePath.c_str()));
 }
 
-EseIntegrationScenario(Database, AttachDatabaseReadOnlyAllowsReadsButRejectsWrites)
+EseIntegrationScenario(Database, AttachDatabaseReadOnlyAllowsReadsButRejectsWrites, Smoke)
 {
     TemporaryDirectory directory(
         "Database.AttachDatabaseReadOnlyAllowsReadsButRejectsWrites");
@@ -496,7 +499,7 @@ EseIntegrationScenario(Database, AttachDatabaseReadOnlyAllowsReadsButRejectsWrit
     CheckJet(JetDetachDatabaseA(session.Handle(), databasePath.c_str()));
 }
 
-EseIntegrationScenario(Database, TerminateInstanceWithTermAbruptAllowsCleanReopen)
+EseIntegrationScenario(Database, TerminateInstanceWithTermAbruptAllowsCleanReopen, Smoke)
 {
     TemporaryDirectory directory(
         "Database.TerminateInstanceWithTermAbruptAllowsCleanReopen");
@@ -617,7 +620,7 @@ EseIntegrationScenario(Database, TerminateInstanceWithTermAbruptAllowsCleanReope
                                 databasePath.c_str()));
 }
 
-EseIntegrationScenario(Database, TerminateInstanceWithTermStopBackupCancelsInFlightBackup)
+EseIntegrationScenario(Database, TerminateInstanceWithTermStopBackupCancelsInFlightBackup, Smoke)
 {
     TemporaryDirectory directory(
         "Database.TerminateInstanceWithTermStopBackupCancelsInFlightBackup");
@@ -720,4 +723,73 @@ EseIntegrationScenario(Database, TerminateInstanceWithTermStopBackupCancelsInFli
     CheckJet(JetCloseDatabase(verifySession.Handle(), verifyDbId, 0));
     CheckJet(JetDetachDatabaseA(verifySession.Handle(),
                                 databasePath.c_str()));
+}
+
+//  ===================================================================
+//  Tier::Regression — iterative GrowDatabase preserves existing
+//  content across many grow steps.  8 grow increments interleaved
+//  with row writes, then validates every row survives.
+//  ===================================================================
+EseIntegrationScenario(Database, IterativeGrowsInterleavedWithWritesPreserveContent, Regression)
+{
+    TemporaryDirectory directory(
+        "Database.IterativeGrowsInterleavedWithWritesPreserveContent");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "GrowMix.mdb");
+    EseTable table(database, "Rows");
+    auto valueColumn = table.AddColumn("Value", JET_coltypLong,
+                                        JET_bitColumnNotNULL);
+
+    static constexpr int32_t Steps = 8;
+    static constexpr int32_t RowsPerStep = 128;
+    uint32_t lastPages = 0;
+    for (int32_t step = 0; step < Steps; ++step)
+    {
+        uint32_t pagesNow = 0;
+        const uint32_t target = lastPages + 128;
+        CheckJet(JetGrowDatabase(session.Handle(), database.Id(),
+                                 target, &pagesNow));
+        Require(pagesNow >= target);
+        Require(pagesNow > lastPages);
+        lastPages = pagesNow;
+
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < RowsPerStep; ++i)
+        {
+            const int32_t value = step * RowsPerStep + i;
+            InsertSingleFixedColumnRow<int32_t>(table, valueColumn, value);
+        }
+        transaction.Commit();
+    }
+
+    //  Walk all inserted values; each must appear exactly once.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    std::vector<bool> seen(Steps * RowsPerStep, false);
+    int32_t walked = 0;
+    while (true)
+    {
+        int32_t observed = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   valueColumn,
+                                   &observed, sizeof(observed),
+                                   &actualBytes, 0, nullptr));
+        Require(observed >= 0 && observed < Steps * RowsPerStep);
+        Require(!seen[static_cast<size_t>(observed)]);
+        seen[static_cast<size_t>(observed)] = true;
+        ++walked;
+        const auto moveResult = JetMove(session.Handle(), table.Id(),
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walked == Steps * RowsPerStep);
+    for (bool b : seen)
+    {
+        Require(b);
+    }
 }

@@ -119,7 +119,7 @@ void TerminateInstance( JET_INSTANCE handle )
 //  name passed at create time persists into JetGetInstanceInfoW —
 //  proves the W path round-tripped the UTF-16 name through engine
 //  storage and back out, not just that the bootstrap succeeded.
-EseIntegrationScenario( WideApi, CreateInstanceWBootsCleanly )
+EseIntegrationScenario(WideApi, CreateInstanceWBootsCleanly, Smoke)
 {
     TemporaryDirectory directory( "WideApi.CreateInstanceWBootsCleanly" );
     JET_INSTANCE handle = JET_instanceNil;
@@ -175,7 +175,7 @@ EseIntegrationScenario( WideApi, CreateInstanceWBootsCleanly )
 //  a session proves the W bootstrap left a workable instance but
 //  doesn't catch a W path that silently null-terminates after the
 //  first byte; a real DML round-trip does.
-EseIntegrationScenario( WideApi, CreateInstance2WStampsDisplayName )
+EseIntegrationScenario(WideApi, CreateInstance2WStampsDisplayName, Smoke)
 {
     TemporaryDirectory directory( "WideApi.CreateInstance2WStampsDisplayName" );
     JET_INSTANCE handle = InitInstanceWide( directory,
@@ -230,7 +230,7 @@ EseIntegrationScenario( WideApi, CreateInstance2WStampsDisplayName )
 //  W path to accept arbitrary UTF-16 strings without trying to
 //  narrow them to ANSI.  Also verify the session is functional
 //  post-credentials by running a tiny DML round-trip.
-EseIntegrationScenario( WideApi, BeginSessionWAcceptsWideCredentials )
+EseIntegrationScenario(WideApi, BeginSessionWAcceptsWideCredentials, Smoke)
 {
     TemporaryDirectory directory( "WideApi.BeginSessionWAcceptsWideCredentials" );
     JET_INSTANCE handle = InitInstanceWide( directory, u"WideApi-BeginSessionW" );
@@ -254,7 +254,7 @@ EseIntegrationScenario( WideApi, BeginSessionWAcceptsWideCredentials )
 //  JetCreateDatabaseW + JetAttachDatabaseW round-trip.  Create the
 //  database, close + detach, reattach and reopen — proves the W
 //  path persists the path correctly across detach/attach.
-EseIntegrationScenario( WideApi, CreateDatabaseWThenAttachWReopens )
+EseIntegrationScenario(WideApi, CreateDatabaseWThenAttachWReopens, Smoke)
 {
     TemporaryDirectory directory(
         "WideApi.CreateDatabaseWThenAttachWReopens" );
@@ -290,7 +290,7 @@ EseIntegrationScenario( WideApi, CreateDatabaseWThenAttachWReopens )
 
 //  JetCreateDatabase2W — adds cpgDatabaseSizeMax to the v1 surface.
 //  Confirm the cap is round-tripped via JetGetMaxDatabaseSize.
-EseIntegrationScenario( WideApi, CreateDatabase2WCapsMaxSize )
+EseIntegrationScenario(WideApi, CreateDatabase2WCapsMaxSize, Smoke)
 {
     TemporaryDirectory directory( "WideApi.CreateDatabase2WCapsMaxSize" );
     JET_INSTANCE handle = InitInstanceWide( directory, u"WideApi-CreateDb2W" );
@@ -321,7 +321,7 @@ EseIntegrationScenario( WideApi, CreateDatabase2WCapsMaxSize )
 //  JetAttachDatabase2W — adds cpgDatabaseSizeMax + grbit to the v1
 //  attach.  Detach the original attach, re-attach via v2W with a
 //  cap, confirm the cap stuck.
-EseIntegrationScenario( WideApi, AttachDatabase2WAppliesMaxSize )
+EseIntegrationScenario(WideApi, AttachDatabase2WAppliesMaxSize, Smoke)
 {
     TemporaryDirectory directory( "WideApi.AttachDatabase2WAppliesMaxSize" );
     JET_INSTANCE handle = InitInstanceWide( directory, u"WideApi-AttachDb2W" );
@@ -357,7 +357,7 @@ EseIntegrationScenario( WideApi, AttachDatabase2WAppliesMaxSize )
 //  JetCreateTableW + JetAddColumnW + JetCreateIndexW.  End-to-end
 //  schema build through the W path, then insert + retrieve a row
 //  to confirm the table is functional.  Three APIs in one scenario.
-EseIntegrationScenario( WideApi, CreateTableWAddColumnWCreateIndexWFullDDL )
+EseIntegrationScenario(WideApi, CreateTableWAddColumnWCreateIndexWFullDDL, Smoke)
 {
     TemporaryDirectory directory(
         "WideApi.CreateTableWAddColumnWCreateIndexWFullDDL" );
@@ -431,7 +431,7 @@ EseIntegrationScenario( WideApi, CreateTableWAddColumnWCreateIndexWFullDDL )
 //  JetCreateTableColumnIndexW — single-call DDL via JET_TABLECREATE_W
 //  struct.  Same surface as CreateTableW + AddColumnW + CreateIndexW
 //  but bundled, so all the W strings sit in one struct.
-EseIntegrationScenario( WideApi, CreateTableColumnIndexWBuildsAtomically )
+EseIntegrationScenario(WideApi, CreateTableColumnIndexWBuildsAtomically, Smoke)
 {
     TemporaryDirectory directory(
         "WideApi.CreateTableColumnIndexWBuildsAtomically" );
@@ -519,7 +519,7 @@ EseIntegrationScenario( WideApi, CreateTableColumnIndexWBuildsAtomically )
 //  JetCreateIndex2W — INDEXCREATE struct path (vs. v1's positional
 //  args).  The W variant stresses that every szIndexName + szKey
 //  pointer in the struct array is decoded through the W path.
-EseIntegrationScenario( WideApi, CreateIndex2WStructPath )
+EseIntegrationScenario(WideApi, CreateIndex2WStructPath, Smoke)
 {
     TemporaryDirectory directory( "WideApi.CreateIndex2WStructPath" );
     JET_INSTANCE handle = InitInstanceWide( directory, u"WideApi-CI2W" );
@@ -594,7 +594,7 @@ EseIntegrationScenario( WideApi, CreateIndex2WStructPath )
 //  marker has to land between JetCreateInstance2W and JetInit.  Read
 //  it back via JetGetSystemParameterW after init to prove the W
 //  marshalling preserved the bytes through the param store.
-EseIntegrationScenario( WideApi, SystemParameterRoundTripsViaWString )
+EseIntegrationScenario(WideApi, SystemParameterRoundTripsViaWString, Smoke)
 {
     TemporaryDirectory directory(
         "WideApi.SystemParameterRoundTripsViaWString" );
@@ -646,7 +646,7 @@ EseIntegrationScenario( WideApi, SystemParameterRoundTripsViaWString )
 //  filesystem layer uses) without falling back to ANSI narrowing.
 //  Verify by detaching, reattaching by the same wide path, and
 //  reopening — proves the engine stored the path losslessly.
-EseIntegrationScenario( WideApi, NonAsciiDatabasePathPersists )
+EseIntegrationScenario(WideApi, NonAsciiDatabasePathPersists, Smoke)
 {
     TemporaryDirectory directory( "WideApi.NonAsciiDatabasePathPersists" );
     JET_INSTANCE handle = InitInstanceWide( directory, u"WideApi-NonAsciiPath" );
@@ -678,7 +678,7 @@ EseIntegrationScenario( WideApi, NonAsciiDatabasePathPersists )
 //  Non-ASCII table + column names round-trip.  Insert and retrieve
 //  a row via the W-named columns to prove the catalog stored the
 //  W identifiers losslessly and the cursor APIs find them again.
-EseIntegrationScenario( WideApi, NonAsciiTableAndColumnNamesRoundTrip )
+EseIntegrationScenario(WideApi, NonAsciiTableAndColumnNamesRoundTrip, Smoke)
 {
     TemporaryDirectory directory(
         "WideApi.NonAsciiTableAndColumnNamesRoundTrip" );
@@ -750,7 +750,7 @@ EseIntegrationScenario( WideApi, NonAsciiTableAndColumnNamesRoundTrip )
 //  unrepresentable codepoint, and the engine then rejects the
 //  resulting identifier as invalid (JET_errInvalidName).  This is
 //  Windows-equivalent behavior for an en-US Windows install.
-EseIntegrationScenario( WideApi, NonCp1252IdentifierIsRejected )
+EseIntegrationScenario(WideApi, NonCp1252IdentifierIsRejected, Smoke)
 {
     TemporaryDirectory directory( "WideApi.NonCp1252IdentifierIsRejected" );
     JET_INSTANCE handle = InitInstanceWide( directory, u"WideApi-NonCp1252" );

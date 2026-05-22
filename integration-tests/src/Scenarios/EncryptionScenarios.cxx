@@ -42,7 +42,7 @@ static std::vector<uint8_t> CreateAes256Key()
 }
 
 
-EseIntegrationScenario(Encryption, CreateEncryptionKeyRoundTripsBufferTooSmall)
+EseIntegrationScenario(Encryption, CreateEncryptionKeyRoundTripsBufferTooSmall, Smoke)
 {
     //  JetCreateEncryptionKey's discovery protocol: pass cbKey=0 and
     //  the engine reports the required size; allocate, call again,
@@ -58,7 +58,7 @@ EseIntegrationScenario(Encryption, CreateEncryptionKeyRoundTripsBufferTooSmall)
 }
 
 
-EseIntegrationScenario(Encryption, ColumnRoundTripsThroughEncryptedTable)
+EseIntegrationScenario(Encryption, ColumnRoundTripsThroughEncryptedTable, Smoke)
 {
     TemporaryDirectory directory(
         "Encryption.ColumnRoundTripsThroughEncryptedTable");
@@ -149,7 +149,7 @@ EseIntegrationScenario(Encryption, ColumnRoundTripsThroughEncryptedTable)
 }
 
 
-EseIntegrationScenario(Encryption, WrongKeyFailsDecryption)
+EseIntegrationScenario(Encryption, WrongKeyFailsDecryption, Smoke)
 {
     TemporaryDirectory directory("Encryption.WrongKeyFailsDecryption");
     EseInstance instance(directory);

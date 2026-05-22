@@ -14,14 +14,16 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <format>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <vector>
 
 using namespace ese::tests;
 
-EseIntegrationScenario(BackupRestore, StreamingBackupProducesNonEmptyDirectory)
+EseIntegrationScenario(BackupRestore, StreamingBackupProducesNonEmptyDirectory, Smoke)
 {
     TemporaryDirectory directory("BackupRestore.StreamingBackupProducesNonEmptyDirectory");
     EseInstance instance(directory);
@@ -97,7 +99,7 @@ EseIntegrationScenario(BackupRestore, StreamingBackupProducesNonEmptyDirectory)
     Require(!errorCode);
 }
 
-EseIntegrationScenario(BackupRestore, ExternalBackupExposesAttachInfo)
+EseIntegrationScenario(BackupRestore, ExternalBackupExposesAttachInfo, Smoke)
 {
     TemporaryDirectory directory("BackupRestore.ExternalBackupExposesAttachInfo");
     EseInstance instance(directory);
@@ -144,7 +146,7 @@ EseIntegrationScenario(BackupRestore, ExternalBackupExposesAttachInfo)
     CheckJet(JetEndExternalBackupInstance(instance.Handle()));
 }
 
-EseIntegrationScenario(BackupRestore, FullBackupRestoreRoundTrip)
+EseIntegrationScenario(BackupRestore, FullBackupRestoreRoundTrip, Smoke)
 {
     TemporaryDirectory sourceDirectory("BackupRestore.FullRoundTrip.source");
     TemporaryDirectory restoreDirectory("BackupRestore.FullRoundTrip.restore");
@@ -258,8 +260,7 @@ EseIntegrationScenario(BackupRestore, FullBackupRestoreRoundTrip)
     CheckJet(JetTerm(restoreHandle));
 }
 
-EseIntegrationScenario(BackupRestore,
-                       GetAttachInfoGlobalEnumeratesAttachedDatabase)
+EseIntegrationScenario(BackupRestore, GetAttachInfoGlobalEnumeratesAttachedDatabase, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.GetAttachInfoGlobalEnumeratesAttachedDatabase");
@@ -286,8 +287,7 @@ EseIntegrationScenario(BackupRestore,
     CheckJet(JetEndExternalBackupInstance(instance.Handle()));
 }
 
-EseIntegrationScenario(BackupRestore,
-                       GetLogInfoInstanceListsActiveLogs)
+EseIntegrationScenario(BackupRestore, GetLogInfoInstanceListsActiveLogs, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.GetLogInfoInstanceListsActiveLogs");
@@ -375,8 +375,7 @@ EseIntegrationScenario(BackupRestore,
     CheckJet(JetEndExternalBackupInstance(instance.Handle()));
 }
 
-EseIntegrationScenario(BackupRestore,
-                       TruncateLogInstanceEnforcesBackupSequence)
+EseIntegrationScenario(BackupRestore, TruncateLogInstanceEnforcesBackupSequence, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.TruncateLogInstanceEnforcesBackupSequence");
@@ -411,8 +410,7 @@ EseIntegrationScenario(BackupRestore,
     CheckJet(JetEndExternalBackupInstance(instance.Handle()));
 }
 
-EseIntegrationScenario(BackupRestore,
-                       StopBackupInstanceCancelsActiveBackup)
+EseIntegrationScenario(BackupRestore, StopBackupInstanceCancelsActiveBackup, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.StopBackupInstanceCancelsActiveBackup");
@@ -431,8 +429,7 @@ EseIntegrationScenario(BackupRestore,
     CheckJet(JetEndExternalBackupInstance(instance.Handle()));
 }
 
-EseIntegrationScenario(BackupRestore,
-                       GetInstanceMiscInfoReportsLogSignature)
+EseIntegrationScenario(BackupRestore, GetInstanceMiscInfoReportsLogSignature, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.GetInstanceMiscInfoReportsLogSignature");
@@ -487,8 +484,7 @@ EseIntegrationScenario(BackupRestore,
                         sizeof(logSignature)) == 0);
 }
 
-EseIntegrationScenario(BackupRestore,
-                       GetLogFileInfoReadsHeaderOfClosedLog)
+EseIntegrationScenario(BackupRestore, GetLogFileInfoReadsHeaderOfClosedLog, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.GetLogFileInfoReadsHeaderOfClosedLog");
@@ -634,8 +630,7 @@ EseIntegrationScenario(BackupRestore,
     Require(logInfo.ulGeneration >= 1);
 }
 
-EseIntegrationScenario(BackupRestore,
-                       BeginAndEndExternalBackupGlobalForms)
+EseIntegrationScenario(BackupRestore, BeginAndEndExternalBackupGlobalForms, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.BeginAndEndExternalBackupGlobalForms");
@@ -662,8 +657,7 @@ EseIntegrationScenario(BackupRestore,
     CheckJet(JetEndExternalBackup());
 }
 
-EseIntegrationScenario(BackupRestore,
-                       StopBackupGlobalCancelsActiveBackup)
+EseIntegrationScenario(BackupRestore, StopBackupGlobalCancelsActiveBackup, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.StopBackupGlobalCancelsActiveBackup");
@@ -679,8 +673,7 @@ EseIntegrationScenario(BackupRestore,
     CheckJet(JetEndExternalBackup());
 }
 
-EseIntegrationScenario(BackupRestore,
-                       TruncateLogGlobalEnforcesSequence)
+EseIntegrationScenario(BackupRestore, TruncateLogGlobalEnforcesSequence, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.TruncateLogGlobalEnforcesSequence");
@@ -743,8 +736,7 @@ private:
 
 }  // namespace
 
-EseIntegrationScenario(BackupRestore,
-                       OpenAndReadAndCloseFileInstanceCopiesDatabase)
+EseIntegrationScenario(BackupRestore, OpenAndReadAndCloseFileInstanceCopiesDatabase, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.OpenAndReadAndCloseFileInstanceCopiesDatabase");
@@ -832,8 +824,7 @@ EseIntegrationScenario(BackupRestore,
     backupSession.EndNormally();
 }
 
-EseIntegrationScenario(BackupRestore,
-                       EndExternalBackupInstance2AcceptsAbortGrbit)
+EseIntegrationScenario(BackupRestore, EndExternalBackupInstance2AcceptsAbortGrbit, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.EndExternalBackupInstance2AcceptsAbortGrbit");
@@ -857,8 +848,7 @@ EseIntegrationScenario(BackupRestore,
                                            JET_bitBackupEndNormal));
 }
 
-EseIntegrationScenario(BackupRestore,
-                       GetLogInfoInstance2ReportsLogGenerationRange)
+EseIntegrationScenario(BackupRestore, GetLogInfoInstance2ReportsLogGenerationRange, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.GetLogInfoInstance2ReportsLogGenerationRange");
@@ -938,8 +928,7 @@ private:
 
 }  // namespace
 
-EseIntegrationScenario(BackupRestore,
-                       OpenAndReadAndCloseFileGlobalCopiesDatabase)
+EseIntegrationScenario(BackupRestore, OpenAndReadAndCloseFileGlobalCopiesDatabase, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.OpenAndReadAndCloseFileGlobalCopiesDatabase");
@@ -1008,8 +997,7 @@ EseIntegrationScenario(BackupRestore,
     backupSession.EndNormally();
 }
 
-EseIntegrationScenario(BackupRestore,
-                       GetLogInfoGlobalListsActiveLogs)
+EseIntegrationScenario(BackupRestore, GetLogInfoGlobalListsActiveLogs, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.GetLogInfoGlobalListsActiveLogs");
@@ -1045,8 +1033,7 @@ EseIntegrationScenario(BackupRestore,
     backupSession.EndNormally();
 }
 
-EseIntegrationScenario(BackupRestore,
-                       OpenFileSectionInstanceReadsLogTail)
+EseIntegrationScenario(BackupRestore, OpenFileSectionInstanceReadsLogTail, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.OpenFileSectionInstanceReadsLogTail");
@@ -1099,7 +1086,7 @@ EseIntegrationScenario(BackupRestore,
     backupSession.EndNormally();
 }
 
-EseIntegrationScenario(BackupRestore, RemoveLogfileRejectsActiveLog)
+EseIntegrationScenario(BackupRestore, RemoveLogfileRejectsActiveLog, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.RemoveLogfileRejectsActiveLog");
@@ -1208,8 +1195,7 @@ EseIntegrationScenario(BackupRestore, RemoveLogfileRejectsActiveLog)
                     JET_errInvalidParameter);
 }
 
-EseIntegrationScenario(BackupRestore,
-                       BeginAndEndSurrogateBackupRoundTrip)
+EseIntegrationScenario(BackupRestore, BeginAndEndSurrogateBackupRoundTrip, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.BeginAndEndSurrogateBackupRoundTrip");
@@ -1295,7 +1281,7 @@ EseIntegrationScenario(BackupRestore,
     CheckJet(JetTerm2(instanceHandle, JET_bitTermComplete));
 }
 
-EseIntegrationScenario(BackupRestore, BackupInstanceIncrementalProducesLogOnlyArtifacts)
+EseIntegrationScenario(BackupRestore, BackupInstanceIncrementalProducesLogOnlyArtifacts, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.BackupInstanceIncrementalProducesLogOnlyArtifacts");
@@ -1399,7 +1385,7 @@ EseIntegrationScenario(BackupRestore, BackupInstanceIncrementalProducesLogOnlyAr
     Require(sawFullDatabase);
 }
 
-EseIntegrationScenario(BackupRestore, BackupInstanceAtomicAcceptedAndProducesArtifacts)
+EseIntegrationScenario(BackupRestore, BackupInstanceAtomicAcceptedAndProducesArtifacts, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.BackupInstanceAtomicAcceptedAndProducesArtifacts");
@@ -1465,7 +1451,7 @@ EseIntegrationScenario(BackupRestore, BackupInstanceAtomicAcceptedAndProducesArt
     Require(sawLog);
 }
 
-EseIntegrationScenario(BackupRestore, BeginSurrogateBackupAndEndCompletesCleanly)
+EseIntegrationScenario(BackupRestore, BeginSurrogateBackupAndEndCompletesCleanly, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.BeginSurrogateBackupAndEndCompletesCleanly");
@@ -1524,7 +1510,7 @@ EseIntegrationScenario(BackupRestore, BeginSurrogateBackupAndEndCompletesCleanly
     Require(observedRows == 26);
 }
 
-EseIntegrationScenario(BackupRestore, BackupSurrogateFlagAcceptedByExternalBackup)
+EseIntegrationScenario(BackupRestore, BackupSurrogateFlagAcceptedByExternalBackup, Smoke)
 {
     TemporaryDirectory directory(
         "BackupRestore.BackupSurrogateFlagAcceptedByExternalBackup");
@@ -1560,4 +1546,221 @@ EseIntegrationScenario(BackupRestore, BackupSurrogateFlagAcceptedByExternalBacku
     CheckJet(JetBeginExternalBackupInstance(instance.Handle(),
                                              JET_bitBackupSurrogate));
     CheckJet(JetEndExternalBackupInstance(instance.Handle()));
+}
+
+//  ===================================================================
+//  Tier::Regression — backup/restore content validation.
+//
+//  Smoke FullBackupRestoreRoundTrip only counts rows.  A refactor
+//  that broke specific log-record replay paths (UPDATE / DELETE /
+//  index maintenance) could pass the count check while corrupting
+//  data.  This scenario builds a database with a mixed
+//  insert/update/delete workload, backs it up, restores into a
+//  fresh instance, and validates every surviving row's exact
+//  bytes — Key, Value (updated for some keys), Body.
+//  ===================================================================
+EseIntegrationScenario(BackupRestore, FullBackupRestoreRoundTripsExactRowContents, Regression)
+{
+    TemporaryDirectory sourceDirectory(
+        "BackupRestore.FullRoundTripContent.source");
+    TemporaryDirectory restoreDirectory(
+        "BackupRestore.FullRoundTripContent.restore");
+    const auto backupDirectory = sourceDirectory.Path() / "backup";
+
+    static constexpr int32_t Inserted = 1024;
+    static constexpr int32_t DeletedEveryNth = 7;
+    static constexpr int32_t UpdatedEveryNth = 5;
+
+    {
+        EseInstance sourceInstance(sourceDirectory);
+        EseSession session(sourceInstance);
+        EseDatabase database(session, "Original.mdb");
+        EseTable table(database, "Rows");
+        auto keyColumn = table.AddColumn("Key", JET_coltypLong,
+                                         JET_bitColumnNotNULL);
+        auto valueColumn = table.AddColumn("Value", JET_coltypLong,
+                                           JET_bitColumnNotNULL);
+        auto bodyColumn = table.AddColumn("Body", JET_coltypLongBinary);
+        static constexpr std::string_view PrimaryKey =
+            std::string_view("+Key\0\0", 6);
+        table.CreateIndex("PrimaryByKey", PrimaryKey,
+                          JET_bitIndexPrimary | JET_bitIndexUnique);
+
+        {
+            EseTransaction transaction(session);
+            for (int32_t key = 0; key < Inserted; ++key)
+            {
+                CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                          JET_prepInsert));
+                CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                      keyColumn, &key, sizeof(key),
+                                      0, nullptr));
+                const int32_t v = key * 7 + 11;
+                CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                      valueColumn, &v, sizeof(v),
+                                      0, nullptr));
+                const std::string body = std::format("row-{:04}", key);
+                CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                      bodyColumn,
+                                      body.data(), body.size(),
+                                      0, nullptr));
+                CheckJet(JetUpdate(session.Handle(), table.Id(),
+                                   nullptr, 0, nullptr));
+            }
+            transaction.Commit();
+        }
+        {
+            EseTransaction transaction(session);
+            for (int32_t key = 0; key < Inserted; key += UpdatedEveryNth)
+            {
+                CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                                    &key, sizeof(key), JET_bitNewKey));
+                CheckJet(JetSeek(session.Handle(), table.Id(),
+                                 JET_bitSeekEQ));
+                CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                          JET_prepReplace));
+                const int32_t v = -(key * 7 + 11);
+                CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                      valueColumn, &v, sizeof(v),
+                                      0, nullptr));
+                CheckJet(JetUpdate(session.Handle(), table.Id(),
+                                   nullptr, 0, nullptr));
+            }
+            transaction.Commit();
+        }
+        {
+            EseTransaction transaction(session);
+            for (int32_t key = 0; key < Inserted; key += DeletedEveryNth)
+            {
+                CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                                    &key, sizeof(key), JET_bitNewKey));
+                CheckJet(JetSeek(session.Handle(), table.Id(),
+                                 JET_bitSeekEQ));
+                CheckJet(JetDelete(session.Handle(), table.Id()));
+            }
+            transaction.Commit();
+        }
+
+        std::error_code errorCode;
+        std::filesystem::create_directories(backupDirectory, errorCode);
+        Require(!errorCode);
+        CheckJet(JetBackupInstanceA(sourceInstance.Handle(),
+                                    backupDirectory.string().c_str(),
+                                    0, nullptr));
+    }
+
+    JET_INSTANCE restoreHandle = JET_instanceNil;
+    CheckJet(JetCreateInstance2A(&restoreHandle,
+                                 "ese-tests-restore-content",
+                                 "ese-tests-restore-content", 0));
+    auto restorePathWithSeparator = restoreDirectory.Path().string();
+    if (!restorePathWithSeparator.empty()
+        && restorePathWithSeparator.back() != '/')
+    {
+        restorePathWithSeparator.push_back('/');
+    }
+    CheckJet(JetSetSystemParameterA(&restoreHandle, JET_sesidNil,
+                                    JET_paramSystemPath, 0,
+                                    restorePathWithSeparator.c_str()));
+    CheckJet(JetSetSystemParameterA(&restoreHandle, JET_sesidNil,
+                                    JET_paramTempPath, 0,
+                                    restorePathWithSeparator.c_str()));
+    CheckJet(JetSetSystemParameterA(&restoreHandle, JET_sesidNil,
+                                    JET_paramLogFilePath, 0,
+                                    restorePathWithSeparator.c_str()));
+    CheckJet(JetSetSystemParameterA(&restoreHandle, JET_sesidNil,
+                                    JET_paramBaseName, 0, "edb"));
+    CheckJet(JetSetSystemParameterA(&restoreHandle, JET_sesidNil,
+                                    JET_paramEventSource, 0,
+                                    "ese-tests-restore-content"));
+    CheckJet(JetSetSystemParameterA(&restoreHandle, JET_sesidNil,
+                                    JET_paramCircularLog, 1, nullptr));
+    CheckJet(JetRestoreInstanceA(restoreHandle,
+                                 backupDirectory.string().c_str(),
+                                 restorePathWithSeparator.c_str(),
+                                 nullptr));
+    CheckJet(JetInit(&restoreHandle));
+
+    JET_SESID restoreSession = JET_sesidNil;
+    CheckJet(JetBeginSessionA(restoreHandle, &restoreSession,
+                              nullptr, nullptr));
+    const auto restoredDb =
+        (restoreDirectory.Path() / "Original.mdb").string();
+    CheckJet(JetAttachDatabaseA(restoreSession, restoredDb.c_str(), 0));
+    JET_DBID restoredDbid = JET_dbidNil;
+    CheckJet(JetOpenDatabaseA(restoreSession, restoredDb.c_str(),
+                              nullptr, &restoredDbid, 0));
+    JET_TABLEID restoredTableId = JET_tableidNil;
+    CheckJet(JetOpenTableA(restoreSession, restoredDbid, "Rows",
+                           nullptr, 0, 0, &restoredTableId));
+    JET_COLUMNDEF keyInfo = {};
+    keyInfo.cbStruct = sizeof(keyInfo);
+    CheckJet(JetGetTableColumnInfoA(restoreSession, restoredTableId, "Key",
+                                     &keyInfo, sizeof(keyInfo),
+                                     JET_ColInfo));
+    JET_COLUMNDEF valueInfo = {};
+    valueInfo.cbStruct = sizeof(valueInfo);
+    CheckJet(JetGetTableColumnInfoA(restoreSession, restoredTableId,
+                                     "Value", &valueInfo, sizeof(valueInfo),
+                                     JET_ColInfo));
+    JET_COLUMNDEF bodyInfo = {};
+    bodyInfo.cbStruct = sizeof(bodyInfo);
+    CheckJet(JetGetTableColumnInfoA(restoreSession, restoredTableId,
+                                     "Body", &bodyInfo, sizeof(bodyInfo),
+                                     JET_ColInfo));
+
+    CheckJet(JetMove(restoreSession, restoredTableId, JET_MoveFirst, 0));
+    int32_t walkedRowCount = 0;
+    while (true)
+    {
+        int32_t observedKey = 0;
+        int32_t observedValue = 0;
+        char observedBody[32] = {};
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(restoreSession, restoredTableId,
+                                   keyInfo.columnid,
+                                   &observedKey, sizeof(observedKey),
+                                   &actualBytes, 0, nullptr));
+        CheckJet(JetRetrieveColumn(restoreSession, restoredTableId,
+                                   valueInfo.columnid,
+                                   &observedValue, sizeof(observedValue),
+                                   &actualBytes, 0, nullptr));
+        CheckJet(JetRetrieveColumn(restoreSession, restoredTableId,
+                                   bodyInfo.columnid,
+                                   observedBody, sizeof(observedBody),
+                                   &actualBytes, 0, nullptr));
+        //  No surviving row may have a Key that's a multiple of 7.
+        Require(observedKey % DeletedEveryNth != 0);
+        const int32_t expectedValue =
+            (observedKey % UpdatedEveryNth == 0)
+                ? -(observedKey * 7 + 11)
+                : (observedKey * 7 + 11);
+        Require(observedValue == expectedValue);
+        const auto expectedBody = std::format("row-{:04}", observedKey);
+        const std::string_view observedBodyView(observedBody, actualBytes);
+        Require(observedBodyView == expectedBody);
+        ++walkedRowCount;
+        const auto moveResult = JetMove(restoreSession, restoredTableId,
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    int32_t expectedSurvivors = 0;
+    for (int32_t k = 0; k < Inserted; ++k)
+    {
+        if (k % DeletedEveryNth != 0)
+        {
+            ++expectedSurvivors;
+        }
+    }
+    Require(walkedRowCount == expectedSurvivors);
+
+    CheckJet(JetCloseTable(restoreSession, restoredTableId));
+    CheckJet(JetCloseDatabase(restoreSession, restoredDbid, 0));
+    CheckJet(JetDetachDatabaseA(restoreSession, restoredDb.c_str()));
+    CheckJet(JetEndSession(restoreSession, 0));
+    CheckJet(JetTerm(restoreHandle));
 }

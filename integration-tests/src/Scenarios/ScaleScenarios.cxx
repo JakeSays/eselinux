@@ -20,11 +20,12 @@
 #include <cstring>
 #include <format>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace ese::tests;
 
-EseIntegrationScenario(Scale, BulkInsertAndScan)
+EseIntegrationScenario(Scale, BulkInsertAndScan, Smoke)
 {
     TemporaryDirectory directory("Scale.BulkInsertAndScan");
     EseInstance instance(directory);
@@ -55,7 +56,7 @@ EseIntegrationScenario(Scale, BulkInsertAndScan)
     Require(observed == rowCount);
 }
 
-EseIntegrationScenario(Scale, ManyTablesCreatedAndOpened)
+EseIntegrationScenario(Scale, ManyTablesCreatedAndOpened, Smoke)
 {
     TemporaryDirectory directory("Scale.ManyTablesCreatedAndOpened");
     EseInstance instance(directory);
@@ -111,7 +112,7 @@ EseIntegrationScenario(Scale, ManyTablesCreatedAndOpened)
     }
 }
 
-EseIntegrationScenario(Scale, LargeLongValueRoundTrip)
+EseIntegrationScenario(Scale, LargeLongValueRoundTrip, Smoke)
 {
     TemporaryDirectory directory("Scale.LargeLongValueRoundTrip");
     EseInstance instance(directory);
@@ -146,7 +147,7 @@ EseIntegrationScenario(Scale, LargeLongValueRoundTrip)
                         writtenBytes.size()) == 0);
 }
 
-EseIntegrationScenario(Scale, BulkInsertWithSecondaryIndexBuilds)
+EseIntegrationScenario(Scale, BulkInsertWithSecondaryIndexBuilds, Smoke)
 {
     TemporaryDirectory directory("Scale.BulkInsertWithSecondaryIndexBuilds");
     EseInstance instance(directory);
@@ -214,4 +215,119 @@ EseIntegrationScenario(Scale, BulkInsertWithSecondaryIndexBuilds)
         CheckJet(moveResult);
     }
     Require(observedRows == rowCount);
+}
+
+//  ===================================================================
+//  Tier::Regression — large insert + secondary index walk at the
+//  scale profile.  Smoke ScaleScenarios use sequential ascending
+//  inserts; this scenario inserts in random order to drive B-tree
+//  split selection AND walks both primary + secondary indexes for
+//  content match.
+//  ===================================================================
+EseIntegrationScenario(Scale, RandomOrderInsertWithSecondaryIndexAtScale, Regression)
+{
+    TemporaryDirectory directory(
+        "Scale.RandomOrderInsertWithSecondaryIndexAtScale");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "RandScale.mdb");
+    EseTable table(database, "Rows");
+    auto keyColumn = table.AddColumn("Key", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
+    auto valueColumn = table.AddColumn("Value", JET_coltypLong,
+                                       JET_bitColumnNotNULL);
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Key\0\0", 6);
+    table.CreateIndex("PrimaryByKey", PrimaryKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+    static constexpr std::string_view ValueKey =
+        std::string_view("+Value\0\0", 8);
+    table.CreateIndex("ByValue", ValueKey, JET_bitIndexUnique);
+
+    const int32_t rowCount = RowCount();
+    std::vector<int32_t> shuffled(rowCount);
+    for (int32_t i = 0; i < rowCount; ++i)
+    {
+        shuffled[static_cast<size_t>(i)] = i;
+    }
+    uint32_t seed = 0xFADE;
+    for (int32_t i = rowCount - 1; i > 0; --i)
+    {
+        seed = seed * 1664525u + 1013904223u;
+        const int32_t j = static_cast<int32_t>(
+            seed % static_cast<uint32_t>(i + 1));
+        std::swap(shuffled[static_cast<size_t>(i)],
+                  shuffled[static_cast<size_t>(j)]);
+    }
+    {
+        EseTransaction transaction(session);
+        for (int32_t key : shuffled)
+        {
+            const int32_t value = rowCount - 1 - key;
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  keyColumn, &key, sizeof(key),
+                                  0, nullptr));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  valueColumn, &value, sizeof(value),
+                                  0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+
+    //  Primary index walk: ascending Key.
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(),
+                                 "PrimaryByKey"));
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t expectedKey = 0;
+    int32_t walked = 0;
+    while (true)
+    {
+        int32_t observed = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   keyColumn,
+                                   &observed, sizeof(observed),
+                                   &actualBytes, 0, nullptr));
+        Require(observed == expectedKey);
+        ++expectedKey;
+        ++walked;
+        const auto moveResult = JetMove(session.Handle(), table.Id(),
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walked == rowCount);
+
+    //  Secondary index walk: ascending Value implies descending Key.
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(), "ByValue"));
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t expectedKeyDescending = rowCount - 1;
+    int32_t secondaryWalked = 0;
+    while (true)
+    {
+        int32_t observedKey = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   keyColumn,
+                                   &observedKey, sizeof(observedKey),
+                                   &actualBytes, 0, nullptr));
+        Require(observedKey == expectedKeyDescending);
+        --expectedKeyDescending;
+        ++secondaryWalked;
+        const auto moveResult = JetMove(session.Handle(), table.Id(),
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(secondaryWalked == rowCount);
 }

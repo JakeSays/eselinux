@@ -12,10 +12,13 @@
 #include "Framework/TemporaryDirectory.hxx"
 
 #include <cstring>
+#include <format>
+#include <string>
+#include <string_view>
 
 using namespace ese::tests;
 
-EseIntegrationScenario(Transaction, BeginAndCommit)
+EseIntegrationScenario(Transaction, BeginAndCommit, Smoke)
 {
     TemporaryDirectory directory("Transaction.BeginAndCommit");
     EseInstance instance(directory);
@@ -64,7 +67,7 @@ EseIntegrationScenario(Transaction, BeginAndCommit)
     Require(rowCount == 2);
 }
 
-EseIntegrationScenario(Transaction, CommitWithLazyFlushSucceeds)
+EseIntegrationScenario(Transaction, CommitWithLazyFlushSucceeds, Smoke)
 {
     TemporaryDirectory directory("Transaction.CommitWithLazyFlushSucceeds");
     EseInstance instance(directory);
@@ -83,7 +86,7 @@ EseIntegrationScenario(Transaction, CommitWithLazyFlushSucceeds)
     Require(readBack == 7);
 }
 
-EseIntegrationScenario(Transaction, ExplicitRollbackDiscardsChanges)
+EseIntegrationScenario(Transaction, ExplicitRollbackDiscardsChanges, Smoke)
 {
     TemporaryDirectory directory("Transaction.ExplicitRollbackDiscardsChanges");
     EseInstance instance(directory);
@@ -103,7 +106,7 @@ EseIntegrationScenario(Transaction, ExplicitRollbackDiscardsChanges)
                     JET_errNoCurrentRecord);
 }
 
-EseIntegrationScenario(Transaction, NestedInnerCommitOuterCommitPersistsBoth)
+EseIntegrationScenario(Transaction, NestedInnerCommitOuterCommitPersistsBoth, Smoke)
 {
     TemporaryDirectory directory(
         "Transaction.NestedInnerCommitOuterCommitPersistsBoth");
@@ -136,7 +139,7 @@ EseIntegrationScenario(Transaction, NestedInnerCommitOuterCommitPersistsBoth)
     Require(observedRows == 2);
 }
 
-EseIntegrationScenario(Transaction, NestedInnerCommitOuterRollbackDiscardsBoth)
+EseIntegrationScenario(Transaction, NestedInnerCommitOuterRollbackDiscardsBoth, Smoke)
 {
     TemporaryDirectory directory(
         "Transaction.NestedInnerCommitOuterRollbackDiscardsBoth");
@@ -160,7 +163,7 @@ EseIntegrationScenario(Transaction, NestedInnerCommitOuterRollbackDiscardsBoth)
                     JET_errNoCurrentRecord);
 }
 
-EseIntegrationScenario(Transaction, NestedInnerRollbackOuterCommitKeepsOuter)
+EseIntegrationScenario(Transaction, NestedInnerRollbackOuterCommitKeepsOuter, Smoke)
 {
     TemporaryDirectory directory(
         "Transaction.NestedInnerRollbackOuterCommitKeepsOuter");
@@ -193,7 +196,7 @@ EseIntegrationScenario(Transaction, NestedInnerRollbackOuterCommitKeepsOuter)
     Require(survivor == 100);
 }
 
-EseIntegrationScenario(Transaction, RollbackWithoutOpenTransactionReturnsNotInTransaction)
+EseIntegrationScenario(Transaction, RollbackWithoutOpenTransactionReturnsNotInTransaction, Smoke)
 {
     TemporaryDirectory directory(
         "Transaction.RollbackWithoutOpenTransactionReturnsNotInTransaction");
@@ -205,7 +208,7 @@ EseIntegrationScenario(Transaction, RollbackWithoutOpenTransactionReturnsNotInTr
                     JET_errNotInTransaction);
 }
 
-EseIntegrationScenario(Transaction, CommitWithoutOpenTransactionReturnsNotInTransaction)
+EseIntegrationScenario(Transaction, CommitWithoutOpenTransactionReturnsNotInTransaction, Smoke)
 {
     TemporaryDirectory directory(
         "Transaction.CommitWithoutOpenTransactionReturnsNotInTransaction");
@@ -217,7 +220,7 @@ EseIntegrationScenario(Transaction, CommitWithoutOpenTransactionReturnsNotInTran
                     JET_errNotInTransaction);
 }
 
-EseIntegrationScenario(Transaction, CommittedInsertVisibleToFreshCursor)
+EseIntegrationScenario(Transaction, CommittedInsertVisibleToFreshCursor, Smoke)
 {
     TemporaryDirectory directory(
         "Transaction.CommittedInsertVisibleToFreshCursor");
@@ -261,7 +264,7 @@ EseIntegrationScenario(Transaction, CommittedInsertVisibleToFreshCursor)
     CheckJet(JetCloseTable(session.Handle(), secondCursorId));
 }
 
-EseIntegrationScenario(Transaction, TransactionAutoRollbackOnScopeExit)
+EseIntegrationScenario(Transaction, TransactionAutoRollbackOnScopeExit, Smoke)
 {
     TemporaryDirectory directory("Transaction.TransactionAutoRollbackOnScopeExit");
     EseInstance instance(directory);
@@ -281,7 +284,7 @@ EseIntegrationScenario(Transaction, TransactionAutoRollbackOnScopeExit)
                     JET_errNoCurrentRecord);
 }
 
-EseIntegrationScenario(Transaction, GetLockWriteOnCurrentRowSucceeds)
+EseIntegrationScenario(Transaction, GetLockWriteOnCurrentRowSucceeds, Smoke)
 {
     TemporaryDirectory directory(
         "Transaction.GetLockWriteOnCurrentRowSucceeds");
@@ -308,7 +311,7 @@ EseIntegrationScenario(Transaction, GetLockWriteOnCurrentRowSucceeds)
     transaction.Commit();
 }
 
-EseIntegrationScenario(Transaction, GetLockOutsideTransactionReturnsNotInTransaction)
+EseIntegrationScenario(Transaction, GetLockOutsideTransactionReturnsNotInTransaction, Smoke)
 {
     TemporaryDirectory directory(
         "Transaction.GetLockOutsideTransactionReturnsNotInTransaction");
@@ -331,8 +334,7 @@ EseIntegrationScenario(Transaction, GetLockOutsideTransactionReturnsNotInTransac
                     JET_errNotInTransaction);
 }
 
-EseIntegrationScenario(Transaction,
-                       BeginTransaction3StoresTrxIdInLogStream)
+EseIntegrationScenario(Transaction, BeginTransaction3StoresTrxIdInLogStream, Smoke)
 {
     TemporaryDirectory directory(
         "Transaction.BeginTransaction3StoresTrxIdInLogStream");
@@ -363,8 +365,7 @@ EseIntegrationScenario(Transaction,
     Require(observed == 4242);
 }
 
-EseIntegrationScenario(Transaction,
-                       CommitTransaction2ReturnsMonotonicCommitId)
+EseIntegrationScenario(Transaction, CommitTransaction2ReturnsMonotonicCommitId, Smoke)
 {
     TemporaryDirectory directory(
         "Transaction.CommitTransaction2ReturnsMonotonicCommitId");
@@ -410,3 +411,299 @@ EseIntegrationScenario(Transaction,
                         &commitIdB.signLog,
                         sizeof(JET_SIGNATURE)) == 0);
 }
+
+//  ===================================================================
+//  Tier::Regression — deep savepoint nesting + complex undo payload
+//
+//  Smoke tests cover 2–3 levels of savepoint nesting with single-row
+//  insert payloads.  Real-world workloads can pile up many savepoints
+//  with mixed DML on multi-column records; a refactor that broke the
+//  undo log ordering or savepoint version-store cleanup at depth
+//  would slip past the Smoke tier.  This scenario nests 15 levels
+//  deep, performs insert/update/delete across multiple columns and a
+//  secondary index at each level, rolls back the inner half, commits
+//  the outer half, and verifies the final state matches the predicted
+//  surviving rows exactly.
+//  ===================================================================
+EseIntegrationScenario(Transaction, DeepSavepointStackUnwindsComplexPayload, Regression)
+{
+    TemporaryDirectory directory(
+        "Transaction.DeepSavepointStackUnwindsComplexPayload");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "DeepSavepoint.mdb");
+    EseTable table(database, "Rows");
+
+    auto keyColumn = table.AddColumn("Key", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
+    auto markerColumn = table.AddColumn("Marker", JET_coltypLong,
+                                        JET_bitColumnNotNULL);
+    auto bodyColumn = table.AddColumn("Body", JET_coltypLongBinary);
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Key\0\0", 6);
+    table.CreateIndex("PrimaryByKey", PrimaryKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+    static constexpr std::string_view MarkerKey =
+        std::string_view("+Marker\0\0", 9);
+    table.CreateIndex("ByMarker", MarkerKey);
+
+    //  Seed with 10 baseline rows committed outside the deep stack.
+    {
+        EseTransaction transaction(session);
+        for (int32_t key = 0; key < 10; ++key)
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  keyColumn, &key, sizeof(key),
+                                  0, nullptr));
+            const int32_t marker = 1000;
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  markerColumn, &marker, sizeof(marker),
+                                  0, nullptr));
+            const std::string body = std::format("baseline-row-{}", key);
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  bodyColumn,
+                                  body.data(), body.size(),
+                                  0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+
+    //  ESE caps savepoint nesting at 7 (engine-internal
+    //  JET_cbtransactionLevelsMax).  Use exactly that depth — beyond
+    //  it the engine rejects with JET_errTransTooDeep, which we also
+    //  validate at the bottom of this scenario.
+    static constexpr int32_t Depth = 7;
+    //  Open Depth nested savepoints.  Level i performs:
+    //    - Insert row (Key=100+i, Marker=2000+i)
+    //    - Update Marker on baseline row i % 10 to 3000+i
+    //    - On levels >= 5, also overwrite Body on baseline row
+    //      (i % 10) with a long-value blob to drive the undo path
+    //      through the long-value tree.
+    for (int32_t depth = 0; depth < Depth; ++depth)
+    {
+        CheckJet(JetBeginTransaction(session.Handle()));
+
+        const int32_t newKey = 100 + depth;
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                              keyColumn, &newKey, sizeof(newKey),
+                              0, nullptr));
+        const int32_t newMarker = 2000 + depth;
+        CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                              markerColumn, &newMarker, sizeof(newMarker),
+                              0, nullptr));
+        const std::string newBody =
+            std::format("nested-depth-{}-payload", depth);
+        CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                              bodyColumn, newBody.data(), newBody.size(),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), table.Id(),
+                           nullptr, 0, nullptr));
+
+        const int32_t baselineKey = depth % 10;
+        CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                            &baselineKey, sizeof(baselineKey),
+                            JET_bitNewKey));
+        CheckJet(JetSeek(session.Handle(), table.Id(), JET_bitSeekEQ));
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepReplace));
+        const int32_t mutatedMarker = 3000 + depth;
+        CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                              markerColumn,
+                              &mutatedMarker, sizeof(mutatedMarker),
+                              0, nullptr));
+        if (depth >= 5)
+        {
+            //  At deeper levels, replace the Body with a long-value
+            //  to drive the undo path through LV-tree operations.
+            const std::string body =
+                std::format("mutated-body-from-depth-{}", depth);
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  bodyColumn,
+                                  body.data(), body.size(),
+                                  0, nullptr));
+        }
+        CheckJet(JetUpdate(session.Handle(), table.Id(),
+                           nullptr, 0, nullptr));
+    }
+
+    //  Boundary probe: a Depth+1 begin must hit ErrorTransTooDeep
+    //  before we touch the rollback / commit drain.  Catches a
+    //  refactor that silently raised or removed the cap.
+    RequireJetError(JetBeginTransaction(session.Handle()),
+                    JET_errTransTooDeep);
+
+    //  Roll back the inner half and commit the outer half.  With
+    //  Depth=7 we roll back 3 inner levels and commit 4 outer.
+    static constexpr int32_t InnerRollbackCount = 3;
+    for (int32_t i = 0; i < InnerRollbackCount; ++i)
+    {
+        CheckJet(JetRollback(session.Handle(), 0));
+    }
+    const int32_t outerCommitCount = Depth - InnerRollbackCount;
+    for (int32_t i = 0; i < outerCommitCount; ++i)
+    {
+        CheckJet(JetCommitTransaction(session.Handle(), 0));
+    }
+
+    //  Predict the surviving state:
+    //    Baseline rows 0..9 with Marker=1000, except those touched
+    //    at committed depths d ∈ [0..7], where the LAST committed
+    //    depth that hit row d wins.  Levels 8..14 rolled back,
+    //    levels 0..7 committed.  For each baseline key k, the last
+    //    committed depth touching k is the largest d ∈ [0..7] with
+    //    d % 10 == k.
+    //    Plus rows 100..107 from the inserts at committed depths,
+    //    Marker=2000+d.  Rows 108..114 must NOT exist.
+    int32_t expectedMarkerForBaseline[10] = {};
+    for (int32_t k = 0; k < 10; ++k)
+    {
+        expectedMarkerForBaseline[k] = 1000;
+    }
+    for (int32_t d = 0; d < outerCommitCount; ++d)
+    {
+        expectedMarkerForBaseline[d % 10] = 3000 + d;
+    }
+
+    //  Walk by primary index and validate every survivor.
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(),
+                                 "PrimaryByKey"));
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t walkedRowCount = 0;
+    while (true)
+    {
+        int32_t observedKey = 0;
+        int32_t observedMarker = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   keyColumn,
+                                   &observedKey, sizeof(observedKey),
+                                   &actualBytes, 0, nullptr));
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   markerColumn,
+                                   &observedMarker, sizeof(observedMarker),
+                                   &actualBytes, 0, nullptr));
+        if (observedKey < 10)
+        {
+            Require(observedMarker ==
+                    expectedMarkerForBaseline[observedKey]);
+        }
+        else
+        {
+            Require(observedKey >= 100);
+            Require(observedKey < 100 + outerCommitCount);
+            Require(observedMarker == 2000 + (observedKey - 100));
+        }
+        ++walkedRowCount;
+        const auto moveResult = JetMove(session.Handle(), table.Id(),
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    //  10 baseline rows + outerCommitCount inserted rows survive.
+    Require(walkedRowCount == 10 + outerCommitCount);
+
+    //  Inserted keys from rolled-back depths must be absent.
+    for (int32_t rolledBackKey = 100 + outerCommitCount;
+         rolledBackKey < 100 + Depth;
+         ++rolledBackKey)
+    {
+        CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                            &rolledBackKey, sizeof(rolledBackKey),
+                            JET_bitNewKey));
+        RequireJetError(JetSeek(session.Handle(), table.Id(),
+                                JET_bitSeekEQ),
+                        JET_errRecordNotFound);
+    }
+}
+
+//  ===================================================================
+//  Tier::Regression — lazy-flush commit durability across detach
+//  + reattach.  Smoke CommitWithLazyFlush reads back inside the
+//  same session.  A refactor that broke lazy-flush durability
+//  could pass that — the row sits in the buffer cache.  This
+//  scenario commits with LazyFlush, detaches + JetTerms, then
+//  reattaches in a fresh instance and confirms every row is
+//  present.
+//  ===================================================================
+EseIntegrationScenario(Transaction, LazyFlushCommitsAreDurableAcrossTerm, Regression)
+{
+    TemporaryDirectory directory(
+        "Transaction.LazyFlushCommitsAreDurableAcrossTerm");
+    const auto databasePath = directory.Path() / "Lazy.mdb";
+
+    static constexpr int32_t Rows = 256;
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+        EseDatabase database(session, "Lazy.mdb");
+        EseTable table(database, "Rows");
+        auto valueColumn = table.AddColumn("Value", JET_coltypLong,
+                                            JET_bitColumnNotNULL);
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < Rows; ++i)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, valueColumn, i);
+        }
+        transaction.Commit(JET_bitCommitLazyFlush);
+        //  Wait briefly for the lazy-flush thread to pick the
+        //  commit up before tearing down — engine spec says
+        //  JetTerm waits for outstanding lazy commits to flush.
+    }
+    //  EseInstance dtor calls JetTerm2, which must flush pending
+    //  lazy-flush commits before returning.
+
+    //  Reattach in a fresh instance: every row must be present.
+    EseInstance instance(directory);
+    EseSession session(instance);
+    CheckJet(JetAttachDatabaseA(session.Handle(),
+                                databasePath.string().c_str(), 0));
+    JET_DBID dbid = JET_dbidNil;
+    CheckJet(JetOpenDatabaseA(session.Handle(),
+                              databasePath.string().c_str(),
+                              nullptr, &dbid, 0));
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetOpenTableA(session.Handle(), dbid, "Rows",
+                           nullptr, 0, 0, &tableId));
+    JET_COLUMNDEF valueInfo = {};
+    valueInfo.cbStruct = sizeof(valueInfo);
+    CheckJet(JetGetTableColumnInfoA(session.Handle(), tableId, "Value",
+                                     &valueInfo, sizeof(valueInfo),
+                                     JET_ColInfo));
+    CheckJet(JetMove(session.Handle(), tableId, JET_MoveFirst, 0));
+    int32_t expected = 0;
+    int32_t walked = 0;
+    while (true)
+    {
+        int32_t observed = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), tableId,
+                                   valueInfo.columnid,
+                                   &observed, sizeof(observed),
+                                   &actualBytes, 0, nullptr));
+        Require(observed == expected);
+        ++expected;
+        ++walked;
+        const auto moveResult = JetMove(session.Handle(), tableId,
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walked == Rows);
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+    CheckJet(JetCloseDatabase(session.Handle(), dbid, 0));
+    CheckJet(JetDetachDatabaseA(session.Handle(),
+                                databasePath.string().c_str()));
+}
+

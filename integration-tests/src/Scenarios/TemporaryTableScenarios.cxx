@@ -9,6 +9,7 @@
 
 #include <limits>
 #include <string_view>
+#include <vector>
 
 using namespace ese::tests;
 
@@ -57,7 +58,7 @@ int32_t RetrieveCurrentLong(JET_SESID session, JET_TABLEID table, JET_COLUMNID c
 
 }  // namespace
 
-EseIntegrationScenario(TemporaryTable, OpenSortedTempTable)
+EseIntegrationScenario(TemporaryTable, OpenSortedTempTable, Smoke)
 {
     TemporaryDirectory directory("TemporaryTable.OpenSortedTempTable");
     EseInstance instance(directory);
@@ -117,7 +118,7 @@ EseIntegrationScenario(TemporaryTable, OpenSortedTempTable)
     CheckJet(JetCloseTable(session.Handle(), temporaryTableId));
 }
 
-EseIntegrationScenario(TemporaryTable, AscendingKeySortsInsertedRowsLowToHigh)
+EseIntegrationScenario(TemporaryTable, AscendingKeySortsInsertedRowsLowToHigh, Smoke)
 {
     TemporaryDirectory directory("TemporaryTable.AscendingKeySortsInsertedRowsLowToHigh");
     EseInstance instance(directory);
@@ -143,7 +144,7 @@ EseIntegrationScenario(TemporaryTable, AscendingKeySortsInsertedRowsLowToHigh)
     CheckJet(JetCloseTable(session.Handle(), temporaryTableId));
 }
 
-EseIntegrationScenario(TemporaryTable, DescendingKeySortsInsertedRowsHighToLow)
+EseIntegrationScenario(TemporaryTable, DescendingKeySortsInsertedRowsHighToLow, Smoke)
 {
     TemporaryDirectory directory(
         "TemporaryTable.DescendingKeySortsInsertedRowsHighToLow");
@@ -171,7 +172,7 @@ EseIntegrationScenario(TemporaryTable, DescendingKeySortsInsertedRowsHighToLow)
     CheckJet(JetCloseTable(session.Handle(), temporaryTableId));
 }
 
-EseIntegrationScenario(TemporaryTable, ForwardOnlyRejectsKeyColumnsAtOpen)
+EseIntegrationScenario(TemporaryTable, ForwardOnlyRejectsKeyColumnsAtOpen, Smoke)
 {
     TemporaryDirectory directory("TemporaryTable.ForwardOnlyRejectsKeyColumnsAtOpen");
     EseInstance instance(directory);
@@ -196,7 +197,7 @@ EseIntegrationScenario(TemporaryTable, ForwardOnlyRejectsKeyColumnsAtOpen)
                     JET_errCannotMaterializeForwardOnlySort);
 }
 
-EseIntegrationScenario(TemporaryTable, UpdatableTempTableAcceptsReplace)
+EseIntegrationScenario(TemporaryTable, UpdatableTempTableAcceptsReplace, Smoke)
 {
     TemporaryDirectory directory("TemporaryTable.UpdatableTempTableAcceptsReplace");
     EseInstance instance(directory);
@@ -257,7 +258,7 @@ EseIntegrationScenario(TemporaryTable, UpdatableTempTableAcceptsReplace)
 //  is moot for non-text keys, but the call still has to flow through
 //  the v2 dispatch and produce a sorted temp table.  Insert three rows
 //  out of order, walk and confirm ascending order.
-EseIntegrationScenario(TemporaryTable, OpenTempTable2WithLcidBuildsSortedTable)
+EseIntegrationScenario(TemporaryTable, OpenTempTable2WithLcidBuildsSortedTable, Smoke)
 {
     TemporaryDirectory directory(
         "TemporaryTable.OpenTempTable2WithLcidBuildsSortedTable");
@@ -316,7 +317,7 @@ EseIntegrationScenario(TemporaryTable, OpenTempTable2WithLcidBuildsSortedTable)
     CheckJet(JetCloseTable(session.Handle(), temporaryTableId));
 }
 
-EseIntegrationScenario(TemporaryTable, OpenTempTable3SortsViaUnicodeIndex)
+EseIntegrationScenario(TemporaryTable, OpenTempTable3SortsViaUnicodeIndex, Smoke)
 {
     TemporaryDirectory directory(
         "TemporaryTable.OpenTempTable3SortsViaUnicodeIndex");
@@ -436,7 +437,7 @@ EseIntegrationScenario(TemporaryTable, OpenTempTable3SortsViaUnicodeIndex)
 //  fields without changing the function arity.  We test the
 //  struct shape end-to-end: insert two rows out of key order,
 //  confirm the temp table sorts them on walk.
-EseIntegrationScenario(TemporaryTable, OpenTemporaryTableStructDrivesSort)
+EseIntegrationScenario(TemporaryTable, OpenTemporaryTableStructDrivesSort, Smoke)
 {
     TemporaryDirectory directory(
         "TemporaryTable.OpenTemporaryTableStructDrivesSort");
@@ -492,7 +493,7 @@ EseIntegrationScenario(TemporaryTable, OpenTemporaryTableStructDrivesSort)
 //  and en-US locale, NORM_IGNORECASE map flag — the same surface
 //  that JetOpenTempTable3SortsViaUnicodeIndex tests via the
 //  lcid-based struct, but routed through the v2 entry point.
-EseIntegrationScenario(TemporaryTable, OpenTemporaryTable2SortsWithLocaleName)
+EseIntegrationScenario(TemporaryTable, OpenTemporaryTable2SortsWithLocaleName, Smoke)
 {
     TemporaryDirectory directory(
         "TemporaryTable.OpenTemporaryTable2SortsWithLocaleName");
@@ -558,3 +559,167 @@ EseIntegrationScenario(TemporaryTable, OpenTemporaryTable2SortsWithLocaleName)
 
     CheckJet(JetCloseTable(session.Handle(), tableid));
 }
+
+//  ===================================================================
+//  Tier::Regression — temp-table sort across the spill-to-disk
+//  threshold.
+//
+//  Smoke temp-table tests use 3 rows.  The engine pivots from a
+//  fully-in-memory sort to a disk-backed sort somewhere past a few
+//  hundred rows; a refactor that broke the pivot logic or the
+//  disk-spill path would pass the smoke tests silently.  Insert
+//  2000 keys in random order, walk in ascending order, verify
+//  every key is present and ordered.
+//  ===================================================================
+EseIntegrationScenario(TemporaryTable, SortPreservedAcrossSpillToDiskThreshold, Regression)
+{
+    TemporaryDirectory directory(
+        "TemporaryTable.SortPreservedAcrossSpillToDiskThreshold");
+    EseInstance instance(directory);
+    EseSession session(instance);
+
+    JET_COLUMNID columnId = 0;
+    auto temporaryTableId = OpenLongKeyTempTable(session,
+                                                 JET_bitTTUpdatable,
+                                                 &columnId);
+    Require(temporaryTableId != JET_tableidNil);
+
+    static constexpr int32_t Count = 2000;
+    std::vector<int32_t> shuffled(Count);
+    for (int32_t i = 0; i < Count; ++i)
+    {
+        shuffled[static_cast<size_t>(i)] = i;
+    }
+    //  Deterministic shuffle.
+    uint32_t seed = 0x1234ABCD;
+    for (int32_t i = Count - 1; i > 0; --i)
+    {
+        seed = seed * 1664525u + 1013904223u;
+        const int32_t j = static_cast<int32_t>(
+            seed % static_cast<uint32_t>(i + 1));
+        std::swap(shuffled[static_cast<size_t>(i)],
+                  shuffled[static_cast<size_t>(j)]);
+    }
+    CheckJet(JetBeginTransaction(session.Handle()));
+    for (int32_t value : shuffled)
+    {
+        CheckJet(JetPrepareUpdate(session.Handle(), temporaryTableId,
+                                  JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), temporaryTableId,
+                              columnId, &value, sizeof(value),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), temporaryTableId,
+                           nullptr, 0, nullptr));
+    }
+    CheckJet(JetCommitTransaction(session.Handle(), 0));
+
+    CheckJet(JetMove(session.Handle(), temporaryTableId,
+                     JET_MoveFirst, 0));
+    int32_t expected = 0;
+    int32_t walked = 0;
+    while (true)
+    {
+        int32_t observed = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), temporaryTableId,
+                                   columnId,
+                                   &observed, sizeof(observed),
+                                   &actualBytes, 0, nullptr));
+        Require(observed == expected);
+        ++expected;
+        ++walked;
+        const auto moveResult = JetMove(session.Handle(),
+                                        temporaryTableId,
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walked == Count);
+    CheckJet(JetCloseTable(session.Handle(), temporaryTableId));
+}
+
+//  ===================================================================
+//  Tier::Regression — updatable temp-table preserves sort order
+//  across many replace+insert cycles.  Smoke UpdatableTempTable
+//  inserts/replaces one row.  This drives 200 sequential inserts
+//  with deterministically-shuffled keys inside a single committed
+//  transaction, then walks ascending and validates exact sort
+//  order across the spill-threshold boundary that 200+ rows
+//  cross on small page sizes.
+//  ===================================================================
+EseIntegrationScenario(TemporaryTable, UpdatableTempTableSortPreservedAcrossManyInserts, Regression)
+{
+    TemporaryDirectory directory(
+        "TemporaryTable.UpdatableTempTableSortPreservedAcrossManyInserts");
+    EseInstance instance(directory);
+    EseSession session(instance);
+
+    JET_COLUMNID columnId = 0;
+    auto temporaryTableId = OpenLongKeyTempTable(session,
+                                                 JET_bitTTUpdatable,
+                                                 &columnId);
+    Require(temporaryTableId != JET_tableidNil);
+
+    static constexpr int32_t Count = 200;
+    std::vector<int32_t> shuffled(Count);
+    for (int32_t i = 0; i < Count; ++i)
+    {
+        shuffled[static_cast<size_t>(i)] = i;
+    }
+    uint32_t seed = 0xBEAD;
+    for (int32_t i = Count - 1; i > 0; --i)
+    {
+        seed = seed * 1664525u + 1013904223u;
+        const int32_t j = static_cast<int32_t>(
+            seed % static_cast<uint32_t>(i + 1));
+        std::swap(shuffled[static_cast<size_t>(i)],
+                  shuffled[static_cast<size_t>(j)]);
+    }
+
+    //  JET_bitTTUpdatable temp tables require an open transaction
+    //  for DML — JetSetColumn outside a txn trips
+    //  JET_errNotInTransaction.
+    CheckJet(JetBeginTransaction(session.Handle()));
+    for (int32_t value : shuffled)
+    {
+        CheckJet(JetPrepareUpdate(session.Handle(), temporaryTableId,
+                                  JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), temporaryTableId,
+                              columnId, &value, sizeof(value),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), temporaryTableId,
+                           nullptr, 0, nullptr));
+    }
+    CheckJet(JetCommitTransaction(session.Handle(), 0));
+
+    CheckJet(JetMove(session.Handle(), temporaryTableId,
+                     JET_MoveFirst, 0));
+    int32_t expected = 0;
+    int32_t walked = 0;
+    while (true)
+    {
+        int32_t observed = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), temporaryTableId,
+                                   columnId,
+                                   &observed, sizeof(observed),
+                                   &actualBytes, 0, nullptr));
+        Require(observed == expected);
+        ++expected;
+        ++walked;
+        const auto moveResult = JetMove(session.Handle(),
+                                        temporaryTableId,
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walked == Count);
+    CheckJet(JetCloseTable(session.Handle(), temporaryTableId));
+}
+

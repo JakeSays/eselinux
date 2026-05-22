@@ -59,7 +59,7 @@ JET_COLUMNID PopulatePrereadTable(EseTable& table, int rowCount)
 
 } // namespace
 
-EseIntegrationScenario(Preread, PrereadKeysAcceptsKeyArray)
+EseIntegrationScenario(Preread, PrereadKeysAcceptsKeyArray, Smoke)
 {
     TemporaryDirectory directory("Preread.PrereadKeysAcceptsKeyArray");
     EseInstance instance(directory);
@@ -108,7 +108,7 @@ EseIntegrationScenario(Preread, PrereadKeysAcceptsKeyArray)
     }
 }
 
-EseIntegrationScenario(Preread, PrereadIndexRangeAcceptsBoundedRange)
+EseIntegrationScenario(Preread, PrereadIndexRangeAcceptsBoundedRange, Smoke)
 {
     TemporaryDirectory directory(
         "Preread.PrereadIndexRangeAcceptsBoundedRange");
@@ -193,7 +193,7 @@ EseIntegrationScenario(Preread, PrereadIndexRangeAcceptsBoundedRange)
     Require(walkedRowCount > 0);
 }
 
-EseIntegrationScenario(Preread, PrereadTablesAcceptsKnownTableName)
+EseIntegrationScenario(Preread, PrereadTablesAcceptsKnownTableName, Smoke)
 {
     TemporaryDirectory directory("Preread.PrereadTablesAcceptsKnownTableName");
     EseInstance instance(directory);
@@ -238,7 +238,7 @@ EseIntegrationScenario(Preread, PrereadTablesAcceptsKnownTableName)
     CheckJet(JetCloseTable(session.Handle(), secondCursor));
 }
 
-EseIntegrationScenario(Preread, PrereadIndexRangesAcceptsTwoRanges)
+EseIntegrationScenario(Preread, PrereadIndexRangesAcceptsTwoRanges, Smoke)
 {
     TemporaryDirectory directory(
         "Preread.PrereadIndexRangesAcceptsTwoRanges");

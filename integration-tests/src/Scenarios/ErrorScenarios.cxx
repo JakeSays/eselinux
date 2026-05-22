@@ -17,7 +17,7 @@
 
 using namespace ese::tests;
 
-EseIntegrationScenario(Error, RetrievingUnknownColumnReturnsColumnNotFound)
+EseIntegrationScenario(Error, RetrievingUnknownColumnReturnsColumnNotFound, Smoke)
 {
     TemporaryDirectory directory(
         "Error.RetrievingUnknownColumnReturnsColumnNotFound");
@@ -38,7 +38,7 @@ EseIntegrationScenario(Error, RetrievingUnknownColumnReturnsColumnNotFound)
                     JET_errColumnNotFound);
 }
 
-EseIntegrationScenario(Error, OpeningUnknownTableReturnsObjectNotFound)
+EseIntegrationScenario(Error, OpeningUnknownTableReturnsObjectNotFound, Smoke)
 {
     TemporaryDirectory directory("Error.OpeningUnknownTableReturnsObjectNotFound");
     EseInstance instance(directory);
@@ -51,7 +51,7 @@ EseIntegrationScenario(Error, OpeningUnknownTableReturnsObjectNotFound)
                     JET_errObjectNotFound);
 }
 
-EseIntegrationScenario(Error, AddingDuplicateColumnReturnsColumnDuplicate)
+EseIntegrationScenario(Error, AddingDuplicateColumnReturnsColumnDuplicate, Smoke)
 {
     TemporaryDirectory directory("Error.AddingDuplicateColumnReturnsColumnDuplicate");
     EseInstance instance(directory);
@@ -71,7 +71,7 @@ EseIntegrationScenario(Error, AddingDuplicateColumnReturnsColumnDuplicate)
                     JET_errColumnDuplicate);
 }
 
-EseIntegrationScenario(Error, CreatingDuplicateTableReturnsTableDuplicate)
+EseIntegrationScenario(Error, CreatingDuplicateTableReturnsTableDuplicate, Smoke)
 {
     TemporaryDirectory directory("Error.CreatingDuplicateTableReturnsTableDuplicate");
     EseInstance instance(directory);
@@ -85,7 +85,7 @@ EseIntegrationScenario(Error, CreatingDuplicateTableReturnsTableDuplicate)
                     JET_errTableDuplicate);
 }
 
-EseIntegrationScenario(Error, DuplicateUniqueKeyInsertReturnsKeyDuplicate)
+EseIntegrationScenario(Error, DuplicateUniqueKeyInsertReturnsKeyDuplicate, Smoke)
 {
     TemporaryDirectory directory("Error.DuplicateUniqueKeyInsertReturnsKeyDuplicate");
     EseInstance instance(directory);
@@ -116,7 +116,7 @@ EseIntegrationScenario(Error, DuplicateUniqueKeyInsertReturnsKeyDuplicate)
     CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepCancel));
 }
 
-EseIntegrationScenario(Error, SeekWithoutMakeKeyReturnsKeyNotMade)
+EseIntegrationScenario(Error, SeekWithoutMakeKeyReturnsKeyNotMade, Smoke)
 {
     TemporaryDirectory directory("Error.SeekWithoutMakeKeyReturnsKeyNotMade");
     EseInstance instance(directory);
@@ -135,7 +135,7 @@ EseIntegrationScenario(Error, SeekWithoutMakeKeyReturnsKeyNotMade)
                     JET_errKeyNotMade);
 }
 
-EseIntegrationScenario(Error, SetColumnOutsideUpdateReturnsUpdateNotPrepared)
+EseIntegrationScenario(Error, SetColumnOutsideUpdateReturnsUpdateNotPrepared, Smoke)
 {
     TemporaryDirectory directory(
         "Error.SetColumnOutsideUpdateReturnsUpdateNotPrepared");
@@ -152,7 +152,7 @@ EseIntegrationScenario(Error, SetColumnOutsideUpdateReturnsUpdateNotPrepared)
                     JET_errUpdateNotPrepared);
 }
 
-EseIntegrationScenario(Error, UpdateOutsideUpdateReturnsUpdateNotPrepared)
+EseIntegrationScenario(Error, UpdateOutsideUpdateReturnsUpdateNotPrepared, Smoke)
 {
     TemporaryDirectory directory(
         "Error.UpdateOutsideUpdateReturnsUpdateNotPrepared");
@@ -167,7 +167,7 @@ EseIntegrationScenario(Error, UpdateOutsideUpdateReturnsUpdateNotPrepared)
                     JET_errUpdateNotPrepared);
 }
 
-EseIntegrationScenario(Error, RetrieveColumnSizeMismatchReturnsInvalidBufferSize)
+EseIntegrationScenario(Error, RetrieveColumnSizeMismatchReturnsInvalidBufferSize, Smoke)
 {
     TemporaryDirectory directory(
         "Error.RetrieveColumnSizeMismatchReturnsInvalidBufferSize");
@@ -200,7 +200,7 @@ EseIntegrationScenario(Error, RetrieveColumnSizeMismatchReturnsInvalidBufferSize
     Require(actualSize == sizeof(int32_t));
 }
 
-EseIntegrationScenario(Error, AttachAlreadyAttachedDatabaseReturnsWarning)
+EseIntegrationScenario(Error, AttachAlreadyAttachedDatabaseReturnsWarning, Smoke)
 {
     TemporaryDirectory directory(
         "Error.AttachAlreadyAttachedDatabaseReturnsWarning");
@@ -228,7 +228,7 @@ EseIntegrationScenario(Error, AttachAlreadyAttachedDatabaseReturnsWarning)
     CheckJet(JetDetachDatabaseA(session.Handle(), databasePath.c_str()));
 }
 
-EseIntegrationScenario(Error, AttachMissingFileReturnsFileNotFound)
+EseIntegrationScenario(Error, AttachMissingFileReturnsFileNotFound, Smoke)
 {
     TemporaryDirectory directory("Error.AttachMissingFileReturnsFileNotFound");
     EseInstance instance(directory);
@@ -241,7 +241,7 @@ EseIntegrationScenario(Error, AttachMissingFileReturnsFileNotFound)
                     JET_errFileNotFound);
 }
 
-EseIntegrationScenario(Error, DeletingMissingIndexReturnsIndexNotFound)
+EseIntegrationScenario(Error, DeletingMissingIndexReturnsIndexNotFound, Smoke)
 {
     TemporaryDirectory directory("Error.DeletingMissingIndexReturnsIndexNotFound");
     EseInstance instance(directory);
@@ -255,7 +255,7 @@ EseIntegrationScenario(Error, DeletingMissingIndexReturnsIndexNotFound)
                     JET_errIndexNotFound);
 }
 
-EseIntegrationScenario(Error, GetErrorInfoReportsCategoryHierarchy)
+EseIntegrationScenario(Error, GetErrorInfoReportsCategoryHierarchy, Smoke)
 {
     //  JetGetErrorInfoW takes a pointer to a JET_ERR as context and
     //  fills a JET_ERRINFOBASIC_W with category metadata describing

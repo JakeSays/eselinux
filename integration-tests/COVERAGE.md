@@ -696,6 +696,196 @@ coverage target:
     table with `index + 100000` and reads the sentinel back
     during reopen.
 
+  Tier classification: all round-15 scenarios — and every other
+  scenario in the suite up through this point — land at
+  `ScenarioTier::Smoke`.
+
+- **Round 16**: tier system + first batch of `Tier::Regression`
+  scenarios.  Framework changes:
+  - `EseIntegrationScenario(Category, Name, Tier)` — the macro
+    now takes a third argument naming the tier
+    (Smoke / Regression / LongRunning).  Every existing scenario
+    retrofit to its tier; LongRunning scenarios moved from the
+    deprecated `LongRunning` category to `MultiThreaded` +
+    `LongRunning` tier.
+  - `enum class ScenarioTier { Smoke, Regression, LongRunning }`
+    is orthogonal to `ScenarioCategory`.  The functional area
+    (Schema, Backup, etc.) stays in the FullName prefix; the tier
+    is metadata.
+  - `--tier <list>` runner flag, comma-separated, with aliases
+    smoke / reg / regression / long / long-running / all.
+    Default (no flag): smoke + reg.  Replaces the old
+    `--include-long-running` toggle entirely.
+  - `--list` output prefixes each scenario with its tier in
+    bracketed alias form: `[smoke]`, `[reg  ]`, `[long ]`.
+  - Filtering composes with tier: `--filter 'Backup.*' --tier reg`
+    runs backup regression tests; `--filter 'Backup.*'` alone
+    runs backup smoke+reg.
+
+  Regression-tier scenarios added in this round — every per-file
+  blind spot and categorical gap from the refactor-sensitivity
+  audit (`/p/ese/refactor-sensitivity-audit.md`) gets a scenario
+  or is folded into one that addresses multiple blind spots at
+  once.  Each scenario targets a code path the Smoke tier doesn't
+  exercise such that an internal refactor could break it
+  unnoticed:
+
+  - **Schema.WideRecordWithMixedColumnTypesRoundTrips** — 30
+    columns (10 fixed Long + 10 fixed Binary + 10 tagged
+    LongText), insert one row + retrieve each column,
+    confirming bytes round-trip.  Catches refactors that broke
+    record packing under realistic column counts.
+  - **Schema.UniqueIndexEnforcedAcrossPagedBTree** — 4096 random
+    keys, unique primary index, every 16th key probed for
+    duplicate rejection.  Catches refactors that broke
+    uniqueness in B-tree split paths above the in-page-only
+    threshold.
+  - **Schema.CompositeIndexResolvesDuplicateFirstColumns** —
+    400 (region, quarter) rows with duplicates in the first key
+    column, seeks on representative pairs.  Catches composite-
+    key encoding refactors that ignored the second column.
+  - **DataManipulation.RandomOrderInsertSurvivesAscendingWalk**
+    — 8192 deterministically-shuffled keys, walk in ascending
+    order.  Targets B-tree split selection on random-key input.
+  - **DataManipulation.ReverseOrderInsertProducesAscendingTable**
+    — 8192 keys inserted N-1 down to 0, walk ascending.
+    Targets right-to-left growth + rebalancing paths.
+  - **DataManipulation.ChurnFromDeleteReinsertPreservesAscendingOrder**
+    — 4096 random inserts, delete every other key, reinsert
+    2048 fresh keys above the range.  Targets freelist
+    coalescing and page-reuse heuristics.
+  - **Transaction.DeepSavepointStackUnwindsComplexPayload** —
+    nests 7 savepoints (the engine limit) with multi-column
+    mutations + LV writes at each level, rolls back inner 3 and
+    commits outer 4, verifies exact final state.  Also probes
+    the depth limit (8th BeginTransaction must surface
+    `errTransTooDeep`).
+  - **BackupRestore.FullBackupRestoreRoundTripsExactRowContents**
+    — 1024 rows with insert + selective update + selective
+    delete, full backup, restore into a fresh instance, walks
+    every surviving row by exact Key/Value/Body.  Catches
+    refactors that broke specific log-record replay paths.
+  - **Recovery.MultiCycleTermInitReplaysAllLogOpTypes** —
+    three Term→Init cycles with insert + update + delete
+    between each, validates exact row contents after every
+    cycle.  Catches refactors that broke graceful re-init or
+    update/delete log-record replay on a second-cycle attach.
+  - **Concurrency.EscrowMixedSignDeltasContendOnSharedCounter**
+    — 8 worker threads, 4 doing +3 and 4 doing -7, 1000
+    increments each on the same row, final value must equal
+    the predicted signed sum.  Catches refactors that broke
+    conflict resolution for mixed-sign deltas.
+  - **LongValue.MixedSizeLongValuesAcrossSeparationBoundary**
+    — 10 rows with payload sizes 16 / 256 / 1024 / 1536 /
+    2048 / 4096 / 5000 / 8192 / 12000 / 24576 bracketing the
+    LV separation threshold, detach + reattach in a fresh
+    instance, every payload byte-compared.  Catches refactors
+    to the intrinsic-vs-separated decision or LV root pointer.
+  - **Maintenance.MultiPassDefragmentPreservesAllSurvivors** —
+    2000 rows with every 3rd deleted, three Start/Stop defrag
+    cycles, final walk validates every survivor in order.
+    Catches refactors that broke pass-resumption state.
+  - **TemporaryTable.SortPreservedAcrossSpillToDiskThreshold**
+    — 2000 keys inserted in random order, ascending walk
+    produces them sorted.  Catches refactors to the
+    in-memory-to-disk-spill pivot logic.
+  - **Navigation.SecondaryIndexSeekAndRangeAtScale** — 4096
+    rows on a secondary index with reverse-sorted Value, three
+    seek-equality probes across the index, 501-row range walk
+    bounded by SetIndexRange.  Catches refactors to seek
+    position-translation or range-iteration code that don't
+    surface unless the cursor crosses multiple B-tree levels.
+
+  Additional regression scenarios (in this same round):
+  - **Schema.BoundaryPackingExactPageFitChurnPreservesContent** —
+    200-row insert + delete-every-3rd + reinsert 200 with offset
+    keys; final walk validates every survivor's filler bytes
+    via memcmp.
+  - **ColumnType.AllPrimitiveTypesPackedInOneRecord** — single
+    record carrying every primitive type (Bit/Byte/Short/Long/
+    Currency/Float/Double/Text/Binary) round-trips through
+    detach+reattach.
+  - **ColumnType.VariableLengthBinaryAcrossSizeBoundaries** —
+    Binary at 16 boundary sizes (1/2/64/126/127/128/129/254/255/
+    256/257/1023/1024/2048/4095/4096); each value's bytes
+    compared exactly.
+  - **ColumnType.AutoincrementMonotonicAcrossReattach** —
+    autoinc Identity column survives close + reopen + second
+    insert batch; final identity strictly > max of first batch.
+  - **MultiValue.OneHundredItagsAllValuesRoundTrip** — every
+    itag 1..100 set + retrieved, exact-value match per slot.
+  - **MultiValue.UniqueMultiValueIndexAtScale** — 1000 rows ×
+    4 multi-values/row; duplicate insert rejected at three
+    sampled probe values.
+  - **LongValue.AppendAcrossManyChunksSpansSeparationBoundary**
+    — 8 chunks (256..4096 bytes each) appended via prepReplace
+    + JET_bitSetAppendLV; full body byte-pattern compared.
+  - **LongValue.OverwriteAtPageBoundariesPreservesEverythingElse**
+    — 16 KiB LV overwritten at offset 0, offset TotalSize-1,
+    and offset 3968 (straddling a 4 KiB page boundary); full
+    body bytes compared.
+  - **LongValue.ReplaceShrinksLVAndReportsNewSize** — replace
+    32 KiB LV with 16-byte payload; readback reports exact
+    new size + bytes.
+  - **Maintenance.CompactProducesByteIdenticalContent** — 512
+    rows with (Key, Value=Key*17+3); post-compact walk
+    validates every (Key, Value) byte-for-byte.
+  - **Maintenance.DatabaseScanMultiplePassesDataIntact** — two
+    sequential scan passes with delete-every-4th between;
+    final walk validates surviving rows.
+  - **Scale.RandomOrderInsertWithSecondaryIndexAtScale** — scale-
+    sized table with random-order Key inserts + reverse-sorted
+    Value secondary index; both indexes walked end-to-end.
+  - **Snapshot.RepeatedBracketsAroundLiveWorkload** — three
+    Prepare→Freeze→Thaw→End brackets interleaved with three
+    insert batches of varying sizes; final walk validates
+    all 896 rows in insertion order.
+  - **Rbs.PrepareCancelPreservesEveryRowContent** — captures
+    file size + JetGetDatabaseFileInfo's reported size BEFORE
+    PrepareRevert+CancelRevert; AFTER cancel, both must match
+    byte-exactly (file unchanged) and the row count must hold.
+  - **Replication.LogShippingPassiveContentByteMatch** — uses
+    the existing log-shipping topology, then walks the passive's
+    rows in primary-index order asserting Value=row-index
+    monotonically (catches lost / duplicated / reordered log
+    records during shipping).
+  - **Session.MultiSessionWriteConflictRejectsConcurrent** —
+    two sessions race for the same row; second
+    JetPrepareUpdate(prepReplace) surfaces
+    JET_errWriteConflict; first session commits and the
+    committed value wins.
+  - **Session.ManyDupCursorsCoexistAndIsolatePositions** — 64
+    dup cursors each navigate to row-i, each retrieve their
+    expected Value, all close in reverse order, original
+    cursor still usable.
+  - **Database.IterativeGrowsInterleavedWithWritesPreserveContent**
+    — 8 grow steps × 128 rows interleaved; final walk
+    validates every value appears once.
+  - **Transaction.LazyFlushCommitsAreDurableAcrossTerm** —
+    256-row lazy-flush commit; reattach in fresh instance
+    confirms all rows survived JetTerm.
+  - **Concurrency.HighFanoutWriterContentionConverges** — 8
+    workers × 250 RMW increments on 16 shared rows with
+    retry-on-conflict; final sum equals predicted total
+    (no lost or doubled increments under contention).
+  - **MultiThreaded.BulkLongValueCommitsPreserveExactBytes** —
+    4 workers × 4 transactions × 32 LVs/transaction; each
+    LV's 2 KiB pattern validated byte-for-byte post-join.
+  - **TemporaryTable.UpdatableTempTableSortPreservedAcrossManyInserts**
+    — 200 shuffled keys in one txn on a JET_bitTTUpdatable
+    temp table; ascending walk validates the sort threshold.
+  - **Recovery.SigKillRecoveryReplaysMixedOpRecords** — child
+    inserts 100, updates every 3rd, deletes every 7th, all
+    committed before SIGKILL; parent recovers and validates
+    surviving rows have the predicted (key, value), proving
+    UPDATE + DELETE log records replay correctly (not just
+    INSERT).
+  - One Tier::LongRunning scenario,
+    **MultiThreaded.SustainedChurnUnderCachePressure** — 20
+    insert+delete cycles at 10K rows each, ~5 min wall clock
+    to exercise periodic background tasks (page eviction,
+    version-store cleanup, checkpoint advancement).
+
   Framework changes: `EseInstanceOptions::LogFileSizeKb`
   added — scenarios that need to force log generation rolls
   within a small workload (snapshot/truncate-log tests) set a

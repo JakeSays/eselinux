@@ -12,6 +12,7 @@
 #include "Framework/TemporaryDirectory.hxx"
 
 #include <cstring>
+#include <limits>
 #include <string_view>
 #include <vector>
 
@@ -52,7 +53,7 @@ JET_COLUMNID PopulateAutoIncrementTable(EseTable& table, int rowCount)
 
 } // namespace
 
-EseIntegrationScenario(Navigation, MoveFirstNextLast)
+EseIntegrationScenario(Navigation, MoveFirstNextLast, Smoke)
 {
     TemporaryDirectory directory("Navigation.MoveFirstNextLast");
     EseInstance instance(directory);
@@ -73,7 +74,7 @@ EseIntegrationScenario(Navigation, MoveFirstNextLast)
     Require(lastIdentity == firstIdentity + 2);
 }
 
-EseIntegrationScenario(Navigation, MovePreviousFromLastSeesEveryRow)
+EseIntegrationScenario(Navigation, MovePreviousFromLastSeesEveryRow, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.MovePreviousFromLastSeesEveryRow");
@@ -114,7 +115,7 @@ EseIntegrationScenario(Navigation, MovePreviousFromLastSeesEveryRow)
     Require(observedRows == 7);
 }
 
-EseIntegrationScenario(Navigation, MakeKeyAndSeekEqualHitsExpectedRow)
+EseIntegrationScenario(Navigation, MakeKeyAndSeekEqualHitsExpectedRow, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.MakeKeyAndSeekEqualHitsExpectedRow");
@@ -147,7 +148,7 @@ EseIntegrationScenario(Navigation, MakeKeyAndSeekEqualHitsExpectedRow)
     Require(landedKey == targetKey);
 }
 
-EseIntegrationScenario(Navigation, SeekGreaterOrEqualLandsOnFirstMatch)
+EseIntegrationScenario(Navigation, SeekGreaterOrEqualLandsOnFirstMatch, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.SeekGreaterOrEqualLandsOnFirstMatch");
@@ -180,7 +181,7 @@ EseIntegrationScenario(Navigation, SeekGreaterOrEqualLandsOnFirstMatch)
     Require(landedKey == smallestKey);
 }
 
-EseIntegrationScenario(Navigation, SeekEqualReturnsRecordNotFoundWhenMissing)
+EseIntegrationScenario(Navigation, SeekEqualReturnsRecordNotFoundWhenMissing, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.SeekEqualReturnsRecordNotFoundWhenMissing");
@@ -203,7 +204,7 @@ EseIntegrationScenario(Navigation, SeekEqualReturnsRecordNotFoundWhenMissing)
                     JET_errRecordNotFound);
 }
 
-EseIntegrationScenario(Navigation, GetBookmarkAndGotoBookmarkRoundTrip)
+EseIntegrationScenario(Navigation, GetBookmarkAndGotoBookmarkRoundTrip, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.GetBookmarkAndGotoBookmarkRoundTrip");
@@ -242,7 +243,7 @@ EseIntegrationScenario(Navigation, GetBookmarkAndGotoBookmarkRoundTrip)
     Require(landedKey == expectedKey);
 }
 
-EseIntegrationScenario(Navigation, MoveByCountAdvancesCorrectNumberOfRows)
+EseIntegrationScenario(Navigation, MoveByCountAdvancesCorrectNumberOfRows, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.MoveByCountAdvancesCorrectNumberOfRows");
@@ -266,7 +267,7 @@ EseIntegrationScenario(Navigation, MoveByCountAdvancesCorrectNumberOfRows)
     Require(skipKey == firstKey + 5);
 }
 
-EseIntegrationScenario(Navigation, SetCurrentIndexSwitchesActiveIndex)
+EseIntegrationScenario(Navigation, SetCurrentIndexSwitchesActiveIndex, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.SetCurrentIndexSwitchesActiveIndex");
@@ -335,7 +336,7 @@ EseIntegrationScenario(Navigation, SetCurrentIndexSwitchesActiveIndex)
     }
 }
 
-EseIntegrationScenario(Navigation, SetIndexRangeStopsWhereExpected)
+EseIntegrationScenario(Navigation, SetIndexRangeStopsWhereExpected, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.SetIndexRangeStopsWhereExpected");
@@ -383,7 +384,7 @@ EseIntegrationScenario(Navigation, SetIndexRangeStopsWhereExpected)
     Require(observedRows == 3); // firstKey, +1, +2
 }
 
-EseIntegrationScenario(Navigation, MoveBeyondLastReturnsNoCurrentRecord)
+EseIntegrationScenario(Navigation, MoveBeyondLastReturnsNoCurrentRecord, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.MoveBeyondLastReturnsNoCurrentRecord");
@@ -399,7 +400,7 @@ EseIntegrationScenario(Navigation, MoveBeyondLastReturnsNoCurrentRecord)
                     JET_errNoCurrentRecord);
 }
 
-EseIntegrationScenario(Navigation, IntersectIndexesReturnsRowsMatchingBothRanges)
+EseIntegrationScenario(Navigation, IntersectIndexesReturnsRowsMatchingBothRanges, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.IntersectIndexesReturnsRowsMatchingBothRanges");
@@ -534,7 +535,7 @@ EseIntegrationScenario(Navigation, IntersectIndexesReturnsRowsMatchingBothRanges
     CheckJet(JetCloseTable(session.Handle(), byColor));
 }
 
-EseIntegrationScenario(Navigation, RetrieveKeyReturnsIndexKeyBytes)
+EseIntegrationScenario(Navigation, RetrieveKeyReturnsIndexKeyBytes, Smoke)
 {
     TemporaryDirectory directory("Navigation.RetrieveKeyReturnsIndexKeyBytes");
     EseInstance instance(directory);
@@ -590,7 +591,7 @@ EseIntegrationScenario(Navigation, RetrieveKeyReturnsIndexKeyBytes)
     Require(resolvedKey == 11);  // first row's key
 }
 
-EseIntegrationScenario(Navigation, RetrieveKeyReportsBufferTruncation)
+EseIntegrationScenario(Navigation, RetrieveKeyReportsBufferTruncation, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.RetrieveKeyReportsBufferTruncation");
@@ -623,7 +624,7 @@ EseIntegrationScenario(Navigation, RetrieveKeyReportsBufferTruncation)
     Require(cbActual > sizeof(tinyBuffer));
 }
 
-EseIntegrationScenario(Navigation, IndexRecordCountReportsRowCount)
+EseIntegrationScenario(Navigation, IndexRecordCountReportsRowCount, Smoke)
 {
     TemporaryDirectory directory("Navigation.IndexRecordCountReportsRowCount");
     EseInstance instance(directory);
@@ -664,7 +665,7 @@ EseIntegrationScenario(Navigation, IndexRecordCountReportsRowCount)
     Require(bounded == 10);
 }
 
-EseIntegrationScenario(Navigation, GetCurrentIndexReportsActiveIndex)
+EseIntegrationScenario(Navigation, GetCurrentIndexReportsActiveIndex, Smoke)
 {
     TemporaryDirectory directory("Navigation.GetCurrentIndexReportsActiveIndex");
     EseInstance instance(directory);
@@ -711,7 +712,7 @@ EseIntegrationScenario(Navigation, GetCurrentIndexReportsActiveIndex)
     (void)rankColumnId;
 }
 
-EseIntegrationScenario(Navigation, SetAndResetTableSequentialRoundTrip)
+EseIntegrationScenario(Navigation, SetAndResetTableSequentialRoundTrip, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.SetAndResetTableSequentialRoundTrip");
@@ -776,7 +777,7 @@ EseIntegrationScenario(Navigation, SetAndResetTableSequentialRoundTrip)
     Require(afterResetRowsSeen == 32);
 }
 
-EseIntegrationScenario(Navigation, SetCursorFilterRejectsNonMatchingRows)
+EseIntegrationScenario(Navigation, SetCursorFilterRejectsNonMatchingRows, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.SetCursorFilterRejectsNonMatchingRows");
@@ -861,7 +862,7 @@ EseIntegrationScenario(Navigation, SetCursorFilterRejectsNonMatchingRows)
     Require(rowsSeen == 5);
 }
 
-EseIntegrationScenario(Navigation, GetAndGotoRecordPositionRoundTrip)
+EseIntegrationScenario(Navigation, GetAndGotoRecordPositionRoundTrip, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.GetAndGotoRecordPositionRoundTrip");
@@ -900,7 +901,7 @@ EseIntegrationScenario(Navigation, GetAndGotoRecordPositionRoundTrip)
     Require(roundTripValue == landingValue);
 }
 
-EseIntegrationScenario(Navigation, SecondaryIndexBookmarkRoundTrip)
+EseIntegrationScenario(Navigation, SecondaryIndexBookmarkRoundTrip, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.SecondaryIndexBookmarkRoundTrip");
@@ -992,7 +993,7 @@ EseIntegrationScenario(Navigation, SecondaryIndexBookmarkRoundTrip)
     Require(roundTripIdentity == landingIdentity);
 }
 
-EseIntegrationScenario(Navigation, IndexRecordCount2Reports64BitCount)
+EseIntegrationScenario(Navigation, IndexRecordCount2Reports64BitCount, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.IndexRecordCount2Reports64BitCount");
@@ -1038,7 +1039,7 @@ EseIntegrationScenario(Navigation, IndexRecordCount2Reports64BitCount)
     Require(bounded == 25);
 }
 
-EseIntegrationScenario(Navigation, SetCurrentIndex2WithNoMoveLeavesCursorInPlace)
+EseIntegrationScenario(Navigation, SetCurrentIndex2WithNoMoveLeavesCursorInPlace, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.SetCurrentIndex2WithNoMoveLeavesCursorInPlace");
@@ -1120,7 +1121,7 @@ EseIntegrationScenario(Navigation, SetCurrentIndex2WithNoMoveLeavesCursorInPlace
 //  lands on the first row of the new index order — same observable
 //  behavior as v2 without JET_bitNoMove, confirming the v3 dispatch
 //  is wired up.
-EseIntegrationScenario(Navigation, SetCurrentIndex3MovesToFirstOnNewIndex)
+EseIntegrationScenario(Navigation, SetCurrentIndex3MovesToFirstOnNewIndex, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.SetCurrentIndex3MovesToFirstOnNewIndex");
@@ -1204,7 +1205,7 @@ EseIntegrationScenario(Navigation, SetCurrentIndex3MovesToFirstOnNewIndex)
 //  key), matching the SetCurrentIndex2 contract — proves the
 //  v4 entry actually plumbs through the index lookup correctly.
 
-EseIntegrationScenario(Navigation, SetCurrentIndex4PositionsViaIndexId)
+EseIntegrationScenario(Navigation, SetCurrentIndex4PositionsViaIndexId, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.SetCurrentIndex4PositionsViaIndexId");
@@ -1338,7 +1339,7 @@ JET_ERR SeekIntKey(EseTable& table, int32_t key, JET_GRBIT seekGrbit)
 
 } // namespace
 
-EseIntegrationScenario(Navigation, SeekLessThanLandsOnPredecessor)
+EseIntegrationScenario(Navigation, SeekLessThanLandsOnPredecessor, Smoke)
 {
     TemporaryDirectory directory("Navigation.SeekLessThanLandsOnPredecessor");
     EseInstance instance(directory);
@@ -1379,7 +1380,7 @@ EseIntegrationScenario(Navigation, SeekLessThanLandsOnPredecessor)
                     JET_errNoCurrentRecord);
 }
 
-EseIntegrationScenario(Navigation, SeekLessThanOrEqualHitsExactOrPredecessor)
+EseIntegrationScenario(Navigation, SeekLessThanOrEqualHitsExactOrPredecessor, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.SeekLessThanOrEqualHitsExactOrPredecessor");
@@ -1408,7 +1409,7 @@ EseIntegrationScenario(Navigation, SeekLessThanOrEqualHitsExactOrPredecessor)
     Require(SeekIntKey(table, 5, JET_bitSeekLE) == JET_errRecordNotFound);
 }
 
-EseIntegrationScenario(Navigation, SeekGreaterThanLandsOnSuccessor)
+EseIntegrationScenario(Navigation, SeekGreaterThanLandsOnSuccessor, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.SeekGreaterThanLandsOnSuccessor");
@@ -1443,7 +1444,7 @@ EseIntegrationScenario(Navigation, SeekGreaterThanLandsOnSuccessor)
     Require(SeekIntKey(table, 75, JET_bitSeekGT) == JET_errRecordNotFound);
 }
 
-EseIntegrationScenario(Navigation, SeekEqualWithCheckUniquenessSignalsUniqueKey)
+EseIntegrationScenario(Navigation, SeekEqualWithCheckUniquenessSignalsUniqueKey, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.SeekEqualWithCheckUniquenessSignalsUniqueKey");
@@ -1511,7 +1512,7 @@ EseIntegrationScenario(Navigation, SeekEqualWithCheckUniquenessSignalsUniqueKey)
     Require(category == 300);
 }
 
-EseIntegrationScenario(Navigation, SetIndexRangeExclusiveUpperBoundExcludesBoundary)
+EseIntegrationScenario(Navigation, SetIndexRangeExclusiveUpperBoundExcludesBoundary, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.SetIndexRangeExclusiveUpperBoundExcludesBoundary");
@@ -1556,7 +1557,7 @@ EseIntegrationScenario(Navigation, SetIndexRangeExclusiveUpperBoundExcludesBound
     }
 }
 
-EseIntegrationScenario(Navigation, SetIndexRangeRemoveClearsActiveRange)
+EseIntegrationScenario(Navigation, SetIndexRangeRemoveClearsActiveRange, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.SetIndexRangeRemoveClearsActiveRange");
@@ -1602,7 +1603,7 @@ EseIntegrationScenario(Navigation, SetIndexRangeRemoveClearsActiveRange)
     }
 }
 
-EseIntegrationScenario(Navigation, SetIndexRangeInstantDurationDoesNotStick)
+EseIntegrationScenario(Navigation, SetIndexRangeInstantDurationDoesNotStick, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.SetIndexRangeInstantDurationDoesNotStick");
@@ -1649,7 +1650,7 @@ EseIntegrationScenario(Navigation, SetIndexRangeInstantDurationDoesNotStick)
     }
 }
 
-EseIntegrationScenario(Navigation, MoveWithKeyNotEqualSkipsEqualKeyEntries)
+EseIntegrationScenario(Navigation, MoveWithKeyNotEqualSkipsEqualKeyEntries, Smoke)
 {
     TemporaryDirectory directory(
         "Navigation.MoveWithKeyNotEqualSkipsEqualKeyEntries");
@@ -1726,4 +1727,120 @@ EseIntegrationScenario(Navigation, MoveWithKeyNotEqualSkipsEqualKeyEntries)
     }
 }
 
+//  ===================================================================
+//  Tier::Regression — index seek + range walk at meaningful scale.
+//
+//  Smoke navigation tests use 5–10 rows; refactors to the seek
+//  position-translation or range-iteration code don't surface
+//  unless the cursor traverses multiple B-tree levels.  Populates
+//  4096 rows on a secondary index with reverse-sorted Value
+//  column, then exercises seek-equality at three positions and a
+//  range walk bounded by SetIndexRange — all against rows that
+//  necessarily span multiple leaf pages.
+//  ===================================================================
+EseIntegrationScenario(Navigation, SecondaryIndexSeekAndRangeAtScale, Regression)
+{
+    TemporaryDirectory directory(
+        "Navigation.SecondaryIndexSeekAndRangeAtScale");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "NavScale.mdb");
+    EseTable table(database, "Rows");
+    auto keyColumn = table.AddColumn("Key", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
+    auto valueColumn = table.AddColumn("Value", JET_coltypLong,
+                                       JET_bitColumnNotNULL);
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Key\0\0", 6);
+    table.CreateIndex("PrimaryByKey", PrimaryKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+    static constexpr std::string_view ValueKey =
+        std::string_view("+Value\0\0", 8);
+    table.CreateIndex("ByValue", ValueKey, JET_bitIndexUnique);
+
+    //  Key=i, Value=Count-1-i.  Walking ByValue ascending produces
+    //  the rows in REVERSE Key order.
+    static constexpr int32_t Count = 4096;
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < Count; ++i)
+        {
+            const int32_t value = Count - 1 - i;
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  keyColumn, &i, sizeof(i),
+                                  0, nullptr));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  valueColumn, &value, sizeof(value),
+                                  0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(),
+                                 "ByValue"));
+
+    auto seekValueAndAssertKey = [&](int32_t seekValue,
+                                     int32_t expectedKey) {
+        CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                            &seekValue, sizeof(seekValue),
+                            JET_bitNewKey));
+        CheckJet(JetSeek(session.Handle(), table.Id(), JET_bitSeekEQ));
+        int32_t observedKey = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   keyColumn,
+                                   &observedKey, sizeof(observedKey),
+                                   &actualBytes, 0, nullptr));
+        Require(observedKey == expectedKey);
+    };
+    //  Seek-equality at start, middle, tail of the secondary
+    //  index — exercises seek descending through different levels.
+    seekValueAndAssertKey(0, Count - 1);
+    seekValueAndAssertKey(Count / 2, Count / 2 - 1);
+    seekValueAndAssertKey(Count - 1, 0);
+
+    //  Range walk 1000..1500 inclusive on ByValue — exactly 501
+    //  rows in strict ascending order.
+    const int32_t rangeStart = 1000;
+    const int32_t rangeEnd = 1500;
+    CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                        &rangeStart, sizeof(rangeStart),
+                        JET_bitNewKey));
+    CheckJet(JetSeek(session.Handle(), table.Id(), JET_bitSeekGE));
+    CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                        &rangeEnd, sizeof(rangeEnd),
+                        JET_bitNewKey));
+    CheckJet(JetSetIndexRange(session.Handle(), table.Id(),
+                              JET_bitRangeInclusive
+                              | JET_bitRangeUpperLimit));
+
+    int32_t walkedRowCount = 0;
+    int32_t lastValue = std::numeric_limits<int32_t>::min();
+    while (true)
+    {
+        int32_t observedValue = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   valueColumn,
+                                   &observedValue, sizeof(observedValue),
+                                   &actualBytes, 0, nullptr));
+        Require(observedValue >= rangeStart);
+        Require(observedValue <= rangeEnd);
+        Require(observedValue > lastValue);
+        lastValue = observedValue;
+        ++walkedRowCount;
+        const auto moveResult = JetMove(session.Handle(), table.Id(),
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walkedRowCount == rangeEnd - rangeStart + 1);
+}
 

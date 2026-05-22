@@ -12,10 +12,11 @@
 #include "Framework/TemporaryDirectory.hxx"
 
 #include <cstring>
+#include <vector>
 
 using namespace ese::tests;
 
-EseIntegrationScenario(Session, OpenAndClose)
+EseIntegrationScenario(Session, OpenAndClose, Smoke)
 {
     TemporaryDirectory directory("Session.OpenAndClose");
     EseInstance instance(directory);
@@ -45,7 +46,7 @@ EseIntegrationScenario(Session, OpenAndClose)
     Require(afterRollback.ulTrxLevel == 0);
 }
 
-EseIntegrationScenario(Session, DupSessionYieldsDistinctSesid)
+EseIntegrationScenario(Session, DupSessionYieldsDistinctSesid, Smoke)
 {
     TemporaryDirectory directory("Session.DupSessionYieldsDistinctSesid");
     EseInstance instance(directory);
@@ -62,7 +63,7 @@ EseIntegrationScenario(Session, DupSessionYieldsDistinctSesid)
     CheckJet(JetEndSession(duplicateSesid, 0));
 }
 
-EseIntegrationScenario(Session, DupCursorYieldsIndependentCursor)
+EseIntegrationScenario(Session, DupCursorYieldsIndependentCursor, Smoke)
 {
     TemporaryDirectory directory(
         "Session.DupCursorYieldsIndependentCursor");
@@ -108,7 +109,7 @@ EseIntegrationScenario(Session, DupCursorYieldsIndependentCursor)
     CheckJet(JetCloseTable(session.Handle(), secondCursor));
 }
 
-EseIntegrationScenario(Session, GetSessionInfoReportsTxLevel)
+EseIntegrationScenario(Session, GetSessionInfoReportsTxLevel, Smoke)
 {
     TemporaryDirectory directory("Session.GetSessionInfoReportsTxLevel");
     EseInstance instance(directory);
@@ -151,7 +152,7 @@ EseIntegrationScenario(Session, GetSessionInfoReportsTxLevel)
     Require(afterOuter.ulTrxLevel == 0);
 }
 
-EseIntegrationScenario(Session, GetThreadStatsAccumulatesOnInsert)
+EseIntegrationScenario(Session, GetThreadStatsAccumulatesOnInsert, Smoke)
 {
     TemporaryDirectory directory("Session.GetThreadStatsAccumulatesOnInsert");
     EseInstance instance(directory);
@@ -185,7 +186,7 @@ EseIntegrationScenario(Session, GetThreadStatsAccumulatesOnInsert)
     Require(after.cPageDirtied >= baseline.cPageDirtied);
 }
 
-EseIntegrationScenario(Session, GetVersionReturnsNonZero)
+EseIntegrationScenario(Session, GetVersionReturnsNonZero, Smoke)
 {
     TemporaryDirectory directory("Session.GetVersionReturnsNonZero");
     EseInstance instance(directory);
@@ -206,7 +207,7 @@ EseIntegrationScenario(Session, GetVersionReturnsNonZero)
     Require(versionAgain == version);
 }
 
-EseIntegrationScenario(Session, GetCursorInfoChecksCurrentRecordLock)
+EseIntegrationScenario(Session, GetCursorInfoChecksCurrentRecordLock, Smoke)
 {
     TemporaryDirectory directory("Session.GetCursorInfoChecksCurrentRecordLock");
     EseInstance instance(directory);
@@ -248,7 +249,7 @@ EseIntegrationScenario(Session, GetCursorInfoChecksCurrentRecordLock)
                     JET_errInvalidParameter);
 }
 
-EseIntegrationScenario(Session, ClosingOneDupCursorLeavesOthersUsable)
+EseIntegrationScenario(Session, ClosingOneDupCursorLeavesOthersUsable, Smoke)
 {
     TemporaryDirectory directory(
         "Session.ClosingOneDupCursorLeavesOthersUsable");
@@ -291,7 +292,7 @@ EseIntegrationScenario(Session, ClosingOneDupCursorLeavesOthersUsable)
     CheckJet(JetCloseTable(session.Handle(), dupB));
 }
 
-EseIntegrationScenario(Session, SetAndResetSessionContextRoundTrip)
+EseIntegrationScenario(Session, SetAndResetSessionContextRoundTrip, Smoke)
 {
     TemporaryDirectory directory(
         "Session.SetAndResetSessionContextRoundTrip");
@@ -336,7 +337,7 @@ JET_ERR JET_API FreeLSCallback(JET_SESID    /*sesid*/,
 
 } // namespace
 
-EseIntegrationScenario(Session, SetAndGetCursorLocalStorageRoundTrip)
+EseIntegrationScenario(Session, SetAndGetCursorLocalStorageRoundTrip, Smoke)
 {
     TemporaryDirectory directory(
         "Session.SetAndGetCursorLocalStorageRoundTrip");
@@ -378,7 +379,7 @@ EseIntegrationScenario(Session, SetAndGetCursorLocalStorageRoundTrip)
                     JET_errLSNotSet);
 }
 
-EseIntegrationScenario(Session, SetAndGetSessionParameterRoundTrip)
+EseIntegrationScenario(Session, SetAndGetSessionParameterRoundTrip, Smoke)
 {
     TemporaryDirectory directory(
         "Session.SetAndGetSessionParameterRoundTrip");
@@ -405,7 +406,7 @@ EseIntegrationScenario(Session, SetAndGetSessionParameterRoundTrip)
     Require(observed == CorrelationId);
 }
 
-EseIntegrationScenario(Session, GetSystemParameterReportsConfiguredBaseName)
+EseIntegrationScenario(Session, GetSystemParameterReportsConfiguredBaseName, Smoke)
 {
     TemporaryDirectory directory(
         "Session.GetSystemParameterReportsConfiguredBaseName");
@@ -425,4 +426,212 @@ EseIntegrationScenario(Session, GetSystemParameterReportsConfiguredBaseName)
                                     baseName,
                                     sizeof(baseName)));
     Require(std::strlen(baseName) >= 1);
+}
+
+//  ===================================================================
+//  Tier::Regression — DupCursor produces independent cursor state.
+//
+//  Smoke DupCursor moves both cursors to the same place and reads
+//  once.  A refactor that shared internal position cache across
+//  dup'd cursors would still pass that.  This scenario positions
+//  cursor A on row N, dups to cursor B, moves B independently to
+//  row M, and asserts A's position is unaffected.
+//  ===================================================================
+EseIntegrationScenario(Session, DupCursorPositionIsolatedFromOriginal, Regression)
+{
+    TemporaryDirectory directory(
+        "Session.DupCursorPositionIsolatedFromOriginal");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "DupPos.mdb");
+    EseTable table(database, "Rows");
+    auto valueColumn = table.AddColumn("Value", JET_coltypLong,
+                                       JET_bitColumnNotNULL);
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < 100; ++i)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, valueColumn, i);
+        }
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveNext, 0));
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveNext, 0));
+    //  Cursor on row index 2 (Value=2).
+    JET_TABLEID dup = JET_tableidNil;
+    CheckJet(JetDupCursor(session.Handle(), table.Id(), &dup, 0));
+
+    //  Move dup independently to last row.
+    CheckJet(JetMove(session.Handle(), dup, JET_MoveLast, 0));
+    int32_t observedDup = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), dup, valueColumn,
+                               &observedDup, sizeof(observedDup),
+                               &actualBytes, 0, nullptr));
+    Require(observedDup == 99);
+
+    //  Original cursor must still be on Value=2.
+    int32_t observedOriginal = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), valueColumn,
+                               &observedOriginal, sizeof(observedOriginal),
+                               &actualBytes, 0, nullptr));
+    Require(observedOriginal == 2);
+
+    //  Close the duplicate; the original must still be usable.
+    CheckJet(JetCloseTable(session.Handle(), dup));
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveNext, 0));
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), valueColumn,
+                               &observedOriginal, sizeof(observedOriginal),
+                               &actualBytes, 0, nullptr));
+    Require(observedOriginal == 3);
+}
+
+//  ===================================================================
+//  Tier::Regression — write-conflict surfaces across sessions.
+//
+//  Smoke GetCursorInfo probes a single-session lock.  A refactor
+//  that broke multi-session write isolation would pass that.
+//  Two sessions both update the same row inside open transactions;
+//  the second update must surface JET_errWriteConflict.
+//  ===================================================================
+EseIntegrationScenario(Session, MultiSessionWriteConflictRejectsConcurrent, Regression)
+{
+    TemporaryDirectory directory(
+        "Session.MultiSessionWriteConflictRejectsConcurrent");
+    EseInstance instance(directory);
+    {
+        EseSession setup(instance);
+        EseDatabase database(setup, "Conflict.mdb");
+        EseTable table(database, "Rows");
+        auto valueColumn = table.AddColumn("Value", JET_coltypLong,
+                                           JET_bitColumnNotNULL);
+        EseTransaction transaction(setup);
+        InsertSingleFixedColumnRow<int32_t>(table, valueColumn, 1);
+        transaction.Commit();
+    }
+
+    EseSession sessionA(instance);
+    EseDatabase dbA(sessionA, "Conflict.mdb",
+                    EseDatabaseMode::AttachAndOpen);
+    EseTable tableA(dbA, "Rows", EseTableMode::Open);
+    JET_COLUMNDEF valueInfo = {};
+    valueInfo.cbStruct = sizeof(valueInfo);
+    CheckJet(JetGetTableColumnInfoA(sessionA.Handle(), tableA.Id(),
+                                     "Value", &valueInfo, sizeof(valueInfo),
+                                     JET_ColInfo));
+
+    EseSession sessionB(instance);
+    EseDatabase dbB(sessionB, "Conflict.mdb",
+                    EseDatabaseMode::AttachAndOpen);
+    EseTable tableB(dbB, "Rows", EseTableMode::Open);
+
+    //  Session A begins txn + replaces.
+    CheckJet(JetBeginTransaction(sessionA.Handle()));
+    CheckJet(JetMove(sessionA.Handle(), tableA.Id(), JET_MoveFirst, 0));
+    CheckJet(JetPrepareUpdate(sessionA.Handle(), tableA.Id(),
+                              JET_prepReplace));
+    const int32_t newA = 100;
+    CheckJet(JetSetColumn(sessionA.Handle(), tableA.Id(),
+                          valueInfo.columnid,
+                          &newA, sizeof(newA), 0, nullptr));
+    CheckJet(JetUpdate(sessionA.Handle(), tableA.Id(),
+                       nullptr, 0, nullptr));
+
+    //  Session B begins txn + tries to replace the same row.  The
+    //  engine surfaces JET_errWriteConflict at the
+    //  JetPrepareUpdate(JET_prepReplace) call — that's where it
+    //  acquires the row's version-store lock.
+    CheckJet(JetBeginTransaction(sessionB.Handle()));
+    CheckJet(JetMove(sessionB.Handle(), tableB.Id(), JET_MoveFirst, 0));
+    RequireJetError(JetPrepareUpdate(sessionB.Handle(), tableB.Id(),
+                                     JET_prepReplace),
+                    JET_errWriteConflict);
+    CheckJet(JetRollback(sessionB.Handle(), 0));
+
+    //  Session A commits; new value sticks.
+    CheckJet(JetCommitTransaction(sessionA.Handle(), 0));
+    CheckJet(JetMove(sessionA.Handle(), tableA.Id(), JET_MoveFirst, 0));
+    int32_t observed = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(sessionA.Handle(), tableA.Id(),
+                               valueInfo.columnid,
+                               &observed, sizeof(observed),
+                               &actualBytes, 0, nullptr));
+    Require(observed == newA);
+}
+
+//  ===================================================================
+//  Tier::Regression — many JetDupCursor handles open simultaneously.
+//  Smoke ClosingOneDupCursor closes the first dup and uses the
+//  others.  This scenario opens 64 dup cursors, navigates each to
+//  a distinct row, reads each back, then closes them all — catches
+//  refactors that broke dup-list cleanup or hit resource caps.
+//  ===================================================================
+EseIntegrationScenario(Session, ManyDupCursorsCoexistAndIsolatePositions, Regression)
+{
+    TemporaryDirectory directory(
+        "Session.ManyDupCursorsCoexistAndIsolatePositions");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Dups.mdb");
+    EseTable table(database, "Rows");
+    auto valueColumn = table.AddColumn("Value", JET_coltypLong,
+                                       JET_bitColumnNotNULL);
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < 128; ++i)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, valueColumn, i);
+        }
+        transaction.Commit();
+    }
+
+    static constexpr int32_t DupCount = 64;
+    std::vector<JET_TABLEID> dups(DupCount, JET_tableidNil);
+    for (int32_t i = 0; i < DupCount; ++i)
+    {
+        CheckJet(JetDupCursor(session.Handle(), table.Id(),
+                              &dups[static_cast<size_t>(i)], 0));
+        Require(dups[static_cast<size_t>(i)] != JET_tableidNil);
+        //  Each dup walks to row index i.
+        CheckJet(JetMove(session.Handle(),
+                         dups[static_cast<size_t>(i)],
+                         JET_MoveFirst, 0));
+        for (int32_t step = 0; step < i; ++step)
+        {
+            CheckJet(JetMove(session.Handle(),
+                             dups[static_cast<size_t>(i)],
+                             JET_MoveNext, 0));
+        }
+    }
+    //  Read each dup's current row — must observe its assigned
+    //  Value, proving cursor-state isolation across 64 dups.
+    for (int32_t i = 0; i < DupCount; ++i)
+    {
+        int32_t observed = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(),
+                                   dups[static_cast<size_t>(i)],
+                                   valueColumn,
+                                   &observed, sizeof(observed),
+                                   &actualBytes, 0, nullptr));
+        Require(observed == i);
+    }
+    //  Close in REVERSE order so the dup-list pointer maintenance
+    //  is exercised at every depth.
+    for (int32_t i = DupCount - 1; i >= 0; --i)
+    {
+        CheckJet(JetCloseTable(session.Handle(),
+                               dups[static_cast<size_t>(i)]));
+    }
+    //  Original cursor must still be usable.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t observed = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), valueColumn,
+                               &observed, sizeof(observed),
+                               &actualBytes, 0, nullptr));
+    Require(observed == 0);
 }

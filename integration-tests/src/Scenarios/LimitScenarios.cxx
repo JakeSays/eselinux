@@ -17,7 +17,7 @@
 
 using namespace ese::tests;
 
-EseIntegrationScenario(Limit, TableWithOneHundredColumnsRoundTrips)
+EseIntegrationScenario(Limit, TableWithOneHundredColumnsRoundTrips, Smoke)
 {
     TemporaryDirectory directory("Limit.TableWithOneHundredColumnsRoundTrips");
     EseInstance instance(directory);
@@ -59,7 +59,7 @@ EseIntegrationScenario(Limit, TableWithOneHundredColumnsRoundTrips)
     }
 }
 
-EseIntegrationScenario(Limit, TableWithTwentyIndexesRoundTrips)
+EseIntegrationScenario(Limit, TableWithTwentyIndexesRoundTrips, Smoke)
 {
     TemporaryDirectory directory("Limit.TableWithTwentyIndexesRoundTrips");
     EseInstance instance(directory);
@@ -131,7 +131,7 @@ EseIntegrationScenario(Limit, TableWithTwentyIndexesRoundTrips)
     }
 }
 
-EseIntegrationScenario(Limit, FiftyTablesInOneDatabase)
+EseIntegrationScenario(Limit, FiftyTablesInOneDatabase, Smoke)
 {
     TemporaryDirectory directory("Limit.FiftyTablesInOneDatabase");
     EseInstance instance(directory);
@@ -185,7 +185,7 @@ EseIntegrationScenario(Limit, FiftyTablesInOneDatabase)
     }
 }
 
-EseIntegrationScenario(Limit, LongTableNameAccepted)
+EseIntegrationScenario(Limit, LongTableNameAccepted, Smoke)
 {
     TemporaryDirectory directory("Limit.LongTableNameAccepted");
     EseInstance instance(directory);
@@ -230,7 +230,7 @@ EseIntegrationScenario(Limit, LongTableNameAccepted)
     CheckJet(JetCloseTable(session.Handle(), reopened));
 }
 
-EseIntegrationScenario(Limit, ColumnNameAtMaximumLengthAccepted)
+EseIntegrationScenario(Limit, ColumnNameAtMaximumLengthAccepted, Smoke)
 {
     TemporaryDirectory directory("Limit.ColumnNameAtMaximumLengthAccepted");
     EseInstance instance(directory);
@@ -252,7 +252,7 @@ EseIntegrationScenario(Limit, ColumnNameAtMaximumLengthAccepted)
     Require(columnDefinition.columnid == columnId);
 }
 
-EseIntegrationScenario(Limit, EmptyTableNameRejected)
+EseIntegrationScenario(Limit, EmptyTableNameRejected, Smoke)
 {
     TemporaryDirectory directory("Limit.EmptyTableNameRejected");
     EseInstance instance(directory);

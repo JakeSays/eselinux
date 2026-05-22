@@ -17,6 +17,9 @@
 namespace ese::tests
 {
 
+//  Functional grouping — names the engine area the scenario is
+//  testing.  Encoded in the first half of FullName ("Schema.Foo").
+//  Independent of tier — a Schema scenario can sit at any tier.
 enum class ScenarioCategory
 {
     Platform,
@@ -45,15 +48,50 @@ enum class ScenarioCategory
     Rbs,
     Replication,
     WideApi,
+};
+
+//  Tier — depth/intent of the test.  Orthogonal to Category.
+//  Smoke      — fast public-API exercise, asserts contract +
+//               immediate round-trip.  Default tier.
+//  Regression — heavier scenarios designed to catch refactor-induced
+//               regressions in internal heuristics (B-tree split
+//               policy, freelist coalescing, concurrency, etc.).
+//               Larger row counts, randomized patterns, multi-cycle
+//               state exercise.
+//  LongRunning — minutes-to-hours stress.  Opt-in.
+enum class ScenarioTier
+{
+    Smoke,
+    Regression,
     LongRunning,
 };
 
 const char* ToString(ScenarioCategory category);
 
+//  ToString returns the canonical alias used in --list and on the
+//  command line: "smoke", "reg", "long".  Use ToFullString for the
+//  human-friendly long form ("Regression", "LongRunning").
+const char* ToString(ScenarioTier tier);
+const char* ToFullString(ScenarioTier tier);
+
+//  Parse a single tier token (alias or canonical name, case-
+//  insensitive).  Accepted forms:
+//    smoke
+//    reg | regression
+//    long | long-running | longrunning
+//    all  (caller expands to the full set)
+//  Returns true on success and writes to tier (unless the token
+//  is "all", in which case all is set and tier is undefined).
+bool ParseScenarioTier(std::string_view token,
+                       ScenarioTier& tier,
+                       bool& all);
+
 class Scenario
 {
 public:
-    Scenario(ScenarioCategory category, std::string_view name);
+    Scenario(ScenarioCategory category,
+             std::string_view name,
+             ScenarioTier tier);
     virtual ~Scenario() = default;
 
     Scenario(const Scenario&) = delete;
@@ -62,6 +100,11 @@ public:
     ScenarioCategory Category() const
     {
         return _category;
+    }
+
+    ScenarioTier Tier() const
+    {
+        return _tier;
     }
 
     const std::string& Name() const
@@ -78,24 +121,30 @@ public:
 private:
     ScenarioCategory _category;
     std::string _name;
+    ScenarioTier _tier;
 };
 
 } // namespace ese::tests
 
-// EseIntegrationScenario(Category, Name) { body } — declares a scenario
-// in the calling translation unit. Generates:
+// EseIntegrationScenario(Category, Name, Tier) { body } — declares
+// a scenario in the calling translation unit.  Tier is one of the
+// ScenarioTier enumerators (Smoke / Regression / LongRunning).
+// Generates:
 // 1. A free function holding the user-supplied body.
 // 2. A subclass of Scenario whose Run() forwards to that function.
 // 3. A file-local instance of the subclass — its base-class ctor
-// self-registers in the global ScenarioRegistry at static-init time.
-#define EseIntegrationScenario(category, name) \
+//    self-registers in the global ScenarioRegistry at static-init
+//    time.
+#define EseIntegrationScenario(category, name, tier) \
     static void EseIntegrationScenarioBody_##category##_##name(); \
     namespace \
     { \
     struct EseIntegrationScenarioRunner_##category##_##name : public ::ese::tests::Scenario \
     { \
         EseIntegrationScenarioRunner_##category##_##name() \
-            : ::ese::tests::Scenario(::ese::tests::ScenarioCategory::category, #name) \
+            : ::ese::tests::Scenario(::ese::tests::ScenarioCategory::category, \
+                                     #name, \
+                                     ::ese::tests::ScenarioTier::tier) \
         { \
         } \
         void Run() override \

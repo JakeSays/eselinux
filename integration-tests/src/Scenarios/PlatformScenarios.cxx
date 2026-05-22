@@ -17,7 +17,7 @@
 
 using namespace ese::tests;
 
-EseIntegrationScenario(Platform, InitializeAndTerminate)
+EseIntegrationScenario(Platform, InitializeAndTerminate, Smoke)
 {
     TemporaryDirectory directory("Platform.InitializeAndTerminate");
     EseInstance instance(directory);
@@ -25,7 +25,7 @@ EseIntegrationScenario(Platform, InitializeAndTerminate)
     // RAII wrapper throws and the scenario fails.
 }
 
-EseIntegrationScenario(Platform, GetInstanceInfoEnumeratesRunningInstance)
+EseIntegrationScenario(Platform, GetInstanceInfoEnumeratesRunningInstance, Smoke)
 {
     TemporaryDirectory directory(
         "Platform.GetInstanceInfoEnumeratesRunningInstance");
@@ -66,7 +66,7 @@ EseIntegrationScenario(Platform, GetInstanceInfoEnumeratesRunningInstance)
     CheckJet(JetFreeBuffer(reinterpret_cast<char*>(instanceInfoArray)));
 }
 
-EseIntegrationScenario(Platform, CreateInstanceAllocatesHandleWithoutInit)
+EseIntegrationScenario(Platform, CreateInstanceAllocatesHandleWithoutInit, Smoke)
 {
     //  JetCreateInstance is the unversioned alloc-only form (the
     //  framework uses JetCreateInstance2 elsewhere because it accepts
@@ -79,7 +79,7 @@ EseIntegrationScenario(Platform, CreateInstanceAllocatesHandleWithoutInit)
     CheckJet(JetTerm(handle));
 }
 
-EseIntegrationScenario(Platform, GetAndSetResourceParamRoundTrip)
+EseIntegrationScenario(Platform, GetAndSetResourceParamRoundTrip, Smoke)
 {
     TemporaryDirectory directory("Platform.GetAndSetResourceParamRoundTrip");
     EseInstance instance(directory);
@@ -125,7 +125,7 @@ EseIntegrationScenario(Platform, GetAndSetResourceParamRoundTrip)
     Require(pibMaxAfter == pibMax);
 }
 
-EseIntegrationScenario(Platform, Init2BringsUpInstanceAcceptingGrbit)
+EseIntegrationScenario(Platform, Init2BringsUpInstanceAcceptingGrbit, Smoke)
 {
     TemporaryDirectory directory("Platform.Init2BringsUpInstanceAcceptingGrbit");
 
@@ -305,7 +305,7 @@ struct EnableMultiInstanceRegistrar
 
 }  // namespace
 
-EseIntegrationScenario(Platform, EnableMultiInstanceHostsTwoIndependentInstances)
+EseIntegrationScenario(Platform, EnableMultiInstanceHostsTwoIndependentInstances, Smoke)
 {
     TemporaryDirectory directory(
         "Platform.EnableMultiInstanceHostsTwoIndependentInstances");
@@ -324,7 +324,7 @@ EseIntegrationScenario(Platform, EnableMultiInstanceHostsTwoIndependentInstances
     Require(WEXITSTATUS(status) == 0);
 }
 
-EseIntegrationScenario(Platform, StopServiceInstanceBlocksSubsequentApiCalls)
+EseIntegrationScenario(Platform, StopServiceInstanceBlocksSubsequentApiCalls, Smoke)
 {
     TemporaryDirectory directory(
         "Platform.StopServiceInstanceBlocksSubsequentApiCalls");
@@ -362,8 +362,7 @@ EseIntegrationScenario(Platform, StopServiceInstanceBlocksSubsequentApiCalls)
     //  (The EseInstance dtor will JetTerm next.)
 }
 
-EseIntegrationScenario(Platform,
-                       StopServiceInstance2BackgroundOnlyKeepsForegroundAlive)
+EseIntegrationScenario(Platform, StopServiceInstance2BackgroundOnlyKeepsForegroundAlive, Smoke)
 {
     TemporaryDirectory directory(
         "Platform.StopServiceInstance2BackgroundOnlyKeepsForegroundAlive");
@@ -403,7 +402,7 @@ EseIntegrationScenario(Platform,
     CheckJet(JetCloseTable(session.Handle(), tableid));
 }
 
-EseIntegrationScenario(Platform, StopServiceGlobalRoutesToActiveInstance)
+EseIntegrationScenario(Platform, StopServiceGlobalRoutesToActiveInstance, Smoke)
 {
     TemporaryDirectory directory(
         "Platform.StopServiceGlobalRoutesToActiveInstance");
@@ -429,7 +428,7 @@ EseIntegrationScenario(Platform, StopServiceGlobalRoutesToActiveInstance)
                     JET_errClientRequestToStopJetService);
 }
 
-EseIntegrationScenario(Platform, ConfigureProcessForCrashDumpAcceptsGrbits)
+EseIntegrationScenario(Platform, ConfigureProcessForCrashDumpAcceptsGrbits, Smoke)
 {
     //  JetConfigureProcessForCrashDump is process-wide (not
     //  instance-scoped) — it tells the engine which slices of its
@@ -456,7 +455,7 @@ EseIntegrationScenario(Platform, ConfigureProcessForCrashDumpAcceptsGrbits)
 //  as JetInit/JetInit2 — the test confirms the v3 entry reaches
 //  the same engine path and produces a usable instance.
 
-EseIntegrationScenario(Platform, Init3WithEmptyRstInfoBootsInstance)
+EseIntegrationScenario(Platform, Init3WithEmptyRstInfoBootsInstance, Smoke)
 {
     TemporaryDirectory directory(
         "Platform.Init3WithEmptyRstInfoBootsInstance");

@@ -13,11 +13,12 @@
 
 #include <cstring>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace ese::tests;
 
-EseIntegrationScenario(LongValue, ShortLongTextRoundTrip)
+EseIntegrationScenario(LongValue, ShortLongTextRoundTrip, Smoke)
 {
     TemporaryDirectory directory("LongValue.ShortLongTextRoundTrip");
     EseInstance instance(directory);
@@ -47,7 +48,7 @@ EseIntegrationScenario(LongValue, ShortLongTextRoundTrip)
                         WrittenValue.size()) == 0);
 }
 
-EseIntegrationScenario(LongValue, MultiPageLongValueRoundTrip)
+EseIntegrationScenario(LongValue, MultiPageLongValueRoundTrip, Smoke)
 {
     TemporaryDirectory directory("LongValue.MultiPageLongValueRoundTrip");
     EseInstance instance(directory);
@@ -84,7 +85,7 @@ EseIntegrationScenario(LongValue, MultiPageLongValueRoundTrip)
                         writtenBytes.size()) == 0);
 }
 
-EseIntegrationScenario(LongValue, AppendExtendsExistingValue)
+EseIntegrationScenario(LongValue, AppendExtendsExistingValue, Smoke)
 {
     TemporaryDirectory directory("LongValue.AppendExtendsExistingValue");
     EseInstance instance(directory);
@@ -141,7 +142,7 @@ EseIntegrationScenario(LongValue, AppendExtendsExistingValue)
                         SecondChunk.size()) == 0);
 }
 
-EseIntegrationScenario(LongValue, OverwritePortionPreservesSurroundingBytes)
+EseIntegrationScenario(LongValue, OverwritePortionPreservesSurroundingBytes, Smoke)
 {
     TemporaryDirectory directory(
         "LongValue.OverwritePortionPreservesSurroundingBytes");
@@ -205,7 +206,7 @@ EseIntegrationScenario(LongValue, OverwritePortionPreservesSurroundingBytes)
     }
 }
 
-EseIntegrationScenario(LongValue, ChunkedRetrieveReadsByOffset)
+EseIntegrationScenario(LongValue, ChunkedRetrieveReadsByOffset, Smoke)
 {
     TemporaryDirectory directory("LongValue.ChunkedRetrieveReadsByOffset");
     EseInstance instance(directory);
@@ -275,7 +276,7 @@ EseIntegrationScenario(LongValue, ChunkedRetrieveReadsByOffset)
                         writtenBytes.size()) == 0);
 }
 
-EseIntegrationScenario(LongValue, RetrieveIntoTooSmallBufferReturnsBufferTruncated)
+EseIntegrationScenario(LongValue, RetrieveIntoTooSmallBufferReturnsBufferTruncated, Smoke)
 {
     TemporaryDirectory directory(
         "LongValue.RetrieveIntoTooSmallBufferReturnsBufferTruncated");
@@ -313,7 +314,7 @@ EseIntegrationScenario(LongValue, RetrieveIntoTooSmallBufferReturnsBufferTruncat
     Require(actualBytes == WrittenValue.size());
 }
 
-EseIntegrationScenario(LongValue, EmptyLongValueRoundTrip)
+EseIntegrationScenario(LongValue, EmptyLongValueRoundTrip, Smoke)
 {
     TemporaryDirectory directory("LongValue.EmptyLongValueRoundTrip");
     EseInstance instance(directory);
@@ -355,7 +356,7 @@ EseIntegrationScenario(LongValue, EmptyLongValueRoundTrip)
     Require(actualBytes == 0);
 }
 
-EseIntegrationScenario(LongValue, SetSeparateLVForcesSeparatedStorage)
+EseIntegrationScenario(LongValue, SetSeparateLVForcesSeparatedStorage, Smoke)
 {
     TemporaryDirectory directory("LongValue.SetSeparateLVForcesSeparatedStorage");
     EseInstance instance(directory);
@@ -435,7 +436,7 @@ EseIntegrationScenario(LongValue, SetSeparateLVForcesSeparatedStorage)
                         ShortPayloadBytes) == 0);
 }
 
-EseIntegrationScenario(LongValue, SetCompressedShrinksHighlyCompressibleData)
+EseIntegrationScenario(LongValue, SetCompressedShrinksHighlyCompressibleData, Smoke)
 {
     TemporaryDirectory directory(
         "LongValue.SetCompressedShrinksHighlyCompressibleData");
@@ -487,7 +488,7 @@ EseIntegrationScenario(LongValue, SetCompressedShrinksHighlyCompressibleData)
                         PayloadBytes) == 0);
 }
 
-EseIntegrationScenario(LongValue, SetUncompressedOverridesColumnDefaultCompression)
+EseIntegrationScenario(LongValue, SetUncompressedOverridesColumnDefaultCompression, Smoke)
 {
     TemporaryDirectory directory(
         "LongValue.SetUncompressedOverridesColumnDefaultCompression");
@@ -576,7 +577,7 @@ EseIntegrationScenario(LongValue, SetUncompressedOverridesColumnDefaultCompressi
                         compressiblePayload.data(), PayloadBytes) == 0);
 }
 
-EseIntegrationScenario(LongValue, SetSizeLVTruncatesPreservingPrefix)
+EseIntegrationScenario(LongValue, SetSizeLVTruncatesPreservingPrefix, Smoke)
 {
     TemporaryDirectory directory("LongValue.SetSizeLVTruncatesPreservingPrefix");
     EseInstance instance(directory);
@@ -631,7 +632,7 @@ EseIntegrationScenario(LongValue, SetSizeLVTruncatesPreservingPrefix)
                         TruncatedBytes) == 0);
 }
 
-EseIntegrationScenario(LongValue, RetrieveLongIdReturnsEightByteHandle)
+EseIntegrationScenario(LongValue, RetrieveLongIdReturnsEightByteHandle, Smoke)
 {
     TemporaryDirectory directory("LongValue.RetrieveLongIdReturnsEightByteHandle");
     EseInstance instance(directory);
@@ -688,7 +689,7 @@ EseIntegrationScenario(LongValue, RetrieveLongIdReturnsEightByteHandle)
     Require(std::memcmp(roundTrip.data(), payload.data(), PayloadBytes) == 0);
 }
 
-EseIntegrationScenario(LongValue, SetIntrinsicLVForcesInlineStorage)
+EseIntegrationScenario(LongValue, SetIntrinsicLVForcesInlineStorage, Smoke)
 {
     TemporaryDirectory directory("LongValue.SetIntrinsicLVForcesInlineStorage");
     EseInstance instance(directory);
@@ -730,7 +731,7 @@ EseIntegrationScenario(LongValue, SetIntrinsicLVForcesInlineStorage)
                         IntrinsicPayloadBytes) == 0);
 }
 
-EseIntegrationScenario(LongValue, SetIntrinsicLVSilentlySeparatesOversizeValue)
+EseIntegrationScenario(LongValue, SetIntrinsicLVSilentlySeparatesOversizeValue, Smoke)
 {
     TemporaryDirectory directory(
         "LongValue.SetIntrinsicLVSilentlySeparatesOversizeValue");
@@ -786,7 +787,7 @@ EseIntegrationScenario(LongValue, SetIntrinsicLVSilentlySeparatesOversizeValue)
                         OversizePayloadBytes) == 0);
 }
 
-EseIntegrationScenario(LongValue, SetContiguousLVRoundTripsLargeData)
+EseIntegrationScenario(LongValue, SetContiguousLVRoundTripsLargeData, Smoke)
 {
     TemporaryDirectory directory("LongValue.SetContiguousLVRoundTripsLargeData");
     EseInstance instance(directory);
@@ -839,7 +840,7 @@ EseIntegrationScenario(LongValue, SetContiguousLVRoundTripsLargeData)
                         PayloadBytes) == 0);
 }
 
-EseIntegrationScenario(LongValue, ReplaceLongValueShrinksToZero)
+EseIntegrationScenario(LongValue, ReplaceLongValueShrinksToZero, Smoke)
 {
     TemporaryDirectory directory("LongValue.ReplaceLongValueShrinksToZero");
     EseInstance instance(directory);
@@ -885,3 +886,415 @@ EseIntegrationScenario(LongValue, ReplaceLongValueShrinksToZero)
                         SmallValue.data(),
                         SmallValue.size()) == 0);
 }
+
+//  ===================================================================
+//  Tier::Regression — long-value boundary + size diversity.
+//
+//  Smoke tests cover single LVs at one size each.  This scenario
+//  drives the LV separation-threshold decision with many sizes
+//  bracketing the boundary (a few bytes below to many KB above),
+//  then verifies every payload round-trips byte-for-byte AFTER
+//  detach + reattach.  A refactor that broke the
+//  intrinsic-vs-separated decision at a specific size threshold,
+//  or that mis-serialised the LV root pointer, would surface here.
+//  ===================================================================
+EseIntegrationScenario(LongValue, MixedSizeLongValuesAcrossSeparationBoundary, Regression)
+{
+    TemporaryDirectory directory(
+        "LongValue.MixedSizeLongValuesAcrossSeparationBoundary");
+    const auto databasePath = directory.Path() / "Boundary.mdb";
+
+    //  Sizes chosen to span the intrinsic/separated boundary (the
+    //  engine separates above ~half-page, typically ~1–2 KiB) and
+    //  to push deep into multi-page LVs (>16 KiB).  Each row's
+    //  payload is a deterministic pattern (byte_i = i * 31 + key
+    //  XOR'd through) so a corrupted byte at any offset shows up.
+    const std::vector<uint32_t> Sizes = {
+        16, 256, 1024, 1536, 2048, 4096, 5000, 8192, 12000, 24576,
+    };
+    static constexpr int32_t RowCount = static_cast<int32_t>(10);
+
+    auto makePayload = [](int32_t key, uint32_t size) {
+        std::vector<uint8_t> bytes(size);
+        for (uint32_t i = 0; i < size; ++i)
+        {
+            bytes[i] = static_cast<uint8_t>(
+                ((i * 31) ^ (key * 7) ^ (i >> 3)) & 0xFF);
+        }
+        return bytes;
+    };
+
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+        EseDatabase database(session, "Boundary.mdb");
+        EseTable table(database, "LongValues");
+        auto keyColumn = table.AddColumn("Key", JET_coltypLong,
+                                         JET_bitColumnNotNULL);
+        auto bodyColumn = table.AddColumn("Body", JET_coltypLongBinary);
+        static constexpr std::string_view PrimaryKey =
+            std::string_view("+Key\0\0", 6);
+        table.CreateIndex("PrimaryByKey", PrimaryKey,
+                          JET_bitIndexPrimary | JET_bitIndexUnique);
+
+        EseTransaction transaction(session);
+        for (int32_t key = 0; key < RowCount; ++key)
+        {
+            const auto payload = makePayload(key, Sizes[key]);
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  keyColumn, &key, sizeof(key),
+                                  0, nullptr));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  bodyColumn,
+                                  payload.data(), payload.size(),
+                                  0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+        //  Scope-exit RAII closes table + database, detaches, and
+        //  JetTerms the instance — no manual JetDetachDatabaseA
+        //  needed (and a manual detach here would race the
+        //  destructors).
+    }
+
+    //  Reattach in a fresh instance — verifies the LV root
+    //  pointers + multi-page LV nodes survive the detach/attach
+    //  cycle, not just the buffer cache.
+    EseInstance instance(directory);
+    EseSession session(instance);
+    CheckJet(JetAttachDatabaseA(session.Handle(),
+                                databasePath.string().c_str(), 0));
+    JET_DBID dbid = JET_dbidNil;
+    CheckJet(JetOpenDatabaseA(session.Handle(),
+                              databasePath.string().c_str(),
+                              nullptr, &dbid, 0));
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetOpenTableA(session.Handle(), dbid, "LongValues",
+                           nullptr, 0, 0, &tableId));
+    JET_COLUMNDEF keyInfo = {};
+    keyInfo.cbStruct = sizeof(keyInfo);
+    CheckJet(JetGetTableColumnInfoA(session.Handle(), tableId, "Key",
+                                     &keyInfo, sizeof(keyInfo),
+                                     JET_ColInfo));
+    JET_COLUMNDEF bodyInfo = {};
+    bodyInfo.cbStruct = sizeof(bodyInfo);
+    CheckJet(JetGetTableColumnInfoA(session.Handle(), tableId, "Body",
+                                     &bodyInfo, sizeof(bodyInfo),
+                                     JET_ColInfo));
+
+    CheckJet(JetMove(session.Handle(), tableId, JET_MoveFirst, 0));
+    int32_t walkedRowCount = 0;
+    while (true)
+    {
+        int32_t observedKey = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), tableId,
+                                   keyInfo.columnid,
+                                   &observedKey, sizeof(observedKey),
+                                   &actualBytes, 0, nullptr));
+        const auto expectedSize = Sizes[observedKey];
+        std::vector<uint8_t> observedBody(expectedSize);
+        CheckJet(JetRetrieveColumn(session.Handle(), tableId,
+                                   bodyInfo.columnid,
+                                   observedBody.data(), expectedSize,
+                                   &actualBytes, 0, nullptr));
+        Require(actualBytes == expectedSize);
+        const auto expected = makePayload(observedKey, expectedSize);
+        Require(std::memcmp(observedBody.data(),
+                            expected.data(),
+                            expectedSize) == 0);
+        ++walkedRowCount;
+        const auto moveResult = JetMove(session.Handle(), tableId,
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walkedRowCount == RowCount);
+
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+    CheckJet(JetCloseDatabase(session.Handle(), dbid, 0));
+    CheckJet(JetDetachDatabaseA(session.Handle(),
+                                databasePath.string().c_str()));
+}
+
+//  ===================================================================
+//  Tier::Regression — LV append builds correctly across many
+//  chunks that span the separation threshold.  Smoke append test
+//  uses 2 chunks; this appends 8 chunks of varying sizes so the
+//  cumulative total crosses the separation boundary mid-append
+//  and the engine has to migrate the LV root pointer in place.
+//  ===================================================================
+EseIntegrationScenario(LongValue, AppendAcrossManyChunksSpansSeparationBoundary, Regression)
+{
+    TemporaryDirectory directory(
+        "LongValue.AppendAcrossManyChunksSpansSeparationBoundary");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "AppendMany.mdb");
+    EseTable table(database, "Rows");
+    auto bodyColumn = table.AddColumn("Body", JET_coltypLongBinary);
+
+    //  Eight chunks, cumulative sizes:
+    //  256, 512, 1280, 2304, 3328, 5376, 7424, 11520
+    //  Crosses the typical ~1.5 KiB separation threshold between
+    //  chunks 3 and 4.
+    const std::vector<uint32_t> ChunkSizes = {
+        256, 256, 768, 1024, 1024, 2048, 2048, 4096,
+    };
+
+    auto patternByte = [](uint32_t offset) {
+        return static_cast<uint8_t>((offset * 17 + (offset >> 4)) & 0xFF);
+    };
+
+    //  First chunk inserts; subsequent chunks must use JET_prepReplace
+    //  + JET_bitSetAppendLV with NO setInfo (engine appends to the
+    //  current LV).
+    uint32_t totalSoFar = 0;
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepInsert));
+        std::vector<uint8_t> chunk(ChunkSizes[0]);
+        for (uint32_t i = 0; i < ChunkSizes[0]; ++i)
+        {
+            chunk[i] = patternByte(i);
+        }
+        CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                              bodyColumn,
+                              chunk.data(), chunk.size(),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), table.Id(),
+                           nullptr, 0, nullptr));
+        transaction.Commit();
+        totalSoFar = ChunkSizes[0];
+    }
+    for (size_t ci = 1; ci < ChunkSizes.size(); ++ci)
+    {
+        const uint32_t cb = ChunkSizes[ci];
+        std::vector<uint8_t> chunk(cb);
+        for (uint32_t i = 0; i < cb; ++i)
+        {
+            chunk[i] = patternByte(totalSoFar + i);
+        }
+        EseTransaction transaction(session);
+        CheckJet(JetMove(session.Handle(), table.Id(),
+                         JET_MoveFirst, 0));
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepReplace));
+        CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                              bodyColumn,
+                              chunk.data(), chunk.size(),
+                              JET_bitSetAppendLV, nullptr));
+        CheckJet(JetUpdate(session.Handle(), table.Id(),
+                           nullptr, 0, nullptr));
+        transaction.Commit();
+        totalSoFar += cb;
+    }
+
+    uint32_t totalExpected = 0;
+    for (uint32_t cb : ChunkSizes)
+    {
+        totalExpected += cb;
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    std::vector<uint8_t> readBack(totalExpected);
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                               bodyColumn,
+                               readBack.data(), readBack.size(),
+                               &actualBytes, 0, nullptr));
+    Require(actualBytes == totalExpected);
+    for (uint32_t i = 0; i < totalExpected; ++i)
+    {
+        Require(readBack[i] == patternByte(i));
+    }
+}
+
+//  ===================================================================
+//  Tier::Regression — overwrite at LV boundary offsets.  Smoke
+//  test overwrites the middle of a 4 KiB LV.  This overwrites
+//  the FIRST byte, the LAST byte, and a slab exactly straddling
+//  a 4 KiB page boundary on a separated LV.
+//  ===================================================================
+EseIntegrationScenario(LongValue, OverwriteAtPageBoundariesPreservesEverythingElse, Regression)
+{
+    TemporaryDirectory directory(
+        "LongValue.OverwriteAtPageBoundariesPreservesEverythingElse");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Overwrite.mdb");
+    EseTable table(database, "Rows");
+    auto bodyColumn = table.AddColumn("Body", JET_coltypLongBinary);
+
+    //  16 KiB body — multi-page separated LV.  Initial pattern:
+    //  byte_i = i & 0xFF.
+    static constexpr uint32_t TotalSize = 16 * 1024;
+    std::vector<uint8_t> body(TotalSize);
+    for (uint32_t i = 0; i < TotalSize; ++i)
+    {
+        body[i] = static_cast<uint8_t>(i & 0xFF);
+    }
+
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                              bodyColumn,
+                              body.data(), body.size(),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), table.Id(),
+                           nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+
+    //  Overwrite at offset 0 (the start byte).
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepReplace));
+        const uint8_t firstByteOverride = 0xAA;
+        JET_SETINFO setInfo = {};
+        setInfo.cbStruct = sizeof(setInfo);
+        setInfo.itagSequence = 1;
+        setInfo.ibLongValue = 0;
+        CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                              bodyColumn,
+                              &firstByteOverride,
+                              sizeof(firstByteOverride),
+                              JET_bitSetOverwriteLV, &setInfo));
+        CheckJet(JetUpdate(session.Handle(), table.Id(),
+                           nullptr, 0, nullptr));
+        transaction.Commit();
+        body[0] = firstByteOverride;
+    }
+    //  Overwrite at offset TotalSize-1 (last byte).
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepReplace));
+        const uint8_t lastByteOverride = 0x55;
+        JET_SETINFO setInfo = {};
+        setInfo.cbStruct = sizeof(setInfo);
+        setInfo.itagSequence = 1;
+        setInfo.ibLongValue = TotalSize - 1;
+        CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                              bodyColumn,
+                              &lastByteOverride,
+                              sizeof(lastByteOverride),
+                              JET_bitSetOverwriteLV, &setInfo));
+        CheckJet(JetUpdate(session.Handle(), table.Id(),
+                           nullptr, 0, nullptr));
+        transaction.Commit();
+        body[TotalSize - 1] = lastByteOverride;
+    }
+    //  Overwrite a 256-byte slab straddling the 4096-byte
+    //  boundary at offset 3968 (extends 3968..4223).  Page
+    //  boundary is at byte 4096; the write spans two LV pages.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepReplace));
+        std::array<uint8_t, 256> slab{};
+        for (uint32_t i = 0; i < slab.size(); ++i)
+        {
+            slab[i] = static_cast<uint8_t>(0xC0 + (i & 0x1F));
+        }
+        JET_SETINFO setInfo = {};
+        setInfo.cbStruct = sizeof(setInfo);
+        setInfo.itagSequence = 1;
+        setInfo.ibLongValue = 3968;
+        CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                              bodyColumn,
+                              slab.data(), slab.size(),
+                              JET_bitSetOverwriteLV, &setInfo));
+        CheckJet(JetUpdate(session.Handle(), table.Id(),
+                           nullptr, 0, nullptr));
+        transaction.Commit();
+        std::memcpy(body.data() + 3968, slab.data(), slab.size());
+    }
+
+    //  Final readback: every byte must match the predicted
+    //  pattern with the three overwrites applied.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    std::vector<uint8_t> readBack(TotalSize);
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                               bodyColumn,
+                               readBack.data(), readBack.size(),
+                               &actualBytes, 0, nullptr));
+    Require(actualBytes == TotalSize);
+    Require(std::memcmp(readBack.data(), body.data(), TotalSize) == 0);
+}
+
+//  ===================================================================
+//  Tier::Regression — replace LV with a smaller payload, verify
+//  the engine returns the predicted size (not the original).
+//  Catches refactors to LV tree node shrinking.
+//  ===================================================================
+EseIntegrationScenario(LongValue, ReplaceShrinksLVAndReportsNewSize, Regression)
+{
+    TemporaryDirectory directory(
+        "LongValue.ReplaceShrinksLVAndReportsNewSize");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Shrink.mdb");
+    EseTable table(database, "Rows");
+    auto bodyColumn = table.AddColumn("Body", JET_coltypLongBinary);
+
+    //  Original 32 KiB separated LV.
+    std::vector<uint8_t> original(32 * 1024, 0xAB);
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                              bodyColumn,
+                              original.data(), original.size(),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), table.Id(),
+                           nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    //  Replace with 16 bytes — engine must shrink the LV.
+    static constexpr uint8_t Replacement[] = {
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+    };
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepReplace));
+        CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                              bodyColumn,
+                              Replacement, sizeof(Replacement),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), table.Id(),
+                           nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    uint8_t readBack[64] = {};
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                               bodyColumn,
+                               readBack, sizeof(readBack),
+                               &actualBytes, 0, nullptr));
+    Require(actualBytes == sizeof(Replacement));
+    Require(std::memcmp(readBack, Replacement,
+                        sizeof(Replacement)) == 0);
+}
+

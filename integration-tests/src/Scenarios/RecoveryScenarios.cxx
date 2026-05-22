@@ -20,6 +20,8 @@
 
 #include <chrono>
 #include <filesystem>
+#include <functional>
+#include <string_view>
 #include <thread>
 
 using namespace ese::tests;
@@ -666,7 +668,7 @@ private:
 
 }  // namespace
 
-EseIntegrationScenario(Recovery, CommittedRowsSurviveSigkill)
+EseIntegrationScenario(Recovery, CommittedRowsSurviveSigkill, Smoke)
 {
     TemporaryDirectory directory("Recovery.CommittedRowsSurviveSigkill");
 
@@ -723,7 +725,7 @@ EseIntegrationScenario(Recovery, CommittedRowsSurviveSigkill)
     CheckJet(JetCloseTable(session.Handle(), recoveredTableId));
 }
 
-EseIntegrationScenario(Recovery, UncommittedRowsDiscardedAfterSigkill)
+EseIntegrationScenario(Recovery, UncommittedRowsDiscardedAfterSigkill, Smoke)
 {
     TemporaryDirectory directory("Recovery.UncommittedRowsDiscardedAfterSigkill");
 
@@ -759,7 +761,7 @@ EseIntegrationScenario(Recovery, UncommittedRowsDiscardedAfterSigkill)
     CheckJet(JetCloseTable(session.Handle(), recoveredTableId));
 }
 
-EseIntegrationScenario(Recovery, CleanShutdownAndReopenRetainsAllRows)
+EseIntegrationScenario(Recovery, CleanShutdownAndReopenRetainsAllRows, Smoke)
 {
     // Same-process variant: build a database, drop the instance
     // cleanly, then reopen.  Exercises the JetTerm → JetInit →
@@ -809,7 +811,7 @@ EseIntegrationScenario(Recovery, CleanShutdownAndReopenRetainsAllRows)
     CheckJet(JetCloseTable(session.Handle(), tableId));
 }
 
-EseIntegrationScenario(Recovery, ReplayIgnoreMissingDBProceedsWithoutDeletedDatabase)
+EseIntegrationScenario(Recovery, ReplayIgnoreMissingDBProceedsWithoutDeletedDatabase, Smoke)
 {
     TemporaryDirectory directory(
         "Recovery.ReplayIgnoreMissingDBProceedsWithoutDeletedDatabase");
@@ -893,7 +895,7 @@ EseIntegrationScenario(Recovery, ReplayIgnoreMissingDBProceedsWithoutDeletedData
     CheckJet(JetEndSession(sessionId, 0));
 }
 
-EseIntegrationScenario(Recovery, ReplayIgnoreLostLogsAcceptsRecoveryAfterCurrentLogRemoved)
+EseIntegrationScenario(Recovery, ReplayIgnoreLostLogsAcceptsRecoveryAfterCurrentLogRemoved, Smoke)
 {
     TemporaryDirectory directory(
         "Recovery.ReplayIgnoreLostLogsAcceptsRecoveryAfterCurrentLogRemoved");
@@ -962,7 +964,7 @@ EseIntegrationScenario(Recovery, ReplayIgnoreLostLogsAcceptsRecoveryAfterCurrent
     CheckJet(JetEndSession(sessionId, 0));
 }
 
-EseIntegrationScenario(Recovery, ReplayMissingMapEntryDBDefaultsToOriginalPath)
+EseIntegrationScenario(Recovery, ReplayMissingMapEntryDBDefaultsToOriginalPath, Smoke)
 {
     TemporaryDirectory directory(
         "Recovery.ReplayMissingMapEntryDBDefaultsToOriginalPath");
@@ -1034,7 +1036,7 @@ EseIntegrationScenario(Recovery, ReplayMissingMapEntryDBDefaultsToOriginalPath)
     CheckJet(JetEndSession(sessionId, 0));
 }
 
-EseIntegrationScenario(Recovery, ReplayInferCheckpointFromRstmapDbsRecoversWithoutChk)
+EseIntegrationScenario(Recovery, ReplayInferCheckpointFromRstmapDbsRecoversWithoutChk, Smoke)
 {
     TemporaryDirectory directory(
         "Recovery.ReplayInferCheckpointFromRstmapDbsRecoversWithoutChk");
@@ -1120,7 +1122,7 @@ EseIntegrationScenario(Recovery, ReplayInferCheckpointFromRstmapDbsRecoversWitho
     CheckJet(JetEndSession(sessionId, 0));
 }
 
-EseIntegrationScenario(Recovery, ReplayIgnoreLogRecordsBeforeMinRequiredLogSkipsPreAttachRecords)
+EseIntegrationScenario(Recovery, ReplayIgnoreLogRecordsBeforeMinRequiredLogSkipsPreAttachRecords, Smoke)
 {
     TemporaryDirectory directory(
         "Recovery.ReplayIgnoreLogRecordsBeforeMinRequiredLogSkipsPreAttachRecords");
@@ -1201,4 +1203,450 @@ EseIntegrationScenario(Recovery, ReplayIgnoreLogRecordsBeforeMinRequiredLogSkips
     CheckJet(JetDetachDatabaseA(sessionId, secondaryPath.string().c_str()));
 
     CheckJet(JetEndSession(sessionId, 0));
+}
+
+//  ===================================================================
+//  Tier::Regression — multi-cycle Term→Init persistence + non-INSERT
+//  log-record replay.
+//
+//  Smoke recovery tests use SIGKILL + a single cycle and only
+//  exercise insert log records.  This scenario walks the database
+//  through three clean Term→Init cycles with insert + update +
+//  delete mutations between each, verifying exact row contents
+//  after every recovery pass.
+//  ===================================================================
+EseIntegrationScenario(Recovery, MultiCycleTermInitReplaysAllLogOpTypes, Regression)
+{
+    TemporaryDirectory directory(
+        "Recovery.MultiCycleTermInitReplaysAllLogOpTypes");
+    const auto databasePath = directory.Path() / "Multi.mdb";
+
+    static constexpr int32_t Inserted = 256;
+    static constexpr int32_t UpdatedEveryNth = 5;
+    static constexpr int32_t DeletedEveryNth = 7;
+
+    //  Walk every surviving row by primary key and confirm both the
+    //  key set AND the value match predictions.  Used after every
+    //  cycle; opens its own EseInstance so the JetTerm sequence
+    //  between cycles is enforced by RAII.
+    auto walkAndValidate = [&](
+        const std::function<int32_t(int32_t)>& expectedValueForKey,
+        const std::function<bool(int32_t)>& keyAlive,
+        int32_t totalKnownKeys)
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+        CheckJet(JetAttachDatabaseA(session.Handle(),
+                                    databasePath.string().c_str(), 0));
+        JET_DBID dbid = JET_dbidNil;
+        CheckJet(JetOpenDatabaseA(session.Handle(),
+                                  databasePath.string().c_str(),
+                                  nullptr, &dbid, 0));
+        JET_TABLEID tableId = JET_tableidNil;
+        CheckJet(JetOpenTableA(session.Handle(), dbid, "Rows",
+                               nullptr, 0, 0, &tableId));
+        JET_COLUMNDEF keyInfo = {};
+        keyInfo.cbStruct = sizeof(keyInfo);
+        CheckJet(JetGetTableColumnInfoA(session.Handle(), tableId, "Key",
+                                         &keyInfo, sizeof(keyInfo),
+                                         JET_ColInfo));
+        JET_COLUMNDEF valueInfo = {};
+        valueInfo.cbStruct = sizeof(valueInfo);
+        CheckJet(JetGetTableColumnInfoA(session.Handle(), tableId, "Value",
+                                         &valueInfo, sizeof(valueInfo),
+                                         JET_ColInfo));
+
+        CheckJet(JetMove(session.Handle(), tableId, JET_MoveFirst, 0));
+        int32_t walked = 0;
+        int32_t expectedAlive = 0;
+        for (int32_t k = 0; k < totalKnownKeys; ++k)
+        {
+            if (keyAlive(k))
+            {
+                ++expectedAlive;
+            }
+        }
+        while (true)
+        {
+            int32_t observedKey = 0;
+            int32_t observedValue = 0;
+            uint32_t actualBytes = 0;
+            CheckJet(JetRetrieveColumn(session.Handle(), tableId,
+                                       keyInfo.columnid,
+                                       &observedKey, sizeof(observedKey),
+                                       &actualBytes, 0, nullptr));
+            CheckJet(JetRetrieveColumn(session.Handle(), tableId,
+                                       valueInfo.columnid,
+                                       &observedValue,
+                                       sizeof(observedValue),
+                                       &actualBytes, 0, nullptr));
+            Require(keyAlive(observedKey));
+            Require(observedValue == expectedValueForKey(observedKey));
+            ++walked;
+            const auto moveResult = JetMove(session.Handle(), tableId,
+                                            JET_MoveNext, 0);
+            if (moveResult == JET_errNoCurrentRecord)
+            {
+                break;
+            }
+            CheckJet(moveResult);
+        }
+        Require(walked == expectedAlive);
+
+        CheckJet(JetCloseTable(session.Handle(), tableId));
+        CheckJet(JetCloseDatabase(session.Handle(), dbid, 0));
+        CheckJet(JetDetachDatabaseA(session.Handle(),
+                                    databasePath.string().c_str()));
+    };
+
+    //  Cycle 1: build, insert + update + delete.
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+        EseDatabase database(session, "Multi.mdb");
+        EseTable table(database, "Rows");
+        auto keyColumn = table.AddColumn("Key", JET_coltypLong,
+                                         JET_bitColumnNotNULL);
+        auto valueColumn = table.AddColumn("Value", JET_coltypLong,
+                                           JET_bitColumnNotNULL);
+        static constexpr std::string_view PrimaryKey =
+            std::string_view("+Key\0\0", 6);
+        table.CreateIndex("PrimaryByKey", PrimaryKey,
+                          JET_bitIndexPrimary | JET_bitIndexUnique);
+
+        {
+            EseTransaction transaction(session);
+            for (int32_t k = 0; k < Inserted; ++k)
+            {
+                CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                          JET_prepInsert));
+                CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                      keyColumn, &k, sizeof(k),
+                                      0, nullptr));
+                const int32_t v = k * 3 + 1;
+                CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                      valueColumn, &v, sizeof(v),
+                                      0, nullptr));
+                CheckJet(JetUpdate(session.Handle(), table.Id(),
+                                   nullptr, 0, nullptr));
+            }
+            transaction.Commit();
+        }
+        {
+            EseTransaction transaction(session);
+            for (int32_t k = 0; k < Inserted; k += UpdatedEveryNth)
+            {
+                CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                                    &k, sizeof(k), JET_bitNewKey));
+                CheckJet(JetSeek(session.Handle(), table.Id(),
+                                 JET_bitSeekEQ));
+                CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                          JET_prepReplace));
+                const int32_t v = -(k * 3 + 1);
+                CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                      valueColumn, &v, sizeof(v),
+                                      0, nullptr));
+                CheckJet(JetUpdate(session.Handle(), table.Id(),
+                                   nullptr, 0, nullptr));
+            }
+            transaction.Commit();
+        }
+        {
+            EseTransaction transaction(session);
+            for (int32_t k = 0; k < Inserted; k += DeletedEveryNth)
+            {
+                CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                                    &k, sizeof(k), JET_bitNewKey));
+                CheckJet(JetSeek(session.Handle(), table.Id(),
+                                 JET_bitSeekEQ));
+                CheckJet(JetDelete(session.Handle(), table.Id()));
+            }
+            transaction.Commit();
+        }
+    }
+
+    //  Cycle 2: re-attach and validate every row.
+    auto cycle1ExpectedValue = [&](int32_t k) {
+        return (k % UpdatedEveryNth == 0)
+                   ? -(k * 3 + 1)
+                   : (k * 3 + 1);
+    };
+    auto cycle1KeyAlive = [&](int32_t k) {
+        return k % DeletedEveryNth != 0;
+    };
+    walkAndValidate(cycle1ExpectedValue, cycle1KeyAlive, Inserted);
+
+    //  Cycle 3: another mutation round — insert keys 10000..10063.
+    static constexpr int32_t FreshKeyBase = 10000;
+    static constexpr int32_t FreshKeyCount = 64;
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+        CheckJet(JetAttachDatabaseA(session.Handle(),
+                                    databasePath.string().c_str(), 0));
+        JET_DBID dbid = JET_dbidNil;
+        CheckJet(JetOpenDatabaseA(session.Handle(),
+                                  databasePath.string().c_str(),
+                                  nullptr, &dbid, 0));
+        JET_TABLEID tableId = JET_tableidNil;
+        CheckJet(JetOpenTableA(session.Handle(), dbid, "Rows",
+                               nullptr, 0, 0, &tableId));
+        JET_COLUMNDEF keyInfo = {};
+        keyInfo.cbStruct = sizeof(keyInfo);
+        CheckJet(JetGetTableColumnInfoA(session.Handle(), tableId, "Key",
+                                         &keyInfo, sizeof(keyInfo),
+                                         JET_ColInfo));
+        JET_COLUMNDEF valueInfo = {};
+        valueInfo.cbStruct = sizeof(valueInfo);
+        CheckJet(JetGetTableColumnInfoA(session.Handle(), tableId, "Value",
+                                         &valueInfo, sizeof(valueInfo),
+                                         JET_ColInfo));
+
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < FreshKeyCount; ++i)
+        {
+            const int32_t k = FreshKeyBase + i;
+            CheckJet(JetPrepareUpdate(session.Handle(), tableId,
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), tableId,
+                                  keyInfo.columnid, &k, sizeof(k),
+                                  0, nullptr));
+            const int32_t v = k * 11;
+            CheckJet(JetSetColumn(session.Handle(), tableId,
+                                  valueInfo.columnid, &v, sizeof(v),
+                                  0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), tableId,
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+
+        CheckJet(JetCloseTable(session.Handle(), tableId));
+        CheckJet(JetCloseDatabase(session.Handle(), dbid, 0));
+        CheckJet(JetDetachDatabaseA(session.Handle(),
+                                    databasePath.string().c_str()));
+    }
+
+    //  Cycle 4: validate both cycle-1 survivors AND fresh keys.
+    auto finalExpectedValue = [&](int32_t k) {
+        if (k >= FreshKeyBase)
+        {
+            return k * 11;
+        }
+        return cycle1ExpectedValue(k);
+    };
+    auto finalKeyAlive = [&](int32_t k) {
+        if (k >= FreshKeyBase && k < FreshKeyBase + FreshKeyCount)
+        {
+            return true;
+        }
+        if (k < Inserted)
+        {
+            return cycle1KeyAlive(k);
+        }
+        return false;
+    };
+    walkAndValidate(finalExpectedValue, finalKeyAlive,
+                    FreshKeyBase + FreshKeyCount);
+}
+
+//  ===================================================================
+//  Tier::Regression — SIGKILL crash recovery with mixed
+//  INSERT/UPDATE/DELETE pre-crash workload and exact-value
+//  post-recovery validation.  Smoke CommittedRowsSurviveSigkill
+//  only inserts and counts.  This scenario:
+//    1. Child inserts 100 rows in batch 1.
+//    2. Child updates every 3rd row's Value to -value.
+//    3. Child deletes every 7th row.
+//    4. Child commits and signals ready.
+//    5. Parent SIGKILLs.
+//    6. Parent recovers + validates every surviving row has the
+//       predicted Value (negated for multiples of 3, present
+//       for non-multiples of 7).
+//  Catches refactors that broke UPDATE or DELETE log-record
+//  replay during crash recovery.
+//  ===================================================================
+namespace
+{
+
+constexpr const char* ChildEntryMixedOps = "Recovery.MixedOpsChildEntry";
+
+void ChildEntryMixedOpsImpl(const std::filesystem::path& directory,
+                            std::span<const std::string_view> args)
+{
+    (void)args;
+    JET_INSTANCE handle = JET_instanceNil;
+    CheckJet(InitInstanceForReplayRecovery(handle, directory, 0));
+    JET_SESID session = JET_sesidNil;
+    CheckJet(JetBeginSessionA(handle, &session, nullptr, nullptr));
+    const auto databasePath = (directory / "Mixed.mdb").string();
+    JET_DBID dbid = JET_dbidNil;
+    CheckJet(JetCreateDatabaseA(session, databasePath.c_str(),
+                                nullptr, &dbid, 0));
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetCreateTableA(session, dbid, "Rows", 8, 100, &tableId));
+    JET_COLUMNDEF keyDef = {};
+    keyDef.cbStruct = sizeof(keyDef);
+    keyDef.coltyp = JET_coltypLong;
+    keyDef.grbit = JET_bitColumnNotNULL;
+    JET_COLUMNID keyColumn = 0;
+    CheckJet(JetAddColumnA(session, tableId, "Key", &keyDef,
+                           nullptr, 0, &keyColumn));
+    JET_COLUMNDEF valueDef = {};
+    valueDef.cbStruct = sizeof(valueDef);
+    valueDef.coltyp = JET_coltypLong;
+    valueDef.grbit = JET_bitColumnNotNULL;
+    JET_COLUMNID valueColumn = 0;
+    CheckJet(JetAddColumnA(session, tableId, "Value", &valueDef,
+                           nullptr, 0, &valueColumn));
+    char primaryKey[] = "+Key\0";
+    JET_INDEXCREATE_A indexCreate = {};
+    indexCreate.cbStruct = sizeof(indexCreate);
+    indexCreate.szIndexName = const_cast<char*>("PrimaryByKey");
+    indexCreate.szKey = primaryKey;
+    indexCreate.cbKey = sizeof(primaryKey);
+    indexCreate.grbit = JET_bitIndexPrimary | JET_bitIndexUnique;
+    indexCreate.ulDensity = 80;
+    CheckJet(JetCreateIndex2A(session, tableId, &indexCreate, 1));
+
+    CheckJet(JetBeginTransaction(session));
+    for (int32_t k = 0; k < 100; ++k)
+    {
+        CheckJet(JetPrepareUpdate(session, tableId, JET_prepInsert));
+        CheckJet(JetSetColumn(session, tableId, keyColumn,
+                              &k, sizeof(k), 0, nullptr));
+        const int32_t v = k * 5 + 1;
+        CheckJet(JetSetColumn(session, tableId, valueColumn,
+                              &v, sizeof(v), 0, nullptr));
+        CheckJet(JetUpdate(session, tableId, nullptr, 0, nullptr));
+    }
+    CheckJet(JetCommitTransaction(session, 0));
+
+    CheckJet(JetBeginTransaction(session));
+    for (int32_t k = 0; k < 100; k += 3)
+    {
+        CheckJet(JetMakeKey(session, tableId, &k, sizeof(k),
+                            JET_bitNewKey));
+        CheckJet(JetSeek(session, tableId, JET_bitSeekEQ));
+        CheckJet(JetPrepareUpdate(session, tableId, JET_prepReplace));
+        const int32_t v = -(k * 5 + 1);
+        CheckJet(JetSetColumn(session, tableId, valueColumn,
+                              &v, sizeof(v), 0, nullptr));
+        CheckJet(JetUpdate(session, tableId, nullptr, 0, nullptr));
+    }
+    CheckJet(JetCommitTransaction(session, 0));
+
+    CheckJet(JetBeginTransaction(session));
+    for (int32_t k = 0; k < 100; k += 7)
+    {
+        CheckJet(JetMakeKey(session, tableId, &k, sizeof(k),
+                            JET_bitNewKey));
+        CheckJet(JetSeek(session, tableId, JET_bitSeekEQ));
+        CheckJet(JetDelete(session, tableId));
+    }
+    //  Synchronous commit so the delete log records reach disk
+    //  before the parent SIGKILLs us.  LazyFlush would leave the
+    //  deletes in the version store / log buffer where recovery
+    //  may or may not replay them depending on the timing of the
+    //  kill.
+    CheckJet(JetCommitTransaction(session, 0));
+
+    ChildProcess::SignalReady(directory);
+    //  Sleep until SIGKILL.
+    while (true)
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(60));
+    }
+}
+
+struct MixedOpsRegistrar
+{
+    MixedOpsRegistrar()
+    {
+        RegisterChildEntry(ChildEntryMixedOps, &ChildEntryMixedOpsImpl);
+    }
+};
+[[maybe_unused]] static MixedOpsRegistrar _mixedOpsRegistrar;
+
+}  // namespace
+
+EseIntegrationScenario(Recovery, SigKillRecoveryReplaysMixedOpRecords, Regression)
+{
+    TemporaryDirectory directory(
+        "Recovery.SigKillRecoveryReplaysMixedOpRecords");
+
+    {
+        ChildProcess child(ChildEntryMixedOps, directory.Path());
+        child.WaitUntilReady(std::chrono::seconds(30));
+        child.Kill();
+        child.WaitForExit();
+    }
+
+    JetInstanceRaii recoverInstance;
+    CheckJet(InitInstanceForReplayRecovery(
+                 *recoverInstance.Address(), directory.Path(), 0));
+    JET_SESID session = JET_sesidNil;
+    CheckJet(JetBeginSessionA(recoverInstance.Get(), &session,
+                              nullptr, nullptr));
+    const auto databasePath = (directory.Path() / "Mixed.mdb").string();
+    CheckJet(JetAttachDatabaseA(session, databasePath.c_str(), 0));
+    JET_DBID dbid = JET_dbidNil;
+    CheckJet(JetOpenDatabaseA(session, databasePath.c_str(),
+                              nullptr, &dbid, 0));
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetOpenTableA(session, dbid, "Rows",
+                           nullptr, 0, 0, &tableId));
+    JET_COLUMNDEF keyInfo = {};
+    keyInfo.cbStruct = sizeof(keyInfo);
+    CheckJet(JetGetTableColumnInfoA(session, tableId, "Key",
+                                     &keyInfo, sizeof(keyInfo),
+                                     JET_ColInfo));
+    JET_COLUMNDEF valueInfo = {};
+    valueInfo.cbStruct = sizeof(valueInfo);
+    CheckJet(JetGetTableColumnInfoA(session, tableId, "Value",
+                                     &valueInfo, sizeof(valueInfo),
+                                     JET_ColInfo));
+
+    CheckJet(JetMove(session, tableId, JET_MoveFirst, 0));
+    int32_t walked = 0;
+    while (true)
+    {
+        int32_t observedKey = 0;
+        int32_t observedValue = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session, tableId,
+                                   keyInfo.columnid,
+                                   &observedKey, sizeof(observedKey),
+                                   &actualBytes, 0, nullptr));
+        CheckJet(JetRetrieveColumn(session, tableId,
+                                   valueInfo.columnid,
+                                   &observedValue, sizeof(observedValue),
+                                   &actualBytes, 0, nullptr));
+        Require(observedKey % 7 != 0);
+        const int32_t expected =
+            (observedKey % 3 == 0)
+                ? -(observedKey * 5 + 1)
+                : (observedKey * 5 + 1);
+        Require(observedValue == expected);
+        ++walked;
+        const auto moveResult = JetMove(session, tableId,
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    int32_t expectedSurvivors = 0;
+    for (int32_t k = 0; k < 100; ++k)
+    {
+        if (k % 7 != 0)
+        {
+            ++expectedSurvivors;
+        }
+    }
+    Require(walked == expectedSurvivors);
+    CheckJet(JetCloseTable(session, tableId));
+    CheckJet(JetCloseDatabase(session, dbid, 0));
+    CheckJet(JetDetachDatabaseA(session, databasePath.c_str()));
+    CheckJet(JetEndSession(session, 0));
 }

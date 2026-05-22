@@ -616,7 +616,7 @@ void VerifyInstanceContents(EseInstance& instance,
 
 } // namespace
 
-EseIntegrationScenario(LongRunning, TwoInstancesIndependentWorkloads)
+EseIntegrationScenario(MultiThreaded, TwoInstancesIndependentWorkloads, LongRunning)
 {
     // Two completely independent EseInstance objects. Each gets its
     // own TemporaryDirectory so SystemPath/LogFilePath/TempPath don't

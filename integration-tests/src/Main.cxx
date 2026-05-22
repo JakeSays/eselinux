@@ -54,7 +54,13 @@ struct CommandLineOptions
     // LongRunning scenarios are opt-in: they take minutes apiece and
     // exist to hammer the engine, not to gate fast iteration. Off by
     // default; --include-long-running flips them on.
-    bool IncludeLongRunning = false;
+    //  Tier filter.  Empty means "default selection" (smoke + reg).
+    //  Populated via --tier <name>[,<name>...] with aliases:
+    //    smoke
+    //    reg | regression
+    //    long | long-running | longrunning
+    //    all
+    std::vector<ScenarioTier> SelectedTiers;
     //  Each scenario runs in its own forked child by default so the
     //  parent never accumulates ESE process-global state (multi-instance
     //  flip, CResourceManager freeze, leftover handles).  --in-process
@@ -90,9 +96,9 @@ void PrintUsage(std::string_view programName)
     PrintLine(" --in-process Run every scenario in the runner process (no fork).");
     PrintLine("              Off by default — fork-per-scenario isolates ESE's");
     PrintLine("              process-global state.  Use only for debugger attach.");
-    PrintLine(" --include-long-running Force-include the LongRunning category in a");
-    PrintLine("                        broader run. Not needed when --filter matches");
-    PrintLine("                        only LongRunning scenarios.");
+    PrintLine(" --tier <list> Comma-separated tier filter.  Tokens: smoke,");
+    PrintLine("               reg|regression, long|long-running, all.  Default");
+    PrintLine("               when omitted: smoke,reg (LongRunning excluded).");
     PrintLine(" --help, -h Show this message.");
     PrintLine("");
     PrintLine(" --log-file <path> Also write every console line to <path>.");
@@ -168,9 +174,53 @@ bool ParseCommandLine(int argc, char** argv, CommandLineOptions& options)
         {
             options.InProcess = true;
         }
-        else if (argument == "--include-long-running")
+        else if (argument == "--tier")
         {
-            options.IncludeLongRunning = true;
+            auto* value = requireValue(argument);
+            if (value == nullptr)
+            {
+                return false;
+            }
+            //  Comma-separated tokens.  Validate every token; reject
+            //  the whole list on the first unrecognized one.
+            std::string_view list(value);
+            size_t cursor = 0;
+            while (cursor <= list.size())
+            {
+                const size_t comma = list.find(',', cursor);
+                const auto token = list.substr(
+                    cursor,
+                    comma == std::string_view::npos
+                        ? std::string_view::npos
+                        : comma - cursor);
+                if (!token.empty())
+                {
+                    ScenarioTier parsed = ScenarioTier::Smoke;
+                    bool isAll = false;
+                    if (!ParseScenarioTier(token, parsed, isAll))
+                    {
+                        PrintLine("unknown --tier token: {}", token);
+                        return false;
+                    }
+                    if (isAll)
+                    {
+                        options.SelectedTiers = {
+                            ScenarioTier::Smoke,
+                            ScenarioTier::Regression,
+                            ScenarioTier::LongRunning,
+                        };
+                    }
+                    else
+                    {
+                        options.SelectedTiers.push_back(parsed);
+                    }
+                }
+                if (comma == std::string_view::npos)
+                {
+                    break;
+                }
+                cursor = comma + 1;
+            }
         }
         else if (argument == "--log-file")
         {
@@ -495,32 +545,59 @@ int RunScenarios(const CommandLineOptions& options)
     const auto pattern = options.FilterPattern.empty() ? "*" : options.FilterPattern;
     const auto matchedScenarios = registry.Filtered(pattern);
 
-    // LongRunning scenarios are suppressed by default — minutes apiece,
-    // they would dominate any unfiltered run.  Two paths include them:
-    // an explicit --include-long-running, or a filter pattern that
-    // matches LongRunning scenarios exclusively (the operator named
-    // them, so we trust the intent).
-    bool everyMatchIsLongRunning = !matchedScenarios.empty();
-    for (auto* scenario : matchedScenarios)
+    //  Tier selection.  Default (no --tier flag): smoke + reg.
+    //  Two escape hatches that auto-include LongRunning even
+    //  without explicit selection:
+    //    (a) filter pattern matches LongRunning-tier scenarios
+    //        exclusively (operator named them — trust the intent),
+    //    (b) the user passed --tier with an explicit set.
+    std::vector<ScenarioTier> selectedTiers = options.SelectedTiers;
+    bool tierSelectionExplicit = !selectedTiers.empty();
+    if (selectedTiers.empty())
     {
-        if (scenario->Category() != ScenarioCategory::LongRunning)
+        selectedTiers = {
+            ScenarioTier::Smoke,
+            ScenarioTier::Regression,
+        };
+    }
+
+    if (!tierSelectionExplicit)
+    {
+        bool everyMatchIsLongRunning = !matchedScenarios.empty();
+        for (auto* scenario : matchedScenarios)
         {
-            everyMatchIsLongRunning = false;
-            break;
+            if (scenario->Tier() != ScenarioTier::LongRunning)
+            {
+                everyMatchIsLongRunning = false;
+                break;
+            }
+        }
+        if (everyMatchIsLongRunning)
+        {
+            selectedTiers.push_back(ScenarioTier::LongRunning);
         }
     }
-    const bool includeLongRunning =
-        options.IncludeLongRunning || everyMatchIsLongRunning;
+
+    auto tierAllowed = [&](ScenarioTier candidate)
+    {
+        for (auto tier : selectedTiers)
+        {
+            if (tier == candidate)
+            {
+                return true;
+            }
+        }
+        return false;
+    };
 
     std::vector<Scenario*> matching;
     matching.reserve(matchedScenarios.size());
-    uint32_t suppressedLongRunningCount = 0;
+    uint32_t suppressedByTier = 0;
     for (auto* scenario : matchedScenarios)
     {
-        if (scenario->Category() == ScenarioCategory::LongRunning
-            && !includeLongRunning)
+        if (!tierAllowed(scenario->Tier()))
         {
-            ++suppressedLongRunningCount;
+            ++suppressedByTier;
             continue;
         }
         matching.push_back(scenario);
@@ -530,14 +607,15 @@ int RunScenarios(const CommandLineOptions& options)
     {
         for (auto* scenario : matching)
         {
-            PrintLine("{}", scenario->FullName());
+            PrintLine("[{:<5}] {}",
+                      ToString(scenario->Tier()),
+                      scenario->FullName());
         }
-        if (suppressedLongRunningCount > 0)
+        if (suppressedByTier > 0)
         {
-            PrintLine("(skipping {} LongRunning scenario(s); "
-                      "pass --include-long-running or filter them "
-                      "explicitly to enable)",
-                      suppressedLongRunningCount);
+            PrintLine("(skipping {} scenario(s) outside the selected tier(s); "
+                      "pass --tier all or name the tier explicitly to include)",
+                      suppressedByTier);
         }
         return 0;
     }

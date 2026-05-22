@@ -11,14 +11,16 @@
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
+#include <array>
 #include <cstring>
 #include <format>
 #include <string>
 #include <string_view>
+#include <vector>
 
 using namespace ese::tests;
 
-EseIntegrationScenario(Schema, CreateTable)
+EseIntegrationScenario(Schema, CreateTable, Smoke)
 {
     TemporaryDirectory directory("Schema.CreateTable");
     EseInstance instance(directory);
@@ -39,7 +41,7 @@ EseIntegrationScenario(Schema, CreateTable)
     CheckJet(JetCloseTable(session.Handle(), reopened));
 }
 
-EseIntegrationScenario(Schema, AddColumnAfterTableCreation)
+EseIntegrationScenario(Schema, AddColumnAfterTableCreation, Smoke)
 {
     TemporaryDirectory directory("Schema.AddColumnAfterTableCreation");
     EseInstance instance(directory);
@@ -64,7 +66,7 @@ EseIntegrationScenario(Schema, AddColumnAfterTableCreation)
     Require(retrieved.coltyp == JET_coltypLong);
 }
 
-EseIntegrationScenario(Schema, AddMultipleColumnsRoundTripsThroughGetColumnInfo)
+EseIntegrationScenario(Schema, AddMultipleColumnsRoundTripsThroughGetColumnInfo, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.AddMultipleColumnsRoundTripsThroughGetColumnInfo");
@@ -106,7 +108,7 @@ EseIntegrationScenario(Schema, AddMultipleColumnsRoundTripsThroughGetColumnInfo)
     VerifyColumn("RawBytes", rawBytesColumnId, JET_coltypLongBinary);
 }
 
-EseIntegrationScenario(Schema, DeleteColumn)
+EseIntegrationScenario(Schema, DeleteColumn, Smoke)
 {
     TemporaryDirectory directory("Schema.DeleteColumn");
     EseInstance instance(directory);
@@ -140,7 +142,7 @@ EseIntegrationScenario(Schema, DeleteColumn)
     Require(columnDefinition.coltyp == JET_coltypLong);
 }
 
-EseIntegrationScenario(Schema, RenameTable)
+EseIntegrationScenario(Schema, RenameTable, Smoke)
 {
     TemporaryDirectory directory("Schema.RenameTable");
     EseInstance instance(directory);
@@ -180,7 +182,7 @@ EseIntegrationScenario(Schema, RenameTable)
     CheckJet(JetCloseTable(session.Handle(), transientTableId));
 }
 
-EseIntegrationScenario(Schema, RenameColumn)
+EseIntegrationScenario(Schema, RenameColumn, Smoke)
 {
     TemporaryDirectory directory("Schema.RenameColumn");
     EseInstance instance(directory);
@@ -216,7 +218,7 @@ EseIntegrationScenario(Schema, RenameColumn)
     Require(columnDefinition.columnid == columnId);
 }
 
-EseIntegrationScenario(Schema, CreatePrimaryIndex)
+EseIntegrationScenario(Schema, CreatePrimaryIndex, Smoke)
 {
     TemporaryDirectory directory("Schema.CreatePrimaryIndex");
     EseInstance instance(directory);
@@ -248,7 +250,7 @@ EseIntegrationScenario(Schema, CreatePrimaryIndex)
     CheckJet(JetCloseTable(session.Handle(), indexList.tableid));
 }
 
-EseIntegrationScenario(Schema, CreateSecondaryUniqueIndex)
+EseIntegrationScenario(Schema, CreateSecondaryUniqueIndex, Smoke)
 {
     TemporaryDirectory directory("Schema.CreateSecondaryUniqueIndex");
     EseInstance instance(directory);
@@ -325,7 +327,7 @@ EseIntegrationScenario(Schema, CreateSecondaryUniqueIndex)
     }
 }
 
-EseIntegrationScenario(Schema, CreateMultiColumnIndex)
+EseIntegrationScenario(Schema, CreateMultiColumnIndex, Smoke)
 {
     TemporaryDirectory directory("Schema.CreateMultiColumnIndex");
     EseInstance instance(directory);
@@ -388,7 +390,7 @@ EseIntegrationScenario(Schema, CreateMultiColumnIndex)
     Require(observedTotal == 300);
 }
 
-EseIntegrationScenario(Schema, DeleteIndex)
+EseIntegrationScenario(Schema, DeleteIndex, Smoke)
 {
     TemporaryDirectory directory("Schema.DeleteIndex");
     EseInstance instance(directory);
@@ -411,7 +413,7 @@ EseIntegrationScenario(Schema, DeleteIndex)
                     JET_errIndexNotFound);
 }
 
-EseIntegrationScenario(Schema, CreateTableColumnIndexOneShot)
+EseIntegrationScenario(Schema, CreateTableColumnIndexOneShot, Smoke)
 {
     TemporaryDirectory directory("Schema.CreateTableColumnIndexOneShot");
     EseInstance instance(directory);
@@ -460,7 +462,7 @@ EseIntegrationScenario(Schema, CreateTableColumnIndexOneShot)
     CheckJet(JetCloseTable(session.Handle(), tableCreate.tableid));
 }
 
-EseIntegrationScenario(Schema, GetTableInfoReportsCreationStats)
+EseIntegrationScenario(Schema, GetTableInfoReportsCreationStats, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.GetTableInfoReportsCreationStats");
@@ -506,7 +508,7 @@ EseIntegrationScenario(Schema, GetTableInfoReportsCreationStats)
     Require(available <= owned);
 }
 
-EseIntegrationScenario(Schema, DeleteTableRemovesTheTable)
+EseIntegrationScenario(Schema, DeleteTableRemovesTheTable, Smoke)
 {
     TemporaryDirectory directory("Schema.DeleteTableRemovesTheTable");
     EseInstance instance(directory);
@@ -529,7 +531,7 @@ EseIntegrationScenario(Schema, DeleteTableRemovesTheTable)
                     JET_errObjectNotFound);
 }
 
-EseIntegrationScenario(Schema, DeleteTableOfUnknownTableReturnsObjectNotFound)
+EseIntegrationScenario(Schema, DeleteTableOfUnknownTableReturnsObjectNotFound, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.DeleteTableOfUnknownTableReturnsObjectNotFound");
@@ -543,7 +545,7 @@ EseIntegrationScenario(Schema, DeleteTableOfUnknownTableReturnsObjectNotFound)
                     JET_errObjectNotFound);
 }
 
-EseIntegrationScenario(Schema, DeleteTableFreesTheNameForReuse)
+EseIntegrationScenario(Schema, DeleteTableFreesTheNameForReuse, Smoke)
 {
     TemporaryDirectory directory("Schema.DeleteTableFreesTheNameForReuse");
     EseInstance instance(directory);
@@ -565,7 +567,7 @@ EseIntegrationScenario(Schema, DeleteTableFreesTheNameForReuse)
     Require(replacement.Id() != JET_tableidNil);
 }
 
-EseIntegrationScenario(Schema, GetObjectInfoReportsTableType)
+EseIntegrationScenario(Schema, GetObjectInfoReportsTableType, Smoke)
 {
     TemporaryDirectory directory("Schema.GetObjectInfoReportsTableType");
     EseInstance instance(directory);
@@ -590,7 +592,7 @@ EseIntegrationScenario(Schema, GetObjectInfoReportsTableType)
             != 0);
 }
 
-EseIntegrationScenario(Schema, GetIndexInfoReturnsIndexCount)
+EseIntegrationScenario(Schema, GetIndexInfoReturnsIndexCount, Smoke)
 {
     TemporaryDirectory directory("Schema.GetIndexInfoReturnsIndexCount");
     EseInstance instance(directory);
@@ -618,7 +620,7 @@ EseIntegrationScenario(Schema, GetIndexInfoReturnsIndexCount)
     Require(indexCount == 2);
 }
 
-EseIntegrationScenario(Schema, CreateIndex2BuildsSecondaryIndex)
+EseIntegrationScenario(Schema, CreateIndex2BuildsSecondaryIndex, Smoke)
 {
     TemporaryDirectory directory("Schema.CreateIndex2BuildsSecondaryIndex");
     EseInstance instance(directory);
@@ -713,7 +715,7 @@ EseIntegrationScenario(Schema, CreateIndex2BuildsSecondaryIndex)
     (void)identityColumnId;
 }
 
-EseIntegrationScenario(Schema, CreateDatabase2HonorsMaxPagesCap)
+EseIntegrationScenario(Schema, CreateDatabase2HonorsMaxPagesCap, Smoke)
 {
     TemporaryDirectory directory("Schema.CreateDatabase2HonorsMaxPagesCap");
     EseInstance instance(directory);
@@ -745,7 +747,7 @@ EseIntegrationScenario(Schema, CreateDatabase2HonorsMaxPagesCap)
     CheckJet(JetDetachDatabaseA(session.Handle(), dbPath.c_str()));
 }
 
-EseIntegrationScenario(Schema, AttachDatabase2AppliesMaxPagesCapOnAttach)
+EseIntegrationScenario(Schema, AttachDatabase2AppliesMaxPagesCapOnAttach, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.AttachDatabase2AppliesMaxPagesCapOnAttach");
@@ -790,7 +792,7 @@ EseIntegrationScenario(Schema, AttachDatabase2AppliesMaxPagesCapOnAttach)
     CheckJet(JetDetachDatabaseA(session.Handle(), dbPath.c_str()));
 }
 
-EseIntegrationScenario(Schema, CreateTableColumnIndex2BulkCreateRoundTrip)
+EseIntegrationScenario(Schema, CreateTableColumnIndex2BulkCreateRoundTrip, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.CreateTableColumnIndex2BulkCreateRoundTrip");
@@ -846,7 +848,7 @@ EseIntegrationScenario(Schema, CreateTableColumnIndex2BulkCreateRoundTrip)
     CheckJet(JetCloseTable(session.Handle(), create.tableid));
 }
 
-EseIntegrationScenario(Schema, ConvertDDLIncreasesMaxColumnSize)
+EseIntegrationScenario(Schema, ConvertDDLIncreasesMaxColumnSize, Smoke)
 {
     TemporaryDirectory directory("Schema.ConvertDDLIncreasesMaxColumnSize");
     EseInstance instance(directory);
@@ -1011,7 +1013,7 @@ EseIntegrationScenario(Schema, ConvertDDLIncreasesMaxColumnSize)
     }
 }
 
-EseIntegrationScenario(Schema, ConvertDDLChangesIndexDensity)
+EseIntegrationScenario(Schema, ConvertDDLChangesIndexDensity, Smoke)
 {
     TemporaryDirectory directory("Schema.ConvertDDLChangesIndexDensity");
     EseInstance instance(directory);
@@ -1082,7 +1084,7 @@ EseIntegrationScenario(Schema, ConvertDDLChangesIndexDensity)
 //  reads back the same value, proving the param actually
 //  landed in the engine's per-DB state (rather than just being
 //  accepted and discarded).
-EseIntegrationScenario(Schema, CreateDatabase3StampsDbSizeMaxPages)
+EseIntegrationScenario(Schema, CreateDatabase3StampsDbSizeMaxPages, Smoke)
 {
     TemporaryDirectory directory("Schema.CreateDatabase3StampsDbSizeMaxPages");
     EseInstance instance(directory);
@@ -1119,7 +1121,7 @@ EseIntegrationScenario(Schema, CreateDatabase3StampsDbSizeMaxPages)
 //  DB without a max-pages cap, detach, then re-attach via
 //  JetAttachDatabase3 specifying a cap; verify the engine
 //  picks it up.
-EseIntegrationScenario(Schema, AttachDatabase3StampsDbSizeMaxPages)
+EseIntegrationScenario(Schema, AttachDatabase3StampsDbSizeMaxPages, Smoke)
 {
     TemporaryDirectory directory("Schema.AttachDatabase3StampsDbSizeMaxPages");
     EseInstance instance(directory);
@@ -1171,7 +1173,7 @@ EseIntegrationScenario(Schema, AttachDatabase3StampsDbSizeMaxPages)
 //  JetCreateIndex3 with non-default space hints, then exercise
 //  the index with a seek — confirms the index actually built
 //  and is usable.
-EseIntegrationScenario(Schema, CreateIndex3WithSpaceHintsBuilds)
+EseIntegrationScenario(Schema, CreateIndex3WithSpaceHintsBuilds, Smoke)
 {
     TemporaryDirectory directory("Schema.CreateIndex3WithSpaceHintsBuilds");
     EseInstance instance(directory);
@@ -1245,7 +1247,7 @@ EseIntegrationScenario(Schema, CreateIndex3WithSpaceHintsBuilds)
 //  the temp-table OpenTemporaryTable2 upgrade.  Build an index
 //  over a Unicode-text column with case-insensitive collation
 //  via locale-name "en-US".
-EseIntegrationScenario(Schema, CreateIndex4WithUnicodeIndex2Sorts)
+EseIntegrationScenario(Schema, CreateIndex4WithUnicodeIndex2Sorts, Smoke)
 {
     TemporaryDirectory directory("Schema.CreateIndex4WithUnicodeIndex2Sorts");
     EseInstance instance(directory);
@@ -1326,7 +1328,7 @@ EseIntegrationScenario(Schema, CreateIndex4WithUnicodeIndex2Sorts)
 //  One scenario exercises all three by building three tables
 //  in the same database — each call must succeed and yield a
 //  usable table with the expected column count.
-EseIntegrationScenario(Schema, CreateTableColumnIndex345BuildsProgressiveForms)
+EseIntegrationScenario(Schema, CreateTableColumnIndex345BuildsProgressiveForms, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.CreateTableColumnIndex345BuildsProgressiveForms");
@@ -1456,7 +1458,7 @@ EseIntegrationScenario(Schema, CreateTableColumnIndex345BuildsProgressiveForms)
 //  took effect via JetGetColumnInfo / JetOpenTable reads that
 //  should now miss.
 
-EseIntegrationScenario(Schema, DeleteColumn2RemovesColumn)
+EseIntegrationScenario(Schema, DeleteColumn2RemovesColumn, Smoke)
 {
     TemporaryDirectory directory("Schema.DeleteColumn2RemovesColumn");
     EseInstance instance(directory);
@@ -1496,7 +1498,7 @@ EseIntegrationScenario(Schema, DeleteColumn2RemovesColumn)
 //  JET_VERSION bumps to include it, drop a scenario here that
 //  mirrors `DeleteColumn2RemovesColumn` above.
 
-EseIntegrationScenario(Schema, CreateIndexOptionallyUniqueEnforcedOnlyWhenFlagged)
+EseIntegrationScenario(Schema, CreateIndexOptionallyUniqueEnforcedOnlyWhenFlagged, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.CreateIndexOptionallyUniqueEnforcedOnlyWhenFlagged");
@@ -1600,7 +1602,7 @@ EseIntegrationScenario(Schema, CreateIndexOptionallyUniqueEnforcedOnlyWhenFlagge
     (void)identityColumnId;
 }
 
-EseIntegrationScenario(Schema, OpenTableReadOnlyRejectsInsertButAllowsRead)
+EseIntegrationScenario(Schema, OpenTableReadOnlyRejectsInsertButAllowsRead, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.OpenTableReadOnlyRejectsInsertButAllowsRead");
@@ -1668,7 +1670,7 @@ EseIntegrationScenario(Schema, OpenTableReadOnlyRejectsInsertButAllowsRead)
     CheckJet(JetCloseTable(session.Handle(), readOnlyTableId));
 }
 
-EseIntegrationScenario(Schema, OpenTableDenyWriteBlocksConcurrentWritersInOtherSessions)
+EseIntegrationScenario(Schema, OpenTableDenyWriteBlocksConcurrentWritersInOtherSessions, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.OpenTableDenyWriteBlocksConcurrentWritersInOtherSessions");
@@ -1786,7 +1788,7 @@ EseIntegrationScenario(Schema, OpenTableDenyWriteBlocksConcurrentWritersInOtherS
     CheckJet(JetCloseTable(sessionB.Handle(), afterReleaseId));
 }
 
-EseIntegrationScenario(Schema, OpenTableDenyReadBlocksReadsFromOtherSessions)
+EseIntegrationScenario(Schema, OpenTableDenyReadBlocksReadsFromOtherSessions, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.OpenTableDenyReadBlocksReadsFromOtherSessions");
@@ -1858,7 +1860,7 @@ EseIntegrationScenario(Schema, OpenTableDenyReadBlocksReadsFromOtherSessions)
     CheckJet(JetCloseTable(sessionB.Handle(), afterReleaseId));
 }
 
-EseIntegrationScenario(Schema, OpenTablePermitDDLAllowsAddColumnOnFixedDDLTable)
+EseIntegrationScenario(Schema, OpenTablePermitDDLAllowsAddColumnOnFixedDDLTable, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.OpenTablePermitDDLAllowsAddColumnOnFixedDDLTable");
@@ -2006,7 +2008,7 @@ EseIntegrationScenario(Schema, OpenTablePermitDDLAllowsAddColumnOnFixedDDLTable)
     CheckJet(JetCloseTable(session.Handle(), reopenId));
 }
 
-EseIntegrationScenario(Schema, CreateIndexSortNullsHighPlacesNullsAfterData)
+EseIntegrationScenario(Schema, CreateIndexSortNullsHighPlacesNullsAfterData, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.CreateIndexSortNullsHighPlacesNullsAfterData");
@@ -2091,7 +2093,7 @@ EseIntegrationScenario(Schema, CreateIndexSortNullsHighPlacesNullsAfterData)
     (void)identityColumnId;
 }
 
-EseIntegrationScenario(Schema, CreateIndexEmptyDoesNotPopulateExistingRows)
+EseIntegrationScenario(Schema, CreateIndexEmptyDoesNotPopulateExistingRows, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.CreateIndexEmptyDoesNotPopulateExistingRows");
@@ -2148,7 +2150,7 @@ EseIntegrationScenario(Schema, CreateIndexEmptyDoesNotPopulateExistingRows)
     Require(observedDataRows == RowCount);
 }
 
-EseIntegrationScenario(Schema, CreateIndexUnversionedAcceptedAndDataIntact)
+EseIntegrationScenario(Schema, CreateIndexUnversionedAcceptedAndDataIntact, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.CreateIndexUnversionedAcceptedAndDataIntact");
@@ -2209,7 +2211,7 @@ EseIntegrationScenario(Schema, CreateIndexUnversionedAcceptedAndDataIntact)
     Require(expectedValue == RowCount);
 }
 
-EseIntegrationScenario(Schema, CreateIndexLazyFlushAcceptedAndDataIntact)
+EseIntegrationScenario(Schema, CreateIndexLazyFlushAcceptedAndDataIntact, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.CreateIndexLazyFlushAcceptedAndDataIntact");
@@ -2267,7 +2269,7 @@ EseIntegrationScenario(Schema, CreateIndexLazyFlushAcceptedAndDataIntact)
     Require(expectedValue == RowCount);
 }
 
-EseIntegrationScenario(Schema, CreateIndexTuplesEnablesSubstringSeek)
+EseIntegrationScenario(Schema, CreateIndexTuplesEnablesSubstringSeek, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.CreateIndexTuplesEnablesSubstringSeek");
@@ -2433,18 +2435,17 @@ namespace
 //  enough to read at a glance.
 JET_TABLEID CreateRowsTableForHint(JET_SESID sesid,
                                    JET_DBID dbid,
-                                   JET_COLUMNID& outValueColumnId)
+                                   JET_COLUMNID& valueColumnId)
 {
     JET_TABLEID tableId = JET_tableidNil;
     CheckJet(JetCreateTableA(sesid, dbid, "Rows", 16, 100, &tableId));
     JET_COLUMNDEF columnDefinition = {};
     columnDefinition.cbStruct = sizeof(columnDefinition);
     columnDefinition.coltyp = JET_coltypLong;
-    JET_COLUMNID valueColumnId = 0;
+    valueColumnId = 0;
     CheckJet(JetAddColumnA(sesid, tableId, "Value",
                            &columnDefinition, nullptr, 0,
                            &valueColumnId));
-    outValueColumnId = valueColumnId;
     return tableId;
 }
 
@@ -2519,7 +2520,7 @@ void SeekValueIndexAndVerify(JET_SESID sesid,
 
 } // namespace
 
-EseIntegrationScenario(Schema, CreateIndex3WithSpaceHintUtilizeParentSpaceAccepted)
+EseIntegrationScenario(Schema, CreateIndex3WithSpaceHintUtilizeParentSpaceAccepted, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.CreateIndex3WithSpaceHintUtilizeParentSpaceAccepted");
@@ -2537,7 +2538,7 @@ EseIntegrationScenario(Schema, CreateIndex3WithSpaceHintUtilizeParentSpaceAccept
     CheckJet(JetCloseTable(session.Handle(), tableId));
 }
 
-EseIntegrationScenario(Schema, CreateIndex3WithSpaceHintUtilizeExactExtentsAccepted)
+EseIntegrationScenario(Schema, CreateIndex3WithSpaceHintUtilizeExactExtentsAccepted, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.CreateIndex3WithSpaceHintUtilizeExactExtentsAccepted");
@@ -2555,7 +2556,7 @@ EseIntegrationScenario(Schema, CreateIndex3WithSpaceHintUtilizeExactExtentsAccep
     CheckJet(JetCloseTable(session.Handle(), tableId));
 }
 
-EseIntegrationScenario(Schema, CreateIndex3WithCreateHintAppendSequentialAccepted)
+EseIntegrationScenario(Schema, CreateIndex3WithCreateHintAppendSequentialAccepted, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.CreateIndex3WithCreateHintAppendSequentialAccepted");
@@ -2578,7 +2579,7 @@ EseIntegrationScenario(Schema, CreateIndex3WithCreateHintAppendSequentialAccepte
     CheckJet(JetCloseTable(session.Handle(), tableId));
 }
 
-EseIntegrationScenario(Schema, CreateIndex3WithCreateHintHotpointSequentialAccepted)
+EseIntegrationScenario(Schema, CreateIndex3WithCreateHintHotpointSequentialAccepted, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.CreateIndex3WithCreateHintHotpointSequentialAccepted");
@@ -2599,7 +2600,7 @@ EseIntegrationScenario(Schema, CreateIndex3WithCreateHintHotpointSequentialAccep
     CheckJet(JetCloseTable(session.Handle(), tableId));
 }
 
-EseIntegrationScenario(Schema, CreateIndex3WithRetrieveHintTableScanForwardAccepted)
+EseIntegrationScenario(Schema, CreateIndex3WithRetrieveHintTableScanForwardAccepted, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.CreateIndex3WithRetrieveHintTableScanForwardAccepted");
@@ -2632,7 +2633,7 @@ EseIntegrationScenario(Schema, CreateIndex3WithRetrieveHintTableScanForwardAccep
     CheckJet(JetCloseTable(session.Handle(), tableId));
 }
 
-EseIntegrationScenario(Schema, CreateIndex3WithRetrieveHintTableScanBackwardAccepted)
+EseIntegrationScenario(Schema, CreateIndex3WithRetrieveHintTableScanBackwardAccepted, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.CreateIndex3WithRetrieveHintTableScanBackwardAccepted");
@@ -2663,7 +2664,7 @@ EseIntegrationScenario(Schema, CreateIndex3WithRetrieveHintTableScanBackwardAcce
     CheckJet(JetCloseTable(session.Handle(), tableId));
 }
 
-EseIntegrationScenario(Schema, CreateIndex3WithDeleteHintTableSequentialAccepted)
+EseIntegrationScenario(Schema, CreateIndex3WithDeleteHintTableSequentialAccepted, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.CreateIndex3WithDeleteHintTableSequentialAccepted");
@@ -2701,7 +2702,7 @@ EseIntegrationScenario(Schema, CreateIndex3WithDeleteHintTableSequentialAccepted
     CheckJet(JetCloseTable(session.Handle(), tableId));
 }
 
-EseIntegrationScenario(Schema, CreateIndex3WithCombinedSpaceAndAccessHintsAccepted)
+EseIntegrationScenario(Schema, CreateIndex3WithCombinedSpaceAndAccessHintsAccepted, Smoke)
 {
     TemporaryDirectory directory(
         "Schema.CreateIndex3WithCombinedSpaceAndAccessHintsAccepted");
@@ -2729,3 +2730,459 @@ EseIntegrationScenario(Schema, CreateIndex3WithCombinedSpaceAndAccessHintsAccept
     SeekValueIndexAndVerify(session.Handle(), tableId, valueColumnId, 17);
     CheckJet(JetCloseTable(session.Handle(), tableId));
 }
+
+//  ===================================================================
+//  Tier::Regression — exact-page-fit boundary packing.  Build a
+//  table whose record size is calibrated to fit a predictable
+//  number of rows per page, fill to exactly cross several page
+//  boundaries, then do random delete + reinsert to force re-pack
+//  at the boundary.  Catches refactors to record packing or
+//  per-page slot allocation at the boundary.
+//  ===================================================================
+EseIntegrationScenario(Schema, BoundaryPackingExactPageFitChurnPreservesContent, Regression)
+{
+    TemporaryDirectory directory(
+        "Schema.BoundaryPackingExactPageFitChurnPreservesContent");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "BoundaryPack.mdb");
+    EseTable table(database, "Rows");
+    auto keyColumn = table.AddColumn("Key", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
+    //  256-byte filler binary so each row ~268 bytes; on a 4KiB
+    //  page roughly 14-15 records fit.  Exact count varies with
+    //  page overhead, but the churn pass exercises the boundary.
+    auto fillerColumn = table.AddColumn("Filler", JET_coltypLongBinary);
+    static constexpr std::string_view PrimaryKey =
+        std::string_view("+Key\0\0", 6);
+    table.CreateIndex("PrimaryByKey", PrimaryKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    auto fillerForKey = [](int32_t k) {
+        std::array<uint8_t, 256> bytes{};
+        for (int32_t i = 0; i < 256; ++i)
+        {
+            bytes[i] = static_cast<uint8_t>((k * 7 + i * 13) & 0xFF);
+        }
+        return bytes;
+    };
+
+    static constexpr int32_t TotalRows = 200;
+    {
+        EseTransaction transaction(session);
+        for (int32_t k = 0; k < TotalRows; ++k)
+        {
+            const auto filler = fillerForKey(k);
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  keyColumn, &k, sizeof(k),
+                                  0, nullptr));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  fillerColumn,
+                                  filler.data(), filler.size(),
+                                  0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+    //  Delete every 3rd row to fragment the leaf pages.
+    {
+        EseTransaction transaction(session);
+        for (int32_t k = 0; k < TotalRows; k += 3)
+        {
+            CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                                &k, sizeof(k), JET_bitNewKey));
+            CheckJet(JetSeek(session.Handle(), table.Id(),
+                             JET_bitSeekEQ));
+            CheckJet(JetDelete(session.Handle(), table.Id()));
+        }
+        transaction.Commit();
+    }
+    //  Reinsert with offset keys to force the boundary packer to
+    //  reuse slots in the same leaf pages.
+    {
+        EseTransaction transaction(session);
+        for (int32_t i = 0; i < TotalRows; i += 3)
+        {
+            const int32_t k = i + 100000;
+            const auto filler = fillerForKey(k);
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  keyColumn, &k, sizeof(k),
+                                  0, nullptr));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  fillerColumn,
+                                  filler.data(), filler.size(),
+                                  0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+
+    //  Final walk: every surviving original row (k%3!=0) and every
+    //  reinserted row (k>=100000) must have its filler match
+    //  predictions byte-for-byte.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t walked = 0;
+    while (true)
+    {
+        int32_t observedKey = 0;
+        uint8_t observedFiller[256] = {};
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   keyColumn,
+                                   &observedKey, sizeof(observedKey),
+                                   &actualBytes, 0, nullptr));
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   fillerColumn,
+                                   observedFiller, sizeof(observedFiller),
+                                   &actualBytes, 0, nullptr));
+        const auto expected = fillerForKey(observedKey);
+        Require(std::memcmp(observedFiller, expected.data(),
+                            expected.size()) == 0);
+        ++walked;
+        const auto moveResult = JetMove(session.Handle(), table.Id(),
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    int32_t expectedSurvivors = 0;
+    for (int32_t k = 0; k < TotalRows; ++k)
+    {
+        if (k % 3 != 0)
+        {
+            ++expectedSurvivors;
+        }
+    }
+    int32_t expectedReinserted = 0;
+    for (int32_t i = 0; i < TotalRows; i += 3)
+    {
+        (void)i;
+        ++expectedReinserted;
+    }
+    Require(walked == expectedSurvivors + expectedReinserted);
+}
+
+//  ===================================================================
+//  Tier::Regression — refactor-sensitivity scenarios
+//
+//  These tests target internal-policy code paths that the Smoke tier
+//  doesn't exercise: B-tree split/merge under non-monotonic insert
+//  patterns, large multi-column records, schema correctness at scale,
+//  index enforcement past trivial cardinality.  Each one is designed
+//  so a refactor that broke an internal heuristic — while keeping the
+//  public API contract intact — would fail the assertions here.
+//  ===================================================================
+
+//  Schema correctness with 30 columns of mixed types.  The Smoke
+//  scenarios exercise 1–3 columns; refactors that broke fixed-vs-
+//  variable column ordering, columnid allocation across many
+//  columns, or column-id-to-offset lookup at scale would slip past
+//  them.  Insert one row with a known value per column, retrieve
+//  each column individually + via JetEnumerateColumns and confirm
+//  every byte round-trips.
+EseIntegrationScenario(Schema, WideRecordWithMixedColumnTypesRoundTrips, Regression)
+{
+    TemporaryDirectory directory(
+        "Schema.WideRecordWithMixedColumnTypesRoundTrips");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Wide.mdb");
+    EseTable table(database, "Wide");
+
+    //  10 fixed Long + 10 fixed-width Binary + 10 variable Text/Binary
+    //  — exercises the boundary between fixed-storage and tagged-
+    //  storage column ordering.  Names sort lexically so the catalog
+    //  walks them in insertion order.
+    std::vector<JET_COLUMNID> fixedLongColumns;
+    std::vector<JET_COLUMNID> fixedBinaryColumns;
+    std::vector<JET_COLUMNID> taggedColumns;
+    for (int32_t i = 0; i < 10; ++i)
+    {
+        fixedLongColumns.push_back(table.AddColumn(
+            std::format("L{:02}", i), JET_coltypLong,
+            JET_bitColumnNotNULL));
+    }
+    for (int32_t i = 0; i < 10; ++i)
+    {
+        fixedBinaryColumns.push_back(table.AddColumn(
+            std::format("B{:02}", i), JET_coltypBinary, 0, 8));
+    }
+    for (int32_t i = 0; i < 10; ++i)
+    {
+        taggedColumns.push_back(table.AddColumn(
+            std::format("T{:02}", i), JET_coltypLongText,
+            0, 0, 1252));
+    }
+
+    auto longValue = [](int32_t i) { return 1000 + i * 7; };
+    auto binaryBytes = [](int32_t i) {
+        std::array<uint8_t, 8> bytes{};
+        for (size_t b = 0; b < bytes.size(); ++b)
+        {
+            bytes[b] = static_cast<uint8_t>((i * 13 + b) & 0xFF);
+        }
+        return bytes;
+    };
+    auto textValue = [](int32_t i) {
+        return std::format("text-column-{:02}-payload", i);
+    };
+
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepInsert));
+        for (int32_t i = 0; i < 10; ++i)
+        {
+            const auto v = longValue(i);
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  fixedLongColumns[i],
+                                  &v, sizeof(v), 0, nullptr));
+            const auto b = binaryBytes(i);
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  fixedBinaryColumns[i],
+                                  b.data(), b.size(), 0, nullptr));
+            const auto t = textValue(i);
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  taggedColumns[i],
+                                  t.data(), t.size(), 0, nullptr));
+        }
+        CheckJet(JetUpdate(session.Handle(), table.Id(),
+                           nullptr, 0, nullptr));
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    for (int32_t i = 0; i < 10; ++i)
+    {
+        int32_t observedLong = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   fixedLongColumns[i],
+                                   &observedLong, sizeof(observedLong),
+                                   &actualBytes, 0, nullptr));
+        Require(observedLong == longValue(i));
+
+        uint8_t observedBinary[8] = {};
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   fixedBinaryColumns[i],
+                                   observedBinary, sizeof(observedBinary),
+                                   &actualBytes, 0, nullptr));
+        Require(actualBytes == sizeof(observedBinary));
+        const auto expected = binaryBytes(i);
+        Require(std::memcmp(observedBinary, expected.data(),
+                            expected.size()) == 0);
+
+        char observedText[64] = {};
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                   taggedColumns[i],
+                                   observedText, sizeof(observedText),
+                                   &actualBytes, 0, nullptr));
+        const std::string_view observed(observedText, actualBytes);
+        Require(observed == textValue(i));
+    }
+}
+
+//  Unique-index enforcement at meaningful cardinality.  The Smoke
+//  scenario tests with 2–3 rows; a refactor that broke the unique
+//  check in B-tree split paths above the in-page-only threshold
+//  (~100s of keys) would pass the Smoke test.  Insert 4096 unique
+//  rows in random key order, then run a deterministic uniqueness
+//  probe against every key — duplicates must always be rejected.
+EseIntegrationScenario(Schema, UniqueIndexEnforcedAcrossPagedBTree, Regression)
+{
+    TemporaryDirectory directory(
+        "Schema.UniqueIndexEnforcedAcrossPagedBTree");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "UniqueScale.mdb");
+    EseTable table(database, "Rows");
+    auto keyColumn = table.AddColumn("Key", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
+    static constexpr std::string_view IndexKey =
+        std::string_view("+Key\0\0", 6);
+    table.CreateIndex("ByKey", IndexKey,
+                      JET_bitIndexPrimary | JET_bitIndexUnique);
+
+    //  Linear-feedback shuffle of 0..4095 — deterministic and
+    //  non-monotonic, so B-tree split positions land all over the
+    //  tree.  4096 keys at single-int records overflows a default
+    //  4-KiB page comfortably (each leaf page holds ~200 records).
+    static constexpr int32_t Count = 4096;
+    std::vector<int32_t> shuffled(Count);
+    for (int32_t i = 0; i < Count; ++i)
+    {
+        shuffled[static_cast<size_t>(i)] = i;
+    }
+    {
+        //  Fisher-Yates with a fixed seed so the test is repeatable.
+        uint32_t seed = 0xC0FFEE;
+        auto nextRandom = [&seed]() {
+            seed = seed * 1664525u + 1013904223u;
+            return seed;
+        };
+        for (int32_t i = Count - 1; i > 0; --i)
+        {
+            const int32_t j = static_cast<int32_t>(
+                nextRandom() % static_cast<uint32_t>(i + 1));
+            std::swap(shuffled[static_cast<size_t>(i)],
+                      shuffled[static_cast<size_t>(j)]);
+        }
+    }
+
+    {
+        EseTransaction transaction(session);
+        for (int32_t key : shuffled)
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(), keyColumn,
+                                  &key, sizeof(key), 0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+
+    //  Every existing key must be seekable AND a duplicate insert
+    //  must be rejected.  Probe a representative sample across the
+    //  key range (every 16th key) so we cover the whole tree
+    //  without making the scenario 4096× slower.
+    for (int32_t probe = 0; probe < Count; probe += 16)
+    {
+        CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                            &probe, sizeof(probe), JET_bitNewKey));
+        CheckJet(JetSeek(session.Handle(), table.Id(), JET_bitSeekEQ));
+        int32_t observed = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), keyColumn,
+                                   &observed, sizeof(observed),
+                                   &actualBytes, 0, nullptr));
+        Require(observed == probe);
+
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), keyColumn,
+                              &probe, sizeof(probe), 0, nullptr));
+        RequireJetError(JetUpdate(session.Handle(), table.Id(),
+                                  nullptr, 0, nullptr),
+                        JET_errKeyDuplicate);
+    }
+
+    //  Full forward walk: rows must appear in strict ascending key
+    //  order with no gaps and no duplicates.  This is the load-
+    //  bearing structural assertion — a refactor that lost or
+    //  duplicated a key in an interior split shows up here.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t expectedKey = 0;
+    int32_t walkedRowCount = 0;
+    while (true)
+    {
+        int32_t observed = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), keyColumn,
+                                   &observed, sizeof(observed),
+                                   &actualBytes, 0, nullptr));
+        Require(observed == expectedKey);
+        ++expectedKey;
+        ++walkedRowCount;
+        const auto moveResult = JetMove(session.Handle(), table.Id(),
+                                        JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walkedRowCount == Count);
+}
+
+//  Composite-index correctness with realistic cardinality.  Smoke
+//  test covers 4 rows; here we exercise the composite key code
+//  with 100 rows × 4 quarters = 400 records with duplicates in
+//  the first key column, ensuring the composite key encoding
+//  resolves correctly at the second-column level.
+EseIntegrationScenario(Schema, CompositeIndexResolvesDuplicateFirstColumns, Regression)
+{
+    TemporaryDirectory directory(
+        "Schema.CompositeIndexResolvesDuplicateFirstColumns");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Composite.mdb");
+    EseTable table(database, "Sales");
+
+    auto regionColumn = table.AddColumn("Region", JET_coltypLong);
+    auto quarterColumn = table.AddColumn("Quarter", JET_coltypLong);
+    auto totalColumn = table.AddColumn("Total", JET_coltypCurrency);
+
+    static constexpr std::string_view CompositeKey =
+        std::string_view("+Region\0+Quarter\0\0", 18);
+    table.CreateIndex("ByRegionQuarter", CompositeKey);
+
+    static constexpr int32_t Regions = 100;
+    static constexpr int32_t Quarters = 4;
+    {
+        EseTransaction transaction(session);
+        for (int32_t region = 0; region < Regions; ++region)
+        {
+            for (int32_t quarter = 1; quarter <= Quarters; ++quarter)
+            {
+                CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                          JET_prepInsert));
+                CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                      regionColumn,
+                                      &region, sizeof(region),
+                                      0, nullptr));
+                CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                      quarterColumn,
+                                      &quarter, sizeof(quarter),
+                                      0, nullptr));
+                const int64_t total = static_cast<int64_t>(region) * 10000
+                                      + quarter;
+                CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                      totalColumn,
+                                      &total, sizeof(total),
+                                      0, nullptr));
+                CheckJet(JetUpdate(session.Handle(), table.Id(),
+                                   nullptr, 0, nullptr));
+            }
+        }
+        transaction.Commit();
+    }
+
+    //  Every (region, quarter) pair must seek to its exact total —
+    //  a composite-key encoding regression that ignored the second
+    //  column would land on the wrong row.
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(),
+                                 "ByRegionQuarter"));
+    for (int32_t region : { 0, 1, 17, 99 })
+    {
+        for (int32_t quarter = 1; quarter <= Quarters; ++quarter)
+        {
+            CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                                &region, sizeof(region), JET_bitNewKey));
+            CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                                &quarter, sizeof(quarter), 0));
+            CheckJet(JetSeek(session.Handle(), table.Id(), JET_bitSeekEQ));
+            int64_t observedTotal = 0;
+            uint32_t actualBytes = 0;
+            CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                                       totalColumn,
+                                       &observedTotal,
+                                       sizeof(observedTotal),
+                                       &actualBytes, 0, nullptr));
+            const int64_t expectedTotal =
+                static_cast<int64_t>(region) * 10000 + quarter;
+            Require(observedTotal == expectedTotal);
+        }
+    }
+}
+
