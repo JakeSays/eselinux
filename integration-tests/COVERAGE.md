@@ -461,3 +461,100 @@ coverage target:
   End.  Closes the last remaining in-scope functional gap; 196/198
   testable APIs now covered.
 
+- **Round 13** (wave H): backup-family grbits + fork-per-scenario
+  isolation harness.  Seven scenarios across `BackupRestoreScenarios.cxx`,
+  `DatabaseScenarios.cxx`, and `MaintenanceScenarios.cxx`:
+  `JET_bitBackupIncremental` (log-only artefacts in target dir),
+  `JET_bitBackupAtomic` (engine stages under `new/` subdir for
+  atomic promote), `JET_bitBackupSurrogate` on both
+  `JetBeginSurrogateBackup` / `JetEndSurrogateBackup` and
+  `JetBeginExternalBackupInstance`, `JetTerm2` with
+  `JET_bitTermStopBackup` mid-flight, `JetCompact` with a
+  `JET_PFNSTATUS` callback (counts `JET_snpCompact` /
+  `JET_sntProgress`), and `JetIdle` with
+  `JET_bitIdleCompact|JET_bitIdleCompactAsync`.
+  No new base APIs (all on already-covered surface); the round
+  exists to exercise grbits that the surrounding scenarios skipped.
+
+  Infrastructure shipping in the same commit (`f885d0c`):
+  every scenario now runs in its own forked child process.  The
+  parent forks per scenario, the child runs `PlatformInitializer`
+  + the scenario body + `_exit`, and a side-channel pipe carries
+  the failure message back.  Solves three classes of order-
+  dependent flake at once: ESE's permanent multi-instance flip
+  after first `JetCreateInstance2`, `CResourceManager`'s
+  freeze-on-first-commit, and leftover system-parameter state.
+  Scenarios that need a non-default engine config now flip it via
+  `EseInstanceOptions` (the round adds `EnableCircularLog` — the
+  three surrogate/incremental/atomic backup scenarios all opt
+  out of circular logging because the engine returns
+  `JET_errInvalidBackup` for those grbits under circular log)
+  without leaking the change into the rest of the suite.
+  `--in-process` opts the suite back into the old single-process
+  behaviour for debugger attach / asan walks.
+
+  Also in this commit: `JetErrorName` now covers all 485
+  `JET_err*`/`JET_wrn*` codes from `jetapi.h` with `Error*` /
+  `Warning*` short names, so failure output reads
+  `ErrorInvalidBackup (-526)` rather than `JET_err<-526>`.  Six
+  unterminated section-header comments in `jetapi.h`
+  (`/*  SYSTEM errors`, `/*  LOGGING/RECOVERY errors`, etc.)
+  were silently swallowing the first `#define` in each block —
+  same upstream-header bug as commit `2a29af6` for the DML
+  block.  Fixed in this commit so the full error-name table
+  compiles.
+
+  Engine-contract gotchas surfaced:
+  - `JET_bitBackupIncremental`, `JET_bitBackupAtomic`,
+    `JET_bitBackupSurrogate`, and `JetBeginSurrogateBackup` are
+    all rejected with `JET_errInvalidBackup` (-526) when
+    `JET_paramCircularLog=1`.  Default framework setting is
+    circular-on for log-dir boundedness — backup grbit tests must
+    flip it off per-instance.
+  - `JET_bitBackupAtomic` writes its artefacts into a `new/`
+    subdirectory under the requested target path, not directly
+    into the target.  Atomicity comes from populating the side
+    directory in full and then promoting it on success, so a
+    crash mid-copy never leaves a half-written backup at the
+    target name.  Recursive iteration required to verify the
+    `.mdb` + `.log` show up.
+  - `JET_bitBackupSurrogate` on `JetBeginExternalBackupInstance`
+    suppresses the engine's own file-copy bookkeeping (the
+    external surrogate is doing the snapshot), so companion
+    APIs like `JetGetAttachInfoInstance` return
+    `JET_errNoBackup`.  Scenario validates Begin accepts the
+    flag and End closes cleanly; no GetAttachInfo middle.
+
+- **Round 14** (wave I): `JET_SPACEHINTS::grbit` coverage — every
+  non-reserved `JET_bit*Hint*` flag exercised through
+  `JetCreateIndex3` + `JET_INDEXCREATE2::pSpacehints`.  Eight
+  scenarios in `SchemaScenarios.cxx`:
+  `JET_bitSpaceHintsUtilizeParentSpace` (hierarchical extent
+  allocation),
+  `JET_bitSpaceHintsUtilizeExactExtents` (exact-size extents),
+  `JET_bitCreateHintAppendSequential` (right-edge-biased split
+  policy),
+  `JET_bitCreateHintHotpointSequential` (moving-cursor split
+  policy),
+  `JET_bitRetrieveHintTableScanForward` (forward-scan workload
+  hint — auto-defrag trigger),
+  `JET_bitRetrieveHintTableScanBackward` (backward-scan
+  workload),
+  `JET_bitDeleteHintTableSequential` (low-to-high cleanup
+  pattern), plus a combined-bits scenario that OR's five bits
+  together.  No new base APIs; the round closes the hint-bit
+  gap on the `JET_SPACEHINTS` grbit field that earlier rounds
+  left at the safe default of `grbit=0`.
+
+  Each scenario is hint-flag-with-weak-observable by nature —
+  the engine accepts the hint, the index builds, and the
+  intended workload (seek for space/create hints; full scan
+  for retrieve hints; sequential delete for the delete hint)
+  succeeds.  The internal policy change (extent layout, defrag
+  threshold, cleanup ordering) isn't directly visible to
+  public-API callers.  Shared boilerplate factored into
+  `CreateRowsTableForHint` / `InsertSequentialRows` /
+  `CreateValueIndexWithSpaceHints` / `SeekValueIndexAndVerify`
+  helpers in the anonymous namespace at the top of the wave's
+  block so each scenario body fits on one screen.
+
