@@ -2249,3 +2249,329 @@ EseIntegrationScenario(Schema, CreateIndexTuplesEnablesSubstringSeek)
     const std::string_view hitWord(wordBuffer, actualBytes);
     Require(hitWord.find(SearchTerm) != std::string_view::npos);
 }
+
+//  JET_SPACEHINTS hint-flag scenarios.
+//
+//  These bits are *hints* to the engine's space allocator / scan
+//  prefetcher / cleanup heuristics: each is meant to nudge an
+//  internal policy (extent layout, B-tree defrag triggering, range
+//  prefetch) without changing the public API contract.  The
+//  observable from outside is just "engine accepted the hint and
+//  the index built + works."  The scenarios below construct a
+//  populated table, build a secondary index with one hint flag at a
+//  time, then exercise the index with a seek (and a scan or delete
+//  for the access-pattern hints) so the build path actually runs.
+//
+//  Each scenario follows the same shape as
+//  CreateIndex3WithSpaceHintsBuilds — same ulInitialDensity (80%),
+//  same cbInitial (16 KiB), same ulMaintDensity — and only varies
+//  the grbit field of JET_SPACEHINTS.  The Round-9 gotcha applies:
+//  density/cbInitial must be sensible; the engine rejects
+//  fabricated values from cat.cxx's validator.
+
+namespace
+{
+
+//  Common helper: build a single-int-column table with N rows, then
+//  call JetCreateIndex3 with the given JET_SPACEHINTS::grbit.  The
+//  flag is the only thing that varies between scenarios in this
+//  cluster — extracting the boilerplate keeps each scenario short
+//  enough to read at a glance.
+JET_TABLEID CreateRowsTableForHint(JET_SESID sesid,
+                                   JET_DBID dbid,
+                                   JET_COLUMNID& outValueColumnId)
+{
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetCreateTableA(sesid, dbid, "Rows", 16, 100, &tableId));
+    JET_COLUMNDEF columnDefinition = {};
+    columnDefinition.cbStruct = sizeof(columnDefinition);
+    columnDefinition.coltyp = JET_coltypLong;
+    JET_COLUMNID valueColumnId = 0;
+    CheckJet(JetAddColumnA(sesid, tableId, "Value",
+                           &columnDefinition, nullptr, 0,
+                           &valueColumnId));
+    outValueColumnId = valueColumnId;
+    return tableId;
+}
+
+void InsertSequentialRows(JET_SESID sesid,
+                          JET_TABLEID tableId,
+                          JET_COLUMNID valueColumnId,
+                          int32_t rowCount)
+{
+    CheckJet(JetBeginTransaction(sesid));
+    for (int32_t rowIndex = 0; rowIndex < rowCount; ++rowIndex)
+    {
+        CheckJet(JetPrepareUpdate(sesid, tableId, JET_prepInsert));
+        CheckJet(JetSetColumn(sesid, tableId, valueColumnId,
+                              &rowIndex, sizeof(rowIndex), 0, nullptr));
+        CheckJet(JetUpdate(sesid, tableId, nullptr, 0, nullptr));
+    }
+    CheckJet(JetCommitTransaction(sesid, 0));
+}
+
+//  Build a +Value secondary index on tableId with the supplied
+//  JET_SPACEHINTS::grbit.  Index name fixed to "ValueIndex" so
+//  callers can set it as the current index without each scenario
+//  carrying its own name string.
+void CreateValueIndexWithSpaceHints(JET_SESID sesid,
+                                    JET_TABLEID tableId,
+                                    JET_GRBIT spaceHintsGrbit)
+{
+    JET_SPACEHINTS spaceHints = {};
+    spaceHints.cbStruct = sizeof(spaceHints);
+    spaceHints.ulInitialDensity = 80;
+    spaceHints.cbInitial = 16 * 1024;
+    spaceHints.grbit = spaceHintsGrbit;
+    spaceHints.ulMaintDensity = 80;
+
+    char indexKey[] = "+Value\0";
+    JET_INDEXCREATE2_A indexCreate = {};
+    indexCreate.cbStruct = sizeof(indexCreate);
+    indexCreate.szIndexName = const_cast<char*>("ValueIndex");
+    indexCreate.szKey = indexKey;
+    indexCreate.cbKey = sizeof(indexKey);
+    indexCreate.grbit = JET_bitIndexUnique;
+    indexCreate.ulDensity = 80;
+    indexCreate.pSpacehints = &spaceHints;
+
+    CheckJet(JetCreateIndex3A(sesid, tableId, &indexCreate, 1));
+    Require(indexCreate.err == JET_errSuccess);
+}
+
+//  Seek to a specific value through the named index and confirm
+//  retrieval matches.  Verifies the built index is actually usable
+//  — the goal of every hint-flag scenario, not just space-allocator
+//  ones — because a silently-broken index would also "accept" the
+//  flag.
+void SeekValueIndexAndVerify(JET_SESID sesid,
+                             JET_TABLEID tableId,
+                             JET_COLUMNID valueColumnId,
+                             int32_t targetValue)
+{
+    CheckJet(JetSetCurrentIndex2A(sesid, tableId, "ValueIndex", 0));
+    CheckJet(JetMakeKey(sesid, tableId,
+                        &targetValue, sizeof(targetValue),
+                        JET_bitNewKey));
+    CheckJet(JetSeek(sesid, tableId, JET_bitSeekEQ));
+
+    int32_t observed = 0;
+    uint32_t actualSize = 0;
+    CheckJet(JetRetrieveColumn(sesid, tableId, valueColumnId,
+                               &observed, sizeof(observed),
+                               &actualSize, 0, nullptr));
+    Require(observed == targetValue);
+}
+
+} // namespace
+
+EseIntegrationScenario(Schema, CreateIndex3WithSpaceHintUtilizeParentSpaceAccepted)
+{
+    TemporaryDirectory directory(
+        "Schema.CreateIndex3WithSpaceHintUtilizeParentSpaceAccepted");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "HintParent.mdb");
+
+    JET_COLUMNID valueColumnId = 0;
+    JET_TABLEID tableId =
+        CreateRowsTableForHint(session.Handle(), database.Id(), valueColumnId);
+    InsertSequentialRows(session.Handle(), tableId, valueColumnId, 32);
+    CreateValueIndexWithSpaceHints(session.Handle(), tableId,
+                                   JET_bitSpaceHintsUtilizeParentSpace);
+    SeekValueIndexAndVerify(session.Handle(), tableId, valueColumnId, 17);
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+}
+
+EseIntegrationScenario(Schema, CreateIndex3WithSpaceHintUtilizeExactExtentsAccepted)
+{
+    TemporaryDirectory directory(
+        "Schema.CreateIndex3WithSpaceHintUtilizeExactExtentsAccepted");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "HintExact.mdb");
+
+    JET_COLUMNID valueColumnId = 0;
+    JET_TABLEID tableId =
+        CreateRowsTableForHint(session.Handle(), database.Id(), valueColumnId);
+    InsertSequentialRows(session.Handle(), tableId, valueColumnId, 32);
+    CreateValueIndexWithSpaceHints(session.Handle(), tableId,
+                                   JET_bitSpaceHintsUtilizeExactExtents);
+    SeekValueIndexAndVerify(session.Handle(), tableId, valueColumnId, 17);
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+}
+
+EseIntegrationScenario(Schema, CreateIndex3WithCreateHintAppendSequentialAccepted)
+{
+    TemporaryDirectory directory(
+        "Schema.CreateIndex3WithCreateHintAppendSequentialAccepted");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "HintAppend.mdb");
+
+    JET_COLUMNID valueColumnId = 0;
+    JET_TABLEID tableId =
+        CreateRowsTableForHint(session.Handle(), database.Id(), valueColumnId);
+    InsertSequentialRows(session.Handle(), tableId, valueColumnId, 32);
+    //  Append hint biases split policy toward right-edge growth —
+    //  matches a workload that's monotonically appending.  The
+    //  observable here is just that the engine accepts it and the
+    //  index still functions; the actual split-policy change is
+    //  internal to the space allocator.
+    CreateValueIndexWithSpaceHints(session.Handle(), tableId,
+                                   JET_bitCreateHintAppendSequential);
+    SeekValueIndexAndVerify(session.Handle(), tableId, valueColumnId, 17);
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+}
+
+EseIntegrationScenario(Schema, CreateIndex3WithCreateHintHotpointSequentialAccepted)
+{
+    TemporaryDirectory directory(
+        "Schema.CreateIndex3WithCreateHintHotpointSequentialAccepted");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "HintHotpoint.mdb");
+
+    JET_COLUMNID valueColumnId = 0;
+    JET_TABLEID tableId =
+        CreateRowsTableForHint(session.Handle(), database.Id(), valueColumnId);
+    InsertSequentialRows(session.Handle(), tableId, valueColumnId, 32);
+    //  Hotpoint hint biases split policy toward a moving insertion
+    //  cursor — workloads that append into a recent-but-not-the-
+    //  newest key range (e.g. timestamp + nondeterministic suffix).
+    CreateValueIndexWithSpaceHints(session.Handle(), tableId,
+                                   JET_bitCreateHintHotpointSequential);
+    SeekValueIndexAndVerify(session.Handle(), tableId, valueColumnId, 17);
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+}
+
+EseIntegrationScenario(Schema, CreateIndex3WithRetrieveHintTableScanForwardAccepted)
+{
+    TemporaryDirectory directory(
+        "Schema.CreateIndex3WithRetrieveHintTableScanForwardAccepted");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "HintForward.mdb");
+
+    JET_COLUMNID valueColumnId = 0;
+    JET_TABLEID tableId =
+        CreateRowsTableForHint(session.Handle(), database.Id(), valueColumnId);
+    InsertSequentialRows(session.Handle(), tableId, valueColumnId, 32);
+    //  Forward-scan hint tells the engine the predominant access
+    //  pattern is sequential forward — triggers auto-defrag when
+    //  fragmentation crosses an internal threshold (see
+    //  JET_paramDefragmentSequentialBTrees).  We don't test the
+    //  defrag trigger here; just confirm Build + a sample scan run.
+    CreateValueIndexWithSpaceHints(session.Handle(), tableId,
+                                   JET_bitRetrieveHintTableScanForward);
+    CheckJet(JetSetCurrentIndex2A(session.Handle(), tableId,
+                                  "ValueIndex", 0));
+    CheckJet(JetMove(session.Handle(), tableId, JET_MoveFirst, 0));
+    int32_t scannedRowCount = 0;
+    do
+    {
+        ++scannedRowCount;
+    }
+    while (JetMove(session.Handle(), tableId, JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+    Require(scannedRowCount == 32);
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+}
+
+EseIntegrationScenario(Schema, CreateIndex3WithRetrieveHintTableScanBackwardAccepted)
+{
+    TemporaryDirectory directory(
+        "Schema.CreateIndex3WithRetrieveHintTableScanBackwardAccepted");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "HintBackward.mdb");
+
+    JET_COLUMNID valueColumnId = 0;
+    JET_TABLEID tableId =
+        CreateRowsTableForHint(session.Handle(), database.Id(), valueColumnId);
+    InsertSequentialRows(session.Handle(), tableId, valueColumnId, 32);
+    //  Symmetric to the forward variant — backward sequential scan
+    //  as the predominant pattern.  Walks the index back-to-front
+    //  to exercise the move-prev path under the hint.
+    CreateValueIndexWithSpaceHints(session.Handle(), tableId,
+                                   JET_bitRetrieveHintTableScanBackward);
+    CheckJet(JetSetCurrentIndex2A(session.Handle(), tableId,
+                                  "ValueIndex", 0));
+    CheckJet(JetMove(session.Handle(), tableId, JET_MoveLast, 0));
+    int32_t scannedRowCount = 0;
+    do
+    {
+        ++scannedRowCount;
+    }
+    while (JetMove(session.Handle(), tableId, JET_MovePrevious, 0)
+           != JET_errNoCurrentRecord);
+    Require(scannedRowCount == 32);
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+}
+
+EseIntegrationScenario(Schema, CreateIndex3WithDeleteHintTableSequentialAccepted)
+{
+    TemporaryDirectory directory(
+        "Schema.CreateIndex3WithDeleteHintTableSequentialAccepted");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "HintDelete.mdb");
+
+    JET_COLUMNID valueColumnId = 0;
+    JET_TABLEID tableId =
+        CreateRowsTableForHint(session.Handle(), database.Id(), valueColumnId);
+    InsertSequentialRows(session.Handle(), tableId, valueColumnId, 32);
+    //  Delete-sequential hint advertises that cleanup will walk the
+    //  table low-key-to-high-key.  Run a low-to-high delete pass to
+    //  match the documented usage pattern and confirm both index
+    //  build and the deletes themselves succeed under the hint.
+    CreateValueIndexWithSpaceHints(session.Handle(), tableId,
+                                   JET_bitDeleteHintTableSequential);
+    CheckJet(JetSetCurrentIndex2A(session.Handle(), tableId,
+                                  "ValueIndex", 0));
+    CheckJet(JetBeginTransaction(session.Handle()));
+    CheckJet(JetMove(session.Handle(), tableId, JET_MoveFirst, 0));
+    int32_t deletedRowCount = 0;
+    while (true)
+    {
+        CheckJet(JetDelete(session.Handle(), tableId));
+        ++deletedRowCount;
+        if (JetMove(session.Handle(), tableId, JET_MoveNext, 0)
+            == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+    }
+    CheckJet(JetCommitTransaction(session.Handle(), 0));
+    Require(deletedRowCount == 32);
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+}
+
+EseIntegrationScenario(Schema, CreateIndex3WithCombinedSpaceAndAccessHintsAccepted)
+{
+    TemporaryDirectory directory(
+        "Schema.CreateIndex3WithCombinedSpaceAndAccessHintsAccepted");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "HintCombined.mdb");
+
+    JET_COLUMNID valueColumnId = 0;
+    JET_TABLEID tableId =
+        CreateRowsTableForHint(session.Handle(), database.Id(), valueColumnId);
+    InsertSequentialRows(session.Handle(), tableId, valueColumnId, 32);
+    //  All five non-reserved hint bits OR'd together — the engine
+    //  treats them as additive hints to independent subsystems, so
+    //  the combination must be accepted at API time even though no
+    //  single workload would set every bit.  The seek afterwards
+    //  proves the resulting index is still functional.
+    const JET_GRBIT combinedHints =
+        JET_bitSpaceHintsUtilizeParentSpace |
+        JET_bitSpaceHintsUtilizeExactExtents |
+        JET_bitCreateHintAppendSequential |
+        JET_bitRetrieveHintTableScanForward |
+        JET_bitDeleteHintTableSequential;
+    CreateValueIndexWithSpaceHints(session.Handle(), tableId,
+                                   combinedHints);
+    SeekValueIndexAndVerify(session.Handle(), tableId, valueColumnId, 17);
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+}
