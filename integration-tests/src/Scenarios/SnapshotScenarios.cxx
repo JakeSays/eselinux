@@ -25,7 +25,23 @@ EseIntegrationScenario(Snapshot, PrepareAndEndCycle)
     JET_OSSNAPID snapshotId = 0;
     CheckJet(JetOSSnapshotPrepare(&snapshotId, 0));
     Require(snapshotId != 0);
+
+    //  Two successive Prepare calls must hand out distinct snapshot
+    //  ids — proves Prepare allocates fresh state rather than
+    //  returning a constant.
+    JET_OSSNAPID secondSnapshotId = 0;
+    CheckJet(JetOSSnapshotPrepare(&secondSnapshotId, 0));
+    Require(secondSnapshotId != 0);
+    Require(secondSnapshotId != snapshotId);
+
     CheckJet(JetOSSnapshotEnd(snapshotId, 0));
+    CheckJet(JetOSSnapshotEnd(secondSnapshotId, 0));
+
+    //  Reusing an ended snapshot id must be rejected with
+    //  InvalidSnapId — proves End actually released the engine-side
+    //  state instead of leaving the id valid.
+    RequireJetError(JetOSSnapshotEnd(snapshotId, 0),
+                    JET_errOSSnapshotInvalidSnapId);
 }
 
 EseIntegrationScenario(Snapshot, FreezeAndThawAroundActiveInstance)
@@ -146,9 +162,19 @@ EseIntegrationScenario(Snapshot, GetFreezeInfoReturnsActiveInstance)
 EseIntegrationScenario(Snapshot, TruncateLogClearsBackupLogs)
 {
     TemporaryDirectory directory("Snapshot.TruncateLogClearsBackupLogs");
-    EseInstance instance(directory);
+    //  Use non-circular logging so gens accumulate (TruncateLog has
+    //  nothing to do under circular logging).  Tiny log size forces
+    //  rolls even on a small workload.
+    EseInstanceOptions instanceOptions;
+    instanceOptions.EnableCircularLog = false;
+    instanceOptions.LogFileSizeKb = 64;
+    EseInstance instance(directory, "ese-tests", nullptr,
+                         EseInstanceMode::SingleInstance, instanceOptions);
     EseSession session(instance);
     EseDatabase database(session, "Snapshot.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Value", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
 
     JET_OSSNAPID snapshotId = 0;
     CheckJet(JetOSSnapshotPrepare(&snapshotId, JET_bitContinueAfterThaw));
@@ -159,12 +185,44 @@ EseIntegrationScenario(Snapshot, TruncateLogClearsBackupLogs)
                                   &freezeCount,
                                   &freezeInfo,
                                   0));
-    Require(freezeCount >= 1);
+    //  freezeCount must enumerate exactly the instance we just
+    //  booted (single-instance configuration).  Asserting on the
+    //  instance struct contents proves the engine populated
+    //  meaningful data — not just "the array pointer is non-null."
+    Require(freezeCount == 1);
+    Require(freezeInfo != nullptr);
+    Require(freezeInfo[0].cDatabases >= 1);
     CheckJet(JetFreeBuffer(reinterpret_cast<char*>(freezeInfo)));
 
     CheckJet(JetOSSnapshotThaw(snapshotId, 0));
+    //  TruncateLog is gated on the snapshot agent having consumed
+    //  the captured logs — without that ack the engine keeps every
+    //  gen.  What we CAN observe is the contract: the call returns
+    //  success (no error) and the snapshot id remains valid through
+    //  End.  An invalid id, double-end, or post-end reuse fails
+    //  with JET_errOSSnapshotInvalidSnapId.
     CheckJet(JetOSSnapshotTruncateLog(snapshotId, 0));
     CheckJet(JetOSSnapshotEnd(snapshotId, 0));
+
+    //  After End, the snapshot id is gone — reusing it must error.
+    RequireJetError(JetOSSnapshotTruncateLog(snapshotId, 0),
+                    JET_errOSSnapshotInvalidSnapId);
+
+    //  After the snapshot bracket, the engine is still serving the
+    //  database — write + read confirms the freeze/thaw didn't
+    //  leave the instance in a half-locked state.
+    {
+        EseTransaction transaction(session);
+        InsertSingleFixedColumnRow<int32_t>(table, columnId, 42);
+        transaction.Commit();
+    }
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t observedValue = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), columnId,
+                               &observedValue, sizeof(observedValue),
+                               &actualBytes, 0, nullptr));
+    Require(observedValue == 42);
 }
 
 //  JetOSSnapshotTruncateLogInstance narrows the truncate to a single

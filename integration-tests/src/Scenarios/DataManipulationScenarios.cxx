@@ -612,6 +612,25 @@ EseIntegrationScenario(DataManipulation, GetRecordSizeReportsNonZeroData)
     // record bytes, including the Id column and the inline blob.
     Require(recsize.cbData >= BlobPayload.size());
     Require(recsize.cNonTaggedColumns + recsize.cTaggedColumns >= 2);
+    //  Two non-tautological bounds: cbData must fit within a single
+    //  page (the blob is sub-LV-threshold so the whole record lives
+    //  inline), and cLongValues must be 0 because nothing was forced
+    //  to the LV tree.
+    Require(recsize.cbData < 32 * 1024);
+    Require(recsize.cLongValues == 0);
+
+    //  Round-trip the blob bytes — the engine reporting a non-zero
+    //  cbData should correspond to actual stored payload, not just a
+    //  populated size field.
+    char retrievedBlob[256] = {};
+    uint32_t retrievedBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), blobColumnId,
+                               retrievedBlob, sizeof(retrievedBlob),
+                               &retrievedBytes, 0, nullptr));
+    Require(retrievedBytes == BlobPayload.size());
+    Require(std::memcmp(retrievedBlob,
+                        BlobPayload.data(),
+                        BlobPayload.size()) == 0);
 }
 
 EseIntegrationScenario(DataManipulation, RetrieveTaggedColumnListReportsTaggedColumns)
@@ -1458,10 +1477,13 @@ EseIntegrationScenario(DataManipulation, RetrievePageNumberReportsResidentPage)
     auto valueColumnId = table.AddColumn("Value", JET_coltypLong,
                                           JET_bitColumnNotNULL);
 
-    // Insert several rows so the engine has more than one data page
-    // to populate.  Two rows separated by enough data force at least
-    // one page boundary.
-    static constexpr int32_t RowCount = 64;
+    //  Insert enough rows to span multiple data pages so firstPage
+    //  and lastPage end up on distinct pages — that's the load-bearing
+    //  observable that proves JET_bitRetrievePageNumber tracks the
+    //  cursor's actual position rather than returning a constant.
+    //  4096 4-byte rows + per-record overhead are well above any
+    //  supported page size (4–32 KiB).
+    static constexpr int32_t RowCount = 4096;
     {
         EseTransaction transaction(session);
         for (int32_t rowIndex = 0; rowIndex < RowCount; ++rowIndex)
@@ -1475,8 +1497,7 @@ EseIntegrationScenario(DataManipulation, RetrievePageNumberReportsResidentPage)
     // current page as a 4-byte unsigned (fldext.cxx:36+).  The flag
     // must be set in isolation; columnid is ignored.  Validate that
     // (a) the call returns a non-zero PGNO for both first and last
-    // rows, and (b) different rows can land on different pages if the
-    // table grew large enough.
+    // rows, and (b) the two rows actually land on different pages.
     CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
     uint32_t firstPage = 0;
     uint32_t actualBytes = 0;
@@ -1495,6 +1516,11 @@ EseIntegrationScenario(DataManipulation, RetrievePageNumberReportsResidentPage)
                                JET_bitRetrievePageNumber, nullptr));
     Require(actualBytes == sizeof(lastPage));
     Require(lastPage > 0);
+    //  With 4096 rows the first and last must be on different pages.
+    //  This is the assertion that proves the engine actually consults
+    //  cursor position to answer the query — not a "call returned
+    //  something" check.
+    Require(lastPage > firstPage);
 
     // Combining the flag with any other grbit is invalid — the engine
     // returns JET_errInvalidGrbit (fldext.cxx:41).

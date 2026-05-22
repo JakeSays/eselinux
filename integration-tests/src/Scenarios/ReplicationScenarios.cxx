@@ -1422,10 +1422,12 @@ EseIntegrationScenario(Replication, OnlinePagePatchRoundTripsValidPage)
                                         pageBytes.get(),
                                         pageSizeBytes, 0));
 
-    //  Functional verification: walk every row.  If the patch
-    //  corrupted the page or broke the buffer manager's cache
-    //  state, the move-next chain would error out before reaching
-    //  the expected row count.
+    //  Functional verification: walk every row AND read its Value
+    //  column back.  The Value column was populated with the row
+    //  index 0..N-1; if the patch had corrupted page bytes silently
+    //  (engine cached the post-patch image without invalidating the
+    //  in-memory copy), values would scramble even if the row count
+    //  survived.
     int32_t rowCount = 0;
     const auto firstRc = JetMove(sessionHandle, tableId, JET_MoveFirst, 0);
     if (firstRc != JET_errNoCurrentRecord)
@@ -1433,6 +1435,14 @@ EseIntegrationScenario(Replication, OnlinePagePatchRoundTripsValidPage)
         CheckJet(firstRc);
         while (true)
         {
+            int32_t observedValue = 0;
+            uint32_t actualBytes = 0;
+            CheckJet(JetRetrieveColumn(sessionHandle, tableId, columnId,
+                                       &observedValue,
+                                       sizeof(observedValue),
+                                       &actualBytes, 0, nullptr));
+            Require(actualBytes == sizeof(observedValue));
+            Require(observedValue == rowCount);
             ++rowCount;
             const auto nextRc = JetMove(sessionHandle, tableId,
                                         JET_MoveNext, 0);
@@ -1444,6 +1454,25 @@ EseIntegrationScenario(Replication, OnlinePagePatchRoundTripsValidPage)
         }
     }
     Require(rowCount == OnlinePatchRowCount);
+
+    //  Re-read PatchPgno and compare against the snapshot we passed
+    //  in.  The "speculative patch" path is defined to leave the page
+    //  unchanged when no patch request is registered — an exact-byte
+    //  match between pre-call snapshot and post-call read confirms
+    //  the engine honoured that contract rather than silently writing.
+    std::unique_ptr<uint8_t, AlignedFree> postPatchBytes(
+        static_cast<uint8_t*>(
+            std::aligned_alloc(pageSizeBytes, pageSizeBytes)));
+    Require(postPatchBytes != nullptr);
+    uint32_t cbActualPost = 0;
+    CheckJet(JetGetDatabasePages(sessionHandle, databaseId,
+                                 PatchPgno, 1,
+                                 postPatchBytes.get(),
+                                 pageSizeBytes,
+                                 &cbActualPost, 0));
+    Require(cbActualPost == pageSizeBytes);
+    Require(std::memcmp(pageBytes.get(), postPatchBytes.get(),
+                        pageSizeBytes) == 0);
 
     CheckJet(JetCloseTable(sessionHandle, tableId));
     CheckJet(JetCloseDatabase(sessionHandle, databaseId, 0));

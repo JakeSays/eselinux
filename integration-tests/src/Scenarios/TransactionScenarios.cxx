@@ -21,9 +21,47 @@ EseIntegrationScenario(Transaction, BeginAndCommit)
     EseInstance instance(directory);
     EseSession session(instance);
     EseDatabase database(session, "Transaction.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Value", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
 
-    EseTransaction transaction(session);
-    transaction.Commit();
+    //  Insert a row inside the transaction, commit, then read it
+    //  back outside the transaction.  An empty Begin/Commit pair
+    //  doesn't prove the transaction actually wrapped any work; the
+    //  insert + readback does, AND it proves the commit promoted
+    //  the row to durable state visible from a cursor positioned
+    //  fresh after the transaction closed.
+    {
+        EseTransaction transaction(session);
+        InsertSingleFixedColumnRow<int32_t>(table, columnId, 1234);
+        transaction.Commit();
+    }
+
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t observedValue = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), columnId,
+                               &observedValue, sizeof(observedValue),
+                               &actualBytes, 0, nullptr));
+    Require(actualBytes == sizeof(observedValue));
+    Require(observedValue == 1234);
+    //  Second insert in a separate transaction lands above the
+    //  first — proves serial transactions stack correctly and the
+    //  commit didn't leave latent state.
+    {
+        EseTransaction transaction(session);
+        InsertSingleFixedColumnRow<int32_t>(table, columnId, 5678);
+        transaction.Commit();
+    }
+    int32_t rowCount = 0;
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    do
+    {
+        ++rowCount;
+    }
+    while (JetMove(session.Handle(), table.Id(), JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+    Require(rowCount == 2);
 }
 
 EseIntegrationScenario(Transaction, CommitWithLazyFlushSucceeds)

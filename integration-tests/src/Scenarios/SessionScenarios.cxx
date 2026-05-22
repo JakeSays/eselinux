@@ -21,6 +21,28 @@ EseIntegrationScenario(Session, OpenAndClose)
     EseInstance instance(directory);
     EseSession session(instance);
     Require(session.Handle() != JET_sesidNil);
+
+    //  A live session must accept JetBeginTransaction / Rollback —
+    //  exercise the contract that the handle is in a usable state,
+    //  not just that JetBeginSessionA returned success.
+    CheckJet(JetBeginTransaction(session.Handle()));
+    //  Inside a transaction, GetSessionInfo reports a non-zero
+    //  trx-level (one nesting level deep).
+    JET_SESSIONINFO insideTrx = {};
+    CheckJet(JetGetSessionInfo(session.Handle(),
+                               &insideTrx, sizeof(insideTrx),
+                               JET_SessionInfo));
+    Require(insideTrx.ulTrxLevel == 1);
+    CheckJet(JetRollback(session.Handle(), 0));
+
+    //  After rollback the transaction level must drop back to zero.
+    //  This proves both that GetSessionInfo reads live state and
+    //  that Rollback unwound the nesting we just opened.
+    JET_SESSIONINFO afterRollback = {};
+    CheckJet(JetGetSessionInfo(session.Handle(),
+                               &afterRollback, sizeof(afterRollback),
+                               JET_SessionInfo));
+    Require(afterRollback.ulTrxLevel == 0);
 }
 
 EseIntegrationScenario(Session, DupSessionYieldsDistinctSesid)
@@ -171,10 +193,17 @@ EseIntegrationScenario(Session, GetVersionReturnsNonZero)
 
     uint32_t version = 0;
     CheckJet(JetGetVersion(session.Handle(), &version));
-    // The engine encodes the build number in the version word; anything
-    // non-zero is fine — we don't pin a specific value because the
-    // engine bumps it per build.
+    // The engine encodes the build number in the version word; the
+    // value must be non-zero (rules out "API never populated the
+    // output").  Specific bit layout varies across major versions,
+    // so we don't pin which half encodes what.
     Require(version != 0);
+
+    //  Two successive calls on the same engine must report the same
+    //  version (it's a property of the binary, not per-call state).
+    uint32_t versionAgain = 0;
+    CheckJet(JetGetVersion(session.Handle(), &versionAgain));
+    Require(versionAgain == version);
 }
 
 EseIntegrationScenario(Session, GetCursorInfoChecksCurrentRecordLock)

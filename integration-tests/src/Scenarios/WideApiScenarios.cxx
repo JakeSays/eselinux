@@ -115,7 +115,10 @@ void TerminateInstance( JET_INSTANCE handle )
 } // namespace
 
 //  JetCreateInstanceW — single-name v1 form.  Verify the instance
-//  boots, runs JetInit, and tears down cleanly via JetTerm2.
+//  boots, runs JetInit, accepts a session, AND the wide instance
+//  name passed at create time persists into JetGetInstanceInfoW —
+//  proves the W path round-tripped the UTF-16 name through engine
+//  storage and back out, not just that the bootstrap succeeded.
 EseIntegrationScenario( WideApi, CreateInstanceWBootsCleanly )
 {
     TemporaryDirectory directory( "WideApi.CreateInstanceWBootsCleanly" );
@@ -141,12 +144,37 @@ EseIntegrationScenario( WideApi, CreateInstanceWBootsCleanly )
 
     CheckJet( JetInit( &handle ) );
     Require( handle != JET_instanceNil );
+
+    //  Enumerate via the W variant — the wide instance name we passed
+    //  at create time must round-trip through engine storage.
+    uint32_t instanceCount = 0;
+    JET_INSTANCE_INFO_W* instanceInfo = nullptr;
+    CheckJet( JetGetInstanceInfoW( &instanceCount, &instanceInfo ) );
+    Require( instanceCount >= 1 );
+    bool foundNamedInstance = false;
+    for ( uint32_t i = 0; i < instanceCount; ++i )
+    {
+        if ( instanceInfo[i].hInstanceId == handle
+             && instanceInfo[i].szInstanceName != nullptr
+             && std::u16string_view( instanceInfo[i].szInstanceName )
+                    == InstanceName )
+        {
+            foundNamedInstance = true;
+            break;
+        }
+    }
+    CheckJet( JetFreeBuffer( reinterpret_cast<char*>( instanceInfo ) ) );
+    Require( foundNamedInstance );
+
     CheckJet( JetTerm2( handle, JET_bitTermComplete ) );
 }
 
 //  JetCreateInstance2W — two-name (instance + display) form with
-//  grbit.  Once the instance is up, run a session begin/end to prove
-//  that the wide bootstrap left a healthy instance behind.
+//  grbit.  Once the instance is up, run a full session that creates
+//  + writes + reads a database via the W APIs.  Just opening + closing
+//  a session proves the W bootstrap left a workable instance but
+//  doesn't catch a W path that silently null-terminates after the
+//  first byte; a real DML round-trip does.
 EseIntegrationScenario( WideApi, CreateInstance2WStampsDisplayName )
 {
     TemporaryDirectory directory( "WideApi.CreateInstance2WStampsDisplayName" );
@@ -156,15 +184,52 @@ EseIntegrationScenario( WideApi, CreateInstance2WStampsDisplayName )
     JET_SESID session = JET_sesidNil;
     CheckJet( JetBeginSessionW( handle, &session, nullptr, nullptr ) );
     Require( session != JET_sesidNil );
-    CheckJet( JetEndSession( session, 0 ) );
 
+    //  Round-trip a value through the engine using all-W APIs.  The
+    //  scenario covers W instance creation; verifying a stored value
+    //  proves the entire W bootstrap chain produced a real engine,
+    //  not just one that returned non-nil handles.
+    const auto databasePath = DatabasePathUnder( directory.Path(),
+                                                 u"createinstance2w.mdb" );
+    JET_DBID dbid = JET_dbidNil;
+    CheckJet( JetCreateDatabaseW( session, databasePath.c_str(),
+                                  nullptr, &dbid, 0 ) );
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet( JetCreateTableW( session, dbid, u"Rows",
+                               8, 100, &tableId ) );
+    JET_COLUMNDEF columnDefinition = {};
+    columnDefinition.cbStruct = sizeof( columnDefinition );
+    columnDefinition.coltyp = JET_coltypLong;
+    JET_COLUMNID columnId = 0;
+    CheckJet( JetAddColumnW( session, tableId, u"Value",
+                             &columnDefinition, nullptr, 0,
+                             &columnId ) );
+    CheckJet( JetBeginTransaction( session ) );
+    CheckJet( JetPrepareUpdate( session, tableId, JET_prepInsert ) );
+    const int32_t storedValue = 0xDEAD;
+    CheckJet( JetSetColumn( session, tableId, columnId,
+                            &storedValue, sizeof( storedValue ),
+                            0, nullptr ) );
+    CheckJet( JetUpdate( session, tableId, nullptr, 0, nullptr ) );
+    CheckJet( JetCommitTransaction( session, 0 ) );
+    CheckJet( JetMove( session, tableId, JET_MoveFirst, 0 ) );
+    int32_t observedValue = 0;
+    uint32_t actualBytes = 0;
+    CheckJet( JetRetrieveColumn( session, tableId, columnId,
+                                 &observedValue, sizeof( observedValue ),
+                                 &actualBytes, 0, nullptr ) );
+    Require( observedValue == storedValue );
+    CheckJet( JetCloseTable( session, tableId ) );
+
+    CheckJet( JetEndSession( session, 0 ) );
     TerminateInstance( handle );
 }
 
 //  JetBeginSessionW with non-null user/password JET_PCWSTR inputs.
 //  The engine ignores credentials (no auth model), but we want the
 //  W path to accept arbitrary UTF-16 strings without trying to
-//  narrow them to ANSI.
+//  narrow them to ANSI.  Also verify the session is functional
+//  post-credentials by running a tiny DML round-trip.
 EseIntegrationScenario( WideApi, BeginSessionWAcceptsWideCredentials )
 {
     TemporaryDirectory directory( "WideApi.BeginSessionWAcceptsWideCredentials" );
@@ -175,8 +240,14 @@ EseIntegrationScenario( WideApi, BeginSessionWAcceptsWideCredentials )
     static const char16_t Password[] = u"placeholder";
     CheckJet( JetBeginSessionW( handle, &session, UserName, Password ) );
     Require( session != JET_sesidNil );
-    CheckJet( JetEndSession( session, 0 ) );
 
+    //  Session must be usable after wide credentials — a JetBeginSessionW
+    //  that swallowed the credentials but returned a broken sesid
+    //  would surface here on BeginTransaction.
+    CheckJet( JetBeginTransaction( session ) );
+    CheckJet( JetRollback( session, 0 ) );
+
+    CheckJet( JetEndSession( session, 0 ) );
     TerminateInstance( handle );
 }
 
@@ -412,6 +483,33 @@ EseIntegrationScenario( WideApi, CreateTableColumnIndexWBuildsAtomically )
     Require( columns[0].columnid != 0 );
     Require( columns[1].columnid != 0 );
 
+    //  Insert + read back via the index that was built atomically
+    //  with the table.  Proves the engine wired the primary index
+    //  through the W bundle, not just that the bundle returned
+    //  non-nil handles.
+    CheckJet( JetBeginTransaction( session ) );
+    CheckJet( JetPrepareUpdate( session, tableCreate.tableid,
+                                JET_prepInsert ) );
+    const int32_t storedValue = 0xC0FE;
+    CheckJet( JetSetColumn( session, tableCreate.tableid,
+                            columns[1].columnid,
+                            &storedValue, sizeof( storedValue ),
+                            0, nullptr ) );
+    CheckJet( JetUpdate( session, tableCreate.tableid,
+                         nullptr, 0, nullptr ) );
+    CheckJet( JetCommitTransaction( session, 0 ) );
+    CheckJet( JetSetCurrentIndexW( session, tableCreate.tableid,
+                                   IndexName ) );
+    CheckJet( JetMove( session, tableCreate.tableid,
+                       JET_MoveFirst, 0 ) );
+    int32_t observedValue = 0;
+    uint32_t actualBytes = 0;
+    CheckJet( JetRetrieveColumn( session, tableCreate.tableid,
+                                 columns[1].columnid,
+                                 &observedValue, sizeof( observedValue ),
+                                 &actualBytes, 0, nullptr ) );
+    Require( observedValue == storedValue );
+
     CheckJet( JetCloseTable( session, tableCreate.tableid ) );
     CheckJet( JetCloseDatabase( session, dbid, 0 ) );
     CheckJet( JetEndSession( session, 0 ) );
@@ -456,6 +554,33 @@ EseIntegrationScenario( WideApi, CreateIndex2WStructPath )
     indexes[0].ulDensity = 80;
 
     CheckJet( JetCreateIndex2W( session, tableId, indexes, 1 ) );
+
+    //  Verify the W-built index is actually populated and seekable:
+    //  insert three out-of-order Rank values, set the index as
+    //  current, seek for a specific Rank, retrieve the value.  Just
+    //  succeeding at CreateIndex2W proves dispatch, not function.
+    CheckJet( JetBeginTransaction( session ) );
+    for ( int32_t value : { 30, 10, 20 } )
+    {
+        CheckJet( JetPrepareUpdate( session, tableId, JET_prepInsert ) );
+        CheckJet( JetSetColumn( session, tableId, columnId,
+                                &value, sizeof( value ),
+                                0, nullptr ) );
+        CheckJet( JetUpdate( session, tableId, nullptr, 0, nullptr ) );
+    }
+    CheckJet( JetCommitTransaction( session, 0 ) );
+    CheckJet( JetSetCurrentIndexW( session, tableId, IndexName ) );
+    const int32_t seekRank = 20;
+    CheckJet( JetMakeKey( session, tableId,
+                          &seekRank, sizeof( seekRank ),
+                          JET_bitNewKey ) );
+    CheckJet( JetSeek( session, tableId, JET_bitSeekEQ ) );
+    int32_t observedRank = 0;
+    uint32_t actualBytes = 0;
+    CheckJet( JetRetrieveColumn( session, tableId, columnId,
+                                 &observedRank, sizeof( observedRank ),
+                                 &actualBytes, 0, nullptr ) );
+    Require( observedRank == seekRank );
 
     CheckJet( JetCloseTable( session, tableId ) );
     CheckJet( JetCloseDatabase( session, dbid, 0 ) );

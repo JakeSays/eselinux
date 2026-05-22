@@ -12,6 +12,7 @@
 #include "Framework/TemporaryDirectory.hxx"
 
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -90,6 +91,21 @@ EseIntegrationScenario(Preread, PrereadKeysAcceptsKeyArray)
                             &prereadAttempted,
                             JET_bitPrereadForward));
     Require(prereadAttempted >= 0);
+    Require(prereadAttempted <= static_cast<int32_t>(std::size(targets)));
+
+    //  Preread is a perf hint — public APIs can't directly observe
+    //  whether the pages landed in cache.  What we CAN verify is
+    //  that every key we asked the engine to preread actually
+    //  resolves to a real record afterward.  A preread that
+    //  silently broke the cursor / clobbered the keys would fail
+    //  the seek-and-retrieve here.
+    for (size_t i = 0; i < std::size(targets); ++i)
+    {
+        CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                            &targets[i], sizeof(targets[i]),
+                            JET_bitNewKey));
+        CheckJet(JetSeek(session.Handle(), table.Id(), JET_bitSeekEQ));
+    }
 }
 
 EseIntegrationScenario(Preread, PrereadIndexRangeAcceptsBoundedRange)
@@ -142,7 +158,39 @@ EseIntegrationScenario(Preread, PrereadIndexRangeAcceptsBoundedRange)
                                   JET_bitPrereadForward,
                                   &cPagesPreread));
     //  Engine reports how many cache pages it scheduled; exact count
-    //  is implementation-defined.
+    //  is implementation-defined.  What we CAN check is that the
+    //  range is real data: a forward walk from startKey reaches
+    //  endKey and surfaces every row in between.  A bad preread
+    //  that scrambled the B-tree would surface here.
+    CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                        &startKey, sizeof(startKey),
+                        JET_bitNewKey));
+    CheckJet(JetSeek(session.Handle(), table.Id(),
+                     JET_bitSeekGE));
+    int32_t walkedRowCount = 0;
+    int32_t lastObservedKey = std::numeric_limits<int32_t>::min();
+    while (true)
+    {
+        const auto observed =
+            RetrieveFixedColumnFromCurrentRecord<int32_t>(table,
+                                                          identityColumnId);
+        Require(observed > lastObservedKey);
+        Require(observed >= startKey);
+        lastObservedKey = observed;
+        ++walkedRowCount;
+        if (observed >= endKey)
+        {
+            break;
+        }
+        const auto moveResult =
+            JetMove(session.Handle(), table.Id(), JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walkedRowCount > 0);
 }
 
 EseIntegrationScenario(Preread, PrereadTablesAcceptsKnownTableName)
@@ -165,6 +213,29 @@ EseIntegrationScenario(Preread, PrereadTablesAcceptsKnownTableName)
                                tableNames,
                                static_cast<int32_t>(std::size(tableNames)),
                                0));
+
+    //  After preread, the table must still open + walk cleanly via
+    //  a fresh cursor.  A preread that corrupted the catalog or
+    //  somehow torn the metadata for the named table would surface
+    //  here as an OpenTable failure or a wrong row count.
+    JET_TABLEID secondCursor = JET_tableidNil;
+    CheckJet(JetOpenTableA(session.Handle(), database.Id(), "Rows",
+                           nullptr, 0, 0, &secondCursor));
+    CheckJet(JetMove(session.Handle(), secondCursor, JET_MoveFirst, 0));
+    int32_t walkedRowCount = 0;
+    while (true)
+    {
+        ++walkedRowCount;
+        const auto moveResult =
+            JetMove(session.Handle(), secondCursor, JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walkedRowCount == 8);
+    CheckJet(JetCloseTable(session.Handle(), secondCursor));
 }
 
 EseIntegrationScenario(Preread, PrereadIndexRangesAcceptsTwoRanges)
@@ -231,8 +302,45 @@ EseIntegrationScenario(Preread, PrereadIndexRangesAcceptsTwoRanges)
                                    /*rgcolumnidPreread=*/nullptr,
                                    /*ccolumnidPreread=*/0,
                                    JET_bitPrereadForward));
-    //  rangesPreread reports how many of the requested ranges the
-    //  engine actually initiated preread for; bounded by the input
-    //  count.
     Require(rangesPreread <= std::size(ranges));
+
+    //  After preread, walk both ranges and confirm every expected
+    //  row is reachable in order — proves the engine's view of the
+    //  ranges matched the data on disk.  A preread that
+    //  miscalculated the range mapping would either skip rows or
+    //  surface keys outside the requested bounds.
+    auto walkRange = [&](int32_t rangeStart, int32_t rangeEnd) {
+        CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                            &rangeStart, sizeof(rangeStart),
+                            JET_bitNewKey));
+        CheckJet(JetSeek(session.Handle(), table.Id(),
+                         JET_bitSeekGE));
+        int32_t lastKey = std::numeric_limits<int32_t>::min();
+        int32_t walked = 0;
+        while (true)
+        {
+            const auto observed =
+                RetrieveFixedColumnFromCurrentRecord<int32_t>(
+                    table, identityColumnId);
+            Require(observed >= rangeStart);
+            Require(observed > lastKey);
+            lastKey = observed;
+            ++walked;
+            if (observed >= rangeEnd)
+            {
+                break;
+            }
+            const auto moveResult =
+                JetMove(session.Handle(), table.Id(),
+                        JET_MoveNext, 0);
+            if (moveResult == JET_errNoCurrentRecord)
+            {
+                break;
+            }
+            CheckJet(moveResult);
+        }
+        return walked;
+    };
+    Require(walkRange(rangeAStart, rangeAEnd) > 0);
+    Require(walkRange(rangeBStart, rangeBEnd) > 0);
 }

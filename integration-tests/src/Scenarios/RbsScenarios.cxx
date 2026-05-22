@@ -380,6 +380,25 @@ EseIntegrationScenario(Rbs, GetRBSFileInfoReadsHeaderOfClosedSnapshotFile)
     Require(info.lRBSGeneration >= 1);
     Require(info.logtimeCreate.bYear > 0);
     Require(info.cbLogicalFileSize > 0);
+    //  cbLogicalFileSize tracks the engine's record of live RBS
+    //  content.  The on-disk file is at least that large — the
+    //  engine may preallocate slack space beyond the logical
+    //  end — so the relationship is bounded, not equal.
+    std::error_code errorCode;
+    const auto onDiskBytes = std::filesystem::file_size(rbsFile, errorCode);
+    Require(!errorCode);
+    Require(static_cast<uintmax_t>(info.cbLogicalFileSize) <= onDiskBytes);
+    //  logtime fields beyond bYear must also be plausible.  bMonth
+    //  in [1,12], bDay in [1,31], etc.  bYear is offset-from-1900.
+    Require(info.logtimeCreate.bMonth >= 1);
+    Require(info.logtimeCreate.bMonth <= 12);
+    Require(info.logtimeCreate.bDay >= 1);
+    Require(info.logtimeCreate.bDay <= 31);
+    Require(static_cast<uint8_t>(info.logtimeCreate.bYear) >= 100);
+    //  ulMajor must be > 0 — an uninitialized version field would
+    //  ring alarm bells.  ulMinor is currently 0 on the supported
+    //  format version, so don't constrain it.
+    Require(info.ulMajor > 0);
 }
 
 EseIntegrationScenario(Rbs, PrepareRevertRejectsUnreachableTargetTime)

@@ -558,3 +558,147 @@ coverage target:
   helpers in the anonymous namespace at the top of the wave's
   block so each scenario body fits on one screen.
 
+- **Round 15**: weak-assertion audit — across all 28 scenario
+  files, find scenarios that only check `CheckJet(...)` success
+  without verifying behavioral consequences, and strengthen them
+  to read back what the API was supposed to do.  Original test
+  authorship sometimes treated "API returned success" as the
+  whole contract; the goal of an integration scenario is to
+  validate what the API *did*, not just that it dispatched.
+
+  Twenty-plus scenarios strengthened across DDL, DML, navigation,
+  backup, recovery, snapshot, RBS, replication, maintenance,
+  session, database, transaction, temp-table, escrow, platform,
+  preread, limit, wide-API, and scale categories.  Examples:
+  - `Schema.CreateTable` now closes + reopens the table by name
+    to prove the catalog entry persists.
+  - `Schema.AddColumnAfterTableCreation` round-trips the
+    columnid through `JetGetTableColumnInfo`.
+  - `Schema.CreateSecondaryUniqueIndex` populates the table,
+    seeks via the index, AND verifies a duplicate key insert is
+    rejected with `JET_errKeyDuplicate`.
+  - `Schema.CreateMultiColumnIndex` populates 4 (Region, Quarter)
+    rows and seeks on the composite key.
+  - `DataManipulation.GetRecordSizeReportsNonZeroData` reads the
+    blob bytes back via `JetRetrieveColumn` + memcmp.
+  - `DataManipulation.RetrievePageNumberReportsResidentPage`
+    bumps to 4096 rows so first-page vs last-page must differ.
+  - `MultiValue.UniqueMultiValueIndexRejectsDuplicateAcrossRows`
+    walks the index post-rejection and asserts the surviving
+    row count is exactly 1 with the right Tag value.
+  - `Navigation.SetAndResetTableSequentialRoundTrip` verifies
+    every row's Identity column is strictly increasing under
+    the hint AND that a second walk after Reset returns the
+    same row count.
+  - `BackupRestore.StreamingBackupProducesNonEmptyDirectory`
+    validates the backup `.mdb` via `JetGetDatabaseFileInfo`
+    (file-type, file-size match on-disk bytes).
+  - `BackupRestore.ExternalBackupExposesAttachInfo` parses the
+    multi-string attach-info buffer and confirms the entry
+    ends with `External.mdb`.
+  - `BackupRestore.GetLogInfoInstanceListsActiveLogs` parses
+    the multi-string list, confirms each entry exists on disk
+    with a log extension, AND that the truncate-log subset is
+    actually a subset of the active list.
+  - `BackupRestore.GetInstanceMiscInfoReportsLogSignature`
+    validates every JET_LOGTIME byte range, `ulRandom` is
+    non-zero, `szComputerName` terminates, AND a second call
+    returns byte-identical bytes (signature is stable).
+  - `Recovery.ReplayIgnoreMissingDBProceedsWithoutDeletedDatabase`
+    walks the Primary rows twice to prove the cursor / page
+    cache survived recovery (engine-resurrected Secondary is
+    documented behaviour and not asserted).
+  - `Snapshot.PrepareAndEndCycle` asserts two Prepare calls
+    yield distinct snapshot ids; a post-End reuse returns
+    `JET_errOSSnapshotInvalidSnapId`.
+  - `Snapshot.TruncateLogClearsBackupLogs` asserts the freeze
+    info populated (cDatabases ≥ 1), End-then-reuse rejects
+    with `JET_errOSSnapshotInvalidSnapId`, AND post-lifecycle
+    the engine still serves writes + reads.
+  - `Rbs.GetRBSFileInfoReadsHeaderOfClosedSnapshotFile` validates
+    every `JET_LOGTIME` field range, `ulMajor > 0`, and the
+    logical file size is ≤ on-disk size.
+  - `Replication.OnlinePagePatchRoundTripsValidPage` reads every
+    row's Value column (not just counts rows) + re-reads the
+    patched page and memcmps against the pre-patch snapshot to
+    confirm the speculative-patch path didn't modify the bytes.
+  - `Maintenance.ComputeStatsOnEmptyTable` reads `JetGetTableInfo`
+    and verifies `cRecord == 0` + `JET_bitTableInfoUpdatable`.
+  - `Maintenance.OnlineDefragmentRunsToCompletion` walks every
+    surviving row by Value (rows 100..199 after the front-of-
+    table deletion) so a defrag that corrupted the B-tree
+    surfaces here.
+  - `Maintenance.ResizeDatabaseGrowsPageCount` reads the page
+    size + filename via `JetGetDatabaseInfo` and confirms the
+    on-disk file size is at least pages * page_size.
+  - `Maintenance.DatabaseScanBatchPassRunsToCompletion` walks
+    all 500 inserted rows by Value post-scan; a scan that
+    damaged checksums or dbtime would fail the readback.
+  - `Maintenance.IdleCompactAsyncSchedulesBackgroundWork` walks
+    by Value AND runs a second synchronous `JetIdle(IdleCompact)`
+    pass to confirm both modes are wired identically.
+  - `Session.OpenAndClose` uses `JetGetSessionInfo` to read the
+    transaction-level inside a transaction (==1) and after
+    rollback (==0) — proves the sesid resolves to live state.
+  - `Session.GetVersionReturnsNonZero` calls twice and confirms
+    the values match (version is a binary property, not per-call).
+  - `Database.CreateAndClose` creates a table, inserts a row,
+    reads it back — proves the dbid is functional, not just
+    that `JetCreateDatabaseA` returned success.
+  - `Database.SetDatabaseSizeMatchesGrowSemantics` writes a 64-row
+    sentinel set BEFORE the resize and verifies all 64 rows
+    come back in order after the reattach.
+  - `Transaction.BeginAndCommit` runs an insert inside the
+    transaction, commits, reads back the value, AND verifies a
+    second serial transaction stacks correctly to two rows.
+  - `TemporaryTable.OpenSortedTempTable` inserts three out-of-
+    order keys and confirms the walk returns them in strictly
+    increasing order.
+  - `TemporaryTable.OpenTempTable3SortsViaUnicodeIndex` walks
+    all three rows and asserts the exact sort
+    `"Apple" < "banana" < "cherry"` (case-insensitive UTF-16
+    sort), not just that the first row starts with A.
+  - `Escrow.DeleteOnZeroEventuallyRemovesRecord` drains async
+    activity via `JetIdle(JET_bitIdleWaitForAsyncActivity)` and
+    branches on the observed state: deleted-and-table-still-
+    usable, or counter-pinned-at-zero (the two valid steady
+    states for this engine contract).
+  - `Platform.GetInstanceInfoEnumeratesRunningInstance` matches
+    the live instance by `hInstanceId` against
+    `instance.Handle()` (was previously just `count >= 1`).
+  - All four `Preread*` scenarios now seek / scan / open
+    against the data behind the preread to confirm the engine
+    served real records, not just that the hint was accepted.
+  - `Limit.TableWithTwentyIndexesRoundTrips` inserts a single
+    row with distinguishable per-column values and seeks via
+    every index, retrieving the matching column to prove each
+    index is populated and functional.
+  - `Limit.FiftyTablesInOneDatabase` stamps each of 50 tables
+    with `index + 1000` and reads the sentinel back during
+    reopen, proving N-th table actually holds N-th data.
+  - `Limit.LongTableNameAccepted` closes + reopens by the long
+    name and reads back a sentinel — proves the engine stored
+    the full 60-char name and resolves it on lookup.
+  - `WideApi.CreateInstanceWBootsCleanly` enumerates via
+    `JetGetInstanceInfoW` and confirms the wide instance name
+    we passed at create-time round-trips through engine
+    storage and back out as UTF-16.
+  - `WideApi.CreateInstance2WStampsDisplayName` runs a full
+    insert + read DML round-trip via all-W APIs (CreateTableW
+    + AddColumnW + SetColumn + RetrieveColumn).
+  - `WideApi.BeginSessionWAcceptsWideCredentials` runs a
+    BeginTransaction / Rollback inside the credentialed
+    session to prove it's functional.
+  - `WideApi.CreateTableColumnIndexWBuildsAtomically` and
+    `WideApi.CreateIndex2WStructPath` populate rows + seek via
+    the W-built index to prove the index is real.
+  - `Scale.ManyTablesCreatedAndOpened` stamps each scale-N
+    table with `index + 100000` and reads the sentinel back
+    during reopen.
+
+  Framework changes: `EseInstanceOptions::LogFileSizeKb`
+  added — scenarios that need to force log generation rolls
+  within a small workload (snapshot/truncate-log tests) set a
+  small value (e.g. 64 KiB) so each transaction's commit
+  flushes overflow into a fresh numbered log.
+

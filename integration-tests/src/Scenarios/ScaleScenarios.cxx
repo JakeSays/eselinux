@@ -64,11 +64,24 @@ EseIntegrationScenario(Scale, ManyTablesCreatedAndOpened)
 
     const auto tableCount = TableCount();
 
+    //  Stamp each table with a unique sentinel so the reopen pass
+    //  can verify table N actually holds table N's data — not just
+    //  that "a valid table existed under some name we can open".
     for (int index = 0; index < tableCount; ++index)
     {
         const auto name = std::format("Table{:05}", index);
         EseTable table(database, name);
-        table.AddColumn("Value", JET_coltypLong);
+        auto columnId = table.AddColumn("Value", JET_coltypLong);
+        EseTransaction transaction(session);
+        const int32_t sentinel = index + 100000;
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), columnId,
+                              &sentinel, sizeof(sentinel),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), table.Id(),
+                           nullptr, 0, nullptr));
+        transaction.Commit();
     }
 
     for (int index = 0; index < tableCount; ++index)
@@ -76,6 +89,25 @@ EseIntegrationScenario(Scale, ManyTablesCreatedAndOpened)
         const auto name = std::format("Table{:05}", index);
         EseTable opened(database, name, EseTableMode::Open);
         Require(opened.Id() != JET_tableidNil);
+        //  Read the per-table sentinel.  A schema confusion where
+        //  opens succeed but point at the wrong table's data would
+        //  surface here as the wrong observed sentinel value.
+        JET_COLUMNDEF columnInfo = {};
+        columnInfo.cbStruct = sizeof(columnInfo);
+        CheckJet(JetGetTableColumnInfoA(session.Handle(), opened.Id(),
+                                         "Value", &columnInfo,
+                                         sizeof(columnInfo),
+                                         JET_ColInfo));
+        CheckJet(JetMove(session.Handle(), opened.Id(),
+                         JET_MoveFirst, 0));
+        int32_t observedSentinel = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), opened.Id(),
+                                   columnInfo.columnid,
+                                   &observedSentinel,
+                                   sizeof(observedSentinel),
+                                   &actualBytes, 0, nullptr));
+        Require(observedSentinel == index + 100000);
     }
 }
 

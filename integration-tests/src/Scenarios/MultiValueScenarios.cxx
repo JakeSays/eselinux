@@ -372,6 +372,32 @@ EseIntegrationScenario(MultiValue, UniqueMultiValueIndexRejectsDuplicateAcrossRo
         CheckJet(JetPrepareUpdate(session.Handle(), table.Id(), JET_prepCancel));
         transaction.Commit();
     }
+
+    //  The rejection above must not have torn the first row — walk
+    //  the unique index and confirm exactly one row remains, with
+    //  Tag=7.  If the engine had silently accepted the duplicate the
+    //  walk would either see two rows or fail; if the engine had
+    //  rolled back too far the walk would see zero.
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(),
+                                 "ByTagUnique"));
+    int32_t rowsSeen = 0;
+    JET_ERR moveResult = JetMove(session.Handle(), table.Id(),
+                                 JET_MoveFirst, 0);
+    while (moveResult != JET_errNoCurrentRecord)
+    {
+        Require(moveResult >= JET_errSuccess);
+        int32_t observedTag = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), columnId,
+                                   &observedTag, sizeof(observedTag),
+                                   &actualBytes,
+                                   0, nullptr));
+        Require(observedTag == 7);
+        ++rowsSeen;
+        moveResult = JetMove(session.Handle(), table.Id(),
+                             JET_MoveNext, 0);
+    }
+    Require(rowsSeen == 1);
 }
 
 EseIntegrationScenario(MultiValue, RetrieveTagFetchesSpecificItagFromTaggedColumn)
@@ -550,9 +576,13 @@ EseIntegrationScenario(MultiValue, SetUniqueNormalizedMultiValuesRejectsCaseEqui
     }
 
     // Walk the surviving itags — exactly two should be set ("Hello"
-    // and "World"), the rejected "HELLO" never landed.
+    // and "World"), the rejected "HELLO" never landed.  Capture each
+    // value so we can prove the exact bytes round-tripped, not just
+    // that two slots happen to be populated by something.
     CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
     uint32_t presentSlots = 0;
+    bool sawHello = false;
+    bool sawWorld = false;
     for (uint32_t itag = 1; itag <= 4; ++itag)
     {
         JET_RETINFO retrieveInformation = {};
@@ -569,7 +599,21 @@ EseIntegrationScenario(MultiValue, SetUniqueNormalizedMultiValuesRejectsCaseEqui
             continue;
         }
         CheckJet(retrieveResult);
+        const std::string_view value(buffer, actualBytes);
+        if (value == "Hello")
+        {
+            sawHello = true;
+        }
+        else if (value == "World")
+        {
+            sawWorld = true;
+        }
         ++presentSlots;
     }
     Require(presentSlots == 2);
+    //  Exact-byte verification — rules out any case where the engine
+    //  truncated, normalized, or substituted a value while leaving
+    //  slot count matching.
+    Require(sawHello);
+    Require(sawWorld);
 }

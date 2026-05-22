@@ -50,18 +50,51 @@ EseIntegrationScenario(BackupRestore, StreamingBackupProducesNonEmptyDirectory)
                                 0,
                                 nullptr));
 
-    // Backup must have produced at least one file under the target.
-    int backupArtifactCount = 0;
+    //  Both the database file and at least one log file must appear
+    //  in the backup directory — file-count > 0 alone doesn't prove
+    //  the artefacts are the right kind.  Then validate the .mdb is
+    //  well-formed: JetGetDatabaseFileInfoA reads the header off the
+    //  detached file without attaching, so it surfaces corruption /
+    //  truncation that "file exists" can't see.
+    int mdbCount = 0;
+    int logCount = 0;
+    std::filesystem::path backupDbPath;
     for (const auto& entry :
          std::filesystem::directory_iterator(backupDirectory, errorCode))
     {
-        if (entry.is_regular_file())
+        if (!entry.is_regular_file())
         {
-            ++backupArtifactCount;
+            continue;
+        }
+        const auto extension = entry.path().extension().string();
+        if (extension == ".mdb")
+        {
+            ++mdbCount;
+            backupDbPath = entry.path();
+        }
+        else if (extension == ".log" || extension == ".jtx")
+        {
+            ++logCount;
         }
     }
     Require(!errorCode);
-    Require(backupArtifactCount > 0);
+    Require(mdbCount == 1);
+    Require(logCount >= 1);
+
+    uint32_t dbFileType = 0;
+    CheckJet(JetGetDatabaseFileInfoA(backupDbPath.string().c_str(),
+                                     &dbFileType, sizeof(dbFileType),
+                                     JET_DbInfoFileType));
+    Require(dbFileType == JET_filetypeDatabase);
+
+    int64_t dbFileSize = 0;
+    CheckJet(JetGetDatabaseFileInfoA(backupDbPath.string().c_str(),
+                                     &dbFileSize, sizeof(dbFileSize),
+                                     JET_DbInfoFilesize));
+    Require(dbFileSize > 0);
+    Require(static_cast<uintmax_t>(dbFileSize) ==
+            std::filesystem::file_size(backupDbPath, errorCode));
+    Require(!errorCode);
 }
 
 EseIntegrationScenario(BackupRestore, ExternalBackupExposesAttachInfo)
@@ -88,6 +121,25 @@ EseIntegrationScenario(BackupRestore, ExternalBackupExposesAttachInfo)
                                        sizeof(attachInfoBuffer),
                                        &attachInfoActualBytes));
     Require(attachInfoActualBytes > 0);
+
+    //  JetGetAttachInfoInstanceA returns a multi-string list — NUL-
+    //  separated database paths terminated by a double-NUL.  Parse
+    //  it and confirm exactly one entry that ends in External.mdb.
+    //  Just checking cbActual>0 leaves the door open to "engine
+    //  returned junk" — actually walking the list proves the contract.
+    Require(attachInfoActualBytes <= sizeof(attachInfoBuffer));
+    Require(attachInfoBuffer[attachInfoActualBytes - 1] == '\0');
+    std::vector<std::string_view> attachedDatabases;
+    const char* cursor = attachInfoBuffer;
+    const char* end = attachInfoBuffer + attachInfoActualBytes;
+    while (cursor < end && *cursor != '\0')
+    {
+        const std::string_view entry(cursor);
+        attachedDatabases.push_back(entry);
+        cursor += entry.size() + 1;
+    }
+    Require(attachedDatabases.size() == 1);
+    Require(attachedDatabases.front().ends_with("External.mdb"));
 
     CheckJet(JetEndExternalBackupInstance(instance.Handle()));
 }
@@ -270,6 +322,29 @@ EseIntegrationScenario(BackupRestore,
                                     &cbActual));
     Require(cbActual > 0);
 
+    //  Parse the multi-string and validate each entry is a real file
+    //  on disk under the log directory.  An external backup agent
+    //  whose only signal is cbActual > 0 would happily try to copy
+    //  garbage paths the engine never wrote.
+    Require(cbActual <= sizeof(logInfo));
+    Require(logInfo[cbActual - 1] == '\0');
+    int32_t logCount = 0;
+    const char* cursor = logInfo;
+    const char* end = logInfo + cbActual;
+    std::error_code errorCode;
+    while (cursor < end && *cursor != '\0')
+    {
+        const std::string_view entry(cursor);
+        Require(std::filesystem::exists(entry, errorCode));
+        Require(!errorCode);
+        const std::filesystem::path entryPath(entry);
+        const auto extension = entryPath.extension().string();
+        Require(extension == ".log" || extension == ".jtx");
+        ++logCount;
+        cursor += entry.size() + 1;
+    }
+    Require(logCount >= 1);
+
     //  JetGetTruncateLogInfoInstance enumerates the subset that's
     //  safe to truncate post-backup — typically a prefix of the
     //  GetLogInfoInstance list.
@@ -279,6 +354,23 @@ EseIntegrationScenario(BackupRestore,
                                             truncInfo,
                                             sizeof(truncInfo),
                                             &cbTrunc));
+    //  truncInfo may legitimately be empty (nothing safe to truncate
+    //  yet, depending on checkpoint position).  Whatever it reports
+    //  must be a subset of the active-log list: every truncate entry
+    //  must also appear in logInfo.
+    if (cbTrunc > 0)
+    {
+        Require(truncInfo[cbTrunc - 1] == '\0');
+        const char* truncCursor = truncInfo;
+        const char* truncEnd = truncInfo + cbTrunc;
+        while (truncCursor < truncEnd && *truncCursor != '\0')
+        {
+            const std::string_view truncEntry(truncCursor);
+            const std::string_view activeBuffer(logInfo, cbActual);
+            Require(activeBuffer.find(truncEntry) != std::string_view::npos);
+            truncCursor += truncEntry.size() + 1;
+        }
+    }
 
     CheckJet(JetEndExternalBackupInstance(instance.Handle()));
 }
@@ -358,11 +450,41 @@ EseIntegrationScenario(BackupRestore,
                                     sizeof(logSignature),
                                     JET_InstanceMiscInfoLogSignature));
 
-    //  The signature is non-zero — the engine generated random bytes
-    //  at log-init time.  We don't probe specific fields; any
-    //  difference from a zero-init struct proves the API populated it.
-    JET_SIGNATURE zero = {};
-    Require(std::memcmp(&logSignature, &zero, sizeof(zero)) != 0);
+    //  Validate the signature's individual fields rather than just
+    //  "any difference from zero" — the engine could plausibly leave
+    //  one field uninitialized and the bulk memcmp would still pass.
+    //  ulRandom must be non-zero (engine seeds it at log creation).
+    //  The logtime fields must encode a plausible recent timestamp:
+    //  bMonth in [1,12], bDay in [1,31], bYear is "current year -
+    //  1900" so for any year >= 2000 it's >= 100.  szComputerName
+    //  must be NUL-terminated within the array.
+    Require(logSignature.ulRandom != 0);
+    Require(logSignature.logtimeCreate.bMonth >= 1);
+    Require(logSignature.logtimeCreate.bMonth <= 12);
+    Require(logSignature.logtimeCreate.bDay >= 1);
+    Require(logSignature.logtimeCreate.bDay <= 31);
+    Require(logSignature.logtimeCreate.bHours <= 23);
+    Require(logSignature.logtimeCreate.bMinutes <= 59);
+    Require(logSignature.logtimeCreate.bSeconds <= 59);
+    //  bYear is offset-from-1900; this scenario runs on contemporary
+    //  hardware, so >= 100 (year 2000+) catches "field never written".
+    Require(static_cast<uint8_t>(logSignature.logtimeCreate.bYear) >= 100);
+    //  szComputerName terminates within JET_MAX_COMPUTERNAME_LENGTH+1.
+    const auto computerNameLen = ::strnlen(
+        logSignature.szComputerName,
+        sizeof(logSignature.szComputerName));
+    Require(computerNameLen < sizeof(logSignature.szComputerName));
+
+    //  Calling GetInstanceMiscInfo a second time must reproduce the
+    //  same signature byte-for-byte — proves it's a stable identifier,
+    //  not a freshly randomized value per call.
+    JET_SIGNATURE secondSignature = {};
+    CheckJet(JetGetInstanceMiscInfo(instance.Handle(),
+                                    &secondSignature,
+                                    sizeof(secondSignature),
+                                    JET_InstanceMiscInfoLogSignature));
+    Require(std::memcmp(&logSignature, &secondSignature,
+                        sizeof(logSignature)) == 0);
 }
 
 EseIntegrationScenario(BackupRestore,

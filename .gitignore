@@ -45,3 +45,4 @@ out/
 assert.txt
 .idea/
 iomgr.md
+.claude/

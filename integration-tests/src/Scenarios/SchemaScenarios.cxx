@@ -12,6 +12,8 @@
 #include "Framework/TemporaryDirectory.hxx"
 
 #include <cstring>
+#include <format>
+#include <string>
 #include <string_view>
 
 using namespace ese::tests;
@@ -25,6 +27,16 @@ EseIntegrationScenario(Schema, CreateTable)
     EseTable table(database, "Customers");
 
     Require(table.Id() != JET_tableidNil);
+
+    //  Close + reopen by name to prove the table actually landed in
+    //  the catalog — handle non-nil alone says JetCreateTable returned
+    //  success but doesn't confirm the table is queryable post-DDL.
+    CheckJet(JetCloseTable(session.Handle(), table.Id()));
+    JET_TABLEID reopened = JET_tableidNil;
+    CheckJet(JetOpenTableA(session.Handle(), database.Id(),
+                           "Customers", nullptr, 0, 0, &reopened));
+    Require(reopened != JET_tableidNil);
+    CheckJet(JetCloseTable(session.Handle(), reopened));
 }
 
 EseIntegrationScenario(Schema, AddColumnAfterTableCreation)
@@ -37,6 +49,19 @@ EseIntegrationScenario(Schema, AddColumnAfterTableCreation)
 
     auto columnId = table.AddColumn("CustomerId", JET_coltypLong);
     Require(columnId != 0);
+
+    //  Round-trip the column through JetGetTableColumnInfo so we
+    //  prove the column was actually added (not just that the call
+    //  returned an id-looking value) and the engine reports the
+    //  matching columnid + coltyp.
+    JET_COLUMNDEF retrieved = {};
+    retrieved.cbStruct = sizeof(retrieved);
+    CheckJet(JetGetTableColumnInfoA(session.Handle(), table.Id(),
+                                     "CustomerId",
+                                     &retrieved, sizeof(retrieved),
+                                     JET_ColInfo));
+    Require(retrieved.columnid == columnId);
+    Require(retrieved.coltyp == JET_coltypLong);
 }
 
 EseIntegrationScenario(Schema, AddMultipleColumnsRoundTripsThroughGetColumnInfo)
@@ -231,14 +256,73 @@ EseIntegrationScenario(Schema, CreateSecondaryUniqueIndex)
     EseDatabase database(session, "Schema.mdb");
     EseTable table(database, "Customers");
 
-    table.AddColumn("CustomerId", JET_coltypLong);
-    table.AddColumn("EmailAddress", JET_coltypLongText, 0, 0, 1252);
+    auto customerIdColumn = table.AddColumn("CustomerId", JET_coltypLong);
+    auto emailColumn =
+        table.AddColumn("EmailAddress", JET_coltypLongText, 0, 0, 1252);
 
     static constexpr std::string_view EmailKey =
         std::string_view("+EmailAddress\0\0", 15);
     table.CreateIndex("ByEmailAddressUnique",
                       EmailKey,
                       JET_bitIndexUnique | JET_bitIndexIgnoreNull);
+
+    //  Insert two distinct rows, then prove the index is actually
+    //  populated and unique-enforced: seek by EmailAddress retrieves
+    //  the right CustomerId, and a third insert with a duplicate
+    //  EmailAddress is rejected at the index level.
+    {
+        EseTransaction transaction(session);
+        for (int32_t customerId : { 100, 200 })
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(),
+                                  customerIdColumn,
+                                  &customerId, sizeof(customerId),
+                                  0, nullptr));
+            const std::string email =
+                std::format("user{}@example.com", customerId);
+            CheckJet(JetSetColumn(session.Handle(), table.Id(), emailColumn,
+                                  email.data(), email.size(),
+                                  0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(),
+                                 "ByEmailAddressUnique"));
+    const std::string seekEmail = "user200@example.com";
+    CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                        seekEmail.data(), seekEmail.size(),
+                        JET_bitNewKey));
+    CheckJet(JetSeek(session.Handle(), table.Id(), JET_bitSeekEQ));
+    int32_t observedCustomerId = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(),
+                               customerIdColumn,
+                               &observedCustomerId,
+                               sizeof(observedCustomerId),
+                               &actualBytes, 0, nullptr));
+    Require(observedCustomerId == 200);
+
+    //  Insert with duplicate EmailAddress — uniqueness must reject.
+    {
+        EseTransaction transaction(session);
+        CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                  JET_prepInsert));
+        const int32_t collidingId = 300;
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), customerIdColumn,
+                              &collidingId, sizeof(collidingId),
+                              0, nullptr));
+        CheckJet(JetSetColumn(session.Handle(), table.Id(), emailColumn,
+                              seekEmail.data(), seekEmail.size(),
+                              0, nullptr));
+        RequireJetError(JetUpdate(session.Handle(), table.Id(),
+                                  nullptr, 0, nullptr),
+                        JET_errKeyDuplicate);
+    }
 }
 
 EseIntegrationScenario(Schema, CreateMultiColumnIndex)
@@ -249,14 +333,59 @@ EseIntegrationScenario(Schema, CreateMultiColumnIndex)
     EseDatabase database(session, "Schema.mdb");
     EseTable table(database, "Sales");
 
-    table.AddColumn("Region", JET_coltypLong);
-    table.AddColumn("Quarter", JET_coltypLong);
-    table.AddColumn("Total", JET_coltypCurrency);
+    auto regionColumn = table.AddColumn("Region", JET_coltypLong);
+    auto quarterColumn = table.AddColumn("Quarter", JET_coltypLong);
+    auto totalColumn = table.AddColumn("Total", JET_coltypCurrency);
 
     // "+Region\0+Quarter\0\0" — both ascending; double-NUL terminator.
     static constexpr std::string_view CompositeKey =
         std::string_view("+Region\0+Quarter\0\0", 18);
     table.CreateIndex("ByRegionQuarter", CompositeKey);
+
+    //  Populate four (Region, Quarter) pairs with distinguishable
+    //  totals and verify the composite index actually finds the
+    //  right row when seeking on both key columns together.
+    struct SalesRow { int32_t region; int32_t quarter; int64_t total; };
+    const SalesRow rows[] =
+    {
+        { 1, 1, 100 }, { 1, 2, 200 }, { 2, 1, 300 }, { 2, 2, 400 },
+    };
+    {
+        EseTransaction transaction(session);
+        for (const auto& row : rows)
+        {
+            CheckJet(JetPrepareUpdate(session.Handle(), table.Id(),
+                                      JET_prepInsert));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(), regionColumn,
+                                  &row.region, sizeof(row.region),
+                                  0, nullptr));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(), quarterColumn,
+                                  &row.quarter, sizeof(row.quarter),
+                                  0, nullptr));
+            CheckJet(JetSetColumn(session.Handle(), table.Id(), totalColumn,
+                                  &row.total, sizeof(row.total),
+                                  0, nullptr));
+            CheckJet(JetUpdate(session.Handle(), table.Id(),
+                               nullptr, 0, nullptr));
+        }
+        transaction.Commit();
+    }
+
+    CheckJet(JetSetCurrentIndexA(session.Handle(), table.Id(),
+                                 "ByRegionQuarter"));
+    const int32_t seekRegion = 2;
+    const int32_t seekQuarter = 1;
+    CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                        &seekRegion, sizeof(seekRegion), JET_bitNewKey));
+    CheckJet(JetMakeKey(session.Handle(), table.Id(),
+                        &seekQuarter, sizeof(seekQuarter), 0));
+    CheckJet(JetSeek(session.Handle(), table.Id(), JET_bitSeekEQ));
+    int64_t observedTotal = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), totalColumn,
+                               &observedTotal, sizeof(observedTotal),
+                               &actualBytes, 0, nullptr));
+    Require(observedTotal == 300);
 }
 
 EseIntegrationScenario(Schema, DeleteIndex)
@@ -350,6 +479,31 @@ EseIntegrationScenario(Schema, GetTableInfoReportsCreationStats)
                               sizeof(objectInfo),
                               JET_TblInfo));
     Require(objectInfo.objtyp == JET_objtypTable);
+    //  A regular user table must be Updatable (Insert/Update/Delete
+    //  allowed) and must NOT carry the FixedDDL or Template flags —
+    //  those are reserved for system catalogs and inheritable
+    //  templates.  Asserting the bit pattern proves the engine
+    //  populated the struct (not just returned success).
+    Require((objectInfo.grbit & JET_bitTableInfoUpdatable) != 0);
+    Require((objectInfo.flags & JET_bitObjectTableFixedDDL) == 0);
+    Require((objectInfo.flags & JET_bitObjectTableTemplate) == 0);
+    Require((objectInfo.flags & JET_bitObjectSystem) == 0);
+
+    //  JET_TblInfoSpaceUsage reports two PGNO values — owned and
+    //  available extents.  Owned must be non-zero (the table has at
+    //  least its root page allocated), and it must be > available
+    //  (some pages are in active use, not just on the free-extent
+    //  list).  That's an actual engine-side fact, not just a "call
+    //  returned success" check.
+    uint32_t spaceUsage[2] = {};
+    CheckJet(JetGetTableInfoA(session.Handle(),
+                              table.Id(),
+                              spaceUsage, sizeof(spaceUsage),
+                              JET_TblInfoSpaceUsage));
+    const uint32_t owned = spaceUsage[0];
+    const uint32_t available = spaceUsage[1];
+    Require(owned > 0);
+    Require(available <= owned);
 }
 
 EseIntegrationScenario(Schema, DeleteTableRemovesTheTable)

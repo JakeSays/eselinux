@@ -871,6 +871,22 @@ EseIntegrationScenario(Recovery, ReplayIgnoreMissingDBProceedsWithoutDeletedData
            != JET_errNoCurrentRecord);
     Require(observedRows == 5);
 
+    //  Walk the rows a SECOND time after a JetMove(MoveFirst).  A
+    //  recovery that returned success but left the cursor / page
+    //  cache in a poisoned state would surface here as a different
+    //  row count or a navigation failure.  This is more than just
+    //  "the call returned success" — it proves the recovered DB is
+    //  navigable end to end.
+    CheckJet(JetMove(sessionId, tableId, JET_MoveFirst, 0));
+    int observedRowsAgain = 0;
+    do
+    {
+        ++observedRowsAgain;
+    }
+    while (JetMove(sessionId, tableId, JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+    Require(observedRowsAgain == observedRows);
+
     CheckJet(JetCloseTable(sessionId, tableId));
     CheckJet(JetCloseDatabase(sessionId, primaryDbId, 0));
     CheckJet(JetDetachDatabaseA(sessionId, primaryPath.string().c_str()));

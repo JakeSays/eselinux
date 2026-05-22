@@ -54,6 +54,14 @@ struct EseInstanceOptions
     //  (incremental/atomic/surrogate) need it off because the engine
     //  rejects those backups with JET_errInvalidBackup under CircularLog.
     bool EnableCircularLog = true;
+
+    //  Override JET_paramLogFileSize (in KiB).  Default 0 means
+    //  "leave the engine default in place" (5 MiB on this build).
+    //  Scenarios that need to force log generation rolls within a
+    //  small workload (snapshot/truncate tests) set a small value
+    //  (e.g. 64) so each transaction's writes overflow into a fresh
+    //  numbered log.
+    uint32_t LogFileSizeKb = 0;
 };
 
 class EseInstance

@@ -130,6 +130,14 @@ EseInstance::EseInstance(const TemporaryDirectory& directory,
     // engine rejects those backups under circular logging.
     SetIntegerParameter(_handle, JET_paramCircularLog,
                         options.EnableCircularLog ? 1 : 0);
+    //  Optional per-scenario log file size override.  Tiny values
+    //  force frequent gen rolls so a small workload spans multiple
+    //  numbered logs (snapshot truncate / log archive scenarios).
+    if (options.LogFileSizeKb != 0)
+    {
+        SetIntegerParameter(_handle, JET_paramLogFileSize,
+                            options.LogFileSizeKb);
+    }
 
     if (runtimeCallback != nullptr)
     {

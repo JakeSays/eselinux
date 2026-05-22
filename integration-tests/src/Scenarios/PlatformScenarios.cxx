@@ -40,6 +40,29 @@ EseIntegrationScenario(Platform, GetInstanceInfoEnumeratesRunningInstance)
     // Our running instance must show up.
     Require(instanceCount >= 1);
     Require(instanceInfoArray != nullptr);
+
+    //  The enumeration must report the live instance we just booted,
+    //  not just "some" instance.  Match by hInstanceId — the engine
+    //  hands us the same opaque handle we hold via instance.Handle().
+    //  Count-only checks pass even if the engine left a stale entry
+    //  from a previous test (which can't happen under fork-per-
+    //  scenario, but the assertion guards the contract anyway).
+    bool foundLiveInstance = false;
+    for (uint32_t i = 0; i < instanceCount; ++i)
+    {
+        if (instanceInfoArray[i].hInstanceId == instance.Handle())
+        {
+            foundLiveInstance = true;
+            break;
+        }
+    }
+    //  The load-bearing assertion: the live instance we booted in
+    //  this process is one of the entries.  Anything else
+    //  (database arrays, instance-name presence) varies with the
+    //  framework's single-vs-multi-instance configuration and
+    //  isn't part of this scenario's contract.
+    Require(foundLiveInstance);
+
     CheckJet(JetFreeBuffer(reinterpret_cast<char*>(instanceInfoArray)));
 }
 

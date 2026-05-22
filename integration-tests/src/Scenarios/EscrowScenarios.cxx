@@ -231,19 +231,32 @@ EseIntegrationScenario(Escrow, DeleteOnZeroEventuallyRemovesRecord)
         transaction.Commit();
     }
 
-    // The deletion runs as a background task once the version store
-    // releases the row.  The synchronous post-condition we can verify
-    // is that the counter has dropped to zero; physical removal is
-    // best-effort and lazy.
-    const auto moveResult = JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0);
-    if (moveResult == JET_errSuccess)
+    //  Deletion runs as a background task once the version store
+    //  releases the row — JetIdle nudges but doesn't synchronously
+    //  drain it.  Accept either of the two valid steady states:
+    //  (a) row still present with counter==0 (deletion pending), or
+    //  (b) row gone (deletion ran).  This is the engine contract for
+    //  bitColumnDeleteOnZero — eventual, not immediate.
+    CheckJet(JetIdle(session.Handle(),
+                     JET_bitIdleWaitForAsyncActivity));
+    const auto moveResult = JetMove(session.Handle(), table.Id(),
+                                    JET_MoveFirst, 0);
+    if (moveResult == JET_errNoCurrentRecord
+        || moveResult == JET_errRecordDeleted)
     {
-        Require(RetrieveLong(session, table, columnId) == 0);
+        //  Deleted — assert the table is still usable for a fresh
+        //  insert (deletion didn't tombstone the B-tree).
+        InsertSingleEscrowRow(session, table);
+        CheckJet(JetMove(session.Handle(), table.Id(),
+                         JET_MoveFirst, 0));
+        Require(RetrieveLong(session, table, columnId) == initialValue);
     }
     else
     {
-        Require(moveResult == JET_errNoCurrentRecord ||
-                moveResult == JET_errRecordDeleted);
+        //  Not deleted yet — counter must read exactly 0, which is
+        //  the precondition for the eventual deletion.
+        CheckJet(moveResult);
+        Require(RetrieveLong(session, table, columnId) == 0);
     }
 }
 

@@ -28,6 +28,36 @@ EseIntegrationScenario(Database, CreateAndClose)
 
     Require(database.Id() != JET_dbidNil);
     Require(std::filesystem::exists(database.Path()));
+
+    //  The created database must be queryable through the same dbid:
+    //  create a tiny table, insert one row, read it back.  A db that
+    //  the engine "created" but whose schema layer isn't actually
+    //  alive would fail at CreateTable / Insert / Retrieve here.
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetCreateTableA(session.Handle(), database.Id(),
+                             "Smoke", 8, 100, &tableId));
+    JET_COLUMNDEF columnDefinition = {};
+    columnDefinition.cbStruct = sizeof(columnDefinition);
+    columnDefinition.coltyp = JET_coltypLong;
+    JET_COLUMNID columnId = 0;
+    CheckJet(JetAddColumnA(session.Handle(), tableId, "Value",
+                           &columnDefinition, nullptr, 0, &columnId));
+    CheckJet(JetBeginTransaction(session.Handle()));
+    CheckJet(JetPrepareUpdate(session.Handle(), tableId, JET_prepInsert));
+    const int32_t storedValue = 0xC0FFEE;
+    CheckJet(JetSetColumn(session.Handle(), tableId, columnId,
+                          &storedValue, sizeof(storedValue),
+                          0, nullptr));
+    CheckJet(JetUpdate(session.Handle(), tableId, nullptr, 0, nullptr));
+    CheckJet(JetCommitTransaction(session.Handle(), 0));
+    CheckJet(JetMove(session.Handle(), tableId, JET_MoveFirst, 0));
+    int32_t observedValue = 0;
+    uint32_t actualBytes = 0;
+    CheckJet(JetRetrieveColumn(session.Handle(), tableId, columnId,
+                               &observedValue, sizeof(observedValue),
+                               &actualBytes, 0, nullptr));
+    Require(observedValue == storedValue);
+    CheckJet(JetCloseTable(session.Handle(), tableId));
 }
 
 EseIntegrationScenario(Database, GrowDatabaseExtendsFileBySpecifiedPages)
@@ -62,6 +92,32 @@ EseIntegrationScenario(Database, SetDatabaseSizeMatchesGrowSemantics)
     EseSession session(instance);
     EseDatabase database(session, "Sized.mdb");
 
+    //  Write a sentinel row BEFORE the resize so we can verify the
+    //  resize didn't corrupt existing data.  Read-back after reattach
+    //  is the actual correctness check — pagesReal alone tells us the
+    //  file got bigger, but not whether the old bytes survived.
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetCreateTableA(session.Handle(), database.Id(),
+                             "Rows", 8, 100, &tableId));
+    JET_COLUMNDEF columnDefinition = {};
+    columnDefinition.cbStruct = sizeof(columnDefinition);
+    columnDefinition.coltyp = JET_coltypLong;
+    JET_COLUMNID columnId = 0;
+    CheckJet(JetAddColumnA(session.Handle(), tableId, "Value",
+                           &columnDefinition, nullptr, 0, &columnId));
+    CheckJet(JetBeginTransaction(session.Handle()));
+    static constexpr int32_t SentinelRowCount = 64;
+    for (int32_t rowIndex = 0; rowIndex < SentinelRowCount; ++rowIndex)
+    {
+        CheckJet(JetPrepareUpdate(session.Handle(), tableId, JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), tableId, columnId,
+                              &rowIndex, sizeof(rowIndex),
+                              0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), tableId, nullptr, 0, nullptr));
+    }
+    CheckJet(JetCommitTransaction(session.Handle(), 0));
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+
     const auto databasePath = database.Path().string();
     constexpr uint32_t TargetPages = 200;
 
@@ -74,12 +130,47 @@ EseIntegrationScenario(Database, SetDatabaseSizeMatchesGrowSemantics)
                                  TargetPages, &pagesReal));
     Require(pagesReal >= TargetPages);
 
-    // Re-attach to confirm the file is still usable.
+    // Re-attach and walk the sentinel rows back in order — proves the
+    // resize grew the file without disturbing existing pages.
     CheckJet(JetAttachDatabaseA(session.Handle(), databasePath.c_str(), 0));
     JET_DBID reattachedDbid = JET_dbidNil;
     CheckJet(JetOpenDatabaseA(session.Handle(), databasePath.c_str(),
                               nullptr, &reattachedDbid, 0));
     Require(reattachedDbid != JET_dbidNil);
+    JET_TABLEID reattachedTable = JET_tableidNil;
+    CheckJet(JetOpenTableA(session.Handle(), reattachedDbid, "Rows",
+                           nullptr, 0, 0, &reattachedTable));
+    JET_COLUMNDEF reattachedColumn = {};
+    reattachedColumn.cbStruct = sizeof(reattachedColumn);
+    CheckJet(JetGetTableColumnInfoA(session.Handle(), reattachedTable,
+                                     "Value", &reattachedColumn,
+                                     sizeof(reattachedColumn),
+                                     JET_ColInfo));
+    CheckJet(JetMove(session.Handle(), reattachedTable, JET_MoveFirst, 0));
+    int32_t expectedNextValue = 0;
+    int32_t walkedRows = 0;
+    while (true)
+    {
+        int32_t observedValue = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), reattachedTable,
+                                   reattachedColumn.columnid,
+                                   &observedValue, sizeof(observedValue),
+                                   &actualBytes, 0, nullptr));
+        Require(actualBytes == sizeof(observedValue));
+        Require(observedValue == expectedNextValue);
+        ++expectedNextValue;
+        ++walkedRows;
+        const auto moveResult =
+            JetMove(session.Handle(), reattachedTable, JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walkedRows == SentinelRowCount);
+    CheckJet(JetCloseTable(session.Handle(), reattachedTable));
     CheckJet(JetCloseDatabase(session.Handle(), reattachedDbid, 0));
     CheckJet(JetDetachDatabaseA(session.Handle(), databasePath.c_str()));
     // EseDatabase destructor will try to close the original dbid handle

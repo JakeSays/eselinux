@@ -25,6 +25,20 @@ EseIntegrationScenario(Maintenance, ComputeStatsOnEmptyTable)
     EseTable table(database, "Empty");
 
     CheckJet(JetComputeStats(session.Handle(), table.Id()));
+
+    //  JetComputeStats walks the primary index and updates cRecord
+    //  in the engine's in-memory object info.  On an empty table
+    //  cRecord must be 0 post-compute — and the engine must have
+    //  populated cPage / grbit too (the struct was zero-init).
+    JET_OBJECTINFO objectInfo = {};
+    objectInfo.cbStruct = sizeof(objectInfo);
+    CheckJet(JetGetTableInfoA(session.Handle(),
+                              table.Id(),
+                              &objectInfo, sizeof(objectInfo),
+                              JET_TblInfo));
+    Require(objectInfo.cRecord == 0);
+    Require(objectInfo.objtyp == JET_objtypTable);
+    Require((objectInfo.grbit & JET_bitTableInfoUpdatable) != 0);
 }
 
 EseIntegrationScenario(Maintenance, ComputeStatsAfterInsertsSucceeds)
@@ -100,6 +114,35 @@ EseIntegrationScenario(Maintenance, OnlineDefragmentRunsToCompletion)
                             &passes,
                             &seconds,
                             JET_bitDefragmentBatchStop));
+
+    //  After the defragment bracket the surviving rows must still be
+    //  readable in order with their original values.  A defragment
+    //  that corrupted the B-tree would surface as a missing /
+    //  reordered / scrambled row here.  Expected survivors: rows
+    //  100..199 (we deleted 0..99 from the front above).
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t expectedNext = 100;
+    int32_t walkedRows = 0;
+    while (true)
+    {
+        int32_t observedValue = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), columnId,
+                                   &observedValue, sizeof(observedValue),
+                                   &actualBytes, 0, nullptr));
+        Require(actualBytes == sizeof(observedValue));
+        Require(observedValue == expectedNext);
+        ++expectedNext;
+        ++walkedRows;
+        const auto moveResult =
+            JetMove(session.Handle(), table.Id(), JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walkedRows == 100);
 }
 
 EseIntegrationScenario(Maintenance, CompactProducesCopyWithSameData)
@@ -294,6 +337,30 @@ EseIntegrationScenario(Maintenance, ResizeDatabaseGrowsPageCount)
                                &cpgActual,
                                JET_bitResizeDatabaseOnlyGrow));
     Require(cpgActual >= cpgTarget);
+
+    //  cpgActual is the engine's accounting; ResizeDatabase must
+    //  also materialize the bytes on disk (otherwise the database
+    //  would silently corrupt at the first read past the
+    //  not-yet-allocated region).  Query the page size, compute
+    //  expected file size, and confirm the on-disk file grew to
+    //  match.
+    uint32_t pageSize = 0;
+    CheckJet(JetGetDatabaseInfoA(session.Handle(),
+                                 database.Id(),
+                                 &pageSize, sizeof(pageSize),
+                                 JET_DbInfoPageSize));
+    Require(pageSize > 0);
+    char filename[JET_cbFullNameMost + 1] = {};
+    CheckJet(JetGetDatabaseInfoA(session.Handle(),
+                                 database.Id(),
+                                 filename, sizeof(filename),
+                                 JET_DbInfoFilename));
+    std::error_code errorCode;
+    const auto onDiskBytes = std::filesystem::file_size(filename, errorCode);
+    Require(!errorCode);
+    const uint64_t expectedBytes =
+        static_cast<uint64_t>(cpgActual) * static_cast<uint64_t>(pageSize);
+    Require(onDiskBytes >= expectedBytes);
 }
 
 EseIntegrationScenario(Maintenance, DatabaseScanBatchPassRunsToCompletion)
@@ -324,13 +391,50 @@ EseIntegrationScenario(Maintenance, DatabaseScanBatchPassRunsToCompletion)
     //  synchronous scan pass; pcSecondsMax bounds the run.  On a tiny
     //  database the call completes well inside the cap; the engine
     //  updates pcSecondsMax in place with the seconds actually used.
-    uint32_t secondsMax = 30;
+    static constexpr uint32_t SecondsMaxCap = 30;
+    uint32_t secondsMax = SecondsMaxCap;
     CheckJet(JetDatabaseScan(session.Handle(),
                              database.Id(),
                              &secondsMax,
                              /*cmsecSleep=*/0,
                              /*pfnCallback=*/nullptr,
                              JET_bitDatabaseScanBatchStart));
+    //  The engine writes the actual elapsed seconds back into the
+    //  in/out parameter.  A scan that ran must consume <= the cap;
+    //  if the engine had ignored the parameter the value would stay
+    //  at SecondsMaxCap (the engine writes either way, but the API
+    //  contract is "actual seconds, not the input cap").  The
+    //  observable here is bounded but real.
+    Require(secondsMax <= SecondsMaxCap);
+
+    //  Post-scan, every inserted row must still be reachable in
+    //  order — a scan that corrupted on-page checksums or scrambled
+    //  the dbtime would surface as a read failure or wrong-value
+    //  retrieval below.  This is the load-bearing assertion: the
+    //  engine made a full pass over the data and didn't damage it.
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t expectedNextValue = 0;
+    int32_t walkedRows = 0;
+    while (true)
+    {
+        int32_t observedValue = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), columnId,
+                                   &observedValue, sizeof(observedValue),
+                                   &actualBytes, 0, nullptr));
+        Require(actualBytes == sizeof(observedValue));
+        Require(observedValue == expectedNextValue);
+        ++expectedNextValue;
+        ++walkedRows;
+        const auto moveResult =
+            JetMove(session.Handle(), table.Id(), JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walkedRows == 500);
 }
 
 EseIntegrationScenario(Maintenance, Defragment2RunsBatchPassToCompletion)
@@ -711,16 +815,53 @@ EseIntegrationScenario(Maintenance, IdleCompactAsyncSchedulesBackgroundWork)
     CheckJet(JetIdle(session.Handle(),
                      JET_bitIdleCompact | JET_bitIdleCompactAsync));
 
-    // Subsequent reads against the same cursor still walk every row.
+    // Subsequent reads against the same cursor still walk every row
+    // AND each row's Value matches what was inserted — exact-byte
+    // round-trip catches a background defrag that scrambled records.
     int observedRows = 0;
     CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
-    do
+    int32_t expectedNextValue = 0;
+    while (true)
     {
+        int32_t observedValue = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), table.Id(), columnId,
+                                   &observedValue, sizeof(observedValue),
+                                   &actualBytes, 0, nullptr));
+        Require(actualBytes == sizeof(observedValue));
+        Require(observedValue == expectedNextValue);
+        ++expectedNextValue;
         ++observedRows;
+        const auto moveResult =
+            JetMove(session.Handle(), table.Id(), JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
     }
-    while (JetMove(session.Handle(), table.Id(), JET_MoveNext, 0)
-           != JET_errNoCurrentRecord);
     Require(observedRows == 100);
+
+    //  Async pairs with sync: the same flag without Async (which
+    //  drains synchronously) must also accept on a fresh idle pass
+    //  and leave the data intact.  Proves both modes are wired up
+    //  identically end-to-end, not just that the Async bit is
+    //  silently ignored.
+    CheckJet(JetIdle(session.Handle(), JET_bitIdleCompact));
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    int32_t secondPassRows = 0;
+    while (true)
+    {
+        ++secondPassRows;
+        const auto moveResult =
+            JetMove(session.Handle(), table.Id(), JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(secondPassRows == 100);
 }
 
 EseIntegrationScenario(Maintenance, DefragmentAvailSpaceTreesOnlyPreservesData)

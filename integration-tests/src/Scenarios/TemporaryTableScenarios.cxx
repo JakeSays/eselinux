@@ -7,6 +7,9 @@
 #include "Framework/Scenario.hxx"
 #include "Framework/TemporaryDirectory.hxx"
 
+#include <limits>
+#include <string_view>
+
 using namespace ese::tests;
 
 namespace
@@ -66,6 +69,51 @@ EseIntegrationScenario(TemporaryTable, OpenSortedTempTable)
                                                  &columnId);
     Require(temporaryTableId != JET_tableidNil);
     Require(columnId != 0);
+
+    //  Insert three out-of-order keys, then walk the table to prove
+    //  the temp table actually sorts on insert.  Just receiving a
+    //  non-nil tableid doesn't establish that the underlying sort
+    //  scaffold is wired up — a row round-trip + observed sort order
+    //  does.
+    static constexpr int32_t Inputs[] = { 30, 10, 20 };
+    for (int32_t value : Inputs)
+    {
+        CheckJet(JetPrepareUpdate(session.Handle(), temporaryTableId,
+                                  JET_prepInsert));
+        CheckJet(JetSetColumn(session.Handle(), temporaryTableId, columnId,
+                              &value, sizeof(value), 0, nullptr));
+        CheckJet(JetUpdate(session.Handle(), temporaryTableId,
+                           nullptr, 0, nullptr));
+    }
+
+    CheckJet(JetMove(session.Handle(), temporaryTableId,
+                     JET_MoveFirst, 0));
+    int32_t walkedRowCount = 0;
+    int32_t lastObservedValue = std::numeric_limits<int32_t>::min();
+    while (true)
+    {
+        int32_t observedValue = 0;
+        uint32_t actualBytes = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(), temporaryTableId,
+                                   columnId,
+                                   &observedValue, sizeof(observedValue),
+                                   &actualBytes, 0, nullptr));
+        Require(actualBytes == sizeof(observedValue));
+        Require(observedValue > lastObservedValue);
+        lastObservedValue = observedValue;
+        ++walkedRowCount;
+        const auto moveResult =
+            JetMove(session.Handle(), temporaryTableId,
+                    JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walkedRowCount == 3);
+    Require(lastObservedValue == 30);
+
     CheckJet(JetCloseTable(session.Handle(), temporaryTableId));
 }
 
@@ -340,19 +388,43 @@ EseIntegrationScenario(TemporaryTable, OpenTempTable3SortsViaUnicodeIndex)
     insertWide(Cherry, 6);
     CheckJet(JetCommitTransaction(session.Handle(), 0));
 
+    //  Walk all three rows in order and confirm the engine's
+    //  case-insensitive Unicode sort placed them as:
+    //  "Apple" < "banana" < "cherry".  Asserting only the first
+    //  character of the first row would pass even if the engine
+    //  silently dropped the other two rows or scrambled them.
+    static constexpr std::u16string_view ExpectedSorted[] = {
+        u"Apple", u"banana", u"cherry",
+    };
     CheckJet(JetMove(session.Handle(), tableid, JET_MoveFirst, 0));
-    char16_t buffer[16] = {};
-    uint32_t cbActual = 0;
-    CheckJet(JetRetrieveColumn(session.Handle(),
-                               tableid,
-                               columnId,
-                               buffer,
-                               sizeof(buffer),
-                               &cbActual,
-                               0,
-                               nullptr));
-    //  Case-insensitive sort puts "Apple" first.
-    Require(buffer[0] == u'A' || buffer[0] == u'a');
+    int32_t walkedRowCount = 0;
+    while (true)
+    {
+        char16_t buffer[16] = {};
+        uint32_t cbActual = 0;
+        CheckJet(JetRetrieveColumn(session.Handle(),
+                                   tableid,
+                                   columnId,
+                                   buffer,
+                                   sizeof(buffer),
+                                   &cbActual,
+                                   0,
+                                   nullptr));
+        Require(walkedRowCount < static_cast<int32_t>(
+            std::size(ExpectedSorted)));
+        const auto charLen = cbActual / sizeof(char16_t);
+        const std::u16string_view observed(buffer, charLen);
+        Require(observed == ExpectedSorted[walkedRowCount]);
+        ++walkedRowCount;
+        const auto moveResult =
+            JetMove(session.Handle(), tableid, JET_MoveNext, 0);
+        if (moveResult == JET_errNoCurrentRecord)
+        {
+            break;
+        }
+        CheckJet(moveResult);
+    }
+    Require(walkedRowCount == std::size(ExpectedSorted));
 
     CheckJet(JetCloseTable(session.Handle(), tableid));
 }
