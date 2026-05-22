@@ -1172,3 +1172,270 @@ EseIntegrationScenario(BackupRestore,
     CheckJet(JetEndSession(sesid, 0));
     CheckJet(JetTerm2(instanceHandle, JET_bitTermComplete));
 }
+
+EseIntegrationScenario(BackupRestore, BackupInstanceIncrementalProducesLogOnlyArtifacts)
+{
+    TemporaryDirectory directory(
+        "BackupRestore.BackupInstanceIncrementalProducesLogOnlyArtifacts");
+
+    //  Incremental backup is rejected by the engine when circular
+    //  logging is enabled.  Flip it off via the framework toggle —
+    //  each scenario runs in its own forked child, so the param
+    //  change doesn't leak into other tests.
+    EseInstanceOptions instanceOptions;
+    instanceOptions.EnableCircularLog = false;
+    EseInstance instance(directory, "ese-tests", nullptr,
+                         EseInstanceMode::SingleInstance, instanceOptions);
+    EseSession session(instance);
+    EseDatabase database(session, "Incr.mdb");
+    EseTable table(database, "Rows");
+
+    auto columnId = table.AddColumn("Value", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
+
+    static constexpr int FullBackupRowCount = 64;
+    {
+        EseTransaction transaction(session);
+        for (int rowIndex = 0; rowIndex < FullBackupRowCount; ++rowIndex)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, rowIndex);
+        }
+        transaction.Commit();
+    }
+
+    // 1) Full backup as the baseline.  JetBackupInstance with no
+    //    grbits writes the .edb plus the surrounding log files.
+    const auto fullBackupDirectory = directory.Path() / "full";
+    std::error_code errorCode;
+    std::filesystem::create_directories(fullBackupDirectory, errorCode);
+    Require(!errorCode);
+    CheckJet(JetBackupInstanceA(instance.Handle(),
+                                fullBackupDirectory.string().c_str(),
+                                0, nullptr));
+
+    // 2) More writes between the full and the incremental.
+    {
+        EseTransaction transaction(session);
+        for (int rowIndex = FullBackupRowCount;
+             rowIndex < FullBackupRowCount + 32;
+             ++rowIndex)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, rowIndex);
+        }
+        transaction.Commit();
+    }
+
+    // 3) Incremental backup picks up only the log changes since the
+    //    full.  JET_bitBackupIncremental tells the engine to skip
+    //    the database file and emit only the new log generations.
+    const auto incrementalBackupDirectory =
+        directory.Path() / "incremental";
+    std::filesystem::create_directories(incrementalBackupDirectory,
+                                         errorCode);
+    Require(!errorCode);
+    CheckJet(JetBackupInstanceA(instance.Handle(),
+                                incrementalBackupDirectory.string().c_str(),
+                                JET_bitBackupIncremental, nullptr));
+
+    // The incremental directory must contain log files (.log or
+    // .jtx) but must NOT contain any database files (.mdb) — that's
+    // the whole point of the flag.
+    bool sawIncrementalLogFile = false;
+    bool sawIncrementalDatabase = false;
+    for (const auto& entry :
+         std::filesystem::directory_iterator(incrementalBackupDirectory,
+                                              errorCode))
+    {
+        if (!entry.is_regular_file())
+        {
+            continue;
+        }
+        const auto extension = entry.path().extension().string();
+        if (extension == ".log" || extension == ".jtx")
+        {
+            sawIncrementalLogFile = true;
+        }
+        else if (extension == ".mdb")
+        {
+            sawIncrementalDatabase = true;
+        }
+    }
+    Require(sawIncrementalLogFile);
+    Require(!sawIncrementalDatabase);
+
+    // Full backup, for contrast, must include the .edb file.
+    bool sawFullDatabase = false;
+    for (const auto& entry :
+         std::filesystem::directory_iterator(fullBackupDirectory, errorCode))
+    {
+        if (entry.is_regular_file()
+            && entry.path().extension().string() == ".mdb")
+        {
+            sawFullDatabase = true;
+        }
+    }
+    Require(sawFullDatabase);
+}
+
+EseIntegrationScenario(BackupRestore, BackupInstanceAtomicAcceptedAndProducesArtifacts)
+{
+    TemporaryDirectory directory(
+        "BackupRestore.BackupInstanceAtomicAcceptedAndProducesArtifacts");
+
+    //  Atomic backup is rejected under circular logging — same root
+    //  cause as the incremental scenario.  Flip CircularLog off via
+    //  the framework toggle.
+    EseInstanceOptions instanceOptions;
+    instanceOptions.EnableCircularLog = false;
+    EseInstance instance(directory, "ese-tests", nullptr,
+                         EseInstanceMode::SingleInstance, instanceOptions);
+    EseSession session(instance);
+    EseDatabase database(session, "Atomic.mdb");
+    EseTable table(database, "Rows");
+
+    auto columnId = table.AddColumn("Value", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
+    {
+        EseTransaction transaction(session);
+        for (int rowIndex = 0; rowIndex < 50; ++rowIndex)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, rowIndex);
+        }
+        transaction.Commit();
+    }
+
+    // JET_bitBackupAtomic asks the engine for a consistent backup
+    // staged under a "new/" subdirectory — atomicity comes from
+    // the engine populating the side directory in full and then
+    // promoting it, so a crash during the copy never leaves a
+    // half-written backup at the target name.
+    // Observable: the call accepts the flag, and the staging
+    // directory contains both the database and at least one log.
+    const auto backupDirectory = directory.Path() / "atomic";
+    std::error_code errorCode;
+    std::filesystem::create_directories(backupDirectory, errorCode);
+    Require(!errorCode);
+    CheckJet(JetBackupInstanceA(instance.Handle(),
+                                backupDirectory.string().c_str(),
+                                JET_bitBackupAtomic, nullptr));
+
+    bool sawDatabase = false;
+    bool sawLog = false;
+    for (const auto& entry :
+         std::filesystem::recursive_directory_iterator(backupDirectory,
+                                                       errorCode))
+    {
+        if (!entry.is_regular_file())
+        {
+            continue;
+        }
+        const auto extension = entry.path().extension().string();
+        if (extension == ".mdb")
+        {
+            sawDatabase = true;
+        }
+        else if (extension == ".log" || extension == ".jtx")
+        {
+            sawLog = true;
+        }
+    }
+    Require(sawDatabase);
+    Require(sawLog);
+}
+
+EseIntegrationScenario(BackupRestore, BeginSurrogateBackupAndEndCompletesCleanly)
+{
+    TemporaryDirectory directory(
+        "BackupRestore.BeginSurrogateBackupAndEndCompletesCleanly");
+
+    //  Surrogate backup is rejected under circular logging.  Flip
+    //  CircularLog off via the framework toggle.
+    EseInstanceOptions instanceOptions;
+    instanceOptions.EnableCircularLog = false;
+    EseInstance instance(directory, "ese-tests", nullptr,
+                         EseInstanceMode::SingleInstance, instanceOptions);
+    EseSession session(instance);
+    EseDatabase database(session, "Surrogate.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Value", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
+    {
+        EseTransaction transaction(session);
+        for (int rowIndex = 0; rowIndex < 25; ++rowIndex)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, rowIndex);
+        }
+        transaction.Commit();
+    }
+
+    // Surrogate backup is the contract external snapshot tools use:
+    // ESE doesn't copy any files itself — the tool marks the engine
+    // "in surrogate backup", takes a filesystem snapshot externally,
+    // then ends the backup.  JetBeginSurrogateBackup takes the
+    // log-generation range the surrogate covers; JetEndSurrogateBackup
+    // closes the protocol with a normal-end / truncate-done grbit.
+    constexpr uint32_t SurrogateLgenFirst = 1;
+    constexpr uint32_t SurrogateLgenLast = 1;
+    CheckJet(JetBeginSurrogateBackup(instance.Handle(),
+                                     SurrogateLgenFirst,
+                                     SurrogateLgenLast,
+                                     0));
+    CheckJet(JetEndSurrogateBackup(instance.Handle(),
+                                   JET_bitBackupEndNormal));
+
+    // After the surrogate cycle the engine remains usable: another
+    // transaction succeeds and reads back what we wrote.
+    {
+        EseTransaction transaction(session);
+        InsertSingleFixedColumnRow<int32_t>(table, columnId, 999);
+        transaction.Commit();
+    }
+
+    int observedRows = 0;
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    do
+    {
+        ++observedRows;
+    }
+    while (JetMove(session.Handle(), table.Id(), JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+    Require(observedRows == 26);
+}
+
+EseIntegrationScenario(BackupRestore, BackupSurrogateFlagAcceptedByExternalBackup)
+{
+    TemporaryDirectory directory(
+        "BackupRestore.BackupSurrogateFlagAcceptedByExternalBackup");
+
+    //  External backup with the Surrogate grbit is rejected under
+    //  circular logging — same root cause as the other surrogate
+    //  scenarios.  Flip CircularLog off.
+    EseInstanceOptions instanceOptions;
+    instanceOptions.EnableCircularLog = false;
+    EseInstance instance(directory, "ese-tests", nullptr,
+                         EseInstanceMode::SingleInstance, instanceOptions);
+    EseSession session(instance);
+    EseDatabase database(session, "BackupSurrogate.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Value", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
+    {
+        EseTransaction transaction(session);
+        for (int rowIndex = 0; rowIndex < 25; ++rowIndex)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, rowIndex);
+        }
+        transaction.Commit();
+    }
+
+    // JET_bitBackupSurrogate hands off to the surrogate-backup
+    // protocol via JetBeginExternalBackupInstance.  In that mode the
+    // engine doesn't itself read database state — the surrogate (an
+    // external snapshot tool) is handling the bytes — so file-copy
+    // companion APIs like JetGetAttachInfo aren't meaningful and the
+    // engine returns ErrorNoBackup for them.  The observable here is
+    // just that Begin accepts the grbit and End closes cleanly.
+    CheckJet(JetBeginExternalBackupInstance(instance.Handle(),
+                                             JET_bitBackupSurrogate));
+    CheckJet(JetEndExternalBackupInstance(instance.Handle()));
+}

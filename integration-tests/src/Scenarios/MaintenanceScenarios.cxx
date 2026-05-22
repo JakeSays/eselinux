@@ -576,6 +576,153 @@ EseIntegrationScenario(Maintenance, CompactRepairProducesIdenticalRows)
     }
 }
 
+EseIntegrationScenario(Maintenance, CompactStatsInvokesProgressCallback)
+{
+    TemporaryDirectory directory(
+        "Maintenance.CompactStatsInvokesProgressCallback");
+
+    static constexpr int RowCount = 300;
+    const auto sourceDatabasePath = directory.Path() / "Source.mdb";
+    const auto destinationDatabasePath = directory.Path() / "Compacted.mdb";
+
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+        EseDatabase database(session, "Source.mdb");
+        EseTable table(database, "Rows");
+        auto columnId = table.AddColumn("Value", JET_coltypLong,
+                                         JET_bitColumnNotNULL);
+        EseTransaction transaction(session);
+        for (int rowIndex = 0; rowIndex < RowCount; ++rowIndex)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, rowIndex);
+        }
+        transaction.Commit();
+    }
+
+    // JET_bitCompactStats requires the JET_PFNSTATUS callback so the
+    // engine has somewhere to report progress.  The callback's job
+    // here is to count Compact-flavored notifications; the assertion
+    // is that at least one fired (proves the flag actually plumbed
+    // the engine's status pipeline).  Counters live as static
+    // file-scope because JET_PFNSTATUS takes no user-context pointer.
+    static int compactCallbackInvocations = 0;
+    static int compactProgressInvocations = 0;
+    compactCallbackInvocations = 0;
+    compactProgressInvocations = 0;
+
+    struct CompactStatsCallback
+    {
+        static JET_ERR JET_API Status(JET_SESID /*sesid*/,
+                                       JET_SNP snp,
+                                       JET_SNT snt,
+                                       void* /*pv*/)
+        {
+            if (snp == JET_snpCompact)
+            {
+                ++compactCallbackInvocations;
+                if (snt == JET_sntProgress)
+                {
+                    ++compactProgressInvocations;
+                }
+            }
+            return JET_errSuccess;
+        }
+    };
+
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+        CheckJet(JetAttachDatabaseA(session.Handle(),
+                                    sourceDatabasePath.string().c_str(),
+                                    JET_bitDbReadOnly));
+        CheckJet(JetCompactA(session.Handle(),
+                             sourceDatabasePath.string().c_str(),
+                             destinationDatabasePath.string().c_str(),
+                             &CompactStatsCallback::Status, nullptr,
+                             JET_bitCompactStats));
+        CheckJet(JetDetachDatabaseA(session.Handle(),
+                                    sourceDatabasePath.string().c_str()));
+    }
+
+    // At least one Compact-flavored callback must have fired.
+    Require(compactCallbackInvocations > 0);
+    // And ideally one of them was a progress tick — proves stats are
+    // actually being streamed (the engine's compact loop emits these
+    // at the page level).
+    Require(compactProgressInvocations > 0);
+
+    // Compacted DB must still be openable + walkable, no row loss.
+    {
+        EseInstance instance(directory);
+        EseSession session(instance);
+        CheckJet(JetAttachDatabaseA(session.Handle(),
+                                    destinationDatabasePath.string().c_str(),
+                                    0));
+        JET_DBID dbid = JET_dbidNil;
+        CheckJet(JetOpenDatabaseA(session.Handle(),
+                                  destinationDatabasePath.string().c_str(),
+                                  nullptr, &dbid, 0));
+        JET_TABLEID tid = JET_tableidNil;
+        CheckJet(JetOpenTableA(session.Handle(), dbid, "Rows",
+                               nullptr, 0, 0, &tid));
+        int observedRows = 0;
+        CheckJet(JetMove(session.Handle(), tid, JET_MoveFirst, 0));
+        do
+        {
+            ++observedRows;
+        }
+        while (JetMove(session.Handle(), tid, JET_MoveNext, 0)
+               != JET_errNoCurrentRecord);
+        Require(observedRows == RowCount);
+        CheckJet(JetCloseTable(session.Handle(), tid));
+        CheckJet(JetCloseDatabase(session.Handle(), dbid, 0));
+        CheckJet(JetDetachDatabaseA(session.Handle(),
+                                    destinationDatabasePath.string().c_str()));
+    }
+}
+
+EseIntegrationScenario(Maintenance, IdleCompactAsyncSchedulesBackgroundWork)
+{
+    TemporaryDirectory directory(
+        "Maintenance.IdleCompactAsyncSchedulesBackgroundWork");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "Idle.mdb");
+    EseTable table(database, "Rows");
+    auto columnId = table.AddColumn("Value", JET_coltypLong,
+                                     JET_bitColumnNotNULL);
+    {
+        EseTransaction transaction(session);
+        for (int rowIndex = 0; rowIndex < 100; ++rowIndex)
+        {
+            InsertSingleFixedColumnRow<int32_t>(table, columnId, rowIndex);
+        }
+        transaction.Commit();
+    }
+
+    // JET_bitIdleCompactAsync requires JET_bitIdleCompact and tells
+    // the engine to schedule the OLD2 (B-tree defrag) pass on a
+    // background thread instead of running synchronously.  The call
+    // accepts the flag combination and returns promptly; the
+    // engine's OLD2 task runs out of band.  Validate acceptance +
+    // data correctness post-call (synchronous completion isn't
+    // promised, so we don't assert on defrag effects).
+    CheckJet(JetIdle(session.Handle(),
+                     JET_bitIdleCompact | JET_bitIdleCompactAsync));
+
+    // Subsequent reads against the same cursor still walk every row.
+    int observedRows = 0;
+    CheckJet(JetMove(session.Handle(), table.Id(), JET_MoveFirst, 0));
+    do
+    {
+        ++observedRows;
+    }
+    while (JetMove(session.Handle(), table.Id(), JET_MoveNext, 0)
+           != JET_errNoCurrentRecord);
+    Require(observedRows == 100);
+}
+
 EseIntegrationScenario(Maintenance, DefragmentAvailSpaceTreesOnlyPreservesData)
 {
     TemporaryDirectory directory(

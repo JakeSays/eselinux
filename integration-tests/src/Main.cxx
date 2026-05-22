@@ -22,6 +22,12 @@
 
 #include <jetapi.h>
 
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <cerrno>
+
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -49,6 +55,12 @@ struct CommandLineOptions
     // exist to hammer the engine, not to gate fast iteration. Off by
     // default; --include-long-running flips them on.
     bool IncludeLongRunning = false;
+    //  Each scenario runs in its own forked child by default so the
+    //  parent never accumulates ESE process-global state (multi-instance
+    //  flip, CResourceManager freeze, leftover handles).  --in-process
+    //  collapses that for debugger attachment / asan walks where fork
+    //  is inconvenient — but loses the isolation guarantee.
+    bool InProcess = false;
     bool ChildMode = false;
     std::string ChildEntryName;
     std::string ChildDirectory;
@@ -75,6 +87,9 @@ void PrintUsage(std::string_view programName)
     PrintLine(" --list Print every registered scenario and exit.");
     PrintLine(" --verbose Print per-scenario start lines and failure detail.");
     PrintLine(" --keep-temp Don't delete scenario temp directories on exit.");
+    PrintLine(" --in-process Run every scenario in the runner process (no fork).");
+    PrintLine("              Off by default — fork-per-scenario isolates ESE's");
+    PrintLine("              process-global state.  Use only for debugger attach.");
     PrintLine(" --include-long-running Force-include the LongRunning category in a");
     PrintLine("                        broader run. Not needed when --filter matches");
     PrintLine("                        only LongRunning scenarios.");
@@ -148,6 +163,10 @@ bool ParseCommandLine(int argc, char** argv, CommandLineOptions& options)
         else if (argument == "--keep-temp")
         {
             options.KeepTemporary = true;
+        }
+        else if (argument == "--in-process")
+        {
+            options.InProcess = true;
         }
         else if (argument == "--include-long-running")
         {
@@ -237,6 +256,236 @@ int RunChildEntry(const CommandLineOptions& options)
     return 0;
 }
 
+// RAII wrapper around JetPlatformInitialize / JetPlatformTerminate.
+// Linux libese.so requires this one-shot platform init before any other
+// Jet API; Windows folds the same plumbing into DllMain.
+//
+// Defined ahead of the scenario loop because RunScenarios constructs
+// one in each forked child — that way the engine's worker threads
+// live in the child process (fork() inherits memory but not threads,
+// so a parent-side initializer would leave the engine half-wired in
+// the children that actually call Jet APIs).
+class PlatformInitializer
+{
+public:
+    PlatformInitializer()
+    {
+        auto initializeErrorCode = JetPlatformInitialize();
+        if (initializeErrorCode < JET_errSuccess)
+        {
+            PrintLine("JetPlatformInitialize failed: {} ({})",
+                      JetErrorName(initializeErrorCode),
+                      static_cast<int>(initializeErrorCode));
+            std::exit(2);
+        }
+
+        // Process-global engine settings — must be in place before any
+        // scenario triggers internal OS-layer init. AssertAction in
+        // particular must be SkipAll, otherwise FireWall paths in the
+        // log layer abort the runner on ZFS-class filesystems that
+        // report > 4 KB sector size. DisablePerfmon matches the
+        // perfmon-off configuration libese.so is built with.
+        auto assertActionErrorCode = JetSetSystemParameterA(nullptr,
+                                                            JET_sesidNil,
+                                                            JET_paramAssertAction,
+                                                            JET_AssertSkipAll,
+                                                            nullptr);
+        if (assertActionErrorCode < JET_errSuccess)
+        {
+            PrintLine("JetSetSystemParameter(AssertAction) failed: {}",
+                      JetErrorName(assertActionErrorCode));
+            std::exit(2);
+        }
+        auto disablePerfmonErrorCode = JetSetSystemParameterA(nullptr,
+                                                              JET_sesidNil,
+                                                              JET_paramDisablePerfmon,
+                                                              1,
+                                                              nullptr);
+        if (disablePerfmonErrorCode < JET_errSuccess)
+        {
+            PrintLine("JetSetSystemParameter(DisablePerfmon) failed: {}",
+                      JetErrorName(disablePerfmonErrorCode));
+            std::exit(2);
+        }
+    }
+    ~PlatformInitializer()
+    {
+        (void)JetPlatformTerminate();
+    }
+
+    PlatformInitializer(const PlatformInitializer&) = delete;
+    PlatformInitializer& operator=(const PlatformInitializer&) = delete;
+};
+
+struct ScenarioResult
+{
+    bool Passed = false;
+    std::string FailureMessage;
+};
+
+ScenarioResult RunScenarioInProcess(Scenario* scenario)
+{
+    ScenarioResult result;
+    try
+    {
+        scenario->Run();
+        result.Passed = true;
+    }
+    catch (const ScenarioFailure& failure)
+    {
+        result.FailureMessage = failure.what();
+    }
+    catch (const std::exception& exception)
+    {
+        result.FailureMessage = std::format("std::exception: {}",
+                                            exception.what());
+    }
+    catch (...)
+    {
+        result.FailureMessage = "unknown exception";
+    }
+    return result;
+}
+
+//  Read everything from a pipe fd until EOF.  Small failure messages
+//  fit well below the default 64 KiB pipe buffer, so a blocking read
+//  loop is sufficient — no need for poll/select.
+std::string ReadAllFromPipe(int readFd)
+{
+    std::string out;
+    char buffer[4096];
+    while (true)
+    {
+        ssize_t n = ::read(readFd, buffer, sizeof(buffer));
+        if (n > 0)
+        {
+            out.append(buffer, static_cast<size_t>(n));
+        }
+        else if (n == 0)
+        {
+            break;
+        }
+        else if (errno == EINTR)
+        {
+            continue;
+        }
+        else
+        {
+            break;
+        }
+    }
+    return out;
+}
+
+ScenarioResult RunScenarioInForkedChild(Scenario* scenario)
+{
+    //  Single side-channel pipe carries the failure message from the
+    //  child back to the parent.  Child stdout/stderr stay attached to
+    //  the parent's terminal so PrintLine diagnostics from inside the
+    //  scenario behave exactly as they did before isolation.
+    int failurePipe[2] = { -1, -1 };
+    if (::pipe(failurePipe) != 0)
+    {
+        return { false,
+                 std::format("pipe() failed: {}", std::strerror(errno)) };
+    }
+
+    pid_t childPid = ::fork();
+    if (childPid < 0)
+    {
+        ::close(failurePipe[0]);
+        ::close(failurePipe[1]);
+        return { false,
+                 std::format("fork() failed: {}", std::strerror(errno)) };
+    }
+
+    if (childPid == 0)
+    {
+        //  Child: close read end, run the scenario with a fresh engine
+        //  initializer, write failure (if any) into the pipe, _exit so
+        //  parent-side C++ destructors don't double-fire on shared
+        //  resources like g_logFile.
+        ::close(failurePipe[0]);
+
+        //  PlatformInitializer is RAII, but since we _exit at the end
+        //  the destructor (JetPlatformTerminate) never runs — that's
+        //  fine: the process is going away and the kernel reclaims
+        //  everything ESE owns.
+        PlatformInitializer platformInitializer;
+        (void)platformInitializer;
+
+        ScenarioResult childResult = RunScenarioInProcess(scenario);
+
+        if (!childResult.Passed && !childResult.FailureMessage.empty())
+        {
+            const auto& message = childResult.FailureMessage;
+            size_t written = 0;
+            while (written < message.size())
+            {
+                ssize_t n = ::write(failurePipe[1],
+                                    message.data() + written,
+                                    message.size() - written);
+                if (n > 0)
+                {
+                    written += static_cast<size_t>(n);
+                }
+                else if (n < 0 && errno == EINTR)
+                {
+                    continue;
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+        ::close(failurePipe[1]);
+        std::_Exit(childResult.Passed ? 0 : 1);
+    }
+
+    //  Parent: close write end, drain the pipe, wait, decode status.
+    ::close(failurePipe[1]);
+    std::string failureFromChild = ReadAllFromPipe(failurePipe[0]);
+    ::close(failurePipe[0]);
+
+    int status = 0;
+    while (::waitpid(childPid, &status, 0) < 0)
+    {
+        if (errno == EINTR)
+        {
+            continue;
+        }
+        return { false,
+                 std::format("waitpid() failed: {}", std::strerror(errno)) };
+    }
+
+    if (WIFEXITED(status))
+    {
+        const int code = WEXITSTATUS(status);
+        if (code == 0)
+        {
+            return { true, "" };
+        }
+        if (!failureFromChild.empty())
+        {
+            return { false, std::move(failureFromChild) };
+        }
+        return { false, std::format("child exited with code {}", code) };
+    }
+    if (WIFSIGNALED(status))
+    {
+        const int sig = WTERMSIG(status);
+        return { false,
+                 std::format("child terminated by signal {} ({}){}",
+                             sig,
+                             ::strsignal(sig),
+                             failureFromChild.empty()
+                                 ? std::string()
+                                 : std::format(": {}", failureFromChild)) };
+    }
+    return { false, "child exited abnormally" };
+}
+
 int RunScenarios(const CommandLineOptions& options)
 {
     TemporaryDirectory::SetKeepOnDestruction(options.KeepTemporary);
@@ -313,32 +562,15 @@ int RunScenarios(const CommandLineOptions& options)
         }
 
         const auto scenarioStart = std::chrono::steady_clock::now();
-        bool passed = false;
-        std::string failureMessage;
-
-        try
-        {
-            scenario->Run();
-            passed = true;
-        }
-        catch (const ScenarioFailure& failure)
-        {
-            failureMessage = failure.what();
-        }
-        catch (const std::exception& exception)
-        {
-            failureMessage = std::format("std::exception: {}", exception.what());
-        }
-        catch (...)
-        {
-            failureMessage = "unknown exception";
-        }
+        ScenarioResult result = options.InProcess
+            ? RunScenarioInProcess(scenario)
+            : RunScenarioInForkedChild(scenario);
 
         const auto scenarioDuration =
             std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::steady_clock::now() - scenarioStart);
 
-        if (passed)
+        if (result.Passed)
         {
             ++passedCount;
             PrintLine("[ PASS ] {} ({} ms)",
@@ -349,7 +581,7 @@ int RunScenarios(const CommandLineOptions& options)
             ++failedCount;
             PrintLine("[ FAIL ] {} ({} ms)",
                       fullName, scenarioDuration.count());
-            PrintLine(" {}", failureMessage);
+            PrintLine(" {}", result.FailureMessage);
         }
     }
 
@@ -363,61 +595,6 @@ int RunScenarios(const CommandLineOptions& options)
 
     return failedCount == 0 ? 0 : 1;
 }
-
-// RAII wrapper around JetPlatformInitialize / JetPlatformTerminate.
-// Linux libese.so requires this one-shot platform init before any other
-// Jet API; Windows folds the same plumbing into DllMain.
-class PlatformInitializer
-{
-public:
-    PlatformInitializer()
-    {
-        auto initializeErrorCode = JetPlatformInitialize();
-        if (initializeErrorCode < JET_errSuccess)
-        {
-            PrintLine("JetPlatformInitialize failed: {} ({})",
-                      JetErrorName(initializeErrorCode),
-                      static_cast<int>(initializeErrorCode));
-            std::exit(2);
-        }
-
-        // Process-global engine settings — must be in place before any
-        // scenario triggers internal OS-layer init. AssertAction in
-        // particular must be SkipAll, otherwise FireWall paths in the
-        // log layer abort the runner on ZFS-class filesystems that
-        // report > 4 KB sector size. DisablePerfmon matches the
-        // perfmon-off configuration libese.so is built with.
-        auto assertActionErrorCode = JetSetSystemParameterA(nullptr,
-                                                            JET_sesidNil,
-                                                            JET_paramAssertAction,
-                                                            JET_AssertSkipAll,
-                                                            nullptr);
-        if (assertActionErrorCode < JET_errSuccess)
-        {
-            PrintLine("JetSetSystemParameter(AssertAction) failed: {}",
-                      JetErrorName(assertActionErrorCode));
-            std::exit(2);
-        }
-        auto disablePerfmonErrorCode = JetSetSystemParameterA(nullptr,
-                                                              JET_sesidNil,
-                                                              JET_paramDisablePerfmon,
-                                                              1,
-                                                              nullptr);
-        if (disablePerfmonErrorCode < JET_errSuccess)
-        {
-            PrintLine("JetSetSystemParameter(DisablePerfmon) failed: {}",
-                      JetErrorName(disablePerfmonErrorCode));
-            std::exit(2);
-        }
-    }
-    ~PlatformInitializer()
-    {
-        (void)JetPlatformTerminate();
-    }
-
-    PlatformInitializer(const PlatformInitializer&) = delete;
-    PlatformInitializer& operator=(const PlatformInitializer&) = delete;
-};
 
 } // namespace
 
@@ -443,15 +620,29 @@ int main(int argc, char** argv)
         }
     }
 
-    PlatformInitializer platformInitializer;
-
     int exitCode;
     if (options.ChildMode)
     {
+        //  --child-entry is the leaf of a fork+exec from inside a
+        //  scenario.  This process IS the engine — initialize it.
+        PlatformInitializer platformInitializer;
+        (void)platformInitializer;
         exitCode = RunChildEntry(options);
+    }
+    else if (options.InProcess)
+    {
+        //  --in-process: every scenario runs in this process.  Init
+        //  the engine once up front, same as the pre-isolation runner.
+        PlatformInitializer platformInitializer;
+        (void)platformInitializer;
+        exitCode = RunScenarios(options);
     }
     else
     {
+        //  Default fork-per-scenario.  The parent must NOT initialize
+        //  the engine — engine worker threads do not survive fork(),
+        //  so each forked child runs PlatformInitializer for itself
+        //  inside RunScenarioInForkedChild.
         exitCode = RunScenarios(options);
     }
     CloseLogFile();

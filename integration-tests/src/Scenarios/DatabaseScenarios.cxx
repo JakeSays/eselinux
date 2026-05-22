@@ -525,3 +525,108 @@ EseIntegrationScenario(Database, TerminateInstanceWithTermAbruptAllowsCleanReope
     CheckJet(JetDetachDatabaseA(verifySession.Handle(),
                                 databasePath.c_str()));
 }
+
+EseIntegrationScenario(Database, TerminateInstanceWithTermStopBackupCancelsInFlightBackup)
+{
+    TemporaryDirectory directory(
+        "Database.TerminateInstanceWithTermStopBackupCancelsInFlightBackup");
+
+    const auto databasePath =
+        (directory.Path() / "InFlight.mdb").string();
+
+    // Stand up an instance via raw JET API (so we can JetTerm2 with
+    // JET_bitTermStopBackup without fighting the EseInstance RAII).
+    JET_INSTANCE instanceHandle = JET_instanceNil;
+    {
+        auto pathWithSeparator = directory.Path().string();
+        if (!pathWithSeparator.empty() && pathWithSeparator.back() != '/')
+        {
+            pathWithSeparator.push_back('/');
+        }
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramSystemPath, 0,
+                                        pathWithSeparator.c_str()));
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramTempPath, 0,
+                                        pathWithSeparator.c_str()));
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramLogFilePath, 0,
+                                        pathWithSeparator.c_str()));
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramBaseName, 0, "edb"));
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramEventSource, 0,
+                                        "ese-tests-stopbackup"));
+        CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                        JET_paramCircularLog, 1, nullptr));
+        CheckJet(JetInit(&instanceHandle));
+    }
+
+    JET_SESID sessionHandle = JET_sesidNil;
+    CheckJet(JetBeginSessionA(instanceHandle, &sessionHandle,
+                              nullptr, nullptr));
+    JET_DBID dbId = JET_dbidNil;
+    CheckJet(JetCreateDatabaseA(sessionHandle, databasePath.c_str(),
+                                nullptr, &dbId,
+                                JET_bitDbOverwriteExisting));
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetCreateTableA(sessionHandle, dbId, "Rows",
+                             8, 100, &tableId));
+    JET_COLUMNDEF columnDef = {};
+    columnDef.cbStruct = sizeof(columnDef);
+    columnDef.coltyp = JET_coltypLong;
+    columnDef.grbit = JET_bitColumnNotNULL;
+    JET_COLUMNID valueColumnId = 0;
+    CheckJet(JetAddColumnA(sessionHandle, tableId, "Value",
+                           &columnDef, nullptr, 0, &valueColumnId));
+    CheckJet(JetBeginTransaction2(sessionHandle, 0));
+    for (int32_t rowIndex = 0; rowIndex < 32; ++rowIndex)
+    {
+        CheckJet(JetPrepareUpdate(sessionHandle, tableId, JET_prepInsert));
+        CheckJet(JetSetColumn(sessionHandle, tableId, valueColumnId,
+                              &rowIndex, sizeof(rowIndex),
+                              0, nullptr));
+        CheckJet(JetUpdate(sessionHandle, tableId, nullptr, 0, nullptr));
+    }
+    CheckJet(JetCommitTransaction(sessionHandle, 0));
+
+    // Start an external backup but do not finish it — the engine
+    // now holds a backup-in-progress flag on this instance.
+    CheckJet(JetBeginExternalBackupInstance(instanceHandle, 0));
+
+    // JetTerm2(JET_bitTermStopBackup) cancels the in-flight backup
+    // as part of teardown.  Without the flag the engine refuses to
+    // terminate while a backup is active.
+    CheckJet(JetTerm2(instanceHandle, JET_bitTermStopBackup));
+    instanceHandle = JET_instanceNil;
+
+    // Reopen the instance and verify the committed rows are intact
+    // — the cancelled backup didn't corrupt anything.
+    EseInstance verifyInstance(directory);
+    EseSession verifySession(verifyInstance);
+    CheckJet(JetAttachDatabaseA(verifySession.Handle(),
+                                databasePath.c_str(), 0));
+    JET_DBID verifyDbId = JET_dbidNil;
+    CheckJet(JetOpenDatabaseA(verifySession.Handle(),
+                              databasePath.c_str(),
+                              nullptr, &verifyDbId, 0));
+    JET_TABLEID verifyTableId = JET_tableidNil;
+    CheckJet(JetOpenTableA(verifySession.Handle(), verifyDbId,
+                           "Rows", nullptr, 0, 0, &verifyTableId));
+
+    int observedRows = 0;
+    CheckJet(JetMove(verifySession.Handle(), verifyTableId,
+                     JET_MoveFirst, 0));
+    do
+    {
+        ++observedRows;
+    }
+    while (JetMove(verifySession.Handle(), verifyTableId,
+                   JET_MoveNext, 0) != JET_errNoCurrentRecord);
+    Require(observedRows == 32);
+
+    CheckJet(JetCloseTable(verifySession.Handle(), verifyTableId));
+    CheckJet(JetCloseDatabase(verifySession.Handle(), verifyDbId, 0));
+    CheckJet(JetDetachDatabaseA(verifySession.Handle(),
+                                databasePath.c_str()));
+}

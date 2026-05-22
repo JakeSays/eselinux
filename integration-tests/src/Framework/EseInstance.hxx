@@ -42,6 +42,20 @@ enum class EseInstanceMode
     MultiInstance,
 };
 
+//  Optional knobs that diverge from the framework defaults.  Scenarios
+//  that need a non-default engine configuration construct one of these,
+//  set the bits they want to flip, and pass it to EseInstance — same
+//  pattern as Win32 attribute structs.  Adding a new knob doesn't
+//  touch any of the existing call sites.
+struct EseInstanceOptions
+{
+    //  Circular logging is on by default so the framework keeps log
+    //  directories bounded across the suite.  Backup-family scenarios
+    //  (incremental/atomic/surrogate) need it off because the engine
+    //  rejects those backups with JET_errInvalidBackup under CircularLog.
+    bool EnableCircularLog = true;
+};
+
 class EseInstance
 {
 public:
@@ -57,7 +71,8 @@ public:
     EseInstance(const TemporaryDirectory& directory,
                 std::string_view instanceName = "ese-tests",
                 JET_CALLBACK runtimeCallback = nullptr,
-                EseInstanceMode mode = EseInstanceMode::SingleInstance);
+                EseInstanceMode mode = EseInstanceMode::SingleInstance,
+                EseInstanceOptions options = {});
     ~EseInstance();
 
     EseInstance(const EseInstance&) = delete;

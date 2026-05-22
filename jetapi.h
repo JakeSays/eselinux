@@ -5361,7 +5361,7 @@ typedef JET_ERR (JET_API *JET_PFNEMITLOGDATA)(
 
 #define JET_wrnNyi                          -1    /* Function Not Yet Implemented */
 
-/*  SYSTEM errors
+//  SYSTEM errors
 #define JET_errRfsFailure                   -100  /* Resource Failure Simulator failure */
 #define JET_errRfsNotArmed                  -101  /* Resource Failure Simulator not initialized */
 #define JET_errFileClose                    -102  /* Could not close file */
@@ -5427,7 +5427,7 @@ typedef JET_ERR (JET_API *JET_PFNEMITLOGDATA)(
 //  VERSION STORE errors
 //
 #define wrnVERRCEMoved                       275  /*  RCE was moved instead of being cleaned */
-/*  DIRECTORY MANAGER errors
+//  DIRECTORY MANAGER errors
 #define errPMOutOfPageSpace                 -300  /* Out of page space */
 #define errPMItagTooBig                     -301  /* Itag too big */                    //  XXX -- to be deleted
 #define errPMRecDeleted                     -302  /* Record deleted */                  //  XXX -- to be deleted
@@ -5504,7 +5504,7 @@ typedef JET_ERR (JET_API *JET_PFNEMITLOGDATA)(
 #define JET_errNodeCorrupted                -358  // A node or prefix node is logically corrupted, the key suffix size is larger than the node or line's size.
 
 
-/*  RECORD MANAGER errors
+//  RECORD MANAGER errors
 #define wrnFLDKeyTooBig                      400  /* Key too big (truncated it) */
 #define errFLDTooManySegments               -401  /* Too many key segments */
 #define wrnFLDNullKey                        402  /* Key is entirely NULL */
@@ -5546,7 +5546,7 @@ typedef JET_ERR (JET_API *JET_PFNEMITLOGDATA)(
 #define JET_wrnIndexDeferredPopulateHalted   433  /* Populating a deferred populate index was unexpectedly halted. */
 #define JET_errIndexDeferredPopulateCurrentlyUnavailable -434 /* Populating a deferred populate index is not allowed at this time. */
 
-/*  LOGGING/RECOVERY errors
+//  LOGGING/RECOVERY errors
 #define JET_errInvalidLoggedOperation       -500  /* Logged operation cannot be redone */
 #define JET_errLogFileCorrupt               -501  /* Log file is corrupt */
 #define errLGNoMoreRecords                  -502  /* Last log record read */
@@ -5957,7 +5957,7 @@ typedef JET_ERR (JET_API *JET_PFNEMITLOGDATA)(
 #define errFCBExists                        -1331 /* Tried to create an FCB that already exists */
 #define errFCBUnusable                      -1332 /* Placeholder to mark an FCB that must be purged as unusable */
 #define wrnCATNoMoreRecords                  1333 /* Attempted to navigate past the end of the catalog */
-/*  DDL errors
+//  DDL errors
 // Note: Some DDL errors have snuck into other categories.
 #define JET_errIndexCantBuild               -1401 /* Index build failed */
 #define JET_errIndexHasPrimary              -1402 /* Primary index already defined */
@@ -6078,11 +6078,11 @@ typedef JET_ERR (JET_API *JET_PFNEMITLOGDATA)(
 #define JET_errAutoIncrementNotSet          -1625  /* The user must have explicitly set the auto-increment column for this table. */
 
 
-/*  Sort Table errors
+//  Sort Table errors
 #define JET_errTooManySorts                 -1701 /* Too many sort processes */
 #define JET_errInvalidOnSort                -1702 /* Invalid operation on Sort */
 
-/*  Other errors
+//  Other errors
 #define JET_errTempFileOpenError            -1803 /* Temp file could not be opened */
 #define JET_errTooManyAttachedDatabases     -1805 /* Too many open databases */
 #define JET_errDiskFull                     -1808 /* No space left on disk */

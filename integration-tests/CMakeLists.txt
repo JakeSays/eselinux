@@ -21,6 +21,7 @@ add_executable(ese-tests
     src/Framework/EseSession.cxx
     src/Framework/EseTable.cxx
     src/Framework/EseTransaction.cxx
+    src/Framework/JetErrorNames.cxx
     src/Framework/ScaleProfile.cxx
     src/Framework/Scenario.cxx
     src/Framework/ScenarioRegistry.cxx

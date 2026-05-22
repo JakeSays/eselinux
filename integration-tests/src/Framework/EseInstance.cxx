@@ -59,7 +59,8 @@ std::atomic<uint64_t> g_multiInstanceCounter{0};
 EseInstance::EseInstance(const TemporaryDirectory& directory,
                          std::string_view instanceName,
                          JET_CALLBACK runtimeCallback,
-                         EseInstanceMode mode)
+                         EseInstanceMode mode,
+                         EseInstanceOptions options)
     : _directory(directory.Path())
 {
     // Path strings need a trailing slash so JET concatenates filenames
@@ -95,7 +96,8 @@ EseInstance::EseInstance(const TemporaryDirectory& directory,
         SetStringParameter(_handle, JET_paramLogFilePath, pathWithSeparator);
         SetStringParameter(_handle, JET_paramBaseName, "edb");
         SetStringParameter(_handle, JET_paramEventSource, uniqueInstanceName);
-        SetIntegerParameter(_handle, JET_paramCircularLog, 1);
+        SetIntegerParameter(_handle, JET_paramCircularLog,
+                            options.EnableCircularLog ? 1 : 0);
 
         if (runtimeCallback != nullptr)
         {
@@ -123,7 +125,11 @@ EseInstance::EseInstance(const TemporaryDirectory& directory,
 
     // CircularLog keeps the log directory bounded — every scenario is
     // a one-shot process and we don't care about replay past it.
-    SetIntegerParameter(_handle, JET_paramCircularLog, 1);
+    // Backup-family scenarios (incremental/atomic/surrogate) opt out
+    // via EseInstanceOptions::EnableCircularLog = false because the
+    // engine rejects those backups under circular logging.
+    SetIntegerParameter(_handle, JET_paramCircularLog,
+                        options.EnableCircularLog ? 1 : 0);
 
     if (runtimeCallback != nullptr)
     {
