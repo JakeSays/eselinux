@@ -309,7 +309,11 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         -Wno-microsoft-sealed
         -Wno-microsoft-enum-forward-reference
         -Wno-microsoft-extra-qualification
+        -Wno-microsoft-include
         -Wno-deprecated-anon-enum-enum-conversion
+        -Wno-duplicate-decl-specifier
+        -Wno-missing-declarations
+        -Wno-switch
         # The engine uses a banner style of block comment that nests
         # `/*` characters inside an outer /* ... */, e.g.
         #
