@@ -5024,7 +5024,7 @@ public:
         void* operator new[]( size_t );         //  not supported
         void operator delete[]( void* );        //  not supported
     public:
-        void* operator new( size_t cbAlloc )
+        void* operator new( size_t cbAlloc ) noexcept
         {
             return RESINST.PvRESAlloc_( SzNewFile(), UlNewLine() );
         }

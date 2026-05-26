@@ -284,7 +284,7 @@ private:
     void* operator new[]( size_t );         //  meaningless without INST*
     void operator delete[]( void* );        //  not supported
 public:
-    void* operator new( size_t cbAlloc, INST* pinst )
+    void* operator new( size_t cbAlloc, INST* pinst ) noexcept
     {
         return pinst->m_cresSCB.PvRESAlloc_( SzNewFile(), UlNewLine() );
     }

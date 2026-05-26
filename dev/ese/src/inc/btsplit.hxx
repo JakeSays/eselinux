@@ -136,7 +136,7 @@ private:
     void* operator new[]( size_t );         //  not supported
     void operator delete[]( void* );        //  not supported
 public:
-    void* operator new( size_t cbAlloc )
+    void* operator new( size_t cbAlloc ) noexcept
     {
         return RESSPLIT.PvRESAlloc_( SzNewFile(), UlNewLine() );
     }
@@ -224,7 +224,7 @@ private:
     void* operator new[]( size_t );         //  not supported
     void operator delete[]( void* );        //  not supported
 public:
-    void* operator new( size_t cbAlloc )
+    void* operator new( size_t cbAlloc ) noexcept
     {
         return RESSPLITPATH.PvRESAlloc_( SzNewFile(), UlNewLine() );
     }
@@ -320,7 +320,7 @@ private:
     void* operator new[]( size_t );         //  not supported
     void operator delete[]( void* );        //  not supported
 public:
-    void* operator new( size_t cbAlloc )
+    void* operator new( size_t cbAlloc ) noexcept
     {
         return RESMERGE.PvRESAlloc_( SzNewFile(), UlNewLine() );
     }
@@ -392,7 +392,7 @@ private:
     void* operator new[]( size_t );         //  not supported
     void operator delete[]( void* );        //  not supported
 public:
-    void* operator new( size_t cbAlloc )
+    void* operator new( size_t cbAlloc ) noexcept
     {
         return RESMERGEPATH.PvRESAlloc_( SzNewFile(), UlNewLine() );
     }

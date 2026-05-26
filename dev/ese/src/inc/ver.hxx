@@ -1846,7 +1846,7 @@ struct BUCKET
         void* operator new[]( size_t );         //  meaningless without VER*
         void operator delete[]( void* );        //  not supported
     public:
-        void* operator new( size_t cbAlloc, VER* pver )
+        void* operator new( size_t cbAlloc, VER* pver ) noexcept
         {
             return pver->m_cresBucket.PvRESAlloc_( SzNewFile(), UlNewLine() );
         }

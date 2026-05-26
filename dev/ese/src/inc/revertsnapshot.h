@@ -212,7 +212,7 @@ struct CSnapshotBuffer
     void* operator new[]( size_t ) = delete;        //  meaningless without CResource*
     void operator delete[]( void* ) = delete;       //  not supported
 
-    void* operator new( size_t cbAlloc, CResource *pcresRBSBuf )
+    void* operator new( size_t cbAlloc, CResource *pcresRBSBuf ) noexcept
     {
         Assert( cbAlloc == sizeof(CSnapshotBuffer) );
         return pcresRBSBuf->PvRESAlloc_( SzNewFile(), UlNewLine() );
