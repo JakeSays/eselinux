@@ -537,7 +537,7 @@ if (NOT WIN32)
     include(ExternalProject)
 
     set(LIBSODIUM_URL "https://download.libsodium.org/libsodium/releases/libsodium-1.0.22-stable.tar.gz")
-    set(LIBSODIUM_SHA256 "ba3e9f0310f546f6877498891e9afc0b6e7973dfae412cfe9f3bca511dbb4087")
+    set(LIBSODIUM_SHA256 "dcfe9b0f87ceee9c884fbba1954506c1b3be4b4c6026835c5c68e56cbe1e90a2")
 
     #  Bake every position-sensitive flag into the CC string passed
     #  to autotools.  libtool reorders / filters LDFLAGS when it
