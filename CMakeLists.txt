@@ -208,6 +208,29 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     # semantics; equivalent to MSVC's /Zc:wchar_t-. Project-wide.
     add_compile_options(-fshort-wchar)
 
+    # Mandatory companion to -fshort-wchar.  clang's loop-idiom pass
+    # pattern-matches hand-written wide-string loops (while (s[n]) ++n, etc.)
+    # and rewrites them into calls to libc wcslen/wcscmp/...  But libc's
+    # wcs* walk 4-byte wchar_t while ours are 2-byte, so the rewrite reads
+    # past every other code unit and returns garbage.  The fold only fires
+    # at -O1+, so it is invisible in Debug and corrupts wide strings (e.g.
+    # instance names round-tripped through JetGetInstanceInfoW) in Release.
+    # Disable the builtins everywhere -fshort-wchar applies — they are a
+    # matched pair.  (libnls/osposix also set these locally; the duplicate
+    # is harmless.)
+    add_compile_options(
+        -fno-builtin-wcslen
+        -fno-builtin-wcscpy
+        -fno-builtin-wcsncpy
+        -fno-builtin-wcscat
+        -fno-builtin-wcsncat
+        -fno-builtin-wcscmp
+        -fno-builtin-wcsncmp
+        -fno-builtin-wcschr
+        -fno-builtin-wcsrchr
+        -fno-builtin-wcsstr
+    )
+
     # NOTE: UNICODE / _UNICODE were previously set project-wide here. The
     # upstream Windows OS layer (oswinnt target) does NOT define _UNICODE,
     # so _TCHAR = char on its build, and OS call sites pass narrow string
@@ -536,8 +559,8 @@ if (NOT WIN32)
     # the produced libsodium.so* into the build's lib output dir.
     include(ExternalProject)
 
-    set(LIBSODIUM_URL "https://download.libsodium.org/libsodium/releases/libsodium-1.0.22-stable.tar.gz")
-    set(LIBSODIUM_SHA256 "dcfe9b0f87ceee9c884fbba1954506c1b3be4b4c6026835c5c68e56cbe1e90a2")
+    set(LIBSODIUM_URL "https://github.com/jedisct1/libsodium/releases/download/1.0.22-RELEASE/libsodium-1.0.22.tar.gz")
+    set(LIBSODIUM_SHA256 "adbdd8f16149e81ac6078a03aca6fc03b592b89ef7b5ed83841c086191be3349")
 
     #  Bake every position-sensitive flag into the CC string passed
     #  to autotools.  libtool reorders / filters LDFLAGS when it
@@ -616,6 +639,26 @@ endif ()
 
 # Finally, in this project, we configure and build these subdirectories:
 add_subdirectory(dev)
+
+# `package-libs` — convenience aggregate for packaging.  Builds libese.so
+# plus every runtime sidecar that has to ship next to it in <build>/lib:
+# libnls (link-time dependency), libsodium (dlopen'd for at-rest
+# encryption), and — when lttng-ust was found at configure time —
+# libese_tracepoints.so (dlopen'd analytic-tracing provider).  The two
+# dlopen'd sidecars are NOT link dependencies of `ese`, so building
+# `--target ese` alone omits them; this target names them explicitly.
+# Defined here (before the test subdirectories) so ese-tests can depend
+# on it and stage the sidecars into <build>/lib for the encryption /
+# tracing runtime paths.
+if (NOT WIN32)
+    add_custom_target(package-libs
+        COMMENT "Built libese.so + sidecars (libnls, libsodium, tracepoints) into <build>/lib"
+    )
+    add_dependencies(package-libs ese nls libsodium_stage)
+    if (ESE_BUILD_TRACEPOINTS)
+        add_dependencies(package-libs ese_tracepoints)
+    endif ()
+endif ()
 
 add_subdirectory(test)
 

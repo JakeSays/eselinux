@@ -154,15 +154,48 @@ void __cdecl OSEventTrace_( const ULONG etguid, const size_t cData, ... )
 
 
 ////////////////////////////////////////////////
-//  Compile-time / runtime trace gates
+//  Per-event call-site gate
 //
-//  The non-templated FOSEventTraceEnabled() (in oseventtrace.hxx)
-//  returns fTrue so OSEventTrace_ runs and our dispatch sees the
-//  etguid.  The templated FOSEventTraceEnabled<etguid>() stays
-//  fFalse for now — that gate is only consulted by a handful of
-//  call sites that do expensive data-gathering before the trace
-//  call.  Flipping those to query lttng's per-tracepoint enable
-//  state is follow-up work.
+//  The OSEventTrace macro (oseventtrace.hxx) calls this with the event's
+//  etguid *before* evaluating any trace arguments.  We read the
+//  provider's per-tracepoint enable-state int — published as
+//  eventEnabledState[ etguid ] by the generated table, which points at
+//  lttng's `__tracepoint_ese___<Event>.state`.  When no session has the
+//  event enabled the state is 0 and the whole OSEventTrace_ marshalling
+//  path is skipped, mirroring how upstream gated on EventEnabled().
+//  Cheap on the hot path: a couple of loads, no call into the .so once
+//  the table has been resolved.
+BOOL PosixTraceEnabled( const ULONG etguid )
+{
+    const EseTracepointTable * pTable = g_pTracepointTable;
+    if ( pTable == nullptr )
+    {
+        //  A trace fired before the OS-layer preinit resolved the table
+        //  (or there is no provider .so).  Trigger the one-shot load and
+        //  re-read; stays null forever when lttng-ust isn't installed.
+        TracepointsEnsureInit();
+        pTable = g_pTracepointTable;
+        if ( pTable == nullptr )
+        {
+            return fFalse;
+        }
+    }
+    if ( etguid >= pTable->eventCount )
+    {
+        return fFalse;
+    }
+    const int * pState = pTable->eventEnabledState[ etguid ];
+    return ( pState != nullptr && *pState != 0 ) ? fTrue : fFalse;
+}
+
+
+////////////////////////////////////////////////
+//  Station-identification gate
+//
+//  The templated FOSEventTraceEnabled<etguid>() stays fFalse on Linux —
+//  it is consulted only by COSEventTraceIdCheck::FAnnounceTime, which
+//  does expensive pre-trace data-gathering for the station-id records.
+//  Wiring those to the per-tracepoint enable state is separate follow-up.
 
 template BOOL FOSEventTraceEnabled<_etguidCacheRequestPage>();
 

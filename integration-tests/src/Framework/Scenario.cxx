@@ -69,6 +69,8 @@ const char* ToString(ScenarioCategory category)
             return "Replication";
         case ScenarioCategory::WideApi:
             return "WideApi";
+        case ScenarioCategory::Tracing:
+            return "Tracing";
     }
     return "Unknown";
 }

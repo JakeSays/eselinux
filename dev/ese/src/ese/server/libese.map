@@ -1,0 +1,17 @@
+# Linux export map for libese.so — the equivalent of esent.def on Windows.
+#
+# Only the public Jet* API is exported. Every engine internal, OS-layer
+# entry point, and C runtime shim is made local. Localizing the shims is
+# load-bearing: winapi_crt.cxx defines wcslen/wcscpy/wcscmp/... built with
+# -fshort-wchar (2-byte wchar_t). Those names collide with glibc's 4-byte
+# versions, and glibc is always earlier in the process's global symbol
+# scope, so when libese.so is dlopen'd its own intra-library calls would
+# otherwise bind to glibc's 4-byte routines and corrupt every wide string.
+# Marking them local keeps libese's references bound to libese's own
+# definitions and removes them from .dynsym so nothing can interpose them.
+ESE {
+    global:
+        Jet*;
+    local:
+        *;
+};

@@ -16,29 +16,35 @@ void __cdecl OSEventTrace_( const ULONG etguid,
                             const size_t cData = 0,
                             ... );
 
-// Both the non-templated and templated overloads of FOSEventTraceEnabled
-// have inline bodies here (rather than in oseventtrace_posix.cxx as a
-// declaration-only with a separate definition).
+// FOSEventTraceEnabled() / FOSEventTraceEnabled<etguid>() are the
+// upstream ETW gates; on the Linux port their bodies are inline here.
 //
-// The non-templated overload gates the OSEventTrace macro that the
-// generated ET* wrappers expand into.  On the Linux port we return
-// fTrue from it so OSEventTrace_ actually runs — the implementation in
-// oseventtrace_posix.cxx dispatches on etguid and is the bridge that
-// turns `ETEventLogInfo/Warn/Error` into stderr output (the EtEventLog*
-// "do something real" path).  All other ET* wrappers still no-op,
-// because OSEventTrace_ just compares the etguid and returns.
+// The non-templated overload is no longer what the OSEventTrace macro
+// gates on — it stays fTrue purely as a harmless default for any
+// non-macro caller.  The macro now gates per-event at runtime via
+// PosixTraceEnabled(etguid) (below), so an event whose lttng tracepoint
+// no session has enabled skips OSEventTrace_ and all of its argument
+// marshalling — the same role upstream's EventEnabled()-backed gate
+// played on ETW.
 //
-// The templated overload gates per-guid explicit trace blocks (e.g.
-// FOSEventTraceEnabled< _etguidCacheRequestPage >()).  Those stay off
-// — we don't have ETW or LTTng wired up, so per-event tracing has
-// nothing to do.  The explicit template instantiations in
-// oseventtrace_posix.cxx bind to this generic body.
+// The templated overload still backs the per-guid
+// COSEventTraceIdCheck::FAnnounceTime<etguid>() station-identification
+// logic; its Linux body stays fFalse (those announce paths do expensive
+// pre-trace data gathering and are wired separately).  The explicit
+// template instantiations in oseventtrace_posix.cxx bind to this body.
 INLINE BOOL FOSEventTraceEnabled() { return fTrue; }
 
 template< OSEventTraceGUID etguid >
 INLINE BOOL FOSEventTraceEnabled() { return fFalse; }
 
-#define OSEventTrace if ( FOSEventTraceEnabled() ) OSEventTrace_
+// Runtime per-event gate.  Returns fTrue when a loaded lttng session has
+// enabled the tracepoint for this etguid.  Defined in
+// os/posix/oseventtrace_posix.cxx; reads the provider's per-tracepoint
+// enable-state pointer published through the EseTracepointTable.
+BOOL PosixTraceEnabled( const ULONG etguid );
+
+#define OSEventTrace( etguid, ... ) \
+    if ( PosixTraceEnabled( etguid ) ) OSEventTrace_( ( etguid ) __VA_OPT__(,) __VA_ARGS__ )
 
 //  The first 8 are generic reasons, resused per event, the next 248 are for whatever 
 

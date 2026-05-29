@@ -170,28 +170,29 @@ BOOL g_fEncryptionAvailable = fFalse;
 
 void SodiumInitOnce()
 {
-    //  Three sonames in order of preference:
+    //  Candidate library names, in order of preference:
     //
-    //    1. libsodium.so.26 — the SOname of libsodium >= 1.0.20,
-    //       which is what our build's ExternalProject ships (and
-    //       what Debian trixie / Ubuntu 25.04+ / recent Fedora carry
-    //       system-wide).  This is the version that has the AArch64
-    //       AES path; older versions on aarch64 fail the
-    //       crypto_aead_aes256gcm_is_available() check.
+    //    1. libsodium.so.26.4.0 — the fully-versioned real file of the
+    //       1.0.22 build our ExternalProject ships next to libese.so.
+    //       We load it by its real name rather than the libsodium.so.26
+    //       / libsodium.so symlinks so a deployment that ships only the
+    //       versioned file (no dev symlinks) still resolves.  This is the
+    //       build with the AArch64 AES path; older versions on aarch64
+    //       fail the crypto_aead_aes256gcm_is_available() check.
     //
-    //    2. libsodium.so.23 — pre-1.0.20 SOname (Ubuntu 24.04,
+    //    2. libsodium.so.26 — system SOname of libsodium >= 1.0.20
+    //       (Debian trixie / Ubuntu 25.04+ / recent Fedora), used only
+    //       as a fallback when our staged build isn't present.
+    //
+    //    3. libsodium.so.23 — pre-1.0.20 system SOname (Ubuntu 24.04,
     //       Debian 12).  Works on x86 with AES-NI; on aarch64 the
     //       availability check fails and we return FNA at the
     //       call-site level.
-    //
-    //    3. libsodium.so — unversioned dev symlink (only present if
-    //       `-dev` package is installed, or when our own build
-    //       stages the lib next to libese.so).
     static const char* const sodiumSonames[] =
     {
+        "libsodium.so.26.4.0",
         "libsodium.so.26",
         "libsodium.so.23",
-        "libsodium.so",
     };
     for ( const char* soname : sodiumSonames )
     {

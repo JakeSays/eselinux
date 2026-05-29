@@ -48,6 +48,7 @@ enum class ScenarioCategory
     Rbs,
     Replication,
     WideApi,
+    Tracing,
 };
 
 //  Tier — depth/intent of the test.  Orthogonal to Category.

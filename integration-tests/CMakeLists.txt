@@ -56,6 +56,7 @@ add_executable(ese-tests
     src/Scenarios/SessionScenarios.cxx
     src/Scenarios/SnapshotScenarios.cxx
     src/Scenarios/TemporaryTableScenarios.cxx
+    src/Scenarios/TracingScenarios.cxx
     src/Scenarios/TransactionScenarios.cxx
     src/Scenarios/WideApiScenarios.cxx
 )
@@ -80,6 +81,14 @@ target_include_directories(ese-tests PRIVATE
 target_link_libraries(ese-tests PRIVATE
     ese
     Threads::Threads)
+
+# Stage the runtime sidecars (libsodium, libese_tracepoints.so, libnls)
+# into <build>/lib alongside libese.so before the suite runs, so the
+# encryption and analytic-tracing dlopen paths resolve the shipped
+# artifacts (libsodium.so.26.4.0, ...) rather than whatever the system
+# happens to carry. libsodium / tracepoints are dlopen'd, not linked, so
+# without this dependency they would never be built for a test run.
+add_dependencies(ese-tests package-libs)
 
 
 # ese-config-test — standalone integration test for the libucl-backed

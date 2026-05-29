@@ -131,8 +131,23 @@ internal static class Emitter
         sb.AppendLine("namespace");
         sb.AppendLine("{");
         sb.AppendLine();
+        sb.AppendLine("//  Address of each tracepoint's lttng enable-state int, in");
+        sb.AppendLine("//  OSEventTraceGUID order.  lttng_ust_tracepoint_ese___<Name> is the");
+        sb.AppendLine("//  per-tracepoint struct TRACEPOINT_DEFINE emits (this symbol prefix");
+        sb.AppendLine("//  was __tracepoint_ese___ before lttng-ust 2.13); `.state` is the");
+        sb.AppendLine("//  field tracepoint_enabled() reads.  libese.so indexes this by");
+        sb.AppendLine("//  etguid in PosixTraceEnabled().");
+        sb.AppendLine("const int* const g_eventEnabledState[] = {");
+        foreach (var ev in events)
+        {
+            sb.Append("    &lttng_ust_tracepoint_ese___").Append(ev.Name).AppendLine(".state,");
+        }
+        sb.AppendLine("};");
+        sb.AppendLine();
         sb.AppendLine("EseTracepointTable g_table = {");
         sb.AppendLine("    .version = ESE_TRACEPOINT_TABLE_VERSION,");
+        sb.Append("    .eventCount = ").Append(events.Count).AppendLine("u,");
+        sb.AppendLine("    .eventEnabledState = g_eventEnabledState,");
         foreach (var ev in events)
         {
             sb.Append("    .pfn_").Append(ev.Name).Append(" = &EseTracepoint_").Append(ev.Name).AppendLine(",");
@@ -204,7 +219,7 @@ internal static class Emitter
         sb.AppendLine();
         sb.AppendLine("//  Bump on every signature-incompatible change.  libese.so checks");
         sb.AppendLine("//  the version after dlopen and refuses a mismatch.");
-        sb.AppendLine("#define ESE_TRACEPOINT_TABLE_VERSION 1u");
+        sb.AppendLine("#define ESE_TRACEPOINT_TABLE_VERSION 2u");
         sb.AppendLine();
         sb.AppendLine("#ifdef __cplusplus");
         sb.AppendLine("extern \"C\" {");
@@ -213,6 +228,15 @@ internal static class Emitter
         sb.AppendLine("struct EseTracepointTable");
         sb.AppendLine("{");
         sb.AppendLine("    uint32_t version;");
+        sb.AppendLine();
+        sb.AppendLine("    //  Per-event lttng enable-state, indexed by OSEventTraceGUID");
+        sb.AppendLine("    //  (the _etguid* enum value == event order).  eventEnabledState[g]");
+        sb.AppendLine("    //  points at that tracepoint's `state` int; libese.so reads it in");
+        sb.AppendLine("    //  PosixTraceEnabled() to gate at the call site before any arg");
+        sb.AppendLine("    //  marshalling.  An entry is null only if the event was never");
+        sb.AppendLine("    //  defined.");
+        sb.AppendLine("    uint32_t eventCount;");
+        sb.AppendLine("    const int* const* eventEnabledState;");
         sb.AppendLine();
 
         foreach (var ev in events)

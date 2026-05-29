@@ -34,29 +34,62 @@ else()
     set(_ese_rc_source )
 endif()
 
-# NOTE: `ese` is a shared library (a DLL), not a static one
-add_library(ese SHARED
-    ${_ese_def_source}
+# Engine translation units, compiled once into an object library. Shared by
+# the production shared object below and by static consumers (eseutil) that
+# embed the full engine + OS layer in a single self-contained image rather
+# than importing them from libese.so.
+add_library(ese_objects OBJECT
     ${GEN_OUTPUT_DIRECTORY}/ese/jetapitable.cxx
     ${ESE_SOURCES}
-    ${_ese_rc_source}
     ../std.cxx
 )
 
-set_target_properties(ese
-    PROPERTIES
-    DEFINE_SYMBOL "ESE"
+add_dependencies(ese_objects gen_jetapitable)
+
+target_precompile_headers(ese_objects PRIVATE
+    ../std.hxx
+)
+
+# OBJECT libraries do not link, so they do not inherit the INTERFACE include
+# directories the engine used to get transitively from _xpress/osposix/...
+# List them explicitly, matching eselibwithtests (the other static engine build).
+target_include_directories(ese_objects PRIVATE
+    ${GEN_OUTPUT_DIRECTORY}/_res/
+    ${INC_OUTPUT_DIRECTORY}
+    ${ESE_DEV}/src/_xpress/
+    ${ESE_DEV}/src/inc/_osu/
+    ${ESE_DEV}/src/os/
+    ${ESE_DEV}/src/os/blockcache/
+    ${ESE_DEV}/src/os/posix/
+    ./
+    ../
 )
 
 if (NOT WIN32)
-    # Drop the project-wide -fvisibility=hidden for the ese shared library:
-    # eseutil/devlibtest link directly against libese.so for the Jet API
-    # exports plus a long tail of engine internals (UtilReportEvent,
-    # FOSRMPreinit, the column-iterator vtables, ...) that the OS layer
-    # references. Without this, only operator new/delete end up visible.
-    # On Windows the same role is played by esent.def, which we don't have
-    # a Linux equivalent of yet.
-    target_compile_options(ese PRIVATE -fvisibility=default)
+    # The engine objects keep default visibility so the public Jet* entry
+    # points are export candidates. The version script on libese.so (below)
+    # then demotes everything that is not Jet* — engine internals, OS-layer
+    # entry points, and the -fshort-wchar wcs* CRT shims in winapi_crt.cxx —
+    # to a local symbol. See libese.map for why localizing the shims matters.
+    target_compile_options(ese_objects PRIVATE -fvisibility=default)
+endif()
+
+# NOTE: `ese` is a shared library (a DLL), not a static one
+add_library(ese SHARED
+    ${_ese_def_source}
+    $<TARGET_OBJECTS:ese_objects>
+    ${_ese_rc_source}
+)
+
+if (NOT WIN32)
+    # Export only the public Jet* API; libese.map makes every other symbol
+    # local. This is the Linux equivalent of esent.def.
+    target_link_options(ese PRIVATE
+        -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libese.map
+    )
+    set_target_properties(ese PROPERTIES
+        LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/libese.map
+    )
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
@@ -69,22 +102,15 @@ endif()
 
 add_dependencies(ese gen_jetapitable)
 
-target_precompile_headers(ese PRIVATE
-    ../std.hxx
-)
-
 if (WIN32)
     target_link_libraries(ese PRIVATE
         ${ESE_LIBRARIES}
     )
 else ()
     # Wrap the OS-layer + sync archives in --whole-archive so every member
-    # ends up in libese.so even if libese.so itself doesn't reference it.
-    # eseutil is a pure consumer of libese.so on Linux (we deliberately do
-    # not link osposix into eseutil to avoid duplicating OS-layer state),
-    # so the OS layer's full surface — FindNextFileW, DeviceIoControl,
-    # wcscat_s, ... — has to be reachable through libese.so. The other
-    # static libs (lib_log, lib_osu, ...) only need on-demand inclusion.
+    # ends up in libese.so even if the engine references it only indirectly
+    # (function pointers, OS-layer state globals, ...). The other static
+    # libs (lib_log, lib_osu, ...) only need on-demand inclusion.
     target_link_libraries(ese PRIVATE
         dht
         _errstr
