@@ -522,7 +522,8 @@ ERR ErrDUMPHeader( INST *pinst, _In_ PCWSTR wszDatabase, const BOOL fVerbose )
     {
         headerRequestPrimaryOnly,
         wszDatabase,
-        nullptr,
+        JET_filetypeUnknown,
+        NULL,
         cbHeader,
         OffsetOf( DBFILEHDR_FIX, le_cbPageSize ),
         pinst->m_pfsapi,
@@ -537,7 +538,8 @@ ERR ErrDUMPHeader( INST *pinst, _In_ PCWSTR wszDatabase, const BOOL fVerbose )
     {
         headerRequestSecondaryOnly,
         wszDatabase,
-        nullptr,
+        JET_filetypeUnknown,
+        NULL,
         cbHeader,
         OffsetOf( DBFILEHDR_FIX, le_cbPageSize ),
         pinst->m_pfsapi,
@@ -674,7 +676,8 @@ ERR ErrDUMPFixupHeader( INST *pinst, _In_ PCWSTR wszDatabase, const BOOL fVerbos
     {
         headerRequestGoodOnly,
         wszDatabase,
-        nullptr,
+        JET_filetypeUnknown,
+        NULL,
         cbHeader,
         OffsetOf( DBFILEHDR_FIX, le_cbPageSize ),
         pinst->m_pfsapi,

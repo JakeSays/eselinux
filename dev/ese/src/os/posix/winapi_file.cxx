@@ -18,6 +18,7 @@
 #include "osstd.hxx"
 #include "winapi_kobject.hxx"
 #include "winapi_path.hxx"
+#include "ntstatus.h"   // STATUS_SUCCESS/UNSUCCESSFUL/INVALID_HANDLE for the NtFlushBuffersFileEx shim
 
 #include <errno.h>
 #include <fcntl.h>
@@ -599,6 +600,59 @@ BOOL FlushFileBuffers(HANDLE hFile)
     return (fdatasync(k->fileFd) == 0)
            ? TRUE
            : FALSE;
+}
+
+//  NTDLL flush path. The EFV9620 merge rewrote COSFile::ErrFlushFileBuffers to
+//  reach NtFlushBuffersFileEx for the Win8 data-only flush; on Linux that is
+//  fdatasync (data only) vs fsync (full). osfile.cxx declares both functions
+//  inline; we replicate the IO_STATUS_BLOCK layout so the mangled signatures
+//  match. The NTOSFunc static-shim binds &func directly, so a real definition
+//  must exist in the link. osfile.cxx declares both with extern "C" (matching
+//  the real NTDLL exports), so they bind to these C-linkage shim definitions.
+typedef struct _IO_STATUS_BLOCK
+{
+    union
+    {
+        NTSTATUS    Status;
+        PVOID       Pointer;
+    } DUMMYUNIONNAME;
+    ULONG_PTR       Information;
+} IO_STATUS_BLOCK, *PIO_STATUS_BLOCK;
+
+NTSTATUS NTAPI NtFlushBuffersFileEx( HANDLE FileHandle, ULONG Flags, PVOID /*Parameters*/, ULONG /*ParametersSize*/, PIO_STATUS_BLOCK IoStatusBlock )
+{
+    KObject* const k = HandleToK( FileHandle );
+    if ( !k || k->kind != HandleKind::File )
+    {
+        SetLastError( ERROR_INVALID_HANDLE );
+        return STATUS_INVALID_HANDLE;
+    }
+
+    //  FLUSH_FLAGS_FILE_DATA_ONLY (0x1) / FLUSH_FLAGS_FILE_DATA_SYNC_ONLY (0x4)
+    //  request a data-only flush; everything else is a full metadata+data flush.
+    const bool      fDataOnly   = ( Flags & 0x00000005 ) != 0;
+    const int       rc          = fDataOnly ? fdatasync( k->fileFd ) : fsync( k->fileFd );
+    const NTSTATUS  status      = ( rc == 0 ) ? STATUS_SUCCESS : STATUS_UNSUCCESSFUL;
+
+    if ( IoStatusBlock )
+    {
+        IoStatusBlock->DUMMYUNIONNAME.Status = status;
+        IoStatusBlock->Information = 0;
+    }
+    return status;
+}
+
+ULONG NTAPI RtlNtStatusToDosError( NTSTATUS Status )
+{
+    if ( Status >= 0 )
+    {
+        return ERROR_SUCCESS;
+    }
+    if ( Status == STATUS_INVALID_HANDLE )
+    {
+        return ERROR_INVALID_HANDLE;
+    }
+    return ERROR_WRITE_FAULT;   //  generic flush failure → JET disk I/O error
 }
 
 BOOL GetFileSizeEx(HANDLE hFile, PLARGE_INTEGER lpFileSize)

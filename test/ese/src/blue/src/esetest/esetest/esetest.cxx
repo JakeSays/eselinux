@@ -5676,7 +5676,7 @@ void OSDebugPrint( const WCHAR * const wszOutput )
 PRIVATE
 void ForceProcessCrash()
     {
-    *( char* )0 = 0;
+    __builtin_trap();
     }
 
 #define ErrOSStrCbAppendA( szDst, cbDst, szSrc )        StringCbCatA( szDst, cbDst, szSrc )

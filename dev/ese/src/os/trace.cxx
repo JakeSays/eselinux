@@ -371,8 +371,6 @@ void OSFreeInfoStrings()
 
 //  Tracing
 
-const WCHAR         g_wszMutexTrace[]   = L"Global\\{5E5C36C0-5E7C-471f-84D7-110FDC1AFD0D}";
-HANDLE              g_hMutexTrace       = nullptr;
 const WCHAR         g_wszFileTrace[]    = L"\\Debug\\ESE.TXT";
 HANDLE              g_hFileTrace        = nullptr;
 LOCAL PFNTRACEEMIT  g_pfnTraceEmit      = nullptr;
@@ -604,13 +602,7 @@ void __stdcall OSTraceEmit( const TRACETAG tag, const char* const szPrefixNYI, c
             if ( !g_fJetDebugTracing && g_hFileTrace )
             {
                 DWORD cbT;
-                WaitForSingleObjectEx( g_hMutexTrace, INFINITE, FALSE );
-                const LARGE_INTEGER ibOffset = { 0, 0 };
-                if ( SetFilePointerEx( g_hFileTrace, ibOffset, nullptr, FILE_END ) )
-                {
-                    WriteFile( g_hFileTrace, szTrace, min( DWORD( -1 ), cchTrace ), &cbT, nullptr );
-                }
-                ReleaseMutex( g_hMutexTrace );
+                WriteFile( g_hFileTrace, szTrace, min( DWORD( -1 ), cchTrace ), &cbT, NULL );
             }
 
         }
@@ -712,7 +704,7 @@ const char* OSFormat_( __format_string const char* const szFormat, _In_ va_list 
             szRaw[ cchRawMax ]      = 0;
             cchRaw                  = 0;
 
-            if ( S_OK != StringCbVPrintfA( szRaw + cchRaw,
+            if ( JET_errSuccess > ErrOSStrCbVFormatA( szRaw + cchRaw,
                                         ( cchRawMax - cchRaw ) * sizeof( char ),
                                         szFormat,
                                         arglist ) )
@@ -797,7 +789,7 @@ const WCHAR* OSFormatW_( __format_string const WCHAR* const wszFormat, _In_ va_l
             wszRaw[ cchRawMax ]     = 0;
             cchRaw                  = 0;
 
-            if ( S_OK != StringCbVPrintfW( wszRaw + cchRaw,
+            if ( JET_errSuccess > ErrOSStrCbVFormatW( wszRaw + cchRaw,
                                         ( cchRawMax - cchRaw ) * sizeof( WCHAR ),
                                         wszFormat,
                                         arglist ) )
@@ -1296,11 +1288,6 @@ void OSTraceITerm()
         CloseHandle( g_hFileTrace );
         g_hFileTrace = nullptr;
     }
-    if ( g_hMutexTrace )
-    {
-        CloseHandle( g_hMutexTrace );
-        g_hMutexTrace = nullptr;
-    }
     if ( g_fcsThreadTableInit )
     {
         DeleteCriticalSection( &g_csThreadTable );
@@ -1314,9 +1301,8 @@ ERR ErrOSTraceIInit()
     const size_t    cchPathTrace    = MAX_PATH + 1;
     WCHAR           wszPathTrace[ cchPathTrace ];
 
-    Assert( 0 == g_fcsThreadTableInit );
-    Assert( nullptr == g_hMutexTrace );
-    Assert( nullptr == g_hFileTrace );
+    Assert( NULL == g_fcsThreadTableInit );
+    Assert( NULL == g_hFileTrace );
 
     if ( !( g_fcsThreadTableInit = InitializeCriticalSectionAndSpinCount( &g_csThreadTable, 1000 ) ) )
     {
@@ -1327,7 +1313,7 @@ ERR ErrOSTraceIInit()
     OSStrCbAppendW( wszPathTrace, sizeof(wszPathTrace), g_wszFileTrace );
 
     if ( ( g_hFileTrace = CreateFileW(  wszPathTrace,
-                                        GENERIC_WRITE,
+                                        FILE_APPEND_DATA,
                                         FILE_SHARE_READ | FILE_SHARE_WRITE,
                                         nullptr,
                                         OPEN_ALWAYS,
@@ -1338,25 +1324,9 @@ ERR ErrOSTraceIInit()
         g_hFileTrace = nullptr;
 
     }
-    else
-    {
-        // The mutex is only used to access the file. If we failed to open the file, then
-        // don't bother to open the mutex.
-        Assert( NULL != g_hFileTrace && INVALID_HANDLE_VALUE != g_hFileTrace );
-
-        if (    !( g_hMutexTrace = CreateMutexW( nullptr, FALSE, g_wszMutexTrace ) ) &&
-                !( g_hMutexTrace = CreateMutexW( nullptr, FALSE, wcsrchr( g_wszMutexTrace, L'\\' ) + 1 ) ) )
-        {
-            Call( ErrOSErrFromWin32Err( GetLastError() ) );
-        }
-    }
 
 HandleError:
     AssertSz( INVALID_HANDLE_VALUE != g_hFileTrace, "g_hFileTrace should be NULL if it couldn't be opened." );
-    AssertSz( ( ( NULL == g_hMutexTrace ) == ( NULL == g_hFileTrace ) )
-        || err < JET_errSuccess,
-        "g_hMutexTrace (%p) and g_hFileTrace (%p) must both be NULL or non-NULL. Or that there was an error.",
-        g_hMutexTrace, g_hFileTrace );
 
     //  Since this is actually the VERY first trace out of the whole system, I'm attributing 
     //  it to the higher level SysInitTerm.
@@ -1379,11 +1349,6 @@ HandleError:
         {
             CloseHandle( g_hFileTrace );
             g_hFileTrace = nullptr;
-        }
-        if ( g_hMutexTrace )
-        {
-            CloseHandle( g_hMutexTrace );
-            g_hMutexTrace = nullptr;
         }
         if ( g_fcsThreadTableInit )
         {

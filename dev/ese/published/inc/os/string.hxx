@@ -40,6 +40,7 @@ typedef _Return_type_success_(return >= 0) LONG HRESULT; // required b/c we defi
 ERR ErrFromStrsafeHr ( HRESULT hr );
 
 LONG LOSStrLengthA( _In_ PCSTR const sz );
+LONG LOSStrLengthA( _In_ PCSTR const sz, _In_ const ULONG cchMax );   // bounded (strnlen); EFV9620 dataserializer uses this
 LONG LOSStrLengthW( _In_ PCWSTR const wsz );
 LONG LOSStrLengthUnalignedW( _In_ const UnalignedLittleEndian< WCHAR > * wsz );
 LONG LOSStrLengthMW( _In_ PCWSTR const wsz );
@@ -79,10 +80,13 @@ LONG LOSStrCompareW( _In_ PCWSTR const pwszStr1, _In_ PCWSTR const pwszStr2, _In
 //  create a formatted string in a given buffer
 
 void __cdecl OSStrCbVFormatA ( __out_bcount(cbBuffer) PSTR szBuffer, size_t cbBuffer, __format_string PCSTR szFormat, va_list alist );
+void __cdecl OSStrCbVFormatW ( __out_bcount(cbBuffer) PWSTR szBuffer, size_t cbBuffer, __format_string PCWSTR szFormat, va_list alist );
 void __cdecl OSStrCbFormatA ( __out_bcount(cbBuffer) PSTR szBuffer, size_t cbBuffer, __format_string PCSTR szFormat, ...);
 void __cdecl OSStrCbFormatW ( __out_bcount(cbBuffer) PWSTR szBuffer, size_t cbBuffer, __format_string PCWSTR szFormat, ...);
 ERR __cdecl ErrOSStrCbFormatA ( __out_bcount(cbBuffer) PSTR szBuffer, size_t cbBuffer, __format_string PCSTR szFormat, ...);
 ERR __cdecl ErrOSStrCbFormatW ( __out_bcount(cbBuffer) PWSTR szBuffer, size_t cbBuffer, __format_string PCWSTR szFormat, ...);
+ERR __cdecl ErrOSStrCbVFormatA ( __out_bcount(cbBuffer) PSTR szBuffer, size_t cbBuffer, __format_string PCSTR szFormat, va_list alist );
+ERR __cdecl ErrOSStrCbVFormatW ( __out_bcount(cbBuffer) PWSTR szBuffer, size_t cbBuffer, __format_string PCWSTR szFormat, va_list alist );
 
 //  Formats a GUID in a given given buffer.
 //  Note: Does not exist. If it's necessary, please use/refactor WszCATFormatSortID()

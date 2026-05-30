@@ -189,6 +189,22 @@ ULONGLONG GetTickCount64( void )
          + static_cast<ULONGLONG>( ts.tv_nsec ) / 1000000ULL;
 }
 
+// Unbiased interrupt time excludes intervals the machine spent suspended.
+// On Linux that is exactly CLOCK_MONOTONIC (it freezes across suspend, unlike
+// CLOCK_BOOTTIME). Reported in 100ns units to match the Win32 contract.
+BOOLEAN QueryUnbiasedInterruptTime( ULONGLONG* lpUnbiasedInterruptTime )
+{
+    if ( !lpUnbiasedInterruptTime )
+    {
+        return FALSE;
+    }
+    struct timespec ts;
+    clock_gettime( CLOCK_MONOTONIC, &ts );
+    *lpUnbiasedInterruptTime = static_cast<ULONGLONG>( ts.tv_sec ) * 10000000ULL
+                             + static_cast<ULONGLONG>( ts.tv_nsec ) / 100ULL;
+    return TRUE;
+}
+
 // osstd_.hxx renames GetTickCount → GetTickCount_is_protected_... to poison
 // accidental layer violations. time.cxx legitimately #undef's the macro to
 // reach the real timer; we have to do the same here so the definition emits

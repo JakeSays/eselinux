@@ -37,9 +37,16 @@ typedef struct _EXCEPTION_POINTERS
 } EXCEPTION_POINTERS, *PEXCEPTION_POINTERS, *LPEXCEPTION_POINTERS;
 
 // Common NTSTATUS-shaped exception codes used by the engine.
+// Guarded: ntstatus.h is the canonical owner; either header may be included first.
+#ifndef STATUS_ACCESS_VIOLATION
 #define STATUS_ACCESS_VIOLATION         ((unsigned long)0xC0000005)
+#endif
+#ifndef STATUS_IN_PAGE_ERROR
 #define STATUS_IN_PAGE_ERROR            ((unsigned long)0xC0000006)
+#endif
+#ifndef STATUS_DISK_FULL
 #define STATUS_DISK_FULL                ((unsigned long)0xC000007F)
+#endif
 
 #ifdef __cplusplus
 extern "C" {

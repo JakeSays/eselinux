@@ -272,6 +272,7 @@ BOOL SystemTimeToTzSpecificLocalTime( const TIME_ZONE_INFORMATION* lpTimeZone,
 //
 DWORD     GetTickCount(   void );
 ULONGLONG GetTickCount64( void );
+BOOLEAN   QueryUnbiasedInterruptTime( ULONGLONG* lpUnbiasedInterruptTime );
 
 //  Processor feature query. Win32 surface; on Linux x86_64 the engine
 //  only asks about RDTSC, which is always available. The posix layer

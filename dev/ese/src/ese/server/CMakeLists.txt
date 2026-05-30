@@ -115,6 +115,7 @@ else ()
         dht
         _errstr
         _xpress
+        _lz4
         _perfctrs
         _log
         _osu

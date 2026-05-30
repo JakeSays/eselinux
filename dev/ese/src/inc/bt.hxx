@@ -333,8 +333,14 @@ ERR ErrBTPageMove(
     _In_ const PGNO pgnoSource,
     _In_ const BOOL fLeafPage,
     _In_ const ULONG fSPAllocFlags,
-    __inout BOOKMARK * const pbmNext );
+    _Inout_ BOOKMARK * const pbmNext );
 VOID BTPerformPageMove( _In_ MERGEPATH * const pmergePath );
+
+ERR ErrBTContiguousExtentMove(
+    _In_ FUCB * const pfucb,
+    _In_ const BOOKMARK& bm,
+    _In_ const PGNO pgnoSourceFirst,
+    _Out_ CPG * const pcpgMoved );
 
 ERR ErrBTFindFragmentedRange(
     _In_ FUCB * const pfucb,

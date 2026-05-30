@@ -3810,14 +3810,10 @@ typedef enum
 #define JET_paramEnableIndexChecking            45  //  Enable checking OS version for indexes (false by default).
 #define JET_paramEnableIndexCleanup             54  //  Enable cleanup of out-of-date index entries (Windows 2003 through Windows 7); Does NLS version checking (Windows 2003 and later).
 
-#define JET_paramFlight_SmoothIoTestPermillage  55  //  The per mille of total (or one thousandths, or tenths of a percent) of IO should be made smooth.  Ex(s): 995(/1000) = 99.5% smooth, 10(/1000) = 1%, etc.  0 = disabled.
 
 #define JET_paramElasticWaypointLatency         56  //  Amount of extra elastic waypoint latency
-#define JET_paramFlight_SynchronousLVCleanup    57  //  Perform synchronous cleanup (actual delete) of LVs instead of flag delete with cleanup happening later
 
-#define JET_paramFlight_RBSRevertIOUrgentLevel  58  // IO urgent level for reverting the databases using RBS. Used to decide how many outstanding I/Os will be allowed.
 
-#define JET_paramFlight_EnableXpress10Compression 59 //  Enable Xpress10 compression using corsica hardware
 //                                              60  //  JET_paramCacheSizeMin defined above
 #define JET_paramLogFileFailoverPath            61  //  path to use if the log file disk should fail
 #define JET_paramEnableImprovedSeekShortcut     62  //  check to see if we are seeking for the record we are currently on
@@ -3832,7 +3828,6 @@ typedef enum
 #define JET_paramBackupChunkSize                66  //  backup read size in pages
 #define JET_paramBackupOutstandingReads         67  //  backup maximum reads outstanding
 
-#define JET_paramFlight_RBSMaxTableDeletePages  68  //  Maximum table delete size (in pages) to allow if we are activated on the RBS copy
 
 #define JET_paramLogFileCreateAsynch            69  //  prepares next log file while logging to the current one to smooth response time
 
@@ -3853,42 +3848,24 @@ typedef enum
 #define JET_paramRecoveryCurrentLogfile         79  //  which generation is currently being replayed (read only)
 //                                              81  //  JET_paramGlobalMinVerPages defined above
 #define JET_paramOSSnapshotTimeout              82  //  timeout for the freeze period in msec
-#define JET_paramFlight_RBSDbScanRaiseCorruptionRevertedFDP     74  // Dbscan normally should redelete reverted FDPs which have the delete flag set. But, we don't expect that unless we delete logs and mount that copy and for automated testing, we don't delete logs. So for the automated testing cases, we will raise a corruption instead, which should avoid any real corruption due to bugs.
-
-#define JET_paramFlight_RBSAllowTooSoonNonRevertableDelete      75  //  If set, we will do a non-revertable table even if PgnoFDPLastSetTime is null or within the last 7days. Note: Both JET_bitRevertableTableDeleteIfTooSoon and JET_paramFlight_RBSRevertableDeleteIfTooSoonTimeNull will be ignored if this variant is set.
-
-#define JET_paramFlight_RBSForceRollIntervalSec                 80  // Time after which we should force roll into new revert snapshot by raising failure item and letting HA remount. This is temporary till we have live roll.
-
-#define JET_paramFlight_EnableScanCheckFDPDeleteFlags           83  //  Whether we want to enable logging FDPDelete flags in ScanCheck2 log record.
-
-#define JET_paramFlight_NewQueueOptions                         84  //  Controls options for new Meted IO Queue
-#define JET_paramFlight_ConcurrentMetedOps                      85  //  Controls how many IOs we leave out at once for the new Meted IO Queue.
-
-#define JET_paramFlight_LowMetedOpsThreshold                    86  //  Controls the transition from 1 meted op to JET_paramFlight_ConcurrentMetedOps (which is the max).
-
-#define JET_paramFlight_MetedOpStarvedThreshold                 87  //  Milliseconds until a meted IO op is considered starved and dispatched no matter what.
 
 
-#define JET_paramFlight_MaxRBSBuffers                           88  //  Max number of buffers to allocate for revert snapshot.
 
 
-#define JET_paramFlight_EnableShrinkArchiving                   89  //  Turns on archiving truncated data when shrinking a database (subject to efv).
 
 
-#define JET_paramFlight_EnableBackupDuringRecovery              90  //  Turns on backup during recovery (i.e. seed from passive copy).
 
 
-#define JET_paramFlight_RBSRollIntervalSec                      91 // Time after which we should roll into new revert snapshot.
 
-#define JET_paramFlight_RBSMaxRequiredRange                     92 // Max required range allowed for revert snapshot. If combined required range of the dbs is greater than this we will skip creating the revert snapshot
 
-#define JET_paramFlight_RBSCleanupEnabled                       93 // Turns on clean up for revert snapshot.
-#define JET_paramFlight_RBSLowDiskSpaceThresholdGb              94 // Low disk space in gigabytes at which we will start cleaning up RBS aggressively.
 
-#define JET_paramFlight_RBSMaxSpaceWhenLowDiskSpaceGb           95 // Max alloted space in gigabytes for revert snapshots when the disk space is low.
 
-#define JET_paramFlight_RBSMaxTimeSpanSec                       96 // Max timespan of a revert snapshot
-#define JET_paramFlight_RBSCleanupIntervalMinSec                97 // Min time between cleanup attempts of revert snapshots.
+
+
+
+
+
+
 
 
 
@@ -3914,17 +3891,11 @@ typedef enum
 // Parameters added in Windows 2003/XP64.
 #define JET_paramAlternateDatabaseRecoveryPath  113 //  recovery-only - search for dirty-shutdown databases in specified location only
 
-#define JET_paramFlight_ExtentPageCountCacheVerifyOnly          114 //  Verify values read from the Extent Page Count Cache rather than just returning them.
 
-#define JET_paramFlight_EnablePgnoFDPLastSetTime                115 //  whether we want to enable setting PgnoPFDSetTime in the system table for a table entry.
 
-#define JET_paramFlight_EnableScanCheck2Flags                   116 //  whether we want to enable logging flags in ScanCheck2 log record.
 
-#define JET_paramFlight_EnableExtentFreed2                      117 //  whether we want to enable logging ExtentFreed2 LR after the efv upgrade.
 
-#define JET_paramFlight_RBSLargeRevertableDeletePages           118 //  Large revertable delete size for a table (in pages) beyond which we will track the deletes.
 
-#define JET_paramFlight_RBSRevertableDeleteIfTooSoonTimeNull    119 //  If set, we will do a revertable table delete even if NonRevertableTableDelete flag is passed provided NonRevertable delete is failing due to JET_errRBSDeleteTableTooSoon due to time not being set. Note: If JET_bitRevertableTableDeleteIfTooSoon is set, this variant is ignored.
 
 
 //                                              120 //  JET_paramDBAPageAvailMin
@@ -4073,7 +4044,7 @@ typedef enum
 #define JET_paramEnableBlockCacheDetach         220 //  Indicates that ESE Block Cache detach is enabled.  This will allow a file cached by the ESE Block Cache to be detached on open.
 
 
-#define JET_paramMaxValueInvalid                221 //  This is not a valid parameter. It can change from release to release!
+#define JET_paramMaxValueInvalid                223 //  This is not a valid parameter. It can change from release to release!
 
 
 /* Flags for JET_sesparamIOSessTraceFlags */
@@ -5503,6 +5474,10 @@ typedef JET_ERR (JET_API *JET_PFNEMITLOGDATA)(
 
 #define JET_errNodeCorrupted                -358  // A node or prefix node is logically corrupted, the key suffix size is larger than the node or line's size.
 
+#define JET_errBBTNodeCorrupted             -364  // A property of the BBT node is logically corrupted. Or the BBT node isn't valid.
+
+#define JET_errBBTBuffCorrupted             -365  // A BBT buff is logically corrupted. The nodes are out of sequence or the BBT header is corrupt.
+
 
 //  RECORD MANAGER errors
 #define wrnFLDKeyTooBig                      400  /* Key too big (truncated it) */
@@ -6160,6 +6135,8 @@ typedef JET_ERR (JET_API *JET_PFNEMITLOGDATA)(
 
 #define JET_errRBSRCPageFDPDeleteFileCorrupt -1948  /* The database cannot be reverted to the expected time as we are in apply root page records state but the corresponding file to init the page state is corrupt */
 
+#define JET_errRBSRedeleteFDPExpected       -1949  /* Indicates that the reverted table is expected to be marked with delete flag. */
+
 #define JET_wrnDefragAlreadyRunning          2000 /* Online defrag already running on specified database */
 #define JET_wrnDefragNotRunning              2001 /* Online defrag not running on specified database */
 #define JET_wrnDatabaseScanAlreadyRunning    2002 /* JetDatabaseScan already running on specified database */
@@ -6495,6 +6472,14 @@ JetDupSession(
     JET_SESID sesid,
     JET_SESID* psesid);
 
+#define JET_bitDupReadOnlySnapshot      0x00000001  // Duplicate the transaction snapshot point (including transaction context) for readonly transaction.
+
+JET_ERR JET_API
+JetDupSession2(
+    JET_SESID sesid,
+    JET_GRBIT grbit,
+    JET_SESID* psesid);
+
 JET_ERR JET_API
 JetEndSession(
     JET_SESID sesid,
@@ -6555,7 +6540,6 @@ JetIdle(
 //  If zero, the ExtentPageCountCache table will be removed, if it exists.
 //  The default value is 0 (i.e. remove unless explicitly told to keep).
 
-#define JET_dbparamFlight_SelfAllocSpBufReservationEnabled 8201 //  Enable self-allocation of space to refill root split buffers.
 
 
 #define JET_dbparamMaxValueInvalid          8202     //  This is not a valid database parameter. It can change from release to release!

@@ -1,24 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-// tchar.h must be above where strsafe.h is includes.
-#pragma prefast(push)
-#pragma prefast(disable:26006, "Dont bother us with tchar, someone else owns that.")
-#pragma prefast(disable:26007, "Dont bother us with tchar, someone else owns that.")
-#pragma prefast(disable:28718, "Dont bother us with tchar, someone else owns that.")
-#pragma prefast(disable:28726, "Dont bother us with tchar, someone else owns that.")
-#include <tchar.h>
-#pragma prefast(pop)
-
 #include "sync.hxx"
-
-#define STRSAFE_NO_DEPRECATE 1
-#pragma prefast(push)
-#pragma prefast(disable:28196, "Do not bother us with strsafe, someone else owns that.")
-#pragma prefast(disable:28205, "Do not bother us with strsafe, someone else owns that.")
-#include <strsafe.h>
-#pragma prefast(pop)
-
 
 //  Random Fault Injection
 
@@ -2906,7 +2889,9 @@ CSXWLatch::~CSXWLatch()
 // errors.
 
 
+#define DWORD OS_WIN_DWORD
 #include <windows.h>
+#undef DWORD
 
 #ifndef ESENT
 //
@@ -3233,7 +3218,7 @@ BOOL FOSSyncIClsRegister( _CLS* pcls )
 
             DWORD dwExitCode;
             if (    pclsClean->hContext &&
-                    GetExitCodeThread( pclsClean->hContext, &dwExitCode ) &&
+                    GetExitCodeThread( pclsClean->hContext, ( OS_WIN_DWORD * )&dwExitCode ) &&
                     dwExitCode != STILL_ACTIVE )
             {
                 //  detach this CLS
@@ -4268,7 +4253,6 @@ void CKernelSemaphore::Release( const INT cToRelease )
 
 #include<stdarg.h>
 #include<stdio.h>
-#include<tchar.h>
 
 //  ================================================================
 class CPrintF
@@ -4319,7 +4303,7 @@ inline void __cdecl CIPrintF::operator()( const CHAR* szFormat, ... )
     CHAR szT[ 1024 ];
     va_list arg_ptr;
     va_start( arg_ptr, szFormat );
-    StringCbVPrintfA( szT, sizeof(szT), szFormat, arg_ptr );
+    vsprintf_s( szT, sizeof(szT), szFormat, arg_ptr );
     va_end( arg_ptr );
 
     CHAR*   szLast  = szT;
@@ -4450,7 +4434,7 @@ void __cdecl CFPrintF::operator()( const char* szFormat, ... )
 
         va_list arg_ptr;
         va_start( arg_ptr, szFormat );
-        StringCbVPrintfA( szBuf, cchBuf, szFormat, arg_ptr );
+        vsprintf_s( szBuf, cchBuf, szFormat, arg_ptr );
         va_end( arg_ptr );
 
         //  append the string to the file
@@ -4461,7 +4445,7 @@ void __cdecl CFPrintF::operator()( const char* szFormat, ... )
         SetFilePointerEx( HANDLE( m_hFile ), ibOffset, NULL, FILE_END );
 
         DWORD cbWritten;
-        WriteFile( HANDLE( m_hFile ), szBuf, DWORD( strlen( szBuf ) * sizeof( char ) ), &cbWritten, NULL );
+        WriteFile( HANDLE( m_hFile ), szBuf, DWORD( strlen( szBuf ) * sizeof( char ) ), ( OS_WIN_DWORD * )&cbWritten, NULL );
 
         ReleaseMutex( HANDLE( m_hMutex ) );
     }
@@ -4613,7 +4597,7 @@ GetExpression(
     DEBUG_VALUE FullValue;
     ULONG64 Address = 0;
 
-    hr = g_DebugControl->Evaluate( szExpression, DEBUG_VALUE_INT64, &FullValue, &EndIdx );
+    hr = g_DebugControl->Evaluate( szExpression, DEBUG_VALUE_INT64, &FullValue, ( OS_WIN_ULONG * )&EndIdx );
     if ( SUCCEEDED( hr ) )
     {
         Address = FullValue.I64;
@@ -4635,7 +4619,7 @@ FEDBGMemoryRead(
 //  ================================================================
 {
     HRESULT hr;
-    hr = g_DebugDataSpaces->ReadVirtual( ulAddressInDebuggee, pbBuffer, cbBuffer, pcbRead );
+    hr = g_DebugDataSpaces->ReadVirtual( ulAddressInDebuggee, pbBuffer, cbBuffer, ( OS_WIN_ULONG * )pcbRead );
     return SUCCEEDED( hr );
 }
 
@@ -4679,7 +4663,7 @@ LOCAL BOOL FAddressFromGlobal( const char* const szGlobal, T** const ppt )
     DEBUG_VALUE FullValue;
     ULONG64 Address = 0;
 
-    hr = g_DebugControl-> Evaluate( szGlobal, DEBUG_VALUE_INT64, &FullValue, &EndIdx);
+    hr = g_DebugControl->Evaluate( szGlobal, DEBUG_VALUE_INT64, &FullValue, ( OS_WIN_ULONG * )&EndIdx);
 
     if ( SUCCEEDED( hr ) )
     {
@@ -4707,7 +4691,7 @@ LOCAL BOOL FGlobalFromAddress( T* const pt, __out_bcount(cbMax) PSTR szGlobal, c
         ulAddress,
         szGlobal,
         (ULONG) cbMax,
-        &cbActual,
+        ( OS_WIN_ULONG * )&cbActual,
         &dwOffset
         );
 
@@ -4896,7 +4880,7 @@ LOCAL VOID SprintHex(
     {
         if ( 0 != cbAddress )
         {
-            StringCbPrintfA( sz, cbDest-(sz-szDest), "%*.*lx    ", cbAddress, cbAddress, (DWORD)(pb - rgbSrc) + cbStart );
+            sprintf_s( sz, cbDest-(sz-szDest), "%*.*lx    ", cbAddress, cbAddress, (DWORD)(pb - rgbSrc) + cbStart );
             sz += strlen( sz );
         }
         CHAR * szHex    = sz;
@@ -6252,12 +6236,12 @@ static BOOL FOSSyncIInit()
         BOOL fResult;
         fResult = GetLogicalProcessorInformationEx( RelationGroup,
                                                     pBuffer,
-                                                    &BufferSize );
+                                                    ( OS_WIN_DWORD * )&BufferSize );
         OSSYNCAssert( !fResult && GetLastError() == ERROR_INSUFFICIENT_BUFFER );
         pBuffer = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *)_alloca( BufferSize );
         fResult = GetLogicalProcessorInformationEx( RelationGroup,
                                                     pBuffer,
-                                                    &BufferSize );
+                                                    ( OS_WIN_DWORD * )&BufferSize );
         OSSYNCAssert( fResult );
         g_cProcessorGroups = pBuffer->Group.ActiveGroupCount;
         g_cProcessorsPerGroup = 1;

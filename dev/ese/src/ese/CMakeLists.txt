@@ -90,6 +90,7 @@ set(ESE_LIBRARIES
     dht
     sync
     _errstr
+    _lz4
     _xpress
     _perfctrs
     _log

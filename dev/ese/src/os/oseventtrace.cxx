@@ -200,6 +200,7 @@ ERR ErrOSEventTraceInit()
 
     // Needed to make everything compile.  Harmless.
     (void)FOSEventTraceEnabled();
+    (void)FOSEventTraceAnyKeywordEnabled( 0 );
 
     return JET_errSuccess;
 }
@@ -267,3 +268,7 @@ BOOL FOSEventTraceEnabled()
     // return !fThanks;
 }
 
+// FOSEventTraceKeywordEnabled / FOSEventTraceAnyKeywordEnabled are now
+// header-inline stubs returning fFalse (see oseventtrace.hxx). The ETW keyword
+// gate is dead on the Linux port — PosixTraceEnabled (lttng state) gates
+// emission — so keyword subsampling is simply off.

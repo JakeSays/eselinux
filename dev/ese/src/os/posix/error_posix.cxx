@@ -332,7 +332,7 @@ void __stdcall AssertFail(PCSTR szMessageFormat, PCSTR szFilename, LONG lLine, .
     OSDiagTrackAssertFail(szAssertMessage, wszIssueSource);
 
     {
-        CPRINTFFILE cprintffileAssertTxt(wszAssertFile);
+        CPRINTFFILE cprintffileAssertTxt(wszAssertFile, CPRINTFFILE::FILEENCODING::ASCII);
         cprintffileAssertTxt("%ws", g_wszAssertTextFull);
     }
 

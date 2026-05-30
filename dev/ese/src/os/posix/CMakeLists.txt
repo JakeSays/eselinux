@@ -162,6 +162,12 @@ if (NOT WIN32)
     # compression path).  Vendored under third_party/zstd-1.5.7/.
     target_link_libraries(osposix PRIVATE zstd)
 
+    # _lz4 backs TCompressedJournalEntry (_journalentry.hxx), instantiated in
+    # osposix TUs. PRIVATE on a static lib still propagates to consumers, so
+    # every target that links osposix (libese + the devlibtest unit tests)
+    # picks up LZ4_compress_default / LZ4_decompress_safe_partial.
+    target_link_libraries(osposix PRIVATE _lz4)
+
     # libdl backs runtime dlopen() of two optional sibling libraries:
     #   - libsystemd.so.0 from eventoslog_posix.cxx (sd_journal_sendv
     #     structured-fields upgrade; falls back to syslog(3) if absent)

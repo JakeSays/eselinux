@@ -19,6 +19,19 @@ inline void random_shuffle( It first, It last )
 
 #include "collectionunittest.hxx"
 
+// MSVC's <random> internal _Rand_urng_from_func doesn't exist on libc++. Provide
+// a minimal rand()-backed UniformRandomBitGenerator (the exact name the merged
+// std::shuffle() calls below reference) so they compile and stay deterministic.
+struct _Rand_urng_from_func
+{
+    typedef unsigned int result_type;
+    static constexpr result_type min() { return 0; }
+    static constexpr result_type max() { return RAND_MAX; }
+    result_type operator()() { return (result_type)rand(); }
+};
+
+_Rand_urng_from_func _ShuffleRandFunc;
+
 // node constructor zeroes members and sets the color to red
 CUnitTest( RedBlackTreeINodeConstructor, 0, "" );
 ERR RedBlackTreeINodeConstructor::ErrTest()
@@ -542,12 +555,12 @@ ERR RedBlackTreeRandomInserts::ErrTest()
 
     CRedBlackTree<INT,INT> tree;
     
-    random_shuffle(keys, keys+_countof(keys));
+    shuffle(keys, keys+_countof(keys), _ShuffleRandFunc);
     TestCall(ErrInsertAll(tree, keys, _countof(keys)));
 
     TestCall(ErrRetrieveAll(tree, keys, _countof(keys)));
 
-    random_shuffle(keys, keys+_countof(keys));
+    shuffle(keys, keys+_countof(keys), _ShuffleRandFunc);
     TestCall(ErrDeleteAll(tree, keys, _countof(keys)));
 
 HandleError:    
@@ -570,7 +583,7 @@ ERR RedBlackTreeInvasiveMakeEmpty::ErrTest()
 
     CRedBlackTree<INT, INT>::BaseType itree;
 
-    random_shuffle( keys, keys + _countof( keys ) );
+    shuffle( keys, keys + _countof( keys ), _ShuffleRandFunc );
     TestCall( ErrInsertAll( itree, keys, _countof( keys ), &prgNodes ) );
     TestCall( ErrRetrieveAll( itree, keys, _countof( keys ) ) );
     itree.MakeEmpty();
@@ -608,7 +621,7 @@ ERR RedBlackTreeMakeEmpty::ErrTest()
 
     CRedBlackTree<INT,INT> tree;
     
-    random_shuffle(keys, keys+_countof(keys));
+    shuffle(keys, keys+_countof(keys), _ShuffleRandFunc);
     TestCall(ErrInsertAll(tree, keys, _countof(keys)));
     TestCall(ErrRetrieveAll(tree, keys, _countof(keys)));
     tree.MakeEmpty();
@@ -635,11 +648,11 @@ ERR RedBlackTreeInsertDeleteInsert::ErrTest()
 
     CRedBlackTree<INT,INT> tree;
     
-    random_shuffle(keys1, keys1+_countof(keys1));
-    random_shuffle(keys2, keys2+_countof(keys2));
+    shuffle(keys1, keys1+_countof(keys1), _ShuffleRandFunc);
+    shuffle(keys2, keys2+_countof(keys2), _ShuffleRandFunc);
     TestCall(ErrInsertAll(tree, keys1, _countof(keys1)));
     TestCall(ErrRetrieveAll(tree, keys1, _countof(keys1)));
-    random_shuffle(keys1, keys1+_countof(keys1));
+    shuffle(keys1, keys1+_countof(keys1), _ShuffleRandFunc);
     TestCall(ErrDeleteAll(tree, keys1, _countof(keys1)/2));
     TestCall(ErrInsertAll(tree, keys2, _countof(keys2)));
     TestCall(ErrRetrieveAll(tree, keys2, _countof(keys2)));

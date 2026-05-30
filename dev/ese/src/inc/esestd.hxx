@@ -8,13 +8,6 @@
 #define _CRT_RAND_S
 #include <stdlib.h>
 #include <string.h>
-#pragma prefast(push)
-#pragma prefast(disable:26006, "Dont bother us with tchar, someone else owns that.")
-#pragma prefast(disable:26007, "Dont bother us with tchar, someone else owns that.")
-#pragma prefast(disable:28718, "Dont bother us with tchar, someone else owns that.")
-#pragma prefast(disable:28726, "Dont bother us with tchar, someone else owns that.")
-#include <tchar.h>
-#pragma prefast(pop)
 #include <stddef.h>
 #include <stdio.h>
 #include <time.h>
@@ -23,11 +16,6 @@
 #include <ctype.h>
 
 #include <specstrings.h>
-
-typedef __nullterminated char* PSTR;
-typedef __nullterminated const char* PCSTR;
-typedef __nullterminated wchar_t* PWSTR;
-typedef __nullterminated const wchar_t* PCWSTR;
 
 #include <algorithm>
 #include <functional>

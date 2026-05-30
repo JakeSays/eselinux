@@ -46,6 +46,17 @@ BOOL PosixTraceEnabled( const ULONG etguid );
 #define OSEventTrace( etguid, ... ) \
     if ( PosixTraceEnabled( etguid ) ) OSEventTrace_( ( etguid ) __VA_OPT__(,) __VA_ARGS__ )
 
+//  The ETW keyword gate is dead on the Linux port — PosixTraceEnabled (lttng
+//  state) gates emission instead.  These return fTrue so the cache-trace
+//  subsampling pre-gate in bf.cxx stays *transparent* (emit, then let
+//  PosixTraceEnabled decide) rather than suppressing BF ResMgr traces before
+//  they ever reach the lttng gate.  The rate-reduction (1-in-N) is forgone; it
+//  needs the unwired JET_paramFlight_CacheTraceSamplingRatio anyway.
+template< OSEventTraceKeywordGUID etguid >
+INLINE BOOL FOSEventTraceKeywordEnabled() { return fTrue; }
+
+INLINE BOOL FOSEventTraceAnyKeywordEnabled( const ULONGLONG ullKeywordMask ) { return fTrue; }
+
 //  The first 8 are generic reasons, resused per event, the next 248 are for whatever 
 
 enum TraceStationIdentificationReason : BYTE // tsidr
@@ -159,6 +170,9 @@ extern template BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidFileStationId >
 extern template BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidSysStationId >( const TraceStationIdentificationReason tsidr );
 extern template BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidIsamDbfilehdrInfo >( const TraceStationIdentificationReason tsidr );
 extern template BOOL COSEventTraceIdCheck::FAnnounceTime< _etguidFmpStationId >( const TraceStationIdentificationReason tsidr );
+
+// (FOSEventTraceKeywordEnabled is a header-inline stub above; the port needs no
+//  explicit instantiation — the ETW keyword mechanism is unused.)
 
 #endif  //  _OS_EVENT_TRACE_HXX_INCLUDED
 

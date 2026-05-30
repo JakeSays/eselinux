@@ -55,7 +55,7 @@ extern CHAR*    g_szCapturedAssert;
             if ( g_szCapturedAssert != NULL )                           \
                 {                                                       \
                 wprintf( L"\t\t\tDOUBLE-Assert( %hs ) ... Failed!\n", #_condition );    \
-                *(INT*)NULL = 0x42;                                         \
+                __builtin_trap();                                         \
             }                                                           \
             g_szCapturedAssert = #_condition;                               \
         }                                                               \
@@ -63,7 +63,7 @@ extern CHAR*    g_szCapturedAssert;
             {                                                               \
             g_cTestsFailed++;                                               \
             wprintf( L"\t\t\tAssert( %hs ) ... Failed!\n", #_condition );   \
-            *(INT*)NULL = 0x42;                                             \
+            __builtin_trap();                                             \
             exit( 1 );                                                      \
         }                                                               \
     }
@@ -94,7 +94,7 @@ extern CHAR*    g_szCapturedAssert;
         {                                                                                       \
         g_cTestsFailed++;                                                                       \
         wprintf( L"\t\t\tAssert( %hs ) ... Failed @ %d (in %hs)!\n", _sz, __LINE__, __FILE__ ); \
-        *(INT*)NULL = 0x42;                                                                     \
+        __builtin_trap();                                                                     \
         exit( 1 );                                                                              \
     }
 

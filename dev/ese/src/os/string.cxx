@@ -45,6 +45,16 @@ LONG LOSStrLengthA( _In_ PCSTR const sz )
 
     return strlen( sz );
 }
+//  bounded variant (strnlen); EFV9620 dataserializer relies on this.
+LONG LOSStrLengthA( _In_ PCSTR const sz, _In_ const ULONG cchMax )
+{
+    if ( nullptr == sz )
+    {
+        return 0;
+    }
+
+    return strnlen( sz, cchMax );
+}
 LONG LOSStrLengthW( _In_ PCWSTR const wsz )
 {
     // According to Windows OACR, wcslen cannot handle NULL.
@@ -232,6 +242,14 @@ void __cdecl OSStrCbVFormatA ( __out_bcount(cbBuffer) PSTR szBuffer, size_t cbBu
 #endif
 }
 
+void __cdecl OSStrCbVFormatW ( __out_bcount(cbBuffer) PWSTR szBuffer, size_t cbBuffer, __format_string PCWSTR szFormat, va_list alist )
+{
+    HRESULT hr = StringCbVPrintfW( szBuffer, cbBuffer, szFormat, alist );
+#ifdef DEBUG
+    CallS( ErrFromStrsafeHr( hr ) );
+#endif
+}
+
 void __cdecl OSStrCbFormatA ( __out_bcount(cbBuffer) PSTR szBuffer, size_t cbBuffer, __format_string PCSTR szFormat, ...)
 {
     va_list alist;
@@ -275,6 +293,18 @@ ERR __cdecl ErrOSStrCbFormatW ( __out_bcount(cbBuffer) PWSTR szBuffer, size_t cb
     va_start( alist, szFormat );
     HRESULT hr = StringCbVPrintfW( szBuffer, cbBuffer, szFormat, alist );
     va_end( alist );
+    return( ErrFromStrsafeHr(hr) );
+}
+
+ERR __cdecl ErrOSStrCbVFormatA ( __out_bcount(cbBuffer) PSTR szBuffer, size_t cbBuffer, __format_string PCSTR szFormat, va_list alist )
+{
+    HRESULT hr = StringCbVPrintf( szBuffer, cbBuffer, szFormat, alist );
+    return( ErrFromStrsafeHr(hr) );
+}
+
+ERR __cdecl ErrOSStrCbVFormatW ( __out_bcount(cbBuffer) PWSTR szBuffer, size_t cbBuffer, __format_string PCWSTR szFormat, va_list alist )
+{
+    HRESULT hr = StringCbVPrintfW( szBuffer, cbBuffer, szFormat, alist );
     return( ErrFromStrsafeHr(hr) );
 }
 
@@ -627,6 +657,7 @@ ERR ErrOSSTRUnicodeToAscii( _In_ PCWSTR const       pwszIn,
 
 //  convert a WCHAR string to a _TCHAR string
 
+#ifdef __TCHAR_DEFINED   // decl in string.hxx is identically gated; _TCHAR only exists with tchar.h
 ERR ErrOSSTRUnicodeToTchar( const wchar_t *const    pwszIn,
                             __out_ecount(ctchOut) _TCHAR *const         ptszOut,
                             const INT               ctchOut )
@@ -653,6 +684,7 @@ ERR ErrOSSTRUnicodeToTchar( const wchar_t *const    pwszIn,
 
 #endif  //  UNICODE
 }
+#endif  //  __TCHAR_DEFINED
 
 
 // this is to convert a multi string (double zero terminated)

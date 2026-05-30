@@ -18,7 +18,7 @@ void AssertExpectedAsserts()
     if ( g_cExpectedAsserts != g_cAssertsFound )
     {
         wprintf( L"\t\t\tDid not find the expect amount of asserts!\n" );
-        *((INT*)NULL) = 0;
+        __builtin_trap();   // deliberate crash; *(INT*)nullptr = 0 is UB clang may delete
         exit(-1);
     }
 #else

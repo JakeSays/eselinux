@@ -469,8 +469,21 @@ if (MSVC)
     )
 endif()
 
+#  Global ESE project defines
+add_compile_definitions(
+    OS_LAYER_USE_NEW_OVERRIDE
+)
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Using Microsoft Visual C++
+
+    # The _HAS_STD_BYTE=0 came in along with the CMAKE_CXX_STANDARD 17 (and was <LanguageStandard>stdcpp17</LanguageStandard> change 
+    # from the .vcxproj project file world) to make ESE code not conflict.  Research suggested this is only need for MSVC, so it is 
+    # set in here.
+    add_compile_definitions(
+        _HAS_STD_BYTE=0
+    )
+
     add_compile_options(
         /Oi # generate intrinsic functions
         /Ot
@@ -487,6 +500,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         /Gy # function-level linking
         /Zc:wchar_t-
         /Zc:forScope
+        /Zc:externConstexpr
         /Zc:inline-
         /GR-
         /TP

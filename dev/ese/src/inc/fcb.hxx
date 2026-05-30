@@ -1069,7 +1069,7 @@ private:
     // =====================================================================
     // FCB creation/deletion.
     public:
-        static FCB *PfcbFCBGet( const IFMP ifmp, const PGNO pgnoFDP, FCBStateFlags* const pfcbsf = nullptr, const BOOL fIncrementRefCount = fTrue, const BOOL fInitForRecovery = fFalse );
+        static FCB *PfcbFCBGet( const IFMP ifmp, const PGNO pgnoFDP, FCBStateFlags* const pfcbsf = nullptr, const BOOL fIncrementRefCount = fTrue, const BOOL fInitForRecovery = fFalse, OBJID* const pobjid = nullptr );
         static ERR ErrCreate( PIB *ppib, IFMP ifmp, PGNO pgnoFDP, FCB **ppfcb );
         VOID CreateComplete_( ERR err, PCSTR szFile, const LONG lLine );
         VOID PrepareForPurge( const BOOL fPrepareChildren = fTrue );

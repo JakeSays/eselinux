@@ -5,7 +5,6 @@
 
 #include "PageSizeClean.hxx"
 
-
 //  ================================================================
 //  CPRINTFBUFFER
 //  ================================================================
@@ -21,12 +20,12 @@ public:
     virtual ~CPRINTFBUFFER() {}
 
     const char * SzBuffer() const { return m_szBuffer; }
-    void __cdecl operator()( const _TCHAR* szFormat, ... )
+    void __cdecl operator()( const CHAR* szFormat, ... )
     {
         va_list arg_ptr;
         va_start( arg_ptr, szFormat );
         const size_t cchBufferUsed = strlen( m_szBuffer );
-        StringCbVPrintfA( m_szBuffer + cchBufferUsed, m_cchBuffer - cchBufferUsed, szFormat, arg_ptr );
+        OSStrCbVFormatA( m_szBuffer + cchBufferUsed, m_cchBuffer - cchBufferUsed, szFormat, arg_ptr );
         va_end( arg_ptr );
     }
 

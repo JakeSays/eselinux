@@ -142,6 +142,7 @@
 #define _Reserved_
 #define _Notnull_
 #define _Maybenull_
+#define _Printf_format_string_
 
 // _At_(target, annotations) applies annotations to a specific target. _Curr_
 // is the SAL placeholder for "the parameter being annotated"; both are
@@ -276,6 +277,30 @@ typedef unsigned char       BYTE, *PBYTE;
 typedef USHORT              WORD, *PWORD;
 typedef ULONG               DWORD, *PDWORD;
 typedef ULONGLONG           QWORD, *PQWORD;
+
+//  Types for the (few) places that interact with OS APIs declared in terms of
+//  `long` / `unsigned long`.  A true 32 bits on BOTH platforms: `long` is
+//  32-bit on Win32/Win64 (LLP64); on the LP64 port `long` is 64-bit, so there
+//  we use `int` / `unsigned int` to keep them 32-bit and match the
+//  windows-shim's DWORD plus the clang intrinsic signatures (_BitScanReverse64
+//  takes `unsigned int*`, _InterlockedExchange `volatile int*`).
+//  Upstream-introduced (sync to EFV 9620); a handful of merged sites cast
+//  through these.
+#if defined(_MSC_VER)
+typedef long                OS_WIN_LONG;
+typedef unsigned long       OS_WIN_ULONG;
+typedef unsigned long       OS_WIN_DWORD;
+typedef long *              OS_WIN_PLONG;
+typedef unsigned long *     OS_WIN_PULONG;
+typedef unsigned long *     OS_WIN_PDWORD;
+#else
+typedef int                 OS_WIN_LONG;
+typedef unsigned int        OS_WIN_ULONG;
+typedef unsigned int        OS_WIN_DWORD;
+typedef int *               OS_WIN_PLONG;
+typedef unsigned int *      OS_WIN_PULONG;
+typedef unsigned int *      OS_WIN_PDWORD;
+#endif
 
 #ifndef _MSC_VER
 typedef char                CHAR, *PCHAR;
@@ -536,11 +561,14 @@ const QWORD     qwMax   = 0xFFFFFFFFFFFFFFFF;
     // ("_TRUNCATE" or actual cap). We collapse to glibc's snprintf using the
     // smaller of the two limits, which matches the safe-CRT semantics for our
     // engine call sites (none of them rely on _TRUNCATE-specific behavior).
-    #define _snprintf_s( buf, cb, cnt, fmt, ... ) snprintf( (buf), ( (cb) < (cnt) ? (cb) : (cnt) ), (fmt), ##__VA_ARGS__ )
+    //  NB: fmt is intentionally NOT parenthesized — the edbg FORMAT_*() macros
+    //  expand to a comma-separated "fmt", arg, arg... list in the fmt slot, and
+    //  wrapping that in parens would collapse it to a comma-operator expression.
+    #define _snprintf_s( buf, cb, cnt, fmt, ... ) snprintf( (buf), ( (cb) < (cnt) ? (cb) : (cnt) ), fmt, ##__VA_ARGS__ )
 
     // sprintf_s — fixed-size sprintf. (buf, cb, fmt, ...) → snprintf,
     // ignoring the secure-CRT semantics for the trailing NUL.
-    #define sprintf_s( buf, cb, fmt, ... ) snprintf( (buf), (cb), (fmt), ##__VA_ARGS__ )
+    #define sprintf_s( buf, cb, fmt, ... ) snprintf( (buf), (cb), fmt, ##__VA_ARGS__ )
 
     // sscanf_s — engine call sites scan integer fields only (no %s/%c), so
     // the secure-CRT buffer-size args aren't needed; collapse to glibc sscanf.

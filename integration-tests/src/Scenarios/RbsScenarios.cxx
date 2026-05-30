@@ -20,6 +20,14 @@
 #include <thread>
 #include <vector>
 
+//  Internal RBS roll-interval flight knobs — deliberately NOT part of the
+//  public jetapi.h surface.  This scenario reaches past the public API to
+//  force rapid RBS rolling.  IDs track the engine's jethdr.w (80 / 91); JET
+//  flight-param IDs are recycled across releases, so re-verify these on a
+//  major engine sync.
+#define JET_paramFlight_RBSForceRollIntervalSec  80
+#define JET_paramFlight_RBSRollIntervalSec       91
+
 using namespace ese::tests;
 
 namespace

@@ -62,16 +62,9 @@ typedef HANDLE              HKEY;
 typedef HANDLE              HLOCAL;
 typedef HANDLE              HGLOBAL;
 
-//  String pointer aliases (CHAR/LPSTR live in cc.hxx)
-//
-typedef char*               PSTR;
-typedef const char*         PCSTR;
-typedef const char*         LPCSTR;
-typedef wchar_t*            LPWSTR;
-typedef const wchar_t*      LPCWSTR;
-typedef wchar_t             WCHAR;
-typedef WCHAR*              PWSTR;
-typedef const WCHAR*        PCWSTR;
+//  WCHAR / string-pointer aliases (CHAR/LPSTR live in cc.hxx). Single source of
+//  truth shared with the published os.hxx-chain headers.
+#include "commontypes.hxx"
 
 //  "Long pointer" aliases for the Win32 base integer types.
 //

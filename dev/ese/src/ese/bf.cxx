@@ -6,7 +6,6 @@
 
 
 
-
 //  Only Init requires the global cbPage, subsequent this point the buffer manager is page independent, and
 //  supports multiple page sizes concurrently.
 //
@@ -4648,6 +4647,10 @@ ERR ErrBFFlush( IFMP ifmp, const OBJID objidFDP, const PGNO pgnoFirst, const PGN
     }
     while ( fRetryFlush );
 
+    if ( g_rgfmp[ ifmp ].FRBSOn() && ( g_rgfmp[ ifmp ].PRBS()->ErrFlushAll() >= JET_errSuccess ) )
+    {
+        g_rgfmp[ ifmp ].PRBS()->AssertAllFlushed();
+    }
     const ERR errBfFlushLoop = err;
     
     OSTraceFMP(
@@ -5252,7 +5255,7 @@ void BFIBuildReferencedPageListForCrashDump( CReferencedPages * ptableReferenced
                             //  means that the page won't be included
                             //  in our list of referenced pages)
 
-                            (void) arrayReferencedPages.ErrSetEntry( arrayReferencedPages.Size(), pagepointer );
+                            (void) arrayReferencedPages.ErrAppendEntry( pagepointer );
                         }
                     }
                 }
@@ -6275,7 +6278,44 @@ void BFIFTLTerm()
 #define ENABLE_BFFTL_TRACING
 #endif
 
-void BFITraceResMgrInit(
+ULONG g_ulSamplingRatio = 0;
+// Mask of all keywords that have events in common with BFRESMGRSUBSAMPLED.
+const ULONGLONG g_ullSamplingKeywordMask = _etguidKeywordPerformance | _etguidKeywordBF | _etguidKeywordBFRESMGR | _etguidKeywordDataWorkingSet;
+
+void BFICacheTraceSamplingInit( const ULONG ulSamplingRatio )
+{
+    g_ulSamplingRatio = ulSamplingRatio;
+}
+
+// Do not emit the events for ResMgrInit and ResMgrTerm if g_ulSamplingRatio is equals to 0
+// and no other keyword with events in common with BFRESMGRSUBSAMPLED are set.
+INLINE bool FBFIDoNotEmitBfResMgrInitTermTrace()
+{
+    return ( ( g_ulSamplingRatio == 0 ) &&
+             !FOSEventTraceAnyKeywordEnabled( g_ullSamplingKeywordMask ) );
+}
+
+// Subsample the cache trace by preventing some events from being emitted.
+// Subsampling is only possible if no other keyword with events in common with BFRESMGRSUBSAMPLED are set and BFRESMGRSUBSAMPLED is set.
+// If g_ulSamplingRatio is set to 0, no events are emitted.
+// With g_ulSamplingRatio > 0, only the events for 1 in g_ulSamplingRatio pages are traced on average.
+INLINE bool FBFIDoNotEmitBfResMgrPageTrace( const IFMP ifmp, const PGNO pgno )
+{
+    if ( ( g_ulSamplingRatio == 1 ) || FOSEventTraceAnyKeywordEnabled( g_ullSamplingKeywordMask ) )
+    {
+        return fFalse;
+    }
+
+    if ( ( g_ulSamplingRatio == 0 ) || !FOSEventTraceKeywordEnabled<_etguidKeywordBFRESMGRSUBSAMPLED>() )
+    {
+        return fTrue;
+    }
+
+    return ( ( ( IFMPPGNO( ifmp, pgno ).Hash() ) % g_ulSamplingRatio ) != 0 );
+}
+
+
+INLINE void BFITraceResMgrInit(
     const INT       K,
     const double    csecCorrelatedTouch,
     const double    csecTimeout,
@@ -6284,35 +6324,41 @@ void BFITraceResMgrInit(
     const double    dblHashUniformity,
     const double    dblSpeedSizeTradeoff )
 {
+    if ( !FBFIDoNotEmitBfResMgrInitTermTrace() )
+    {
 #ifdef ENABLE_BFFTL_TRACING
-    (void)ErrBFIFTLSysResMgrInit(
-        K,
-        csecCorrelatedTouch,
-        csecTimeout,
-        csecUncertainty,
-        dblHashLoadFactor,
-        dblHashUniformity,
-        dblSpeedSizeTradeoff );
+        ( void )ErrBFIFTLSysResMgrInit(
+            K,
+            csecCorrelatedTouch,
+            csecTimeout,
+            csecUncertainty,
+            dblHashLoadFactor,
+            dblHashUniformity,
+            dblSpeedSizeTradeoff );
 #endif // ENABLE_BFFTL_TRACING
 
-    ETResMgrInit(
-        TickOSTimeCurrent(),
-        K,
-        csecCorrelatedTouch,
-        csecTimeout,
-        csecUncertainty,
-        dblHashLoadFactor,
-        dblHashUniformity,
-        dblSpeedSizeTradeoff );
+        ETResMgrInit(
+            TickOSTimeCurrent(),
+            K,
+            csecCorrelatedTouch,
+            csecTimeout,
+            csecUncertainty,
+            dblHashLoadFactor,
+            dblHashUniformity,
+            dblSpeedSizeTradeoff );
+    }
 }
 
 void BFITraceResMgrTerm()
 {
+    if ( !FBFIDoNotEmitBfResMgrInitTermTrace() )
+    {
 #ifdef ENABLE_BFFTL_TRACING
-    (void)ErrBFIFTLSysResMgrTerm();
+        ( void )ErrBFIFTLSysResMgrTerm();
 #endif // ENABLE_BFFTL_TRACING
 
-    ETResMgrTerm( TickOSTimeCurrent() );
+        ETResMgrTerm( TickOSTimeCurrent() );
+    }
 }
 
 void BFITraceCachePage(
@@ -6324,21 +6370,24 @@ void BFITraceCachePage(
     const BFRequestTraceFlags   bfrtf,
     const TraceContext&         tc )
 {
-    GetCurrUserTraceContext getutc;
-    const BYTE bClientType = getutc->context.nClientType;
+    if ( !FBFIDoNotEmitBfResMgrPageTrace( pbf->ifmp, pbf->pgno ) )
+    {
+        GetCurrUserTraceContext getutc;
+        const BYTE bClientType = getutc->context.nClientType;
 
 #ifdef ENABLE_BFFTL_TRACING
 #endif // ENABLE_BFFTL_TRACING
 
-    ETCacheCachePage(
-        tickCache,
-        pbf->ifmp,
-        pbf->pgno,
-        bflf,
-        bflt,
-        pctPriority,
-        bfrtf,
-        bClientType );
+        ETCacheCachePage(
+            tickCache,
+            pbf->ifmp,
+            pbf->pgno,
+            bflf,
+            bflt,
+            pctPriority,
+            bfrtf,
+            bClientType );
+    }
 }
 
 void BFITraceRequestPage(
@@ -6350,43 +6399,47 @@ void BFITraceRequestPage(
     const BFRequestTraceFlags   bfrtf,
     const TraceContext&         tc )
 {
-#ifdef ENABLE_BFFTL_TRACING
-    GetCurrUserTraceContext getutc;
-    const BYTE bClientType = getutc->context.nClientType;
-
-    (void)ErrBFIFTLTouch(
-        tickTouch,
-        pbf->ifmp,
-        pbf->pgno,
-        bflt,
-        bClientType,
-        pctPriority,
-        !!( bfrtf & bfrtfUseHistory ),
-        !!( bfrtf & bfrtfNewPage ),
-        !!( bfrtf & bfrtfNoTouch ),
-        !!( bfrtf & bfrtfDBScan ) );
-#endif // ENABLE_BFFTL_TRACING
-
-    if ( FOSEventTraceEnabled< _etguidCacheRequestPage >() )
+    if ( !FBFIDoNotEmitBfResMgrPageTrace( pbf->ifmp, pbf->pgno ) )
     {
-#ifndef ENABLE_BFFTL_TRACING
+#ifdef ENABLE_BFFTL_TRACING
         GetCurrUserTraceContext getutc;
         const BYTE bClientType = getutc->context.nClientType;
+
+        (void) ErrBFIFTLTouch(
+            tickTouch,
+            pbf->ifmp,
+            pbf->pgno,
+            bflt,
+            bClientType,
+            pctPriority,
+            !!( bfrtf & bfrtfUseHistory ),
+            !!( bfrtf & bfrtfNewPage ),
+            !!( bfrtf & bfrtfNoTouch ),
+            !!( bfrtf & bfrtfDBScan ) );
+#endif // ENABLE_BFFTL_TRACING
+
+        if ( FOSEventTraceEnabled< _etguidCacheRequestPage >() )
+        {
+#ifndef ENABLE_BFFTL_TRACING
+            GetCurrUserTraceContext getutc;
+            const BYTE bClientType = getutc->context.nClientType;
 #endif
 
-        OSEventTrace_(
-            _etguidCacheRequestPage,
-            10,
-            &tickTouch,
-            &(pbf->ifmp),
-            &(pbf->pgno),
-            &bflf,
-            &( ( (CPAGE::PGHDR *)( pbf->pv ) )->objidFDP ),
-            &( ( (CPAGE::PGHDR *)( pbf->pv ) )->fFlags ),
-            &bflt,
-            &pctPriority,
-            &bfrtf,
-            &bClientType );
+
+            OSEventTrace_(
+                _etguidCacheRequestPage,
+                10,
+                &tickTouch,
+                &( pbf->ifmp ),
+                &( pbf->pgno ),
+                &bflf,
+                &( ( (CPAGE::PGHDR*) ( pbf->pv ) )->objidFDP ),
+                &( ( (CPAGE::PGHDR*) ( pbf->pv ) )->fFlags ),
+                &bflt,
+                &pctPriority,
+                &bfrtf,
+                &bClientType );
+        }
     }
 }
 
@@ -6394,11 +6447,14 @@ void BFITraceMarkPageAsSuperCold(
     const IFMP  ifmp,
     const PGNO  pgno )
 {
+    if ( !FBFIDoNotEmitBfResMgrPageTrace( ifmp, pgno ) )
+    {
 #ifdef ENABLE_BFFTL_TRACING
-    (void)ErrBFIFTLMarkAsSuperCold( ifmp, pgno );
+        ( void )ErrBFIFTLMarkAsSuperCold( ifmp, pgno );
 #endif // ENABLE_BFFTL_TRACING
 
-    ETMarkPageAsSuperCold( TickOSTimeCurrent(), ifmp, pgno );
+        ETMarkPageAsSuperCold( TickOSTimeCurrent(), ifmp, pgno );
+    }
 }
 
 void BFITraceEvictPage(
@@ -6408,15 +6464,18 @@ void BFITraceEvictPage(
     const ERR   errBF,
     const ULONG bfef )
 {
-    const ULONG pctPriority = 0;    //  Not relevant for eviction anymore.
-    
+    if ( !FBFIDoNotEmitBfResMgrPageTrace( ifmp, pgno ) )
+    {
+        const ULONG pctPriority = 0;    //  Not relevant for eviction anymore.
+
 #ifdef ENABLE_BFFTL_TRACING
-    (void)ErrBFIFTLEvict( ifmp, pgno, fCurrentVersion, errBF, bfef, pctPriority );
+        ( void )ErrBFIFTLEvict( ifmp, pgno, fCurrentVersion, errBF, bfef, pctPriority );
 #endif // ENABLE_BFFTL_TRACING
 
-    const TICK tickEvictPage = TickOSTimeCurrent();
+        const TICK tickEvictPage = TickOSTimeCurrent();
 
-    ETCacheEvictPage( tickEvictPage, ifmp, pgno, fCurrentVersion, errBF, bfef, pctPriority );
+        ETCacheEvictPage( tickEvictPage, ifmp, pgno, fCurrentVersion, errBF, bfef, pctPriority );
+    }
 }
 
 void BFITraceDirtyPage(
@@ -6424,50 +6483,53 @@ void BFITraceDirtyPage(
     const BFDirtyFlags      bfdf,
     const TraceContext&     tc )
 {
-    auto tick = TickOSTimeCurrent();
-    static_assert( sizeof(tick) == sizeof(DWORD), "Compiler magic failing." );
 
-    //  Note that pbf->lgposModify contains the current lgposModify of the buffer, prior
-    //  to it being updated to reflect the new lgposModify that is triggering the dirty
-    //  operation. Each setting of lgposModify will generate its own trace so that is
-    //  more suitable to determine the lgpos associated with the dirty operation.
+    if ( !FBFIDoNotEmitBfResMgrPageTrace( pbf->ifmp, pbf->pgno ) )
+    {
+        auto tick = TickOSTimeCurrent();
+        static_assert( sizeof( tick ) == sizeof( DWORD ), "Compiler magic failing." );
 
-    // Need to read atomically because removing undo info may change it from under us
-    // without a latch.
+        //  Note that pbf->lgposModify contains the current lgposModify of the buffer, prior
+        //  to it being updated to reflect the new lgposModify that is triggering the dirty
+        //  operation. Each setting of lgposModify will generate its own trace so that is
+        //  more suitable to determine the lgpos associated with the dirty operation.
 
-    const LGPOS lgposModifyRead = pbf->lgposModify.LgposAtomicRead();
-    const ULONG lgposModifyLGen = (ULONG)lgposModifyRead.lGeneration;
-    const USHORT lgposModifyISec = lgposModifyRead.isec;
-    const USHORT lgposModifyIb = lgposModifyRead.ib;
+        // Need to read atomically because removing undo info may change it from under us
+        // without a latch.
 
-    Assert( (LONG)lgposModifyLGen == lgposModifyRead.lGeneration );
+        const LGPOS lgposModifyRead = pbf->lgposModify.LgposAtomicRead();
+        const ULONG lgposModifyLGen = (ULONG) lgposModifyRead.lGeneration;
+        const USHORT lgposModifyISec = lgposModifyRead.isec;
+        const USHORT lgposModifyIb = lgposModifyRead.ib;
+
+        Assert( (LONG) lgposModifyLGen == lgposModifyRead.lGeneration );
 
 #ifdef ENABLE_BFFTL_TRACING
-    (void)ErrBFIFTLDirty( pbf->ifmp, pbf->pgno, bfdf, lgposModifyLGen, lgposModifyISec, lgposModifyIb );
+        ( void )ErrBFIFTLDirty( pbf->ifmp, pbf->pgno, bfdf, lgposModifyLGen, lgposModifyISec, lgposModifyIb );
 #endif // ENABLE_BFFTL_TRACING
 
-    Assert( CmpLgpos( pbf->lgposModify.LgposAtomicRead(), lgposModifyRead ) >= 0 );
+        Assert( CmpLgpos( pbf->lgposModify.LgposAtomicRead(), lgposModifyRead ) >= 0 );
 
-    const CPAGE::PGHDR * ppghdr = (const CPAGE::PGHDR *)pbf->pv;
-    GetCurrUserTraceContext getutc;
+        const CPAGE::PGHDR* ppghdr = (const CPAGE::PGHDR*) pbf->pv;
+        GetCurrUserTraceContext getutc;
 
-    // Iorp() is reserved for the loweset level action that caused an IO, just above the IO layer (e.g. BF's reason for initiating an IO).
-    // Dirtying a page isn't going to cause an IO directly, so iorp should be none. But it doesn't hurt telemetry if we do emit an iorp here.
-    // These are some of the culprits who push an iorp because they call the IO layer directly, which expects an iorp.
-    // But they also end up leaking iorp into the BF Api.
-    // FUTURE-2022-04-14-SOMEONE - If we ever save tc on the BF, consider fixing the iorp leak.
-    Expected( tc.iorReason.Iorp() == iorpNone || 
-              tc.iorReason.Iorp() == iorpDatabaseShrink ||
-              tc.iorReason.Iorp() == iorpDatabaseTrim ||
-              tc.iorReason.Iorp() == iorpPatchFix ||
-              tc.iorReason.Iorp() == iorpSPDatabaseInlineZero ||
-              tc.iorReason.Iorp() == iorpBFLatch ); // page patch
+        // Iorp() is reserved for the loweset level action that caused an IO, just above the IO layer (e.g. BF's reason for initiating an IO).
+        // Dirtying a page isn't going to cause an IO directly, so iorp should be none. But it doesn't hurt telemetry if we do emit an iorp here.
+        // These are some of the culprits who push an iorp because they call the IO layer directly, which expects an iorp.
+        // But they also end up leaking iorp into the BF Api.
+        // FUTURE-2022-04-14-SOMEONE - If we ever save tc on the BF, consider fixing the iorp leak.
+        Expected( tc.iorReason.Iorp() == iorpNone ||
+                  tc.iorReason.Iorp() == iorpDatabaseShrink ||
+                  tc.iorReason.Iorp() == iorpDatabaseTrim ||
+                  tc.iorReason.Iorp() == iorpPatchFix ||
+                  tc.iorReason.Iorp() == iorpSPDatabaseInlineZero ||
+                  tc.iorReason.Iorp() == iorpBFLatch ); // page patch
 
-    if ( pbf->bfdf < bfdfDirty /* first "proper" dirty */ )
-    {
-        //  There is no point in logging itagMicFree, cbfree, dbtime because they would be the
-        //  same as the most recent read page trace at this point.
-        ETCacheFirstDirtyPage(
+        if ( pbf->bfdf < bfdfDirty /* first "proper" dirty */ )
+        {
+            //  There is no point in logging itagMicFree, cbfree, dbtime because they would be the
+            //  same as the most recent read page trace at this point.
+            ETCacheFirstDirtyPage(
                 tick,
                 pbf->ifmp,
                 pbf->pgno,
@@ -6487,9 +6549,9 @@ void BFITraceDirtyPage(
                 tc.iorReason.Ioru(),
                 tc.iorReason.Iorf(),
                 tc.nParentObjectClass );
-    }
+        }
 
-    ETCacheDirtyPage(
+        ETCacheDirtyPage(
             tick,
             pbf->ifmp,
             pbf->pgno,
@@ -6509,85 +6571,92 @@ void BFITraceDirtyPage(
             tc.iorReason.Ioru(),
             tc.iorReason.Iorf(),
             tc.nParentObjectClass );
+    }
 }
 
 void BFITraceSetLgposModify(
     const PBF       pbf,
     const LGPOS&    lgposModify )
 {
-    auto tick = TickOSTimeCurrent();
-    static_assert( sizeof(tick) == sizeof(DWORD), "Compiler magic failing." );
+    if ( !FBFIDoNotEmitBfResMgrPageTrace( pbf->ifmp, pbf->pgno ) )
+    {
+        auto tick = TickOSTimeCurrent();
+        static_assert( sizeof( tick ) == sizeof( DWORD ), "Compiler magic failing." );
 
 #ifdef ENABLE_BFFTL_TRACING
-    const ULONG lgposModifyLGen = (ULONG)lgposModify.lGeneration;
-    const USHORT lgposModifyISec = lgposModify.isec;
-    const USHORT lgposModifyIb = lgposModify.ib;
+        const ULONG lgposModifyLGen = (ULONG) lgposModify.lGeneration;
+        const USHORT lgposModifyISec = lgposModify.isec;
+        const USHORT lgposModifyIb = lgposModify.ib;
 
-    Assert( (LONG)lgposModifyLGen == lgposModify.lGeneration );
+        Assert( (LONG) lgposModifyLGen == lgposModify.lGeneration );
 
-    (void)ErrBFIFTLSetLgposModify( pbf->ifmp, pbf->pgno, lgposModifyLGen, lgposModifyISec, lgposModifyIb );
+        (void) ErrBFIFTLSetLgposModify( pbf->ifmp, pbf->pgno, lgposModifyLGen, lgposModifyISec, lgposModifyIb );
 #endif // ENABLE_BFFTL_TRACING
 
-    ETCacheSetLgposModify(
+        ETCacheSetLgposModify(
             tick,
             pbf->ifmp,
             pbf->pgno,
             lgposModify.qw );
+    }
 }
 
 void BFITraceWritePage(
     const PBF               pbf,
     const FullTraceContext&     tc )
 {
-    const ULONG bfdfTrace = (ULONG)pbf->bfdf;   //  We need to put this on the stack because & isn't valid on a bitfield
-    auto tick = TickOSTimeCurrent();
+    if ( !FBFIDoNotEmitBfResMgrPageTrace( pbf->ifmp, pbf->pgno ) )
+    {
+        const ULONG bfdfTrace = (ULONG) pbf->bfdf;   //  We need to put this on the stack because & isn't valid on a bitfield
+        auto tick = TickOSTimeCurrent();
 
-    Assert( tc.etc.iorReason.Iorp() != iorpNone );
+        Assert( tc.etc.iorReason.Iorp() != iorpNone );
 
 #ifdef ENABLE_BFFTL_TRACING
-    //  Update: Now that we're FTL logging from the IO completion, it can cause IO issue
-    //  and sync complete below the existing completion:
-    //      ese!OSSYNC::CLockDeadlockDetectionInfo::AssertCleanApiExit+0xd4 [d:\src\e16\esemulti\sources\dev\ese\published\inc\sync.hxx @ 3408]
-    //      ese!OSDiskIIOThreadCompleteWithErr+0x8a6 [d:\src\e16\esemulti\sources\dev\ese\src\os\osdisk.cxx @ 6984]
-    //      ese!COSFile::ErrIOAsync+0x6ef [d:\src\e16\esemulti\sources\dev\ese\src\os\osfile.cxx @ 1811]
-    //      ese!COSFile::ErrIOWrite+0x2c2 [d:\src\e16\esemulti\sources\dev\ese\src\os\osfile.cxx @ 1111]
-    //      ese!CFastTraceLog::ErrFTLIFlushBuffer+0x9fb [d:\src\e16\esemulti\sources\dev\ese\src\os\trace.cxx @ 2461]
-    //      ese!CFastTraceLog::ErrFTLFlushBuffer+0x3d [d:\src\e16\esemulti\sources\dev\ese\src\os\trace.cxx @ 2494]
-    //      ese!CFastTraceLogBuffer::ErrFTLBTrace+0x2b6 [d:\src\e16\esemulti\distrib\private\inc\trace.hxx @ 598]
-    //      ese!CFastTraceLog::ErrFTLTrace+0x90 [d:\src\e16\esemulti\sources\dev\ese\src\os\trace.cxx @ 2524]
-    //      ese!ErrBFIFTLWrite+0xc7 [d:\src\e16\esemulti\sources\dev\ese\published\inc\bf\bfftl.hxx @ 337]
-    //      ese!BFITraceWritePage+0x111 [d:\src\e16\esemulti\sources\dev\ese\src\ese\bf.cxx @ 6035]
-    //      ese!BFIAsyncWriteComplete+0xc1 [d:\src\e16\esemulti\sources\dev\ese\src\ese\bf.cxx @ 25254]
-    //      ese!COSFile::IOComplete+0xe5 [d:\src\e16\esemulti\sources\dev\ese\src\os\osfile.cxx @ 1592]
-    //      ese!COSFile::IOComplete_+0x26 [d:\src\e16\esemulti\sources\dev\ese\src\os\osfile.cxx @ 1565]
-    //      ese!OSDiskIIOThreadCompleteWithErr+0x907 [d:\src\e16\esemulti\sources\dev\ese\src\os\osdisk.cxx @ 6999]
-    //      ese!OSDiskIIOThreadIComplete+0x150 [d:\src\e16\esemulti\sources\dev\ese\src\os\osdisk.cxx @ 7047]
-    //      ese!CTaskManager::TMIDispatch+0x800 [d:\src\e16\esemulti\sources\dev\ese\src\os\task.cxx @ 766]
-    //  Ultimately this could be fixed by [re]moving FTL tracing off the existing IO mechanism and using
-    //  it's own NT API writing calls, which would also fix the other issue in ErrBFIPrereadPage() at the
-    //  same time.
-    //(void)ErrBFIFTLWrite( pbf->ifmp, pbf->pgno, BFDirtyFlags( pbf->bfdf ), iorp );
+        //  Update: Now that we're FTL logging from the IO completion, it can cause IO issue
+        //  and sync complete below the existing completion:
+        //      ese!OSSYNC::CLockDeadlockDetectionInfo::AssertCleanApiExit+0xd4 [d:\src\e16\esemulti\sources\dev\ese\published\inc\sync.hxx @ 3408]
+        //      ese!OSDiskIIOThreadCompleteWithErr+0x8a6 [d:\src\e16\esemulti\sources\dev\ese\src\os\osdisk.cxx @ 6984]
+        //      ese!COSFile::ErrIOAsync+0x6ef [d:\src\e16\esemulti\sources\dev\ese\src\os\osfile.cxx @ 1811]
+        //      ese!COSFile::ErrIOWrite+0x2c2 [d:\src\e16\esemulti\sources\dev\ese\src\os\osfile.cxx @ 1111]
+        //      ese!CFastTraceLog::ErrFTLIFlushBuffer+0x9fb [d:\src\e16\esemulti\sources\dev\ese\src\os\trace.cxx @ 2461]
+        //      ese!CFastTraceLog::ErrFTLFlushBuffer+0x3d [d:\src\e16\esemulti\sources\dev\ese\src\os\trace.cxx @ 2494]
+        //      ese!CFastTraceLogBuffer::ErrFTLBTrace+0x2b6 [d:\src\e16\esemulti\distrib\private\inc\trace.hxx @ 598]
+        //      ese!CFastTraceLog::ErrFTLTrace+0x90 [d:\src\e16\esemulti\sources\dev\ese\src\os\trace.cxx @ 2524]
+        //      ese!ErrBFIFTLWrite+0xc7 [d:\src\e16\esemulti\sources\dev\ese\published\inc\bf\bfftl.hxx @ 337]
+        //      ese!BFITraceWritePage+0x111 [d:\src\e16\esemulti\sources\dev\ese\src\ese\bf.cxx @ 6035]
+        //      ese!BFIAsyncWriteComplete+0xc1 [d:\src\e16\esemulti\sources\dev\ese\src\ese\bf.cxx @ 25254]
+        //      ese!COSFile::IOComplete+0xe5 [d:\src\e16\esemulti\sources\dev\ese\src\os\osfile.cxx @ 1592]
+        //      ese!COSFile::IOComplete_+0x26 [d:\src\e16\esemulti\sources\dev\ese\src\os\osfile.cxx @ 1565]
+        //      ese!OSDiskIIOThreadCompleteWithErr+0x907 [d:\src\e16\esemulti\sources\dev\ese\src\os\osdisk.cxx @ 6999]
+        //      ese!OSDiskIIOThreadIComplete+0x150 [d:\src\e16\esemulti\sources\dev\ese\src\os\osdisk.cxx @ 7047]
+        //      ese!CTaskManager::TMIDispatch+0x800 [d:\src\e16\esemulti\sources\dev\ese\src\os\task.cxx @ 766]
+        //  Ultimately this could be fixed by [re]moving FTL tracing off the existing IO mechanism and using
+        //  it's own NT API writing calls, which would also fix the other issue in ErrBFIPrereadPage() at the
+        //  same time.
+        //(void)ErrBFIFTLWrite( pbf->ifmp, pbf->pgno, BFDirtyFlags( pbf->bfdf ), iorp );
 #endif // ENABLE_BFFTL_TRACING
 
-    ETCacheWritePage(
-        tick,
-        pbf->ifmp,
-        pbf->pgno,
-        (((CPAGE::PGHDR *)(pbf->pv))->objidFDP),
-        (((CPAGE::PGHDR *)(pbf->pv))->fFlags),
-        bfdfTrace,
-        tc.utc.context.dwUserID,
-        tc.utc.context.nOperationID,
-        tc.utc.context.nOperationType,
-        tc.utc.context.nClientType,
-        tc.utc.context.fFlags,
-        tc.utc.dwCorrelationID,
-        tc.etc.iorReason.Iorp(),
-        tc.etc.iorReason.Iors(),
-        tc.etc.iorReason.Iort(),
-        tc.etc.iorReason.Ioru(),
-        tc.etc.iorReason.Iorf(),
-        tc.etc.nParentObjectClass );
+        ETCacheWritePage(
+            tick,
+            pbf->ifmp,
+            pbf->pgno,
+            ( ( (CPAGE::PGHDR*) ( pbf->pv ) )->objidFDP ),
+            ( ( (CPAGE::PGHDR*) ( pbf->pv ) )->fFlags ),
+            bfdfTrace,
+            tc.utc.context.dwUserID,
+            tc.utc.context.nOperationID,
+            tc.utc.context.nOperationType,
+            tc.utc.context.nClientType,
+            tc.utc.context.fFlags,
+            tc.utc.dwCorrelationID,
+            tc.etc.iorReason.Iorp(),
+            tc.etc.iorReason.Iors(),
+            tc.etc.iorReason.Iort(),
+            tc.etc.iorReason.Ioru(),
+            tc.etc.iorReason.Iorf(),
+            tc.etc.nParentObjectClass );
+    }
 }
 
 
@@ -9730,7 +9799,7 @@ VOID CBFIssueList::NullifyDiskTiltFake( const IFMP ifmp )
 }
 
 
-CCriticalSection            CBFIssueList::s_critSync( CLockBasicInfo( CSyncBasicInfo( _T( "CBFIssueList::s_critSync" ) ), rankBFIssueListSync, 0 ) );
+CCriticalSection            CBFIssueList::s_critSync( CLockBasicInfo( CSyncBasicInfo( "CBFIssueList::s_critSync" ), rankBFIssueListSync, 0 ) );
 CMeteredSection             CBFIssueList::s_msSync;
 
 
@@ -9755,7 +9824,7 @@ HMEMORY_NOTIFICATION g_pMemoryNotification = nullptr;
 
     //  Init / Term
 
-LOCAL CBinaryLock g_blBFMaintScheduleCancel( CLockBasicInfo( CSyncBasicInfo( _T( "BFMaint Schedule/Cancel" ) ), rankBFMaintScheduleCancel, 0 ) );
+LOCAL CBinaryLock g_blBFMaintScheduleCancel( CLockBasicInfo( CSyncBasicInfo( "BFMaint Schedule/Cancel" ), rankBFMaintScheduleCancel, 0 ) );
 LOCAL volatile BOOL g_fBFMaintInitialized = fFalse;
 
 ERR ErrBFIMaintInit()
@@ -10127,8 +10196,8 @@ void BFISynchronicity( void )
 
     //  Avail Pool
 
-CSemaphore      g_semMaintAvailPoolRequestUrgent( CSyncBasicInfo( _T( "g_semMaintAvailPoolRequestUrgent" ) ) );
-CSemaphore      g_semMaintAvailPoolRequest( CSyncBasicInfo( _T( "g_semMaintAvailPoolRequest" ) ) );
+CSemaphore      g_semMaintAvailPoolRequestUrgent( CSyncBasicInfo( "g_semMaintAvailPoolRequestUrgent" ) );
+CSemaphore      g_semMaintAvailPoolRequest( CSyncBasicInfo( "g_semMaintAvailPoolRequest" ) );
 
 LONG_PTR        cbfAvailPoolLow;
 LONG_PTR        cbfAvailPoolHigh;
@@ -10328,7 +10397,7 @@ void BFIMaintAvailPoolITask( void*, void* )
 
     //  Scavenging
 
-CSemaphore g_semMaintScavenge( CSyncBasicInfo( _T( "g_semMaintScavenge" ) ) );
+CSemaphore g_semMaintScavenge( CSyncBasicInfo( "g_semMaintScavenge" ) );
 
 //  We track the last several runs
 
@@ -11155,8 +11224,14 @@ ERR ErrBFIMaintScavengeIScavengePages( const char* const szContextTraceOnly, con
             }
 
             // Async-flush this page.
+            //
+            // NOTE:  this can block if ulScavengeWriteSev == ulScavengeWriteMax which would give us qosIODispatchImmediate
             const IOREASON ior = IOR( ( ( bfefReason == bfefReasonShrink ) ? iorpBFShrink : iorpBFAvailPool ), fSync ? iorfForeground : iorfNone );
             const OSFILEQOS qos = QosBFIMaintScavengePages( UlParam( PinstFromIfmp( pbf->ifmp ), JET_paramIOPriority ), ulScavengeWriteSev );
+            if ( ( qos & qosIODispatchMask ) == qosIODispatchImmediate )
+            {
+                (void)bfil.ErrIssue( fFalse );
+            }
             const ERR errFlush = ErrBFIFlushPage( pbf, ior, qos, bfdfDirty, fFalse /* fOpportune */, &fPermanentErr );
 
             // Count the number of latched pages we see.
@@ -11777,7 +11852,7 @@ void BFIMaintScavengeTerm( void )
 
     //  Checkpoint Depth
 
-CSemaphore      g_semMaintCheckpointDepthRequest( CSyncBasicInfo( _T( "g_semMaintCheckpointDepthRequest" ) ) );
+CSemaphore      g_semMaintCheckpointDepthRequest( CSyncBasicInfo( "g_semMaintCheckpointDepthRequest" ) );
 
 IFMP            g_ifmpMaintCheckpointDepthStart;
 
@@ -13342,7 +13417,7 @@ ERR ErrBFIMaintCheckpointDepthIFlushPagesByIFMP( const IFMP ifmp, BOOL * const p
 
     //  Checkpoint
 
-CSemaphore      g_semMaintCheckpointRequest( CSyncBasicInfo( _T( "g_semMaintCheckpointRequest" ) ) );
+CSemaphore      g_semMaintCheckpointRequest( CSyncBasicInfo( "g_semMaintCheckpointRequest" ) );
 
 TICK            g_tickMaintCheckpointLast;
 
@@ -13876,9 +13951,9 @@ void BFIMaintHashedLatchesIRedistribute()
 
     //  Cache Size
 
-CSemaphore      g_semMaintCacheStatsRequest( CSyncBasicInfo( _T( "g_semMaintCacheStatsRequest" ) ) );
+CSemaphore      g_semMaintCacheStatsRequest( CSyncBasicInfo( "g_semMaintCacheStatsRequest" ) );
 
-CSemaphore      g_semMaintCacheSize( CSyncBasicInfo( _T( "g_semMaintCacheSize" ) ) );
+CSemaphore      g_semMaintCacheSize( CSyncBasicInfo( "g_semMaintCacheSize" ) );
 LONG            g_cMaintCacheSizePending = 0;
 
 inline ICBPage IcbBFIBufferSize( _In_ const INT cbSize )
@@ -14539,7 +14614,7 @@ void BFIMaintCacheStatsITask( VOID *, VOID * pvContext )
         //  we've failed to acquire the semaphore to schedule the task. this means the task must be executing
         //  right now or in the process of rescheduling itself to complete its job.
 
-        S_ASSERT( dtickMaintCacheSizeRequest <= ( dtickMaintCacheStatsPeriod / 2 ) );
+        static_assert( dtickMaintCacheSizeRequest <= ( dtickMaintCacheStatsPeriod / 2 ) );
 
         g_cMaintCacheSizeReqAcquireFailures++;
 
@@ -15086,7 +15161,7 @@ TICK DtickBFIMaintCacheSizeDuration()
 
     //  Idle Database
 
-CSemaphore      g_semMaintIdleDatabaseRequest( CSyncBasicInfo( _T( "g_semMaintIdleDatabaseRequest" ) ) );
+CSemaphore      g_semMaintIdleDatabaseRequest( CSyncBasicInfo( "g_semMaintIdleDatabaseRequest" ) );
 
 TICK            g_tickMaintIdleDatabaseLast;
 
@@ -15765,9 +15840,11 @@ POSTIMERTASK    g_posttBFIMaintTelemetryITask = nullptr;
 
 void BFIMaintTelemetryRequest()
 {
-    //  if the trace isn't enabled then do not generate telemetry
-    if ( !( FOSEventTraceEnabled< _etguidCacheMemoryUsage >() ||
-            (BOOL)UlConfigOverrideInjection( 56322, fFalse ) ) )
+    //  if the trace isn't enabled then do not generate telemetry.
+    //  the override is a retail-constant, so read it into a local to keep it
+    //  off the '||' (otherwise -Wconstant-logical-operand fires in release).
+    BOOL fForceTelemetry = (BOOL)UlConfigOverrideInjection( 56322, fFalse );
+    if ( !( FOSEventTraceEnabled< _etguidCacheMemoryUsage >() || fForceTelemetry ) )
     {
         return;
     }
@@ -23240,23 +23317,34 @@ void BFIPurgeAllPageVersions( _Inout_ BFLatch* const pbfl, const TraceContext& t
     g_critBFDepend.Enter();
     for ( PBF pbfAbandon = pbf->pbfTimeDepChainNext; pbfAbandon != pbfNil; )
     {
+        BOOL fRetry = fFalse;
+
         if ( pbfAbandon->sxwl.ErrTryAcquireExclusiveLatch() == CSXWLatch::ERR::errSuccess )
         {
             if ( !pbfAbandon->fAbandoned )
             {
-                pbfAbandon->sxwl.UpgradeExclusiveLatchToWriteLatch();
-                pbfAbandon->fAbandoned = fTrue;
-                pbfAbandon->sxwl.ReleaseWriteLatch();
+                if ( pbfAbandon->sxwl.ErrTryUpgradeExclusiveLatchToWriteLatch() == CSXWLatch::ERR::errSuccess )
+                {
+                    pbfAbandon->fAbandoned = fTrue;
+                    pbfAbandon->sxwl.ReleaseWriteLatch();
+                }
+                else
+                {
+                    fRetry = fTrue;
+                    pbfAbandon->sxwl.ReleaseExclusiveLatch();
+                }
             }
             else
             {
                 pbfAbandon->sxwl.ReleaseExclusiveLatch();
             }
-
-            // Next in the chain.
-            pbfAbandon = pbfAbandon->pbfTimeDepChainNext;
         }
         else
+        {
+            fRetry = fTrue;
+        }
+
+        if ( fRetry )
         {
             // Avoid deadlocks.
             g_critBFDepend.Leave();
@@ -23265,6 +23353,11 @@ void BFIPurgeAllPageVersions( _Inout_ BFLatch* const pbfl, const TraceContext& t
 
             // Reset enumeration because we left the g_critBFDepend for an instant.
             pbfAbandon = pbf->pbfTimeDepChainNext;
+        }
+        else
+        {
+            // Next in the chain.
+            pbfAbandon = pbfAbandon->pbfTimeDepChainNext;
         }
     }
     g_critBFDepend.Leave();
@@ -24033,7 +24126,9 @@ ERR ErrBFIFlushLog( _In_ const IFMP ifmp, _In_ const IOFLUSHREASON iofr, const B
 
     //  I/O
 
-const void* const PV_IO_CTX_LOCK = (void*)upMax;
+const void* const PV_IO_CTX_TICK_FLAG = (void*)(ULONG_PTR)1;
+const void* const PV_IO_CTX_LOCK = (void*)( upMax & ~( (ULONG_PTR)PV_IO_CTX_TICK_FLAG ) );
+
 void* PvBFIAcquireIOContext( PBF pbf )
 {
     void* pvIOContextOld = AtomicReadPointer( &pbf->pvIOContext );
@@ -24122,6 +24217,36 @@ void BFIResetIOContext( PBF pbf )
     }
 }
 
+void BFISetAsyncIOContext( _In_ const PBF pbf, _In_ void* const pvIOContextNew )
+{
+    Assert( !( (ULONG_PTR)pvIOContextNew & (ULONG_PTR)PV_IO_CTX_TICK_FLAG ) );
+
+    BFISetIOContext( pbf, pvIOContextNew );
+}
+
+void BFIResetAsyncIOContext( _In_ const PBF pbf )
+{
+    BFIResetIOContext( pbf );
+}
+
+TICK TickBFISyncIOContextStartTime()
+{
+    return (TICK)( (ULONG_PTR)TickOSTimeInterruptCurrent() | (ULONG_PTR)PV_IO_CTX_TICK_FLAG );
+}
+
+void BFISetSyncIOContext( _In_ const PBF pbf )
+{
+    void* const pvIOContextNew = (void*)(ULONG_PTR)TickBFISyncIOContextStartTime();
+    Assert( (ULONG_PTR)pvIOContextNew & (ULONG_PTR)PV_IO_CTX_TICK_FLAG );
+
+    BFISetIOContext( pbf, pvIOContextNew );
+}
+
+void BFIResetSyncIOContext( _In_ const PBF pbf )
+{
+    BFIResetIOContext( pbf );
+}
+
 BOOL FBFIIsIOHung( PBF pbf )
 {
     void* const pvIOContext = PvBFIAcquireIOContext( pbf );
@@ -24141,12 +24266,14 @@ BYTE PctBFIIsIOHung( PBF pbf, void* const pvIOContext )
 {
     IFileAPI* const pfapi = g_rgfmp[ pbf->ifmp ].Pfapi();
 
-    const TICK dtickIOElapsed = pfapi->DtickIOElapsed( pvIOContext );
+    const TICK dtickIOElapsed = ( (ULONG_PTR)pvIOContext & (ULONG_PTR)PV_IO_CTX_TICK_FLAG ) ?
+        DtickDelta( (TICK)(ULONG_PTR)pvIOContext, TickBFISyncIOContextStartTime() ) :
+        pfapi->DtickIOElapsed( pvIOContext );
     const TICK dtickHungIO = (TICK)UlParam( JET_paramHungIOThreshold );
 
     if ( dtickIOElapsed >= dtickHungIO )
     {
-        return 100;
+        return IsDebuggerAttached() ? 99 : 100;
     }
     else
     {
@@ -24296,14 +24423,17 @@ void BFISyncRead( PBF pbf, const OSFILEQOS qosIoPriorities, const TraceContext& 
     if ( !FBFICacheViewCacheDerefIo( pbf ) )
     {
         HRT hrtStart = HrtHRTCount();
+
+        BFISetSyncIOContext( pbf );
+
         err = pfapi->ErrIORead( tc,
                                 ibOffset,
                                 cbData,
                                 pbData,
-                                qosIoUserDispatch | qosIOSignalSlowSyncIO,
-                                nullptr,   // Passing a NULL pfnCompletion triggers sync I/O (foreground on this thread).
-                                DWORD_PTR( pbf ),
-                                IFileAPI::PfnIOHandoff( BFISyncReadHandoff )  );
+                                qosIoUserDispatch | qosIOSignalSlowSyncIO );
+
+        BFIResetSyncIOContext( pbf );
+
         BFITrackCacheMissLatency( pbf, hrtStart, ( tc.iorReason.Iorf() & iorfReclaimPageFromOS ) ? bftcmrReasonPagingFaultDb : bftcmrReasonSyncRead, qosIoPriorities, tc, err );
         Ptls()->threadstats.cPageRead++;
     }
@@ -24313,21 +24443,6 @@ void BFISyncRead( PBF pbf, const OSFILEQOS qosIoPriorities, const TraceContext& 
     BFISyncReadComplete( err, pfapi, err == wrnIOSlow ? qosIOCompleteIoSlow : 0, ibOffset, cbData, pbData, pbf );
 
 
-}
-
-void BFISyncReadHandoff(    const ERR           err,
-                            IFileAPI* const     pfapi,
-                            const FullTraceContext& tc,
-                            const OSFILEQOS     grbitQOS,
-                            const QWORD         ibOffset,
-                            const DWORD         cbData,
-                            const BYTE* const   pbData,
-                            const PBF           pbf,
-                            void* const         pvIOContext )
-{
-    Assert( JET_errSuccess == err );    // Yeah!!!
-
-    BFISetIOContext( pbf, pvIOContext );
 }
 
 void BFISyncReadComplete(   const ERR           err,
@@ -24340,17 +24455,6 @@ void BFISyncReadComplete(   const ERR           err,
 
 {
     Assert( pbf->sxwl.FOwnWriteLatch() );
-
-    //  reset the I/O context, since the operation is officially completed.
-
-    if ( AtomicReadPointer( &pbf->pvIOContext ) != nullptr )
-    {
-        BFIResetIOContext( pbf );
-    }
-    else
-    {
-        Assert( FBFICacheViewCacheDerefIo( pbf ) );
-    }
 
     //  read was successful
 
@@ -24526,10 +24630,9 @@ void BFIAsyncReadHandoff(   const ERR           err,
                             void* const         pvIOContext )
 {
     Assert( JET_errSuccess == err );    // Yeah!!!
-
-    if ( pvIOContext != nullptr )
+    if ( pvIOContext != NULL )
     {
-        BFISetIOContext( pbf, pvIOContext );
+        BFISetAsyncIOContext( pbf, pvIOContext );
     }
     else
     {
@@ -24559,7 +24662,7 @@ void BFIAsyncReadComplete(  const ERR           err,
 
     if ( AtomicReadPointer( &pbf->pvIOContext ) != nullptr )
     {
-        BFIResetIOContext( pbf );
+        BFIResetAsyncIOContext( pbf );
     }
     else
     {
@@ -24668,14 +24771,15 @@ ERR ErrBFISyncWrite( PBF pbf, const BFLatchType bfltHave, OSFILEQOS qos, const T
 
     //  issue sync write
 
+    BFISetSyncIOContext( pbf );
+
     err = pfapi->ErrIOWrite(    tc,
                                 ibOffset,
                                 cbData,
                                 pbData,
-                                qos,
-                                nullptr,   // Passing a NULL pfnCompletion triggers sync I/O (foreground on this thread).
-                                DWORD_PTR( pbf ),
-                                IFileAPI::PfnIOHandoff( BFISyncWriteHandoff ) );
+                                qos );
+
+    BFIResetSyncIOContext( pbf );
 
     //  complete sync write
 
@@ -24684,21 +24788,6 @@ ERR ErrBFISyncWrite( PBF pbf, const BFLatchType bfltHave, OSFILEQOS qos, const T
     BFISyncWriteComplete( err, pfapi, fullTc, qos, ibOffset, cbData, pbData, pbf, bfltHave );
 
     return err;
-}
-
-void BFISyncWriteHandoff(   const ERR           err,
-                            IFileAPI* const     pfapi,
-                            const FullTraceContext& tc,
-                            const OSFILEQOS     grbitQOS,
-                            const QWORD         ibOffset,
-                            const DWORD         cbData,
-                            const BYTE* const   pbData,
-                            const PBF           pbf,
-                            void* const         pvIOContext )
-{
-    Assert( JET_errSuccess == err );    // Yeah!!!
-
-    BFISetIOContext( pbf, pvIOContext );
 }
 
 void BFISyncWriteComplete(  const ERR           err,
@@ -24711,10 +24800,6 @@ void BFISyncWriteComplete(  const ERR           err,
                             const PBF           pbf,
                             const BFLatchType   bfltHave )
 {
-    //  reset the I/O context, since the operation is officially completed.
-
-    BFIResetIOContext( pbf );
-    
     //  trace that we have just written a page
 
     BFITraceWritePage( pbf, tc );
@@ -24911,8 +24996,7 @@ void BFIAsyncWriteHandoff(  const ERR           err,
                             void* const         pvIOContext )
 {
     Assert( JET_errSuccess == err );    // Yeah!!!
-
-    BFISetIOContext( pbf, pvIOContext );
+    BFISetAsyncIOContext( pbf, pvIOContext );
 
     Enforce( CmpLgpos( pbf->lgposModify, g_rgfmp[ pbf->ifmp ].LgposWaypoint() ) <= 0 );   // just for insurance
 
@@ -25518,7 +25602,7 @@ void BFIAsyncWriteComplete( const ERR           err,
 
     //  reset the I/O context, since the operation is officially completed.
 
-    BFIResetIOContext( pbf );
+    BFIResetAsyncIOContext( pbf );
 
     //  trace that we have just written a page
 

@@ -291,6 +291,7 @@ ULONG CbOSEncryptAes256SizeNeeded( ULONG cbDataLen )
 }
 
 ERR ErrOSEncryptionVerifyKey(
+    _In_                            AES256_IMPLEMENTATION impl,   // single libsodium backend; impl ignored
     _In_reads_bytes_(cbKey) const   BYTE *pbKey,
     _In_                            ULONG cbKey )
 {
@@ -305,6 +306,7 @@ ERR ErrOSEncryptionVerifyKey(
 }
 
 ERR ErrOSCreateAes256Key(
+    _In_                                                AES256_IMPLEMENTATION impl,   // single libsodium backend; impl ignored
     _Out_writes_bytes_to_opt_(*pcbKeySize, *pcbKeySize) BYTE *  pbKey,
     _Inout_                                             ULONG * pcbKeySize )
 {
@@ -336,13 +338,14 @@ ERR ErrOSCreateAes256Key(
     *pcbKeySize    = cbNeeded;
 
 #ifdef DEBUG
-    CallS( ErrOSEncryptionVerifyKey( pbKey, *pcbKeySize ) );
+    CallS( ErrOSEncryptionVerifyKey( impl, pbKey, *pcbKeySize ) );
 #endif
 
     return JET_errSuccess;
 }
 
 ERR ErrOSEncryptWithAes256(
+    _In_                                                    AES256_IMPLEMENTATION impl,   // single libsodium backend; impl ignored
     _Inout_updates_bytes_to_(cbDataBufLen, *pcbDataLen)     BYTE *  pbData,
     _Inout_                                                 ULONG * pcbDataLen,
     _In_                                                    ULONG   cbDataBufLen,
@@ -357,7 +360,7 @@ ERR ErrOSEncryptWithAes256(
         return ErrERRCheck( JET_errFeatureNotAvailable );
     }
 
-    CallR( ErrOSEncryptionVerifyKey( pbKey, cbKey ) );
+    CallR( ErrOSEncryptionVerifyKey( impl, pbKey, cbKey ) );
     if ( cbKey - sizeof( AES256KEY ) < kAes256GcmKeyBytes )
     {
         return ErrERRCheck( JET_errInvalidParameter );
@@ -409,6 +412,7 @@ ERR ErrOSEncryptWithAes256(
 }
 
 ERR ErrOSDecryptWithAes256(
+    _In_                                                AES256_IMPLEMENTATION impl,   // single libsodium backend; impl ignored
     _In_reads_( *pcbDataLen )                           BYTE *  pbDataIn,
     _Out_writes_bytes_to_(*pcbDataLen, *pcbDataLen)     BYTE *  pbDataOut,
     _Inout_                                             ULONG * pcbDataLen,
@@ -423,7 +427,7 @@ ERR ErrOSDecryptWithAes256(
         return ErrERRCheck( JET_errFeatureNotAvailable );
     }
 
-    CallR( ErrOSEncryptionVerifyKey( pbKey, cbKey ) );
+    CallR( ErrOSEncryptionVerifyKey( impl, pbKey, cbKey ) );
     if ( cbKey - sizeof( AES256KEY ) < kAes256GcmKeyBytes )
     {
         return ErrERRCheck( JET_errInvalidParameter );
