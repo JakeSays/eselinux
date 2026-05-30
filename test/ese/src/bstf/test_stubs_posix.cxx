@@ -55,6 +55,16 @@ void JetErrorToString( JET_ERR /* err */, const char ** szError, const char ** s
 }
 #endif
 
+// FINSTSomeInitialized — osposix's COSLayerPreInit destructor queries this to
+// detect a process exiting without JetTerm (abnormal teardown). The engine's
+// real body lives in jetapi.cxx (libese.so only); the no-engine test binaries
+// get this stub. A test process has no JET instances, so "none initialized"
+// (a clean teardown, no process-abort) is correct for them.
+BOOL FINSTSomeInitialized( void )
+{
+    return fFalse;
+}
+
 // OS Resource Manager — engine has real bodies in cresmgr.cxx; tests
 // don't need the resource manager, so trivial no-ops suffice.
 typedef INT ERR;

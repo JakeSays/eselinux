@@ -16,6 +16,10 @@ BOOL FOSLayerUp()
 
 extern volatile BOOL g_fProcessAbort;
 
+//  engine-layer query: are any JET instances still initialized?  Used at
+//  OS-layer teardown to detect a process exiting without JetTerm.
+extern BOOL FINSTSomeInitialized();
+
 void OSIProcessAbort()
 {
     //  set the global process abort state.
@@ -474,6 +478,19 @@ COSLayerPreInit::~COSLayerPreInit()
 {
     if ( m_fInitedSuccessfully )
     {
+#ifndef ESE_OS_WINDOWS
+        //  POSIX has no DLL_PROCESS_DETACH; this static-dtor teardown is the
+        //  OS layer's only exit hook.  If instances are still initialized the
+        //  host is exiting without JetTerm -- an abnormal teardown.  Flip ESE
+        //  into process-abort *before* OSPostterm() so the subsystem postterms
+        //  below skip blocking task/thread waits and stand down their
+        //  clean-shutdown asserts / leak checks.  (Windows drives this from
+        //  dllentry.cxx's DLL_PROCESS_DETACH path.)
+        if ( FINSTSomeInitialized() )
+        {
+            OSIProcessAbort();
+        }
+#endif
         //  Post-term the OS Layer ...
         g_fDllUp = fFalse;
         OSPostterm();

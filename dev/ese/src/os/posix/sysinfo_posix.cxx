@@ -27,8 +27,6 @@
 #include <sys/utsname.h>
 #include <unistd.h>
 
-extern void OSIProcessAbort();
-
 extern volatile BOOL g_fDllUp;
 
 namespace
@@ -211,15 +209,6 @@ const WCHAR* WszUtilImageBuildClass() { return g_wszImageBuildClass; }
 //  Signal handler equivalent of the Win32 ^C / ^Break console handler.
 //
 
-static struct sigaction g_oldSigInt;
-static struct sigaction g_oldSigTerm;
-static BOOL g_fSignalHandlerInstalled = fFalse;
-
-static void SysinfoSignalHandler(int /* sig */)
-{
-    OSIProcessAbort();
-}
-
 //
 //  CPU feature detection.
 //
@@ -284,12 +273,6 @@ LOCAL VOID DetermineProcessorCapabilities()
 
 void OSSysinfoPostterm()
 {
-    if (g_fSignalHandlerInstalled)
-    {
-        sigaction(SIGINT, &g_oldSigInt, nullptr);
-        sigaction(SIGTERM, &g_oldSigTerm, nullptr);
-        g_fSignalHandlerInstalled = fFalse;
-    }
 }
 
 LOCAL BOOL FGetSystemVersion()
@@ -407,17 +390,6 @@ BOOL FOSSysinfoPreinit()
     OSStrCbCopyW(g_wszImageBuildClass, sizeof( g_wszImageBuildClass ), wszBuf);
 
     DetermineProcessorCapabilities();
-
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = SysinfoSignalHandler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_RESTART;
-    if (sigaction(SIGINT, &sa, &g_oldSigInt) == 0 &&
-        sigaction(SIGTERM, &sa, &g_oldSigTerm) == 0)
-    {
-        g_fSignalHandlerInstalled = fTrue;
-    }
 
     return fTrue;
 }

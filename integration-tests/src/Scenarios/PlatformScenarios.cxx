@@ -10,12 +10,152 @@
 #include "Framework/TemporaryDirectory.hxx"
 
 #include <chrono>
+#include <csignal>
+#include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <string>
 #include <sys/wait.h>
 
 using namespace ese::tests;
+
+namespace
+{
+
+// A SIGTERM/SIGINT delivered to a process running ESE must terminate it.
+// ESE installs no SIGINT/SIGTERM handler -- the host owns those signals --
+// so the default disposition (terminate) applies.  Regression guard: an
+// earlier port installed a handler that called OSIProcessAbort and swallowed
+// the signal, leaving the process alive.
+constexpr const char* ChildEntrySignalWorkload =
+    "Platform.SigtermTerminatesRunningEngine";
+
+// Child: bring a real engine up (JetInit + db + table), signal ready, then
+// churn continuously -- begin / insert / durable-commit in a tight loop -- so
+// the parent's signal lands while ESE is actively mid-work (log IO + buffer
+// flush on background threads, possibly holding locks), not idle.  This is the
+// case the removed SIGINT/SIGTERM handler would have hung.  Never JetTerm.
+void RunSignalWorkloadChild(const std::filesystem::path& directory)
+{
+    JET_INSTANCE instanceHandle = JET_instanceNil;
+    auto pathWithSeparator = directory.string();
+    if (!pathWithSeparator.empty() && pathWithSeparator.back() != '/')
+    {
+        pathWithSeparator.push_back('/');
+    }
+
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramSystemPath, 0,
+                                    pathWithSeparator.c_str()));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramTempPath, 0,
+                                    pathWithSeparator.c_str()));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramLogFilePath, 0,
+                                    pathWithSeparator.c_str()));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramBaseName, 0, "edb"));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramEventSource, 0,
+                                    "ese-tests-child"));
+    CheckJet(JetSetSystemParameterA(&instanceHandle, JET_sesidNil,
+                                    JET_paramCircularLog, 1, nullptr));
+
+    CheckJet(JetInit(&instanceHandle));
+
+    JET_SESID sessionId = JET_sesidNil;
+    CheckJet(JetBeginSessionA(instanceHandle, &sessionId, nullptr, nullptr));
+
+    const auto databasePath = directory / "Workload.mdb";
+    JET_DBID databaseId = JET_dbidNil;
+    CheckJet(JetCreateDatabaseA(sessionId, databasePath.string().c_str(),
+                                nullptr, &databaseId,
+                                JET_bitDbOverwriteExisting));
+
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetCreateTableA(sessionId, databaseId, "Workload", 16, 80, &tableId));
+
+    JET_COLUMNDEF columnDefinition = {};
+    columnDefinition.cbStruct = sizeof(columnDefinition);
+    columnDefinition.coltyp = JET_coltypLong;
+    columnDefinition.grbit = JET_bitColumnNotNULL;
+
+    JET_COLUMNID columnId = 0;
+    CheckJet(JetAddColumnA(sessionId, tableId, "Value",
+                           &columnDefinition, nullptr, 0, &columnId));
+
+    // Each batch is a durable commit (grbit 0 fsyncs the log), so the loop
+    // keeps the log/IO background path maximally busy.  Signal ready only
+    // after the first batch lands -- the engine is then provably operational
+    // and actively working when the parent kills it.
+    int32_t value = 0;
+    bool signalledReady = false;
+    while (true)
+    {
+        CheckJet(JetBeginTransaction(sessionId));
+        for (int rowIndex = 0; rowIndex < 50; ++rowIndex)
+        {
+            ++value;
+            CheckJet(JetPrepareUpdate(sessionId, tableId, JET_prepInsert));
+            CheckJet(JetSetColumn(sessionId, tableId, columnId,
+                                  &value, sizeof(value), 0, nullptr));
+            CheckJet(JetUpdate(sessionId, tableId, nullptr, 0, nullptr));
+        }
+        CheckJet(JetCommitTransaction(sessionId, 0));
+
+        if (!signalledReady)
+        {
+            ChildProcess::SignalReady(directory);
+            signalledReady = true;
+        }
+    }
+}
+
+struct SignalWorkloadRegistrar
+{
+    SignalWorkloadRegistrar()
+    {
+        RegisterChildEntry(ChildEntrySignalWorkload, &RunSignalWorkloadChild);
+    }
+};
+[[maybe_unused]] static SignalWorkloadRegistrar _signalWorkloadRegistrar;
+
+// Spawn the churning child, deliver `terminationSignal` while it is mid-work,
+// and require the process actually dies by that signal within a bounded wait.
+// Shared by the SIGTERM and SIGINT scenarios -- the removed port handler
+// captured both, so both must now reach the kernel's default (terminate)
+// disposition.  (A swallowed signal would make WaitForExitWithin time out and
+// the Require(exited) below fail, rather than hang.)
+void RunSignalTerminatesEngineTest(int terminationSignal, const char* directoryLabel)
+{
+    TemporaryDirectory directory(directoryLabel);
+
+    ChildProcess child(ChildEntrySignalWorkload, directory.Path());
+    child.WaitUntilReady(std::chrono::seconds(20));
+
+    child.Kill(terminationSignal);
+
+    int status = 0;
+    const bool exited = child.WaitForExitWithin(std::chrono::seconds(10), status);
+    Require(exited);                                   // must die -- signal not swallowed
+    Require(WIFSIGNALED(status));                      // by a signal, not a normal exit
+    Require(WTERMSIG(status) == terminationSignal);    // by that signal's default action
+}
+
+}  // namespace
+
+// SIGTERM and SIGINT are both catchable, and the removed port handler caught
+// both (calling OSIProcessAbort and returning, so the process stayed alive).
+// With no handler each reaches the kernel's default (terminate) disposition.
+EseIntegrationScenario(Platform, SigtermTerminatesRunningEngine, Smoke)
+{
+    RunSignalTerminatesEngineTest(SIGTERM, "Platform.SigtermTerminatesRunningEngine");
+}
+
+EseIntegrationScenario(Platform, SigintTerminatesRunningEngine, Smoke)
+{
+    RunSignalTerminatesEngineTest(SIGINT, "Platform.SigintTerminatesRunningEngine");
+}
 
 EseIntegrationScenario(Platform, InitializeAndTerminate, Smoke)
 {

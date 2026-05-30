@@ -181,12 +181,40 @@ void ChildProcess::WaitUntilReady(std::chrono::milliseconds timeout)
                                          timeout.count()));
 }
 
-void ChildProcess::Kill()
+void ChildProcess::Kill(int signalNumber)
 {
     if (_pid > 0 && !_reaped)
     {
-        ::kill(_pid, SIGKILL);
+        ::kill(_pid, signalNumber);
     }
+}
+
+bool ChildProcess::WaitForExitWithin(std::chrono::milliseconds timeout, int& status)
+{
+    status = 0;
+    if (_reaped)
+    {
+        return true;
+    }
+    const auto deadline = std::chrono::steady_clock::now() + timeout;
+    const auto pollInterval = std::chrono::milliseconds(10);
+    while (std::chrono::steady_clock::now() < deadline)
+    {
+        const auto result = waitpid(_pid, &status, WNOHANG);
+        if (result == _pid)
+        {
+            _reaped = true;
+            return true;
+        }
+        if (result < 0)
+        {
+            throw std::runtime_error(std::format("waitpid({}) failed: {}",
+                                                 static_cast<long>(_pid),
+                                                 std::strerror(errno)));
+        }
+        std::this_thread::sleep_for(pollInterval);
+    }
+    return false;
 }
 
 int ChildProcess::WaitForExit()

@@ -22,6 +22,7 @@
 #pragma once
 
 #include <chrono>
+#include <csignal>
 #include <filesystem>
 #include <functional>
 #include <span>
@@ -84,11 +85,18 @@ public:
     // Throws if the timeout elapses first.
     void WaitUntilReady(std::chrono::milliseconds timeout);
 
-    // Sends SIGKILL. The child has no chance to clean up.
-    void Kill();
+    // Sends a signal to the child (default SIGKILL, for crash-recovery where
+    // the child gets no chance to clean up). Pass a catchable signal such as
+    // SIGTERM/SIGINT to verify ESE installs no handler that swallows it.
+    void Kill(int signalNumber = SIGKILL);
 
     // Reaps the child. Returns the exit status (wait4-style).
     int WaitForExit();
+
+    // Bounded reap: polls for the child to exit within `timeout`. Returns
+    // true and sets `status` (wait4-style) if it exited; false on timeout
+    // (child still alive — e.g. a signal was swallowed).
+    bool WaitForExitWithin(std::chrono::milliseconds timeout, int& status);
 
     // Children call this to write the "ready" sentinel.
     static void SignalReady(const std::filesystem::path& directory);
