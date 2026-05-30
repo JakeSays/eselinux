@@ -545,21 +545,24 @@ if (NOT WIN32)
     get_target_property(NLS_INC_DIRS nls::nls INTERFACE_INCLUDE_DIRECTORIES)
     include_directories(SYSTEM ${NLS_INC_DIRS})
 
-    # libsodium — downloaded and built at configure time (NOT vendored
-    # in the repo).  libese.so dlopens libsodium.so.26 at runtime for
-    # AES-256-GCM at-rest encryption; we ship our own 1.0.22-stable
-    # build because the 1.0.18 release that Ubuntu 24.04 / Debian 12
-    # / etc. carry has no AArch64 AES path (its aes256gcm
-    # implementation is x86-AES-NI-only).
+    # libsodium — vendored in the repo (third_party/libsodium/) and built
+    # at configure time.  libese.so dlopens libsodium.so.26 at runtime for
+    # AES-256-GCM at-rest encryption; we ship our own 1.0.22 build because
+    # the 1.0.18 release that Ubuntu 24.04 / Debian 12 / etc. carry has no
+    # AArch64 AES path (its aes256gcm implementation is x86-AES-NI-only).
+    # The version is pinned, so we vendor the tarball rather than fetching
+    # it from GitHub on every clean configure.
     #
     # No CMake dep on libsodium — the .so just needs to land under
     # <build>/lib/ so libese.so's $ORIGIN/../lib RPATH resolves the
-    # runtime dlopen.  ExternalProject_Add fetches, configures with
-    # autotools (cross-aware via CC + CFLAGS + --host), and copies
-    # the produced libsodium.so* into the build's lib output dir.
+    # runtime dlopen.  ExternalProject_Add extracts the vendored tarball,
+    # configures with autotools (cross-aware via CC + CFLAGS + --host),
+    # and copies the produced libsodium.so* into the build's lib output dir.
     include(ExternalProject)
 
-    set(LIBSODIUM_URL "https://github.com/jedisct1/libsodium/releases/download/1.0.22-RELEASE/libsodium-1.0.22.tar.gz")
+    # Vendored tarball.  ExternalProject treats a local path like any other
+    # URL and still verifies URL_HASH below, so the pinned bytes are checked.
+    set(LIBSODIUM_TARBALL "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libsodium/libsodium-1.0.22.tar.gz")
     set(LIBSODIUM_SHA256 "adbdd8f16149e81ac6078a03aca6fc03b592b89ef7b5ed83841c086191be3349")
 
     #  Bake every position-sensitive flag into the CC string passed
@@ -600,7 +603,7 @@ if (NOT WIN32)
     set(_libsodium_install_dir "${CMAKE_BINARY_DIR}/_deps/libsodium-install")
 
     ExternalProject_Add(libsodium_external
-        URL ${LIBSODIUM_URL}
+        URL ${LIBSODIUM_TARBALL}
         URL_HASH SHA256=${LIBSODIUM_SHA256}
         PREFIX ${CMAKE_BINARY_DIR}/_deps/libsodium
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
