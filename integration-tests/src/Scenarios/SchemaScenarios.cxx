@@ -1317,6 +1317,108 @@ EseIntegrationScenario(Schema, CreateIndex4WithUnicodeIndex2Sorts, Smoke)
     CheckJet(JetCloseTable(session.Handle(), tableId));
 }
 
+//  Wide index (cbKeyMost well above the legacy 255) over a Unicode
+//  text column.  A long value normalizes to a sort key larger than
+//  the 256-byte stack buffer norm.cxx tries first, which forces its
+//  buffer-growth retry.  That retry hinges on reading
+//  ERROR_INSUFFICIENT_BUFFER back from LCMapStringEx — and that only
+//  works when libese and libnls resolve to a single shared last-error
+//  slot.  When they don't, the engine misreads the failure and the
+//  insert dies with JET_errUnicodeTranslationFail.  This is the
+//  regression guard for that cross-library handshake: it both inserts
+//  and seeks a > 255-byte key, exercising normalization on the write
+//  and the JetMakeKey paths.
+EseIntegrationScenario(Schema, WideUnicodeIndexBuildsKeyOver255Bytes, Smoke)
+{
+    TemporaryDirectory directory(
+        "Schema.WideUnicodeIndexBuildsKeyOver255Bytes");
+    EseInstance instance(directory);
+    EseSession session(instance);
+    EseDatabase database(session, "WideIndex.mdb");
+
+    JET_TABLEID tableId = JET_tableidNil;
+    CheckJet(JetCreateTableA(session.Handle(), database.Id(),
+                             "Rows", 16, 100, &tableId));
+    JET_COLUMNDEF textColumn = {};
+    textColumn.cbStruct = sizeof(textColumn);
+    textColumn.coltyp = JET_coltypLongText;
+    textColumn.cp = 1200;  // UTF-16
+    textColumn.grbit = JET_bitColumnNotNULL;
+    JET_COLUMNID textColumnId = 0;
+    CheckJet(JetAddColumnA(session.Handle(), tableId, "Text",
+                           &textColumn, nullptr, 0, &textColumnId));
+
+    //  Wide key: 1000 bytes is the maximum for the default 4 KB page,
+    //  so the engine keeps (does not pre-truncate to 255) the long
+    //  normalized key.
+    static constexpr uint32_t WideKeyMost = 1000;
+
+    static char16_t LocaleName[] = u"en-US";
+    JET_UNICODEINDEX2 unicodeIndex = {};
+    unicodeIndex.szLocaleName = LocaleName;
+    unicodeIndex.dwMapFlags = 0;  // default linguistic sort
+
+    char indexKey[] = "+Text\0";
+    JET_INDEXCREATE3_A indexCreate = {};
+    indexCreate.cbStruct = sizeof(indexCreate);
+    indexCreate.szIndexName = const_cast<char*>("WideTextIndex");
+    indexCreate.szKey = indexKey;
+    indexCreate.cbKey = sizeof(indexKey);
+    indexCreate.grbit = JET_bitIndexUnicode | JET_bitIndexKeyMost;
+    indexCreate.ulDensity = 80;
+    indexCreate.cbKeyMost = WideKeyMost;
+    indexCreate.pidxunicode = &unicodeIndex;
+
+    CheckJet(JetCreateIndex4A(session.Handle(), tableId,
+                              &indexCreate, 1));
+    Require(indexCreate.err == JET_errSuccess);
+
+    //  Build a 500-character value.  At ~1 sort-key byte per Latin
+    //  letter that normalizes to a key well over the 256-byte stack
+    //  buffer yet under the 1000-byte WideKeyMost ceiling (so it is
+    //  not truncated).  Cycling A-Z keeps the characters distinct and
+    //  avoids the digit/compression special cases.
+    static constexpr uint32_t KeyChars = 500;
+    std::u16string longText;
+    longText.reserve(KeyChars);
+    for (uint32_t i = 0; i < KeyChars; ++i)
+    {
+        longText.push_back(static_cast<char16_t>(u'A' + (i % 26)));
+    }
+
+    //  The insert maintains the wide index — normalization happens
+    //  here.  Pre-fix this returns JET_errUnicodeTranslationFail.
+    CheckJet(JetBeginTransaction(session.Handle()));
+    CheckJet(JetPrepareUpdate(session.Handle(), tableId, JET_prepInsert));
+    CheckJet(JetSetColumn(session.Handle(), tableId, textColumnId,
+                          longText.data(),
+                          static_cast<uint32_t>(longText.size() * sizeof(char16_t)),
+                          0, nullptr));
+    CheckJet(JetUpdate(session.Handle(), tableId, nullptr, 0, nullptr));
+    CheckJet(JetCommitTransaction(session.Handle(), 0));
+
+    //  Seek the row back through the wide index.  JetMakeKey runs the
+    //  same normalization over the full 500-character value.
+    CheckJet(JetSetCurrentIndex2A(session.Handle(), tableId,
+                                  "WideTextIndex", 0));
+    CheckJet(JetMakeKey(session.Handle(), tableId,
+                        longText.data(),
+                        static_cast<uint32_t>(longText.size() * sizeof(char16_t)),
+                        JET_bitNewKey));
+    CheckJet(JetSeek(session.Handle(), tableId, JET_bitSeekEQ));
+
+    //  The stored index key must exceed the legacy 255-byte limit —
+    //  proof the wide normalized key was actually built, not silently
+    //  truncated.
+    uint8_t keyBuffer[WideKeyMost] = {};
+    uint32_t cbKey = 0;
+    CheckJet(JetRetrieveKey(session.Handle(), tableId,
+                            keyBuffer, sizeof(keyBuffer), &cbKey, 0));
+    Require(cbKey > 255);
+
+    CheckJet(JetCloseTable(session.Handle(), tableId));
+}
+
 //  JetCreateTableColumnIndex3/4/5 build a table + columns +
 //  indexes in one call, each version layering on more struct
 //  surface:

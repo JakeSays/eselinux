@@ -9,9 +9,18 @@
 # otherwise bind to glibc's 4-byte routines and corrupt every wide string.
 # Marking them local keeps libese's references bound to libese's own
 # definitions and removes them from .dynsym so nothing can interpose them.
+# GetLastError/SetLastError are exported so libese's thread-local last-error
+# slot interposes libnls's own copy (libnls is a DT_NEEDED child, later in
+# the load order).  Without this the two libraries keep separate slots: a
+# SetLastError inside libnls (e.g. ERROR_INSUFFICIENT_BUFFER from LCMapStringEx
+# on a long sort key) is invisible to the engine's GetLastError, which then
+# misreads the failure as JET_errUnicodeTranslationFail.  Unlike the wcs*
+# shims, exporting these is safe: glibc defines no *LastError to collide with.
 ESE {
     global:
         Jet*;
+        GetLastError;
+        SetLastError;
     local:
         *;
 };
