@@ -74,7 +74,6 @@ set(OSPOSIX_WINAPI_SOURCES
     winapi_memory.cxx
     winapi_message.cxx
     winapi_mmap.cxx
-    winapi_nls.cxx
     winapi_process.cxx
     winapi_random.cxx
     winapi_security.cxx

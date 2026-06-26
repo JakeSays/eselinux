@@ -23453,6 +23453,10 @@ extern "C" void JetPlatformAtexit_( void )
 //  registered on the first successful call drives JetPlatformTerminate
 //  so the OSU layer's CInitTermLock doesn't enforce-fail in its dtor
 //  when callers exit without an explicit Terminate.
+//  libnls's one-time init: installs the NLS data baked into libnls.so. Declared
+//  here because it is libnls's own entry point, not part of the <winnls.h> surface.
+//  (WINAPI is empty on Linux's single ABI, so the bare C signature matches.)
+extern "C" BOOL InitializeNls();
 JET_ERR JET_API JetPlatformInitializeWithConfig( const char * szConfigPath )
 {
     ERR err = JET_errSuccess;
@@ -23486,6 +23490,13 @@ JET_ERR JET_API JetPlatformInitializeWithConfig( const char * szConfigPath )
     //  platform is initialized; the change won't update g_wAssertAction
     //  retroactively, but it documents intent in the param table.
     Call( ErrSetSystemParameter( pinstNil, JET_sesidNil, JET_paramAssertAction, JET_AssertSkipAll, nullptr ) );
+
+    //  Bring up libnls's Win32 NLS surface from the data baked into libnls.so,
+    //  before any engine subsystem that normalizes Unicode index keys.
+    if (!InitializeNls())
+    {
+        Call( ErrERRCheck( JET_errUnicodeNormalizationNotSupported ) );
+    }
 
     Call( ErrOSUInit() );
 
