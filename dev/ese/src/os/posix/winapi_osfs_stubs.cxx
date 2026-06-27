@@ -26,9 +26,8 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 
-using osposix::HandleKind;
-using osposix::HandleToK;
-using osposix::KObject;
+using osposix::As;
+using osposix::FileObject;
 
 //  Mirror osfs.cxx's NtQueryVolumeInformationFile forward declaration.
 
@@ -83,8 +82,8 @@ NTSTATUS NtQueryVolumeInformationFile(HANDLE FileHandle,
         IoStatusBlock->DUMMYUNIONNAME.Status = 0;
         IoStatusBlock->Information = 0;
     }
-    KObject* const k = HandleToK(FileHandle);
-    if (!k || k->kind != HandleKind::File || k->fileFd < 0 || !FsInformation)
+    FileObject* const k = As<FileObject>(FileHandle);
+    if (!k || k->Fd() < 0 || !FsInformation)
         return STATUS_INVALID_HANDLE;
 
     if (FsInformationClass == FileFsSectorSizeInformation)
@@ -93,7 +92,7 @@ NTSTATUS NtQueryVolumeInformationFile(HANDLE FileHandle,
             return STATUS_BUFFER_TOO_SMALL;
 
         struct stat st;
-        if (fstat(k->fileFd, &st) < 0)
+        if (fstat(k->Fd(), &st) < 0)
             return STATUS_ACCESS_DENIED;
 
         //  ESE requires sector sizes to be powers of 2, >= 512, and <= 4096.
@@ -131,9 +130,9 @@ NTSTATUS NtQueryVolumeInformationFile(HANDLE FileHandle,
         {
             int logicalT = 0;
             int physicalT = 0;
-            if (ioctl(k->fileFd, BLKSSZGET, &logicalT) == 0)
+            if (ioctl(k->Fd(), BLKSSZGET, &logicalT) == 0)
                 logical = ClampSectorSize((unsigned int) logicalT);
-            if (ioctl(k->fileFd, BLKPBSZGET, &physicalT) == 0)
+            if (ioctl(k->Fd(), BLKPBSZGET, &physicalT) == 0)
                 physical = ClampSectorSize((unsigned int) physicalT);
         }
         else

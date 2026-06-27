@@ -18,10 +18,8 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-using osposix::AllocKObject;
-using osposix::HandleKind;
-using osposix::HandleToK;
-using osposix::KObject;
+using osposix::As;
+using osposix::FindFileObject;
 using osposix::KToHandle;
 using osposix::Utf8ToWide;
 using osposix::WidePathToUtf8;
@@ -122,61 +120,50 @@ HANDLE FindFirstFileW(LPCWSTR lpFileName, LPWIN32_FIND_DATAW lpFindFileData)
         return INVALID_HANDLE_VALUE;
     }
 
-    KObject* const k = AllocKObject(HandleKind::FindFile);
-    if (!k)
-    {
-        closedir(d);
-        return INVALID_HANDLE_VALUE;
-    }
-    k->findDir = d;
-    k->findBaseDir = strdup(dir);
-    k->findPattern = strdup(base[0]
-                            ? base
-                            : "*");
+    auto* const k = new FindFileObject(d, strdup(dir),
+        strdup(base[0] ? base : "*"));
 
     // Advance to the first match.
     struct dirent* de;
     while ((de = readdir(d)) != nullptr)
     {
         if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
-            continue;
-        if (fnmatch(k->findPattern, de->d_name, 0) == 0)
         {
-            if (FillFindData(k->findBaseDir, de->d_name, lpFindFileData))
+            continue;
+        }
+        if (fnmatch(k->Pattern(), de->d_name, 0) == 0)
+        {
+            if (FillFindData(k->BaseDir(), de->d_name, lpFindFileData))
             {
                 return KToHandle(k);
             }
         }
     }
-    // No match.
-    closedir(d);
-    k->findDir = nullptr;
-    free(k->findBaseDir);
-    k->findBaseDir = nullptr;
-    free(k->findPattern);
-    k->findPattern = nullptr;
-    free(k);
+    // No match — the destructor closes the DIR and frees the strings.
+    delete k;
     SetLastError(ERROR_FILE_NOT_FOUND);
     return INVALID_HANDLE_VALUE;
 }
 
 BOOL FindNextFileW(HANDLE hFindFile, LPWIN32_FIND_DATAW lpFindFileData)
 {
-    KObject* const k = HandleToK(hFindFile);
-    if (!k || k->kind != HandleKind::FindFile)
+    FindFileObject* const k = As<FindFileObject>(hFindFile);
+    if (!k)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
     }
-    DIR* const d = static_cast<DIR*>(k->findDir);
+    DIR* const d = static_cast<DIR*>(k->Dir());
     struct dirent* de;
     while ((de = readdir(d)) != nullptr)
     {
         if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
-            continue;
-        if (fnmatch(k->findPattern, de->d_name, 0) == 0)
         {
-            if (FillFindData(k->findBaseDir, de->d_name, lpFindFileData))
+            continue;
+        }
+        if (fnmatch(k->Pattern(), de->d_name, 0) == 0)
+        {
+            if (FillFindData(k->BaseDir(), de->d_name, lpFindFileData))
             {
                 return TRUE;
             }

@@ -3,7 +3,7 @@
 //
 // CreateFileW / ReadFile / WriteFile / scatter-gather / size / seek /
 // truncate / flush / GetFileInformationByHandle. Backs a Win32 file
-// HANDLE with an extended KObject (kind=File, fileFd holds the OS fd).
+// HANDLE with a FileObject (fileFd holds the OS fd).
 //
 // OVERLAPPED handling here is synchronous — pread/pwrite use the offset
 // in OVERLAPPED but do not signal any event or schedule async completion.
@@ -13,7 +13,7 @@
 // FILE_FLAG_NO_BUFFERING maps to O_DIRECT (kernel honors alignment
 // requirements). FILE_FLAG_WRITE_THROUGH maps to O_SYNC. FILE_FLAG_
 // DELETE_ON_CLOSE is recorded in fileDeleteOnClosePath and the unlink
-// happens in FreeKObject.
+// happens when the FileObject is destroyed.
 
 #include "osstd.hxx"
 #include "winapi_kobject.hxx"
@@ -31,11 +31,8 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
-using osposix::AllocKObject;
-using osposix::FreeKObject;
-using osposix::HandleKind;
-using osposix::HandleToK;
-using osposix::KObject;
+using osposix::As;
+using osposix::FileObject;
 using osposix::KToHandle;
 using osposix::Utf8ToWide;
 using osposix::WidePathToUtf8;
@@ -238,14 +235,8 @@ HANDLE OpenSyntheticBlockDevice(const char* path)
         }
 
         char* const ownedName = diskName[0] ? strdup(diskName) : nullptr;
-        KObject* const k = osposix::AllocBlockDeviceKObject(
-                                major, minor, dMaj, dMin, ownedName);
-        if (!k)
-        {
-            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-            return INVALID_HANDLE_VALUE;
-        }
-        return osposix::KToHandle(k);
+        return osposix::KToHandle(
+            new osposix::BlockDeviceObject(major, minor, dMaj, dMin, ownedName));
     }
 
     static constexpr char c_drivePrefixWin[]   = "\\\\.\\PHYSICALDRIVE";
@@ -326,15 +317,8 @@ HANDLE OpenSyntheticBlockDevice(const char* path)
         }
 
         char* const ownedName = diskNameLocal[0] ? strdup(diskNameLocal) : nullptr;
-        KObject* const k = osposix::AllocBlockDeviceKObject(
-                                diskMajor, diskMinor, dMaj, dMin, ownedName);
-        if (!k)
-        {
-            free(ownedName);
-            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-            return INVALID_HANDLE_VALUE;
-        }
-        return osposix::KToHandle(k);
+        return osposix::KToHandle(
+            new osposix::BlockDeviceObject(diskMajor, diskMinor, dMaj, dMin, ownedName));
     }
 
     return nullptr;  //  not a synthetic path; caller falls through to open()
@@ -407,22 +391,8 @@ HANDLE CreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
         }
     }
 
-    KObject* const k = AllocKObject(HandleKind::File);
-    if (!k)
-    {
-        close(fd);
-        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-        return INVALID_HANDLE_VALUE;
-    }
-    k->fileFd = fd;
-    k->fileFlagsAndAttrs = dwFlagsAndAttributes;
-    k->fileDesiredAccess = dwDesiredAccess;
-    k->fileOpenedPath = strdup(path);
-    if (dwFlagsAndAttributes & FILE_FLAG_DELETE_ON_CLOSE)
-    {
-        k->fileDeleteOnClosePath = strdup(path);
-    }
-    return KToHandle(k);
+    return KToHandle(new FileObject(fd, dwFlagsAndAttributes, dwDesiredAccess,
+        path, (dwFlagsAndAttributes & FILE_FLAG_DELETE_ON_CLOSE) != 0));
 }
 
 //  GetOverlappedResult — the engine pairs this with DeviceIoControl /
@@ -442,8 +412,8 @@ BOOL ReadFile(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead,
 {
     if (lpNumberOfBytesRead)
         *lpNumberOfBytesRead = 0;
-    KObject* const k = HandleToK(hFile);
-    if (!k || k->kind != HandleKind::File)
+    FileObject* const k = As<FileObject>(hFile);
+    if (!k)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
@@ -456,11 +426,11 @@ BOOL ReadFile(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead,
         {
             const off_t off = (static_cast<off_t>(lpOverlapped->OffsetHigh) << 32)
                 | lpOverlapped->Offset;
-            n = pread(k->fileFd, lpBuffer, nNumberOfBytesToRead, off);
+            n = pread(k->Fd(), lpBuffer, nNumberOfBytesToRead, off);
         }
         else
         {
-            n = read(k->fileFd, lpBuffer, nNumberOfBytesToRead);
+            n = read(k->Fd(), lpBuffer, nNumberOfBytesToRead);
         }
     } while (n < 0 && errno == EINTR);
     if (n < 0)
@@ -478,8 +448,8 @@ BOOL WriteFile(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite,
 {
     if (lpNumberOfBytesWritten)
         *lpNumberOfBytesWritten = 0;
-    KObject* const k = HandleToK(hFile);
-    if (!k || k->kind != HandleKind::File)
+    FileObject* const k = As<FileObject>(hFile);
+    if (!k)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
@@ -492,11 +462,11 @@ BOOL WriteFile(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite,
         {
             const off_t off = (static_cast<off_t>(lpOverlapped->OffsetHigh) << 32)
                 | lpOverlapped->Offset;
-            n = pwrite(k->fileFd, lpBuffer, nNumberOfBytesToWrite, off);
+            n = pwrite(k->Fd(), lpBuffer, nNumberOfBytesToWrite, off);
         }
         else
         {
-            n = write(k->fileFd, lpBuffer, nNumberOfBytesToWrite);
+            n = write(k->Fd(), lpBuffer, nNumberOfBytesToWrite);
         }
     } while (n < 0 && errno == EINTR);
     if (n < 0)
@@ -515,8 +485,8 @@ BOOL WriteFile(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite,
 BOOL ReadFileScatter(HANDLE hFile, FILE_SEGMENT_ELEMENT aSegmentArray[],
     DWORD nNumberOfBytesToRead, LPDWORD /*lpReserved*/, LPOVERLAPPED lpOverlapped)
 {
-    KObject* const k = HandleToK(hFile);
-    if (!k || k->kind != HandleKind::File || !aSegmentArray || !lpOverlapped)
+    FileObject* const k = As<FileObject>(hFile);
+    if (!k || !aSegmentArray || !lpOverlapped)
     {
         SetLastError(ERROR_INVALID_PARAMETER);
         return FALSE;
@@ -540,7 +510,7 @@ BOOL ReadFileScatter(HANDLE hFile, FILE_SEGMENT_ELEMENT aSegmentArray[],
     ssize_t n;
     do
     {
-        n = preadv(k->fileFd, iov, nIov, off);
+        n = preadv(k->Fd(), iov, nIov, off);
     } while (n < 0 && errno == EINTR);
     if (n < 0)
     {
@@ -553,8 +523,8 @@ BOOL ReadFileScatter(HANDLE hFile, FILE_SEGMENT_ELEMENT aSegmentArray[],
 BOOL WriteFileGather(HANDLE hFile, FILE_SEGMENT_ELEMENT aSegmentArray[],
     DWORD nNumberOfBytesToWrite, LPDWORD /*lpReserved*/, LPOVERLAPPED lpOverlapped)
 {
-    KObject* const k = HandleToK(hFile);
-    if (!k || k->kind != HandleKind::File || !aSegmentArray || !lpOverlapped)
+    FileObject* const k = As<FileObject>(hFile);
+    if (!k || !aSegmentArray || !lpOverlapped)
     {
         SetLastError(ERROR_INVALID_PARAMETER);
         return FALSE;
@@ -578,7 +548,7 @@ BOOL WriteFileGather(HANDLE hFile, FILE_SEGMENT_ELEMENT aSegmentArray[],
     ssize_t n;
     do
     {
-        n = pwritev(k->fileFd, iov, nIov, off);
+        n = pwritev(k->Fd(), iov, nIov, off);
     } while (n < 0 && errno == EINTR);
     if (n < 0)
     {
@@ -590,27 +560,27 @@ BOOL WriteFileGather(HANDLE hFile, FILE_SEGMENT_ELEMENT aSegmentArray[],
 
 BOOL FlushFileBuffers(HANDLE hFile)
 {
-    KObject* const k = HandleToK(hFile);
-    if (!k || k->kind != HandleKind::File)
+    FileObject* const k = As<FileObject>(hFile);
+    if (!k)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
     }
-    return (fdatasync(k->fileFd) == 0)
+    return (fdatasync(k->Fd()) == 0)
            ? TRUE
            : FALSE;
 }
 
 BOOL GetFileSizeEx(HANDLE hFile, PLARGE_INTEGER lpFileSize)
 {
-    KObject* const k = HandleToK(hFile);
-    if (!k || k->kind != HandleKind::File || !lpFileSize)
+    FileObject* const k = As<FileObject>(hFile);
+    if (!k || !lpFileSize)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
     }
     struct stat st;
-    if (fstat(k->fileFd, &st) < 0)
+    if (fstat(k->Fd(), &st) < 0)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
@@ -622,8 +592,8 @@ BOOL GetFileSizeEx(HANDLE hFile, PLARGE_INTEGER lpFileSize)
 BOOL SetFilePointerEx(HANDLE hFile, LARGE_INTEGER liDistanceToMove,
     PLARGE_INTEGER lpNewFilePointer, DWORD dwMoveMethod)
 {
-    KObject* const k = HandleToK(hFile);
-    if (!k || k->kind != HandleKind::File)
+    FileObject* const k = As<FileObject>(hFile);
+    if (!k)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
@@ -644,7 +614,7 @@ BOOL SetFilePointerEx(HANDLE hFile, LARGE_INTEGER liDistanceToMove,
             SetLastError(ERROR_INVALID_PARAMETER);
             return FALSE;
     }
-    const off_t pos = lseek(k->fileFd, liDistanceToMove.QuadPart, whence);
+    const off_t pos = lseek(k->Fd(), liDistanceToMove.QuadPart, whence);
     if (pos == (off_t) -1)
     {
         SetLastError(ERROR_SEEK);
@@ -657,19 +627,48 @@ BOOL SetFilePointerEx(HANDLE hFile, LARGE_INTEGER liDistanceToMove,
 
 BOOL SetEndOfFile(HANDLE hFile)
 {
-    KObject* const k = HandleToK(hFile);
-    if (!k || k->kind != HandleKind::File)
+    FileObject* const k = As<FileObject>(hFile);
+    if (!k)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
     }
-    const off_t pos = lseek(k->fileFd, 0, SEEK_CUR);
+    const off_t pos = lseek(k->Fd(), 0, SEEK_CUR);
     if (pos == (off_t) -1)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
     }
-    return (ftruncate(k->fileFd, pos) == 0)
+
+    struct stat st;
+    if (fstat(k->Fd(), &st) != 0)
+    {
+        SetLastError(ERROR_INVALID_HANDLE);
+        return FALSE;
+    }
+
+    // Win32 SetEndOfFile sets EOF to the current file pointer. When that grows
+    // the file, ALLOCATE the new region instead of leaving an ftruncate hole:
+    // the engine's ErrSetSize takes its fast extend path on the assumption that a
+    // non-fmfSparse file's extended region is backed by allocated storage (NTFS
+    // SetEndOfFile reserves clusters). On Linux ftruncate would make it sparse,
+    // and a page flushed into a hole and later evicted reads back as zeros, which
+    // the engine reports as JET_errPageNotInitialized. posix_fallocate reserves
+    // [st_size, pos) without zero-fill IO (allocated blocks read as zero until
+    // written) and grows the file to pos.
+    if (pos > st.st_size)
+    {
+        const int rc = posix_fallocate(k->Fd(), st.st_size, pos - st.st_size);
+        if (rc != 0)
+        {
+            SetLastError(rc == ENOSPC ? ERROR_DISK_FULL : ERROR_IO_DEVICE);
+            return FALSE;
+        }
+        return TRUE;
+    }
+
+    // Same size or shrink: truncate to the exact size (releases any blocks past pos).
+    return (ftruncate(k->Fd(), pos) == 0)
            ? TRUE
            : FALSE;
 }
@@ -680,8 +679,8 @@ BOOL SetEndOfFile(HANDLE hFile)
 // simply succeed and let posix_fallocate/ftruncate handle extension.
 BOOL SetFileValidData(HANDLE hFile, LONGLONG /*ValidDataLength*/)
 {
-    KObject* const k = HandleToK(hFile);
-    if (!k || k->kind != HandleKind::File)
+    FileObject* const k = As<FileObject>(hFile);
+    if (!k)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
@@ -691,14 +690,14 @@ BOOL SetFileValidData(HANDLE hFile, LONGLONG /*ValidDataLength*/)
 
 BOOL GetFileInformationByHandle(HANDLE hFile, LPBY_HANDLE_FILE_INFORMATION lpFileInformation)
 {
-    KObject* const k = HandleToK(hFile);
-    if (!k || k->kind != HandleKind::File || !lpFileInformation)
+    FileObject* const k = As<FileObject>(hFile);
+    if (!k || !lpFileInformation)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
     }
     struct stat st;
-    if (fstat(k->fileFd, &st) < 0)
+    if (fstat(k->Fd(), &st) < 0)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;

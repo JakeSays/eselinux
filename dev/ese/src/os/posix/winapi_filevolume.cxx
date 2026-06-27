@@ -19,8 +19,6 @@
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 
-using osposix::HandleKind;
-using osposix::KObject;
 using osposix::Utf8ToWide;
 using osposix::WidePathToUtf8;
 

@@ -69,6 +69,7 @@ set(OSPOSIX_WINAPI_SOURCES
     winapi_filevolume.cxx
     winapi_format.cxx
     winapi_handle.cxx
+    winapi_kobject.cxx
     ${GEN_OUTPUT_DIRECTORY}/_res/jetmsgex_table.cxx
     winapi_lasterror.cxx
     winapi_memory.cxx

@@ -21,9 +21,8 @@
 #include <sys/sendfile.h>
 #include <unistd.h>
 
-using osposix::HandleKind;
-using osposix::HandleToK;
-using osposix::KObject;
+using osposix::As;
+using osposix::FileObject;
 using osposix::Utf8ToWide;
 using osposix::WidePathToUtf8;
 
@@ -422,14 +421,14 @@ UINT GetTempFileNameW(LPCWSTR lpPathName, LPCWSTR lpPrefixString, UINT uUnique, 
 
 DWORD GetFinalPathNameByHandleW(HANDLE hFile, LPWSTR lpszFilePath, DWORD cchFilePath, DWORD /*dwFlags*/)
 {
-    KObject* const k = HandleToK(hFile);
-    if (!k || k->kind != HandleKind::File)
+    FileObject* const k = As<FileObject>(hFile);
+    if (!k)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return 0;
     }
     char proc[64];
-    snprintf(proc, sizeof(proc), "/proc/self/fd/%d", k->fileFd);
+    snprintf(proc, sizeof(proc), "/proc/self/fd/%d", k->Fd());
     char target[c_pathBuf];
     const ssize_t n = readlink(proc, target, sizeof(target) - 1);
     if (n <= 0)
@@ -465,8 +464,8 @@ HANDLE OpenFileById(HANDLE /*hVolumeHint*/, LPFILE_ID_DESCRIPTOR /*lpFileId*/, D
 BOOL GetFileInformationByHandleEx(HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS /*FileInformationClass*/,
     LPVOID /*lpFileInformation*/, DWORD /*dwBufferSize*/)
 {
-    KObject* const k = HandleToK(hFile);
-    if (!k || k->kind != HandleKind::File)
+    FileObject* const k = As<FileObject>(hFile);
+    if (!k)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
@@ -478,8 +477,8 @@ BOOL GetFileInformationByHandleEx(HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS /*File
 BOOL SetFileInformationByHandle(HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInformationClass,
     LPVOID lpFileInformation, DWORD dwBufferSize)
 {
-    KObject* const k = HandleToK(hFile);
-    if (!k || k->kind != HandleKind::File)
+    FileObject* const k = As<FileObject>(hFile);
+    if (!k)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
@@ -495,7 +494,7 @@ BOOL SetFileInformationByHandle(HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInfo
                 return FALSE;
             }
             const FILE_END_OF_FILE_INFO* const pInfo = (const FILE_END_OF_FILE_INFO*) lpFileInformation;
-            if (ftruncate(k->fileFd, (off_t) pInfo->EndOfFile.QuadPart) < 0)
+            if (ftruncate(k->Fd(), (off_t) pInfo->EndOfFile.QuadPart) < 0)
             {
                 SetLastError(errno == ENOSPC ? ERROR_DISK_FULL : ERROR_INVALID_PARAMETER);
                 return FALSE;
@@ -505,7 +504,7 @@ BOOL SetFileInformationByHandle(HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInfo
 
         case FileRenameInfo:
         {
-            if (dwBufferSize < sizeof(FILE_RENAME_INFO) || !lpFileInformation || !k->fileOpenedPath)
+            if (dwBufferSize < sizeof(FILE_RENAME_INFO) || !lpFileInformation || !k->OpenedPath())
             {
                 SetLastError(ERROR_INVALID_PARAMETER);
                 return FALSE;
@@ -536,7 +535,7 @@ BOOL SetFileInformationByHandle(HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInfo
                     return FALSE;
                 }
             }
-            if (k->fileOpenedPath && rename(k->fileOpenedPath, dest) < 0)
+            if (k->OpenedPath() && rename(k->OpenedPath(), dest) < 0)
             {
                 SetLastError(errno == ENOENT ? ERROR_FILE_NOT_FOUND : ERROR_INVALID_PARAMETER);
                 return FALSE;
@@ -545,8 +544,7 @@ BOOL SetFileInformationByHandle(HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInfo
             char* const newPath = strdup(dest);
             if (newPath)
             {
-                free(k->fileOpenedPath);
-                k->fileOpenedPath = newPath;
+                k->ReplaceOpenedPath(newPath);
             }
             return TRUE;
         }
@@ -562,7 +560,7 @@ BOOL SetFileInformationByHandle(HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInfo
             //  Win32 FileAllocationInfo reserves disk blocks; closest Linux
             //  equivalent is fallocate (without KEEP_SIZE) which extends
             //  logical size too.  Treat as best-effort.
-            if (fallocate(k->fileFd, 0, 0, (off_t) pInfo->AllocationSize.QuadPart) < 0 && errno != EOPNOTSUPP)
+            if (fallocate(k->Fd(), 0, 0, (off_t) pInfo->AllocationSize.QuadPart) < 0 && errno != EOPNOTSUPP)
             {
                 SetLastError(errno == ENOSPC ? ERROR_DISK_FULL : ERROR_INVALID_PARAMETER);
                 return FALSE;
@@ -578,11 +576,11 @@ BOOL SetFileInformationByHandle(HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInfo
                 return FALSE;
             }
             const FILE_DISPOSITION_INFO* const pInfo = (const FILE_DISPOSITION_INFO*) lpFileInformation;
-            if (pInfo->DeleteFile && k->fileOpenedPath)
+            if (pInfo->DeleteFile && k->OpenedPath())
             {
-                //  Mark delete-on-close — actual unlink happens in FreeKObject.
-                free(k->fileDeleteOnClosePath);
-                k->fileDeleteOnClosePath = strdup(k->fileOpenedPath);
+                //  Mark delete-on-close — actual unlink happens when the
+                //  FileObject is destroyed.
+                k->MarkDeleteOnClose();
             }
             return TRUE;
         }

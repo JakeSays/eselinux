@@ -273,9 +273,11 @@ BOOL SystemTimeToTzSpecificLocalTime( const TIME_ZONE_INFORMATION* lpTimeZone,
 DWORD     GetTickCount(   void );
 ULONGLONG GetTickCount64( void );
 
-//  Processor feature query. Win32 surface; on Linux x86_64 the engine
-//  only asks about RDTSC, which is always available. The posix layer
-//  returns TRUE for PF_RDTSC_INSTRUCTION_AVAILABLE and FALSE otherwise.
+//  Processor feature query. Win32 surface; the engine asks about RDTSC
+//  (and, on x86 builds, SSE — arch-gated in sysinfo.cxx). The posix layer
+//  answers PF_RDTSC_INSTRUCTION_AVAILABLE per architecture (TRUE on x86/
+//  x86_64, FALSE on aarch64 — RDTSC is an x86 instruction) and FALSE for
+//  every other feature.
 //
 #define PF_RDTSC_INSTRUCTION_AVAILABLE 8
 BOOL IsProcessorFeaturePresent( DWORD ProcessorFeature );

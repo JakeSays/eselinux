@@ -14,7 +14,7 @@
 //   * IFileAPI handle on a regular file — same disk inference happens
 //                                transparently through st_dev.
 //
-// We map all three onto a `HandleKind::BlockDevice` KObject carrying
+// We map all three onto a `BlockDeviceObject` carrying
 // (major:minor) of the filesystem + (major:minor) of the whole-disk parent
 // + the kernel device name (e.g. "sda" or "sda1") for sysfs lookups.  No
 // real fd is held — sysfs reads are by-name.  IOCTL queries dispatch to
@@ -175,27 +175,6 @@ bool ResolveBlockDeviceForPath(const char* path,
     *pFsMajor = fsMaj;
     *pFsMinor = fsMin;
     return true;
-}
-
-//  Public: create a synthetic BlockDevice KObject.  Caller transfers
-//  ownership of diskName (a heap-allocated, narrow UTF-8 string with no
-//  /dev/ prefix; null means "no sysfs backing").
-KObject* AllocBlockDeviceKObject(unsigned int fsMajor, unsigned int fsMinor,
-                                 unsigned int diskMajor, unsigned int diskMinor,
-                                 char* diskName)
-{
-    KObject* const k = AllocKObject(HandleKind::BlockDevice);
-    if (!k)
-    {
-        free(diskName);
-        return nullptr;
-    }
-    k->blockMajor      = fsMajor;
-    k->blockMinor      = fsMinor;
-    k->blockDiskMajor  = diskMajor;
-    k->blockDiskMinor  = diskMinor;
-    k->blockDiskName   = diskName;
-    return k;
 }
 
 }  //  namespace osposix

@@ -1,10 +1,11 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 //
-// Win32 thread management on top of pthreads. Each thread is wrapped in
-// a KObject so HANDLE flow / WaitFor* / CloseHandle work uniformly.
-// CREATE_SUSPENDED is honored via a barrier inside the thread trampoline
-// — the worker waits on threadSuspended before invoking the user proc.
+// Win32 thread entry points. The thread itself is a ThreadObject
+// (winapi_kobject.hxx) which owns the pthread, the CREATE_SUSPENDED barrier,
+// and completion bookkeeping; this file only translates the Win32 ABI and
+// handles the process-task-level concerns (ioprio, pseudo-handles) that
+// aren't per-object state.
 //
 // SuspendThread / TerminateThread are not portable on Linux: there is no
 // safe equivalent. Engine usage of these is sparse (mostly diagnostics
@@ -15,10 +16,8 @@
 #include "osstd.hxx"
 #include "winapi_kobject.hxx"
 
-#include <errno.h>
 #include <pthread.h>
 #include <sched.h>
-#include <stdlib.h>
 #include <sys/resource.h>
 #include <sys/syscall.h>
 #include <unistd.h>
@@ -29,10 +28,10 @@
 //  reduce kernel IO scheduler priority for background workers
 //  (scavenger, async dirty-page flushes).
 #ifndef IOPRIO_CLASS_NONE
-#define IOPRIO_CLASS_NONE  0
-#define IOPRIO_CLASS_RT    1
-#define IOPRIO_CLASS_BE    2
-#define IOPRIO_CLASS_IDLE  3
+#define IOPRIO_CLASS_NONE 0
+#define IOPRIO_CLASS_RT 1
+#define IOPRIO_CLASS_BE 2
+#define IOPRIO_CLASS_IDLE 3
 #endif
 
 #ifndef IOPRIO_WHO_PROCESS
@@ -42,164 +41,129 @@
 #endif
 
 #ifndef IOPRIO_PRIO_VALUE
-#define IOPRIO_PRIO_VALUE( cls, data ) ( ( ( cls ) << 13 ) | ( data ) )
+#define IOPRIO_PRIO_VALUE(cls, data) (((cls) << 13) | (data))
 #endif
 
-using osposix::AllocKObject;
-using osposix::HandleKind;
-using osposix::HandleToK;
-using osposix::KObject;
+using osposix::As;
 using osposix::KToHandle;
+using osposix::ThreadObject;
 
 namespace
 {
-    void* ThreadTrampoline( void* arg )
-    {
-        auto* const k = static_cast<KObject*>( arg );
+// Trampoline for QueueUserWorkItem. Runs the LPTHREAD_START_ROUTINE and
+// discards its return value; pthread_detach takes care of cleanup.
+struct QuwiCtx
+{
+    LPTHREAD_START_ROUTINE fn;
+    PVOID arg;
+};
 
-        // CREATE_SUSPENDED: hold here until ResumeThread broadcasts.
-        pthread_mutex_lock( &k->lock );
-        while ( k->threadSuspended )
-        {
-            pthread_cond_wait( &k->cond, &k->lock );
-        }
-        const auto start = k->threadStart;
-        const auto param = k->threadParam;
-        pthread_mutex_unlock( &k->lock );
-
-        const DWORD rc = start( param );
-
-        pthread_mutex_lock( &k->lock );
-        k->threadExitCode = rc;
-        k->threadFinished = true;
-        pthread_cond_broadcast( &k->cond );
-        pthread_mutex_unlock( &k->lock );
-        return nullptr;
-    }
+void* QuwiTrampoline(void* p)
+{
+    QuwiCtx* const c = static_cast<QuwiCtx*>(p);
+    const LPTHREAD_START_ROUTINE fn = c->fn;
+    PVOID const arg = c->arg;
+    delete c;
+    fn(arg);
+    return nullptr;
+}
 }
 
-extern "C" {
-
-HANDLE CreateThread( LPSECURITY_ATTRIBUTES /*sec*/, SIZE_T dwStackSize,
-                     LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpParameter,
-                     DWORD dwCreationFlags, LPDWORD lpThreadId )
+extern "C"
 {
-    KObject* const k = AllocKObject( HandleKind::Thread );
-    if ( !k ) return nullptr;
-
-    k->threadStart        = lpStartAddress;
-    k->threadParam        = lpParameter;
-    k->threadSuspended    = ( dwCreationFlags & CREATE_SUSPENDED ) != 0;
-    k->threadExitCode     = STILL_ACTIVE;
-    k->threadPriority     = THREAD_PRIORITY_NORMAL;
-    k->threadFinished     = false;
-
-    pthread_attr_t attr;
-    pthread_attr_init( &attr );
-    if ( dwStackSize != 0 )
+HANDLE CreateThread(LPSECURITY_ATTRIBUTES sec, SIZE_T dwStackSize,
+    LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpParameter,
+    DWORD dwCreationFlags, LPDWORD lpThreadId)
+{
+    Unused(sec);
+    auto* const t = new ThreadObject(lpStartAddress, lpParameter,
+        (dwCreationFlags & CREATE_SUSPENDED) != 0);
+    if (!t->Start(dwStackSize))
     {
-        pthread_attr_setstacksize( &attr, dwStackSize );
-    }
-
-    const int rc = pthread_create( &k->thread, &attr, ThreadTrampoline, k );
-    pthread_attr_destroy( &attr );
-    if ( rc != 0 )
-    {
-        free( k );
+        delete t;
         return nullptr;
     }
 
-    if ( lpThreadId )
+    if (lpThreadId)
     {
         // Linux pthread_t is opaque; expose a 32-bit hash for diagnostics.
-        *lpThreadId = static_cast<DWORD>( reinterpret_cast<uintptr_t>( k ) );
+        *lpThreadId = static_cast<DWORD>(reinterpret_cast<uintptr_t>(t));
     }
-    return KToHandle( k );
+    return KToHandle(t);
 }
 
-namespace
+BOOL QueueUserWorkItem(LPTHREAD_START_ROUTINE Function, PVOID Context, ULONG Flags)
 {
-    // Trampoline for QueueUserWorkItem. Runs the LPTHREAD_START_ROUTINE
-    // and discards its return value; pthread_detach takes care of cleanup.
-    struct QuwiCtx { LPTHREAD_START_ROUTINE fn; PVOID arg; };
-    void* QuwiTrampoline( void* p )
+    Unused(Flags);
+    if (!Function)
     {
-        QuwiCtx* const c = static_cast<QuwiCtx*>( p );
-        const LPTHREAD_START_ROUTINE fn = c->fn;
-        PVOID const arg = c->arg;
-        delete c;
-        fn( arg );
-        return nullptr;
+        return FALSE;
     }
-}
-
-BOOL QueueUserWorkItem( LPTHREAD_START_ROUTINE Function, PVOID Context, ULONG /*Flags*/ )
-{
-    if ( !Function ) return FALSE;
     QuwiCtx* const ctx = new QuwiCtx{ Function, Context };
     pthread_t tid;
-    if ( pthread_create( &tid, nullptr, QuwiTrampoline, ctx ) != 0 )
+    if (pthread_create(&tid, nullptr, QuwiTrampoline, ctx) != 0)
     {
         delete ctx;
         return FALSE;
     }
-    pthread_detach( tid );
+    pthread_detach(tid);
     return TRUE;
 }
 
-DWORD ResumeThread( HANDLE hThread )
+DWORD ResumeThread(HANDLE hThread)
 {
-    KObject* const k = HandleToK( hThread );
-    pthread_mutex_lock( &k->lock );
-    const DWORD prior = k->threadSuspended ? 1 : 0;
-    if ( k->threadSuspended )
+    ThreadObject* const t = As<ThreadObject>(hThread);
+    if (!t)
     {
-        k->threadSuspended = false;
-        pthread_cond_broadcast( &k->cond );
+        return static_cast<DWORD>(-1);
     }
-    pthread_mutex_unlock( &k->lock );
-    return prior;
+    return t->Resume();
 }
 
-DWORD SuspendThread( HANDLE /*hThread*/ )
+DWORD SuspendThread(HANDLE hThread)
 {
     // No portable thread-suspend on Linux. Engine call sites that hit
     // this in v1 will see a -1 return and a failed assertion in DEBUG;
     // we'd rather fail loudly than silently no-op.
-    return static_cast<DWORD>( -1 );
+    Unused(hThread);
+    return static_cast<DWORD>(-1);
 }
 
-BOOL TerminateThread( HANDLE hThread, DWORD dwExitCode )
+BOOL TerminateThread(HANDLE hThread, DWORD dwExitCode)
 {
-    KObject* const k = HandleToK( hThread );
-    pthread_cancel( k->thread );
-    pthread_mutex_lock( &k->lock );
-    k->threadExitCode = dwExitCode;
-    k->threadFinished = true;
-    pthread_cond_broadcast( &k->cond );
-    pthread_mutex_unlock( &k->lock );
+    ThreadObject* const t = As<ThreadObject>(hThread);
+    if (!t)
+    {
+        return FALSE;
+    }
+    t->Terminate(dwExitCode);
     return TRUE;
 }
 
-BOOL GetExitCodeThread( HANDLE hThread, LPDWORD lpExitCode )
+BOOL GetExitCodeThread(HANDLE hThread, LPDWORD lpExitCode)
 {
     // GetCurrentThread() returns the -2 pseudo-handle (see winapi_handle.cxx).
     // Win32 GetExitCodeThread on that pseudo-handle reports STILL_ACTIVE; we
     // mirror that since we have no KObject for the running thread.
-    if ( reinterpret_cast<intptr_t>( hThread ) == -2 ||
-         reinterpret_cast<intptr_t>( hThread ) == -1 )
+    if (reinterpret_cast<intptr_t>(hThread) == -2 ||
+        reinterpret_cast<intptr_t>(hThread) == -1)
     {
-        if ( lpExitCode ) *lpExitCode = STILL_ACTIVE;
+        if (lpExitCode)
+        {
+            *lpExitCode = STILL_ACTIVE;
+        }
         return TRUE;
     }
-    KObject* const k = HandleToK( hThread );
-    pthread_mutex_lock( &k->lock );
-    *lpExitCode = k->threadFinished ? k->threadExitCode : STILL_ACTIVE;
-    pthread_mutex_unlock( &k->lock );
+    ThreadObject* const t = As<ThreadObject>(hThread);
+    if (!t)
+    {
+        return FALSE;
+    }
+    *lpExitCode = t->ExitCode();
     return TRUE;
 }
 
-BOOL SetThreadPriority( HANDLE hThread, int nPriority )
+BOOL SetThreadPriority(HANDLE hThread, int nPriority)
 {
     //  The two THREAD_MODE_BACKGROUND_* values are the Win32 "drop me
     //  to background priority" / "restore me" pair.  They're always
@@ -207,19 +171,19 @@ BOOL SetThreadPriority( HANDLE hThread, int nPriority )
     //  UtilThreadBeginLowIOPriority / EndLowIOPriority in thread.cxx)
     //  so we route them to ioprio_set on the current task instead of
     //  treating them as numeric priority values.
-    if ( nPriority == THREAD_MODE_BACKGROUND_BEGIN ||
-         nPriority == THREAD_MODE_BACKGROUND_END )
+    if (nPriority == THREAD_MODE_BACKGROUND_BEGIN ||
+        nPriority == THREAD_MODE_BACKGROUND_END)
     {
         const int cls = nPriority == THREAD_MODE_BACKGROUND_BEGIN
-                            ? IOPRIO_CLASS_IDLE
-                            : IOPRIO_CLASS_NONE;
+            ? IOPRIO_CLASS_IDLE
+            : IOPRIO_CLASS_NONE;
         //  who = 0 → operate on the calling task.  IOPRIO_PRIO_VALUE
         //  packs the (class, data) tuple; data is unused for IDLE /
         //  NONE so we pass 0.  Failures are intentionally swallowed
-        //  to match the Win32 behaviour (the engine ignores the
+        //  to match the Win32 behavior (the engine ignores the
         //  return of SetThreadPriority on background-begin/end).
-        ( void )syscall( SYS_ioprio_set, IOPRIO_WHO_PROCESS, 0,
-                         IOPRIO_PRIO_VALUE( cls, 0 ) );
+        (void)syscall(SYS_ioprio_set, IOPRIO_WHO_PROCESS, 0,
+            IOPRIO_PRIO_VALUE(cls, 0));
         return TRUE;
     }
 
@@ -227,54 +191,63 @@ BOOL SetThreadPriority( HANDLE hThread, int nPriority )
     //  backing KObject; for normal numeric priority values on the
     //  current thread we silently no-op (CAP_SYS_NICE is needed for
     //  real enforcement and we don't assume the engine runs with it).
-    if ( reinterpret_cast< intptr_t >( hThread ) == -2 ||
-         reinterpret_cast< intptr_t >( hThread ) == -1 )
+    if (reinterpret_cast<intptr_t>(hThread) == -2 ||
+        reinterpret_cast<intptr_t>(hThread) == -1)
     {
         return TRUE;
     }
 
-    KObject* const k = HandleToK( hThread );
-    pthread_mutex_lock( &k->lock );
-    k->threadPriority = nPriority;
-    pthread_mutex_unlock( &k->lock );
+    auto const t = As<ThreadObject>(hThread);
+    if (!t)
+    {
+        return FALSE;
+    }
     //  Real priority enforcement requires CAP_SYS_NICE / SCHED_FIFO setup;
     //  record the request so GetThreadPriority reflects it.
+    t->SetPriority(nPriority);
     return TRUE;
 }
 
-int GetThreadPriority( HANDLE hThread )
+int GetThreadPriority(HANDLE hThread)
 {
-    KObject* const k = HandleToK( hThread );
-    pthread_mutex_lock( &k->lock );
-    const int p = k->threadPriority;
-    pthread_mutex_unlock( &k->lock );
-    return p;
+    auto const t = As<ThreadObject>(hThread);
+    if (!t)
+    {
+        return THREAD_PRIORITY_NORMAL;
+    }
+    return t->Priority();
 }
 
-BOOL SetThreadPriorityBoost( HANDLE hThread, BOOL bDisablePriorityBoost )
+BOOL SetThreadPriorityBoost(HANDLE hThread, BOOL bDisablePriorityBoost)
 {
-    KObject* const k = HandleToK( hThread );
-    pthread_mutex_lock( &k->lock );
-    k->threadPriorityBoostDisabled = bDisablePriorityBoost ? true : false;
-    pthread_mutex_unlock( &k->lock );
+    auto const t = As<ThreadObject>(hThread);
+    if (!t)
+    {
+        return FALSE;
+    }
+    t->SetPriorityBoostDisabled(bDisablePriorityBoost != FALSE);
     return TRUE;
 }
 
-BOOL GetThreadPriorityBoost( HANDLE hThread, PBOOL pDisablePriorityBoost )
+BOOL GetThreadPriorityBoost(HANDLE hThread, PBOOL pDisablePriorityBoost)
 {
-    KObject* const k = HandleToK( hThread );
-    pthread_mutex_lock( &k->lock );
-    *pDisablePriorityBoost = k->threadPriorityBoostDisabled ? TRUE : FALSE;
-    pthread_mutex_unlock( &k->lock );
+    auto const t = As<ThreadObject>(hThread);
+    if (!t)
+    {
+        return FALSE;
+    }
+    *pDisablePriorityBoost = t->PriorityBoostDisabled() ? TRUE : FALSE;
     return TRUE;
 }
 
-HANDLE OpenThread( DWORD /*access*/, BOOL /*inherit*/, DWORD /*dwThreadId*/ )
+HANDLE OpenThread(DWORD access, BOOL inherit, DWORD dwThreadId)
 {
     // Open-by-tid isn't a primitive on Linux. Engine call sites only use
     // OpenThread( SYNCHRONIZE, ..., id ) to test thread liveness; that
     // pattern needs a thread-table redesign which lands in Phase 6.
+    Unused(access);
+    Unused(inherit);
+    Unused(dwThreadId);
     return nullptr;
 }
-
 }  // extern "C"

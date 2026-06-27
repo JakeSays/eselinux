@@ -16,11 +16,10 @@
 #include <unistd.h>      // sysconf
 #include <sys/uio.h>     // iovec
 
+using osposix::As;
 using osposix::ErrIOUringSubmitIOREQ;
-using osposix::HandleKind;
-using osposix::HandleToK;
+using osposix::FileObject;
 using osposix::IOContext;
-using osposix::KObject;
 
 extern "C" DWORD OSPosixIouringSubmitIOREQ(
     HANDLE                      hFile,
@@ -32,12 +31,12 @@ extern "C" DWORD OSPosixIouringSubmitIOREQ(
     FILE_SEGMENT_ELEMENT const* rgfse,
     DWORD                       cfse )
 {
-    KObject* const k = HandleToK( hFile );
-    if ( !k || k->kind != HandleKind::File || k->fileFd < 0 || !pioreq )
+    FileObject* const k = As<FileObject>(hFile);
+    if (!k || k->Fd() < 0 || !pioreq)
     {
         return ERROR_INVALID_PARAMETER;
     }
-    const int fd = k->fileFd;
+    const int fd = k->Fd();
 
     IOContext* const ctx = new (std::nothrow) IOContext();
     if ( !ctx )

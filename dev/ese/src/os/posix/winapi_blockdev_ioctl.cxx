@@ -29,22 +29,27 @@
 #undef __reserved
 #include <linux/fs.h>
 
-using osposix::HandleKind;
+using osposix::As;
+using osposix::BlockDeviceObject;
+using osposix::FileObject;
 using osposix::HandleToK;
 using osposix::KObject;
 
 namespace
 {
-
 //  Read a small ASCII file (sysfs entry) into a caller-owned buffer.
 size_t ReadSmallFile(const char* path, char* buf, size_t cbBuf)
 {
     if (cbBuf == 0)
+    {
         return 0;
+    }
     buf[0] = '\0';
     const int fd = open(path, O_RDONLY | O_CLOEXEC);
     if (fd < 0)
+    {
         return 0;
+    }
     ssize_t n;
     do
     {
@@ -52,9 +57,13 @@ size_t ReadSmallFile(const char* path, char* buf, size_t cbBuf)
     } while (n < 0 && errno == EINTR);
     close(fd);
     if (n <= 0)
+    {
         return 0;
+    }
     while (n > 0 && (buf[n - 1] == '\n' || buf[n - 1] == ' '))
+    {
         --n;
+    }
     buf[n] = '\0';
     return (size_t) n;
 }
@@ -63,7 +72,9 @@ unsigned long ReadSysfsULong(const char* path, unsigned long defValue)
 {
     char buf[64];
     if (ReadSmallFile(path, buf, sizeof(buf)) == 0)
+    {
         return defValue;
+    }
     char* end = nullptr;
     const unsigned long v = strtoul(buf, &end, 10);
     return (end == buf) ? defValue : v;
@@ -72,40 +83,61 @@ unsigned long ReadSysfsULong(const char* path, unsigned long defValue)
 //  Map a KObject (BlockDevice or File on a regular file) to a disk name
 //  suitable for /sys/block lookups.  Returns true if we have a usable name.
 bool DiskNameForHandle(KObject* k, char* nameOut, size_t cchNameOut,
-                       unsigned int* pDiskMajor, unsigned int* pDiskMinor)
+    unsigned int* pDiskMajor, unsigned int* pDiskMinor)
 {
-    if (k->kind == HandleKind::BlockDevice)
+    if (BlockDeviceObject* const bd = As<BlockDeviceObject>(k))
     {
-        if (pDiskMajor) *pDiskMajor = k->blockDiskMajor;
-        if (pDiskMinor) *pDiskMinor = k->blockDiskMinor;
-        if (!k->blockDiskName || !*k->blockDiskName)
+        if (pDiskMajor)
+        {
+            *pDiskMajor = bd->DiskMajor();
+        }
+        if (pDiskMinor)
+        {
+            *pDiskMinor = bd->DiskMinor();
+        }
+        if (!bd->DiskName() || !*bd->DiskName())
+        {
             return false;
-        const size_t n = strlen(k->blockDiskName);
+        }
+        const size_t n = strlen(bd->DiskName());
         if (n + 1 > cchNameOut)
+        {
             return false;
-        memcpy(nameOut, k->blockDiskName, n + 1);
+        }
+        memcpy(nameOut, bd->DiskName(), n + 1);
         return true;
     }
-    if (k->kind == HandleKind::File && k->fileFd >= 0)
+    FileObject* const f = As<FileObject>(k);
+    if (f && f->Fd() >= 0)
     {
         //  Resolve the disk-name backing this regular file.
         struct stat st;
-        if (fstat(k->fileFd, &st) < 0)
+        if (fstat(f->Fd(), &st) < 0)
+        {
             return false;
-        unsigned int dMaj = 0, dMin = 0;
+        }
+        unsigned int dMaj = 0;
+        unsigned int dMin = 0;
         char tmpName[64];
-        if (!osposix::ResolveBlockDeviceForPath(k->fileOpenedPath ? k->fileOpenedPath : "/",
-                                                &dMaj, &dMin, &dMaj, &dMin,
-                                                tmpName, sizeof(tmpName))
+        if (!osposix::ResolveBlockDeviceForPath(f->OpenedPath() ? f->OpenedPath() : "/",
+                &dMaj, &dMin, &dMaj, &dMin, tmpName, sizeof(tmpName))
             || tmpName[0] == '\0')
         {
             return false;
         }
-        if (pDiskMajor) *pDiskMajor = dMaj;
-        if (pDiskMinor) *pDiskMinor = dMin;
+        if (pDiskMajor)
+        {
+            *pDiskMajor = dMaj;
+        }
+        if (pDiskMinor)
+        {
+            *pDiskMinor = dMin;
+        }
         const size_t n = strlen(tmpName);
         if (n + 1 > cchNameOut)
+        {
             return false;
+        }
         memcpy(nameOut, tmpName, n + 1);
         return true;
     }
@@ -118,15 +150,15 @@ bool DiskNameForHandle(KObject* k, char* nameOut, size_t cchNameOut,
 //  4096/4096 sector sizes, no seek penalty (assume SSD-class behaviour
 //  since flash is the common case for non-block-backed mounts), no TRIM.
 
-constexpr DWORD c_defaultLogicalSectorBytes  = 512;
+constexpr DWORD c_defaultLogicalSectorBytes = 512;
 constexpr DWORD c_defaultPhysicalSectorBytes = 4096;
 
 BOOL FillSectorAlignmentDescriptor(const char* diskName,
-                                   STORAGE_ACCESS_ALIGNMENT_DESCRIPTOR* p)
+    STORAGE_ACCESS_ALIGNMENT_DESCRIPTOR* p)
 {
     memset(p, 0, sizeof(*p));
     p->Version = sizeof(STORAGE_ACCESS_ALIGNMENT_DESCRIPTOR);
-    p->Size    = sizeof(STORAGE_ACCESS_ALIGNMENT_DESCRIPTOR);
+    p->Size = sizeof(STORAGE_ACCESS_ALIGNMENT_DESCRIPTOR);
     if (diskName && *diskName)
     {
         char path[256];
@@ -139,9 +171,9 @@ BOOL FillSectorAlignmentDescriptor(const char* diskName,
     }
     else
     {
-        p->BytesPerLogicalSector  = c_defaultPhysicalSectorBytes;
+        p->BytesPerLogicalSector = c_defaultPhysicalSectorBytes;
         p->BytesPerPhysicalSector = c_defaultPhysicalSectorBytes;
-        p->BytesPerCacheLine      = c_defaultPhysicalSectorBytes;
+        p->BytesPerCacheLine = c_defaultPhysicalSectorBytes;
     }
     return TRUE;
 }
@@ -150,7 +182,7 @@ BOOL FillSeekPenaltyDescriptor(const char* diskName, DEVICE_SEEK_PENALTY_DESCRIP
 {
     memset(p, 0, sizeof(*p));
     p->Version = sizeof(DEVICE_SEEK_PENALTY_DESCRIPTOR);
-    p->Size    = sizeof(DEVICE_SEEK_PENALTY_DESCRIPTOR);
+    p->Size = sizeof(DEVICE_SEEK_PENALTY_DESCRIPTOR);
     if (diskName && *diskName)
     {
         char path[256];
@@ -171,7 +203,7 @@ BOOL FillTrimDescriptor(const char* diskName, DEVICE_TRIM_DESCRIPTOR* p)
 {
     memset(p, 0, sizeof(*p));
     p->Version = sizeof(DEVICE_TRIM_DESCRIPTOR);
-    p->Size    = sizeof(DEVICE_TRIM_DESCRIPTOR);
+    p->Size = sizeof(DEVICE_TRIM_DESCRIPTOR);
     if (diskName && *diskName)
     {
         char path[256];
@@ -188,7 +220,7 @@ BOOL FillTrimDescriptor(const char* diskName, DEVICE_TRIM_DESCRIPTOR* p)
 }
 
 BOOL FillDeviceDescriptor(const char* diskName,
-                          STORAGE_DEVICE_DESCRIPTOR* p, DWORD cbBuf, DWORD* pcbReturned)
+    STORAGE_DEVICE_DESCRIPTOR* p, DWORD cbBuf, DWORD* pcbReturned)
 {
     if (cbBuf < sizeof(STORAGE_DEVICE_DESCRIPTOR))
     {
@@ -197,15 +229,16 @@ BOOL FillDeviceDescriptor(const char* diskName,
     }
     memset(p, 0, sizeof(*p));
     p->Version = sizeof(STORAGE_DEVICE_DESCRIPTOR);
-    p->Size    = sizeof(STORAGE_DEVICE_DESCRIPTOR);
-    p->DeviceType         = 0x07;   //  FILE_DEVICE_MASS_STORAGE
-    p->RemovableMedia     = FALSE;
-    p->CommandQueueing    = TRUE;
-    p->VendorIdOffset     = 0;
-    p->ProductIdOffset    = 0;
+    p->Size = sizeof(STORAGE_DEVICE_DESCRIPTOR);
+    //  FILE_DEVICE_MASS_STORAGE
+    p->DeviceType = 0x07;
+    p->RemovableMedia = FALSE;
+    p->CommandQueueing = TRUE;
+    p->VendorIdOffset = 0;
+    p->ProductIdOffset = 0;
     p->ProductRevisionOffset = 0;
     p->SerialNumberOffset = 0;
-    p->BusType            = BusTypeUnknown;
+    p->BusType = BusTypeUnknown;
 
     char path[256];
     snprintf(path, sizeof(path), "/sys/block/%s/device/vendor", diskName);
@@ -242,24 +275,28 @@ BOOL FillDeviceDescriptor(const char* diskName,
             return true;
         }
         if (ib + cb + 1 > cbBuf)
+        {
             return false;
+        }
         offsetOut = ib;
         memcpy(base + ib, sz, cb);
         base[ib + cb] = '\0';
         ib += (DWORD)(cb + 1);
         return true;
     };
-    if (!Pack(vendor,   cbVendor,   p->VendorIdOffset)
-        || !Pack(model, cbModel,    p->ProductIdOffset)
+    if (!Pack(vendor, cbVendor, p->VendorIdOffset)
+        || !Pack(model, cbModel, p->ProductIdOffset)
         || !Pack(firmware, cbFirmware, p->ProductRevisionOffset)
-        || !Pack(serial, cbSerial,  p->SerialNumberOffset))
+        || !Pack(serial, cbSerial, p->SerialNumberOffset))
     {
         SetLastError(ERROR_INSUFFICIENT_BUFFER);
         return FALSE;
     }
     p->RawPropertiesLength = ib - sizeof(STORAGE_DEVICE_DESCRIPTOR);
     if (pcbReturned)
+    {
         *pcbReturned = ib;
+    }
     return TRUE;
 }
 
@@ -267,25 +304,29 @@ BOOL FillAdapterDescriptor(const char* diskName, STORAGE_ADAPTER_DESCRIPTOR* p)
 {
     memset(p, 0, sizeof(*p));
     p->Version = sizeof(STORAGE_ADAPTER_DESCRIPTOR);
-    p->Size    = sizeof(STORAGE_ADAPTER_DESCRIPTOR);
+    p->Size = sizeof(STORAGE_ADAPTER_DESCRIPTOR);
     //  Linux block layer doesn't gate per-adapter; report generous defaults
     //  matching what a healthy SATA/NVMe controller advertises.
     p->MaximumTransferLength = 0x00100000u;
-    p->MaximumPhysicalPages  = 256;
-    p->AlignmentMask         = 0;
-    p->AdapterUsesPio        = FALSE;
-    p->AdapterScansDown      = FALSE;
-    p->CommandQueueing       = TRUE;
-    p->AcceleratedTransfer   = TRUE;
-    p->BusType               = BusTypeUnknown;
+    p->MaximumPhysicalPages = 256;
+    p->AlignmentMask = 0;
+    p->AdapterUsesPio = FALSE;
+    p->AdapterScansDown = FALSE;
+    p->CommandQueueing = TRUE;
+    p->AcceleratedTransfer = TRUE;
+    p->BusType = BusTypeUnknown;
     if (diskName && *diskName)
     {
         //  NVMe disks live under /sys/block/nvmeXnY/...; everything else is
         //  too transport-specific to detect from sysfs alone.
         if (strncmp(diskName, "nvme", 4) == 0)
+        {
             p->BusType = BusTypeNvme;
+        }
         else
+        {
             p->BusType = BusTypeSata;
+        }
     }
     return TRUE;
 }
@@ -296,25 +337,34 @@ DWORD ReadDiskstatsInflight(unsigned int diskMajor, unsigned int diskMinor)
 {
     FILE* const f = fopen("/proc/diskstats", "re");
     if (!f)
+    {
         return 0;
+    }
     char line[512];
     DWORD inflight = 0;
     while (fgets(line, sizeof(line), f))
     {
-        unsigned int maj = 0, minr = 0;
+        unsigned int maj = 0;
+        unsigned int minr = 0;
         char name[64];
         //  /proc/diskstats columns (kernel 4.18+): major minor name
         //  rd_ios rd_merges rd_sectors rd_ticks wr_ios wr_merges wr_sectors
         //  wr_ticks in_flight io_ticks time_in_queue ...
-        unsigned long long rdIos, rdMerges, rdSectors, rdTicks;
-        unsigned long long wrIos, wrMerges, wrSectors, wrTicks;
+        unsigned long long rdIos;
+        unsigned long long rdMerges;
+        unsigned long long rdSectors;
+        unsigned long long rdTicks;
+        unsigned long long wrIos;
+        unsigned long long wrMerges;
+        unsigned long long wrSectors;
+        unsigned long long wrTicks;
         unsigned long long inFlight;
         const int n = sscanf(line,
-                "%u %u %63s %llu %llu %llu %llu %llu %llu %llu %llu %llu",
-                &maj, &minr, name,
-                &rdIos, &rdMerges, &rdSectors, &rdTicks,
-                &wrIos, &wrMerges, &wrSectors, &wrTicks,
-                &inFlight);
+            "%u %u %63s %llu %llu %llu %llu %llu %llu %llu %llu %llu",
+            &maj, &minr, name,
+            &rdIos, &rdMerges, &rdSectors, &rdTicks,
+            &wrIos, &wrMerges, &wrSectors, &wrTicks,
+            &inFlight);
         if (n >= 12 && maj == diskMajor && minr == diskMinor)
         {
             inflight = (DWORD) inFlight;
@@ -326,7 +376,7 @@ DWORD ReadDiskstatsInflight(unsigned int diskMajor, unsigned int diskMinor)
 }
 
 BOOL FillDiskPerformance(unsigned int diskMajor, unsigned int diskMinor,
-                         DISK_PERFORMANCE* p)
+    DISK_PERFORMANCE* p)
 {
     memset(p, 0, sizeof(*p));
     p->QueueDepth = ReadDiskstatsInflight(diskMajor, diskMinor);
@@ -334,12 +384,10 @@ BOOL FillDiskPerformance(unsigned int diskMajor, unsigned int diskMinor,
     //  QueueDepth only.
     return TRUE;
 }
-
 }  //  namespace
 
 extern "C"
 {
-
 //  Public entry — called from winapi_filelock.cxx's DeviceIoControl
 //  dispatcher.  Returns FALSE with ERROR_INVALID_FUNCTION when the
 //  control code isn't a storage IOCTL we handle (caller continues
@@ -355,15 +403,15 @@ BOOL OSPosixHandleStorageIoctl(HANDLE hDevice, DWORD dwIoControlCode,
         return FALSE;
     }
 
-    //  fHaveDisk == false just means "no sysfs backing for hardware
+    //  An empty diskName just means "no sysfs backing for hardware
     //  queries" — ZFS, tmpfs, NFS, fuse, overlay all land here.  The
     //  IOCTL helpers below substitute sensible defaults; the engine's
     //  COSDisk grouping still works because (diskMajor:diskMinor)
     //  uniquely identifies the filesystem.
     char diskName[64] = "";
-    unsigned int diskMajor = 0, diskMinor = 0;
-    (void) DiskNameForHandle(k, diskName, sizeof(diskName),
-                             &diskMajor, &diskMinor);
+    unsigned int diskMajor = 0;
+    unsigned int diskMinor = 0;
+    (void) DiskNameForHandle(k, diskName, sizeof(diskName), &diskMajor, &diskMinor);
 
     if (dwIoControlCode == IOCTL_STORAGE_QUERY_PROPERTY)
     {
@@ -373,7 +421,7 @@ BOOL OSPosixHandleStorageIoctl(HANDLE hDevice, DWORD dwIoControlCode,
             return FALSE;
         }
         const STORAGE_PROPERTY_QUERY* const q =
-                reinterpret_cast<const STORAGE_PROPERTY_QUERY*>(lpInBuffer);
+            reinterpret_cast<const STORAGE_PROPERTY_QUERY*>(lpInBuffer);
         if (q->QueryType != PropertyStandardQuery && q->QueryType != PropertyExistsQuery)
         {
             SetLastError(ERROR_INVALID_PARAMETER);
@@ -381,78 +429,88 @@ BOOL OSPosixHandleStorageIoctl(HANDLE hDevice, DWORD dwIoControlCode,
         }
         switch (q->PropertyId)
         {
-            case StorageAccessAlignmentProperty:
-                if (nOutBufferSize < sizeof(STORAGE_ACCESS_ALIGNMENT_DESCRIPTOR))
-                {
-                    SetLastError(ERROR_INSUFFICIENT_BUFFER);
-                    return FALSE;
-                }
-                FillSectorAlignmentDescriptor(diskName,
-                    reinterpret_cast<STORAGE_ACCESS_ALIGNMENT_DESCRIPTOR*>(lpOutBuffer));
-                if (lpBytesReturned)
-                    *lpBytesReturned = sizeof(STORAGE_ACCESS_ALIGNMENT_DESCRIPTOR);
-                return TRUE;
-
-            case StorageDeviceSeekPenaltyProperty:
-                if (nOutBufferSize < sizeof(DEVICE_SEEK_PENALTY_DESCRIPTOR))
-                {
-                    SetLastError(ERROR_INSUFFICIENT_BUFFER);
-                    return FALSE;
-                }
-                FillSeekPenaltyDescriptor(diskName,
-                    reinterpret_cast<DEVICE_SEEK_PENALTY_DESCRIPTOR*>(lpOutBuffer));
-                if (lpBytesReturned)
-                    *lpBytesReturned = sizeof(DEVICE_SEEK_PENALTY_DESCRIPTOR);
-                return TRUE;
-
-            case StorageDeviceTrimProperty:
-                if (nOutBufferSize < sizeof(DEVICE_TRIM_DESCRIPTOR))
-                {
-                    SetLastError(ERROR_INSUFFICIENT_BUFFER);
-                    return FALSE;
-                }
-                FillTrimDescriptor(diskName,
-                    reinterpret_cast<DEVICE_TRIM_DESCRIPTOR*>(lpOutBuffer));
-                if (lpBytesReturned)
-                    *lpBytesReturned = sizeof(DEVICE_TRIM_DESCRIPTOR);
-                return TRUE;
-
-            case StorageDeviceProperty:
+        case StorageAccessAlignmentProperty:
+            if (nOutBufferSize < sizeof(STORAGE_ACCESS_ALIGNMENT_DESCRIPTOR))
             {
-                DWORD cbReturned = 0;
-                const BOOL ok = FillDeviceDescriptor(diskName,
-                    reinterpret_cast<STORAGE_DEVICE_DESCRIPTOR*>(lpOutBuffer),
-                    nOutBufferSize, &cbReturned);
-                if (ok && lpBytesReturned)
-                    *lpBytesReturned = cbReturned;
-                return ok;
+                SetLastError(ERROR_INSUFFICIENT_BUFFER);
+                return FALSE;
             }
+            FillSectorAlignmentDescriptor(diskName,
+                reinterpret_cast<STORAGE_ACCESS_ALIGNMENT_DESCRIPTOR*>(lpOutBuffer));
+            if (lpBytesReturned)
+            {
+                *lpBytesReturned = sizeof(STORAGE_ACCESS_ALIGNMENT_DESCRIPTOR);
+            }
+            return TRUE;
 
-            case StorageAdapterProperty:
-                if (nOutBufferSize < sizeof(STORAGE_ADAPTER_DESCRIPTOR))
-                {
-                    SetLastError(ERROR_INSUFFICIENT_BUFFER);
-                    return FALSE;
-                }
-                FillAdapterDescriptor(diskName,
-                    reinterpret_cast<STORAGE_ADAPTER_DESCRIPTOR*>(lpOutBuffer));
-                if (lpBytesReturned)
-                    *lpBytesReturned = sizeof(STORAGE_ADAPTER_DESCRIPTOR);
-                return TRUE;
-
-            case StorageDeviceCopyOffloadProperty:
-                //  Linux has no token-based copy-offload abstraction (ODX is
-                //  a Win32/SCSI-XCOPY thing).  Report not-supported; engine's
-                //  m_errorOsdcod path handles the negative case.
-                SetLastError(ERROR_NOT_SUPPORTED);
+        case StorageDeviceSeekPenaltyProperty:
+            if (nOutBufferSize < sizeof(DEVICE_SEEK_PENALTY_DESCRIPTOR))
+            {
+                SetLastError(ERROR_INSUFFICIENT_BUFFER);
                 return FALSE;
+            }
+            FillSeekPenaltyDescriptor(diskName,
+                reinterpret_cast<DEVICE_SEEK_PENALTY_DESCRIPTOR*>(lpOutBuffer));
+            if (lpBytesReturned)
+            {
+                *lpBytesReturned = sizeof(DEVICE_SEEK_PENALTY_DESCRIPTOR);
+            }
+            return TRUE;
 
-            case StorageDeviceWriteCacheProperty:
-                //  IOCTL_DISK_GET_CACHE_INFORMATION already serves the
-                //  write-cache state below; the engine treats a failure here
-                //  as "use the IOCTL_DISK_GET_CACHE_INFORMATION answer."
-                SetLastError(ERROR_NOT_SUPPORTED);
+        case StorageDeviceTrimProperty:
+            if (nOutBufferSize < sizeof(DEVICE_TRIM_DESCRIPTOR))
+            {
+                SetLastError(ERROR_INSUFFICIENT_BUFFER);
                 return FALSE;
+            }
+            FillTrimDescriptor(diskName,
+                reinterpret_cast<DEVICE_TRIM_DESCRIPTOR*>(lpOutBuffer));
+            if (lpBytesReturned)
+            {
+                *lpBytesReturned = sizeof(DEVICE_TRIM_DESCRIPTOR);
+            }
+            return TRUE;
+
+        case StorageDeviceProperty:
+        {
+            DWORD cbReturned = 0;
+            const BOOL ok = FillDeviceDescriptor(diskName,
+                reinterpret_cast<STORAGE_DEVICE_DESCRIPTOR*>(lpOutBuffer),
+                nOutBufferSize, &cbReturned);
+            if (ok && lpBytesReturned)
+            {
+                *lpBytesReturned = cbReturned;
+            }
+            return ok;
+        }
+
+        case StorageAdapterProperty:
+            if (nOutBufferSize < sizeof(STORAGE_ADAPTER_DESCRIPTOR))
+            {
+                SetLastError(ERROR_INSUFFICIENT_BUFFER);
+                return FALSE;
+            }
+            FillAdapterDescriptor(diskName,
+                reinterpret_cast<STORAGE_ADAPTER_DESCRIPTOR*>(lpOutBuffer));
+            if (lpBytesReturned)
+            {
+                *lpBytesReturned = sizeof(STORAGE_ADAPTER_DESCRIPTOR);
+            }
+            return TRUE;
+
+        case StorageDeviceCopyOffloadProperty:
+            //  Linux has no token-based copy-offload abstraction (ODX is
+            //  a Win32/SCSI-XCOPY thing).  Report not-supported; engine's
+            //  m_errorOsdcod path handles the negative case.
+            SetLastError(ERROR_NOT_SUPPORTED);
+            return FALSE;
+
+        case StorageDeviceWriteCacheProperty:
+            //  IOCTL_DISK_GET_CACHE_INFORMATION already serves the
+            //  write-cache state below; the engine treats a failure here
+            //  as "use the IOCTL_DISK_GET_CACHE_INFORMATION answer."
+            SetLastError(ERROR_NOT_SUPPORTED);
+            return FALSE;
         }
         SetLastError(ERROR_INVALID_FUNCTION);
         return FALSE;
@@ -476,10 +534,12 @@ BOOL OSPosixHandleStorageIoctl(HANDLE hDevice, DWORD dwIoControlCode,
             SetLastError(ERROR_INSUFFICIENT_BUFFER);
             return FALSE;
         }
-        FillDiskPerformance(k->blockDiskMajor, k->blockDiskMinor,
+        FillDiskPerformance(diskMajor, diskMinor,
             reinterpret_cast<DISK_PERFORMANCE*>(lpOutBuffer));
         if (lpBytesReturned)
+        {
             *lpBytesReturned = sizeof(DISK_PERFORMANCE);
+        }
         return TRUE;
     }
 
@@ -491,10 +551,11 @@ BOOL OSPosixHandleStorageIoctl(HANDLE hDevice, DWORD dwIoControlCode,
             return FALSE;
         }
         DISK_CACHE_INFORMATION* const p =
-                reinterpret_cast<DISK_CACHE_INFORMATION*>(lpOutBuffer);
+            reinterpret_cast<DISK_CACHE_INFORMATION*>(lpOutBuffer);
         memset(p, 0, sizeof(*p));
         static constexpr char c_writeBack[] = "write back";
-        bool fWriteCacheBack = true;    //  default: assume write-back (matches Linux block-layer default)
+        //  Default: assume write-back (matches Linux block-layer default).
+        bool fWriteCacheBack = true;
         if (diskName[0])
         {
             char path[256];
@@ -504,12 +565,15 @@ BOOL OSPosixHandleStorageIoctl(HANDLE hDevice, DWORD dwIoControlCode,
             fWriteCacheBack = (strncmp(buf, c_writeBack, sizeof(c_writeBack) - 1) == 0);
         }
         p->WriteCacheEnabled = fWriteCacheBack;
-        p->ReadCacheEnabled  = TRUE;    //  Linux page cache always on
+        //  Linux page cache always on.
+        p->ReadCacheEnabled = TRUE;
         p->ParametersSavable = FALSE;
-        p->ReadRetentionPriority  = KeepReadData;
+        p->ReadRetentionPriority = KeepReadData;
         p->WriteRetentionPriority = KeepReadData;
         if (lpBytesReturned)
+        {
             *lpBytesReturned = sizeof(*p);
+        }
         return TRUE;
     }
 
@@ -519,25 +583,28 @@ BOOL OSPosixHandleStorageIoctl(HANDLE hDevice, DWORD dwIoControlCode,
         {
             SetLastError(ERROR_MORE_DATA);
             if (lpBytesReturned)
+            {
                 *lpBytesReturned = sizeof(VOLUME_DISK_EXTENTS);
+            }
             return FALSE;
         }
         VOLUME_DISK_EXTENTS* const p =
-                reinterpret_cast<VOLUME_DISK_EXTENTS*>(lpOutBuffer);
+            reinterpret_cast<VOLUME_DISK_EXTENTS*>(lpOutBuffer);
         memset(p, 0, sizeof(*p));
-        p->NumberOfDiskExtents       = 1;
+        p->NumberOfDiskExtents = 1;
         //  Encode the disk's (major:minor) into a unique DiskNumber.
         //  Engine treats this as an opaque identifier for COSDisk grouping.
-        p->Extents[0].DiskNumber     = (DWORD) makedev(diskMajor, diskMinor) & 0x7FFFFFFFu;
+        p->Extents[0].DiskNumber = (DWORD) makedev(diskMajor, diskMinor) & 0x7FFFFFFFu;
         p->Extents[0].StartingOffset.QuadPart = 0;
-        p->Extents[0].ExtentLength.QuadPart   = 0;
+        p->Extents[0].ExtentLength.QuadPart = 0;
         if (lpBytesReturned)
+        {
             *lpBytesReturned = sizeof(*p);
+        }
         return TRUE;
     }
 
     SetLastError(ERROR_INVALID_FUNCTION);
     return FALSE;
 }
-
 }  //  extern "C"

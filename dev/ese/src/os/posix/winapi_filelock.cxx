@@ -21,9 +21,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-using osposix::HandleKind;
-using osposix::HandleToK;
-using osposix::KObject;
+using osposix::As;
+using osposix::FileObject;
 
 namespace
 {
@@ -43,8 +42,8 @@ BOOL LockFileEx(HANDLE hFile, DWORD dwFlags, DWORD /*dwReserved*/,
     DWORD nNumberOfBytesToLockLow, DWORD nNumberOfBytesToLockHigh,
     LPOVERLAPPED lpOverlapped)
 {
-    KObject* const k = HandleToK(hFile);
-    if (!k || k->kind != HandleKind::File || !lpOverlapped)
+    FileObject* const k = As<FileObject>(hFile);
+    if (!k || !lpOverlapped)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
@@ -63,7 +62,7 @@ BOOL LockFileEx(HANDLE hFile, DWORD dwFlags, DWORD /*dwReserved*/,
                    ? F_OFD_SETLK
                    : F_OFD_SETLKW;
     int rc;
-    while ((rc = fcntl(k->fileFd, op, &fl)) < 0 && errno == EINTR)
+    while ((rc = fcntl(k->Fd(), op, &fl)) < 0 && errno == EINTR)
     {
         //  F_OFD_SETLKW can be interrupted by a signal; the caller asked
         //  for a blocking acquire, so retry rather than surface EINTR.
@@ -85,8 +84,8 @@ BOOL UnlockFileEx(HANDLE hFile, DWORD /*dwReserved*/,
     DWORD nNumberOfBytesToUnlockLow, DWORD nNumberOfBytesToUnlockHigh,
     LPOVERLAPPED lpOverlapped)
 {
-    KObject* const k = HandleToK(hFile);
-    if (!k || k->kind != HandleKind::File || !lpOverlapped)
+    FileObject* const k = As<FileObject>(hFile);
+    if (!k || !lpOverlapped)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
@@ -97,7 +96,7 @@ BOOL UnlockFileEx(HANDLE hFile, DWORD /*dwReserved*/,
     fl.l_whence = SEEK_SET;
     fl.l_start = (static_cast<off_t>(lpOverlapped->OffsetHigh) << 32) | lpOverlapped->Offset;
     fl.l_len = LengthFromPair(nNumberOfBytesToUnlockLow, nNumberOfBytesToUnlockHigh);
-    if (fcntl(k->fileFd, F_OFD_SETLK, &fl) < 0)
+    if (fcntl(k->Fd(), F_OFD_SETLK, &fl) < 0)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
@@ -109,7 +108,7 @@ namespace
 {
 //  FSCTL_SET_ZERO_DATA — punch a hole in a sparse file.  fallocate with
 //  PUNCH_HOLE|KEEP_SIZE matches the Win32 contract (logical size unchanged).
-BOOL IoctlPunchHole(KObject* const k, LPVOID lpInBuffer, DWORD nInBufferSize)
+BOOL IoctlPunchHole(FileObject* const k, LPVOID lpInBuffer, DWORD nInBufferSize)
 {
     if (nInBufferSize < sizeof(FILE_ZERO_DATA_INFORMATION) || !lpInBuffer)
     {
@@ -123,7 +122,7 @@ BOOL IoctlPunchHole(KObject* const k, LPVOID lpInBuffer, DWORD nInBufferSize)
     {
         return TRUE;
     }
-    if (fallocate(k->fileFd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, ibStart, ibEnd - ibStart) < 0)
+    if (fallocate(k->Fd(), FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, ibStart, ibEnd - ibStart) < 0)
     {
         SetLastError(errno == EOPNOTSUPP
                      ? ERROR_INVALID_FUNCTION
@@ -137,7 +136,7 @@ BOOL IoctlPunchHole(KObject* const k, LPVOID lpInBuffer, DWORD nInBufferSize)
 //  byte ranges that intersect the input range.  Linux equivalent uses
 //  lseek with SEEK_DATA / SEEK_HOLE to walk the allocated extents.
 BOOL IoctlQueryAllocatedRanges(
-    KObject* const k,
+    FileObject* const k,
     LPVOID lpInBuffer,
     DWORD nInBufferSize,
     LPVOID lpOutBuffer,
@@ -160,7 +159,7 @@ BOOL IoctlQueryAllocatedRanges(
     off_t ibCursor = ibQueryStart;
     while (ibCursor < ibQueryEnd && iOut < cMaxOut)
     {
-        const off_t ibData = lseek(k->fileFd, ibCursor, SEEK_DATA);
+        const off_t ibData = lseek(k->Fd(), ibCursor, SEEK_DATA);
         if (ibData < 0)
         {
             if (errno == ENXIO)
@@ -175,7 +174,7 @@ BOOL IoctlQueryAllocatedRanges(
         {
             break;
         }
-        off_t ibHole = lseek(k->fileFd, ibData, SEEK_HOLE);
+        off_t ibHole = lseek(k->Fd(), ibData, SEEK_HOLE);
         if (ibHole < 0)
         {
             //  SEEK_HOLE always succeeds — EOF acts as an implicit hole.
@@ -211,12 +210,6 @@ BOOL DeviceIoControl(HANDLE hDevice, DWORD dwIoControlCode, LPVOID lpInBuffer,
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
     }
-    KObject* const k = HandleToK(hDevice);
-    if (!k)
-    {
-        SetLastError(ERROR_INVALID_HANDLE);
-        return FALSE;
-    }
     if (lpBytesReturned)
     {
         *lpBytesReturned = 0;
@@ -231,11 +224,27 @@ BOOL DeviceIoControl(HANDLE hDevice, DWORD dwIoControlCode, LPVOID lpInBuffer,
             return TRUE;
 
         case FSCTL_SET_ZERO_DATA:
-            return IoctlPunchHole(k, lpInBuffer, nInBufferSize);
+        {
+            FileObject* const f = As<FileObject>(hDevice);
+            if (!f)
+            {
+                SetLastError(ERROR_INVALID_HANDLE);
+                return FALSE;
+            }
+            return IoctlPunchHole(f, lpInBuffer, nInBufferSize);
+        }
 
         case FSCTL_QUERY_ALLOCATED_RANGES:
-            return IoctlQueryAllocatedRanges(k, lpInBuffer, nInBufferSize,
+        {
+            FileObject* const f = As<FileObject>(hDevice);
+            if (!f)
+            {
+                SetLastError(ERROR_INVALID_HANDLE);
+                return FALSE;
+            }
+            return IoctlQueryAllocatedRanges(f, lpInBuffer, nInBufferSize,
                 lpOutBuffer, nOutBufferSize, lpBytesReturned);
+        }
 
         case IOCTL_STORAGE_QUERY_PROPERTY:
         case IOCTL_DISK_GET_CACHE_INFORMATION:
